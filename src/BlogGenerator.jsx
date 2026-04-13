@@ -281,28 +281,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   // 다시 생성하기 확인
   // ── sessionStorage 키 ──
-  const _ssFormStepKey = useRef("_bg_formStep_" + (initialType || "blog")).current;
-  const _ssSourceTypeKey = useRef("_bg_sourceType_" + (initialType || "blog")).current;
   const _ssFieldsKey = useRef("_bg_fields_" + (initialType || "blog")).current;
   const _ssPlatformKey = useRef("_bg_platform_" + (initialType || "blog")).current;
   const _ssSubtypeKey = useRef("_bg_subtype_" + (initialType || "blog")).current;
   const _ssUrlInputKey = useRef("_bg_urlInput_" + (initialType || "blog")).current;
 
-  const [formStep, setFormStep_raw] = useState(() => {
-    try { return parseInt(sessionStorage.getItem(_ssFormStepKey) || "1") || 1; } catch { return 1; }
-  }); // 1~4 wizard steps
-  const setFormStep = (v) => {
-    setFormStep_raw(v);
-    try { sessionStorage.setItem(_ssFormStepKey, String(v)); } catch {}
-  };
-  const [sourceType, setSourceType_raw] = useState(() => {
-    try { return sessionStorage.getItem(_ssSourceTypeKey) || "topic"; } catch { return "topic"; }
-  }); // "link" | "file" | "topic"
-  const setSourceType = (v) => {
-    setSourceType_raw(v);
-    try { sessionStorage.setItem(_ssSourceTypeKey, v); } catch {}
-  };
   const [showRegenConfirm, setShowRegenConfirm] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const textareaRef = useRef(null);
   // 크레딧/횟수 상태 (렌더 시 체크)
   const _getUsageState = () => {
     const _u = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
@@ -388,12 +375,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   };
 
   const generate = async () => {
-    // 주제 자동 폴백: 링크면 urlResult.title, 파일이면 첫 파일명으로
+    // 주제 자동 폴백: URL 결과가 있으면 title, 파일이 있으면 첫 파일명
     if (!fields.keyword?.trim()) {
-      if (sourceType === "link" && urlResult?.title) {
+      if (urlResult?.title) {
         setField("keyword", urlResult.title.slice(0, 80));
         fields.keyword = urlResult.title.slice(0, 80);
-      } else if (sourceType === "file" && fields._files?.length) {
+      } else if (fields._files?.length) {
         const fallback = fields._files[0].name?.replace(/\.[^.]+$/, "").slice(0, 60) || "";
         setField("keyword", fallback);
         fields.keyword = fallback;
@@ -859,12 +846,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           {result && (
             <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <button onClick={()=>{
-                setResult_raw("");setHtmlResult("");setGenStep(0);setFormStep(1);setSourceType("topic");
+                setResult_raw("");setHtmlResult("");setGenStep(0);
                 setError("");setSuggestedImages([]);setInlineImages({});setCopied(false);
                 setTitleSugg([]);setSeoKeys([]);setFields({});setUrlInput("");setUrlResult(null);
                 try{
                   sessionStorage.removeItem(_ssKey);sessionStorage.removeItem(_ssLoadKey);sessionStorage.removeItem(_ssStepKey);sessionStorage.removeItem(_ssSavedFullKey);
-                  sessionStorage.removeItem(_ssFormStepKey);sessionStorage.removeItem(_ssSourceTypeKey);sessionStorage.removeItem(_ssFieldsKey);
+                  sessionStorage.removeItem(_ssFieldsKey);
                   sessionStorage.removeItem(_ssPlatformKey);sessionStorage.removeItem(_ssSubtypeKey);sessionStorage.removeItem(_ssUrlInputKey);
                 }catch{}
               }}
@@ -1174,18 +1161,70 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   // eslint-disable-next-line no-unused-vars
   const [mobileTab, setMobileTab] = useState("input");
-  // 현재 단계: 1=입력, 2=생성중, 3=결과
-  // genStep: 0=시작전, 1~4=생성중, 5=완료
-  // loading 또는 genStep이 1~4이면 생성중 화면 유지
-  const wizStep = (loading || (genStep > 0 && genStep < 5)) ? 2 : (!loading && genStep === 5 && result) ? 3 : 1;
-  const WSTEPS = [
-    {n:1, label:t("inputStep")},
-    {n:2, label:t("genStep")},
-    {n:3, label:t("resultStep")},
-  ];
+  // 표시 모드: 입력(검색창) vs 생성중/결과
+  const showResult = loading || (genStep > 0 && genStep < 5) || (!loading && genStep === 5 && result);
+
+  // 파일 입력 핸들러 (드래그앤드롭/버튼 공용)
+  const handleFileInput = async (fileList) => {
+    if (!fileList.length) return;
+    const maxSize = 10 * 1024 * 1024;
+    const valid = fileList.filter(f => f.size <= maxSize);
+    if (valid.length < fileList.length) alert(`${fileList.length - valid.length}개 파일이 10MB 초과로 제외되었습니다.`);
+    if (!valid.length) return;
+    setField("extra", (fields.extra ? fields.extra + "\n" : "") + `${valid.length}개 파일 분석 중...`);
+    const prevFiles = fields._files || [];
+    const newFiles = [...prevFiles];
+    let allResults = "";
+    for (const file of valid) {
+      try {
+        if (file.type.startsWith("image/")) {
+          const base64 = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
+          const txt = await callAI("claude-haiku-4-5", [{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:base64.split(",")[1]}},{type:"text",text:"이 이미지의 내용을 한국어로 상세히 설명해주세요. 블로그 글 주제로 사용할 수 있게 핵심 키워드와 설명을 제공해주세요."}]}], 500);
+          allResults += `\n[${file.name}] 이미지: ${txt.slice(0, 200)}`;
+          newFiles.push({ name: file.name, type: "image", summary: txt.slice(0, 200) });
+        } else {
+          const text2 = await file.text().catch(() => "");
+          const summary = text2.slice(0, 2000);
+          allResults += `\n[${file.name}] ${summary.slice(0, 300)}`;
+          newFiles.push({ name: file.name, type: "text", summary: summary.slice(0, 300) });
+        }
+      } catch(err) {
+        allResults += `\n[${file.name}] 분석 실패: ${err.message}`;
+      }
+    }
+    if (!fields.keyword && allResults) {
+      const firstLine = allResults.split("\n").find(l => l.trim().length > 10)?.trim()?.slice(0,80);
+      if (firstLine) setField("keyword", firstLine);
+    }
+    setField("extra", (fields.extra?.replace(/\d+개 파일 분석 중\.\.\./, "").replace("파일 분석 중...", "") || "") + "참고 파일:" + allResults);
+    setField("_files", newFiles);
+  };
+
+  // URL 자동 감지
+  const handleMainInput = (val) => {
+    setField("keyword", val);
+    const urlMatch = val.match(/https?:\/\/[^\s]+/);
+    if (urlMatch && !urlResult && !urlLoading) {
+      setUrlInput(urlMatch[0]);
+    }
+  };
+
+  // textarea 자동 높이
+  const autoResize = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 200) + "px";
+  };
+
+  // 현재 선택된 플랫폼 정보
+  const currentPlatform = SNS_OPTIONS.find(p => p.id === platformId) || SNS_OPTIONS[0];
 
   const content = (
-    <div style={{display:"flex",flex:1,height:"100%",overflow:"hidden",flexDirection:"column"}}>
+    <div style={{display:"flex",flex:1,height:"100%",overflow:"hidden",flexDirection:"column"}}
+      onDragOver={e=>{e.preventDefault();e.stopPropagation();setDragOver(true);}}
+      onDragLeave={e=>{e.preventDefault();e.stopPropagation();setDragOver(false);}}
+      onDrop={e=>{e.preventDefault();e.stopPropagation();setDragOver(false);const files=Array.from(e.dataTransfer.files||[]);if(files.length)handleFileInput(files);}}>
       {/* 다시 생성 확인 모달 */}
       {showRegenConfirm && (
         <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>
@@ -1221,412 +1260,332 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         .tistory-content p{margin:8px 0;line-height:1.8}
         .tistory-content ul{padding-left:20px;margin:8px 0}
         .tistory-content li{margin:4px 0}
+        .bl-search-textarea{scrollbar-width:thin;scrollbar-color:${isDark?"rgba(255,255,255,0.15)":"#ddd"} transparent;}
+        .bl-search-textarea::-webkit-scrollbar{width:4px}
+        .bl-search-textarea::-webkit-scrollbar-thumb{background:${isDark?"rgba(255,255,255,0.15)":"#ddd"};border-radius:4px}
+        .bl-platform-chip:hover{transform:translateY(-1px);box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+        .bl-settings-panel{animation:bl-fadein 0.2s ease}
         @media(max-width:768px){
-          .bl-form-wrap{padding:16px 14px 24px!important;max-width:100%!important}
-          .bl-form-wrap input,.bl-form-wrap textarea,.bl-form-wrap select{font-size:16px!important;padding:12px 14px!important}
-          .bl-form-wrap button{min-height:44px!important}
-          .bl-gen-btn{position:sticky!important;bottom:0!important;z-index:10!important;margin:0 -14px!important;padding:16px 14px!important;border-radius:0!important;background:linear-gradient(135deg,#7c6aff,#8b5cf6)!important}
+          .bl-search-wrap{padding:0 16px!important}
+          .bl-search-box{padding:16px 16px 12px!important}
+          .bl-search-textarea{font-size:16px!important}
+          .bl-platform-chips{gap:8px!important;padding:0 16px!important}
+          .bl-platform-chip{padding:8px 14px!important;font-size:12px!important}
           .bl-result-header{padding:6px 12px!important;gap:4px!important}
           .bl-result-header>div{flex-wrap:wrap!important}
-          .bl-sns-platform-group{gap:6px!important}
-          .bl-sns-platform-group button{padding:11px 13px!important;font-size:13px!important}
         }
         @media(max-width:480px){
-          .bl-form-wrap{padding:14px 12px 24px!important}
-          .bl-form-wrap input,.bl-form-wrap textarea,.bl-form-wrap select{font-size:16px!important}
-          .bl-tone-group{gap:6px!important}
-          .bl-tone-group button{padding:11px 18px!important;font-size:13px!important;min-height:44px!important}
-          .bl-gen-btn{font-size:16px!important;padding:16px!important}
-          .bl-sns-platform-group{gap:6px!important}
-          .bl-sns-platform-group button{padding:10px 12px!important;font-size:12px!important;min-height:46px!important}
+          .bl-search-wrap{padding:0 12px!important}
+          .bl-search-box{padding:14px 14px 10px!important}
+          .bl-platform-chips{gap:6px!important;padding:0 12px!important}
+          .bl-platform-chip{padding:7px 12px!important;font-size:11px!important}
+          .bl-settings-grid{grid-template-columns:1fr!important}
         }
       `}</style>
-      {/* 단계 없음 - 자동 전환 */}
-      {/* 본문 */}
-      <div style={{flex:1,overflowY:"auto"}}>
-        {/* 단계 1: 입력 폼 */}
-        {wizStep===1 && (
-          <div className="bl-form-wrap" style={{maxWidth:900,margin:"0 auto",padding:"24px 20px 24px"}}>
-            {/* ── Progress Bar (큼지막한 노년층 친화 버전) ── */}
-            <div style={{marginBottom:32}}>
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-                {[1,2,3,4].map(step => (
-                  <div key={step} style={{display:"flex",alignItems:"center",gap:10,cursor:step<formStep?"pointer":"default",flex:step<4?1:"none"}} onClick={()=>{if(step<formStep)setFormStep(step);}}>
-                    <div style={{
-                      width:40,height:40,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",
-                      fontSize:16,fontWeight:800,flexShrink:0,
-                      background:formStep===step?accent:formStep>step?accent:(isDark?"rgba(255,255,255,0.08)":"#e9ecef"),
-                      color:formStep>=step?"#fff":muted,
-                      transition:"all 0.2s ease",
-                      boxShadow:formStep===step?`0 0 0 4px ${accent}25`:"none",
-                    }}>{formStep>step?<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>:step}</div>
-                    <span style={{fontSize:14,fontWeight:formStep===step?800:600,color:formStep===step?accent:(formStep>step?text:muted),display:window.innerWidth<480&&step!==formStep?"none":"inline",whiteSpace:"nowrap"}}>
-                      {step===1?"소스":step===2?"플랫폼":step===3?"글타입":"스타일"}
-                    </span>
-                    {step<4&&<div style={{flex:1,height:3,background:formStep>step?accent:(isDark?"rgba(255,255,255,0.1)":"#e0e0e0"),borderRadius:2,transition:"background 0.2s",minWidth:8}}/>}
-                  </div>
-                ))}
-              </div>
-              <div style={{fontSize:12,color:muted,textAlign:"center",fontWeight:600}}>{formStep} / 4 단계</div>
+
+      {/* 드래그 오버레이 */}
+      {dragOver && (
+        <div style={{position:"absolute",inset:0,zIndex:100,background:isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.08)",border:`3px dashed ${accent}`,borderRadius:16,display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(2px)"}}>
+          <div style={{textAlign:"center"}}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            <div style={{marginTop:12,fontSize:16,fontWeight:800,color:accent}}>파일을 여기에 놓으세요</div>
+            <div style={{fontSize:13,color:muted,marginTop:4}}>이미지, PDF, 문서 파일 (10MB 이하)</div>
+          </div>
+        </div>
+      )}
+
+      <div style={{flex:1,overflowY:"auto",position:"relative"}}>
+        {/* ══════ 입력 화면 (검색창 스타일) ══════ */}
+        {!showResult && (
+          <div className="bl-search-wrap" style={{maxWidth:720,margin:"0 auto",padding:"0 24px",display:"flex",flexDirection:"column",justifyContent:"center",minHeight:"100%"}}>
+            {/* 타이틀 */}
+            <div style={{textAlign:"center",marginBottom:32}}>
+              <div style={{fontSize:28,fontWeight:900,color:text,letterSpacing:-0.5,lineHeight:1.3}}>무엇을 작성해볼까요?</div>
+              <div style={{fontSize:14,color:muted,marginTop:8,lineHeight:1.6}}>주제를 입력하거나, 링크를 붙여넣거나, 파일을 드래그하세요</div>
             </div>
 
-            {/* ══════ Step 1: Source Selection — 클릭 즉시 Step 2로 ══════ */}
-            {formStep===1 && (
-              <div>
-                <div style={{fontSize:22,fontWeight:900,color:text,marginBottom:6,textAlign:"center",letterSpacing:-0.5}}>어떻게 시작할까요?</div>
-                <div style={{fontSize:14,color:muted,marginBottom:28,lineHeight:1.6,textAlign:"center"}}>원하는 방식을 고르면 바로 다음 단계로 넘어갑니다</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(min(220px,100%),1fr))",gap:14}}>
-                  {[
-                    {id:"link",title:"링크로 작성",desc:"뉴스 기사나 유튜브 링크 기반으로 작성",color:"#7c6aff",iconSvg:<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>},
-                    {id:"file",title:"파일로 작성",desc:"이미지·PDF·문서 파일을 분석해서 작성",color:"#ec4899",iconSvg:<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>},
-                    {id:"topic",title:"주제 직접 입력",desc:"키워드나 주제를 직접 입력해서 작성",color:"#22c55e",iconSvg:<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>},
-                  ].map(src => (
-                    <button key={src.id} onClick={()=>{setSourceType(src.id);setFormStep(2);}}
-                      style={{
-                        padding:"28px 22px",borderRadius:16,textAlign:"left",cursor:"pointer",
-                        border:`2px solid ${border}`,
-                        background:inputBg,
-                        transition:"all 0.15s ease",display:"flex",flexDirection:"column",gap:12,
-                        minHeight:180, fontFamily:"inherit",
-                      }}
-                      onMouseEnter={e=>{
-                        e.currentTarget.style.borderColor=src.color;
-                        e.currentTarget.style.background=`${src.color}0d`;
-                        e.currentTarget.style.transform="translateY(-3px)";
-                        e.currentTarget.style.boxShadow=`0 10px 28px ${src.color}22`;
-                      }}
-                      onMouseLeave={e=>{
-                        e.currentTarget.style.borderColor=border;
-                        e.currentTarget.style.background=inputBg;
-                        e.currentTarget.style.transform="none";
-                        e.currentTarget.style.boxShadow="none";
-                      }}>
-                      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                        <div style={{width:60,height:60,borderRadius:15,background:`${src.color}15`,color:src.color,display:"flex",alignItems:"center",justifyContent:"center"}}>{src.iconSvg}</div>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{opacity:0.5}}><polyline points="9 18 15 12 9 6"/></svg>
-                      </div>
-                      <div style={{fontSize:18,fontWeight:800,color:text,letterSpacing:-0.3,marginTop:2}}>{src.title}</div>
-                      <div style={{fontSize:13,color:muted,lineHeight:1.6}}>{src.desc}</div>
-                    </button>
+            {/* 현재 선택된 플랫폼 표시 */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:14}}>
+              <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:20,background:isDark?"rgba(255,255,255,0.06)":"#f5f5f5",fontSize:13,color:text,fontWeight:700}}>
+                <div style={{width:20,height:20,display:"flex",alignItems:"center",justifyContent:"center",color:currentPlatform.color||muted}}>
+                  {currentPlatform.svg ? <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">{currentPlatform.svg.props.children}</svg> : <img src={currentPlatform.icon} alt="" style={{width:16,height:16,borderRadius:3,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>}
+                </div>
+                {currentPlatform.label}
+                <span style={{fontSize:11,color:muted,fontWeight:500}}>/ {cfg.subtypes.find(s=>s.id===subtype)?.label||cfg.subtypes[0].label}</span>
+              </div>
+            </div>
+
+            {/* 메인 검색창 */}
+            <div className="bl-search-box" style={{
+              background:inputBg,
+              border:`1.5px solid ${dragOver?accent:(error&&!fields.keyword?.trim()?"#ef4444":inputBdr)}`,
+              borderRadius:24,
+              padding:"18px 20px 14px",
+              boxShadow:isDark?"0 4px 24px rgba(0,0,0,0.3)":"0 4px 24px rgba(0,0,0,0.06)",
+              transition:"border-color 0.2s, box-shadow 0.2s",
+            }}>
+              <textarea
+                ref={textareaRef}
+                className="bl-search-textarea"
+                value={fields.keyword||""}
+                onChange={e=>{handleMainInput(e.target.value);setTimeout(autoResize,0);}}
+                onKeyDown={e=>{
+                  if(e.key==="Enter"&&!e.shiftKey){
+                    e.preventDefault();
+                    if(fields.keyword?.trim())handleGenerateClick();
+                  }
+                }}
+                placeholder={FIELD_LABELS.keyword?.placeholder || "예) 봄철 캠핑 준비물 추천"}
+                rows={1}
+                style={{
+                  width:"100%",border:"none",background:"transparent",color:text,
+                  fontSize:15,fontFamily:"inherit",outline:"none",resize:"none",
+                  lineHeight:1.6,minHeight:24,maxHeight:200,
+                  boxSizing:"border-box",padding:0,
+                }}
+              />
+
+              {/* URL 감지 알림 */}
+              {urlInput && !urlResult && !urlLoading && (
+                <div style={{marginTop:10,display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",border:`1px solid ${accent}22`}}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+                  <span style={{fontSize:12,color:accent,fontWeight:600,flex:1}}>링크가 감지되었습니다</span>
+                  <button onClick={fetchFromUrl} style={{padding:"4px 12px",borderRadius:8,border:"none",background:accent,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>불러오기</button>
+                </div>
+              )}
+              {urlLoading && (
+                <div style={{marginTop:10,display:"flex",alignItems:"center",gap:8,fontSize:12,color:muted}}>
+                  <div style={{width:12,height:12,borderRadius:"50%",border:"2px solid "+accent,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>
+                  링크 불러오는 중...
+                </div>
+              )}
+              {urlResult && (
+                <div style={{marginTop:10,padding:"10px 12px",borderRadius:12,background:isDark?"rgba(255,255,255,0.04)":"#f9f9fb",border:`1px solid ${border}`,display:"flex",gap:10,alignItems:"center"}}>
+                  {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{width:48,height:36,objectFit:"cover",borderRadius:6,flexShrink:0}} onError={e=>e.target.style.display="none"}/>}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:800,color:text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{urlResult.title}</div>
+                    <div style={{fontSize:11,color:"#22c55e",marginTop:2,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                      {urlResult.type==="youtube"?"유튜브":urlResult.type==="news"?"뉴스":"웹페이지"} 분석 완료
+                    </div>
+                  </div>
+                  <button onClick={()=>{setUrlResult(null);setUrlInput("");}} style={{background:"none",border:"none",cursor:"pointer",color:muted,padding:4}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                  </button>
+                </div>
+              )}
+
+              {/* 첨부 파일 표시 */}
+              {fields._files && fields._files.length > 0 && (
+                <div style={{marginTop:10,display:"flex",flexWrap:"wrap",gap:6}}>
+                  {fields._files.map((f,i) => (
+                    <span key={i} style={{fontSize:12,padding:"5px 10px",borderRadius:8,background:isDark?"rgba(236,72,153,0.12)":"rgba(236,72,153,0.08)",color:"#ec4899",display:"inline-flex",alignItems:"center",gap:6,fontWeight:700}}>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      {f.name}
+                      <button onClick={()=>{const nf=[...fields._files];nf.splice(i,1);setField("_files",nf);}} style={{background:"none",border:"none",cursor:"pointer",color:"inherit",padding:0,display:"flex",alignItems:"center",opacity:0.7}} aria-label="제거">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    </span>
                   ))}
                 </div>
+              )}
+
+              {/* 하단 툴바 */}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:12,paddingTop:10,borderTop:`1px solid ${border}`}}>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  {/* 파일 추가 버튼 */}
+                  <input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.csv,.xlsx,.pptx,.hwp" multiple style={{display:"none"}} id="blog-file-input"
+                    onChange={e=>{const files=Array.from(e.target.files||[]);e.target.value="";if(files.length)handleFileInput(files);}}/>
+                  <button onClick={()=>document.getElementById("blog-file-input")?.click()}
+                    title="파일 첨부"
+                    style={{padding:"7px 14px",borderRadius:12,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",transition:"all 0.15s"}}
+                    onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}
+                    onMouseLeave={e=>{e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+                    파일
+                  </button>
+                  {/* 설정 버튼 */}
+                  <button onClick={()=>setShowSettings(!showSettings)}
+                    title="글 설정"
+                    style={{padding:"7px 14px",borderRadius:12,border:`1px solid ${showSettings?accent:border}`,background:showSettings?(isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.06)"):"transparent",color:showSettings?accent:muted,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",transition:"all 0.15s"}}
+                    onMouseEnter={e=>{if(!showSettings){e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}}
+                    onMouseLeave={e=>{if(!showSettings){e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                    설정
+                  </button>
+                </div>
+                {/* 생성 버튼 */}
+                <button className="bl-gen-btn" onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()}
+                  style={{
+                    padding:"8px 22px",borderRadius:14,border:"none",
+                    cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",
+                    background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
+                    color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,
+                    display:"flex",alignItems:"center",gap:6,
+                    opacity:loading||!fields.keyword?.trim()?0.5:1,
+                    transition:"all 0.15s",minHeight:38,fontFamily:"inherit",
+                    boxShadow:fields.keyword?.trim()?"0 4px 14px rgba(124,106,255,0.3)":"none",
+                  }}>
+                  {loading ? (
+                    <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
+                  ) : (
+                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>10P</span>}</>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* AI 제목/SEO 추천 */}
+            {fields.keyword && fields.keyword.trim() && (
+              <div style={{maxWidth:720,margin:"10px auto 0",display:"flex",gap:6,justifyContent:"center"}}>
+                <button onClick={suggestTitle} disabled={titleLoading} style={{padding:"6px 14px",borderRadius:12,border:`1px solid ${isDark?"rgba(99,102,241,0.2)":"rgba(99,102,241,0.15)"}`,background:"transparent",color:accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+                  {titleLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid "+accent,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>추천 중...</>:"AI 제목 추천"}
+                </button>
+                <button onClick={suggestSeo} disabled={seoLoading} style={{padding:"6px 14px",borderRadius:12,border:"1px solid rgba(16,185,129,0.2)",background:"transparent",color:"#10b981",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
+                  {seoLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #10b981",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>조회 중...</>:"SEO 키워드"}
+                </button>
               </div>
             )}
+            {titleSugg.length>0 && (
+              <div style={{maxWidth:720,margin:"10px auto 0",background:isDark?"rgba(99,102,241,0.08)":"#f0f0ff",borderRadius:14,padding:"12px 16px",border:"1px solid rgba(99,102,241,0.15)"}}>
+                <div style={{fontSize:12,color:accent,fontWeight:700,marginBottom:8}}>추천 제목 (클릭 시 적용)</div>
+                {titleSugg.map(function(t2,i){return(
+                  <div key={i} onClick={function(){setField("keyword",t2);setTitleSugg([]);}} style={{fontSize:13,color:text,padding:"5px 0",cursor:"pointer",borderBottom:i<titleSugg.length-1?"1px solid "+border:"none",lineHeight:1.6}}>{t2}</div>
+                );})}
+              </div>
+            )}
+            {seoKeys.length>0 && (
+              <div style={{maxWidth:720,margin:"10px auto 0",background:isDark?"rgba(16,185,129,0.06)":"#f0fdf9",borderRadius:14,padding:"12px 16px",border:"1px solid rgba(16,185,129,0.15)"}}>
+                <div style={{fontSize:12,color:"#10b981",fontWeight:700,marginBottom:8}}>SEO 연관 키워드</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                  {seoKeys.map(function(k,i){return(
+                    <span key={i} onClick={function(){setField("extra",(fields.extra?fields.extra+", ":"")+k);}} style={{fontSize:12,padding:"4px 11px",borderRadius:12,background:"rgba(16,185,129,0.12)",color:"#10b981",cursor:"pointer",border:"1px solid rgba(16,185,129,0.2)"}}>{k}</span>
+                  );})}
+                </div>
+              </div>
+            )}
+            <KeywordInsightPanel keyword={fields.keyword} isDark={isDark} onKeywordSelect={(kw)=>setField("keyword",kw)}/>
 
-            {/* ══════ Step 2: Platform Selection ══════ */}
-            {formStep===2 && (
-              <div>
-                <div style={{fontSize:22,fontWeight:900,color:text,marginBottom:6,textAlign:"center",letterSpacing:-0.5}}>어디에 올릴까요?</div>
-                <div style={{fontSize:14,color:muted,marginBottom:24,lineHeight:1.6,textAlign:"center"}}>글을 게시할 플랫폼을 선택해주세요</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(140px,100%),1fr))",gap:12,marginBottom:22}}>
-                  {SNS_OPTIONS.map(p => {
-                    const isA=platformId===p.id;
-                    return (
-                      <button key={p.id} onClick={()=>setPlatformId(p.id)}
-                        style={{
-                          padding:"22px 16px",borderRadius:14,cursor:"pointer",textAlign:"center",
-                          border:isA?`2.5px solid ${p.color||accent}`:`2px solid ${border}`,
-                          background:isA?(`${p.color||"#7c6aff"}0d`):inputBg,
-                          transition:"all 0.15s ease",display:"flex",flexDirection:"column",alignItems:"center",gap:10,
-                          minHeight:108,fontFamily:"inherit",
-                          boxShadow:isA?`0 4px 14px ${p.color||"#7c6aff"}22`:"none",
-                        }}>
-                        <div style={{width:40,height:40,display:"flex",alignItems:"center",justifyContent:"center",color:p.color||muted}}>
-                          {p.svg ? p.svg : <img src={p.icon} alt="" style={{width:40,height:40,borderRadius:8,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>}
+            {/* 에러 메시지 */}
+            {error&&<div style={{maxWidth:720,margin:"12px auto 0",fontSize:13,color:"#ef4444",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",padding:"10px 14px",borderRadius:12,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)"}}>{error}
+              {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
+                <button onClick={()=>window.location.hash="#pricing"} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
+              )}
+            </div>}
+
+            {/* ══════ 설정 패널 (토글) ══════ */}
+            {showSettings && (
+              <div className="bl-settings-panel" style={{maxWidth:720,margin:"16px auto 0",background:cardBg,border:`1px solid ${border}`,borderRadius:20,padding:"20px 22px",boxShadow:isDark?"0 4px 20px rgba(0,0,0,0.3)":"0 4px 20px rgba(0,0,0,0.06)"}}>
+                {/* 플랫폼 선택 */}
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    플랫폼
+                  </div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {SNS_OPTIONS.map(p=>{
+                      const isA=platformId===p.id;
+                      return <button key={p.id} onClick={()=>setPlatformId(p.id)}
+                        style={{padding:"8px 14px",borderRadius:12,border:`1.5px solid ${isA?(p.color||accent):border}`,background:isA?(`${p.color||"#7c6aff"}10`):"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontSize:12,fontWeight:isA?800:600,color:isA?(p.color||accent):text,transition:"all 0.15s",fontFamily:"inherit"}}>
+                        <div style={{width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",color:p.color||muted,flexShrink:0}}>
+                          {p.svg ? <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">{p.svg.props.children}</svg> : <img src={p.icon} alt="" style={{width:14,height:14,borderRadius:2,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>}
                         </div>
-                        <div style={{fontSize:14,fontWeight:isA?800:600,color:isA?(p.color||accent):text,letterSpacing:-0.2}}>{p.label}</div>
-                      </button>
-                    );
-                  })}
+                        {p.label}
+                      </button>;
+                    })}
+                  </div>
                 </div>
-                <div style={{display:"flex",justifyContent:"space-between",marginTop:16,gap:12}}>
-                  <button onClick={()=>setFormStep(1)}
-                    style={{padding:"16px 28px",borderRadius:14,border:`2px solid ${border}`,background:"transparent",
-                      color:text,fontSize:15,fontWeight:700,cursor:"pointer",minHeight:52,display:"flex",alignItems:"center",gap:6}}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                    이전
-                  </button>
-                  <button onClick={()=>setFormStep(3)}
-                    style={{padding:"16px 40px",borderRadius:14,border:"none",cursor:"pointer",
-                      background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:16,fontWeight:800,minHeight:52,display:"flex",alignItems:"center",gap:8}}>
-                    다음 단계 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-                  </button>
-                </div>
-              </div>
-            )}
 
-            {/* ══════ Step 3: Content Type + Prompt ══════ */}
-            {formStep===3 && (
-              <div>
-                <div style={{fontSize:22,fontWeight:900,color:text,marginBottom:6,textAlign:"center",letterSpacing:-0.5}}>어떤 글을 쓸까요?</div>
-                <div style={{fontSize:14,color:muted,marginBottom:24,lineHeight:1.6,textAlign:"center"}}>글의 유형을 고르고 주제를 입력해주세요</div>
-
-                {/* Article type */}
-                <div style={{marginBottom:22}}>
-                  <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:12}}>{t("selectType")}</div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(170px,100%),1fr))",gap:10}}>
+                {/* 글 타입 */}
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                    {t("selectType")}
+                  </div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                     {cfg.subtypes.map(s=>{
                       const isA=subtype===s.id;
-                      return <button key={s.id} onClick={()=>handleSubtype(s.id)} style={{padding:"18px 16px",borderRadius:14,textAlign:"left",cursor:"pointer",border:isA?`2.5px solid ${accent}`:`2px solid ${border}`,background:isA?accentBg:inputBg,fontFamily:"inherit",minHeight:96,display:"flex",flexDirection:"column",gap:6,boxShadow:isA?`0 4px 14px ${accent}22`:"none"}}>
-                        <div style={{fontSize:22,marginBottom:4,lineHeight:1}}>{s.icon}</div>
-                        <div style={{fontSize:15,fontWeight:800,color:isA?accent:text,letterSpacing:-0.3}}>{s.label}</div>
-                        <div style={{fontSize:12,color:muted,lineHeight:1.5}}>{s.desc}</div>
-                      </button>;
+                      return <button key={s.id} onClick={()=>handleSubtype(s.id)} style={{padding:"8px 16px",borderRadius:12,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{s.label}</button>;
                     })}
                   </div>
                 </div>
 
-                {/* ── sourceType별 입력 블록 ── */}
-                {sourceType==="link" && (
-                  <div style={{marginBottom:22,padding:"22px 24px",borderRadius:14,background:isDark?"rgba(124,106,255,0.06)":"rgba(124,106,255,0.04)",border:`1.5px solid ${accent}33`}}>
-                    <div style={{fontSize:14,fontWeight:800,color:text,marginBottom:4,display:"flex",alignItems:"center",gap:8}}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                      링크 붙여넣기
-                    </div>
-                    <div style={{fontSize:12,color:muted,marginBottom:12}}>뉴스 기사나 유튜브 주소를 넣으면 제목·본문을 자동으로 가져와요</div>
-                    <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
-                      <input value={urlInput} onChange={e=>setUrlInput(e.target.value)}
-                        onKeyDown={e=>{if(e.key==="Enter")fetchFromUrl();}}
-                        placeholder="https:// 로 시작하는 주소를 붙여넣기"
-                        style={{flex:1,minWidth:200,padding:"14px 16px",borderRadius:12,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:15,fontFamily:"inherit",outline:"none",minHeight:50}}/>
-                      <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
-                        style={{padding:"14px 26px",borderRadius:12,border:"none",cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer",background:accent,color:"#fff",fontSize:15,fontWeight:800,opacity:urlLoading||!urlInput.trim()?0.5:1,flexShrink:0,whiteSpace:"nowrap",minHeight:50,fontFamily:"inherit"}}>
-                        {urlLoading?"불러오는 중...":"불러오기"}
-                      </button>
-                    </div>
-                    {urlResult && (
-                      <div style={{marginTop:12,padding:"12px 14px",borderRadius:12,background:isDark?"rgba(255,255,255,0.04)":"#fff",border:`1px solid ${border}`,display:"flex",gap:12,alignItems:"center"}}>
-                        {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{width:56,height:42,objectFit:"cover",borderRadius:8,flexShrink:0}} onError={e=>e.target.style.display="none"}/>}
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontSize:13,fontWeight:800,color:text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{urlResult.title}</div>
-                          <div style={{fontSize:12,color:"#22c55e",marginTop:3,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                            {urlResult.type==="youtube"?"유튜브":urlResult.type==="news"?"뉴스":"웹페이지"} · 주제 자동 입력됨
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                {/* 톤 */}
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                    {t("selectTone")}
                   </div>
-                )}
-
-                {sourceType==="file" && (
-                  <div style={{marginBottom:22,padding:"22px 24px",borderRadius:14,background:isDark?"rgba(236,72,153,0.06)":"rgba(236,72,153,0.04)",border:`1.5px solid rgba(236,72,153,0.3)`}}>
-                    <div style={{fontSize:14,fontWeight:800,color:text,marginBottom:4,display:"flex",alignItems:"center",gap:8}}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                      파일 업로드
-                    </div>
-                    <div style={{fontSize:12,color:muted,marginBottom:12}}>이미지·PDF·문서 파일을 올리면 내용을 분석해서 글의 소재로 사용해요 (10MB 이하, 여러 개 가능)</div>
-                    {fields._files && fields._files.length > 0 && (
-                      <div style={{marginBottom:12,display:"flex",flexWrap:"wrap",gap:6}}>
-                        {fields._files.map((f,i) => (
-                          <span key={i} style={{fontSize:13,padding:"8px 14px",borderRadius:10,background:isDark?"rgba(236,72,153,0.15)":"rgba(236,72,153,0.1)",color:"#ec4899",display:"inline-flex",alignItems:"center",gap:8,fontWeight:700}}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                            {f.name}
-                            <button onClick={()=>{const nf=[...fields._files];nf.splice(i,1);setField("_files",nf);}} style={{background:"none",border:"none",cursor:"pointer",color:"inherit",padding:0,display:"flex",alignItems:"center",opacity:0.7}} aria-label="제거">
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.csv,.xlsx,.pptx,.hwp" multiple style={{display:"none"}} id="blog-file-input"
-                      onChange={async (e) => {
-                        const fileList = Array.from(e.target.files || []);
-                        if (!fileList.length) return;
-                        e.target.value = "";
-                        const maxSize = 10 * 1024 * 1024;
-                        const valid = fileList.filter(f => f.size <= maxSize);
-                        if (valid.length < fileList.length) alert(`${fileList.length - valid.length}개 파일이 10MB 초과로 제외되었습니다.`);
-                        if (!valid.length) return;
-                        setField("extra", (fields.extra ? fields.extra + "\n" : "") + `${valid.length}개 파일 분석 중...`);
-                        const prevFiles = fields._files || [];
-                        const newFiles = [...prevFiles];
-                        let allResults = "";
-                        for (const file of valid) {
-                          try {
-                            if (file.type.startsWith("image/")) {
-                              const base64 = await new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
-                              const txt = await callAI("claude-haiku-4-5", [{role:"user",content:[{type:"image",source:{type:"base64",media_type:file.type,data:base64.split(",")[1]}},{type:"text",text:"이 이미지의 내용을 한국어로 상세히 설명해주세요. 블로그 글 주제로 사용할 수 있게 핵심 키워드와 설명을 제공해주세요."}]}], 500);
-                              allResults += `\n[${file.name}] 이미지: ${txt.slice(0, 200)}`;
-                              newFiles.push({ name: file.name, type: "image", summary: txt.slice(0, 200) });
-                            } else {
-                              const text2 = await file.text().catch(() => "");
-                              const summary = text2.slice(0, 2000);
-                              allResults += `\n[${file.name}] ${summary.slice(0, 300)}`;
-                              newFiles.push({ name: file.name, type: "text", summary: summary.slice(0, 300) });
-                            }
-                          } catch(err) {
-                            allResults += `\n[${file.name}] 분석 실패: ${err.message}`;
-                          }
-                        }
-                        if (!fields.keyword && allResults) {
-                          const firstLine = allResults.split("\n").find(l => l.trim().length > 10)?.trim()?.slice(0,80);
-                          if (firstLine) setField("keyword", firstLine);
-                        }
-                        setField("extra", (fields.extra?.replace(/\d+개 파일 분석 중\.\.\./, "").replace("파일 분석 중...", "") || "") + "참고 파일:" + allResults);
-                        setField("_files", newFiles);
-                      }}/>
-                    <button onClick={() => document.getElementById("blog-file-input")?.click()}
-                      style={{width:"100%",padding:"16px",borderRadius:12,border:`2px dashed rgba(236,72,153,0.4)`,background:"transparent",color:"#ec4899",fontSize:14,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",minHeight:56,display:"flex",alignItems:"center",justifyContent:"center",gap:8,fontFamily:"inherit"}}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                      {fields._files?.length ? "파일 더 추가하기" : "파일 선택 또는 드래그"}
-                    </button>
-                  </div>
-                )}
-
-                {/* Keyword input (topic 모드일 땐 메인 입력, 링크/파일 모드일 땐 자동 채워진 주제 확인·편집) */}
-                <div style={{marginBottom:18}}>
-                  <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:8}}>
-                    {sourceType==="topic" ? (FIELD_LABELS.keyword?.label || "주제 / 키워드") : "주제 (자동 입력 · 수정 가능)"}<span style={{color:"#ef4444"}}> *</span>
-                  </div>
-                  <input type="text" value={fields.keyword||""} onChange={e=>setField("keyword",e.target.value)}
-                    placeholder={sourceType==="link" ? "링크를 불러오면 자동으로 채워집니다" : sourceType==="file" ? "파일을 업로드하면 자동으로 채워집니다" : (FIELD_LABELS.keyword?.placeholder || "예) 봄철 캠핑 준비물 추천")}
-                    style={{...IS,fontSize:15,padding:"14px 16px",minHeight:48,borderColor:(error&&!fields.keyword?.trim())?"#ef4444":inputBdr}}/>
-                  {fields.keyword && fields.keyword.trim() && (
-                    <div style={{marginTop:8,display:"flex",gap:6}}>
-                      <button onClick={suggestTitle} disabled={titleLoading} style={{flex:1,padding:"7px 10px",borderRadius:12,border:"1px solid rgba(99,102,241,0.3)",background:"rgba(99,102,241,0.08)",color:accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                        {titleLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid "+accent,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>추천 중...</>:"AI 제목 추천"}
-                      </button>
-                      <button onClick={suggestSeo} disabled={seoLoading} style={{flex:1,padding:"7px 10px",borderRadius:12,border:"1px solid rgba(16,185,129,0.3)",background:"rgba(16,185,129,0.08)",color:"#10b981",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
-                        {seoLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #10b981",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>조회 중...</>:"SEO 키워드"}
-                      </button>
-                    </div>
-                  )}
-                  {titleSugg.length>0 && (
-                    <div style={{marginTop:10,background:isDark?"rgba(99,102,241,0.08)":"#f0f0ff",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(99,102,241,0.15)"}}>
-                      <div style={{fontSize:12,color:accent,fontWeight:700,marginBottom:8}}>추천 제목 (클릭 시 적용)</div>
-                      {titleSugg.map(function(t,i){return(
-                        <div key={i} onClick={function(){setField("keyword",t);setTitleSugg([]);}} style={{fontSize:13,color:text,padding:"5px 0",cursor:"pointer",borderBottom:i<titleSugg.length-1?"1px solid "+border:"none",lineHeight:1.6}}>{t}</div>
-                      );})}
-                    </div>
-                  )}
-                  {seoKeys.length>0 && (
-                    <div style={{marginTop:10,background:isDark?"rgba(16,185,129,0.06)":"#f0fdf9",borderRadius:12,padding:"12px 14px",border:"1px solid rgba(16,185,129,0.15)"}}>
-                      <div style={{fontSize:12,color:"#10b981",fontWeight:700,marginBottom:8}}>SEO 연관 키워드</div>
-                      <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                        {seoKeys.map(function(k,i){return(
-                          <span key={i} onClick={function(){setField("extra",(fields.extra?fields.extra+", ":"")+k);}} style={{fontSize:12,padding:"4px 11px",borderRadius:12,background:"rgba(16,185,129,0.12)",color:"#10b981",cursor:"pointer",border:"1px solid rgba(16,185,129,0.2)"}}>{k}</span>
-                        );})}
-                      </div>
-                    </div>
-                  )}
-                  <KeywordInsightPanel keyword={fields.keyword} isDark={isDark} onKeywordSelect={(kw)=>setField("keyword",kw)}/>
-                </div>
-
-                {/* Custom prompt (extra) */}
-                <div style={{marginBottom:18}}>
-                  <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:8}}>추가 지시사항 <span style={{fontSize:12,fontWeight:500,color:muted}}>(선택)</span></div>
-                  <textarea value={fields.extra||""} onChange={e=>setField("extra",e.target.value)} rows={3}
-                    placeholder="AI에게 전달할 내용을 자유롭게 적어주세요. 예) 초보자도 이해할 수 있게, 사례 중심으로"
-                    style={{...IS,fontSize:15,padding:"14px 16px",resize:"none",lineHeight:1.6}}/>
-                </div>
-
-                {error&&<div style={{fontSize:14,color:"#ef4444",marginBottom:12,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",padding:"12px 14px",borderRadius:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)"}}>{error}
-                  {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
-                    <button onClick={()=>window.location.hash="#pricing"} style={{padding:"8px 16px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",minHeight:40}}>충전하기</button>
-                  )}
-                </div>}
-
-                <div style={{display:"flex",justifyContent:"space-between",marginTop:16,gap:12}}>
-                  <button onClick={()=>setFormStep(2)}
-                    style={{padding:"16px 28px",borderRadius:14,border:`2px solid ${border}`,background:"transparent",
-                      color:text,fontSize:15,fontWeight:700,cursor:"pointer",minHeight:52,display:"flex",alignItems:"center",gap:6}}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                    이전
-                  </button>
-                  <button onClick={async ()=>{
-                    // 링크 모드: URL 입력만 해두고 불러오기 안 눌렀으면 자동 실행
-                    if (sourceType==="link" && urlInput.trim() && !urlResult) {
-                      await fetchFromUrl();
-                    }
-                    // 파일 모드: 파일은 있는데 keyword가 비어있으면 첫 파일명으로 폴백
-                    if (sourceType==="file" && !fields.keyword?.trim() && fields._files?.length) {
-                      const fallback = fields._files[0].name?.replace(/\.[^.]+$/, "").slice(0, 60);
-                      if (fallback) setField("keyword", fallback);
-                    }
-                    if (!fields.keyword?.trim()) {
-                      setError(sourceType==="link" ? "링크를 먼저 불러와주세요." : sourceType==="file" ? "파일을 먼저 업로드해주세요." : "주제를 입력해주세요.");
-                      return;
-                    }
-                    setError("");
-                    setFormStep(4);
-                  }} disabled={urlLoading}
-                    style={{padding:"16px 40px",borderRadius:14,border:"none",cursor:urlLoading?"not-allowed":"pointer",
-                      background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",
-                      color:"#fff",fontSize:16,fontWeight:800,opacity:urlLoading?0.5:1,minHeight:52,display:"flex",alignItems:"center",gap:8}}>
-                    {urlLoading ? "링크 불러오는 중..." : <>다음 단계 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg></>}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* ══════ Step 4: Style Settings ══════ */}
-            {formStep===4 && (
-              <div>
-                <div style={{fontSize:22,fontWeight:900,color:text,marginBottom:6,textAlign:"center",letterSpacing:-0.5}}>마지막! 스타일을 골라주세요</div>
-                <div style={{fontSize:14,color:muted,marginBottom:24,lineHeight:1.6,textAlign:"center"}}>글의 톤, 말투, 분량을 정해주세요</div>
-
-                {/* Tone */}
-                <div style={{marginBottom:22}}>
-                  <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:10}}>{t("selectTone")}</div>
-                  <div className="bl-tone-group" style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {cfg.tones.map(t=>{const isA=tone===t.id;return<button key={t.id} onClick={()=>setTone(t.id)} style={{padding:"12px 22px",borderRadius:24,border:`2px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:text,fontSize:14,fontWeight:isA?800:600,cursor:"pointer",minHeight:44,fontFamily:"inherit"}}>{t.label}</button>;})}
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {cfg.tones.map(t2=>{const isA=tone===t2.id;return<button key={t2.id} onClick={()=>setTone(t2.id)} style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit"}}>{t2.label}</button>;})}
                   </div>
                 </div>
 
-                {/* Speech style */}
-                <div style={{marginBottom:22}}>
-                  <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:10}}>말투</div>
-                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                    {SPEECH_STYLES.map(s=>{const isA=speechStyle===s.id;return<button key={s.id} onClick={()=>setSpeechStyle(s.id)} title={s.desc} style={{padding:"12px 22px",borderRadius:24,border:`2px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:text,fontSize:14,fontWeight:isA?800:600,cursor:"pointer",minHeight:44,fontFamily:"inherit"}}>{s.label}</button>;})}
+                {/* 말투 */}
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    말투
+                  </div>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+                    {SPEECH_STYLES.map(s=>{const isA=speechStyle===s.id;return<button key={s.id} onClick={()=>setSpeechStyle(s.id)} title={s.desc} style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>;})}
                   </div>
                 </div>
 
-                {/* Word count / Length */}
-                <div style={{marginBottom:28}}>
-                  <div style={{fontSize:14,fontWeight:700,color:text,marginBottom:10}}>
+                {/* 분량 */}
+                <div style={{marginBottom:12}}>
+                  <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
                     {t("selectLength")}
                   </div>
-                  <div style={{display:"flex",gap:10,flexWrap:"wrap"}}>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
                     {cfg.wordCounts.map(w=>{
                       const isA=wordCount===w.id;
-                      return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{padding:"14px 22px",borderRadius:14,cursor:"pointer",textAlign:"left",border:`2px solid ${isA?accent:border}`,background:isA?accentBg:inputBg,minHeight:64,minWidth:120,fontFamily:"inherit",display:"flex",flexDirection:"column",justifyContent:"center",gap:3}}>
-                        <div style={{fontSize:15,fontWeight:800,color:isA?accent:text,letterSpacing:-0.2}}>{w.label}</div>
-                        {w.desc && <div style={{fontSize:12,color:muted}}>{w.desc}</div>}
+                      return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{padding:"8px 16px",borderRadius:12,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"flex-start",gap:2}}>
+                        <span>{w.label}</span>
+                        {w.desc && <span style={{fontSize:10,color:muted,fontWeight:500}}>{w.desc}</span>}
                       </button>;
                     })}
                   </div>
                 </div>
 
-                {error&&<div style={{fontSize:14,color:"#ef4444",marginBottom:14,display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",padding:"12px 14px",borderRadius:10,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)"}}>{error}
-                  {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
-                    <button onClick={()=>window.location.hash="#pricing"} style={{padding:"8px 16px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap",minHeight:40}}>충전하기</button>
-                  )}
-                </div>}
-
-                <div style={{display:"flex",justifyContent:"space-between",marginTop:16,gap:12}}>
-                  <button onClick={()=>setFormStep(3)}
-                    style={{padding:"16px 28px",borderRadius:14,border:`2px solid ${border}`,background:"transparent",
-                      color:text,fontSize:15,fontWeight:700,cursor:"pointer",minHeight:56,display:"flex",alignItems:"center",gap:6}}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-                    이전
-                  </button>
-                  <button className="bl-gen-btn" onClick={handleGenerateClick} disabled={loading||!fields.keyword?.trim()}
-                    style={{padding:"16px 36px",borderRadius:14,border:"none",cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",
-                      background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
-                      color:fields.keyword?.trim()?"#fff":muted,fontSize:17,fontWeight:800,
-                      display:"flex",alignItems:"center",justifyContent:"center",gap:10,
-                      opacity:loading||!fields.keyword?.trim()?0.5:1,transition:"opacity 0.15s",minHeight:56,
-                      boxShadow:fields.keyword?.trim()?"0 8px 24px rgba(124,106,255,0.35)":"none"}}>
-                    {loading ? (<><div style={{width:20,height:20,border:"2.5px solid rgba(255,255,255,0.3)",borderTop:"2.5px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>) : user ? (<><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>글 생성하기 <span style={{fontSize:13,opacity:0.85,fontWeight:700,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"3px 10px",borderRadius:10}}>10P</span></>) : (<>1회 생성해보기</>)}
-                  </button>
+                {/* 추가 지시사항 */}
+                <div>
+                  <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    추가 지시사항 <span style={{fontSize:11,fontWeight:500,color:muted}}>(선택)</span>
+                  </div>
+                  <textarea value={fields.extra||""} onChange={e=>setField("extra",e.target.value)} rows={2}
+                    placeholder="AI에게 전달할 내용을 자유롭게 적어주세요. 예) 초보자도 이해할 수 있게, 사례 중심으로"
+                    style={{width:"100%",padding:"10px 14px",borderRadius:12,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",resize:"none",lineHeight:1.6}}/>
                 </div>
               </div>
             )}
+
+            {/* 플랫폼 칩 (검색창 아래) */}
+            <div className="bl-platform-chips" style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginTop:20,padding:"0 24px"}}>
+              {SNS_OPTIONS.slice(0,8).map(p=>{
+                const isA=platformId===p.id;
+                return <button key={p.id} className="bl-platform-chip" onClick={()=>setPlatformId(p.id)}
+                  style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${isA?(p.color||accent):border}`,background:isA?(`${p.color||"#7c6aff"}0d`):"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontSize:13,fontWeight:isA?800:600,color:isA?(p.color||accent):muted,transition:"all 0.15s",fontFamily:"inherit"}}>
+                  <div style={{width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",color:p.color||muted,flexShrink:0}}>
+                    {p.svg ? <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">{p.svg.props.children}</svg> : <img src={p.icon} alt="" style={{width:14,height:14,borderRadius:2,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>}
+                  </div>
+                  {p.label}
+                </button>;
+              })}
+              <button onClick={()=>setShowSettings(true)}
+                style={{padding:"8px 16px",borderRadius:20,border:`1px dashed ${border}`,background:"transparent",cursor:"pointer",fontSize:13,fontWeight:600,color:muted,fontFamily:"inherit",transition:"all 0.15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}>
+                + 더보기
+              </button>
+            </div>
           </div>
         )}
-        {/* 단계 2~3: 결과 */}
-        {wizStep>=2 && renderResult()}
+
+        {/* 결과 화면 */}
+        {showResult && renderResult()}
       </div>
     </div>
   );
@@ -1634,92 +1593,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   if (embedded) return <div style={{flex:1,display:"flex",overflow:"hidden",fontFamily:"'Apple SD Gothic Neo','Noto Sans KR',sans-serif",background:isDark?"transparent":"#f4f4f8",color:text}}>{content}</div>;
   return (
     <div style={{minHeight:"100vh",background:isDark?"#0f0c29":"#f8f9fa",fontFamily:"'Pretendard','Noto Sans KR',sans-serif"}}>
-      <div style={{background:isDark?"rgba(255,255,255,0.02)":"#fff",padding:"32px 24px 24px"}}>
-        <div style={{maxWidth:620,margin:"0 auto"}}>
-          <div style={{display:"inline-block",padding:"4px 12px",borderRadius:16,background:"rgba(124,106,255,0.1)",fontSize:11,fontWeight:700,color:"#7c6aff",marginBottom:12}}>AI 글쓰기</div>
-          <div style={{fontSize:22,fontWeight:900,color:text,lineHeight:1.3,marginBottom:6}}>주제를 입력하면<br/>AI가 글을 작성해드려요</div>
-          <div style={{fontSize:13,color:isDark?"rgba(255,255,255,0.5)":"#999",marginBottom:28}}>원하는 SNS 플랫폼을 선택하고, 주제와 스타일을 정해주세요.</div>
-          {/* SNS 플랫폼 선택 — 카테고리 탭 + 버튼 */}
-          {(() => {
-            const SNS_CATS = [
-              {id:"all",label:"전체"},
-              {id:"korea_blog",label:"블로그"},
-              {id:"korea_sns",label:"한국 SNS"},
-              {id:"global_sns",label:"글로벌 SNS"},
-              {id:"video",label:"영상"},
-              {id:"commerce",label:"커머스"},
-              {id:"newsletter",label:"뉴스레터"},
-              {id:"convert",label:"변환"},
-            ];
-            const SNS_LIST = [
-              // 블로그
-              {id:"blog_naver",label:"네이버 블로그",icon:"/icon-naver-blog.png",cat:"korea_blog"},
-              {id:"blog_cafe",label:"네이버 카페",icon:"/icon-naver-cafe.webp",cat:"korea_blog"},
-              {id:"blog_naverpost",label:"네이버 포스트",icon:"/icon-naver-blog.png",cat:"korea_blog"},
-              {id:"blog_tistory",label:"티스토리",icon:"/icon-tistory.png",cat:"korea_blog"},
-              {id:"blog_brunch",label:"브런치",icon:"/icon-tistory.png",cat:"korea_blog"},
-              {id:"blog_homepage",label:"홈페이지/웹사이트",icon:"/icon-tistory.png",cat:"korea_blog"},
-              // 한국 SNS
-              {id:"blog_insta",label:"인스타그램",icon:"/icon-instagram.webp",cat:"korea_sns"},
-              {id:"blog_thread",label:"스레드",icon:"/icon-threads.png",cat:"korea_sns"},
-              {id:"blog_kakaostory",label:"카카오스토리",icon:"/icon-naver-cafe.webp",cat:"korea_sns"},
-              {id:"blog_band",label:"네이버 밴드",icon:"/icon-naver-cafe.webp",cat:"korea_sns"},
-              {id:"blog_weverse",label:"위버스",icon:"/icon-threads.png",cat:"korea_sns"},
-              // 글로벌 SNS
-              {id:"blog_x",label:"X (트위터)",icon:"/icon-threads.png",cat:"global_sns"},
-              {id:"blog_facebook",label:"페이스북",icon:"/icon-threads.png",cat:"global_sns"},
-              {id:"blog_linkedin",label:"링크드인",icon:"/icon-threads.png",cat:"global_sns"},
-              {id:"blog_bluesky",label:"Bluesky",icon:"/icon-threads.png",cat:"global_sns"},
-              {id:"blog_mastodon",label:"Mastodon",icon:"/icon-threads.png",cat:"global_sns"},
-              {id:"blog_pinterest",label:"핀터레스트",icon:"/icon-threads.png",cat:"global_sns"},
-              {id:"blog_reddit",label:"레딧",icon:"/icon-threads.png",cat:"global_sns"},
-              {id:"blog_medium",label:"Medium",icon:"/icon-threads.png",cat:"global_sns"},
-              {id:"blog_telegram",label:"텔레그램",icon:"/icon-threads.png",cat:"global_sns"},
-              // 영상
-              {id:"blog_youtube",label:"유튜브",icon:"/icon-youtube.png",cat:"video"},
-              {id:"blog_tiktok",label:"틱톡",icon:"/icon-youtube.png",cat:"video"},
-              // 커머스
-              {id:"blog_daangn",label:"당근마켓",icon:"/icon-naver-cafe.webp",cat:"commerce"},
-              {id:"blog_bunjang",label:"번장",icon:"/icon-naver-cafe.webp",cat:"commerce"},
-              {id:"blog_coupang",label:"쿠팡 상품설명",icon:"/icon-naver-cafe.webp",cat:"commerce"},
-              {id:"blog_smartstore",label:"스마트스토어",icon:"/icon-naver-blog.png",cat:"commerce"},
-              // 뉴스레터
-              {id:"blog_substack",label:"Substack",icon:"/icons3d/news.png",cat:"newsletter"},
-              // 변환
-              {id:"blog_link",label:"유튜브 > 블로그",icon:"/icon-youtube.png",cat:"convert"},
-              {id:"blog_news",label:"뉴스 > 블로그",icon:"/icons3d/news.png",cat:"convert"},
-            ];
-            const filtered = snsCat === "all" ? SNS_LIST : SNS_LIST.filter(p => p.cat === snsCat);
-            const tabStyle = (active) => ({
-              padding:"10px 18px",borderRadius:24,border:"none",
-              background:active?(isDark?"rgba(124,106,255,0.2)":"#7c6aff"):"transparent",
-              color:active?"#fff":(isDark?"rgba(255,255,255,0.55)":"#666"),
-              fontSize:13,fontWeight:active?800:600,cursor:"pointer",transition:"all 0.15s",whiteSpace:"nowrap",
-              minHeight:40,
-            });
-            return (
-              <>
-                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14,overflowX:"auto",WebkitOverflowScrolling:"touch"}}>
-                  {SNS_CATS.map(c => (
-                    <button key={c.id} onClick={() => setSnsCat(c.id)} style={tabStyle(snsCat===c.id)}>{c.label}</button>
-                  ))}
-                </div>
-                <div className="bl-sns-platform-group" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(min(120px,100%),1fr))",gap:8}}>
-                  {filtered.map(p => (
-                    <button key={p.id} onClick={() => setPlatformId(p.id)}
-                      style={{padding:"12px 14px",borderRadius:12,border:`2px solid ${platformId===p.id?"#7c6aff":(isDark?"rgba(255,255,255,0.1)":"#e5e7eb")}`,background:platformId===p.id?(isDark?"rgba(124,106,255,0.12)":"#f8f7ff"):(isDark?"rgba(255,255,255,0.03)":"#fff"),cursor:"pointer",display:"flex",alignItems:"center",gap:8,fontSize:13,fontWeight:platformId===p.id?800:600,color:platformId===p.id?"#7c6aff":(isDark?"rgba(255,255,255,0.75)":"#444"),transition:"all 0.15s",minHeight:48,fontFamily:"inherit"}}>
-                      <img src={p.icon} alt="" style={{width:22,height:22,borderRadius:5,objectFit:"contain",flexShrink:0}} onError={e=>{e.target.style.display="none"}}/>
-                      <span style={{textOverflow:"ellipsis",overflow:"hidden",whiteSpace:"nowrap"}}>{p.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </>
-            );
-          })()}
-        </div>
-      </div>
-      {/* 기존 select 제거됨 — 위 카테고리 탭 + 버튼으로 대체 */}
-      <div style={{height:"calc(100vh - 80px)",display:"flex"}}>{content}</div>
+      <div style={{height:"100vh",display:"flex"}}>{content}</div>
     </div>
   );
 }
