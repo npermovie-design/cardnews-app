@@ -10,7 +10,6 @@ const DEFAULT_CATS = [
   { id: "info",    label: "정보공유",   icon: "", color: "#7c6aff" },
   { id: "qna",     label: "질문답변",   icon: "", color: "#f59e0b" },
   { id: "free",    label: "자유게시판", icon: "", color: "#10b981" },
-  { id: "review",  label: "사용후기",   icon: "", color: "#ec4899" },
   { id: "archive", label: "자료실",     icon: "", color: "#3b82f6" },
   { id: "sns_briefing", label: "SNS 브리핑", icon: "", color: "#6366f1" },
 ];

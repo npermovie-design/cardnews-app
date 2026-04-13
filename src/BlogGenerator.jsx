@@ -1610,7 +1610,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   {loading ? (
                     <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
                   ) : (
-                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>{mode==="image"?"50P":"10P"}</span>}</>
+                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>{mode==="image"?"50P":"10P"}</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
                   )}
                 </button>
               </div>
@@ -1816,7 +1816,19 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
         {/* 결과 화면 */}
         {showResult && (
-          shortsMode ? (
+          shortsMode && _getUsageState().exhausted ? (
+            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:40}}>
+              <div style={{maxWidth:400,textAlign:"center"}}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                <div style={{fontSize:20,fontWeight:900,color:text,marginTop:16,marginBottom:8}}>프로 버전에서 사용 가능합니다</div>
+                <div style={{fontSize:14,color:muted,lineHeight:1.7,marginBottom:24}}>무료 체험 횟수를 모두 사용했습니다.<br/>프로 버전으로 업그레이드하면 무제한으로 영상을 생성할 수 있어요.</div>
+                <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+                  <button onClick={()=>{setShortsMode(false);}} style={{padding:"12px 24px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",color:text,fontSize:14,fontWeight:700,cursor:"pointer"}}>돌아가기</button>
+                  <button onClick={()=>{try{window.location.hash="#pricing";}catch{}}} style={{padding:"12px 24px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>프로 버전 보기</button>
+                </div>
+              </div>
+            </div>
+          ) : shortsMode ? (
             <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
               <div style={{padding:"8px 16px",display:"flex",alignItems:"center",gap:8,borderBottom:`1px solid ${border}`}}>
                 <button onClick={()=>{setShortsMode(false);setShortsYtUrl("");}}
