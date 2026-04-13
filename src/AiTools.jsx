@@ -510,6 +510,13 @@ ${fileContent.slice(0, 4000)}
       await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], 4000, (accumulated) => {
         setResult(accumulated);
       });
+      // 포인트 차감
+      if (user?.uid) {
+        try {
+          const { changePoints } = await import("./storage");
+          await changePoints(user.uid, -10, "파일 글 변환");
+        } catch {}
+      }
     } catch (err) {
       setError("글 생성 중 오류: " + err.message);
     } finally {
