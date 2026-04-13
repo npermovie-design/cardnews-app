@@ -1746,6 +1746,25 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 + 더보기
               </button>
             </div>}
+            {/* 이미지 모드 도구 칩 */}
+            {mode==="image" && <div className="bl-platform-chips" style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginTop:20,padding:"0 24px"}}>
+              {[
+                {id:"logo_gen",label:"로고 생성",color:"#8b5cf6",icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>},
+                {id:"product_shot",label:"제품 사진",color:"#ec4899",icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>},
+                {id:"mockup_gen",label:"목업 생성",color:"#06b6d4",icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>},
+                {id:"model_gen",label:"AI 모델",color:"#f59e0b",icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>},
+                {id:"face_swap",label:"얼굴 교체",color:"#ef4444",icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>},
+                {id:"outpaint",label:"이미지 확장",color:"#22c55e",icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>},
+              ].map(tool => (
+                <button key={tool.id} className="bl-platform-chip" onClick={()=>{if(setAiMenu)setAiMenu(tool.id);}}
+                  style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${border}`,background:"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontSize:13,fontWeight:600,color:muted,transition:"all 0.15s",fontFamily:"inherit"}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor=tool.color;e.currentTarget.style.color=tool.color;}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}>
+                  <span style={{display:"flex",alignItems:"center",color:"inherit"}}>{tool.icon}</span>
+                  {tool.label}
+                </button>
+              ))}
+            </div>}
           </div>
         )}
 
