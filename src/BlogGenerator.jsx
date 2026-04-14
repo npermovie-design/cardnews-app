@@ -843,22 +843,16 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           }
         });
 
-        // ★ 이미지 CDN URL → base64 data URI 변환 (모든 에디터 호환)
+        // 이미지 처리: base64 이미지는 제거 (블로그 에디터 호환 문제), CDN URL은 유지
         const imgEls = Array.from(clone.querySelectorAll("img"));
-        await Promise.all(imgEls.map(async (img) => {
-          const src = img.src;
-          if (!src || src.startsWith("data:")) return;
-          try {
-            const b64 = await imageUrlToBase64(src);
-            if (b64) {
-              img.src = b64;
-              img.removeAttribute("srcset");
-              img.removeAttribute("crossorigin");
-              img.style.maxWidth = "100%";
-              img.style.height = "auto";
-            }
-          } catch {}
-        }));
+        imgEls.forEach(img => {
+          if (img.src?.startsWith("data:")) {
+            img.remove(); // base64 이미지는 블로그에서 거부됨 → 제거
+          } else {
+            img.style.maxWidth = "100%";
+            img.style.height = "auto";
+          }
+        });
 
         // 소제목(fontWeight:800) 앞에 빈 줄 추가
         clone.querySelectorAll("p").forEach(p => {
@@ -1031,83 +1025,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>}
                 {copyLoading?"이미지 변환 중":copied?"복사됨":"복사 (이미지 포함)"}
               </button>
-              <button onClick={handleAiImage} disabled={aiImgLoading}
-                style={{padding:"10px 18px",borderRadius:11,border:`1.5px solid ${aiImgUrl?"rgba(74,222,128,0.5)":border}`,
-                  background:aiImgUrl?(isDark?"rgba(74,222,128,0.12)":"#f0fdf4"):"transparent",
-                  color:aiImgUrl?"#22c55e":text,fontSize:13,fontWeight:700,cursor:aiImgLoading?"wait":"pointer",whiteSpace:"nowrap",minHeight:42,display:"flex",alignItems:"center",gap:6,fontFamily:"inherit"}}>
-                {aiImgLoading
-                  ? <><div style={{width:13,height:13,border:`2px solid ${accent}`,borderTopColor:"transparent",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
-                  : aiImgUrl
-                    ? <><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>이미지 생성됨</>
-                    : <><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>AI 대표 이미지</>}
-              </button>
               {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
-              {result && (() => {
-              const isThread = initialType === "blog_thread";
-              const isInsta = initialType === "blog_insta";
-              const threadConn = snsConns.find(c => c.platform === "threads");
-              const btns = [];
-              // 스레드 탭: 스레드만
-              if (isThread) {
-                btns.push({ p:"threads", l: threadConn ? "스레드 발행" : "스레드 연동하기", i:"/icon-threads.png", c:"#7c6aff", connected:!!threadConn, needLogin:!user });
-              }
-              // 인스타 탭: 인스타만 (준비중)
-              else if (isInsta) {
-                const instaConn = snsConns.find(c => c.platform === "instagram");
-                btns.push({ p:"instagram", l: instaConn ? "인스타그램 발행" : "인스타그램 연동하기", i:"/icon-instagram.webp", c:"#E1306C", connected:!!instaConn, needLogin:!user });
-              }
-              // 네이버 블로그 탭
-              else if (initialType === "blog_naver") {
-                btns.push({ p:"naver_blog", l:"네이버 블로그", i:"/icon-naver-blog.png", c:"#03C75A", u:"https://blog.naver.com/PostList.naver" });
-              }
-              // 티스토리 탭
-              else if (initialType === "blog_tistory") {
-                btns.push({ p:"tistory", l:"티스토리", i:"/icon-tistory.png", c:"#FF6B35", u:"https://www.tistory.com/m/entry/write" });
-              }
-              // 네이버 카페 탭
-              else if (initialType === "blog_cafe") {
-                btns.push({ p:"naver_cafe", l:"네이버 카페", i:"/icon-naver-cafe.webp", c:"#03C75A", u:"https://cafe.naver.com" });
-              }
-              // 나머지(유튜브 등): 스레드만
-              else {
-                if (threadConn) btns.push({ p:"threads", l:"스레드", i:"/icon-threads.png", c:"#7c6aff" });
-              }
-              return btns.map(b => {
-                const isPub = publishing === b.p, done = publishResult?.platform === b.p;
-                return (
-                  <button key={b.p} onClick={async () => {
-                    if (b.soon) return;
-                    if (b.needLogin) { if (onLoginRequest) onLoginRequest(); return; }
-                    if (b.connected === false && !b.u) { try { window.location.href = "/mypage"; } catch {} return; }
-                    if (b.u) {
-                      window.open(b.u, "_blank");
-                      try { await navigator.clipboard.writeText(result); } catch {}
-                      setPublishResult({ platform: b.p, clipboard: true, message: `${b.l} 에디터에서 붙여넣기(Ctrl+V)하세요` });
-                      setTimeout(() => setPublishResult(null), 3000);
-                    } else { handlePublish(b.p); }
-                  }} disabled={isPub || b.soon}
-                    style={{ padding:"10px 18px", borderRadius:11, border:`1.5px solid ${done ? "rgba(74,222,128,0.5)" : b.c+"60"}`,
-                      background: done ? (isDark ? "rgba(74,222,128,0.12)" : "#f0fdf4") : (isDark ? b.c+"15" : b.c+"0a"),
-                      color: done ? "#22c55e" : (isDark ? "#fff" : b.c),
-                      fontSize:13, fontWeight:800, cursor:"pointer", display:"flex", alignItems:"center", gap:7, whiteSpace:"nowrap", opacity: isPub || b.soon ? 0.5 : 1, minHeight:42, fontFamily:"inherit" }}>
-                    {isPub
-                      ? <div style={{ width:14, height:14, borderRadius:"50%", border:`2px solid ${b.c}`, borderTopColor:"transparent", animation:"spin 0.8s linear infinite" }} />
-                      : <img src={b.i} alt="" style={{ width:20, height:20, objectFit:"contain", borderRadius:4 }} />
-                    }
-                    {isPub ? "발행 중" : done ? (publishResult?.clipboard ? "복사 완료" : "발행 완료") : b.soon ? "준비중" : b.l}
-                  </button>
-                );
-              });
-            })()}
-              {result && initialType === "blog_thread" && (
-                <button onClick={()=>setShowSchedule(!showSchedule)}
-                  style={{padding:"10px 18px",borderRadius:11,border:`1.5px solid ${showSchedule?"#7c6aff60":border}`,
-                    background:showSchedule?(isDark?"#7c6aff15":"#7c6aff0a"):"transparent",color:showSchedule?accent:text,
-                    fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap",minHeight:42,fontFamily:"inherit"}}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                  예약 발행
-                </button>
-              )}
             </div>
           )}
         </div>
