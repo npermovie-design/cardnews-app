@@ -892,7 +892,6 @@ export default function App() {
               <DropMenu>
                 <DropItem id="community" label={t("info")}    onClick={() => { navigateBoard("info");    setOpenMenu(null); }} />
                 <DropItem id="community" label={t("qna")}     onClick={() => { navigateBoard("qna");     setOpenMenu(null); }} />
-                <DropItem id="community" label="작품 공유"     onClick={() => { navigateBoard("showcase"); setOpenMenu(null); }} />
                 <DropItem id="community" label={t("archiveMenu")} onClick={() => { navigateBoard("archive"); setOpenMenu(null); }} />
               </DropMenu>
             )}
