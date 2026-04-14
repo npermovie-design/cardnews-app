@@ -1016,6 +1016,79 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           {/* 메인 */}
           <div style={{flex:1,minWidth:0,overflow:"hidden",width:"100%"}}>
 
+            {/* 작품 공유 카드 그리드 */}
+            {subCat==="showcase" && (archiveView!=="write") && (() => {
+              const showcasePosts = posts.filter(p=>p.cat==="showcase"||p.subCat==="showcase");
+              const sorted = [...showcasePosts].sort((a,b)=>b.id-a.id);
+              return (
+                <div>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+                    <div style={{fontSize:13,color:C.muted}}>{sorted.length}개 프로젝트</div>
+                    {user && <button onClick={()=>setView({mode:"write",subCat:"showcase"})}
+                      style={{padding:"10px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6}}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      프로젝트 공유하기
+                    </button>}
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:`repeat(auto-fill,minmax(${isMobile?"100%":"280px"},1fr))`,gap:16}}>
+                    {sorted.map(p => {
+                      const thumb = (p.images && p.images[0]) || null;
+                      const plainBody = (p.body||p.content||"").replace(/<[^>]*>/g,"").replace(/!\[.*?\]\(.*?\)/g,"").slice(0,120);
+                      return (
+                        <div key={p.id} onClick={()=>openPost(p)}
+                          style={{borderRadius:16,border:`1px solid ${bdr}`,overflow:"hidden",cursor:"pointer",
+                            background:isDark?"rgba(255,255,255,0.03)":"#fff",transition:"all 0.18s",
+                            boxShadow:isDark?"none":"0 1px 3px rgba(0,0,0,0.04)"}}
+                          onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-3px)";e.currentTarget.style.boxShadow="0 12px 28px rgba(124,106,255,0.12)";}}
+                          onMouseLeave={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow=isDark?"none":"0 1px 3px rgba(0,0,0,0.04)";}}>
+                          {thumb ? (
+                            <div style={{width:"100%",aspectRatio:"16/9",overflow:"hidden",background:isDark?"rgba(255,255,255,0.05)":"#f5f5f5"}}>
+                              <img src={thumb} alt="" loading="lazy" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.target.parentElement.style.display="none";}}/>
+                            </div>
+                          ) : (
+                            <div style={{width:"100%",aspectRatio:"16/9",background:isDark?"rgba(124,106,255,0.08)":"rgba(124,106,255,0.04)",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={isDark?"rgba(255,255,255,0.15)":"rgba(0,0,0,0.1)"} strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                            </div>
+                          )}
+                          <div style={{padding:"16px 18px"}}>
+                            <div style={{fontSize:16,fontWeight:800,color:C.text,marginBottom:6,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{p.title}</div>
+                            <div style={{fontSize:13,color:C.muted,lineHeight:1.6,marginBottom:12,display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{plainBody}</div>
+                            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                              <div style={{display:"flex",alignItems:"center",gap:8}}>
+                                <span style={{fontSize:12,color:"#7c6aff",fontWeight:700}}>{p.nick}</span>
+                                <span style={{fontSize:11,color:C.muted}}>{p.date}</span>
+                              </div>
+                              <div style={{display:"flex",alignItems:"center",gap:10,fontSize:11,color:C.muted}}>
+                                <span style={{display:"flex",alignItems:"center",gap:3}}>
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                  {p.views||0}
+                                </span>
+                                {(p.likes||0)>0 && <span style={{display:"flex",alignItems:"center",gap:3,color:"#f59e0b"}}>
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                                  {p.likes}
+                                </span>}
+                                {(p.comments||[]).length>0 && <span style={{display:"flex",alignItems:"center",gap:3}}>
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                                  {p.comments.length}
+                                </span>}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {sorted.length===0 && (
+                    <div style={{textAlign:"center",padding:"60px 20px",color:C.muted}}>
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{margin:"0 auto 16px",display:"block",opacity:0.3}}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                      <div style={{fontSize:15,fontWeight:700,marginBottom:8}}>아직 공유된 프로젝트가 없어요</div>
+                      <div style={{fontSize:13,lineHeight:1.7}}>AI로 만든 도구, 사이트, 프로젝트를 자유롭게 공유해보세요</div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* 자료실 전용 탭 (영상/사진/GIF/무료이미지) */}
             {subCat==="archive" && (
               <>
