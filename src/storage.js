@@ -34,28 +34,28 @@ export async function getAuthToken() {
   } catch { return null; }
 }
 
-// ── 포인트 상수 (API 실비용 반영) ─────────────────────────────────────────
+// ── 포인트 상수 (API 실비용 × 200%+ 마진 반영) ──────────────────────────
 export const POINTS = {
-  SIGNUP:      50,     // 회원가입 보너스
-  DAILY_LOGIN: 2,      // 일일 로그인
+  SIGNUP:      150,    // 회원가입 보너스 (글쓰기 5회 분량)
+  DAILY_LOGIN: 3,      // 일일 로그인
   POST_WRITE:  1,      // 게시글 작성 (하루 10회 제한)
   COMMENT:     0,      // 댓글 작성
-  // ── AI 생성 (글쓰기 20P 기준) ──────────────────────────
-  AI_USE:      -20,    // Haiku 텍스트
-  AI_SONNET:   -85,    // Sonnet 텍스트
-  IMAGE_GEN:   -200,   // 이미지 생성
-  PPT_GEN:     -45,    // PPT 생성
-  VIDEO_ANALYZE: -65,  // 영상 분석
-  VIDEO_GEN:   -35,    // 영상 15초
-  VIDEO_GEN_30: -55,   // 영상 30초
-  VIDEO_GEN_60: -80,   // 영상 60초
+  // ── AI 생성 (글쓰기 30P 기준) ──────────────────────────
+  AI_USE:      -30,    // Haiku 텍스트
+  AI_SONNET:   -120,   // Sonnet 텍스트
+  IMAGE_GEN:   -250,   // 이미지 생성
+  PPT_GEN:     -60,    // PPT/상세페이지 생성
+  VIDEO_ANALYZE: -80,  // 영상 분석
+  VIDEO_GEN:   -50,    // 영상 15초
+  VIDEO_GEN_30: -75,   // 영상 30초
+  VIDEO_GEN_60: -100,  // 영상 60초
   // ── AI 채팅 ──────────────────────────────────────────
-  CHAT_HAIKU:    -10,  // Haiku 채팅
-  CHAT_SONNET:  -40,   // Sonnet 채팅
-  CHAT_GPT4O_MINI: -10, // GPT-4o Mini
-  CHAT_GPT4O:   -60,   // GPT-4o
-  CHAT_GEMINI_FLASH: -7, // Gemini Flash
-  CHAT_GEMINI_PRO: -40, // Gemini Pro
+  CHAT_HAIKU:    -15,  // Haiku 채팅
+  CHAT_SONNET:  -60,   // Sonnet 채팅
+  CHAT_GPT4O_MINI: -15, // GPT-4o Mini
+  CHAT_GPT4O:   -80,   // GPT-4o
+  CHAT_GEMINI_FLASH: -10, // Gemini Flash
+  CHAT_GEMINI_PRO: -60, // Gemini Pro
 };
 
 // 채팅 모델 → 포인트 매핑
@@ -77,7 +77,7 @@ export const PLANS = [
     points: 0,
     label: "무료",
     color: "#888",
-    features: ["가입 시 100P 지급", "비회원 5회 무료 체험", "매일 출석 +3P", "포인트 소진 시 충전 필요"],
+    features: ["가입 시 150P 지급", "비회원 5회 무료 체험", "매일 출석 +3P", "포인트 소진 시 구독 필요"],
     btnLabel: "무료 체험",
     highlight: false,
   },
@@ -88,8 +88,8 @@ export const PLANS = [
     points: 1000,
     label: "$5.90",
     color: "#4ade80",
-    features: ["1,000P 충전", "텍스트 100회 분량", "유효기간 없음", "모든 기능 이용 가능"],
-    btnLabel: "충전하기",
+    features: ["1,200P 지급", "글쓰기 약 40회", "유효기간 없음", "모든 기능 이용 가능"],
+    btnLabel: "시작하기",
     highlight: false,
     badge: "입문",
   },
@@ -100,8 +100,8 @@ export const PLANS = [
     points: 3500,
     label: "$19.90",
     color: "#7c6aff",
-    features: ["3,500P 충전 (0.57¢/P)", "텍스트 350회 · 이미지 70회 분량", "모든 기능 이용 가능", "SNS 자동 발행"],
-    btnLabel: "충전하기",
+    features: ["2,800P 지급", "글쓰기 약 93회 · 이미지 약 11회", "모든 기능 이용 가능", "SNS 자동 발행"],
+    btnLabel: "시작하기",
     highlight: true,
     badge: "추천",
   },
@@ -112,8 +112,8 @@ export const PLANS = [
     points: 9500,
     label: "$49.90",
     color: "#f59e0b",
-    features: ["9,500P 충전 (0.53¢/P)", "텍스트 950회 · 이미지 190회 분량", "모든 기능 이용 가능", "우선 고객지원"],
-    btnLabel: "충전하기",
+    features: ["5,500P 지급", "글쓰기 약 183회 · 이미지 약 22회", "모든 기능 이용 가능", "우선 고객지원"],
+    btnLabel: "시작하기",
     highlight: false,
     badge: "전문가용",
   },

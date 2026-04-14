@@ -19,20 +19,20 @@ const SUB_PLANS = [
   {
     id: "free", name: "Free", icon: "F",
     monthlyPrice: 0, yearlyPrice: 0,
-    points: 100, color: "#888",
+    points: 150, color: "#888",
     gradient: "linear-gradient(135deg,#555,#333)",
     highlight: false, badge: null,
-    features: ["가입 보너스 50P 지급", "AI 글쓰기 약 2회", ...COMMON_FEATURES],
+    features: ["가입 보너스 150P 지급", "AI 글쓰기 약 5회", ...COMMON_FEATURES],
     btnLabel: "무료로 시작",
     free: true,
   },
   {
     id: "basic", name: "Basic", icon: "B",
     monthlyPrice: 9.9, yearlyPrice: 99,
-    points: 1800, color: "#4ade80",
+    points: 1200, color: "#4ade80",
     gradient: "linear-gradient(135deg,#14532d,#22c55e)",
     highlight: false, badge: null,
-    features: ["매월 1,800P 충전", "AI 글쓰기 약 90회", "상세페이지 생성 약 90회", "이미지 생성 약 9회", ...COMMON_FEATURES],
+    features: ["매월 1,200P 지급", "AI 글쓰기 약 40회", "상세페이지 생성 약 20회", "이미지 생성 약 4회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
     lsId: "8dca976c-3064-4d76-af4b-8743a10e9f9f",
     lsIdYearly: "6b3922c9-04e1-40f0-b295-75870a9e0b3f",
@@ -40,10 +40,10 @@ const SUB_PLANS = [
   {
     id: "pro", name: "Pro", icon: "P",
     monthlyPrice: 19.9, yearlyPrice: 199,
-    points: 3800, color: "#38bdf8",
+    points: 2800, color: "#38bdf8",
     gradient: "linear-gradient(135deg,#0c4a6e,#0ea5e9)",
     highlight: true, badge: "추천",
-    features: ["매월 3,800P 충전", "AI 글쓰기 약 190회", "상세페이지 생성 약 190회", "이미지 생성 약 19회", "숏폼 편집 약 11회", ...COMMON_FEATURES],
+    features: ["매월 2,800P 지급", "AI 글쓰기 약 93회", "상세페이지 생성 약 46회", "이미지 생성 약 11회", "숏폼 편집 약 9회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
     lsId: "81968d65-1482-4dd8-b3a2-88540bdba780",
     lsIdYearly: "ab2d967d-43bb-40a8-96c0-9fcfd6d9c62a",
@@ -51,10 +51,10 @@ const SUB_PLANS = [
   {
     id: "premium", name: "Premium", icon: "P",
     monthlyPrice: 34.9, yearlyPrice: 349,
-    points: 7000, color: "#f59e0b",
+    points: 5500, color: "#f59e0b",
     gradient: "linear-gradient(135deg,#78350f,#f59e0b)",
     highlight: false, badge: "최고 가성비",
-    features: ["매월 7,000P 충전", "AI 글쓰기 약 350회", "상세페이지 생성 약 350회", "이미지 생성 약 35회", "숏폼 편집 약 20회", "자동 글쓰기 무제한", ...COMMON_FEATURES],
+    features: ["매월 5,500P 지급", "AI 글쓰기 약 183회", "상세페이지 생성 약 91회", "이미지 생성 약 22회", "숏폼 편집 약 18회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
     lsId: "ff405644-34fc-415e-b003-e657030484b9",
     lsIdYearly: "fbe69e26-a806-4c86-b36f-5b4e61a4f43d",
@@ -89,14 +89,14 @@ export function PricingPage({ navigate, C, user, onLogin }) {
   ];
   const PLANS = SUB_PLANS.map(pl => {
     // 포인트 기반으로 사용 횟수 자동 계산 (i18n 지원)
-    // 단가: 글쓰기 20P, 상세페이지 45P, 이미지 200P, 쇼츠 180P
-    const writes = Math.floor(pl.points / 20);
-    const details = Math.floor(pl.points / 45);
-    const images = Math.floor(pl.points / 200);
-    const shorts = Math.floor(pl.points / 180);
+    // 단가: 글쓰기 30P, 상세페이지 60P, 이미지 250P, 쇼츠 100P
+    const writes = Math.floor(pl.points / 30);
+    const details = Math.floor(pl.points / 60);
+    const images = Math.floor(pl.points / 250);
+    const shorts = Math.floor(pl.points / 100);
     let featList;
     if (pl.free) {
-      featList = [p("pFeatSignup200") || "가입 시 50P 지급", p("pFeatFreeWrite") || "AI 글쓰기 약 2회"];
+      featList = [p("pFeatSignup200") || "가입 시 150P 지급", p("pFeatFreeWrite") || "AI 글쓰기 약 5회"];
     } else {
       featList = [
         p("pFeatMonthly").replace("{n}", pl.points.toLocaleString()),
@@ -564,12 +564,12 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ fontSize: 12, color: C.muted, marginBottom: 18, lineHeight: 1.6 }}>{p("pointCostDesc")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 10 }}>
           {[
-            { label: p("ptTextHaiku"), cost: "20P", desc: p("ptTextHaikuD") },
-            { label: p("ptTextSonnet"), cost: "85P", desc: p("ptTextSonnetD") },
-            { label: p("ptImage"), cost: "200P", desc: p("ptImageD") },
-            { label: p("ptPpt"), cost: "45P", desc: p("ptPptD") },
-            { label: p("ptVideoAnalysis"), cost: "65P", desc: p("ptVideoAnalysisD") },
-            { label: p("ptVideoGen"), cost: "35~80P", desc: p("ptVideoGenD") },
+            { label: p("ptTextHaiku"), cost: "30P", desc: p("ptTextHaikuD") },
+            { label: p("ptTextSonnet"), cost: "120P", desc: p("ptTextSonnetD") },
+            { label: p("ptImage"), cost: "250P", desc: p("ptImageD") },
+            { label: p("ptPpt"), cost: "60P", desc: p("ptPptD") },
+            { label: p("ptVideoAnalysis"), cost: "80P", desc: p("ptVideoAnalysisD") },
+            { label: p("ptVideoGen"), cost: "50~100P", desc: p("ptVideoGenD") },
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 16px" }}>
               <div>

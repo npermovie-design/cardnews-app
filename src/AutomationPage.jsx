@@ -1,8 +1,8 @@
 import React from "react";
 
-const WIN_URL = "https://github.com/npermovie-design/makeit-automation-releases/releases/download/v0.1.0/SNS.Setup.0.1.0.exe";
-const MAC_ARM_URL = "https://github.com/npermovie-design/makeit-automation-releases/releases/download/v0.1.0/SNS.-0.1.0-arm64.dmg";
-const MAC_INTEL_URL = "https://github.com/npermovie-design/makeit-automation-releases/releases/download/v0.1.0/SNS.-0.1.0.dmg";
+const WIN_URL = "https://github.com/npermovie-design/naverbot-saas/releases/download/v0.1.2/makeit-sns-setup-win.zip";
+const MAC_ARM_URL = "https://github.com/npermovie-design/naverbot-saas/releases/download/v0.1.1/makeit-sns-setup-arm64.dmg";
+const MAC_INTEL_URL = "https://github.com/npermovie-design/naverbot-saas/releases/download/v0.1.1/makeit-sns-setup-intel.dmg";
 const BRAND = "#7c6aff";
 const BRAND2 = "#ec4899";
 const GRAD = "linear-gradient(135deg, #7c6aff, #ec4899)";

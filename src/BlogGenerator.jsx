@@ -317,7 +317,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const _pts = user ? (user.points || 0) : 0;
     const isGuest = !user;
     // 비회원: 5회 초과 시 차단 / 회원: 포인트 부족 시 차단
-    const exhausted = isGuest ? (_used >= _lim) : (_pts < 10);
+    const exhausted = isGuest ? (_used >= _lim) : (_pts < 30);
     return { used: _used, limit: _lim, points: _pts, exhausted, isGuest };
   };
   const handleGenerateClick = () => {
@@ -413,18 +413,18 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
     if (!user && guestLimitExceeded()) return;
     if (!user) incrementGuestUsage(); // 비회원: 즉시 사용 횟수 차감
-    // 비회원: 5회 무료 제한 / 회원: 항상 10P 차감 (무료 횟수 없음)
+    // 비회원: 5회 무료 제한 / 회원: 항상 30P 차감 (무료 횟수 없음)
     const _aiUsage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
     const _aiKey = user ? ("member_" + (user.uid || "u")) : "guest";
     const _aiUsed = _aiUsage[_aiKey] || 0;
     const _aiPoints = user ? (user.points || 0) : 0;
     // 회원: 포인트 부족 시 차단
-    if (user && _aiPoints < 10) {
-      setError("포인트가 부족합니다. 충전 후 이용해주세요.");
+    if (user && _aiPoints < 30) {
+      setError("포인트가 부족합니다. 구독 후 이용해주세요.");
       return;
     }
     // 회원: 포인트 차감 확인
-    if (showPointConfirm && user && !(await showPointConfirm(10))) return;
+    if (showPointConfirm && user && !(await showPointConfirm(30))) return;
     setError(""); setLoading(true); setResult_raw(""); try{sessionStorage.removeItem(_ssKey);sessionStorage.removeItem(_ssSavedFullKey);}catch(e){} setHtmlResult(""); setCopied(false);
     abortRef.current = false;
     // elapsed-time 기반 step progression을 위해 시작 시각 기록
@@ -435,9 +435,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     // 백그라운드 작업 표시기 등록 (메뉴 이동 시 진행 상태 표시)
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "blog_gen_" + (initialType || "blog"), type: initialType || "blog_write", message: "글 작성 중..." } } }));
 
-    // 회원: 항상 10P 즉시 차감
+    // 회원: 항상 30P 즉시 차감
     if (user && user.uid) {
-      changePoints(user.uid, -10, "블로그 글 생성").then(newPts => {
+      changePoints(user.uid, -30, "블로그 글 생성").then(newPts => {
         if (onUserUpdate) onUserUpdate({...user, points: newPts});
       }).catch(()=>{});
     }
@@ -1608,7 +1608,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   {loading ? (
                     <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
                   ) : (
-                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>10P</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
+                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>30P</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
                   )}
                 </button>
               </div>
