@@ -365,8 +365,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   // 보관함
   if (aiMenu === "library") {
-    // 자료실 → 커뮤니티 자료실 탭으로 이동
-    if (navigateBoard) { navigateBoard("archive"); return null; }
     return <LibraryPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} cardDescC={cardDescC} setAiMenu={setAiMenu} renderFooter={() => <AiFooter />} />;
   }
 

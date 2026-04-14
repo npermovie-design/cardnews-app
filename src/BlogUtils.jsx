@@ -124,7 +124,7 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
     .replace(/^>\s+/gm, "")                          // > 인용 제거
     .replace(/^[-*]{3,}$/gm, "")                     // --- 구분선 제거
     .replace(/^[-*+]\s+/gm, "- ")                    // 리스트 기호 통일
-    .replace(/!\[.*?\]\(.*?\)/g, "");                // ![image]() 제거
+    .replace(/!\[.*?\]\((?!data:).*?\)/g, "");         // ![image](url) 제거 (data: base64는 유지)
 
   const lines = cleaned.split("\n");
   const elements = [];
@@ -139,6 +139,13 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
 
     if (!trimmed) {
       elements.push(<div key={i} style={{height:8}}/>);
+      continue;
+    }
+
+    // 사용자 첨부 이미지 (base64 마크다운) → <img> 렌더링
+    const userImgMatch = trimmed.match(/^!\[([^\]]*)\]\((data:[^)]+)\)$/);
+    if (userImgMatch) {
+      elements.push(<img key={`uimg${i}`} src={userImgMatch[2]} alt={userImgMatch[1]} style={{width:"100%",maxWidth:600,borderRadius:12,margin:"8px 0",display:"block"}}/>);
       continue;
     }
 

@@ -918,33 +918,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // ═══════════════════════════════════
   if (step === "upload") return (
     <div style={{ flex: 1, overflowY: "auto", background: D ? "transparent" : "#f4f4f8" }}>
-      {/* 프로 전환 예정 안내 팝업 */}
-      {showProNotice && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }} onClick={() => { setShowProNotice(false); sessionStorage.setItem("shorts_pro_notice_seen", "1"); }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: D ? "rgba(18,15,40,0.97)" : "#fff", borderRadius: 20, padding: "32px 28px", maxWidth: 400, width: "90%", textAlign: "center", border: `1px solid ${D ? "rgba(124,106,255,0.25)" : "rgba(99,102,241,0.15)"}`, boxShadow: "0 24px 64px rgba(0,0,0,0.3)", position: "relative" }}>
-            <button onClick={() => { setShowProNotice(false); sessionStorage.setItem("shorts_pro_notice_seen", "1"); }}
-              style={{ position: "absolute", top: 12, right: 12, width: 32, height: 32, borderRadius: "50%", border: "none", background: D ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: D ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.4)", lineHeight: 1 }}
-              aria-label="닫기">&times;</button>
-            <div style={{ width: 56, height: 56, borderRadius: 16, background: "linear-gradient(135deg,#7c6aff,#ec4899)", margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.8"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 900, color: D ? "#fff" : "#1a1a2e", marginBottom: 8 }}>AI 자동 영상 제작</div>
-            <div style={{ fontSize: 13, color: D ? "rgba(255,255,255,0.6)" : "#888", lineHeight: 1.7, marginBottom: 16 }}>
-              현재 포인트 차감으로 이용 가능합니다.<br/>
-              <span style={{ color: "#f59e0b", fontWeight: 600 }}>추후 Pro 플랜 전용 기능으로 전환 예정</span>입니다.
-            </div>
-            <div style={{ display: "inline-flex", gap: 8, padding: "8px 14px", borderRadius: 10, background: D ? "rgba(255,255,255,0.06)" : "rgba(124,106,255,0.06)", marginBottom: 20, fontSize: 12, color: D ? "#a5b4fc" : "#6366f1" }}>
-              <span>분석 <b>35P</b></span><span style={{ opacity: 0.3 }}>|</span><span>생성 <b>80P</b></span>
-            </div>
-            <div>
-              <button onClick={() => { setShowProNotice(false); sessionStorage.setItem("shorts_pro_notice_seen", "1"); }}
-                style={{ padding: "13px 40px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>
-                시작하기
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 프로 전환 예정 안내 팝업 — 제거됨 */}
 
       {/* 헤더는 AiPage에서 렌더링 */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 60px" }}>
@@ -1623,7 +1597,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 </div>
               </div>
 
-              <button onClick={handleGenerate} style={{ ...btnStyle, marginTop: 4 }}>영상 생성하기 <span style={{ opacity: 0.7, fontSize: 12 }}>(80P)</span></button>
+              <button onClick={handleGenerate} style={{ ...btnStyle, marginTop: 4 }}>영상 생성하기 <span style={{ opacity: 0.7, fontSize: 12 }}>(100P)</span></button>
             </>) : (<>
               {/* 오버레이 탭 */}
               <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
