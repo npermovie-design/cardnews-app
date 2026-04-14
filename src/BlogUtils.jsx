@@ -1038,15 +1038,15 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
         {/* 혜택 카드 */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:24 }}>
           {(isGuest ? [
-            { icon:"🎁", title:"회원가입 혜택", desc:"가입 즉시 이용권 100회 제공" },
-            { icon:"P", title:"게시글 적립", desc:"작성할 때마다 1회" },
-            { icon:"🔄", title:"일일 로그인", desc:"매일 3회 적립" },
-            { icon:"♾️", title:"AI 무제한", desc:"구독으로" },
+            { icon:"🎁", title:"회원가입 혜택", desc:"가입 즉시 100P 지급" },
+            { icon:"P", title:"게시글 적립", desc:"작성할 때마다 1P" },
+            { icon:"🔄", title:"일일 로그인", desc:"매일 3P 적립" },
+            { icon:"♾️", title:"AI 무제한", desc:"포인트 충전으로" },
           ] : [
-            { icon:"💳", title:"이용권 구독" },
-            { icon:"🔥", title:"Deluxe 플랜", desc:"$19.90 / 9,500회" },
-            { icon:"P", title:"무료 적립", desc:"게시글 작성 1회" },
-            { icon:"💬", title:"관리자 문의", desc:"이용권 문의" },
+            { icon:"💳", title:"포인트 충전" },
+            { icon:"🔥", title:"Deluxe 플랜", desc:"$19.90 / 9,500P" },
+            { icon:"P", title:"무료 적립", desc:"게시글 작성 1P" },
+            { icon:"💬", title:"관리자 문의", desc:"포인트 문의" },
           ]).map((item, i) => (
             <div key={i} style={{ background:card, border:`1px solid ${bdr}`, borderRadius:12, padding:"14px 12px" }}>
               <div style={{ fontSize:24, marginBottom:6 }}>{item.icon}</div>
@@ -1069,7 +1069,7 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800,
                 boxShadow:"0 8px 24px rgba(99,102,241,0.35)" }}>
-              💎 이용권 구독하기
+              💎 포인트 충전하기
             </button>
           )}
           <button onClick={() => { window.location.hash = "#contact"; }}

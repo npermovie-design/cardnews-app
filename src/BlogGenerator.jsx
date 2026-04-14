@@ -420,10 +420,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const _aiPoints = user ? (user.points || 0) : 0;
     // 회원: 포인트 부족 시 차단
     if (user && _aiPoints < 10) {
-      setError("이용권이 부족합니다. 구독 후 이용해주세요.");
+      setError("포인트가 부족합니다. 충전 후 이용해주세요.");
       return;
     }
-    // 회원: 이용권 차감 확인
+    // 회원: 포인트 차감 확인
     if (showPointConfirm && user && !(await showPointConfirm(10))) return;
     setError(""); setLoading(true); setResult_raw(""); try{sessionStorage.removeItem(_ssKey);sessionStorage.removeItem(_ssSavedFullKey);}catch(e){} setHtmlResult(""); setCopied(false);
     abortRef.current = false;
@@ -559,7 +559,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     if (showPointConfirm && !(await showPointConfirm(50))) return;
 
     const _aiPoints = user ? (user.points || 0) : 0;
-    if (_aiPoints < 50) { setError("이용권이 부족합니다. 구독 후 이용해주세요."); return; }
+    if (_aiPoints < 50) { setError("포인트가 부족합니다. 충전 후 이용해주세요."); return; }
 
     setError(""); setLoading(true); setImageResult(null);
     genStartTimeRef.current = Date.now();
@@ -1608,7 +1608,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   {loading ? (
                     <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
                   ) : (
-                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>10회</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
+                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>10P</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
                   )}
                 </button>
               </div>
@@ -1647,8 +1647,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
             {/* 에러 메시지 */}
             {error&&<div style={{maxWidth:720,margin:"12px auto 0",fontSize:13,color:"#ef4444",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",padding:"10px 14px",borderRadius:12,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)"}}>{error}
-              {(error.includes("이용권") || error.includes("구독") || error.includes("무료 횟수")) && (
-                <button onClick={()=>window.location.hash="#pricing"} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>구독하기</button>
+              {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
+                <button onClick={()=>window.location.hash="#pricing"} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
               )}
             </div>}
 

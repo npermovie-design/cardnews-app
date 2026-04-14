@@ -77,7 +77,7 @@ export const PLANS = [
     points: 0,
     label: "무료",
     color: "#888",
-    features: ["가입 시 이용권 100회 제공", "비회원 5회 무료 체험", "매일 출석 +3회", "이용권 소진 시 구독 필요"],
+    features: ["가입 시 100P 지급", "비회원 5회 무료 체험", "매일 출석 +3P", "포인트 소진 시 충전 필요"],
     btnLabel: "무료 체험",
     highlight: false,
   },

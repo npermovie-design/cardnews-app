@@ -163,12 +163,12 @@ function PointsExhausted({ isDark, isGuest, title }) {
       <div style={{ maxWidth:420, width:"100%" }}>
         <div style={{ fontSize:64, marginBottom:16 }}>💎</div>
         <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:8 }}>
-          {isGuest ? "무료 이용권을 모두 사용했어요" : "이용권이 모두 소진됐어요"}
+          {isGuest ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
         </div>
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
             ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>10회 추가 무료</b>를 받으세요!</>
-            : <><b style={{color:text}}>{title}</b> 생성에 이용권이 필요해요.<br/>이용권을 구독하거나 관리자에게 문의해주세요.</>
+            : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
           }
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -182,7 +182,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
             <button onClick={() => { window.location.hash = "#pricing"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800 }}>
-              💎 이용권 구독하기
+              💎 포인트 충전하기
             </button>
           )}
           <button onClick={() => window.open("https://open.kakao.com/o/gIw9vTFg", "_blank")}

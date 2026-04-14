@@ -1081,11 +1081,11 @@ JSON만 응답:
               style={{ width:"min(400px,90vw)", background:D?"#13102a":"#fff", borderRadius:20, padding:"32px 24px", textAlign:"center",
                 boxShadow:"0 24px 64px rgba(0,0,0,0.4)", border:`1px solid ${bdr}` }}>
               <div style={{ fontSize:48, marginBottom:16 }}>💎</div>
-              <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:8 }}>이용권이 부족해요</div>
+              <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:8 }}>포인트가 부족해요</div>
               <div style={{ fontSize:13, color:muted, lineHeight:1.8, marginBottom:20 }}>
                 오늘 무료 {AZ_FREE_MEMBER}회를 모두 사용했습니다.<br/>
-                추가 분석에는 <b style={{color:"#f59e0b"}}>10회</b>가 필요합니다.<br/>
-                현재 보유: <b style={{color:"#ef4444"}}>{user?.points||0}회</b>
+                추가 분석에는 <b style={{color:"#f59e0b"}}>10P</b>가 필요합니다.<br/>
+                현재 보유: <b style={{color:"#ef4444"}}>{user?.points||0}P</b>
               </div>
               <div style={{ display:"flex", gap:10 }}>
                 <button onClick={() => setShowPointPrompt(false)}
@@ -1094,7 +1094,7 @@ JSON만 응답:
                 </button>
                 <button onClick={() => { setShowPointPrompt(false); navigate?.("pricing"); }}
                   style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:"linear-gradient(135deg,#f59e0b,#f97316)", color:"#fff", fontSize:14, fontWeight:800, cursor:"pointer" }}>
-                  이용권 구독하기
+                  포인트 충전하기
                 </button>
               </div>
             </div>
