@@ -62,11 +62,11 @@ const SUB_PLANS = [
 ];
 
 const ONE_OFF_PLANS = [
-  { id:"pack1", name:"Starter",  amount:5.9,  points:1000,  highlight:false, perPoint:"0.59", lsId:"6cd384b2-95a9-4fb6-87e4-2c2bf5dd3a9b" },
-  { id:"pack2", name:"Basic",    amount:11.9, points:2000,  highlight:false, perPoint:"0.60", lsId:"de7d098b-9ef7-4673-ba7e-cfe61858be66" },
-  { id:"pack3", name:"Standard", amount:19.9, points:3500,  highlight:true,  perPoint:"0.57", lsId:"7593e698-c3ca-4abf-b6a3-e2e50f645591" },
-  { id:"pack4", name:"Plus",     amount:29.9, points:5500,  highlight:false, perPoint:"0.54", lsId:"b302ef23-b9ec-450b-9ec8-958c3a587b30" },
-  { id:"pack5", name:"Pro",      amount:49.9, points:9500,  highlight:false, perPoint:"0.53", bestValue:true, lsId:"8c88e4c6-52c6-430f-87dd-c7de12d91e50" },
+  { id:"pack1", name:"Starter",  amount:5.9,  points:600,   highlight:false, perPoint:"0.98", lsId:"6cd384b2-95a9-4fb6-87e4-2c2bf5dd3a9b" },
+  { id:"pack2", name:"Basic",    amount:11.9, points:1300,  highlight:false, perPoint:"0.92", lsId:"de7d098b-9ef7-4673-ba7e-cfe61858be66" },
+  { id:"pack3", name:"Standard", amount:19.9, points:2400,  highlight:true,  perPoint:"0.83", lsId:"7593e698-c3ca-4abf-b6a3-e2e50f645591" },
+  { id:"pack4", name:"Plus",     amount:29.9, points:3800,  highlight:false, perPoint:"0.79", lsId:"b302ef23-b9ec-450b-9ec8-958c3a587b30" },
+  { id:"pack5", name:"Pro",      amount:49.9, points:6500,  highlight:false, perPoint:"0.77", bestValue:true, lsId:"8c88e4c6-52c6-430f-87dd-c7de12d91e50" },
 ];
 
 // FAQ는 컴포넌트 안에서 번역 함수로 동적 생성
