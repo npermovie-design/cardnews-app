@@ -828,13 +828,11 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   const handleCopy = async (content, withImages) => {
     const cleaned = cleanForCopy(content);
-    if (withImages && blogContentRef.current) {
+    if (withImages && blogContentRef.current && !isMobile) {
+      // PC: DOM 선택 복사 (이미지 포함)
       setCopyLoading(true);
       try {
         const el = blogContentRef.current;
-
-        // 모바일 + PC 공통: DOM 선택 복사 (이미지 포함 가능)
-        // 이 방식이 가장 호환성이 좋음 (네이버 블로그, 티스토리, 워드프레스 등)
         const range = document.createRange();
         range.selectNodeContents(el);
         const sel = window.getSelection();
@@ -849,6 +847,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         setCopyLoading(false);
       }
     } else {
+      // 모바일 또는 텍스트 전용: 텍스트만 복사
       try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(cleaned); } else { fallbackCopy(cleaned); } }
       catch { fallbackCopy(cleaned); }
     }
@@ -987,7 +986,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 {copied
                   ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>}
-                {copyLoading?"이미지 변환 중":copied?"복사됨":"복사 (이미지 포함)"}
+                {copyLoading?"복사 중":copied?"복사됨":isMobile?"복사":"복사 (이미지 포함)"}
               </button>
               {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
             </div>
