@@ -882,7 +882,7 @@ export default function App() {
           <NavBtn id="home" label={t("home")} />
           {/* AI 도구 - 드롭다운 없이 바로 진입 */}
           <NavBtn id="ai" label="AI 도구" />
-          <NavBtn id="automation" label="자동화 도구" />
+          {user?.role === "admin" && <NavBtn id="automation" label="자동화 도구" />}
           <NavBtn id="snsnews" label="SNS뉴스" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
           {/* 커뮤니티 */}
@@ -893,11 +893,10 @@ export default function App() {
                 <DropItem id="community" label={t("info")}    onClick={() => { navigateBoard("info");    setOpenMenu(null); }} />
                 <DropItem id="community" label={t("qna")}     onClick={() => { navigateBoard("qna");     setOpenMenu(null); }} />
                 <DropItem id="community" label={t("free")}    onClick={() => { navigateBoard("free");    setOpenMenu(null); }} />
-                <DropItem id="community" label={t("review")}  onClick={() => { navigateBoard("review");  setOpenMenu(null); }} />
               </DropMenu>
             )}
           </div>
-          <NavBtn id="archive" label={t("archiveMenu")} onClick={() => navigateBoard("archive")} />
+          <NavBtn id="archive" label={t("archiveMenu")} active={page==="community"&&boardCat==="archive"} onClick={() => navigateBoard("archive")} />
           <NavBtn id="pricing" label={t("pricing")} />
           {/* 고객센터 */}
           <div style={{ position: "relative" }}>
@@ -1126,7 +1125,7 @@ export default function App() {
           {[
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
             { id: "ai",       label: "AI 도구",       onClick: () => { navigate("ai"); setMobileOpen(false); },       active: page==="ai"||page==="analyzer" },
-            { id: "automation", label: "자동화 도구",  onClick: () => { navigate("automation"); setMobileOpen(false); }, active: page==="automation" },
+            ...(user?.role === "admin" ? [{ id: "automation", label: "자동화 도구",  onClick: () => { navigate("automation"); setMobileOpen(false); }, active: page==="automation" }] : []),
             { id: "snsnews",  label: "SNS뉴스",       onClick: () => { navigate("snsnews"); setMobileOpen(false); }, active: page==="snsnews" },
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
             { id: "pricing",  label: t("pricing"),    onClick: () => { navigate("pricing"); setMobileOpen(false); }, active: page==="pricing" },
