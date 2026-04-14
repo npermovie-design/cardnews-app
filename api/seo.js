@@ -19,7 +19,7 @@ async function handleSitemap(req, res) {
     { url: "/snsnews", priority: "0.8", freq: "daily" },
     { url: "/community/info", priority: "0.7", freq: "daily" },
     { url: "/community/qna", priority: "0.7", freq: "daily" },
-    { url: "/community/free", priority: "0.6", freq: "daily" },
+    { url: "/community/showcase", priority: "0.7", freq: "daily" },
     { url: "/community/archive", priority: "0.5", freq: "weekly" },
     { url: "/community/sns_briefing", priority: "0.7", freq: "daily" },
     { url: "/contact", priority: "0.5", freq: "monthly" },

@@ -9,6 +9,7 @@ import { buildSources, MediaCard, FreeMediaSearch, RichEditor, RichBody, WriteFo
 const DEFAULT_CATS = [
   { id: "info",    label: "정보공유",   icon: "", color: "#7c6aff" },
   { id: "qna",     label: "질문답변",   icon: "", color: "#f59e0b" },
+  { id: "showcase", label: "작품 공유", icon: "", color: "#ec4899" },
   { id: "archive", label: "자료실",     icon: "", color: "#3b82f6" },
   { id: "sns_briefing", label: "SNS 브리핑", icon: "", color: "#6366f1" },
 ];
@@ -58,7 +59,7 @@ function extractKeywordsBoard(title, plainBody, catName) {
   if (catName) base.push(catName);
   return [...base, ...top].join(", ");
 }
-const CAT_LABEL_MAP = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", archive: "자료실", sns_briefing: "SNS 브리핑" };
+const CAT_LABEL_MAP = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", showcase: "작품 공유", archive: "자료실", sns_briefing: "SNS 브리핑" };
 
 function updatePostSeoMeta(post, catId) {
   if (!post) return;
