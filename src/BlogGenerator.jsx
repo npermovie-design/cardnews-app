@@ -824,60 +824,24 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   };
 
   const blogContentRef = useRef(null);
+  const isMobile = typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
   const handleCopy = async (content, withImages) => {
     const cleaned = cleanForCopy(content);
     if (withImages && blogContentRef.current) {
       setCopyLoading(true);
       try {
-        // HTML 복제본 생성
         const el = blogContentRef.current;
-        const clone = el.cloneNode(true);
-        // 버튼/입력 제거
-        clone.querySelectorAll("button, input").forEach(n => n.remove());
-        clone.querySelectorAll("img").forEach(img => {
-          const wrapper = img.parentElement;
-          if (wrapper && wrapper.tagName === "DIV") {
-            Array.from(wrapper.children).forEach(child => {
-              if (child.tagName !== "IMG") child.remove();
-            });
-          }
-        });
 
-        // 이미지 처리: base64 이미지는 제거 (블로그 에디터 호환 문제), CDN URL은 유지
-        const imgEls = Array.from(clone.querySelectorAll("img"));
-        imgEls.forEach(img => {
-          if (img.src?.startsWith("data:")) {
-            img.remove(); // base64 이미지는 블로그에서 거부됨 → 제거
-          } else {
-            img.style.maxWidth = "100%";
-            img.style.height = "auto";
-          }
-        });
-
-        // 소제목(fontWeight:800) 앞에 빈 줄 추가
-        clone.querySelectorAll("p").forEach(p => {
-          if (p.style.fontWeight === "800") {
-            const br = document.createElement("br");
-            p.parentElement.insertBefore(br, p);
-          }
-        });
-
-        const html = clone.innerHTML;
-        try {
-          await navigator.clipboard.write([new ClipboardItem({
-            "text/html": new Blob([html], {type: "text/html"}),
-            "text/plain": new Blob([cleaned], {type: "text/plain"})
-          })]);
-        } catch {
-          // ClipboardItem 실패 시 DOM 선택 복사
-          const range = document.createRange();
-          range.selectNodeContents(el);
-          const sel = window.getSelection();
-          sel.removeAllRanges();
-          sel.addRange(range);
-          document.execCommand("copy");
-          sel.removeAllRanges();
-        }
+        // 모바일 + PC 공통: DOM 선택 복사 (이미지 포함 가능)
+        // 이 방식이 가장 호환성이 좋음 (네이버 블로그, 티스토리, 워드프레스 등)
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        document.execCommand("copy");
+        sel.removeAllRanges();
       } catch {
         try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(cleaned); } else { fallbackCopy(cleaned); } }
         catch { fallbackCopy(cleaned); }
