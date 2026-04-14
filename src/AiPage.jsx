@@ -1282,7 +1282,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
       )}
 
       {/* 글로벌 백그라운드 작업 인디케이터 */}
-      <BackgroundTaskIndicator isDark={isDark} currentMenu={aiMenu} onNavigate={(menu) => setAiMenu(menu)} />
+      {/* BackgroundTaskIndicator 제거 */}
       <style>{`
         *{box-sizing:border-box;margin:0;padding:0}
         ::-webkit-scrollbar{width:4px;height:4px}
