@@ -1358,8 +1358,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 )}
               </>}
 
-            {/* 일반 게시판 뷰 (무료이미지 검색 탭에서는 숨김) */}
-            {!(subCat==="archive" && archiveView==="search") && <>
+            {/* 일반 게시판 뷰 (무료이미지 검색/작품공유에서는 숨김) */}
+            {!(subCat==="archive" && archiveView==="search") && subCat!=="showcase" && <>
 
             {/* 액션바 */}
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:18,flexWrap:"wrap",gap:10}}>
