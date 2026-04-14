@@ -22,7 +22,7 @@ const SUB_PLANS = [
     points: 100, color: "#888",
     gradient: "linear-gradient(135deg,#555,#333)",
     highlight: false, badge: null,
-    features: ["가입 보너스 50P 지급", "AI 글쓰기 약 2회", ...COMMON_FEATURES],
+    features: ["가입 보너스 이용권 50회 제공", "AI 글쓰기 약 2회", ...COMMON_FEATURES],
     btnLabel: "무료로 시작",
     free: true,
   },
@@ -32,7 +32,7 @@ const SUB_PLANS = [
     points: 1800, color: "#4ade80",
     gradient: "linear-gradient(135deg,#14532d,#22c55e)",
     highlight: false, badge: null,
-    features: ["매월 1,800P 충전", "AI 글쓰기 약 90회", "상세페이지 생성 약 90회", "이미지 생성 약 9회", ...COMMON_FEATURES],
+    features: ["매월 이용권 1,800회 제공", "AI 글쓰기 약 90회", "상세페이지 생성 약 90회", "이미지 생성 약 9회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
     lsId: "8dca976c-3064-4d76-af4b-8743a10e9f9f",
     lsIdYearly: "6b3922c9-04e1-40f0-b295-75870a9e0b3f",
@@ -43,7 +43,7 @@ const SUB_PLANS = [
     points: 3800, color: "#38bdf8",
     gradient: "linear-gradient(135deg,#0c4a6e,#0ea5e9)",
     highlight: true, badge: "추천",
-    features: ["매월 3,800P 충전", "AI 글쓰기 약 190회", "상세페이지 생성 약 190회", "이미지 생성 약 19회", "숏폼 편집 약 11회", ...COMMON_FEATURES],
+    features: ["매월 이용권 3,800회 제공", "AI 글쓰기 약 190회", "상세페이지 생성 약 190회", "이미지 생성 약 19회", "숏폼 편집 약 11회", ...COMMON_FEATURES],
     btnLabel: "시작하기",
     lsId: "81968d65-1482-4dd8-b3a2-88540bdba780",
     lsIdYearly: "ab2d967d-43bb-40a8-96c0-9fcfd6d9c62a",
@@ -54,7 +54,7 @@ const SUB_PLANS = [
     points: 7000, color: "#f59e0b",
     gradient: "linear-gradient(135deg,#78350f,#f59e0b)",
     highlight: false, badge: "최고 가성비",
-    features: ["매월 7,000P 충전", "AI 글쓰기 약 350회", "상세페이지 생성 약 350회", "이미지 생성 약 35회", "숏폼 편집 약 20회", "자동 글쓰기 무제한", ...COMMON_FEATURES],
+    features: ["매월 이용권 7,000회 제공", "AI 글쓰기 약 350회", "상세페이지 생성 약 350회", "이미지 생성 약 35회", "숏폼 편집 약 20회", "자동 글쓰기 무제한", ...COMMON_FEATURES],
     btnLabel: "시작하기",
     lsId: "ff405644-34fc-415e-b003-e657030484b9",
     lsIdYearly: "fbe69e26-a806-4c86-b36f-5b4e61a4f43d",
@@ -96,7 +96,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
     const shorts = Math.floor(pl.points / 180);
     let featList;
     if (pl.free) {
-      featList = [p("pFeatSignup200") || "가입 시 50P 지급", p("pFeatFreeWrite") || "AI 글쓰기 약 2회"];
+      featList = [p("pFeatSignup200") || "가입 시 이용권 50회 제공", p("pFeatFreeWrite") || "AI 글쓰기 약 2회"];
     } else {
       featList = [
         p("pFeatMonthly").replace("{n}", pl.points.toLocaleString()),
@@ -246,7 +246,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             <div style={{ background: isDark?"rgba(124,106,255,0.1)":"rgba(124,106,255,0.06)", border:"1px solid rgba(124,106,255,0.25)", borderRadius:14, padding:"16px 18px", marginBottom:20 }}>
               {successModal.newPoints === null ? (
                 <div>
-                  <div style={{ fontSize:12, color:C.muted, marginBottom:6 }}>{lang === "ko" ? "포인트 지급 중..." : "Crediting points..."}</div>
+                  <div style={{ fontSize:12, color:C.muted, marginBottom:6 }}>{lang === "ko" ? "이용권 지급 중..." : "Crediting credits..."}</div>
                   <div style={{ display:"flex", justifyContent:"center", gap:4 }}>
                     {[0,1,2].map(i => (
                       <span key={i} style={{ width:8, height:8, borderRadius:"50%", background:"#7c6aff", opacity:0.5, animation:`lsdot 1.2s ${i*0.15}s infinite` }} />
@@ -256,19 +256,19 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                 </div>
               ) : successModal.pointsDelta > 0 ? (
                 <>
-                  <div style={{ fontSize:11, fontWeight:700, color:C.muted, marginBottom:6, letterSpacing:0.3 }}>{lang === "ko" ? "충전된 포인트" : "Points credited"}</div>
+                  <div style={{ fontSize:11, fontWeight:700, color:C.muted, marginBottom:6, letterSpacing:0.3 }}>{lang === "ko" ? "지급된 이용권" : "Credits granted"}</div>
                   <div style={{ fontSize:28, fontWeight:900, color:"#7c6aff", marginBottom:4 }}>
-                    +{successModal.pointsDelta.toLocaleString()} P
+                    +{successModal.pointsDelta.toLocaleString()}{lang === "ko" ? "회" : " P"}
                   </div>
                   <div style={{ fontSize:11, color:C.muted }}>
-                    {lang === "ko" ? "현재 잔액" : "Current balance"}: <strong style={{ color:C.text }}>{successModal.newPoints.toLocaleString()} P</strong>
+                    {lang === "ko" ? "현재 잔여" : "Current balance"}: <strong style={{ color:C.text }}>{successModal.newPoints.toLocaleString()}{lang === "ko" ? "회" : " P"}</strong>
                   </div>
                 </>
               ) : (
                 <div style={{ fontSize:12, color:"#f59e0b" }}>
                   {lang === "ko"
-                    ? "포인트 지급이 지연되고 있어요. 잠시 후 My Page에서 확인해주세요."
-                    : "Point credit is delayed. Please check My Page shortly."}
+                    ? "이용권 지급이 지연되고 있어요. 잠시 후 My Page에서 확인해주세요."
+                    : "Credit is delayed. Please check My Page shortly."}
                 </div>
               )}
             </div>
@@ -313,8 +313,8 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         </p>
         {user && (
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 14, padding: "8px 20px", borderRadius: 20, background: isDark ? "rgba(99,102,241,0.12)" : "rgba(99,102,241,0.07)", border: "1px solid rgba(99,102,241,0.2)" }}>
-            <span style={{ fontSize: 13, color: "#818cf8" }}>{p("pricingMyPoints")}</span>
-            <span style={{ fontSize: 20, fontWeight: 900, color: "#7c6aff" }}>{userPoints.toLocaleString()} P</span>
+            <span style={{ fontSize: 13, color: "#818cf8" }}>{lang === "ko" ? "내 이용권" : p("pricingMyPoints")}</span>
+            <span style={{ fontSize: 20, fontWeight: 900, color: "#7c6aff" }}>{userPoints.toLocaleString()}{lang === "ko" ? "회" : " P"}</span>
           </div>
         )}
       </div>
@@ -329,7 +329,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
       {/* 탭 */}
       <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
         <div style={{ display: "flex", gap: 4, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e5ea", borderRadius: 12, padding: 4 }}>
-          {[["subscription",p("pricingSubTab")],["oneoff",p("pricingOneoffTab")]].map(([id,label]) => (
+          {[["subscription",p("pricingSubTab")]].map(([id,label]) => (
             <button key={id} onClick={() => setTab(id)}
               style={{ padding: "10px 32px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 14, fontWeight: 700,
                 background: tab === id ? (isDark ? "#1e2a4a" : "#fff") : "transparent",
@@ -397,7 +397,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                     </>
                   )}
 
-                  <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, marginBottom: 16 }}>{plan.points.toLocaleString()} P/월</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, marginBottom: 16 }}>{lang === "ko" ? `이용권 ${plan.points.toLocaleString()}회/월` : `${plan.points.toLocaleString()} P/mo`}</div>
 
                   <div style={{ flex: 1, marginBottom: 20 }}>
                     {plan.features.map((f, i) => (
@@ -564,12 +564,12 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ fontSize: 12, color: C.muted, marginBottom: 18, lineHeight: 1.6 }}>{p("pointCostDesc")}</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 10 }}>
           {[
-            { label: p("ptTextHaiku"), cost: "20P", desc: p("ptTextHaikuD") },
-            { label: p("ptTextSonnet"), cost: "85P", desc: p("ptTextSonnetD") },
-            { label: p("ptImage"), cost: "200P", desc: p("ptImageD") },
-            { label: p("ptPpt"), cost: "45P", desc: p("ptPptD") },
-            { label: p("ptVideoAnalysis"), cost: "65P", desc: p("ptVideoAnalysisD") },
-            { label: p("ptVideoGen"), cost: "35~80P", desc: p("ptVideoGenD") },
+            { label: p("ptTextHaiku"), cost: lang === "ko" ? "20회" : "20P", desc: p("ptTextHaikuD") },
+            { label: p("ptTextSonnet"), cost: lang === "ko" ? "85회" : "85P", desc: p("ptTextSonnetD") },
+            { label: p("ptImage"), cost: lang === "ko" ? "200회" : "200P", desc: p("ptImageD") },
+            { label: p("ptPpt"), cost: lang === "ko" ? "45회" : "45P", desc: p("ptPptD") },
+            { label: p("ptVideoAnalysis"), cost: lang === "ko" ? "65회" : "65P", desc: p("ptVideoAnalysisD") },
+            { label: p("ptVideoGen"), cost: lang === "ko" ? "35~80회" : "35~80P", desc: p("ptVideoGenD") },
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 16px" }}>
               <div>
@@ -599,6 +599,23 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* 이용권 정책 안내 */}
+      <div style={{ background: isDark ? "rgba(249,115,22,0.06)" : "rgba(249,115,22,0.04)", border: "1px solid rgba(249,115,22,0.2)", borderRadius: 16, padding: "24px 28px", marginBottom: 32 }}>
+        <div style={{ fontSize: 15, fontWeight: 900, color: C.text, marginBottom: 14 }}>이용권 정책 안내</div>
+        {[
+          "제공된 이용권은 구독 기간 내에만 유효합니다.",
+          "월 구독: 매월 갱신 시 미사용 이용권은 소멸됩니다.",
+          "연 구독: 연간 갱신 시 미사용 이용권은 소멸됩니다.",
+          "구독 해지 시 잔여 이용권은 결제 기간 만료와 함께 소멸됩니다.",
+          "이용권의 유효기간은 제공일로부터 1년입니다.",
+          "이용권은 현금으로 환급되지 않습니다.",
+        ].map((text, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 6, fontSize: 13, color: C.muted, lineHeight: 1.6 }}>
+            <span style={{ color: "#f59e0b", fontWeight: 700, flexShrink: 0 }}>-</span>{text}
+          </div>
+        ))}
       </div>
 
       {/* FAQ */}

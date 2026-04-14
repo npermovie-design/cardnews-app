@@ -259,10 +259,10 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
           {/* 포인트 현황 */}
           <div style={{ padding:"12px 16px", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.06)":"rgba(124,106,255,0.08)"}` }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-              <span style={{ fontSize:11, color:muted }}>보유 포인트</span>
+              <span style={{ fontSize:11, color:muted }}>보유 이용권</span>
               <span style={{ fontSize:14, fontWeight:900,
                 color: isEmpty?"#f87171":isLow?"#f59e0b":"#a5b4fc" }}>
-                {ptLeft.toLocaleString()}P
+                {ptLeft.toLocaleString()}회
               </span>
             </div>
             {/* 포인트 바 */}
@@ -273,7 +273,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
             </div>
             {(isEmpty||isLow) && (
               <div style={{ fontSize:10, color:isEmpty?"#f87171":"#f59e0b", fontWeight:700 }}>
-                {isEmpty?"포인트 소진 · 충전이 필요해요":"1~2회 생성 가능 · 충전을 권장해요"}
+                {isEmpty?"이용권 소진 · 구독이 필요해요":"1~2회 생성 가능 · 구독을 권장해요"}
               </div>
             )}
           </div>
@@ -281,7 +281,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
           {/* 메뉴 */}
           <div style={{ padding:"6px 8px" }}>
             {[
-              { label:"포인트 충전", sub:"더 많은 AI 생성", onClick:()=>{ navigate("pricing"); setOpen(false); },
+              { label:"이용권 구독", sub:"더 많은 AI 생성", onClick:()=>{ navigate("pricing"); setOpen(false); },
                 accent:true },
               { label:"내 보관함", sub:"생성한 글·카드뉴스", onClick:()=>{ navigate("library"); setOpen(false); } },
             ].map((item,i) => (
@@ -347,7 +347,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
             overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nick}</div>
           <div style={{ fontSize:10, fontWeight: isLow||isEmpty?700:400,
             color: isEmpty?"#f87171":isLow?"#f59e0b":muted }}>
-            {isEmpty?"포인트 소진":isLow?`${ptLeft}P 남음`:`${ptLeft.toLocaleString()}P 잔여`}
+            {isEmpty?"이용권 소진":isLow?`${ptLeft}회 남음`:`${ptLeft.toLocaleString()}회 잔여`}
           </div>
         </div>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2.5"

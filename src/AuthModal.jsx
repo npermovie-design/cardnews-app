@@ -247,14 +247,14 @@ export default function AuthModal({ onClose, onAuth, C }) {
               <div style={{ fontSize: 11, color: C.purpleL, fontWeight: 700, marginBottom: 6 }}>{ko ? "가입 혜택" : "Signup Benefits"}</div>
               <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.8 }}>
                 {ko ? <>
-                  · 가입 즉시 <b style={{ color: C.text }}>50P</b> 지급<br/>
-                  · 게시글 작성 시 <b style={{ color: C.text }}>+1P</b> (하루 10회)<br/>
-                  · 매일 로그인 시 <b style={{ color: C.text }}>+2P</b><br/>
-                  · 포인트 충전으로 AI 무제한 이용
+                  · 가입 즉시 이용권 <b style={{ color: C.text }}>50회</b> 제공<br/>
+                  · 게시글 작성 시 <b style={{ color: C.text }}>+1회</b> (하루 10회)<br/>
+                  · 매일 로그인 시 <b style={{ color: C.text }}>+2회</b><br/>
+                  · 구독으로 AI 무제한 이용
                 </> : <>
-                  · <b style={{ color: C.text }}>50P</b> on signup<br/>
-                  · <b style={{ color: C.text }}>+1P</b> per post (up to 10/day)<br/>
-                  · <b style={{ color: C.text }}>+2P</b> daily login<br/>
+                  · <b style={{ color: C.text }}>50 credits</b> on signup<br/>
+                  · <b style={{ color: C.text }}>+1 credit</b> per post (up to 10/day)<br/>
+                  · <b style={{ color: C.text }}>+2 credits</b> daily login<br/>
                   · Unlimited AI with point top-up
                 </>}
               </div>

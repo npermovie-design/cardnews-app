@@ -244,8 +244,8 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
           {/* 오른쪽: 크레딧 */}
           <div style={{ flexShrink:0, textAlign:"right" }}>
-            <div style={{ fontSize:22, fontWeight:900, color:"#a5b4fc" }}>{(userData?.points||0).toLocaleString()}P</div>
-            <div style={{ fontSize:10, color:muted }}>{ko?"보유 포인트":"Points"}</div>
+            <div style={{ fontSize:22, fontWeight:900, color:"#a5b4fc" }}>{(userData?.points||0).toLocaleString()}회</div>
+            <div style={{ fontSize:10, color:muted }}>{ko?"보유 이용권":"Credits"}</div>
           </div>
         </div>
 
@@ -434,7 +434,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
           <div className="myp-quick-grid" style={{ marginTop:8, display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10 }}>
             {[
-              { icon:"P", label:ko?"포인트 충전":"Buy Points", sub:ko?"AI 생성 포인트 충전":"Recharge AI points", action:()=>navigate("pricing"), color:"#a5b4fc" },
+              { icon:"P", label:ko?"이용권 구독":"Subscribe", sub:ko?"AI 생성 이용권 구독":"Subscribe for AI credits", action:()=>navigate("pricing"), color:"#a5b4fc" },
               { icon:"L", label:ko?"내 보관함":"My Library",   sub:ko?"카드뉴스·상세페이지":"Card news & pages", action:()=>navigate("ai"), color:"#4ade80" },
               { icon:"Q", label:ko?"문의하기":"Contact",    sub:ko?"1:1 문의":"1:1 Support", action:()=>navigate("contact"), color:"#f59e0b" },
             ].map(({icon,label,sub,action,color})=>(

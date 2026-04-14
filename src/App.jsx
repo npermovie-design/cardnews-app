@@ -212,15 +212,15 @@ function GuardModal({ cost, onConfirm, onCancel, lang = "ko" }) {
           {ko ? (<>
             페이지를 나가면<br/>
             <span style={{ color: "#ef4444", fontWeight: 700 }}>결과물이 저장되지 않으며</span><br/>
-            <span style={{ color: "#f59e0b", fontWeight: 700 }}>{cost}P 포인트가 소진</span>됩니다.
+            <span style={{ color: "#f59e0b", fontWeight: 700 }}>{cost}회 이용권이 소진</span>됩니다.
           </>) : (<>
             Leaving this page will<br/>
             <span style={{ color: "#ef4444", fontWeight: 700 }}>discard your result</span> and<br/>
-            <span style={{ color: "#f59e0b", fontWeight: 700 }}>consume {cost}P</span>.
+            <span style={{ color: "#f59e0b", fontWeight: 700 }}>consume {cost} credits</span>.
           </>)}
         </div>
         <div style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 10, padding: "10px 14px", marginBottom: 20, fontSize: 12, color: "#ef4444", fontWeight: 600 }}>
-          {ko ? "소진된 포인트는 복구되지 않습니다" : "Consumed points cannot be restored"}
+          {ko ? "소진된 이용권은 복구되지 않습니다" : "Consumed credits cannot be restored"}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onCancel}
@@ -466,7 +466,7 @@ export default function App() {
     const descMap = {
       ko: {
         home: "주제만 입력하면 AI가 블로그, 상세페이지, 쇼츠 영상을 자동으로 만들어드려요. 비회원 5회 무료!",
-        pricing: "SNS메이킷 요금제 안내. Basic $9.90/월, Pro $19.90/월, Premium $34.90/월. 연간 결제 시 2개월 무료. 일회 충전 $5.90부터.",
+        pricing: "SNS메이킷 요금제 안내. Basic $9.90/월, Pro $19.90/월, Premium $34.90/월. 연간 결제 시 2개월 무료.",
         about: "SNS메이킷은 AI로 SNS 콘텐츠 제작 전 과정을 자동화하는 올인원 플랫폼입니다.",
         howto: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 숏폼 편집까지 단계별로 안내합니다.",
         ai: "AI로 블로그, 상세페이지, 이미지, 숏폼 영상을 자동 생성하세요. 비회원 5회 무료.",
@@ -839,7 +839,7 @@ export default function App() {
             <div style={{ fontSize: "clamp(16px,4vw,19px)", fontWeight: 900, color: "#1a1730", marginBottom: 10 }}>무료 사용 횟수를 모두 사용했어요</div>
             <div style={{ fontSize: 13, color: "rgba(26,23,48,0.55)", lineHeight: 1.9, marginBottom: 26 }}>
               비회원은 AI 기능을 <b style={{ color: "#7c6aff" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
-              로그인하면 <b style={{ color: "#7c6aff" }}>10회 추가</b> + 포인트로 무제한 이용 가능해요!
+              로그인하면 <b style={{ color: "#7c6aff" }}>10회 추가</b> + 이용권으로 무제한 이용 가능해요!
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button onClick={() => { setShowPointsModal(false); setShowAuth(true); }}
@@ -848,7 +848,7 @@ export default function App() {
               </button>
               <button onClick={() => { setShowPointsModal(false); navigate("pricing"); }}
                 style={{ padding: "12px", borderRadius: 12, border: "1px solid rgba(124,106,255,0.2)", cursor: "pointer", background: "rgba(124,106,255,0.06)", color: "#7c6aff", fontSize: 13, fontWeight: 700 }}>
-                포인트 충전하기
+                이용권 구독하기
               </button>
               <button onClick={() => setShowPointsModal(false)}
                 style={{ padding: "9px", borderRadius: 12, border: "none", cursor: "pointer", background: "transparent", color: "rgba(26,23,48,0.35)", fontSize: 12 }}>
@@ -967,7 +967,7 @@ export default function App() {
                   {(user.nick||"U")[0].toUpperCase()}
                 </div>
                 <span style={{ fontSize: 13, color: C.text, fontWeight: 600, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.nick}</span>
-                <span style={{ fontSize: 11, color: C.purpleL, fontWeight: 700 }}>{(user.points||0).toLocaleString()}P</span>
+                <span style={{ fontSize: 11, color: C.purpleL, fontWeight: 700 }}>{(user.points||0).toLocaleString()}회</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" style={{ flexShrink:0, transform: profileOpen?"rotate(180deg)":"none", transition:"transform 0.2s" }}><polyline points="18 15 12 9 6 15"/></svg>
               </button>
 
@@ -996,8 +996,8 @@ export default function App() {
                     {/* 포인트 바 */}
                     <div style={{ background: theme==="dark"?"rgba(255,255,255,0.05)":"#f5f5f8", borderRadius: 10, padding: "10px 12px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
-                        <span style={{ color: C.muted }}>포인트 잔액</span>
-                        <span style={{ fontWeight: 800, color: C.purpleL }}>{(user.points||0).toLocaleString()}P</span>
+                        <span style={{ color: C.muted }}>이용권 잔액</span>
+                        <span style={{ fontWeight: 800, color: C.purpleL }}>{(user.points||0).toLocaleString()}회</span>
                       </div>
                       <div style={{ height: 4, borderRadius: 4, background: theme==="dark"?"rgba(255,255,255,0.08)":"#e0e0eb", overflow: "hidden" }}>
                         <div style={{ height: "100%", borderRadius: 4, width: Math.min(((user.points||0)/500)*100,100)+"%",
@@ -1009,11 +1009,11 @@ export default function App() {
                   {/* 메뉴 */}
                   <div style={{ padding: "8px" }}>
                     {[
-                      { icon: "L", label: "출석체크", sub: "매일 로그인 +2P", action: () => { setShowAttendance(true); setProfileOpen(false); } },
-                      { icon: "P", label: "포인트 충전", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
+                      { icon: "L", label: "출석체크", sub: "매일 로그인 +2회", action: () => { setShowAttendance(true); setProfileOpen(false); } },
+                      { icon: "P", label: "이용권 구독", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
                       { icon: "F", label: "내 보관함", sub: "생성한 글·이미지", action: () => { navigate("ai"); setAiMenu("library"); setProfileOpen(false); } },
-                      { icon: "U", label: "회원정보", sub: "프로필·포인트 내역 확인", action: () => { navigate("mypage"); setProfileOpen(false); } },
-                      ...(user.role==="admin" ? [{ icon: "A", label: "관리자 페이지", sub: "회원·포인트 관리", action: () => { navigate("xk9m2p4q7"); setProfileOpen(false); } }] : []),
+                      { icon: "U", label: "회원정보", sub: "프로필·이용권 내역 확인", action: () => { navigate("mypage"); setProfileOpen(false); } },
+                      ...(user.role==="admin" ? [{ icon: "A", label: "관리자 페이지", sub: "회원·이용권 관리", action: () => { navigate("xk9m2p4q7"); setProfileOpen(false); } }] : []),
                     ].map((m,i) => (
                       <button key={i} onClick={m.action}
                         style={{ width: "100%", padding: "10px 12px", borderRadius: 9, border: "none", background: "transparent",
@@ -1171,7 +1171,7 @@ export default function App() {
                     </div>
                     <div>
                       <div style={{ fontSize: 14, color: C.text, fontWeight: 700 }}>{user.nick}</div>
-                      <div style={{ fontSize: 12, color: C.purpleL, marginTop: 1 }}>{(user.points||0).toLocaleString()}P · {Math.floor((user.points||0)/10)}회 가능</div>
+                      <div style={{ fontSize: 12, color: C.purpleL, marginTop: 1 }}>{(user.points||0).toLocaleString()}회 · {Math.floor((user.points||0)/10)}회 가능</div>
                     </div>
                   </div>
                   <button onClick={logout} style={{ padding: "7px 14px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12 }}>{t("logout")}</button>

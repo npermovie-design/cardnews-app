@@ -11,10 +11,10 @@ import {
 import { buildBlogPrompt, splitBodyByImageMarkers } from "../../lib/naverbot/prompts.js";
 import { fetchRecentTrends, trendsToPromptText } from "../../lib/naverbot/trends.js";
 
-const OR_KEY = process.env.OPENROUTER_API_KEY;
+const ANTHROPIC_KEY = process.env.NAVERBOT_ANTHROPIC_KEY;
 const PEXELS_KEY = process.env.PEXELS_KEY;
-const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = "anthropic/claude-sonnet-4-5";
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+const MODEL = "claude-sonnet-4-5-20250514";
 
 const VALID_SUBTYPES = ["info", "visit", "travel", "product", "column", "article"];
 const VALID_TONES = ["friendly", "diary", "review", "professional"];
@@ -129,7 +129,7 @@ export default async function handler(req, res) {
   setCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return safeError(res, 405, "POST only");
-  if (!OR_KEY) return safeError(res, 500, "서버 설정 오류");
+  if (!ANTHROPIC_KEY) return safeError(res, 500, "서버 설정 오류");
 
   // 1. 입력 검증
   const errors = validateInput(req.body);
@@ -187,13 +187,12 @@ export default async function handler(req, res) {
   let aiText = "";
   let tokensUsed = 0;
   try {
-    const orRes = await fetch(OR_URL, {
+    const apiRes = await fetch(ANTHROPIC_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${OR_KEY}`,
-        "HTTP-Referer": "https://snsmakeit.com",
-        "X-Title": "NaverBot SaaS",
+        "x-api-key": ANTHROPIC_KEY,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
         model: MODEL,
@@ -203,14 +202,14 @@ export default async function handler(req, res) {
       }),
     });
 
-    if (!orRes.ok) {
-      const errText = await orRes.text().catch(() => "");
+    if (!apiRes.ok) {
+      const errText = await apiRes.text().catch(() => "");
       return safeError(res, 502, "글 생성 실패", new Error(errText.slice(0, 300)));
     }
 
-    const data = await orRes.json();
-    aiText = data?.choices?.[0]?.message?.content || data?.content?.[0]?.text || "";
-    tokensUsed = data?.usage?.total_tokens || 0;
+    const data = await apiRes.json();
+    aiText = data?.content?.[0]?.text || "";
+    tokensUsed = (data?.usage?.input_tokens || 0) + (data?.usage?.output_tokens || 0);
     if (!aiText) return safeError(res, 502, "빈 응답");
   } catch (e) {
     return safeError(res, 502, "글 생성 실패", e);

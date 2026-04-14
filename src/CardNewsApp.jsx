@@ -1220,12 +1220,12 @@ function PageMake(props) {
         <div style={{maxWidth:380, width:"100%"}}>
           <div style={{fontSize:56, marginBottom:14}}>💎</div>
           <div style={{fontSize:19, fontWeight:900, color:text, marginBottom:8}}>
-            {!props.user ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
+            {!props.user ? "무료 이용권을 모두 사용했어요" : "이용권이 모두 소진됐어요"}
           </div>
           <div style={{fontSize:13, color:muted, lineHeight:1.9, marginBottom:24}}>
             {!props.user
               ? <>비회원 무료 5회를 모두 사용하셨어요.<br/>회원가입 후 10회 추가 무료를 받으세요!</>
-              : <>카드뉴스 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>}
+              : <>카드뉴스 생성에 이용권이 필요해요.<br/>이용권을 구독하거나 관리자에게 문의해주세요.</>}
           </div>
           <div style={{display:"flex", flexDirection:"column", gap:10}}>
             {!props.user ? (
@@ -1236,7 +1236,7 @@ function PageMake(props) {
             ) : (
               <button onClick={function(){ window.location.hash = "#pricing"; }}
                 style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800}}>
-                💎 포인트 충전하기
+                💎 이용권 구독하기
               </button>
             )}
             <button onClick={function(){ window.location.hash = "#contact"; }}
@@ -1583,7 +1583,7 @@ export function CardNewsApp(props) {
   async function generate() {
     if (!topic.trim()) { return; }
     let left = getLeft(user);
-    if (!left.canUse) { setErr(user ? "포인트 부족" : "비회원 " + FREE_GUEST + "회 초과"); return; }
+    if (!left.canUse) { setErr(user ? "이용권 부족" : "비회원 " + FREE_GUEST + "회 초과"); return; }
     setLoading(true); setErr("");
     try {
       let sysMsg = "인스타그램 카드뉴스 전문 카피라이터.\n반드시 JSON만 반환하세요.\n형식:{\"topic\":\"주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문\",\"highlight\":\"핵심문구\"}]}";
