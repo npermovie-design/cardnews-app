@@ -7,6 +7,7 @@ import React from "react";
 function cleanBlogText(text) {
   if (!text) return text;
   return text
+    .replace(/\[(?:image|이미지):\s*[^\]]+\]/gi, '')  // [image: keyword] 태그 제거
     .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1FA00}-\u{1FA9F}\u{200D}\u{FE0F}]/gu, '')
     .replace(/^#{1,6}\s*/gm, '')
     .replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1')
