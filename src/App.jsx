@@ -892,10 +892,10 @@ export default function App() {
               <DropMenu>
                 <DropItem id="community" label={t("info")}    onClick={() => { navigateBoard("info");    setOpenMenu(null); }} />
                 <DropItem id="community" label={t("qna")}     onClick={() => { navigateBoard("qna");     setOpenMenu(null); }} />
+                <DropItem id="community" label={t("archiveMenu")} onClick={() => { navigateBoard("archive"); setOpenMenu(null); }} />
               </DropMenu>
             )}
           </div>
-          <NavBtn id="archive" label={t("archiveMenu")} active={page==="community"&&boardCat==="archive"} onClick={() => navigateBoard("archive")} />
           <NavBtn id="pricing" label={t("pricing")} />
           {/* 고객센터 */}
           <div style={{ position: "relative" }}>
