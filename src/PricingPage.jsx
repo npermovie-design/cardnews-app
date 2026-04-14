@@ -6,12 +6,9 @@ import { supabase } from "./storage";
 const PAYMENT_ENABLED = true;
 
 const COMMON_FEATURES = [
-  "AI 상세페이지 생성 (전환율 최적화형)",
   "SNS 글쓰기 (네이버/티스토리/인스타/유튜브/스레드)",
-  "AI 이미지 생성 (제품컷/로고/목업/모델)",
   "숏폼 자동 편집",
-  "유튜브 채널 분석",
-  "뉴스레터 구독",
+  "SNS 분석",
   "커뮤니티 · 자료실 이용",
 ];
 
@@ -558,29 +555,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         </div>
       )}
 
-      {/* 포인트 소모 기준 안내 */}
-      <div style={{ background: isDark ? "rgba(99,102,241,0.06)" : "rgba(99,102,241,0.04)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 20, padding: "28px", marginBottom: 24 }}>
-        <div style={{ fontSize: 16, fontWeight: 900, color: C.text, marginBottom: 6 }}>{p("pointCostTitle")}</div>
-        <div style={{ fontSize: 12, color: C.muted, marginBottom: 18, lineHeight: 1.6 }}>{p("pointCostDesc")}</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 10 }}>
-          {[
-            { label: p("ptTextHaiku"), cost: "30P", desc: p("ptTextHaikuD") },
-            { label: p("ptTextSonnet"), cost: "120P", desc: p("ptTextSonnetD") },
-            { label: p("ptImage"), cost: "250P", desc: p("ptImageD") },
-            { label: p("ptPpt"), cost: "60P", desc: p("ptPptD") },
-            { label: p("ptVideoAnalysis"), cost: "80P", desc: p("ptVideoAnalysisD") },
-            { label: p("ptVideoGen"), cost: "50~100P", desc: p("ptVideoGenD") },
-          ].map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.card, border: "1px solid " + C.border, borderRadius: 10, padding: "12px 16px" }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{item.label}</div>
-                <div style={{ fontSize: 11, color: C.muted }}>{item.desc}</div>
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 900, color: "#7c6aff", whiteSpace: "nowrap", marginLeft: 12 }}>{item.cost}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* 포인트 소모 기준 — 제거됨 */}
 
       {/* 무료 포인트 적립 안내 */}
       <div style={{ background: "linear-gradient(135deg,rgba(99,102,241,0.08),rgba(139,92,246,0.05))", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 20, padding: "28px", marginBottom: 48 }}>

@@ -87,9 +87,9 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
   const generate = async () => {
     if (!input.trim()) { setErr("어떤 문서를 만들지 입력해주세요."); return; }
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
-    if (!(await showPointConfirm(10))) return;
+    if (!(await showPointConfirm(30))) return;
     setStep("loading"); setErr(""); setResult("");
-    window.__isGenerating = true; window.__generatingCost = 10;
+    window.__isGenerating = true; window.__generatingCost = 30;
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_prompt_studio", type: "blog_write", message: "문서 생성 중..." } } }));
     try {
       const { callClaude } = await import("./aiClient");
@@ -132,7 +132,7 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
       if (user && onUserUpdate) {
         try {
           const { changePoints } = await import("./storage");
-          const newPts = await changePoints(user.uid, -10, "기획 생성");
+          const newPts = await changePoints(user.uid, -30, "기획 생성");
           if (newPts !== null) onUserUpdate({ ...user, points: newPts });
         } catch {}
       }

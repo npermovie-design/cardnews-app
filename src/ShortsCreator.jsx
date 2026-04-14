@@ -839,7 +839,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
   // 생성
   const handleGenerate = async () => {
-    if (showPointConfirm && user && !(await showPointConfirm(80))) return;
+    if (showPointConfirm && user && !(await showPointConfirm(100))) return;
     setStep("generate"); setResults([]); setPreviewIdx(0);
 
     // 백그라운드 인디케이터 등록

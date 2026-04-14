@@ -391,7 +391,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
   // Step3→Step4: 슬라이드 텍스트 생성 후 편집 모드로
   const generate = async () => {
     if (!user && guestLimitExceeded()) return;
-    if (showPointConfirm && user && !(await showPointConfirm(10))) return;
+    if (showPointConfirm && user && !(await showPointConfirm(60))) return;
     if (!user) incrementGuestUsage();
     setLoading(true);
     try {
@@ -426,7 +426,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
       if (imageMode && slidesData.length > 0) {
         setTimeout(() => { autoDownloadRef.current = true; }, 300);
       }
-      if (user?.uid) changePoints(user.uid, -10, "심플 상세페이지 생성").then(newPts => { if (onUserUpdate) onUserUpdate({...user, points: newPts}); }).catch(()=>{});
+      if (user?.uid) changePoints(user.uid, -60, "심플 상세페이지 생성").then(newPts => { if (onUserUpdate) onUserUpdate({...user, points: newPts}); }).catch(()=>{});
       // 프리셋 저장
       try {
         const KEY = "nper_simpledetail_saves_v1";

@@ -272,7 +272,7 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate, 
     /* ── 블로그 글 생성 ── */
   const generate = async () => {
     if (!videoInfo) { setGenErr("먼저 유튜브 URL을 입력해주세요."); return; }
-    if (showPointConfirm && user && !(await showPointConfirm(10))) return;
+    if (showPointConfirm && user && !(await showPointConfirm(30))) return;
     const _aiUsage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
     const _aiKey = user ? ("member_" + (user.uid || "u")) : "guest";
     const _aiUsed = _aiUsage[_aiKey] || 0;
@@ -286,7 +286,7 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate, 
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "blog_gen_yt", type: "blog_write", message: "유튜브 블로그 작성 중..." } } }));
     // 포인트 즉시 차감
     if (user && user.uid) {
-      changePoints(user.uid, -10, "유튜브 블로그 생성").then(newPts => {
+      changePoints(user.uid, -30, "유튜브 블로그 생성").then(newPts => {
         if (onUserUpdate) onUserUpdate({...user, points: newPts});
       }).catch(()=>{});
     }

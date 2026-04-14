@@ -64,7 +64,7 @@ function RepurposePage({ isDark, user, onLoginRequest, onUserUpdate, showPointCo
     if (!sourceText.trim()) { setError("원본 콘텐츠를 입력해주세요."); return; }
     if (selectedCount === 0) { setError("최소 1개 이상의 형식을 선택해주세요."); return; }
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
-    if (!(await showPointConfirm(35))) return;
+    if (!(await showPointConfirm(60))) return;
 
     setError(""); setLoading(true); setResults(null);
 
@@ -74,7 +74,7 @@ function RepurposePage({ isDark, user, onLoginRequest, onUserUpdate, showPointCo
       const freeLimit = user ? FREE_MEMBER : FREE_GUEST;
       if (info.used >= freeLimit) {
         const { changePoints } = await import("./storage");
-        const newPts = await changePoints(user.uid, -35, "콘텐츠 리퍼포징");
+        const newPts = await changePoints(user.uid, -60, "콘텐츠 리퍼포징");
         if (onUserUpdate) onUserUpdate({ ...user, points: newPts });
       }
 
@@ -478,7 +478,7 @@ function FileTranscriber({ isDark, user, onLoginRequest, onUserUpdate, showPoint
   const generateFromTemplate = async (tmpl) => {
     if (!fileContent.trim()) { setError("파일 내용이 없습니다."); return; }
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
-    if (showPointConfirm && !(await showPointConfirm(10))) return;
+    if (showPointConfirm && !(await showPointConfirm(30))) return;
     setSelectedTemplate(tmpl);
     setGenerating(true);
     setResult("");
@@ -514,7 +514,7 @@ ${fileContent.slice(0, 4000)}
       if (user?.uid) {
         try {
           const { changePoints } = await import("./storage");
-          await changePoints(user.uid, -10, "파일 글 변환");
+          await changePoints(user.uid, -30, "파일 글 변환");
         } catch {}
       }
     } catch (err) {

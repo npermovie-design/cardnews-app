@@ -1595,7 +1595,7 @@ export function CardNewsApp(props) {
       setIdx(0); setSted({}); setBgIs({});
       if (selPreset) { applyPreset(selPreset); }
       setPage("edit"); consumeOne(user);
-      if (user && user.uid) { changePoints(user.uid, -10, "카드뉴스 생성").catch(function(e) {}); }
+      if (user && user.uid) { changePoints(user.uid, -30, "카드뉴스 생성").catch(function(e) {}); }
       // 보관함 자동저장
       try {
         let _slides = parsed.slides || [];

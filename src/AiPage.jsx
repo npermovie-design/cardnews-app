@@ -1133,10 +1133,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
     return new Promise(resolve => {
       if (!user) { resolve(true); return; }
       const pts = user.points ?? 0;
-      // 무료 횟수 남아있으면 바로 진행
-      const usage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
-      const used = usage["member_" + (user.uid || "u")] || 0;
-      if (used < 5) { resolve(true); return; } // 무료 5회
+      // 회원은 항상 포인트 차감 (무료 횟수 없음)
       // 포인트 부족 시 팝업
       if (pts < cost) {
         setPointConfirm({ cost, onConfirm: () => { setPointConfirm(null); resolve(false); }, onCancel: () => { setPointConfirm(null); resolve(false); } });
@@ -1151,7 +1148,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
     // 생성 중 다른 메뉴 클릭 차단 - 커스텀 모달
     // 블로그 영속 레이어가 활성화된 상태에서는 가드 스킵 (백그라운드에서 계속 생성됨)
     if (window.__isGenerating) {
-      const cost = window.__generatingCost || 10;
+      const cost = window.__generatingCost || 30;
       const ok = await new Promise(resolve => {
         setGuardModal({
           cost,

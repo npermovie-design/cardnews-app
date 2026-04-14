@@ -140,15 +140,13 @@ export default function AutomationPage({ C, navigate }) {
           <p style={{ fontSize: 14, color: "#6b7280" }}>macOS와 Windows에서 사용 가능합니다.</p>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, maxWidth: 700, margin: "0 auto" }}>
-          <div style={{ background: "#f9fafb", borderRadius: 16, padding: "40px 30px", textAlign: "center", border: "1px solid #e5e7eb" }}>
+          <div style={{ background: "#f9fafb", borderRadius: 16, padding: "40px 30px", textAlign: "center", border: "1px solid #e5e7eb", opacity: 0.6 }}>
             <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.5 }}></div>
             <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>macOS</div>
             <div style={{ fontSize: 12, color: "#9ca3af", marginBottom: 20 }}>macOS 12.0 이상</div>
-            <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
-              <a href={MAC_ARM_URL} style={{ padding: "8px 16px", borderRadius: 8, background: GRAD, color: "#fff", border: "none", fontSize: 12, textDecoration: "none", fontWeight: 600 }}>Apple Silicon</a>
-              <a href={MAC_INTEL_URL} style={{ padding: "8px 16px", borderRadius: 8, background: "#e5e7eb", color: "#374151", border: "none", fontSize: 12, textDecoration: "none", fontWeight: 500 }}>Intel</a>
+            <div style={{ padding: "10px 24px", borderRadius: 10, background: "#e5e7eb", color: "#9ca3af", fontWeight: 600, fontSize: 13, display: "inline-block" }}>
+              준비중
             </div>
-            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 10 }}>v0.1.0</div>
           </div>
           <div style={{ background: "#f9fafb", borderRadius: 16, padding: "40px 30px", textAlign: "center", border: "1px solid #e5e7eb" }}>
             <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.5 }}></div>
@@ -161,7 +159,7 @@ export default function AutomationPage({ C, navigate }) {
             }}>
               x64 다운로드
             </a>
-            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 10 }}>v0.1.0 | 190MB</div>
+            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 10 }}>v0.1.2</div>
           </div>
         </div>
       </section>

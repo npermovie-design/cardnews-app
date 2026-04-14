@@ -12,7 +12,7 @@ export async function runPipeline(ctx) {
 
   if (!productName.trim() || !category) return;
   if (!user && guestLimitExceeded()) return;
-  if (showPointConfirm && user && !(await showPointConfirm(10))) return;
+  if (showPointConfirm && user && !(await showPointConfirm(60))) return;
   if (!user) incrementGuestUsage();
 
   setPhase("generating");
@@ -408,7 +408,7 @@ JSON배열만 출력.`;
     setSections(diversified);
     setActiveSection(0);
 
-    try { if (user?.uid) await changePoints(user.uid, -10, "상세페이지 생성"); } catch {}
+    try { if (user?.uid) await changePoints(user.uid, -60, "상세페이지 생성"); } catch {}
     if (!user) try { incrementGuestUsage(); } catch {}
 
     setTimeout(() => setPhase("outline"), 800);

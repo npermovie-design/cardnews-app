@@ -5,15 +5,15 @@ import {
   verifyMakeitAccount,
 } from "../../lib/naverbot/index.js";
 
-const OR_KEY = process.env.OPENROUTER_API_KEY;
-const OR_URL = "https://openrouter.ai/api/v1/chat/completions";
-const MODEL = "anthropic/claude-sonnet-4-5";
+const ANTHROPIC_KEY = process.env.NAVERBOT_ANTHROPIC_KEY;
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+const MODEL = "claude-sonnet-4-5-20250514";
 
 export default async function handler(req, res) {
   setCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return safeError(res, 405, "POST only");
-  if (!OR_KEY) return safeError(res, 500, "서버 설정 오류");
+  if (!ANTHROPIC_KEY) return safeError(res, 500, "서버 설정 오류");
 
   const { email, password, access_token, keyword, crawled_titles, crawled_contents } = req.body || {};
   if (!keyword) return safeError(res, 400, "keyword 필수");
@@ -55,13 +55,12 @@ ${topContents.map((c, i) => `--- 글 ${i + 1}: ${c.title || ""} ---\n${(c.body |
 반드시 JSON만 출력하세요. \`\`\`json 같은 코드블록 없이.`;
 
   try {
-    const orRes = await fetch(OR_URL, {
+    const apiRes = await fetch(ANTHROPIC_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${OR_KEY}`,
-        "HTTP-Referer": "https://snsmakeit.com",
-        "X-Title": "NaverBot SaaS",
+        "x-api-key": ANTHROPIC_KEY,
+        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
         model: MODEL,
@@ -70,10 +69,10 @@ ${topContents.map((c, i) => `--- 글 ${i + 1}: ${c.title || ""} ---\n${(c.body |
       }),
     });
 
-    if (!orRes.ok) return safeError(res, 502, "분석 실패");
+    if (!apiRes.ok) return safeError(res, 502, "분석 실패");
 
-    const data = await orRes.json();
-    const aiText = data?.choices?.[0]?.message?.content || "";
+    const data = await apiRes.json();
+    const aiText = data?.content?.[0]?.text || "";
 
     let analysis;
     try {
