@@ -75,7 +75,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
   const accent = "#7c6aff";
 
   const filteredBlog = blogList.filter(x =>
-    !search || x.title.toLowerCase().includes(search.toLowerCase()) || (x.type||"").includes(search)
+    x.type !== "shorts" && (!search || x.title.toLowerCase().includes(search.toLowerCase()) || (x.type||"").includes(search))
   );
   const filteredCard = cardList.filter(x =>
     !search || (x.topic||"").toLowerCase().includes(search.toLowerCase())
@@ -111,12 +111,8 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
       {/* 탭 */}
       <div style={{ display:"flex", gap:4, marginBottom:20, background: isDark?"rgba(255,255,255,0.05)":"#e9e9ef", borderRadius:10, padding:4, width:"fit-content", flexWrap:"wrap" }}>
         {[
-          ["blog","글 생성", blogList.length],
-          ["cardnews","카드뉴스", cardList.length + imgCardList.length],
-          ["detail","상세페이지", detailList.length + simpleDetailList.length],
-          ["ppt","PPT", pptList.length],
-          ["doc","문서", docList.length],
-          ["shared","공유 템플릿", null],
+          ["blog","글 생성", blogList.filter(x=>x.type!=="shorts").length],
+          ["shorts","영상 편집", blogList.filter(x=>x.type==="shorts").length],
         ].map(([id, label, cnt]) => (
           <button key={id} onClick={()=>{ setTab(id); setSelectedBlog(null); setSelectedDoc(null); }}
             style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
@@ -130,6 +126,32 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
       </div>
 
       {/* 블로그 목록 */}
+      {tab === "shorts" && (() => {
+        const shortsList = blogList.filter(x => x.type === "shorts");
+        return (
+          <div>
+            {shortsList.length === 0 ? (
+              <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
+                <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 영상이 없어요</div>
+                <div style={{ fontSize:13, lineHeight:1.8 }}>영상 편집 후 자동으로 여기 저장됩니다</div>
+              </div>
+            ) : (
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:12 }}>
+                {shortsList.map(s => (
+                  <div key={s.id} style={{ padding:"16px", borderRadius:12, border:`1px solid ${bdr}`, background:bg, cursor:"pointer" }}>
+                    {s.videoUrl && <video src={s.videoUrl} controls style={{ width:"100%", borderRadius:8, marginBottom:10 }} />}
+                    <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:4 }}>{s.title || "영상"}</div>
+                    <div style={{ fontSize:11, color:muted }}>{s.date}</div>
+                    <button onClick={() => { deleteBlogWork(s.id); setBlogList(getBlogSaves()); }}
+                      style={{ marginTop:8, fontSize:11, color:"#f87171", background:"none", border:"none", cursor:"pointer", padding:0 }}>삭제</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {tab === "blog" && (
         <>
           {filteredBlog.length === 0 ? (

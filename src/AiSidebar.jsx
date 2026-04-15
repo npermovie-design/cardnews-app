@@ -87,9 +87,8 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
   // 메뉴 정의
   const menuItems = [
     { id:"home", label:t("home"), icon:"/icons3d/sns-heart.png", ids:["home","blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link","blog_write"] },
-    { id:"library", label:t("library"), icon:"/icons3d/search-book.png" },
-    { sep:true },
     { id:"social_analyzer", label:"SNS분석", icon:"/icons3d/sns-app.png", ids:["social_analyzer"] },
+    { id:"library", label:t("library"), icon:"/icons3d/search-book.png" },
   ];
 
   const isActive = (item) => {

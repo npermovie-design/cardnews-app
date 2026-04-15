@@ -831,7 +831,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       return {
         ...s,
         title: mainTitle,
-        subtitle_text: (sub && sub !== mainTitle && !mainTitle.includes(sub)) ? sub : "",
+        subtitle_text: (sub && sub !== mainTitle && !mainTitle.includes(sub) && !sub.includes(mainTitle) && _similarity(mainTitle, sub) < 0.5) ? sub : "",
         script: s.script || "",
         subtitles: s.subtitles || (s.script ? s.script.match(/.{1,30}/g)?.map((t, j) => ({ start: j * 3, end: (j + 1) * 3, text: t })) || [] : []),
       };
@@ -911,6 +911,16 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   };
 
   const fmt = s => { const m = Math.floor(s / 60); return `${m}:${String(Math.floor(s % 60)).padStart(2, "0")}`; };
+
+  // 제목/부제 유사도 비교 (단어 기반 Jaccard)
+  const _similarity = (a, b) => {
+    if (!a || !b) return 0;
+    const wa = new Set(a.replace(/[^가-힣a-zA-Z0-9\s]/g, "").split(/\s+/).filter(Boolean));
+    const wb = new Set(b.replace(/[^가-힣a-zA-Z0-9\s]/g, "").split(/\s+/).filter(Boolean));
+    if (wa.size === 0 || wb.size === 0) return 0;
+    let inter = 0; wa.forEach(w => { if (wb.has(w)) inter++; });
+    return inter / Math.max(wa.size, wb.size);
+  };
 
   const btnStyle = { padding: "14px", borderRadius: 12, border: "none", cursor: "pointer", fontSize: 15, fontWeight: 900, width: "100%", background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff" };
   const cardStyle = { background: card, border: `1px solid ${bdr}`, borderRadius: 14, padding: 16, marginBottom: 12 };
