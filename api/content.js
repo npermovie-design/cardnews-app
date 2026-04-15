@@ -660,6 +660,83 @@ async function handleAutoPublish(req, res) {
   }
 }
 
+// ── Action: keyword-volume (네이버 검색광고 API 기반 키워드 검색량 조회) ──
+async function handleKeywordVolume(req, res) {
+  setCors(req, res, { methods: "GET,POST,OPTIONS" });
+  if (req.method === "OPTIONS") return res.status(200).end();
+
+  const keywords = req.method === "POST"
+    ? (req.body?.keywords || [])
+    : (req.query.keywords || req.query.q || "").split(",").map(k => k.trim()).filter(Boolean);
+
+  if (!keywords.length) return res.status(400).json({ error: "keywords 필요" });
+  if (keywords.length > 5) return res.status(400).json({ error: "최대 5개 키워드" });
+
+  const API_LICENSE = process.env.NAVER_AD_API_LICENSE;
+  const API_SECRET = process.env.NAVER_AD_API_SECRET;
+  const CUSTOMER_ID = process.env.NAVER_AD_CUSTOMER_ID;
+
+  if (!API_LICENSE || !API_SECRET || !CUSTOMER_ID) {
+    return res.status(500).json({ error: "네이버 검색광고 API 키 미설정" });
+  }
+
+  try {
+    const crypto = require("crypto");
+    const timestamp = Date.now().toString();
+    const method = "GET";
+    const uri = "/keywordstool";
+    const message = `${timestamp}.${method}.${uri}`;
+    const signature = crypto.createHmac("sha256", API_SECRET).update(message).digest("base64");
+
+    const params = new URLSearchParams({
+      hintKeywords: keywords.join(","),
+      showDetail: "1",
+    });
+
+    const apiRes = await fetch(`https://api.naver.com${uri}?${params}`, {
+      method: "GET",
+      headers: {
+        "X-Timestamp": timestamp,
+        "X-API-KEY": API_LICENSE,
+        "X-Customer": CUSTOMER_ID,
+        "X-Signature": signature,
+      },
+    });
+
+    if (!apiRes.ok) {
+      const errText = await apiRes.text().catch(() => "");
+      return res.status(apiRes.status).json({ error: `네이버 API 오류: ${errText.slice(0, 200)}` });
+    }
+
+    const data = await apiRes.json();
+    const results = (data.keywordList || []).map(kw => ({
+      keyword: kw.relKeyword || "",
+      monthlyPcQcCnt: kw.monthlyPcQcCnt || 0,       // PC 월간 검색량
+      monthlyMobileQcCnt: kw.monthlyMobileQcCnt || 0, // 모바일 월간 검색량
+      monthlyAvePcClkCnt: kw.monthlyAvePcClkCnt || 0,
+      monthlyAveMobileClkCnt: kw.monthlyAveMobileClkCnt || 0,
+      monthlyAvePcCtr: kw.monthlyAvePcCtr || 0,
+      monthlyAveMobileCtr: kw.monthlyAveMobileCtr || 0,
+      plAvgDepth: kw.plAvgDepth || 0,                  // 경쟁 정도
+      compIdx: kw.compIdx || "",                        // 경쟁 지표 (높음/중간/낮음)
+      totalSearch: (kw.monthlyPcQcCnt || 0) + (kw.monthlyMobileQcCnt || 0),
+    }));
+
+    // 입력 키워드 우선 정렬
+    const inputSet = new Set(keywords.map(k => k.toLowerCase()));
+    results.sort((a, b) => {
+      const aMain = inputSet.has(a.keyword.toLowerCase()) ? 0 : 1;
+      const bMain = inputSet.has(b.keyword.toLowerCase()) ? 0 : 1;
+      if (aMain !== bMain) return aMain - bMain;
+      return b.totalSearch - a.totalSearch;
+    });
+
+    return res.json({ keywords: results.slice(0, 30), source: "naver_searchad_api" });
+  } catch (e) {
+    return res.status(500).json({ error: e.message || "검색량 조회 실패" });
+  }
+}
+
 const ACTION_HANDLERS = {
   "crawl": handleCrawl,
   "fetch-url": handleFetchUrl,
@@ -669,6 +746,7 @@ const ACTION_HANDLERS = {
   "trends": handleTrends,
   "sns-profile": handleSnsProfile,
   "auto-publish": handleAutoPublish,
+  "keyword-volume": handleKeywordVolume,
 };
 
 // ── Action: sns-profile (SNS 프로필 크롤링 — 메타태그/구조화 데이터 추출) ──

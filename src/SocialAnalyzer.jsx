@@ -16,6 +16,120 @@ function fmtNum(n) { if (!n && n !== 0) return "-"; const num = typeof n === "st
 function fmtDate(d) { if (!d) return ""; const dt = new Date(d); return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,"0")}.${String(dt.getDate()).padStart(2,"0")}`; }
 function parseDuration(iso) { if (!iso) return ""; const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/); if (!m) return ""; const h = parseInt(m[1]||"0"), mi = parseInt(m[2]||"0"), s = parseInt(m[3]||"0"); return h > 0 ? `${h}:${String(mi).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${mi}:${String(s).padStart(2,"0")}`; }
 
+// ── 키워드 검색량 조회 컴포넌트 ──
+function KeywordVolume({ isDark }) {
+  const [query, setQuery] = React.useState("");
+  const [results, setResults] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  const acc = "#7c6aff";
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
+  const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
+  const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+
+  const search = async () => {
+    if (!query.trim()) return;
+    setLoading(true); setError(""); setResults(null);
+    try {
+      const r = await fetch(`/api/content?action=keyword-volume&q=${encodeURIComponent(query.trim())}`);
+      if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || "조회 실패"); }
+      const d = await r.json();
+      setResults(d.keywords || []);
+    } catch (e) { setError(e.message); }
+    setLoading(false);
+  };
+
+  const fmtN = (n) => {
+    if (n === "< 10" || !n) return "< 10";
+    const num = typeof n === "string" ? parseInt(n) : n;
+    if (isNaN(num)) return String(n);
+    return num.toLocaleString();
+  };
+
+  const compColor = (c) => c === "높음" ? "#ef4444" : c === "중간" ? "#f59e0b" : "#22c55e";
+
+  return (
+    <div style={{ marginBottom: 28, padding: 24, borderRadius: 16, border: `1px solid ${bdr}`, background: cardBg }}>
+      <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 6 }}>키워드 검색량 조회</div>
+      <div style={{ fontSize: 12, color: muted, marginBottom: 16 }}>네이버 기준 월간 검색량, PC/모바일 비율, 경쟁도를 확인하세요. 쉼표로 여러 키워드 입력 가능 (최대 5개)</div>
+
+      <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+        <input value={query} onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => { if (e.key === "Enter") search(); }}
+          placeholder="키워드 입력 (예: AI 마케팅, 블로그 수익)"
+          style={{ flex: 1, padding: "12px 16px", borderRadius: 12, border: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.06)" : "#f5f5f8", color: text, fontSize: 14, outline: "none" }} />
+        <button onClick={search} disabled={loading || !query.trim()}
+          style={{ padding: "12px 24px", borderRadius: 12, border: "none", background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 14, fontWeight: 700, cursor: loading ? "wait" : "pointer", opacity: loading || !query.trim() ? 0.5 : 1, whiteSpace: "nowrap" }}>
+          {loading ? "조회 중..." : "검색량 조회"}
+        </button>
+      </div>
+
+      {error && <div style={{ padding: 12, borderRadius: 10, background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 13, marginBottom: 12 }}>{error}</div>}
+
+      {results && results.length > 0 && (
+        <div>
+          {/* 입력 키워드 요약 카드 */}
+          {results.slice(0, 5).filter(r => query.toLowerCase().split(",").some(q => r.keyword.toLowerCase().includes(q.trim()))).slice(0, 3).map((kw, i) => (
+            <div key={i} style={{ padding: 16, borderRadius: 14, background: isDark ? "rgba(124,106,255,0.06)" : `${acc}04`, border: `1px solid ${acc}20`, marginBottom: 12 }}>
+              <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 10 }}>{kw.keyword}</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10 }}>
+                {[
+                  ["월간 검색량", fmtN(kw.totalSearch), acc],
+                  ["PC 검색량", fmtN(kw.monthlyPcQcCnt), "#3b82f6"],
+                  ["모바일 검색량", fmtN(kw.monthlyMobileQcCnt), "#10b981"],
+                  ["경쟁도", kw.compIdx || "-", compColor(kw.compIdx)],
+                ].map(([label, val, color]) => (
+                  <div key={label} style={{ padding: "10px 12px", borderRadius: 10, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${bdr}`, textAlign: "center" }}>
+                    <div style={{ fontSize: 10, color: muted, marginBottom: 4 }}>{label}</div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color }}>{val}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* 연관 키워드 테이블 */}
+          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginTop: 16, marginBottom: 10 }}>연관 키워드</div>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ borderBottom: `2px solid ${bdr}` }}>
+                  {["키워드", "월간 검색량", "PC", "모바일", "경쟁도"].map(h => (
+                    <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: muted, fontWeight: 700, fontSize: 11 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {results.slice(0, 20).map((kw, i) => (
+                  <tr key={i} style={{ borderBottom: `1px solid ${bdr}`, cursor: "pointer" }}
+                    onClick={() => { try { navigator.clipboard.writeText(kw.keyword); } catch {} }}
+                    onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.04)" : "#f8f8fc"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                    <td style={{ padding: "10px", fontWeight: 600, color: text }}>{kw.keyword}</td>
+                    <td style={{ padding: "10px", fontWeight: 700, color: acc }}>{fmtN(kw.totalSearch)}</td>
+                    <td style={{ padding: "10px", color: "#3b82f6" }}>{fmtN(kw.monthlyPcQcCnt)}</td>
+                    <td style={{ padding: "10px", color: "#10b981" }}>{fmtN(kw.monthlyMobileQcCnt)}</td>
+                    <td style={{ padding: "10px" }}>
+                      <span style={{ padding: "2px 8px", borderRadius: 6, fontSize: 10, fontWeight: 700, background: `${compColor(kw.compIdx)}15`, color: compColor(kw.compIdx) }}>{kw.compIdx || "-"}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ fontSize: 10, color: muted, marginTop: 8 }}>키워드 클릭 시 클립보드 복사 / 데이터: 네이버 검색광고 API</div>
+        </div>
+      )}
+
+      {results && results.length === 0 && (
+        <div style={{ textAlign: "center", padding: "30px 0", color: muted, fontSize: 13 }}>검색 결과가 없습니다</div>
+      )}
+    </div>
+  );
+}
+
 // ── 실시간 키워드 트렌드 컴포넌트 ──
 function TrendKeywords({ isDark }) {
   const [platform, setPlatform] = React.useState("google");
@@ -559,6 +673,9 @@ JSON 형식으로 응답:
 
       {/* 실시간 키워드 트렌드 */}
       {!hasData && <TrendKeywords isDark={isDark} />}
+
+      {/* 키워드 검색량 조회 */}
+      {!hasData && <KeywordVolume isDark={isDark} />}
 
       {/* SNS 계정 분석 - 사용 가이드 */}
       {!hasData && !loading && (

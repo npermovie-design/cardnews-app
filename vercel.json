@@ -105,6 +105,7 @@
     { "source": "/api/fetch-url-content", "destination": "/api/content?action=fetch-url-content" },
     { "source": "/api/fetch-trending-videos", "destination": "/api/content?action=trending-videos" },
     { "source": "/api/keyword-analysis", "destination": "/api/content?action=keyword-analysis" },
+    { "source": "/api/keyword-volume", "destination": "/api/content?action=keyword-volume" },
     { "source": "/api/trends", "destination": "/api/content?action=trends" },
     { "source": "/api/auto-publish", "destination": "/api/content?action=auto-publish" },
 
