@@ -1142,11 +1142,6 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
               검색
             </button>
           </div>
-          <div style={{ display: "flex", gap: 6, marginBottom: 16, fontSize: 11, color: C.muted }}>
-            <span style={{ padding: "3px 10px", borderRadius: 12, background: C.bg === "#fff" ? "#f0f0f4" : "rgba(255,255,255,0.06)" }}>Pexels</span>
-            <span style={{ padding: "3px 10px", borderRadius: 12, background: C.bg === "#fff" ? "#f0f0f4" : "rgba(255,255,255,0.06)" }}>Pixabay</span>
-            {category === "free_photo" && <span style={{ padding: "3px 10px", borderRadius: 12, background: C.bg === "#fff" ? "#f0f0f4" : "rgba(255,255,255,0.06)" }}>Unsplash</span>}
-          </div>
         </section>
       )}
 
@@ -1170,11 +1165,13 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
                       <img src={m.preview} alt={m.title} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     )}
                   </div>
-                  <div style={{ padding: "10px 12px" }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.title}</div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
-                      <span style={{ fontSize: 10, color: "#10b981", fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: "rgba(16,185,129,0.1)" }}>{m.src}</span>
-                      <span style={{ fontSize: 10, color: C.muted }}>무료</span>
+                  <div style={{ padding: "10px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.title}</div>
+                      <div style={{ fontSize: 10, color: "#10b981", fontWeight: 600, marginTop: 2 }}>무료</div>
+                    </div>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(16,185,129,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     </div>
                   </div>
                 </div>
