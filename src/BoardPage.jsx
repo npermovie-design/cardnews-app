@@ -9,7 +9,6 @@ import { buildSources, MediaCard, FreeMediaSearch, RichEditor, RichBody, WriteFo
 const DEFAULT_CATS = [
   { id: "info",    label: "정보공유",   icon: "", color: "#7c6aff" },
   { id: "qna",     label: "질문답변",   icon: "", color: "#f59e0b" },
-  { id: "archive", label: "자료실",     icon: "", color: "#3b82f6" },
   { id: "sns_briefing", label: "SNS 브리핑", icon: "", color: "#6366f1" },
 ];
 
@@ -58,7 +57,7 @@ function extractKeywordsBoard(title, plainBody, catName) {
   if (catName) base.push(catName);
   return [...base, ...top].join(", ");
 }
-const CAT_LABEL_MAP = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", showcase: "작품 공유", archive: "자료실", sns_briefing: "SNS 브리핑" };
+const CAT_LABEL_MAP = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", showcase: "작품 공유", sns_briefing: "SNS 브리핑" };
 
 function updatePostSeoMeta(post, catId) {
   if (!post) return;
@@ -977,7 +976,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       {/* 서브 카테고리 탭 */}
       {!loading && <div style={{borderBottom:"1px solid "+bdr,background:isDark?"rgba(99,102,241,0.04)":"rgba(99,102,241,0.02)"}}>
         <div style={{maxWidth:1100,margin:"0 auto",padding:"0 20px",display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
-          {(subCat==="archive"?subCats.filter(s=>s.id==="archive"):subCats.filter(s=>s.id!=="archive")).map(s=>(
+          {subCats.filter(s=>s.id!=="archive").map(s=>(
             <button key={s.id} onClick={()=>{setSubCat(s.id);setSearch("");setPage(1);setView(null);setFilterTag("");setArchiveView("posts");}}
               style={{display:"flex",alignItems:"center",gap:8,padding:isMobile?"14px 16px":"16px 22px",borderRadius:0,border:"none",cursor:"pointer",
                 fontSize:isMobile?14:15,fontWeight:subCat===s.id?800:600,whiteSpace:"nowrap",minHeight:48,fontFamily:"inherit",

@@ -25,7 +25,7 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
           <div className="footer-links-row" style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: C.text, marginBottom: 12, letterSpacing: 1.5 }}>{t("community") || "커뮤니티"}</div>
-              {[{id:"info",label:t("info")||"정보공유"},{id:"qna",label:t("qna")||"질문답변"},{id:"free",label:t("free")||"자유게시판"},{id:"review",label:t("review")||"사용후기"},{id:"archive",label:t("archive")||"자료실"}].map(cc => (
+              {[{id:"info",label:t("info")||"정보공유"},{id:"qna",label:t("qna")||"질문답변"},{id:"free",label:t("free")||"자유게시판"},{id:"review",label:t("review")||"사용후기"}].map(cc => (
                 <div key={cc.id} onClick={() => navigateBoard?.(cc.id)} style={{ fontSize: 13, color: C.muted, padding: "7px 0", cursor: "pointer", transition: "color 0.12s" }}
                   onMouseEnter={e => e.currentTarget.style.color = C.purpleL}
                   onMouseLeave={e => e.currentTarget.style.color = C.muted}>

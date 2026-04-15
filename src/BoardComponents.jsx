@@ -780,20 +780,15 @@ function extractThumb(html) { const m = html?.match(/<img[^>]+src=["']([^"']+)/i
 function extractText(html, maxLen = 120) { const t = html?.replace(/<[^>]*>/g, '').trim() || ''; return t.length > maxLen ? t.slice(0, maxLen) + '...' : t; }
 
 /* ─── Supabase 카테고리 CRUD ─────────────────────────────────── */
-const ARCHIVE_CAT = { id: "archive", label: "자료실", icon: "", color: "#3b82f6" };
+const ARCHIVE_CAT = null; // removed
 
-const DEFAULT_CATS = [ARCHIVE_CAT];
+const DEFAULT_CATS = [];
 
 async function fetchBoardCats() {
   try {
     const { data } = await supabase.from("board_cats").select("*").order("order", { ascending: true });
     if (!data || data.length === 0) return DEFAULT_CATS;
-    const cats = data.map(v => ({ ...v, key: v.id }));
-    // 자료실이 Supabase에 없으면 삽입 후 추가
-    if (!cats.find(c => c.id === "archive")) {
-      supabase.from("board_cats").insert({ ...ARCHIVE_CAT, order: cats.length }).then(() => {});
-      cats.push(ARCHIVE_CAT);
-    }
+    const cats = data.map(v => ({ ...v, key: v.id })).filter(c => c.id !== "archive");
     return cats;
   } catch { return DEFAULT_CATS; }
 }

@@ -86,8 +86,6 @@ const COMMUNITY_CATS = {
   qna: "질문답변",
   free: "자유게시판",
   review: "사용후기",
-  archive: "자료실",
-  resource: "자료실",
   tip: "꿀팁",
   showcase: "작품공유",
   sns_briefing: "SNS 브리핑",
@@ -104,7 +102,7 @@ const CAT_FALLBACK_IMG = {
   qna: `${SITE}/og-image.png`,
   free: `${SITE}/og-image.png`,
   review: `${SITE}/og-image.png`,
-  archive: `${SITE}/og-image.png`,
+
   sns_briefing: `${SITE}/og-image.png`,
 };
 

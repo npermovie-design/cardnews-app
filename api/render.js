@@ -109,7 +109,7 @@ export default async function handler(req) {
     }
   }
 
-  const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", archive: "자료실", sns_briefing: "SNS 브리핑" };
+  const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", sns_briefing: "SNS 브리핑" };
   if (segments[1]) {
     title = `${catNames[segments[1]] || "커뮤니티"} - SNS메이킷 커뮤니티`;
   }

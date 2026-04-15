@@ -503,7 +503,7 @@ export default function App() {
     setBoardCat(cat);
     window.history.pushState(null, "", "/community/" + cat);
     setPage("community"); setOpenMenu(null); setMobileOpen(false);
-    const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", archive: "자료실" };
+    const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기" };
     const title = (catNames[cat] || "커뮤니티") + " - SNS메이킷";
     document.title = title;
     updateOgMeta(title, null, "/community/" + cat);
@@ -638,7 +638,7 @@ export default function App() {
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "howto" || page === "guide")  return <HowToPage C={C} navigate={navigate} />;
     if (page === "faq")      return <FaqPage C={C} navigate={navigate} />;
-    if (page === "archive")  { navigateBoard("archive"); return null; }
+
     if (page === "analyzer")  return <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (page === "ai")       return null; /* AiPage는 keep-alive로 별도 렌더 */
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
@@ -898,7 +898,7 @@ export default function App() {
               <DropMenu>
                 <DropItem id="community" label={t("info")}    onClick={() => { navigateBoard("info");    setOpenMenu(null); }} />
                 <DropItem id="community" label={t("qna")}     onClick={() => { navigateBoard("qna");     setOpenMenu(null); }} />
-                <DropItem id="community" label={t("archiveMenu")} onClick={() => { navigateBoard("archive"); setOpenMenu(null); }} />
+
               </DropMenu>
             )}
           </div>
