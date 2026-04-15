@@ -46,9 +46,9 @@ async function handleGenerate(req, res) {
 
   // ── 방법 1: Gemini generateContent (이미지 생성 가능 모델) ──
   const MODELS = [
-    "gemini-2.0-flash-exp",
     "gemini-2.0-flash-preview-image-generation",
-    "gemini-2.0-flash-001",
+    "gemini-2.0-flash-exp-image-generation",
+    "gemini-2.0-flash-exp",
   ];
 
   const parts = [];
@@ -63,6 +63,7 @@ async function handleGenerate(req, res) {
   let lastError = "";
   for (const model of MODELS) {
     try {
+      console.log(`[image.js] 시도: ${model}`);
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
@@ -80,8 +81,10 @@ async function handleGenerate(req, res) {
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
         lastError = `${model}: ${err.error?.message || response.status}`;
-        if ([400, 403, 404, 429].includes(response.status)) continue;
-        return res.status(response.status).json({ error: lastError });
+        console.log(`[image.js] ${model} 실패(${response.status}):`, lastError);
+        // 모든 4xx 에러는 다음 모델로 시도
+        if (response.status < 500) continue;
+        continue; // 5xx도 다음 모델 시도
       }
 
       const data = await response.json();
@@ -91,20 +94,24 @@ async function handleGenerate(req, res) {
       if (!imagePart?.inlineData?.data) {
         const textPart = partsOut.find(p => p.text);
         lastError = `${model}: 이미지 없음` + (textPart ? ` (${textPart.text.slice(0, 100)})` : "");
+        console.log(`[image.js] ${model}: 응답에 이미지 없음`);
         continue;
       }
 
+      console.log(`[image.js] 성공: ${model}`);
       return res.status(200).json({
         image: `data:${imagePart.inlineData.mimeType};base64,${imagePart.inlineData.data}`,
         model,
       });
     } catch (e) {
       lastError = `${model}: ${e.message}`;
+      console.error(`[image.js] ${model} 예외:`, e.message);
     }
   }
 
   // ── 방법 2: Imagen 4 (텍스트→이미지 전용) ──
   const IMAGEN_MODELS = [
+    "imagen-4.0-generate-preview-06-06",
     "imagen-3.0-generate-002",
     "imagen-3.0-fast-generate-001",
   ];
@@ -267,4 +274,4 @@ export default async function handler(req, res) {
   }
 }
 
-export const config = { maxDuration: 20 };
+export const config = { maxDuration: 60 };

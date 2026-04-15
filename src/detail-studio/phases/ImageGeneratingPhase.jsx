@@ -5,7 +5,7 @@ export default function ImageGeneratingPhase({
 }) {
   const { completed = 0, total = 0, currentSecId = "" } = genProgress || {};
   const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
-  const isDone = completed >= total && total > 0;
+  const isDone = currentSecId === "done" || (completed >= total && total > 0);
 
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "80vh", padding: 24 }}>

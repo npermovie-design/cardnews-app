@@ -82,7 +82,10 @@ export function renderPromo(ctx) {
           {plans.map((plan, pi) => {
             const isHighlight = pi === Math.floor(plans.length / 2);
             return (
-              <div key={pi} style={{ borderRadius: 16, overflow: "hidden", border: isHighlight ? `2px solid ${mainColor}` : `1px solid ${isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff", position: "relative" }}>
+              <div key={pi} style={{ borderRadius: 18, overflow: "hidden", border: isHighlight ? `2px solid ${mainColor}` : `1px solid ${isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff", position: "relative", boxShadow: isHighlight ? `0 8px 32px ${mainColor}20` : (isDarkBg ? "0 4px 16px rgba(0,0,0,0.2)" : "0 4px 24px rgba(0,0,0,0.05)"), transition: "transform 0.25s ease, box-shadow 0.25s ease" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = isHighlight ? `0 12px 40px ${mainColor}30` : (isDarkBg ? "0 8px 28px rgba(0,0,0,0.3)" : "0 8px 36px rgba(0,0,0,0.08)"); }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = isHighlight ? `0 8px 32px ${mainColor}20` : (isDarkBg ? "0 4px 16px rgba(0,0,0,0.2)" : "0 4px 24px rgba(0,0,0,0.05)"); }}
+              >
                 {isHighlight && (
                   <div style={{ background: mainColor, color: "#fff", textAlign: "center", padding: "6px", fontSize: 11, fontWeight: 800, letterSpacing: 1 }}>BEST</div>
                 )}
@@ -104,8 +107,10 @@ export function renderPromo(ctx) {
                   )}
                   <div style={{ height: 1, background: isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)", marginBottom: 16 }} />
                   {plan.features.map((feat, fi) => (
-                    <div key={fi} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, justifyContent: "flex-start", paddingLeft: 8 }}>
-                      <span style={{ fontSize: 10, color: mainColor, fontWeight: 900 }}>+</span>
+                    <div key={fi} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, justifyContent: "flex-start", paddingLeft: 8 }}>
+                      <span style={{ width: 18, height: 18, borderRadius: "50%", background: `${mainColor}12`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2.5 6l2.5 2.5L9.5 4" stroke={mainColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </span>
                       <span {...editable(feat)} style={eS(feat, { fontSize: 13, color: isDarkBg ? "rgba(255,255,255,0.7)" : "#555" })}>
                         {feat.content}
                       </span>
@@ -155,9 +160,9 @@ export function renderPromo(ctx) {
               setSections(prev => prev.map((s, si) => si !== i ? s : { ...s, _faqOpen: { ...faqOpen, [qi]: !isOpen } }));
             };
             return (
-            <div key={qi} style={{ borderRadius: 14, border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, overflow: "hidden", transition: "all 0.2s" }}>
-              <div onClick={toggleFaq} style={{ padding: "16px 24px", background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fafafa", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", userSelect: "none" }}>
-                <span style={{ fontSize: 14, fontWeight: 900, color: mainColor }}>Q</span>
+            <div key={qi} style={{ borderRadius: 16, border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}`, overflow: "hidden", transition: "all 0.2s", boxShadow: isDarkBg ? "0 2px 12px rgba(0,0,0,0.15)" : "0 2px 12px rgba(0,0,0,0.03)" }}>
+              <div onClick={toggleFaq} style={{ padding: "18px 24px", background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fafafa", display: "flex", alignItems: "center", gap: 14, cursor: "pointer", userSelect: "none", transition: "background 0.15s ease" }}>
+                <span style={{ width: 28, height: 28, borderRadius: 8, background: `linear-gradient(135deg, ${mainColor}, ${mainColor}cc)`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, flexShrink: 0 }}>Q</span>
                 <div {...editable(q)} style={eS(q, { fontSize: 15, fontWeight: 700, color: isDarkBg ? "#fff" : "#1a1a2e", flex: 1 })}>
                   {q.content}
                 </div>
@@ -331,19 +336,26 @@ export function renderPromo(ctx) {
           {decoLine(mainColor)}
         </div>
         {/* 테이블 형태 정돈 */}
-        <div style={{ maxWidth: 620, margin: "0 auto", borderRadius: 14, overflow: "hidden", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
+        <div style={{ maxWidth: 640, margin: "0 auto", borderRadius: 16, overflow: "hidden", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)"}`, boxShadow: isDarkBg ? "0 4px 20px rgba(0,0,0,0.2)" : "0 4px 24px rgba(0,0,0,0.05)" }}>
+          {/* 테이블 헤더 */}
+          <div style={{ padding: "14px 24px", background: isDarkBg ? `${mainColor}20` : `${mainColor}08`, borderBottom: `2px solid ${isDarkBg ? `${mainColor}30` : `${mainColor}15`}`, display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: mainColor }} />
+            <span style={{ fontSize: 13, fontWeight: 800, color: isDarkBg ? "rgba(255,255,255,0.8)" : "#555", letterSpacing: 1 }}>
+              {secType === "shipping" ? "SHIPPING INFO" : secType === "contact" ? "CONTACT" : "PRODUCT INFO"}
+            </span>
+          </div>
           {bodyEls.map((el, bi) => {
             const parts = (el.content || "").split("|").map(s => s.trim());
             const hasLabel = parts.length > 1;
             return (
-              <div key={bi} style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 24px", borderBottom: bi < bodyEls.length - 1 ? `1px solid ${isDarkBg ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)"}` : "none", background: bi % 2 === 0 ? (isDarkBg ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)") : "transparent" }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: `${mainColor}08`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+              <div key={bi} style={{ display: "flex", alignItems: "center", gap: 16, padding: "18px 24px", borderBottom: bi < bodyEls.length - 1 ? `1px solid ${isDarkBg ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` : "none", background: bi % 2 === 0 ? (isDarkBg ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.015)") : "transparent", transition: "background 0.15s ease" }}>
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: isDarkBg ? `${mainColor}15` : `${mainColor}08`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `1px solid ${isDarkBg ? `${mainColor}20` : `${mainColor}10`}` }}>
                   {shippingIcons[bi % shippingIcons.length]}
                 </div>
                 {hasLabel ? (
-                  <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 12 }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: isDarkBg ? "rgba(255,255,255,0.7)" : "#555", minWidth: 80 }}>{parts[0]}</span>
-                    <span {...editable(el)} style={eS(el, { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#777", lineHeight: 1.6 })}>{parts.slice(1).join(" | ")}</span>
+                  <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 16 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: isDarkBg ? "rgba(255,255,255,0.8)" : "#444", minWidth: 90, borderRight: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}`, paddingRight: 16 }}>{parts[0]}</span>
+                    <span {...editable(el)} style={eS(el, { fontSize: 14, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.55)" : "#666", lineHeight: 1.6 })}>{parts.slice(1).join(" | ")}</span>
                   </div>
                 ) : (
                   <div {...editable(el)} style={eS(el, { flex: 1, fontSize: 14, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.75)" : "#444"), lineHeight: 1.8 })}>
@@ -729,7 +741,9 @@ export function renderPromo(ctx) {
       return (
         <div style={{ background: ctaBg, padding: isMobile ? "80px 24px" : "120px 56px", textAlign: "center", position: "relative", overflow: "hidden" }}>
           {/* 배경 원형 장식 */}
-          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 600, height: 600, borderRadius: "50%", background: `radial-gradient(circle, ${mainColor}08 0%, transparent 70%)`, pointerEvents: "none" }} />
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: 600, height: 600, borderRadius: "50%", background: `radial-gradient(circle, ${mainColor}0a 0%, transparent 70%)`, pointerEvents: "none" }} />
+          {/* subtle 도트 패턴 */}
+          <div style={{ position: "absolute", inset: 0, opacity: isDarkBg ? 0.03 : 0.025, pointerEvents: "none", backgroundImage: `radial-gradient(${isDarkBg ? "#fff" : "#000"} 1px, transparent 1px)`, backgroundSize: "24px 24px" }} />
           <div style={{ position: "relative", zIndex: 1 }}>
             {subtitleEl && <div {...editable(subtitleEl)} style={eS(subtitleEl, { fontSize: 12, fontWeight: 700, color: mainColor, letterSpacing: 4, textTransform: "uppercase", marginBottom: 14 })}>{subtitleEl.content}</div>}
             {titleEl && <div {...editable(titleEl)} style={eS(titleEl, { fontSize: isMobile ? 28 : 38, fontWeight: 900, color: ctaTxt, lineHeight: 1.25, marginBottom: 24 })}>{titleEl.content}</div>}
@@ -757,12 +771,18 @@ export function renderPromo(ctx) {
             )}
             {/* CTA 버튼 */}
             <div style={{ maxWidth: isMobile ? 320 : 480, margin: "0 auto" }}>
-              <div style={{ width: "100%", padding: "18px 0", borderRadius: 28, background: mainColor, color: "#fff", fontSize: isMobile ? 16 : 18, fontWeight: 900, boxShadow: `0 8px 32px ${mainColor}40`, letterSpacing: 1, height: 56, display: "flex", alignItems: "center", justifyContent: "center", animation: "ctaPulse 2s ease-in-out infinite" }}>
-                지금 구매하기
+              <div style={{ width: "100%", padding: "18px 0", borderRadius: 28, background: `linear-gradient(135deg, ${mainColor}, ${mainColor}dd)`, color: "#fff", fontSize: isMobile ? 16 : 18, fontWeight: 900, boxShadow: `0 8px 32px ${mainColor}40, 0 2px 8px ${mainColor}20`, letterSpacing: 1, height: 58, display: "flex", alignItems: "center", justifyContent: "center", animation: "ctaPulse 2s ease-in-out infinite", position: "relative", overflow: "hidden" }}>
+                <span style={{ position: "relative", zIndex: 1 }}>지금 구매하기</span>
+              </div>
+              {/* Urgency 배지 */}
+              <div style={{ textAlign: "center", marginTop: 14 }}>
+                <span style={{ display: "inline-block", padding: "6px 18px", borderRadius: 20, background: isDarkBg ? "rgba(239,68,68,0.15)" : "#fef2f2", color: "#ef4444", fontSize: 12, fontWeight: 700, border: "1px solid rgba(239,68,68,0.2)" }}>
+                  한정 수량 / 조기 마감 가능
+                </span>
               </div>
             </div>
             {/* 보증 아이콘 태그 */}
-            <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 16 : 32, marginTop: 36, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 16 : 32, marginTop: 32, flexWrap: "wrap" }}>
               {[
                 { label: "무료배송", icon: "M1 5h10v8H1z M11 8h3l2 3v2h-5V8z" },
                 { label: "당일출고", icon: "M12 2v10l4.5-2.5L12 2z M2 12h8v8H2z" },
@@ -808,13 +828,22 @@ export function renderPromo(ctx) {
           )}
           {!priceEl && badge && <span {...editable(badge)} style={eS(badge, { display: "inline-block", padding: "8px 20px", borderRadius: 20, background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 13, fontWeight: 700, marginBottom: 28, border: "1px solid rgba(255,255,255,0.2)" })}>{badge.content}</span>}
           <div style={{ maxWidth: isMobile ? 320 : 480, margin: "0 auto" }}>
-            <div style={{ width: "100%", padding: "18px 0", borderRadius: 28, background: mainColor, color: "#fff", fontSize: isMobile ? 16 : 18, fontWeight: 900, boxShadow: `0 8px 32px ${mainColor}40`, letterSpacing: 1, height: 56, display: "flex", alignItems: "center", justifyContent: "center", animation: "ctaPulse 2s ease-in-out infinite" }}>
-              지금 구매하기
+            <div style={{ width: "100%", padding: "18px 0", borderRadius: 28, background: `linear-gradient(135deg, ${mainColor}, ${mainColor}dd)`, color: "#fff", fontSize: isMobile ? 16 : 18, fontWeight: 900, boxShadow: `0 8px 32px ${mainColor}40, 0 2px 8px rgba(0,0,0,0.2)`, letterSpacing: 1, height: 58, display: "flex", alignItems: "center", justifyContent: "center", animation: "ctaPulse 2s ease-in-out infinite", position: "relative", overflow: "hidden" }}>
+              <span style={{ position: "relative", zIndex: 1 }}>지금 구매하기</span>
+            </div>
+            {/* Urgency 배지 */}
+            <div style={{ textAlign: "center", marginTop: 14 }}>
+              <span style={{ display: "inline-block", padding: "6px 18px", borderRadius: 20, background: "rgba(239,68,68,0.2)", color: "#fca5a5", fontSize: 12, fontWeight: 700, border: "1px solid rgba(239,68,68,0.3)" }}>
+                한정 수량 / 조기 마감 가능
+              </span>
             </div>
           </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 16 : 24, marginTop: 32, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: isMobile ? 16 : 24, marginTop: 28, flexWrap: "wrap" }}>
             {["무료배송", "당일출고", "100% 정품", "안전결제"].map((t, ti) => (
-              <span key={ti} style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontWeight: 600, letterSpacing: 0.5 }}>{t}</span>
+              <span key={ti} style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", fontWeight: 600, letterSpacing: 0.5, display: "flex", alignItems: "center", gap: 4 }}>
+                <span style={{ width: 4, height: 4, borderRadius: "50%", background: "rgba(255,255,255,0.4)", display: "inline-block" }} />
+                {t}
+              </span>
             ))}
           </div>
         </div>

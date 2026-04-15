@@ -56,7 +56,10 @@ export function renderContent(ctx) {
           </div>
           <div style={{ maxWidth: 700, margin: "0 auto", display: "flex", flexDirection: "column", gap: 20 }}>
             {filteredCards.map((group, gi) => (
-              <div key={gi} style={{ padding: "28px 32px", borderRadius: 16, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}`, position: "relative" }}>
+              <div key={gi} style={{ padding: "28px 32px", borderRadius: 16, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)"}`, position: "relative", boxShadow: isDarkBg ? "0 2px 16px rgba(0,0,0,0.15)" : "0 4px 20px rgba(0,0,0,0.04)", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = isDarkBg ? "0 8px 28px rgba(0,0,0,0.25)" : "0 8px 32px rgba(0,0,0,0.08)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = isDarkBg ? "0 2px 16px rgba(0,0,0,0.15)" : "0 4px 20px rgba(0,0,0,0.04)"; }}
+              >
                 <div style={{ position: "absolute", top: 20, right: 24, fontSize: 40, color: `${mainColor}12`, fontFamily: "Georgia, serif", lineHeight: 1, pointerEvents: "none" }}>"</div>
                 {group.filter(e => e.role === "review_text").map((el, ri) => (
                   <div key={ri} {...editable(el)} style={eS(el, { fontSize: 15, color: isDarkBg ? "rgba(255,255,255,0.8)" : "#444", lineHeight: 1.8, marginBottom: 16 })}>{el.content}</div>
@@ -132,7 +135,10 @@ export function renderContent(ctx) {
         <div style={{ padding: isMobile ? "40px 20px 60px" : "60px 56px 80px" }}>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : (filteredCards.length >= 3 ? "repeat(3, 1fr)" : filteredCards.length === 2 ? "1fr 1fr" : "1fr"), gap: 20, maxWidth: 820, margin: "0 auto" }}>
             {filteredCards.map((group, gi) => (
-              <div key={gi} style={{ padding: "28px 24px", borderRadius: 16, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff", boxShadow: isDarkBg ? "0 2px 12px rgba(0,0,0,0.2)" : "0 4px 20px rgba(0,0,0,0.06)", position: "relative", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}` }}>
+              <div key={gi} style={{ padding: "28px 24px", borderRadius: 18, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff", boxShadow: isDarkBg ? "0 4px 20px rgba(0,0,0,0.25)" : "0 6px 28px rgba(0,0,0,0.07)", position: "relative", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)"}`, transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = isDarkBg ? "0 10px 36px rgba(0,0,0,0.35)" : "0 12px 40px rgba(0,0,0,0.1)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = isDarkBg ? "0 4px 20px rgba(0,0,0,0.25)" : "0 6px 28px rgba(0,0,0,0.07)"; }}
+              >
                 {/* 따옴표 장식 */}
                 <div style={{ position: "absolute", top: 16, right: 20, fontSize: 36, color: `${mainColor}15`, fontFamily: "Georgia, serif", lineHeight: 1, pointerEvents: "none" }}>"</div>
                 {/* 프로필 + 이름 + 별점 */}
@@ -213,7 +219,7 @@ export function renderContent(ctx) {
             <div style={{ flex: "0 0 45%", display: "flex", flexDirection: "column", alignItems: "center", gap: 0 }}>
               {statNums.map((sn, si) => (
                 <div key={si}>
-                  <div style={{ width: 200, padding: "24px 20px", borderRadius: 24, background: "rgba(255,255,255,0.55)", backdropFilter: "blur(8px)", textAlign: "center", border: "1px solid rgba(255,255,255,0.6)" }}>
+                  <div style={{ width: 200, padding: "28px 24px", borderRadius: 24, background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", textAlign: "center", border: "1px solid rgba(255,255,255,0.7)", boxShadow: "0 8px 32px rgba(0,0,0,0.06)" }}>
                     {statLabels[si] && <div {...editable(statLabels[si])} style={eS(statLabels[si], { fontSize: 13, fontWeight: 600, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#888", marginBottom: 8, lineHeight: 1.5 })}>{statLabels[si].content}</div>}
                     <div {...editable(sn)} style={eS(sn, { fontSize: 34, fontWeight: 900, color: accentColor, letterSpacing: -1 })}>{sn.content}</div>
                   </div>
@@ -302,8 +308,8 @@ export function renderContent(ctx) {
                       {sn.content}
                     </div>
                     {/* 수평 프로그레스 바 */}
-                    <div style={{ width: "80%", maxWidth: 160, height: 6, borderRadius: 3, background: isDarkBg ? "rgba(255,255,255,0.06)" : "#f0f0f0", margin: "0 auto 14px", overflow: "hidden" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", borderRadius: 3, background: `linear-gradient(90deg, ${mainColor}, ${mainColor}cc)`, transition: "width 1s ease" }} />
+                    <div style={{ width: "80%", maxWidth: 160, height: 6, borderRadius: 3, background: isDarkBg ? "rgba(255,255,255,0.08)" : "#eee", margin: "0 auto 14px", overflow: "hidden" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", borderRadius: 3, background: `linear-gradient(90deg, ${mainColor}cc, ${mainColor})`, transition: "width 1s ease", boxShadow: `0 0 8px ${mainColor}30` }} />
                     </div>
                     {statLabels[si] && (
                       <div {...editable(statLabels[si])} style={eS(statLabels[si], { fontSize: isMobile ? 13 : 15, fontWeight: 600, color: isDarkBg ? "rgba(255,255,255,0.5)" : "#888" })}>

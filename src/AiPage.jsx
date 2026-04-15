@@ -20,7 +20,7 @@ const UnifiedBlogWriter = React.lazy(() => import("./AiTools.jsx").then(m => ({ 
 const LinkBlogCombined = React.lazy(() => import("./AiTools.jsx").then(m => ({ default: m.LinkBlogCombined })));
 const PlannerPanel = React.lazy(() => import("./CardNewsApp").then(m => ({ default: m.PlannerPanel })));
 const SimpleDetailPageGenerator = React.lazy(() => import("./SimpleDetailPageGenerator"));
-const DetailPageStudio = React.lazy(() => import("./DetailPageStudio"));
+const DetailPageStudio = React.lazy(() => import("./v2/DetailPageStudioV2"));
 const LogoGenerator = React.lazy(() => import("./LogoGenerator"));
 const MockupGenerator = React.lazy(() => import("./MockupGenerator"));
 const ProductShotGenerator = React.lazy(() => import("./ProductShotGenerator"));

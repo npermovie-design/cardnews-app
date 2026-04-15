@@ -88,16 +88,23 @@ export async function fetchStockImages(query, ctx) {
 // 섹션별 AI 이미지 생성
 export async function generateSectionImage(secId, prompt, ctx, productImageB64) {
   const { user, setSectionImages } = ctx;
-  if (!prompt) return;
+  if (!prompt) {
+    console.warn(`[generateSectionImage] 섹션 ${secId}: prompt가 비어있음, 스킵`);
+    return;
+  }
   if (!user) { alert("이미지 생성은 로그인 후 이용 가능합니다."); return; }
   setSectionImages(prev => ({ ...prev, [secId]: { loading: true, url: null, error: null } }));
   try {
     const token = await getAuthToken() || "";
+    if (!token) {
+      console.warn(`[generateSectionImage] 섹션 ${secId}: 인증 토큰 없음`);
+    }
     const body = { prompt, aspectRatio: "3:4" };
     if (productImageB64) {
       body.productImageB64 = productImageB64;
       body.productImageMime = "image/jpeg";
     }
+    console.log(`[generateSectionImage] 섹션 ${secId}: 이미지 생성 요청 시작`);
     const res = await fetch("/api/image?action=generate", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
@@ -105,11 +112,14 @@ export async function generateSectionImage(secId, prompt, ctx, productImageB64) 
     });
     const data = await res.json();
     if (data.image) {
+      console.log(`[generateSectionImage] 섹션 ${secId}: 이미지 생성 성공 (모델: ${data.model || "unknown"})`);
       setSectionImages(prev => ({ ...prev, [secId]: { loading: false, url: data.image, error: null } }));
     } else {
+      console.error(`[generateSectionImage] 섹션 ${secId}: 생성 실패 -`, data.error);
       setSectionImages(prev => ({ ...prev, [secId]: { loading: false, url: null, error: data.error || "생성 실패" } }));
     }
   } catch (e) {
+    console.error(`[generateSectionImage] 섹션 ${secId}: fetch 에러 -`, e.message);
     setSectionImages(prev => ({ ...prev, [secId]: { loading: false, url: null, error: e.message } }));
   }
 }
@@ -122,16 +132,30 @@ export async function generateAllImages(ctx, onProgress) {
     if (onProgress) onProgress(sections.length, sections.length, "done");
     return;
   }
-  const needGen = sections.filter(sec => sec.image_prompt && !sectionImages[sec.id]?.url);
+
+  // image_prompt가 없는 섹션(ai_notice, shipping 등 텍스트 전용) 제외
+  const imageSections = sections.filter(sec => sec.type !== "ai_notice" && sec.type !== "shipping");
+  const needGen = imageSections.filter(sec => !sectionImages[sec.id]?.url);
   const total = needGen.length;
+
+  // 생성할 이미지가 없으면 바로 완료 처리
+  if (total === 0) {
+    console.log("[generateAllImages] 생성할 이미지 없음, 바로 에디터로 전환");
+    if (onProgress) onProgress(1, 1, "done");
+    return;
+  }
+
   // 제품 이미지 base64 (첫 번째 업로드 이미지)
   const productB64 = images?.[0]?.base64 || null;
   for (let i = 0; i < needGen.length; i++) {
     const sec = needGen[i];
     if (onProgress) onProgress(i, total, sec.id);
+    // image_prompt가 없으면 기본 프롬프트 생성
+    const prompt = sec.image_prompt || `Create a premium e-commerce product detail page section background for a ${sec.type || "product"} section. Clean, professional, minimalist design. No text, no letters, no words in the image. Aspect ratio 3:4.`;
     try {
-      await generateSectionImage(sec.id, sec.image_prompt, ctx, productB64);
+      await generateSectionImage(sec.id, prompt, ctx, productB64);
     } catch (e) {
+      console.error(`[generateAllImages] 섹션 ${sec.id} 이미지 생성 실패:`, e);
       // 실패 시 유저 제품 이미지로 폴백 (스톡 이미지 사용 안 함)
       if (images?.length > 0) {
         const fallbackUrl = images[i % images.length]?.preview;

@@ -57,17 +57,17 @@ export function renderProcess(ctx) {
 
         {/* 3스텝 */}
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 0, position: "relative", marginBottom: 40 }}>
-          {/* 연결선 */}
-          {!isMobile && <div style={{ position: "absolute", top: 16, left: "16.66%", right: "16.66%", height: 1, background: isDarkBg ? "rgba(255,255,255,0.1)" : "#dddddd", zIndex: 0 }} />}
+          {/* 연결선 (그라데이션) */}
+          {!isMobile && <div style={{ position: "absolute", top: 20, left: "16.66%", right: "16.66%", height: 2, background: isDarkBg ? `linear-gradient(90deg, ${accentColor}40, ${accentColor}20, ${accentColor}40)` : `linear-gradient(90deg, ${accentColor}30, ${accentColor}15, ${accentColor}30)`, zIndex: 0, borderRadius: 1 }} />}
 
           {mechSteps.map((el, si) => {
             const parts = el.content.split("|");
             const stepTitle = parts[0]?.trim();
             const stepDesc = parts[1]?.trim() || "";
             return (
-              <div key={si} style={{ textAlign: "center", position: "relative", zIndex: 1 }}>
-                {/* 넘버 */}
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: isDarkBg ? `${accentColor}cc` : accentColor, color: "#ffffff", fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>{si + 1}</div>
+              <div key={si} style={{ textAlign: "center", position: "relative", zIndex: 1, padding: "0 8px" }}>
+                {/* 넘버 (그라데이션 원형) */}
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg, ${accentColor}, ${accentColor}bb)`, color: "#ffffff", fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", boxShadow: `0 4px 16px ${accentColor}35` }}>{si + 1}</div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: accentColor, marginBottom: 10 }}>{stepTitle}</div>
                 <div {...editable(el)} style={eS(el, { fontSize: 13, color: isDarkBg ? "rgba(255,255,255,0.45)" : "#777777", lineHeight: 1.7, padding: "0 8px" })}>{stepDesc}</div>
                 {/* 일러스트 영역 */}
@@ -124,16 +124,16 @@ export function renderProcess(ctx) {
             {titleEl ? <div {...editable(titleEl)} style={eS(titleEl, { fontSize: isMobile ? 24 : 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.3 })}>{titleEl.content}</div> : <div style={{ fontSize: 28, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e" }}>HOW TO USE</div>}
             {decoLine(mainColor)}
           </div>
-          <div style={{ maxWidth: 560, margin: "0 auto", position: "relative" }}>
-            {/* 세로 타임라인 */}
-            <div style={{ position: "absolute", left: 24, top: 0, bottom: 0, width: 2, background: isDarkBg ? "rgba(255,255,255,0.08)" : `${mainColor}15` }} />
+          <div style={{ maxWidth: 580, margin: "0 auto", position: "relative" }}>
+            {/* 세로 타임라인 (그라데이션) */}
+            <div style={{ position: "absolute", left: 24, top: 0, bottom: 0, width: 2, background: isDarkBg ? `linear-gradient(180deg, ${mainColor}30, ${mainColor}10)` : `linear-gradient(180deg, ${mainColor}25, ${mainColor}08)`, borderRadius: 1 }} />
             {steps.map((step, si) => (
-              <div key={si} style={{ display: "flex", gap: 24, marginBottom: 32, position: "relative" }}>
-                <div style={{ width: 50, height: 50, borderRadius: "50%", background: mainColor, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, zIndex: 1, boxShadow: `0 4px 12px ${mainColor}30` }}>
+              <div key={si} style={{ display: "flex", gap: 24, marginBottom: 24, position: "relative" }}>
+                <div style={{ width: 50, height: 50, borderRadius: "50%", background: `linear-gradient(135deg, ${mainColor}, ${mainColor}cc)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, zIndex: 1, boxShadow: `0 6px 20px ${mainColor}35` }}>
                   <span style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>{si + 1}</span>
                 </div>
-                <div style={{ paddingTop: 8 }}>
-                  {step.title && <div {...editable(step.title)} style={eS(step.title, { fontSize: 17, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a1a", marginBottom: 6 })}>{step.title.content}</div>}
+                <div style={{ paddingTop: 4, flex: 1, padding: "16px 24px 20px", borderRadius: 14, background: isDarkBg ? "rgba(255,255,255,0.03)" : `${mainColor}04`, border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.05)" : `${mainColor}08`}` }}>
+                  {step.title && <div {...editable(step.title)} style={eS(step.title, { fontSize: 17, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a1a", marginBottom: 8 })}>{step.title.content}</div>}
                   {step.body && <div {...editable(step.body)} style={eS(step.body, { fontSize: 14, color: isDarkBg ? "rgba(255,255,255,0.6)" : "#666", lineHeight: 1.7 })}>{step.body.content}</div>}
                 </div>
               </div>
@@ -194,7 +194,7 @@ export function renderProcess(ctx) {
                 <div style={{ flex: "0 0 55%", padding: "32px 36px", display: "flex", alignItems: "center" }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                      <div style={{ width: 40, height: 40, borderRadius: 12, background: mainColor, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 900, flexShrink: 0, boxShadow: `0 4px 14px ${mainColor}30` }}>
+                      <div style={{ width: 44, height: 44, borderRadius: 14, background: `linear-gradient(135deg, ${mainColor}, ${mainColor}bb)`, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 17, fontWeight: 900, flexShrink: 0, boxShadow: `0 6px 20px ${mainColor}35` }}>
                         {si + 1}
                       </div>
                       <span style={{ fontSize: 11, fontWeight: 700, color: mainColor, letterSpacing: 3, textTransform: "uppercase" }}>STEP {String(si + 1).padStart(2, "0")}</span>

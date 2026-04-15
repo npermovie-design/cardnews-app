@@ -196,7 +196,7 @@ export function renderFeatures(ctx) {
     }
 
     // -- 기본 카드 스타일 --
-    const cs = { radius: 16, shadow: "0 4px 24px rgba(0,0,0,0.06)", imgH: cols === 3 ? 200 : 260, showImg: true, showNum: true, numStyle: "badge", padTop: "120px", decoType: "circle" };
+    const cs = { radius: 20, shadow: "0 8px 32px rgba(0,0,0,0.08)", imgH: cols === 3 ? 200 : 260, showImg: true, showNum: true, numStyle: "badge", padTop: "120px", decoType: "circle" };
 
     // 기본: 이미지 카드 그리드
     return (
@@ -210,7 +210,7 @@ export function renderFeatures(ctx) {
           {titleEl && <div {...editable(titleEl)} style={eS(titleEl, { fontSize: 36, fontWeight: 900, color: isDarkBg ? "#fff" : "#1a1a2e", lineHeight: 1.25, marginBottom: 20 })}>{titleEl.content}</div>}
           {decoLine(mainColor, 48)}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : `repeat(${cols}, 1fr)`, gap: isMobile ? 16 : (cols === 3 ? 24 : 28), position: "relative", zIndex: 1 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : `repeat(${cols}, 1fr)`, gap: isMobile ? 20 : (cols === 3 ? 28 : 32), position: "relative", zIndex: 1 }}>
           {(items.length > 0 ? items : gridEls.map(el => ({ title: el, body: null }))).map((item, gi) => {
             const itemImg = getItemImg(gi);
             const featureIconImgId = `feat-img-${sec.id}-${gi}`;
@@ -219,11 +219,15 @@ export function renderFeatures(ctx) {
                 overflow: "hidden",
                 background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fff",
                 borderRadius: cs.radius,
-                boxShadow: isDarkBg ? "0 2px 16px rgba(0,0,0,0.2)" : "0 4px 24px rgba(0,0,0,0.06)",
+                boxShadow: isDarkBg ? "0 4px 24px rgba(0,0,0,0.3)" : "0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)",
                 display: "flex", flexDirection: "column",
-                border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}`,
+                border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.03)"}`,
                 borderTop: `3px solid ${mainColor}`,
-              }}>
+                transition: "transform 0.25s ease, box-shadow 0.25s ease",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-6px)"; e.currentTarget.style.boxShadow = isDarkBg ? "0 12px 40px rgba(0,0,0,0.4)" : `0 16px 48px rgba(0,0,0,0.12), 0 4px 12px ${mainColor}15`; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = isDarkBg ? "0 4px 24px rgba(0,0,0,0.3)" : "0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)"; }}
+              >
                 {cs.showImg && (
                   <div style={{ width: "100%", height: itemImg ? cs.imgH : 100, position: "relative", overflow: "hidden", cursor: "pointer", background: itemImg ? `linear-gradient(135deg, ${mainColor}12, ${mainColor}06)` : `${mainColor}06` }}
                     onClick={() => document.getElementById(featureIconImgId)?.click()}>
@@ -238,7 +242,7 @@ export function renderFeatures(ctx) {
                       </div>
                     )}
                     {itemImg && <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 50%, rgba(0,0,0,0.4) 100%)" }} />}
-                    {cs.showNum && <div style={{ position: "absolute", top: 12, left: 12, width: 32, height: 32, borderRadius: 10, background: mainColor, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 2px 8px ${mainColor}40` }}><span style={{ fontSize: 14, fontWeight: 900, color: "#fff" }}>{gi + 1}</span></div>}
+                    {cs.showNum && <div style={{ position: "absolute", top: 12, left: 12, width: 34, height: 34, borderRadius: 10, background: `linear-gradient(135deg, ${mainColor}, ${mainColor}cc)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 14px ${mainColor}40` }}><span style={{ fontSize: 14, fontWeight: 900, color: "#fff" }}>{gi + 1}</span></div>}
                     <input id={featureIconImgId} type="file" accept="image/*" style={{ display: "none" }} onChange={e => {
                       const file = e.target.files?.[0];
                       if (file) {
@@ -249,7 +253,7 @@ export function renderFeatures(ctx) {
                   </div>
                 )}
                 {/* 텍스트 영역 */}
-                <div style={{ padding: cols === 3 ? "24px 20px 28px" : "28px 28px 32px" }}>
+                <div style={{ padding: cols === 3 ? "24px 20px 28px" : "28px 28px 32px", background: isDarkBg ? "transparent" : `linear-gradient(180deg, transparent 0%, ${mainColor}03 100%)`, position: "relative" }}>
                   {item.title && (
                     <div {...editable(item.title)} style={eS(item.title, { fontSize: cols === 3 ? 17 : 20, fontWeight: 800, color: isDarkBg ? "#fff" : "#1a1a2e", marginBottom: 10, lineHeight: 1.4 })}>
                       {item.title.content}

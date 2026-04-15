@@ -7,6 +7,15 @@ export default defineConfig({
       jsxRuntime: 'automatic',
     }),
   ],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://snsmakeit.com',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
+  },
   esbuild: {
     jsx: 'automatic',
     target: 'es2020',

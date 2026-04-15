@@ -174,8 +174,11 @@ export default function DetailPageStudio({ isDark, theme, user, showPointConfirm
   // 이미지 생성 페이즈: AI 이미지 자동 생성 후 에디터로 전환
   useEffect(() => {
     if (phase === "generating_images" && sections.length > 0) {
+      console.log("[DetailPageStudio] generating_images phase 시작, sections:", sections.length,
+        "image_prompt 있는 섹션:", sections.filter(s => s.image_prompt).length);
       setGenProgress({ completed: 0, total: 0, currentSecId: "" });
       const onProgress = (completed, total, secId) => {
+        console.log("[DetailPageStudio] 이미지 생성 진행:", completed, "/", total, secId);
         setGenProgress({ completed, total, currentSecId: secId });
         if (secId === "done") {
           setTimeout(() => setPhase("editor"), 1500);

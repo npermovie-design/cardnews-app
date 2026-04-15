@@ -33,16 +33,22 @@ export function renderMisc(ctx) {
   // ════════════════════════════════════════
   if (secType === "ai_notice") {
     return (
-      <div style={{ background: bgCol || (isDarkBg ? "#1a1a1a" : "#fafafa"), padding: "24px 48px", textAlign: "center" }}>
-        {/* 미세한 구분선 */}
-        <div style={{ width: 60, height: 1, background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)", margin: "0 auto 12px" }} />
+      <div style={{ background: bgCol || (isDarkBg ? "#1a1a1a" : "#fafafa"), padding: "28px 48px", textAlign: "center" }}>
+        {/* 구분선 + 아이콘 영역 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 14 }}>
+          <div style={{ width: 32, height: 1, background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)" }} />
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDarkBg ? "rgba(255,255,255,0.2)" : "#c0c0c0"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/>
+          </svg>
+          <div style={{ width: 32, height: 1, background: isDarkBg ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)" }} />
+        </div>
         {els.filter(e => e.type === "text").map((el, ei) => (
-          <div key={ei} {...editable(el)} style={eS(el, { fontSize: 10, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.2)" : "#c0c0c0", lineHeight: 1.6 })}>
+          <div key={ei} {...editable(el)} style={eS(el, { fontSize: 10, fontWeight: 400, color: isDarkBg ? "rgba(255,255,255,0.25)" : "#b0b0b0", lineHeight: 1.7, letterSpacing: 0.3 })}>
             {el.content}
           </div>
         ))}
         {els.filter(e => e.type === "text").length === 0 && (
-          <div style={{ fontSize: 10, color: isDarkBg ? "rgba(255,255,255,0.2)" : "#c0c0c0", lineHeight: 1.6 }}>
+          <div style={{ fontSize: 10, color: isDarkBg ? "rgba(255,255,255,0.25)" : "#b0b0b0", lineHeight: 1.7, letterSpacing: 0.3 }}>
             본 페이지의 일부 콘텐츠는 AI로 생성되었습니다
           </div>
         )}
@@ -56,7 +62,7 @@ export function renderMisc(ctx) {
   if (layout === "quote_box") {
     return (
       <div style={{ background: bgCol, padding: "160px 64px" }}>
-        <div style={{ maxWidth: 600, margin: "0 auto", padding: "40px 48px", borderRadius: 20, border: `2px solid ${isDarkBg ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)"}`, textAlign: "center", position: "relative" }}>
+        <div style={{ maxWidth: 600, margin: "0 auto", padding: "44px 52px", borderRadius: 24, border: `2px solid ${isDarkBg ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.06)"}`, textAlign: "center", position: "relative", boxShadow: isDarkBg ? "0 8px 32px rgba(0,0,0,0.2)" : "0 8px 40px rgba(0,0,0,0.04)", background: isDarkBg ? "rgba(255,255,255,0.02)" : "rgba(255,255,255,0.8)" }}>
           {/* 인용 부호 장식 */}
           <div style={{ position: "absolute", top: -16, left: "50%", transform: "translateX(-50%)", width: 32, height: 32, background: bgCol, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontSize: 32, color: `${mainColor}40`, fontFamily: "Georgia, serif", lineHeight: 1 }}>"</span>
@@ -161,10 +167,13 @@ export function renderMisc(ctx) {
         )}
         {(titleEl || subtitleEl) && !bodyAsCards && decoLine(mainColor, leftAlign ? 32 : undefined)}
         {bodyAsCards ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 20, maxWidth: 580, marginLeft: leftAlign ? 0 : "auto", marginRight: leftAlign ? "auto" : "auto" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 24, maxWidth: 580, marginLeft: leftAlign ? 0 : "auto", marginRight: leftAlign ? "auto" : "auto" }}>
             {bodyEls.map((el, bi) => (
-              <div key={bi} style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: "18px 24px", borderRadius: 12, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fafafa", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}` }}>
-                <div style={{ width: 4, height: 20, background: mainColor, borderRadius: 2, flexShrink: 0, marginTop: 2 }} />
+              <div key={bi} style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: "20px 24px", borderRadius: 14, background: isDarkBg ? "rgba(255,255,255,0.04)" : "#fafafa", border: `1px solid ${isDarkBg ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)"}`, boxShadow: isDarkBg ? "none" : "0 2px 8px rgba(0,0,0,0.02)", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+                onMouseEnter={e => { e.currentTarget.style.transform = "translateX(4px)"; e.currentTarget.style.boxShadow = isDarkBg ? "0 2px 12px rgba(0,0,0,0.3)" : "0 4px 16px rgba(0,0,0,0.05)"; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = "translateX(0)"; e.currentTarget.style.boxShadow = isDarkBg ? "none" : "0 2px 8px rgba(0,0,0,0.02)"; }}
+              >
+                <div style={{ width: 4, height: 24, background: `linear-gradient(180deg, ${mainColor}, ${mainColor}80)`, borderRadius: 2, flexShrink: 0, marginTop: 2 }} />
                 <div {...editable(el)} style={eS(el, { fontSize: 15, fontWeight: el.fontWeight || "400", color: el.color || (isDarkBg ? "rgba(255,255,255,0.75)" : "#444"), lineHeight: 1.8, textAlign: "left" })}>
                   {el.content}
                 </div>

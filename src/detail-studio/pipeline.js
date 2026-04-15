@@ -112,6 +112,32 @@ JSON만 출력.`, maxTokens: 200 }),
       : ["건강","영양","비타민","운동"].some(k => catLabel.includes(k)) ? "건강" : "default";
     let seed = categoryThemes[catKey];
 
+    const categoryCopyExamples = {
+      "뷰티": `카피 예시 참고:
+- hero: "모공 속 노폐물까지 깨끗하게, 차콜의 흡착력"
+- features: "활성탄 성분이 피지와 노폐물을 흡착하여 모공을 깨끗하게 정화합니다"
+- howto: "1.세안 후 물기 제거 2.적당량 얼굴에 도포(눈/입 주위 제외) 3.15~20분 건조 4.미온수로 깨끗이 세안"
+- 타겟: "모공 고민이 있는 분 / 피지 과다 분비로 고민인 분"`,
+      "식품": `카피 예시 참고:
+- hero: "하루 한 봉, 간편하게 채우는 하루 영양"
+- features: "비타민C 1000mg 함유, 레몬 20개 분량의 항산화 성분"
+- howto: "1.1일 1포 물과 함께 섭취 2.식후 30분 이내 권장 3.냉장보관"`,
+      "패션": `카피 예시 참고:
+- hero: "실루엣이 살아나는 프리미엄 핏"
+- features: "4방향 스트레치 원단으로 어떤 움직임에도 편안한 착용감"
+- howto: "1.30도 이하 물세탁 2.뒤집어서 세탁 3.자연건조 권장"`,
+      "가전": `카피 예시 참고:
+- hero: "소음 없이, 강력하게"
+- features: "BLDC 인버터 모터로 40dB 저소음 운전, 전기료 월 3,000원"`,
+      "건강": `카피 예시 참고:
+- hero: "하루 한 알로 시작하는 건강 습관"
+- features: "프로바이오틱스 100억 CFU 함유, 장까지 살아서 도달하는 코팅 기술"`,
+      "default": `카피 예시 참고:
+- hero: 제품의 핵심 효과를 한 문장으로
+- features: 각 기능의 구체적 원리와 수치를 포함
+- 범용적인 표현 절대 금지`,
+    };
+
     // designStyle 선택 시 프리셋 오버라이드
     const designStylePresets = {
       "minimal_modern": { tone: "미니멀 모던", palette: `메인${mainColor}/화이트#fff/라이트#f5f5f5/다크#111 — 흑백+포인트 1색만`, layout: "여백 넉넉, 가는 산세리프, 좌우 분할, 이미지 중심" },
@@ -196,7 +222,18 @@ role: subtitle, title, body, price, stat_number, stat_label, review_name, star, 
 - pain_points: "Soft muted background, small product in corner, large empty area for text cards."
 - review: "Clean minimal background, subtle decorative elements, product small at top."
 모든 섹션에 image_prompt 필수.
-카피는 실제 쇼핑몰 수준, ${catLabel} 카테고리 전문 멘트. 구체적 수치/성분 포함.
+[중요] 카피 품질 규칙 -- 범용 문구 절대 금지:
+- "차별화된 기술력", "한 차원 높은 결과", "엄격한 품질 기준", "끊임없는 연구개발" 같은 범용 문구 절대 사용 금지
+- 모든 카피는 이 제품만의 구체적 정보를 포함해야 함
+- hero 카피: 제품 사용 후 얻는 구체적 결과 1가지 (예: "모공 속 노폐물까지 깨끗하게")
+- features 설명: 각 기능의 구체적 원리/성분/수치 포함 (예: "활성탄 성분이 피지를 흡착하여 모공을 정화")
+- 사용법(howto): ${catLabel} 카테고리에 맞는 실제 사용 단계 (뷰티=세안->도포->시간->제거, 식품=보관->조리->섭취 등)
+- 타겟 고객: 자연스러운 한국어 문장으로 (예: "모공 고민이 있는 분", "건조한 피부를 가진 분")
+- 제품 정보: 입력된 특징을 그대로 활용, "상세 페이지 참조" 금지
+- body 텍스트: 해당 섹션의 주제에 맞는 구체적 설명, 다른 섹션과 내용 중복 금지
+- 모든 텍스트는 15자 이상 작성 (너무 짧은 텍스트 금지)
+- 브랜드명/제품명이 포함된 텍스트는 절대 잘리지 않게 전체 이름을 사용
+${categoryCopyExamples[catKey] || categoryCopyExamples["default"]}
 - 이모지(emoji), 이모티콘, 특수기호(❌, 🎊, 🎁, ✦, ★ 등)를 절대 사용하지 마세요. 텍스트만 작성하세요.
 - 모든 elements에 content 필수
 JSON배열만 출력.`;
@@ -325,6 +362,33 @@ JSON배열만 출력.`;
       "#ffffff",
       "linear-gradient(180deg, #f7f5f2, #eeebe6)",
     ];
+    // 한국어 조사 후처리 -- "이(가)", "은(는)", "을(를)", "과(와)" 등 자동 보정
+    function fixKoreanParticles(text) {
+      if (!text || typeof text !== "string") return text;
+      return text
+        .replace(/([가-힣])이\(가\)/g, (_, ch) => {
+          const code = ch.charCodeAt(0) - 0xAC00;
+          return (code % 28 !== 0) ? ch + "이" : ch + "가";
+        })
+        .replace(/([가-힣])은\(는\)/g, (_, ch) => {
+          const code = ch.charCodeAt(0) - 0xAC00;
+          return (code % 28 !== 0) ? ch + "은" : ch + "는";
+        })
+        .replace(/([가-힣])을\(를\)/g, (_, ch) => {
+          const code = ch.charCodeAt(0) - 0xAC00;
+          return (code % 28 !== 0) ? ch + "을" : ch + "를";
+        })
+        .replace(/([가-힣])과\(와\)/g, (_, ch) => {
+          const code = ch.charCodeAt(0) - 0xAC00;
+          return (code % 28 !== 0) ? ch + "과" : ch + "와";
+        })
+        .replace(/([가-힣])으로\(로\)/g, (_, ch) => {
+          const code = ch.charCodeAt(0) - 0xAC00;
+          const jongseong = code % 28;
+          return (jongseong !== 0 && jongseong !== 8) ? ch + "으로" : ch + "로";
+        });
+    }
+
     let pointIdx = 0;
     const diversified = layoutData.map((s, i) => {
       const type = s.type || "point";
@@ -403,7 +467,15 @@ JSON배열만 출력.`;
         return el;
       });
 
-      return { ...s, id: `sec_${i}_${Date.now()}`, enabled: true, layout: newLayout, bg_color: newBg, designVariant, elements: correctedElements };
+      // 한국어 조사 후처리
+      const particleFixed = correctedElements.map(el => {
+        if (el.type === "text" || el.type === "badge") {
+          return { ...el, content: fixKoreanParticles(el.content) };
+        }
+        return el;
+      });
+
+      return { ...s, id: `sec_${i}_${Date.now()}`, enabled: true, layout: newLayout, bg_color: newBg, designVariant, elements: particleFixed };
     });
     setSections(diversified);
     setActiveSection(0);
