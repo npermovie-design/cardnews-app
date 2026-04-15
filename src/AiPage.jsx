@@ -25,6 +25,7 @@ const LogoGenerator = React.lazy(() => import("./LogoGenerator"));
 const MockupGenerator = React.lazy(() => import("./MockupGenerator"));
 const ProductShotGenerator = React.lazy(() => import("./ProductShotGenerator"));
 const ShortsCreator = React.lazy(() => import("./ShortsCreator"));
+const LongFormEditor = React.lazy(() => import("./LongFormEditor"));
 const BlogGenerator = React.lazy(() => import("./BlogGenerator"));
 const SocialAnalyzer = React.lazy(() => import("./SocialAnalyzer"));
 const AutoPublisher = React.lazy(() => import("./AutoPublisher"));
@@ -1003,6 +1004,15 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               <div style={{ fontSize:12, color: isDark ? "rgba(255,255,255,0.5)" : "#888", lineHeight:1.5 }}>유튜브 링크 또는 파일에서<br/>AI가 쇼츠를 자동 추출</div>
               <div style={{ marginTop:12, fontSize:11, color:vAcc, fontWeight:700 }}>분석 35P · 생성 80P</div>
             </div>
+            <div onClick={() => setAiMenu("longform_edit")} className="hover-lift"
+              style={{ padding:"28px 20px", borderRadius:16, border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0"}`, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer", textAlign:"center" }}>
+              <div style={{ width:56, height:56, borderRadius:16, background:`${vAcc}15`, margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke={vAcc} strokeWidth="1.8"/><path d="M8 4v16M16 4v16" stroke={vAcc} strokeWidth="1.2" opacity="0.5"/><path d="M2 12h20" stroke={vAcc} strokeWidth="1.2" opacity="0.5"/></svg>
+              </div>
+              <div style={{ fontSize:16, fontWeight:800, color: isDark ? "#fff" : "#1a1a2e", marginBottom:6 }}>롱폼 자동 편집</div>
+              <div style={{ fontSize:12, color: isDark ? "rgba(255,255,255,0.5)" : "#888", lineHeight:1.5 }}>무음 제거 · 자동 자막<br/>반복 삭제 · 자막 애니메이션</div>
+              <div style={{ marginTop:12, fontSize:11, color:vAcc, fontWeight:700 }}>분석 35P · 생성 200P</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1028,6 +1038,14 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
           </div>
         </div>
         <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={st => {}} />
+      </div>
+    );
+  }
+
+  if (aiMenu === "longform_edit") {
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <LongFormEditor isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={st => {}} />
       </div>
     );
   }
