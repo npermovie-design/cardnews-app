@@ -16,6 +16,133 @@ function fmtNum(n) { if (!n && n !== 0) return "-"; const num = typeof n === "st
 function fmtDate(d) { if (!d) return ""; const dt = new Date(d); return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,"0")}.${String(dt.getDate()).padStart(2,"0")}`; }
 function parseDuration(iso) { if (!iso) return ""; const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/); if (!m) return ""; const h = parseInt(m[1]||"0"), mi = parseInt(m[2]||"0"), s = parseInt(m[3]||"0"); return h > 0 ? `${h}:${String(mi).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${mi}:${String(s).padStart(2,"0")}`; }
 
+// ── 실시간 키워드 트렌드 컴포넌트 ──
+function TrendKeywords({ isDark }) {
+  const [platform, setPlatform] = React.useState("naver");
+  const [data, setData] = React.useState({});
+  const [loading, setLoading] = React.useState({});
+  const [lastUpdate, setLastUpdate] = React.useState(null);
+
+  const acc = "#7c6aff";
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
+  const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
+  const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+
+  const PLATFORMS = [
+    { id: "naver", label: "네이버", color: "#03C75A", icon: "N" },
+    { id: "google", label: "구글 트렌드", color: "#4285F4", icon: "G" },
+    { id: "youtube", label: "유튜브", color: "#FF0000", icon: "Y" },
+  ];
+
+  const fetchTrend = React.useCallback(async (pid) => {
+    if (data[pid] && Date.now() - (data[pid]._ts || 0) < 60000) return; // 1분 캐시
+    setLoading(p => ({ ...p, [pid]: true }));
+    try {
+      const r = await fetch(`/api/content?action=trends&platform=${pid}`);
+      if (r.ok) {
+        const d = await r.json();
+        setData(p => ({ ...p, [pid]: { ...d, _ts: Date.now() } }));
+        setLastUpdate(new Date());
+      }
+    } catch {}
+    setLoading(p => ({ ...p, [pid]: false }));
+  }, [data]);
+
+  React.useEffect(() => { fetchTrend("naver"); fetchTrend("google"); }, []);
+  React.useEffect(() => { fetchTrend(platform); }, [platform]);
+
+  // 자동 갱신 (5분)
+  React.useEffect(() => {
+    const t = setInterval(() => { fetchTrend(platform); }, 300000);
+    return () => clearInterval(t);
+  }, [platform]);
+
+  const changeIcon = (ch) => {
+    if (ch === "new") return <span style={{ fontSize: 10, fontWeight: 800, color: "#ef4444", letterSpacing: -0.5 }}>NEW</span>;
+    if (ch === "up") return <span style={{ fontSize: 12, color: "#22c55e" }}>&#9650;</span>;
+    if (ch === "down") return <span style={{ fontSize: 12, color: "#3b82f6" }}>&#9660;</span>;
+    return <span style={{ fontSize: 10, color: muted }}>-</span>;
+  };
+
+  const renderList = (pid) => {
+    const d = data[pid];
+    if (loading[pid] && !d) return <div style={{ textAlign: "center", padding: "40px 0", color: muted, fontSize: 13 }}>불러오는 중...</div>;
+    if (!d?.keywords?.length) return <div style={{ textAlign: "center", padding: "40px 0", color: muted, fontSize: 13 }}>데이터 없음</div>;
+    const p = PLATFORMS.find(x => x.id === pid);
+    return (
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: `${p.color}15`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 900, color: p.color }}>{p.icon}</div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: text }}>{p.label} 실시간 검색어</div>
+        </div>
+        {d.keywords.slice(0, 10).map((kw, i) => (
+          <div key={i} onClick={() => { try { navigator.clipboard.writeText(kw.keyword); } catch {} }}
+            style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 10, marginBottom: 4, cursor: "pointer", background: i === 0 ? (isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.03)") : "transparent", transition: "background 0.12s" }}
+            onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.04)" : "#f8f8fc"}
+            onMouseLeave={e => e.currentTarget.style.background = i === 0 ? (isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.03)") : "transparent"}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: i < 3 ? `${acc}15` : (isDark ? "rgba(255,255,255,0.06)" : "#f0f0f4"), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, color: i < 3 ? acc : muted, flexShrink: 0 }}>{i + 1}</div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{kw.keyword}</div>
+              {kw.volume > 0 && <div style={{ fontSize: 10, color: muted, marginTop: 1 }}>검색량 {kw.volume.toLocaleString()}+</div>}
+            </div>
+            <div style={{ flexShrink: 0 }}>{changeIcon(kw.change)}</div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  const now = new Date();
+  const timeStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,"0")}.${String(now.getDate()).padStart(2,"0")} (${["일","월","화","수","목","금","토"][now.getDay()]}) ${now.getHours()}시`;
+
+  return (
+    <div style={{ marginBottom: 28 }}>
+      {/* 헤더 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <div>
+          <div style={{ fontSize: "clamp(20px, 3.5vw, 26px)", fontWeight: 900, color: text, lineHeight: 1.3 }}>
+            현재 이 시간,<br />실시간으로 뜨고 있는 검색어
+          </div>
+          <div style={{ fontSize: 13, color: muted, marginTop: 8 }}>{timeStr} 기준</div>
+        </div>
+        <button onClick={() => { setData({}); fetchTrend("naver"); fetchTrend("google"); fetchTrend("youtube"); }}
+          style={{ padding: "8px 16px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+          새로고침
+        </button>
+      </div>
+
+      {/* 플랫폼 탭 */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 16, marginTop: 16 }}>
+        {PLATFORMS.map(p => (
+          <button key={p.id} onClick={() => setPlatform(p.id)} style={{
+            padding: "8px 18px", borderRadius: 10, border: "none", cursor: "pointer",
+            fontSize: 13, fontWeight: 700, transition: "all 0.15s",
+            background: platform === p.id ? p.color : (isDark ? "rgba(255,255,255,0.06)" : "#f0f0f4"),
+            color: platform === p.id ? "#fff" : muted,
+          }}>{p.label}</button>
+        ))}
+      </div>
+
+      {/* 2컬럼: 네이버 + 선택 플랫폼 (네이버 선택 시 네이버+구글) */}
+      <div style={{ display: "grid", gridTemplateColumns: typeof window !== "undefined" && window.innerWidth < 700 ? "1fr" : "1fr 1fr", gap: 16 }}>
+        <div style={{ padding: 20, borderRadius: 16, border: `1px solid ${bdr}`, background: cardBg }}>
+          {renderList("naver")}
+        </div>
+        <div style={{ padding: 20, borderRadius: 16, border: `1px solid ${bdr}`, background: cardBg }}>
+          {renderList(platform === "naver" ? "google" : platform)}
+        </div>
+      </div>
+
+      {/* 안내 */}
+      <div style={{ fontSize: 11, color: muted, marginTop: 10, textAlign: "center" }}>
+        키워드를 클릭하면 클립보드에 복사됩니다 / 자동 갱신: 5분
+      </div>
+    </div>
+  );
+}
+
 export default function SocialAnalyzer({ isDark, user }) {
   const [links, setLinks] = useState([""]);
   const [loading, setLoading] = useState(false);
@@ -422,6 +549,9 @@ JSON 형식으로 응답:
         <div style={{fontSize:"clamp(22px,4vw,30px)",fontWeight:900,color:text,lineHeight:1.3,marginTop:10}}>SNS 계정 분석 + 성장 전략</div>
         <div style={{fontSize:14,color:muted,marginTop:6,lineHeight:1.6}}>운영 중인 SNS 프로필 링크를 입력하면 AI가 분석하고 30일 콘텐츠 플랜을 제공합니다.</div>
       </div>
+
+      {/* 실시간 키워드 트렌드 */}
+      {!hasData && <TrendKeywords isDark={isDark} />}
 
       {/* 사용 가이드 */}
       {!hasData && !loading && (
