@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "./storage";
 
+function updateMeta(property, content) {
+  let el = document.querySelector(`meta[property="${property}"]`);
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute("property", property);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("content", content);
+}
+
 const BRAND = "#7c6aff";
 const BRAND2 = "#ec4899";
 const GRAD = "linear-gradient(135deg, #7c6aff, #ec4899)";
@@ -335,8 +345,17 @@ function ProgramUploadModal({ C, onClose, onSave, editItem, isMobile }) {
             </div>
             <div>
               <label style={labelStyle}>플랫폼</label>
-              <input value={form.platform} onChange={e => setForm(p => ({ ...p, platform: e.target.value }))}
-                placeholder="Windows / Mac" style={inputStyle} />
+              <select value={form.platform} onChange={e => setForm(p => ({ ...p, platform: e.target.value }))}
+                style={{ ...inputStyle, cursor: "pointer" }}>
+                <option value="Windows">Windows</option>
+                <option value="Mac">Mac</option>
+                <option value="Windows / Mac">Windows / Mac</option>
+                <option value="Web">Web</option>
+                <option value="Android">Android</option>
+                <option value="iOS">iOS</option>
+                <option value="PSD / Figma">PSD / Figma</option>
+                <option value="기타">기타</option>
+              </select>
             </div>
           </div>
 
@@ -827,11 +846,12 @@ function ProductDetail({ p, C, user, onLogin, onBack, isMobile, isAdmin, onUpdat
 }
 
 /* ── 메인 목록 페이지 ── */
-export default function ProgramsPage({ C, navigate, user, onLogin }) {
+export default function ProgramsPage({ C, navigate, user, onLogin, initialProductId, onProductIdChange }) {
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("latest");
-  const [products, setProducts] = useState(DEMO_PRODUCTS);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -846,7 +866,7 @@ export default function ProgramsPage({ C, navigate, user, onLogin }) {
         .select("*")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      if (data && data.length > 0) {
+      if (data) {
         const mapped = data.map(d => ({
           id: d.id, dbId: d.id,
           title: d.title, desc: d.desc,
@@ -862,11 +882,53 @@ export default function ProgramsPage({ C, navigate, user, onLogin }) {
         setProducts(mapped);
       }
     } catch (err) {
-      console.log("DB 로드 실패, 데모 데이터 사용:", err.message);
+      console.log("DB 로드 실패:", err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => { loadProducts(); }, []);
+
+  // URL의 productId로 상품 자동 선택
+  useEffect(() => {
+    if (initialProductId && products.length > 0 && !selectedProduct) {
+      const found = products.find(p => p.id === initialProductId);
+      if (found) {
+        setSelectedProduct(found);
+        // 조회수 증가
+        const newCount = (found.viewCount || 0) + 1;
+        setProducts(prev => prev.map(p => p.id === found.id ? { ...p, viewCount: newCount } : p));
+        if (found.dbId) supabase.from("programs").update({ view_count: newCount }).eq("id", found.dbId).then(() => {});
+      }
+    }
+  }, [initialProductId, products]);
+
+  // 상품 선택/해제 시 URL + OG 메타태그 업데이트
+  useEffect(() => {
+    if (selectedProduct) {
+      // URL 변경
+      window.history.replaceState(null, "", "/programs/" + selectedProduct.id);
+      if (onProductIdChange) onProductIdChange(selectedProduct.id);
+      // 페이지 타이틀
+      document.title = selectedProduct.title + " - SNS메이킷";
+      // OG 메타태그 업데이트
+      updateMeta("og:title", selectedProduct.title);
+      updateMeta("og:description", selectedProduct.desc);
+      updateMeta("og:url", "https://snsmakeit.com/programs/" + selectedProduct.id);
+      if (selectedProduct.thumbnail) updateMeta("og:image", selectedProduct.thumbnail);
+      updateMeta("og:type", "product");
+    } else {
+      window.history.replaceState(null, "", "/programs");
+      if (onProductIdChange) onProductIdChange(null);
+      document.title = "프로그램 스토어 - SNS메이킷";
+      updateMeta("og:title", "프로그램 스토어 - SNS메이킷");
+      updateMeta("og:description", "SNS 운영과 사업 확장을 위한 필수 솔루션 패키지.");
+      updateMeta("og:url", "https://snsmakeit.com/programs");
+      updateMeta("og:image", "https://snsmakeit.com/og-default.png");
+      updateMeta("og:type", "website");
+    }
+  }, [selectedProduct]);
 
   const handleUpdateDetail = (productId, newBlocks) => {
     setProducts(prev => prev.map(p => p.id === productId ? { ...p, detailContent: newBlocks } : p));
@@ -1001,10 +1063,16 @@ export default function ProgramsPage({ C, navigate, user, onLogin }) {
       </section>
 
       <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 20px 80px" }}>
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div style={{ textAlign: "center", padding: "80px 20px", color: C.muted }}>
+            <div style={{ fontSize: 15, fontWeight: 500 }}>불러오는 중...</div>
+          </div>
+        ) : filtered.length === 0 ? (
           <div style={{ textAlign: "center", padding: "80px 20px", color: C.muted }}>
             <div style={{ fontSize: 40, opacity: 0.3, marginBottom: 12 }}>&#128230;</div>
-            <div style={{ fontSize: 15, fontWeight: 500 }}>검색 결과가 없습니다</div>
+            <div style={{ fontSize: 15, fontWeight: 500 }}>
+              {products.length === 0 ? "등록된 프로그램이 없습니다." : "검색 결과가 없습니다"}
+            </div>
           </div>
         ) : (
           <div style={{

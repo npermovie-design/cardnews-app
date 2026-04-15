@@ -73,6 +73,7 @@
     { "source": "/sitemap.xml", "destination": "/api/seo?action=sitemap" },
     { "source": "/rss.xml", "destination": "/api/seo?action=rss" },
     { "source": "/feed", "destination": "/api/seo?action=rss" },
+    { "source": "/programs/:id", "destination": "/api/render" },
     { "source": "/community/:cat/post-:id", "destination": "/api/render" },
 
     { "source": "/api/analyze-creator", "destination": "/api/image?action=analyze-creator" },

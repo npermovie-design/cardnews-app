@@ -278,6 +278,7 @@ export default function App() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [boardCat,   setBoardCat]   = useState("info");
   const [pendingPostId, setPendingPostId] = useState(null);
+  const [programId, setProgramId] = useState(null);
   const [aiMenu,     setAiMenu]     = useState("home");
   const [theme,      setTheme]      = useState(getSavedTheme);
   const [guardModal, setGuardModal] = useState(null); // { cost, onConfirm }
@@ -387,6 +388,10 @@ export default function App() {
     // /ai/blog_naver → page=ai, aiMenu=blog_naver
     if (mainSeg === "ai" && segments[1]) {
       setAiMenu(segments[1]);
+    }
+    // /programs/[id] → page=programs, programId=id
+    if (mainSeg === "programs" && segments[1]) {
+      setProgramId(segments[1]);
     }
     if (mainSeg && mainSeg !== "home") setPage(mainSeg);
     if (mainSeg === "ai") setAiVisited(true);
@@ -640,7 +645,7 @@ export default function App() {
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "event")    return <EventPage C={C} navigate={navigate} />;
-    if (page === "programs") return <ProgramsPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
+    if (page === "programs") return <ProgramsPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} initialProductId={programId} onProductIdChange={setProgramId} />;
     if (page === "snsnews")  return <SnsNewsPage C={C} user={user} navigate={navigate} />;
     if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} user={user} />;
     if (page === "payment/success") return <PaymentSuccessPage C={C} navigate={navigate} />;

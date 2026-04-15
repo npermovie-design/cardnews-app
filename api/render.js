@@ -86,11 +86,28 @@ export default async function handler(req) {
   const path = url.pathname;
   const segments = path.split("/").filter(Boolean);
 
-  let title = "SNS메이킷 커뮤니티";
-  let description = "SNS메이킷 사용자들과 정보를 공유하고 소통하는 커뮤니티입니다.";
+  let title = "SNS메이킷";
+  let description = "SNS메이킷 - AI 블로그·상세페이지·이미지 자동 생성";
   let image = `${SITE_URL}/og-image.png`;
   let canonicalUrl = `${SITE_URL}${path}`;
-  let keywords = "SNS메이킷, 커뮤니티, AI 콘텐츠";
+  let keywords = "SNS메이킷, AI 콘텐츠";
+
+  // ── 프로그램 상세 페이지 ──
+  if (segments[0] === "programs" && segments[1]) {
+    const productId = segments[1];
+    const product = await sbQuery("programs", `select=title,desc,thumbnail,category,price_label,tags&id=eq.${productId}`);
+    canonicalUrl = `${SITE_URL}/programs/${productId}`;
+    if (product) {
+      title = `${product.title} - SNS메이킷 프로그램`;
+      description = (product.desc || "").slice(0, 155) + ((product.desc || "").length > 155 ? "..." : "");
+      if (product.thumbnail) image = product.thumbnail;
+      const tagStr = Array.isArray(product.tags) ? product.tags.join(", ") : "";
+      keywords = `SNS메이킷, 프로그램, ${tagStr}`;
+    } else {
+      title = "프로그램 - SNS메이킷";
+      description = "SNS 운영과 사업 확장을 위한 필수 솔루션 패키지.";
+    }
+  }
 
   const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", archive: "자료실", sns_briefing: "SNS 브리핑" };
   if (segments[1]) {
