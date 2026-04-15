@@ -918,106 +918,66 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // ═══════════════════════════════════
   if (step === "upload") return (
     <div style={{ flex: 1, overflowY: "auto", background: D ? "transparent" : "#f4f4f8" }}>
-      {/* 프로 전환 예정 안내 팝업 — 제거됨 */}
-
-      {/* 헤더는 AiPage에서 렌더링 */}
       <div style={{ maxWidth: 640, margin: "0 auto", padding: "24px 20px 60px" }}>
+        {/* 헤더 */}
+        <div style={{ textAlign: "center", marginBottom: 24 }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 14px", borderRadius: 20, background: `${acc}15`, marginBottom: 10 }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: acc }}>SHORTS EDITOR</span>
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: text }}>숏폼 자동 편집기</div>
+          <div style={{ fontSize: 13, color: muted, marginTop: 6, lineHeight: 1.6 }}>
+            긴 영상에서 AI가 핵심 구간을 추출해 쇼츠를 자동으로 만들어줍니다
+          </div>
+        </div>
+
         {/* 탭 */}
         <div style={{ display: "flex", borderRadius: 14, overflow: "hidden", marginBottom: 24, border: `1px solid ${bdr}` }}>
-          <button onClick={() => { setInputMode("youtube"); setDownloadHelper(null); }} style={{ ...tabBtn(inputMode === "youtube"), display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}><img src="/icon-youtube.png" alt="" style={{ width:18, height:13, objectFit:"contain" }} /> 유튜브 링크</button>
-          <button onClick={() => setInputMode("file")} style={tabBtn(inputMode === "file")}>📁 파일 업로드</button>
+          <button onClick={() => { setInputMode("youtube"); setDownloadHelper(null); }} style={tabBtn(inputMode === "youtube")}>유튜브 링크</button>
+          <button onClick={() => setInputMode("file")} style={tabBtn(inputMode === "file")}>파일 업로드</button>
         </div>
 
         {inputMode === "youtube" ? (
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 8 }}>유튜브 영상 URL *</div>
-            <div style={{ position: "relative", marginBottom: 8 }}>
-              <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", fontSize: 16, opacity: 0.5 }}>🔗</span>
-              <input value={ytUrl}
-                onChange={e => setYtUrl(e.target.value)}
-                onPaste={e => {
-                  const pasted = e.clipboardData.getData("text");
-                  if (pasted && parseYoutubeUrl(pasted)) {
-                    e.preventDefault();
-                    setYtUrl(pasted.trim());
-                  }
-                }}
-                placeholder="https://www.youtube.com/watch?v=... 또는 youtu.be/..."
-                style={{ ...inputStyle, paddingLeft: 38, paddingRight: ytParsed ? 38 : 14 }} />
-              {ytParsed && <span style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#4ade80" }}>✓</span>}
-            </div>
+            <input value={ytUrl}
+              onChange={e => setYtUrl(e.target.value)}
+              onPaste={e => { const pasted = e.clipboardData.getData("text"); if (pasted && parseYoutubeUrl(pasted)) { e.preventDefault(); setYtUrl(pasted.trim()); } }}
+              placeholder="https://www.youtube.com/watch?v=... 또는 youtu.be/..."
+              style={{ ...inputStyle, marginBottom: 12 }} />
             {ytUrl.trim() && !ytParsed && (
-              <div style={{ fontSize: 11, color: "#f87171", marginBottom: 8, paddingLeft: 4 }}>
-                올바른 유튜브 링크 형식이 아닙니다 (youtube.com/watch?v=... 또는 youtu.be/...)
-              </div>
+              <div style={{ fontSize: 11, color: "#f87171", marginBottom: 8, paddingLeft: 4 }}>올바른 유튜브 링크 형식이 아닙니다</div>
             )}
             {ytParsed && (
-              <div style={{ ...cardStyle, display: "flex", alignItems: "center", gap: 10, marginBottom: 12, padding: 12 }}>
-                <img src={`https://img.youtube.com/vi/${ytParsed.id}/mqdefault.jpg`} alt="" style={{ width: 80, height: 45, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} onError={e => e.target.style.display = "none"} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: acc }}>유튜브 영상 감지됨</div>
-                  <div style={{ fontSize: 11, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>ID: {ytParsed.id}</div>
-                </div>
+              <div style={{ ...cardStyle, display: "flex", alignItems: "center", gap: 10, padding: 12, marginBottom: 12 }}>
+                <img src={`https://img.youtube.com/vi/${ytParsed.id}/mqdefault.jpg`} alt="" style={{ width: 80, height: 45, objectFit: "cover", borderRadius: 8 }} onError={e => e.target.style.display = "none"} />
+                <div><div style={{ fontSize: 12, fontWeight: 700, color: acc }}>영상 감지됨</div><div style={{ fontSize: 11, color: muted }}>ID: {ytParsed.id}</div></div>
               </div>
             )}
             <button onClick={handleYoutube} style={{ ...btnStyle, opacity: !ytParsed ? 0.4 : 1 }} disabled={!ytParsed}>쇼츠로 변환하기 <span style={{ opacity: 0.7, fontSize: 12 }}>(35P)</span></button>
           </div>
         ) : (
           <div>
-            {/* 다운로드 도우미 (Render 서버 실패 시 표시) */}
             {downloadHelper && (
-              <div style={{ ...cardStyle, marginBottom: 16, background: D ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)", border: `1px solid ${acc}30` }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-                  <img src={downloadHelper.thumbnail} alt="" style={{ width: 100, height: 56, objectFit: "cover", borderRadius: 8, flexShrink: 0 }} onError={e => e.target.style.display = "none"} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: text, lineHeight: 1.4, marginBottom: 4, overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{downloadHelper.title}</div>
-                    <div style={{ fontSize: 11, color: muted }}>ID: {downloadHelper.id}</div>
-                  </div>
+              <div style={{ ...cardStyle, background: D ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)", border: `1px solid ${acc}30`, marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+                  <img src={downloadHelper.thumbnail} alt="" style={{ width: 80, height: 45, objectFit: "cover", borderRadius: 8 }} onError={e => e.target.style.display = "none"} />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: text }}>{downloadHelper.title}</div>
                 </div>
-                <div style={{ padding: "12px 14px", borderRadius: 10, background: D ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${bdr}`, marginBottom: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: "#f59e0b", marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 15 }}>&#9888;&#65039;</span> 서버 다운로드 실패 - 직접 다운로드가 필요합니다
-                  </div>
-                  <div style={{ fontSize: 12, color: text, lineHeight: 1.8, opacity: 0.85 }}>
-                    <div style={{ marginBottom: 6 }}>아래 단계를 따라주세요:</div>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
-                      <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: `${acc}20`, color: acc, fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>1</span>
-                      <span>아래 다운로드 사이트에서 영상을 <b>MP4</b>로 다운로드하세요</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 6 }}>
-                      <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: `${acc}20`, color: acc, fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>2</span>
-                      <span>다운로드된 파일을 아래 업로드 영역에 선택하세요</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
-                      <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: "50%", background: `${acc}20`, color: acc, fontSize: 12, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>3</span>
-                      <span>&quot;쇼츠 생성해보기&quot; 버튼을 클릭하면 AI가 분석을 시작합니다</span>
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8 }}>서버 다운로드 실패 - 직접 다운로드 후 업로드해주세요</div>
+                <div style={{ display: "flex", gap: 8 }}>
                   <a href={`https://ssyoutube.com/watch?v=${downloadHelper.id}`} target="_blank" rel="noopener noreferrer"
-                    style={{ flex: 1, minWidth: 120, padding: "10px 14px", borderRadius: 10, background: "#ef4444", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none", textAlign: "center", display: "block" }}>
-                    ssyoutube.com
-                  </a>
+                    style={{ flex: 1, padding: "8px", borderRadius: 8, background: "#ef4444", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>ssyoutube.com</a>
                   <a href={`https://www.y2mate.com/youtube/${downloadHelper.id}`} target="_blank" rel="noopener noreferrer"
-                    style={{ flex: 1, minWidth: 120, padding: "10px 14px", borderRadius: 10, background: "#22c55e", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none", textAlign: "center", display: "block" }}>
-                    y2mate.com
-                  </a>
-                  <a href={`https://en.savefrom.net/1-youtube-video-downloader-${downloadHelper.id}/`} target="_blank" rel="noopener noreferrer"
-                    style={{ flex: 1, minWidth: 120, padding: "10px 14px", borderRadius: 10, background: "#3b82f6", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none", textAlign: "center", display: "block" }}>
-                    savefrom.net
-                  </a>
+                    style={{ flex: 1, padding: "8px", borderRadius: 8, background: "#22c55e", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>y2mate.com</a>
                 </div>
-                <button onClick={() => setDownloadHelper(null)} style={{ marginTop: 10, padding: "6px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 11, cursor: "pointer" }}>닫기</button>
               </div>
             )}
-
             <div onClick={() => fileRef.current?.click()}
               style={{ border: `2px dashed ${bdr}`, borderRadius: 14, padding: "40px 20px", textAlign: "center", cursor: "pointer", marginBottom: 12, background: ibg }}>
               <div style={{ width: 56, height: 56, borderRadius: 16, background: `${acc}15`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-                <span style={{ fontSize: 24 }}>⬆️</span>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: text }}>{downloadHelper ? "다운로드한 영상 파일을 선택하세요" : "영상 파일을 클릭하여 선택하세요"}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: text }}>영상 파일을 선택하세요</div>
               <div style={{ fontSize: 12, color: muted }}>MP4, MOV, AVI (+ SRT 자막 선택)</div>
               <input ref={fileRef} type="file" accept=".mp4,.mkv,.avi,.mov,.srt,.txt" multiple style={{ display: "none" }}
                 onChange={e => { for (const f of e.target.files) { const ext = f.name.split(".").pop().toLowerCase(); if (["mp4", "mkv", "avi", "mov"].includes(ext)) setVideoFile(f); else if (["srt", "txt"].includes(ext)) setSubFile(f); } }} />
@@ -1029,7 +989,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 {!subFile && <span style={{ fontSize: 11, color: muted }}>자막 없음 · AI 음성인식</span>}
               </div>
             )}
-            <button onClick={handleUpload} style={btnStyle} disabled={!videoFile}>쇼츠 생성해보기 <span style={{ opacity: 0.7, fontSize: 12 }}>(35P)</span></button>
+            <button onClick={handleUpload} style={{ ...btnStyle, opacity: !videoFile ? 0.4 : 1 }} disabled={!videoFile}>쇼츠 생성해보기 <span style={{ opacity: 0.7, fontSize: 12 }}>(35P)</span></button>
           </div>
         )}
 
@@ -1037,46 +997,56 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         <div style={{ ...cardStyle, marginTop: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 6 }}>분석 요청 (선택)</div>
           <div style={{ fontSize: 11, color: muted, marginBottom: 8, lineHeight: 1.5 }}>원하는 부분만 추출하고 싶을 때 AI에게 요청해보세요</div>
-          <textarea
-            value={userPrompt}
-            onChange={e => setUserPrompt(e.target.value)}
-            placeholder="원하는 부분을 설명해주세요 (예: 가장 재미있는 부분만, 핵심 요약만, 특정 주제 관련 부분만)"
-            rows={3}
-            style={{ ...inputStyle, resize: "none", lineHeight: 1.6, fontFamily: "inherit" }}
-          />
+          <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)}
+            placeholder="원하는 부분을 설명해주세요 (예: 가장 재미있는 부분만, 핵심 요약만)"
+            rows={3} style={{ ...inputStyle, resize: "none", lineHeight: 1.6, fontFamily: "inherit" }} />
         </div>
 
         {/* 설정 */}
         <div style={{ ...cardStyle, marginTop: 20 }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 12 }}>세부 설정</div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>⏱ 쇼츠 길이</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>쇼츠 길이</div>
           <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 480 ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: 6, marginBottom: 14 }}>
             {LENGTHS.map(l => (
               <button key={l.id} onClick={() => setShortsLength(l.id)}
                 style={{ padding: "10px 6px", borderRadius: 10, border: `1.5px solid ${shortsLength === l.id ? acc : bdr}`, background: shortsLength === l.id ? `${acc}15` : "transparent", color: shortsLength === l.id ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
-                <div>{l.label}</div>
-                <div style={{ fontSize: 10, fontWeight: 400, marginTop: 2 }}>{l.desc}</div>
+                <div>{l.label}</div><div style={{ fontSize: 10, fontWeight: 400, marginTop: 2 }}>{l.desc}</div>
               </button>
             ))}
           </div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>📝 자막 글자수</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>자막 글자수</div>
           <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 480 ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: 6, marginBottom: 14 }}>
-            {[[0, "자동"], [8, "8자"], [15, "15자"], [25, "25자"]].map(([v, l]) => (
+            {[[0,"자동"],[8,"8자"],[15,"15자"],[25,"25자"]].map(([v,l]) => (
               <button key={v} onClick={() => setMaxChars(v)}
-                style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${maxChars === v ? acc : bdr}`, background: maxChars === v ? `${acc}15` : "transparent", color: maxChars === v ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                {l}
-              </button>
+                style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${maxChars === v ? acc : bdr}`, background: maxChars === v ? `${acc}15` : "transparent", color: maxChars === v ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{l}</button>
             ))}
           </div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>🎬 쇼츠 생성 개수</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>쇼츠 생성 개수</div>
           <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 480 ? "repeat(3,1fr)" : "repeat(5,1fr)", gap: 6 }}>
             {[1,2,3,4,5].map(n => (
               <button key={n} onClick={() => setMaxSegments(n)}
-                style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${maxSegments === n ? acc : bdr}`, background: maxSegments === n ? `${acc}15` : "transparent", color: maxSegments === n ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                {n}개
-              </button>
+                style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${maxSegments === n ? acc : bdr}`, background: maxSegments === n ? `${acc}15` : "transparent", color: maxSegments === n ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{n}개</button>
             ))}
           </div>
+        </div>
+
+        {/* 주요 기능 안내 */}
+        <div style={{ ...cardStyle, marginTop: 20 }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 12 }}>주요 기능</div>
+          {[
+            ["AI 하이라이트 추출", "긴 영상에서 가장 흥미로운 구간을 AI가 자동으로 찾아줍니다."],
+            ["9:16 세로 포맷", "유튜브 쇼츠, 인스타 릴스, 틱톡에 최적화된 세로 영상으로 변환합니다."],
+            ["자동 자막 생성", "Whisper AI가 음성을 인식해 자막을 자동으로 삽입합니다."],
+            ["프로 편집 도구", "타임라인, 오버레이, 템플릿 등 전문 편집 도구를 제공합니다."],
+          ].map(([title, desc], i) => (
+            <div key={i} style={{ display: "flex", gap: 12, marginBottom: 10, padding: "10px 12px", borderRadius: 10, background: ibg }}>
+              <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${acc}15`, color: acc, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, flexShrink: 0 }}>{i + 1}</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: text }}>{title}</div>
+                <div style={{ fontSize: 11, color: muted, marginTop: 2, lineHeight: 1.5 }}>{desc}</div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {error && <div style={{ marginTop: 12, padding: 14, borderRadius: 12, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", fontSize: 13 }}>{error}</div>}

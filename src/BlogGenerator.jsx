@@ -1683,8 +1683,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
                       <div onClick={()=>setVideoSubMode("shortform")} style={{padding:"28px 16px",borderRadius:16,border:`1.5px solid ${border}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}
                         onMouseEnter={e=>e.currentTarget.style.borderColor=accent} onMouseLeave={e=>e.currentTarget.style.borderColor=border}>
-                        <div style={{width:56,height:56,borderRadius:14,background:`${accent}10`,margin:"0 auto 14px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="6" y="2" width="12" height="20" rx="3" stroke={accent} strokeWidth="1.8"/><path d="M10 14V10l4 2-4 2z" fill={accent}/></svg>
+                        <div style={{width:72,height:72,borderRadius:18,background:`${accent}10`,margin:"0 auto 14px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                          <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="6" y="2" width="12" height="20" rx="3" stroke={accent} strokeWidth="1.8"/><path d="M10 14V10l4 2-4 2z" fill={accent}/></svg>
                         </div>
                         <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>숏폼 편집</div>
                         <div style={{fontSize:11,color:muted,lineHeight:1.5}}>긴 영상에서 AI가<br/>핵심 쇼츠를 자동 추출</div>
@@ -1694,8 +1694,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                       </div>
                       <div onClick={()=>setVideoSubMode("longform")} style={{padding:"28px 16px",borderRadius:16,border:`1.5px solid ${border}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}
                         onMouseEnter={e=>e.currentTarget.style.borderColor=accent} onMouseLeave={e=>e.currentTarget.style.borderColor=border}>
-                        <div style={{width:56,height:56,borderRadius:14,background:`${accent}10`,margin:"0 auto 14px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke={accent} strokeWidth="1.8"/><path d="M8 4v16M16 4v16" stroke={accent} strokeWidth="1" opacity="0.4"/><path d="M2 12h20" stroke={accent} strokeWidth="1" opacity="0.4"/></svg>
+                        <div style={{width:72,height:72,borderRadius:18,background:`${accent}10`,margin:"0 auto 14px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                          <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke={accent} strokeWidth="1.8"/><path d="M8 4v16M16 4v16" stroke={accent} strokeWidth="1" opacity="0.4"/><path d="M2 12h20" stroke={accent} strokeWidth="1" opacity="0.4"/></svg>
                         </div>
                         <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>롱폼 편집</div>
                         <div style={{fontSize:11,color:muted,lineHeight:1.5}}>무음 제거 + 반복 삭제<br/>자막 애니메이션</div>

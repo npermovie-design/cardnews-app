@@ -81,40 +81,40 @@ function VideoEditHub({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, s
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
           {/* 숏폼 */}
           <div onClick={() => setMode("shortform")} className="hover-lift"
-            style={{ padding:"32px 20px", borderRadius:16, border:`1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer", textAlign:"center", transition:"all 0.2s" }}>
-            <div style={{ width:64, height:64, borderRadius:16, background:`${acc}12`, margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            style={{ padding:"36px 20px", borderRadius:16, border:`1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer", textAlign:"center", transition:"all 0.2s" }}>
+            <div style={{ width:80, height:80, borderRadius:20, background:`${acc}10`, margin:"0 auto 18px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
                 <rect x="6" y="2" width="12" height="20" rx="3" stroke={acc} strokeWidth="1.8"/>
                 <path d="M10 14V10l4 2-4 2z" fill={acc}/>
               </svg>
             </div>
-            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:6 }}>숏폼 편집</div>
-            <div style={{ fontSize:12, color:muted, lineHeight:1.6, marginBottom:12 }}>
+            <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:8 }}>숏폼 편집</div>
+            <div style={{ fontSize:13, color:muted, lineHeight:1.6, marginBottom:14 }}>
               긴 영상에서 AI가<br/>핵심 쇼츠를 자동 추출
             </div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:4, justifyContent:"center" }}>
               {["AI 하이라이트 추출","9:16 세로","자동 자막"].map(t => (
-                <span key={t} style={{ padding:"3px 8px", borderRadius:20, background:`${acc}10`, fontSize:10, color:acc, fontWeight:600 }}>{t}</span>
+                <span key={t} style={{ padding:"4px 10px", borderRadius:20, background:`${acc}10`, fontSize:11, color:acc, fontWeight:600 }}>{t}</span>
               ))}
             </div>
           </div>
           {/* 롱폼 */}
           <div onClick={() => setMode("longform")} className="hover-lift"
-            style={{ padding:"32px 20px", borderRadius:16, border:`1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer", textAlign:"center", transition:"all 0.2s" }}>
-            <div style={{ width:64, height:64, borderRadius:16, background:`${acc}12`, margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+            style={{ padding:"36px 20px", borderRadius:16, border:`1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer", textAlign:"center", transition:"all 0.2s" }}>
+            <div style={{ width:80, height:80, borderRadius:20, background:`${acc}10`, margin:"0 auto 18px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
                 <rect x="2" y="4" width="20" height="16" rx="3" stroke={acc} strokeWidth="1.8"/>
                 <path d="M8 4v16M16 4v16" stroke={acc} strokeWidth="1" opacity="0.4"/>
                 <path d="M2 12h20" stroke={acc} strokeWidth="1" opacity="0.4"/>
               </svg>
             </div>
-            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:6 }}>롱폼 편집</div>
-            <div style={{ fontSize:12, color:muted, lineHeight:1.6, marginBottom:12 }}>
+            <div style={{ fontSize:20, fontWeight:900, color:text, marginBottom:8 }}>롱폼 편집</div>
+            <div style={{ fontSize:13, color:muted, lineHeight:1.6, marginBottom:14 }}>
               무음 제거 + 반복 삭제<br/>자동 자막 + 애니메이션
             </div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:4, justifyContent:"center" }}>
               {["무음 자동 제거","반복 삭제","자막 애니메이션"].map(t => (
-                <span key={t} style={{ padding:"3px 8px", borderRadius:20, background:`${acc}10`, fontSize:10, color:acc, fontWeight:600 }}>{t}</span>
+                <span key={t} style={{ padding:"4px 10px", borderRadius:20, background:`${acc}10`, fontSize:11, color:acc, fontWeight:600 }}>{t}</span>
               ))}
             </div>
           </div>
