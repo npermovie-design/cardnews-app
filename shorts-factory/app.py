@@ -626,12 +626,40 @@ async def analyze(file_id: str, request: Request):
     text = subtitles_to_text(subs)
     segments = analyze_subtitles(text, max_segments=max_segments)
 
-    # 자막 경계에 맞춰 시작/끝 시간 조정
+    # 자막 경계에 맞춰 시작/끝 시간 조정 + 유효성 검증
+    last_sub_end = subs[-1]["end_seconds"] if subs else 300
+    valid_segments = []
     for seg in segments:
+        s = float(seg.get("start_seconds", 0))
+        e = float(seg.get("end_seconds", 0))
+        # 음수 보정
+        s = max(0, s)
+        e = max(0, e)
+        # end가 start보다 앞이면 swap
+        if e <= s:
+            s, e = min(s, e), max(s, e)
+        # 여전히 같으면 최소 15초 보장
+        if e <= s:
+            e = s + 15
+        # 영상 범위 초과 방지
+        if s >= last_sub_end:
+            s = max(0, last_sub_end - 30)
+        if e > last_sub_end + 1:
+            e = last_sub_end + 0.5
+        # 최소 5초 보장
+        if e - s < 5:
+            e = min(s + 15, last_sub_end + 0.5)
+        seg["start_seconds"] = s
+        seg["end_seconds"] = e
         seg["start_seconds"], seg["end_seconds"] = snap_to_subtitle_boundaries(
             seg["start_seconds"], seg["end_seconds"], subs
         )
+        # 스냅 후에도 end > start 재확인
+        if seg["end_seconds"] <= seg["start_seconds"]:
+            seg["end_seconds"] = seg["start_seconds"] + 15
+        valid_segments.append(seg)
 
+    segments = valid_segments
     meta["segments"] = segments
 
     # 각 구간에 해당하는 자막도 함께 반환
