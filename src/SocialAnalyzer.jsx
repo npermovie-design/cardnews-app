@@ -264,6 +264,24 @@ function TrendKeywords({ isDark }) {
   );
 }
 
+// ── 실시간 분석 페이지 (독립 메뉴) ──
+export function RealtimeAnalyzer({ isDark }) {
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
+  const acc = "#7c6aff";
+  return (
+    <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 20px 60px" }}>
+      <div style={{ marginBottom: 20 }}>
+        <span style={{ padding: "4px 12px", borderRadius: 16, background: `${acc}12`, fontSize: 12, fontWeight: 700, color: acc }}>실시간 분석</span>
+        <div style={{ fontSize: "clamp(22px,4vw,30px)", fontWeight: 900, color: text, lineHeight: 1.3, marginTop: 10 }}>키워드 트렌드 + 검색량 조회</div>
+        <div style={{ fontSize: 14, color: muted, marginTop: 6, lineHeight: 1.6 }}>실시간 트렌드를 확인하고, 키워드 검색량을 조회해서 글쓰기에 활용하세요.</div>
+      </div>
+      <TrendKeywords isDark={isDark} />
+      <KeywordVolume isDark={isDark} />
+    </div>
+  );
+}
+
 export default function SocialAnalyzer({ isDark, user }) {
   const [links, setLinks] = useState([""]);
   const [loading, setLoading] = useState(false);
@@ -670,12 +688,6 @@ JSON 형식으로 응답:
         <div style={{fontSize:"clamp(22px,4vw,30px)",fontWeight:900,color:text,lineHeight:1.3,marginTop:10}}>SNS 분석 + 키워드 트렌드</div>
         <div style={{fontSize:14,color:muted,marginTop:6,lineHeight:1.6}}>실시간 트렌드 키워드를 확인하고, SNS 계정을 AI가 분석합니다.</div>
       </div>
-
-      {/* 실시간 키워드 트렌드 */}
-      {!hasData && <TrendKeywords isDark={isDark} />}
-
-      {/* 키워드 검색량 조회 */}
-      {!hasData && <KeywordVolume isDark={isDark} />}
 
       {/* SNS 계정 분석 - 사용 가이드 */}
       {!hasData && !loading && (

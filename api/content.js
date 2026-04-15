@@ -518,55 +518,90 @@ async function handleTrends(req, res) {
     }
 
     if (platform === "naver") {
-      // 네이버: 연관검색어 기반 실시간 인기 키워드 (intend + 자동완성 조합)
-      // 시사/트렌드 시드로 "지금 뜨는" 키워드 수집
-      const seeds = ["오늘","실시간","속보","인기","화제","논란","신상","핫딜","주식","코인","부동산","날씨","취업","여행","맛집","다이어트","AI","챗GPT","유튜브","인스타"];
+      // 네이버: 뉴스 헤드라인 키워드 추출 + 자동완성 병합
       const all = [];
       const seen = new Set();
-      for (const q of seeds) {
-        try {
-          const r = await fetch(`https://mac.search.naver.com/mobile/ac?q=${encodeURIComponent(q)}&st=100&frm=mobile_nv&r_format=json&r_enc=UTF-8&r_unicode=0&t_koreng=1`);
-          if (r.ok) {
-            const d = await r.json();
-            // intend(의도 추천)에서 먼저 추출
-            (d.intend || []).forEach(item => {
-              const kw = (item.query || item.transQuery || "").trim();
-              if (kw && kw.length >= 2 && !seen.has(kw)) { seen.add(kw); all.push({ keyword: kw, change: "new" }); }
+
+      // 1. 네이버 뉴스 인기 기사에서 키워드 추출 (실시간 트렌드 근사)
+      try {
+        const newsRes = await fetch("https://news.naver.com/main/ranking/popularDay.naver", {
+          headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+        });
+        if (newsRes.ok) {
+          const buf = await newsRes.arrayBuffer();
+          const html = new TextDecoder("euc-kr").decode(buf);
+          const titles = [...html.matchAll(/class="list_title[^"]*"[^>]*>([^<]+)/g)].map(m => m[1].trim());
+          // 제목에서 핵심 키워드 추출 (따옴표 안 텍스트, 고유명사 등)
+          const kwSet = new Set();
+          titles.slice(0, 20).forEach(title => {
+            // 따옴표/작은따옴표 안 텍스트 추출
+            const quoted = [...title.matchAll(/[''""「」]([^''""「」]{2,15})[''""「」]/g)].map(m => m[1].trim());
+            quoted.forEach(q => { if (q.length >= 2 && q.length <= 15) kwSet.add(q); });
+            // 한글 2~6글자 고유명사 추출 (마침표/조사 제거)
+            const names = title.match(/[가-힣]{2,6}/g) || [];
+            names.forEach(n => {
+              if (!["에서","으로","이다","한다","됐다","했다","있다","없다","같은","대해","위해","라고","에게","까지","부터","에는"].includes(n) && n.length >= 2) {
+                kwSet.add(n);
+              }
             });
-            // items(자동완성)에서 추출
-            (d.items || []).flat().forEach(s => {
-              const kw = s && s[0] ? s[0].trim() : "";
-              if (kw && kw.length >= 2 && !seen.has(kw)) { seen.add(kw); all.push({ keyword: kw, change: "same" }); }
-            });
-          }
-        } catch {}
-        if (all.length >= 25) break;
+          });
+          // 상위 키워드를 네이버 자동완성으로 검증 + 확장
+          const topKws = [...kwSet].slice(0, 15);
+          const acResults = await Promise.allSettled(topKws.map(q =>
+            fetch(`https://mac.search.naver.com/mobile/ac?q=${encodeURIComponent(q)}&st=100&frm=mobile_nv&r_format=json&r_enc=UTF-8&r_unicode=0&t_koreng=1`)
+              .then(r => r.ok ? r.json() : null).catch(() => null)
+          ));
+          acResults.forEach((r, idx) => {
+            // 원래 키워드 먼저 추가
+            const orig = topKws[idx];
+            if (orig && !seen.has(orig)) { seen.add(orig); all.push({ keyword: orig, change: idx < 3 ? "up" : "new" }); }
+            // 자동완성 결과도 추가
+            if (r.status === "fulfilled" && r.value) {
+              (r.value.items || []).flat().slice(0, 2).forEach(s => {
+                const kw = s && s[0] ? s[0].trim() : "";
+                if (kw && kw.length >= 2 && !seen.has(kw)) { seen.add(kw); all.push({ keyword: kw, change: "same" }); }
+              });
+            }
+          });
+        }
+      } catch {}
+
+      // 2. 폴백: 트렌드 시드 자동완성
+      if (all.length < 10) {
+        const seeds = ["오늘","속보","인기","주식","부동산","AI","여행","맛집","건강","드라마"];
+        const fallback = await Promise.allSettled(seeds.map(q =>
+          fetch(`https://mac.search.naver.com/mobile/ac?q=${encodeURIComponent(q)}&st=100&frm=mobile_nv&r_format=json&r_enc=UTF-8&r_unicode=0&t_koreng=1`)
+            .then(r => r.ok ? r.json() : null).catch(() => null)
+        ));
+        fallback.forEach(r => {
+          if (r.status !== "fulfilled" || !r.value) return;
+          (r.value.items || []).flat().slice(0, 2).forEach(s => {
+            const kw = s && s[0] ? s[0].trim() : "";
+            if (kw && kw.length >= 2 && !seen.has(kw)) { seen.add(kw); all.push({ keyword: kw, change: "same" }); }
+          });
+        });
       }
-      if (all.length > 0) return res.json({ keywords: all.slice(0, 20).map((k, i) => ({ ...k, rank: i+1, change: i < 3 ? "up" : i < 8 ? "new" : "same" })), source: "naver_suggest", live: true });
+
+      if (all.length > 0) return res.json({ keywords: all.slice(0, 20).map((k, i) => ({ ...k, rank: i+1 })), source: "naver_news_trend", live: true });
     }
 
     if (platform === "youtube") {
-      // YouTube 자동완성 (EUC-KR → UTF-8 디코딩)
-      const seeds = ["AI","숏폼","마케팅","브이로그","뉴스","주식","요리","운동","게임","음악","공부","여행"];
+      // YouTube: 병렬 자동완성 (EUC-KR 디코딩)
+      const seeds = ["AI","숏폼","마케팅","브이로그","뉴스","주식","요리","운동","게임","음악","공부","여행","인스타","틱톡","챗GPT"];
       const all = [];
       const seen = new Set();
-      for (const q of seeds.slice(0, 10)) {
-        try {
-          const r = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&hl=ko&q=${encodeURIComponent(q)}`);
-          if (r.ok) {
-            const buf = await r.arrayBuffer();
-            const text = new TextDecoder("euc-kr").decode(buf);
-            const d = JSON.parse(text);
-            (d[1] || []).slice(0, 3).forEach(s => {
-              const clean = (s || "").trim();
-              if (clean && clean.length >= 2 && !seen.has(clean)) {
-                seen.add(clean);
-                all.push({ keyword: clean, change: "same" });
-              }
-            });
-          }
-        } catch {}
-      }
+      const results = await Promise.allSettled(seeds.map(q =>
+        fetch(`https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&hl=ko&q=${encodeURIComponent(q)}`)
+          .then(async r => { if (!r.ok) return null; const buf = await r.arrayBuffer(); return JSON.parse(new TextDecoder("euc-kr").decode(buf)); })
+          .catch(() => null)
+      ));
+      results.forEach(r => {
+        if (r.status !== "fulfilled" || !r.value) return;
+        (r.value[1] || []).slice(0, 3).forEach(s => {
+          const clean = (s || "").trim();
+          if (clean && clean.length >= 2 && !seen.has(clean)) { seen.add(clean); all.push({ keyword: clean, change: "same" }); }
+        });
+      });
       if (all.length > 0) return res.json({ keywords: all.slice(0, 20).map((k, i) => ({ ...k, rank: i+1 })), source: "youtube_autocomplete", live: true });
     }
 

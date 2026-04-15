@@ -1077,6 +1077,15 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     setAiMenu("home"); return null;
   }
 
+  if (aiMenu === "realtime_analyzer") {
+    const { RealtimeAnalyzer } = require("./SocialAnalyzer");
+    return (
+      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <RealtimeAnalyzer isDark={isDark} />
+      </div>
+    );
+  }
+
   if (aiMenu === "social_analyzer") {
     return (
       <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
