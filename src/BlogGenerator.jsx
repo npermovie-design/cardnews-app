@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 const ShortsCreator = React.lazy(() => import("./ShortsCreator"));
+const LongFormEditor = React.lazy(() => import("./LongFormEditor"));
 import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage, getAuthToken } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import { useI18n } from "./i18n.jsx";
@@ -137,7 +138,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [imageResult, setImageResult] = useState(null);
   const [imageStyle, setImageStyle] = useState("realistic");
   const [imageAspect, setImageAspect] = useState("1:1");
-  const [shortsMode, setShortsMode] = useState(false); // 쇼츠 인라인 모드
+  const [shortsMode, setShortsMode] = useState(false); // 영상 모드 (선택 화면 표시)
+  const [videoSubMode, setVideoSubMode] = useState(null); // null(선택) | "shortform" | "longform"
   const [shortsYtUrl, setShortsYtUrl] = useState("");
 
   const [showAdvanced, setShowAdvanced] = useState(true);
@@ -1305,7 +1307,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 {id:"write", label:"글쓰기", color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
                 {id:"shorts", label:"영상 생성", color:"#ef4444", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>},
               ].map(m => (
-                <button key={m.id} onClick={()=>{if(m.id==="shorts"){setShortsMode(true);setShortsYtUrl("");}else{setShortsMode(false);setMode(m.id);}}} style={{
+                <button key={m.id} onClick={()=>{if(m.id==="shorts"){setShortsMode(true);setVideoSubMode(null);setShortsYtUrl("");}else{setShortsMode(false);setVideoSubMode(null);setMode(m.id);}}} style={{
                   padding:"10px 20px", borderRadius:20,
                   border: (m.id==="shorts"?shortsMode:mode===m.id) ? `2px solid ${m.color}` : `1.5px solid ${border}`,
                   background: (m.id==="shorts"?shortsMode:mode===m.id) ? (isDark?`${m.color}15`:`${m.color}08`) : "transparent",
@@ -1665,17 +1667,58 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           ) : shortsMode ? (
             <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
               <div style={{padding:"8px 16px",display:"flex",alignItems:"center",gap:8,borderBottom:`1px solid ${border}`}}>
-                <button onClick={()=>{setShortsMode(false);setShortsYtUrl("");}}
+                <button onClick={()=>{if(videoSubMode){setVideoSubMode(null);}else{setShortsMode(false);setShortsYtUrl("");}}}
                   style={{padding:"6px 14px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:text,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit"}}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-                  돌아가기
+                  {videoSubMode ? "영상 유형 선택" : "돌아가기"}
                 </button>
+                {videoSubMode && <span style={{fontSize:12,fontWeight:700,color:accent,padding:"3px 10px",borderRadius:20,background:`${accent}12`}}>{videoSubMode==="shortform"?"숏폼 편집":"롱폼 편집"}</span>}
               </div>
-              <div style={{flex:1,overflow:"hidden"}}>
-                <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>로딩 중...</div>}>
-                  <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} />
-                </Suspense>
-              </div>
+              {!videoSubMode ? (
+                /* 숏폼/롱폼 선택 화면 */
+                <div style={{flex:1,overflowY:"auto",padding:"40px 20px"}}>
+                  <div style={{maxWidth:520,margin:"0 auto",textAlign:"center"}}>
+                    <div style={{fontSize:22,fontWeight:900,color:text,marginBottom:6}}>영상 편집</div>
+                    <div style={{fontSize:13,color:muted,marginBottom:32}}>어떤 영상을 편집하시겠어요?</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+                      <div onClick={()=>setVideoSubMode("shortform")} style={{padding:"28px 16px",borderRadius:16,border:`1.5px solid ${border}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}
+                        onMouseEnter={e=>e.currentTarget.style.borderColor=accent} onMouseLeave={e=>e.currentTarget.style.borderColor=border}>
+                        <div style={{width:56,height:56,borderRadius:14,background:`${accent}10`,margin:"0 auto 14px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="6" y="2" width="12" height="20" rx="3" stroke={accent} strokeWidth="1.8"/><path d="M10 14V10l4 2-4 2z" fill={accent}/></svg>
+                        </div>
+                        <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>숏폼 편집</div>
+                        <div style={{fontSize:11,color:muted,lineHeight:1.5}}>긴 영상에서 AI가<br/>핵심 쇼츠를 자동 추출</div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:3,justifyContent:"center",marginTop:10}}>
+                          {["AI 추출","9:16","자막"].map(t=><span key={t} style={{padding:"2px 7px",borderRadius:12,background:`${accent}08`,fontSize:9,color:accent,fontWeight:600}}>{t}</span>)}
+                        </div>
+                      </div>
+                      <div onClick={()=>setVideoSubMode("longform")} style={{padding:"28px 16px",borderRadius:16,border:`1.5px solid ${border}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}
+                        onMouseEnter={e=>e.currentTarget.style.borderColor=accent} onMouseLeave={e=>e.currentTarget.style.borderColor=border}>
+                        <div style={{width:56,height:56,borderRadius:14,background:`${accent}10`,margin:"0 auto 14px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                          <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke={accent} strokeWidth="1.8"/><path d="M8 4v16M16 4v16" stroke={accent} strokeWidth="1" opacity="0.4"/><path d="M2 12h20" stroke={accent} strokeWidth="1" opacity="0.4"/></svg>
+                        </div>
+                        <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>롱폼 편집</div>
+                        <div style={{fontSize:11,color:muted,lineHeight:1.5}}>무음 제거 + 반복 삭제<br/>자막 애니메이션</div>
+                        <div style={{display:"flex",flexWrap:"wrap",gap:3,justifyContent:"center",marginTop:10}}>
+                          {["무음제거","반복삭제","애니메이션"].map(t=><span key={t} style={{padding:"2px 7px",borderRadius:12,background:`${accent}08`,fontSize:9,color:accent,fontWeight:600}}>{t}</span>)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : videoSubMode === "shortform" ? (
+                <div style={{flex:1,overflow:"hidden"}}>
+                  <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>로딩 중...</div>}>
+                    <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} />
+                  </Suspense>
+                </div>
+              ) : (
+                <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+                  <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>로딩 중...</div>}>
+                    <LongFormEditor isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} />
+                  </Suspense>
+                </div>
+              )}
             </div>
           ) : renderResult()
         )}
