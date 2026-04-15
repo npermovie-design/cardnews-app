@@ -18,7 +18,7 @@ function parseDuration(iso) { if (!iso) return ""; const m = iso.match(/PT(?:(\d
 
 // ── 실시간 키워드 트렌드 컴포넌트 ──
 function TrendKeywords({ isDark }) {
-  const [platform, setPlatform] = React.useState("naver");
+  const [platform, setPlatform] = React.useState("google");
   const [data, setData] = React.useState({});
   const [loading, setLoading] = React.useState({});
   const [lastUpdate, setLastUpdate] = React.useState(null);
@@ -30,9 +30,10 @@ function TrendKeywords({ isDark }) {
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
 
   const PLATFORMS = [
-    { id: "naver", label: "네이버", color: "#03C75A", icon: "N" },
-    { id: "google", label: "구글 트렌드", color: "#4285F4", icon: "G" },
-    { id: "youtube", label: "유튜브", color: "#FF0000", icon: "Y" },
+    { id: "google", label: "구글 트렌드", color: "#4285F4", icon: "G", desc: "실시간 급상승 검색어" },
+    { id: "naver", label: "네이버", color: "#03C75A", icon: "N", desc: "인기 연관검색어" },
+    { id: "youtube", label: "유튜브", color: "#FF0000", icon: "Y", desc: "인기 검색 자동완성" },
+    { id: "reddit", label: "Reddit", color: "#FF4500", icon: "R", desc: "글로벌 커뮤니티 핫토픽" },
   ];
 
   const fetchTrend = React.useCallback(async (pid) => {
@@ -49,7 +50,7 @@ function TrendKeywords({ isDark }) {
     setLoading(p => ({ ...p, [pid]: false }));
   }, [data]);
 
-  React.useEffect(() => { fetchTrend("naver"); fetchTrend("google"); }, []);
+  React.useEffect(() => { Promise.all([fetchTrend("google"), fetchTrend("naver")]); }, []);
   React.useEffect(() => { fetchTrend(platform); }, [platform]);
 
   // 자동 갱신 (5분)
@@ -106,7 +107,7 @@ function TrendKeywords({ isDark }) {
           </div>
           <div style={{ fontSize: 13, color: muted, marginTop: 8 }}>{timeStr} 기준</div>
         </div>
-        <button onClick={() => { setData({}); fetchTrend("naver"); fetchTrend("google"); fetchTrend("youtube"); }}
+        <button onClick={() => { setData({}); fetchTrend("google"); fetchTrend("naver"); fetchTrend(platform); }}
           style={{ padding: "8px 16px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
           새로고침
@@ -125,19 +126,25 @@ function TrendKeywords({ isDark }) {
         ))}
       </div>
 
-      {/* 2컬럼: 네이버 + 선택 플랫폼 (네이버 선택 시 네이버+구글) */}
+      {/* 2컬럼: 구글 트렌드(고정) + 선택 플랫폼 */}
       <div style={{ display: "grid", gridTemplateColumns: typeof window !== "undefined" && window.innerWidth < 700 ? "1fr" : "1fr 1fr", gap: 16 }}>
         <div style={{ padding: 20, borderRadius: 16, border: `1px solid ${bdr}`, background: cardBg }}>
-          {renderList("naver")}
+          {renderList("google")}
         </div>
         <div style={{ padding: 20, borderRadius: 16, border: `1px solid ${bdr}`, background: cardBg }}>
-          {renderList(platform === "naver" ? "google" : platform)}
+          {renderList(platform === "google" ? "naver" : platform)}
         </div>
       </div>
 
-      {/* 안내 */}
-      <div style={{ fontSize: 11, color: muted, marginTop: 10, textAlign: "center" }}>
-        키워드를 클릭하면 클립보드에 복사됩니다 / 자동 갱신: 5분
+      {/* 소스 설명 */}
+      <div style={{ marginTop: 14, padding: "12px 16px", borderRadius: 12, background: isDark ? "rgba(255,255,255,0.03)" : "#f8f8fc", border: `1px solid ${bdr}` }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: muted, marginBottom: 6 }}>데이터 소스 안내</div>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: 11, color: muted, lineHeight: 1.6 }}>
+          {PLATFORMS.map(p => (
+            <span key={p.id}><span style={{ color: p.color, fontWeight: 700 }}>{p.icon}</span> {p.label}: {p.desc}</span>
+          ))}
+        </div>
+        <div style={{ fontSize: 10, color: muted, marginTop: 6, opacity: 0.7 }}>키워드 클릭 시 클립보드 복사 / 5분 자동 갱신</div>
       </div>
     </div>
   );
@@ -544,16 +551,16 @@ JSON 형식으로 응답:
   return (
     <div style={{maxWidth:900,margin:"0 auto",padding:"32px 20px 60px"}}>
       {/* 헤더 */}
-      <div style={{marginBottom:24}}>
+      <div style={{marginBottom:20}}>
         <span style={{padding:"4px 12px",borderRadius:16,background:`${acc}12`,fontSize:12,fontWeight:700,color:acc}}>SNS분석</span>
-        <div style={{fontSize:"clamp(22px,4vw,30px)",fontWeight:900,color:text,lineHeight:1.3,marginTop:10}}>SNS 계정 분석 + 성장 전략</div>
-        <div style={{fontSize:14,color:muted,marginTop:6,lineHeight:1.6}}>운영 중인 SNS 프로필 링크를 입력하면 AI가 분석하고 30일 콘텐츠 플랜을 제공합니다.</div>
+        <div style={{fontSize:"clamp(22px,4vw,30px)",fontWeight:900,color:text,lineHeight:1.3,marginTop:10}}>SNS 분석 + 키워드 트렌드</div>
+        <div style={{fontSize:14,color:muted,marginTop:6,lineHeight:1.6}}>실시간 트렌드 키워드를 확인하고, SNS 계정을 AI가 분석합니다.</div>
       </div>
 
       {/* 실시간 키워드 트렌드 */}
       {!hasData && <TrendKeywords isDark={isDark} />}
 
-      {/* 사용 가이드 */}
+      {/* SNS 계정 분석 - 사용 가이드 */}
       {!hasData && !loading && (
         <Card style={{marginBottom:16,background:isDark?"rgba(124,106,255,0.04)":`${acc}04`,border:`1px solid ${acc}15`}}>
           <div style={{fontSize:14,fontWeight:800,color:text,marginBottom:10}}>사용 방법</div>

@@ -518,8 +518,9 @@ async function handleTrends(req, res) {
     }
 
     if (platform === "naver") {
-      // Naver 모바일 자동완성 (실시간 인기 검색어 추출)
-      const seeds = ["오늘","뉴스","날씨","주식","부동산","맛집","여행","AI","인스타","유튜브","건강","다이어트","영화","드라마","패션","재테크","코인","취업","대출","보험"];
+      // 네이버: 연관검색어 기반 실시간 인기 키워드 (intend + 자동완성 조합)
+      // 시사/트렌드 시드로 "지금 뜨는" 키워드 수집
+      const seeds = ["오늘","실시간","속보","인기","화제","논란","신상","핫딜","주식","코인","부동산","날씨","취업","여행","맛집","다이어트","AI","챗GPT","유튜브","인스타"];
       const all = [];
       const seen = new Set();
       for (const q of seeds) {
@@ -527,19 +528,21 @@ async function handleTrends(req, res) {
           const r = await fetch(`https://mac.search.naver.com/mobile/ac?q=${encodeURIComponent(q)}&st=100&frm=mobile_nv&r_format=json&r_enc=UTF-8&r_unicode=0&t_koreng=1`);
           if (r.ok) {
             const d = await r.json();
-            const items = (d.items || []).flat();
-            items.forEach(s => {
+            // intend(의도 추천)에서 먼저 추출
+            (d.intend || []).forEach(item => {
+              const kw = (item.query || item.transQuery || "").trim();
+              if (kw && kw.length >= 2 && !seen.has(kw)) { seen.add(kw); all.push({ keyword: kw, change: "new" }); }
+            });
+            // items(자동완성)에서 추출
+            (d.items || []).flat().forEach(s => {
               const kw = s && s[0] ? s[0].trim() : "";
-              if (kw && !seen.has(kw) && kw.length >= 2) {
-                seen.add(kw);
-                all.push({ keyword: kw, change: all.length < 3 ? "up" : all.length < 8 ? "new" : "same" });
-              }
+              if (kw && kw.length >= 2 && !seen.has(kw)) { seen.add(kw); all.push({ keyword: kw, change: "same" }); }
             });
           }
         } catch {}
-        if (all.length >= 20) break;
+        if (all.length >= 25) break;
       }
-      if (all.length > 0) return res.json({ keywords: all.slice(0, 20).map((k, i) => ({ ...k, rank: i+1 })), source: "naver_autocomplete", live: true });
+      if (all.length > 0) return res.json({ keywords: all.slice(0, 20).map((k, i) => ({ ...k, rank: i+1, change: i < 3 ? "up" : i < 8 ? "new" : "same" })), source: "naver_suggest", live: true });
     }
 
     if (platform === "youtube") {
@@ -565,6 +568,32 @@ async function handleTrends(req, res) {
         } catch {}
       }
       if (all.length > 0) return res.json({ keywords: all.slice(0, 20).map((k, i) => ({ ...k, rank: i+1 })), source: "youtube_autocomplete", live: true });
+    }
+
+    if (platform === "reddit") {
+      // Reddit 글로벌 + 한국 핫토픽
+      const all = [];
+      const seen = new Set();
+      for (const sub of ["popular", "korea", "hanguk"]) {
+        try {
+          const r = await fetch(`https://www.reddit.com/r/${sub}/hot.json?limit=15`, { headers: { "User-Agent": "SNSMakeit/1.0" } });
+          if (r.ok) {
+            const d = await r.json();
+            (d.data?.children || []).forEach(p => {
+              const title = p.data?.title || "";
+              const score = p.data?.score || 0;
+              if (title && !seen.has(title) && score > 5) {
+                seen.add(title);
+                all.push({ keyword: title.slice(0, 60), change: score > 1000 ? "up" : score > 100 ? "new" : "same", volume: score, subreddit: p.data?.subreddit || sub });
+              }
+            });
+          }
+        } catch {}
+      }
+      if (all.length > 0) {
+        all.sort((a, b) => b.volume - a.volume);
+        return res.json({ keywords: all.slice(0, 20).map((k, i) => ({ ...k, rank: i + 1 })), source: "reddit_hot", live: true });
+      }
     }
 
     if (platform === "tiktok") {
