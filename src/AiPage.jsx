@@ -33,6 +33,98 @@ const AnalyzerPage = React.lazy(() => import("./AnalyzerPage"));
 const SnsConnectionManager = React.lazy(() => import("./SnsConnectionManager"));
 
 /* ════════════════════════════════════════════════════════════
+   VideoEditHub — 숏폼/롱폼 선택 → 해당 에디터 표시
+════════════════════════════════════════════════════════════ */
+function VideoEditHub({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, showPointConfirm, initialMode }) {
+  const [mode, setMode] = React.useState(initialMode); // null | "shortform" | "longform"
+  const acc = "#7c6aff";
+  const text = isDark ? "#fff" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0";
+
+  // 숏폼 선택
+  if (mode === "shortform") {
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <div style={{ padding:"12px 24px 0", display:"flex", alignItems:"center", gap:10 }}>
+          <button onClick={() => setMode(null)} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, fontWeight:700, cursor:"pointer" }}>← 영상 유형 선택</button>
+          <div style={{ display:"inline-block", padding:"4px 12px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:11, fontWeight:700, color:acc }}>숏폼 편집</div>
+        </div>
+        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>불러오는 중...</div>}>
+          <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={() => {}} />
+        </React.Suspense>
+      </div>
+    );
+  }
+
+  // 롱폼 선택
+  if (mode === "longform") {
+    return (
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
+        <div style={{ padding:"12px 24px 0", display:"flex", alignItems:"center", gap:10 }}>
+          <button onClick={() => setMode(null)} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, fontWeight:700, cursor:"pointer" }}>← 영상 유형 선택</button>
+          <div style={{ display:"inline-block", padding:"4px 12px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:11, fontWeight:700, color:acc }}>롱폼 편집</div>
+        </div>
+        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>불러오는 중...</div>}>
+          <LongFormEditor isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={() => {}} />
+        </React.Suspense>
+      </div>
+    );
+  }
+
+  // 선택 화면
+  return (
+    <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
+      <div style={{ maxWidth:640, margin:"0 auto", padding:"48px 20px 60px", textAlign:"center" }}>
+        <div style={{ fontSize:24, fontWeight:900, color:text, marginBottom:8 }}>영상 편집</div>
+        <div style={{ fontSize:13, color:muted, marginBottom:36 }}>어떤 영상을 편집하시겠어요?</div>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+          {/* 숏폼 */}
+          <div onClick={() => setMode("shortform")} className="hover-lift"
+            style={{ padding:"32px 20px", borderRadius:16, border:`1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer", textAlign:"center", transition:"all 0.2s" }}>
+            <div style={{ width:64, height:64, borderRadius:16, background:`${acc}12`, margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <rect x="6" y="2" width="12" height="20" rx="3" stroke={acc} strokeWidth="1.8"/>
+                <path d="M10 14V10l4 2-4 2z" fill={acc}/>
+              </svg>
+            </div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:6 }}>숏폼 편집</div>
+            <div style={{ fontSize:12, color:muted, lineHeight:1.6, marginBottom:12 }}>
+              긴 영상에서 AI가<br/>핵심 쇼츠를 자동 추출
+            </div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:4, justifyContent:"center" }}>
+              {["AI 하이라이트 추출","9:16 세로","자동 자막"].map(t => (
+                <span key={t} style={{ padding:"3px 8px", borderRadius:20, background:`${acc}10`, fontSize:10, color:acc, fontWeight:600 }}>{t}</span>
+              ))}
+            </div>
+          </div>
+          {/* 롱폼 */}
+          <div onClick={() => setMode("longform")} className="hover-lift"
+            style={{ padding:"32px 20px", borderRadius:16, border:`1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer", textAlign:"center", transition:"all 0.2s" }}>
+            <div style={{ width:64, height:64, borderRadius:16, background:`${acc}12`, margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="4" width="20" height="16" rx="3" stroke={acc} strokeWidth="1.8"/>
+                <path d="M8 4v16M16 4v16" stroke={acc} strokeWidth="1" opacity="0.4"/>
+                <path d="M2 12h20" stroke={acc} strokeWidth="1" opacity="0.4"/>
+              </svg>
+            </div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:6 }}>롱폼 편집</div>
+            <div style={{ fontSize:12, color:muted, lineHeight:1.6, marginBottom:12 }}>
+              무음 제거 + 반복 삭제<br/>자동 자막 + 애니메이션
+            </div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:4, justifyContent:"center" }}>
+              {["무음 자동 제거","반복 삭제","자막 애니메이션"].map(t => (
+                <span key={t} style={{ padding:"3px 8px", borderRadius:20, background:`${acc}10`, fontSize:10, color:acc, fontWeight:600 }}>{t}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
    AiPage
 ════════════════════════════════════════════════════════════ */
 
@@ -985,40 +1077,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     setAiMenu("home"); return null;
   }
 
-  // 영상 편집 — 포인트 차감 (추후 Pro 전용 전환 예정)
-  // 영상 메뉴 허브 (숏폼 편집 vs AI 영상 생성 선택)
-  if (aiMenu === "video_edit") {
-    const vAcc = "#7c6aff";
-    return (
-      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <div style={{ maxWidth:640, margin:"0 auto", padding:"48px 20px 60px", textAlign:"center" }}>
-          <div style={{ fontSize:24, fontWeight:900, color: isDark ? "#fff" : "#1a1a2e", marginBottom:8 }}>영상 제작</div>
-          <div style={{ fontSize:13, color: isDark ? "rgba(255,255,255,0.5)" : "#888", marginBottom:36 }}>원하는 영상 제작 도구를 선택하세요</div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-            <div onClick={() => setAiMenu("shorts_make")} className="hover-lift"
-              style={{ padding:"28px 20px", borderRadius:16, border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0"}`, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer", textAlign:"center" }}>
-              <div style={{ width:56, height:56, borderRadius:16, background:`${vAcc}15`, margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke={vAcc} strokeWidth="1.8"/><path d="M8 15V9l6 3-6 3z" fill={vAcc}/></svg>
-              </div>
-              <div style={{ fontSize:16, fontWeight:800, color: isDark ? "#fff" : "#1a1a2e", marginBottom:6 }}>숏폼 자동 편집</div>
-              <div style={{ fontSize:12, color: isDark ? "rgba(255,255,255,0.5)" : "#888", lineHeight:1.5 }}>유튜브 링크 또는 파일에서<br/>AI가 쇼츠를 자동 추출</div>
-              <div style={{ marginTop:12, fontSize:11, color:vAcc, fontWeight:700 }}>분석 35P · 생성 80P</div>
-            </div>
-            <div onClick={() => setAiMenu("longform_edit")} className="hover-lift"
-              style={{ padding:"28px 20px", borderRadius:16, border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0"}`, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer", textAlign:"center" }}>
-              <div style={{ width:56, height:56, borderRadius:16, background:`${vAcc}15`, margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke={vAcc} strokeWidth="1.8"/><path d="M8 4v16M16 4v16" stroke={vAcc} strokeWidth="1.2" opacity="0.5"/><path d="M2 12h20" stroke={vAcc} strokeWidth="1.2" opacity="0.5"/></svg>
-              </div>
-              <div style={{ fontSize:16, fontWeight:800, color: isDark ? "#fff" : "#1a1a2e", marginBottom:6 }}>롱폼 자동 편집</div>
-              <div style={{ fontSize:12, color: isDark ? "rgba(255,255,255,0.5)" : "#888", lineHeight:1.5 }}>무음 제거 · 자동 자막<br/>반복 삭제 · 자막 애니메이션</div>
-              <div style={{ marginTop:12, fontSize:11, color:vAcc, fontWeight:700 }}>분석 35P · 생성 200P</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (aiMenu === "social_analyzer") {
     return (
       <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
@@ -1027,27 +1085,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  if (aiMenu === "video_create" || aiMenu === "shorts_make") {
-    return (
-      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <div style={{ padding:"36px 24px 28px" }}>
-          <div style={{ maxWidth:700, margin:"0 auto" }}>
-            <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:12, fontWeight:700, color:"#7c6aff", marginBottom:14 }}>숏폼 자동편집</div>
-            <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:8 }}>유튜브 영상을 넣으면<br/>AI가 숏폼을 만들어드려요</div>
-            <div style={{ fontSize:14, color: isDark?"rgba(255,255,255,0.5)":"#888", lineHeight:1.6 }}>유튜브 URL을 입력하면 자동으로 하이라이트를 추출하고 편집합니다.</div>
-          </div>
-        </div>
-        <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={st => {}} />
-      </div>
-    );
-  }
-
-  if (aiMenu === "longform_edit") {
-    return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <LongFormEditor isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={st => {}} />
-      </div>
-    );
+  // 영상 편집 — 숏폼/롱폼 선택 → 해당 에디터 표시
+  if (aiMenu === "video_edit" || aiMenu === "video_create" || aiMenu === "shorts_make" || aiMenu === "longform_edit") {
+    return <VideoEditHub isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} initialMode={aiMenu === "longform_edit" ? "longform" : aiMenu === "shorts_make" ? "shortform" : null} />;
   }
 
 
