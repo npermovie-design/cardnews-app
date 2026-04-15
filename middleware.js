@@ -78,6 +78,11 @@ const PAGE_META = {
     desc: "AI가 매일 분석하는 SNS 마케팅 뉴스. 인스타그램, 틱톡, 유튜브, 네이버 최신 트렌드와 알고리즘 변경 소식을 확인하세요.",
     keywords: "SNS 뉴스, SNS 마케팅 브리핑, 인스타그램 뉴스, 틱톡 뉴스, 마케팅 트렌드",
   },
+  "/programs": {
+    title: "SNS메이킷 프로그램 - SNS 운영 필수 솔루션",
+    desc: "SNS 운영과 사업 확장을 위한 필수 솔루션 패키지. 디자인, 마케팅, 자동화 도구를 만나보세요.",
+    keywords: "SNS 프로그램, 마케팅 도구, 디자인 템플릿, SNS 자동화",
+  },
 };
 
 // 카테고리별 이름
@@ -211,8 +216,51 @@ export default async function middleware(request) {
 
   let title, desc, image, keywords, bodyContent = "";
 
+  // ── 프로그램 상세 페이지: /programs/:id ──
+  const programMatch = path.match(/\/programs\/([a-f0-9-]+)/i);
+  if (programMatch) {
+    const productId = programMatch[1];
+    try {
+      const sbUrl = "https://ckzjnpzadeovrasucjmu.supabase.co";
+      const sbKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
+      const res = await fetch(`${sbUrl}/rest/v1/programs?id=eq.${productId}&select=title,desc,thumbnail,category,price_label,tags`, {
+        headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}` },
+      });
+      const data = await res.json();
+      const product = data?.[0];
+      if (product) {
+        title = `${product.title} - SNS메이킷 프로그램`;
+        desc = (product.desc || "").slice(0, 155) + ((product.desc || "").length > 155 ? "..." : "");
+        if (product.thumbnail) image = product.thumbnail;
+        const tagStr = Array.isArray(product.tags) ? product.tags.join(", ") : "";
+        keywords = `SNS메이킷, 프로그램, ${tagStr}`;
+        bodyContent = `<article><h2>${esc(product.title || "")}</h2><p>${esc(desc)}</p></article>`;
+      }
+    } catch {}
+  }
+
+  // ── SNS뉴스 상세: /snsnews/:id ──
+  const newsMatch = !title && path.match(/\/snsnews\/(\d+)/);
+  if (newsMatch) {
+    try {
+      const sbUrl = "https://ckzjnpzadeovrasucjmu.supabase.co";
+      const sbKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
+      const res = await fetch(`${sbUrl}/rest/v1/sns_news?id=eq.${newsMatch[1]}&select=title,summary,image_url`, {
+        headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}` },
+      });
+      const data = await res.json();
+      const news = data?.[0];
+      if (news) {
+        title = `${(news.title || "").slice(0, 70)} - SNS뉴스 | SNS메이킷`;
+        desc = (news.summary || "").slice(0, 155);
+        if (news.image_url && isUsableOgImage(news.image_url)) image = news.image_url;
+        keywords = "SNS뉴스, SNS 마케팅, " + extractKeywords(news.title, news.summary, "SNS뉴스");
+      }
+    } catch {}
+  }
+
   // 게시글 URL 처리: /community/:cat/post-:id
-  const postMatch = path.match(/\/community\/(\w+)\/post-(.+)/);
+  const postMatch = !title && path.match(/\/community\/(\w+)\/post-(.+)/);
   if (postMatch) {
     const [, catId, postId] = postMatch;
     const catName = COMMUNITY_CATS[catId] || catId;
