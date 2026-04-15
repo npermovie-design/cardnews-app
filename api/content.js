@@ -543,30 +543,28 @@ async function handleTrends(req, res) {
     }
 
     if (platform === "youtube") {
-      // YouTube 자동완성 (UTF-8 강제)
+      // YouTube 자동완성 (JSON 엔드포인트 사용 - UTF-8 보장)
       const seeds = ["AI","숏폼","마케팅","브이로그","뉴스","주식","요리","운동","게임","음악","공부","여행"];
       const all = [];
       const seen = new Set();
       for (const q of seeds.slice(0, 10)) {
         try {
-          const r = await fetch(`https://clients1.google.com/complete/search?client=youtube&hl=ko&gl=kr&gs_ri=youtube&ds=yt&q=${encodeURIComponent(q)}`);
+          // Firefox client는 순수 JSON을 반환 (JSONP 아님)
+          const r = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&hl=ko&q=${encodeURIComponent(q)}`, {
+            headers: { "Accept-Charset": "utf-8" },
+          });
           if (r.ok) {
-            const raw = await r.arrayBuffer();
-            const text = new TextDecoder("utf-8").decode(raw);
-            // JSONP 파싱: window.google.ac.h(...) → JSON 배열 추출
-            const jsonMatch = text.match(/\[.*\]/s);
-            if (jsonMatch) {
-              const parsed = JSON.parse(jsonMatch[0]);
-              (parsed[1] || []).slice(0, 3).forEach(item => {
-                const kw = (Array.isArray(item) ? item[0] : item) || "";
-                // HTML 태그 제거
-                const clean = kw.replace(/<[^>]+>/g, "").trim();
-                if (clean && !seen.has(clean)) {
-                  seen.add(clean);
-                  all.push({ keyword: clean, change: "same" });
-                }
-              });
-            }
+            // arrayBuffer → UTF-8 디코딩
+            const buf = await r.arrayBuffer();
+            const text = Buffer.from(buf).toString("utf8");
+            const d = JSON.parse(text);
+            (d[1] || []).slice(0, 3).forEach(s => {
+              const clean = (s || "").trim();
+              if (clean && clean.length >= 2 && !seen.has(clean)) {
+                seen.add(clean);
+                all.push({ keyword: clean, change: "same" });
+              }
+            });
           }
         } catch {}
       }
