@@ -543,20 +543,16 @@ async function handleTrends(req, res) {
     }
 
     if (platform === "youtube") {
-      // YouTube 자동완성 (JSON 엔드포인트 사용 - UTF-8 보장)
+      // YouTube 자동완성 (EUC-KR → UTF-8 디코딩)
       const seeds = ["AI","숏폼","마케팅","브이로그","뉴스","주식","요리","운동","게임","음악","공부","여행"];
       const all = [];
       const seen = new Set();
       for (const q of seeds.slice(0, 10)) {
         try {
-          // Firefox client는 순수 JSON을 반환 (JSONP 아님)
-          const r = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&hl=ko&q=${encodeURIComponent(q)}`, {
-            headers: { "Accept-Charset": "utf-8" },
-          });
+          const r = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&hl=ko&q=${encodeURIComponent(q)}`);
           if (r.ok) {
-            // arrayBuffer → UTF-8 디코딩
             const buf = await r.arrayBuffer();
-            const text = Buffer.from(buf).toString("utf8");
+            const text = new TextDecoder("euc-kr").decode(buf);
             const d = JSON.parse(text);
             (d[1] || []).slice(0, 3).forEach(s => {
               const clean = (s || "").trim();
