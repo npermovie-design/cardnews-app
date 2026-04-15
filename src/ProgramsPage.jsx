@@ -22,6 +22,8 @@ const CATEGORIES = [
   { id: "marketing", label: "마케팅" },
   { id: "utility", label: "유틸리티" },
   { id: "template", label: "템플릿" },
+  { id: "free_photo", label: "무료사진", special: true },
+  { id: "free_video", label: "무료영상", special: true },
 ];
 
 /*
@@ -850,6 +852,69 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
   const [category, setCategory] = useState("all");
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("latest");
+
+  // 무료 미디어 검색
+  const [mediaQuery, setMediaQuery] = useState("");
+  const [mediaResults, setMediaResults] = useState([]);
+  const [mediaLoading, setMediaLoading] = useState(false);
+  const isMediaTab = category === "free_photo" || category === "free_video";
+
+  const searchMedia = async (q) => {
+    setMediaLoading(true);
+    setMediaResults([]);
+    try {
+      const results = [];
+      const isVideo = category === "free_video";
+      // Pixabay
+      try {
+        const suffix = isVideo ? "&video=true" : "&image_type=photo";
+        const d = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(q || "nature")}&per_page=18&page=1&safesearch=true${suffix}`).then(r=>r.json());
+        (d.hits||[]).forEach(h => {
+          if (isVideo) {
+            results.push({ id: "px_"+h.id, title: h.tags, url: h.videos?.medium?.url||"", preview: h.videos?.tiny?.thumbnail||"", type: "video", src: "Pixabay" });
+          } else {
+            results.push({ id: "px_"+h.id, title: h.tags, url: h.largeImageURL||h.webformatURL, preview: h.webformatURL||h.previewURL, type: "image", src: "Pixabay" });
+          }
+        });
+      } catch {}
+      // Pexels
+      try {
+        const path = isVideo ? (q ? "videos/search" : "videos/popular") : (q ? "v1/search" : "v1/curated");
+        const params = q ? `query=${encodeURIComponent(q)}&per_page=18&page=1` : "per_page=18&page=1";
+        const d = await fetch(`/api/proxy-pexels?path=${path}&${params}`).then(r=>r.json());
+        if (isVideo) {
+          (d.videos||[]).forEach(v => {
+            results.push({ id: "pe_"+v.id, title: v.user?.name||"Pexels", url: (v.video_files||[]).find(f=>f.quality==="hd")?.link||(v.video_files||[])[0]?.link||"", preview: v.image||"", type: "video", src: "Pexels" });
+          });
+        } else {
+          (d.photos||[]).forEach(p => {
+            results.push({ id: "pe_"+p.id, title: p.photographer||"Pexels", url: p.src?.large2x||p.src?.large||"", preview: p.src?.medium||"", type: "image", src: "Pexels" });
+          });
+        }
+      } catch {}
+      // Unsplash (사진만)
+      if (!isVideo) {
+        try {
+          const key = import.meta.env.VITE_UNSPLASH_KEY;
+          if (key) {
+            const uUrl = q ? `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&per_page=18&page=1&client_id=${key}` : `https://api.unsplash.com/photos?per_page=18&order_by=popular&client_id=${key}`;
+            const d = await fetch(uUrl).then(r=>r.json());
+            const photos = q ? (d.results||[]) : (Array.isArray(d)?d:[]);
+            photos.forEach(p => {
+              results.push({ id: "un_"+p.id, title: p.description||p.alt_description||"Unsplash", url: p.urls?.full||p.urls?.regular||"", preview: p.urls?.regular||p.urls?.small||"", type: "image", src: "Unsplash" });
+            });
+          }
+        } catch {}
+      }
+      setMediaResults(results);
+    } catch {}
+    setMediaLoading(false);
+  };
+
+  // 무료 미디어 탭 진입 시 인기 사진/영상 로드
+  React.useEffect(() => {
+    if (isMediaTab) searchMedia("");
+  }, [category]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState(null);
@@ -921,9 +986,9 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
     } else {
       window.history.replaceState(null, "", "/programs");
       if (onProductIdChange) onProductIdChange(null);
-      document.title = "프로그램 스토어 - SNS메이킷";
-      updateMeta("og:title", "프로그램 스토어 - SNS메이킷");
-      updateMeta("og:description", "SNS 운영과 사업 확장을 위한 필수 솔루션 패키지.");
+      document.title = "자료실 - SNS메이킷";
+      updateMeta("og:title", "자료실 - SNS메이킷");
+      updateMeta("og:description", "프로그램, 무료 사진, 무료 영상 등 다양한 자료를 다운로드하세요.");
       updateMeta("og:url", "https://snsmakeit.com/programs");
       updateMeta("og:image", "https://snsmakeit.com/og-default.png");
       updateMeta("og:type", "website");
@@ -1007,15 +1072,15 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
         <div style={{
           display: "inline-block", padding: "5px 14px", borderRadius: 20,
           background: `${BRAND}12`, color: BRAND, fontSize: 12, fontWeight: 600, marginBottom: 16,
-        }}>Program Store</div>
+        }}>Resource Library</div>
         <h1 style={{
           fontSize: "clamp(28px, 5vw, 42px)", fontWeight: 800, lineHeight: 1.25, marginBottom: 14, letterSpacing: -0.5,
         }}>
-          <span style={{ background: GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>도구만 바꿔도 속도가 달라집니다.</span>
+          <span style={{ background: GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>필요한 자료를 한 곳에서.</span>
         </h1>
         <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7 }}>
-          SNS 운영과 사업 확장을 위한 필수 솔루션 패키지.<br />
-          상세페이지 템플릿, 자동화 프로그램, 프리미엄 효과음까지.
+          프로그램, 템플릿, 무료 사진, 무료 영상까지.<br />
+          SNS 운영에 필요한 모든 자료를 다운로드하세요.
         </p>
       </section>
 
@@ -1027,7 +1092,7 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
             border: `1px solid ${C.border}`,
           }}>
             <span style={{ color: C.muted, fontSize: 16 }}>&#128269;</span>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="프로그램 검색..."
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="자료실 검색..."
               style={{ flex: 1, border: "none", outline: "none", background: "transparent", color: C.text, fontSize: 14 }} />
           </div>
           <select value={sort} onChange={e => setSort(e.target.value)} style={{
@@ -1050,20 +1115,73 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
             </button>
           )}
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {CATEGORIES.map(c => (
             <button key={c.id} onClick={() => setCategory(c.id)} style={{
-              padding: "7px 18px", borderRadius: 20, border: "none", cursor: "pointer",
+              padding: "7px 18px", borderRadius: 20, border: c.special ? `1.5px solid ${category === c.id ? "#10b981" : (C.bg === "#fff" ? "#d1fae5" : "rgba(16,185,129,0.3)")}` : "none", cursor: "pointer",
               fontSize: 13, fontWeight: 600, transition: "all 0.15s",
-              background: category === c.id ? BRAND : (C.bg === "#fff" ? "#f0f0f4" : "rgba(255,255,255,0.08)"),
-              color: category === c.id ? "#fff" : C.muted,
+              background: category === c.id ? (c.special ? "#10b981" : BRAND) : (c.special ? (C.bg === "#fff" ? "#ecfdf5" : "rgba(16,185,129,0.1)") : (C.bg === "#fff" ? "#f0f0f4" : "rgba(255,255,255,0.08)")),
+              color: category === c.id ? "#fff" : (c.special ? "#10b981" : C.muted),
             }}>{c.label}</button>
           ))}
         </div>
       </section>
 
+      {/* 무료 미디어 검색 영역 */}
+      {isMediaTab && (
+        <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 20px 20px" }}>
+          <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, background: C.bg === "#fff" ? "#f5f5f8" : "rgba(255,255,255,0.06)", border: `1px solid ${C.border}` }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input value={mediaQuery} onChange={e => setMediaQuery(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter") searchMedia(mediaQuery); }}
+                placeholder={category === "free_photo" ? "무료 사진 검색 (영어 추천)..." : "무료 영상 검색 (영어 추천)..."}
+                style={{ flex: 1, border: "none", outline: "none", background: "transparent", color: C.text, fontSize: 14 }} />
+            </div>
+            <button onClick={() => searchMedia(mediaQuery)} style={{ padding: "10px 20px", borderRadius: 12, border: "none", background: "#10b981", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+              검색
+            </button>
+          </div>
+          <div style={{ display: "flex", gap: 6, marginBottom: 16, fontSize: 11, color: C.muted }}>
+            <span style={{ padding: "3px 10px", borderRadius: 12, background: C.bg === "#fff" ? "#f0f0f4" : "rgba(255,255,255,0.06)" }}>Pexels</span>
+            <span style={{ padding: "3px 10px", borderRadius: 12, background: C.bg === "#fff" ? "#f0f0f4" : "rgba(255,255,255,0.06)" }}>Pixabay</span>
+            {category === "free_photo" && <span style={{ padding: "3px 10px", borderRadius: 12, background: C.bg === "#fff" ? "#f0f0f4" : "rgba(255,255,255,0.06)" }}>Unsplash</span>}
+          </div>
+        </section>
+      )}
+
       <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 20px 80px" }}>
-        {loading ? (
+        {isMediaTab ? (
+          mediaLoading ? (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted }}><div style={{ fontSize: 14 }}>검색 중...</div></div>
+          ) : mediaResults.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted }}>
+              <div style={{ fontSize: 14 }}>검색어를 입력하고 Enter를 눌러주세요</div>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
+              {mediaResults.map(m => (
+                <div key={m.id} style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg === "#fff" ? "#fff" : "rgba(255,255,255,0.04)", cursor: "pointer", transition: "all 0.2s" }}
+                  onClick={() => { const a = document.createElement("a"); a.href = m.url; a.download = (m.title || "media").slice(0,30); a.target = "_blank"; a.click(); }}>
+                  <div style={{ aspectRatio: category === "free_video" ? "16/9" : "4/3", overflow: "hidden", background: "#000" }}>
+                    {m.type === "video" ? (
+                      <video src={m.url} poster={m.preview} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} onMouseEnter={e => e.target.play()} onMouseLeave={e => { e.target.pause(); e.target.currentTime = 0; }} />
+                    ) : (
+                      <img src={m.preview} alt={m.title} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    )}
+                  </div>
+                  <div style={{ padding: "10px 12px" }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.title}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+                      <span style={{ fontSize: 10, color: "#10b981", fontWeight: 600, padding: "2px 8px", borderRadius: 10, background: "rgba(16,185,129,0.1)" }}>{m.src}</span>
+                      <span style={{ fontSize: 10, color: C.muted }}>무료</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : loading ? (
           <div style={{ textAlign: "center", padding: "80px 20px", color: C.muted }}>
             <div style={{ fontSize: 15, fontWeight: 500 }}>불러오는 중...</div>
           </div>

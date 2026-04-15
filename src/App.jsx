@@ -463,7 +463,7 @@ export default function App() {
     // SEO: 다국어 동적 타이틀
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
     const titleMap = {
-      ko: { home:"SNS메이킷 - AI 블로그·상세페이지·이미지 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"프로그램 스토어", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책", snsnews:"SNS뉴스" },
+      ko: { home:"SNS메이킷 - AI 블로그·상세페이지·이미지 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자료실", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책", snsnews:"SNS뉴스" },
       en: { home:"SNS Makeit - AI Card News · Blog · Image Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy", snsnews:"SNS News" },
       ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", programs:"プログラムストア", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約", snsnews:"SNSニュース" },
     };
@@ -888,7 +888,7 @@ export default function App() {
           <NavBtn id="home" label={t("home")} />
           {/* AI 도구 - 드롭다운 없이 바로 진입 */}
           <NavBtn id="ai" label="AI 도구" />
-          <NavBtn id="programs" label="프로그램" />
+          <NavBtn id="programs" label="자료실" />
           <NavBtn id="snsnews" label="SNS뉴스" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
           {/* 커뮤니티 */}
@@ -1130,7 +1130,7 @@ export default function App() {
           {[
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
             { id: "ai",       label: "AI 도구",       onClick: () => { navigate("ai"); setMobileOpen(false); },       active: page==="ai"||page==="analyzer" },
-            { id: "programs", label: "프로그램", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
+            { id: "programs", label: "자료실", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
             { id: "snsnews",  label: "SNS뉴스",       onClick: () => { navigate("snsnews"); setMobileOpen(false); }, active: page==="snsnews" },
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
             { id: "pricing",  label: t("pricing"),    onClick: () => { navigate("pricing"); setMobileOpen(false); }, active: page==="pricing" },
