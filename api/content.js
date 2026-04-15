@@ -501,57 +501,72 @@ async function handleTrends(req, res) {
 
   try {
     if (platform === "google") {
-      // Google Trends Daily (Korea)
-      const r = await fetch("https://trends.google.co.kr/trends/trendingsearches/daily/rss?geo=KR");
+      // Google Trends Daily (Korea) - trends.google.com (not .co.kr)
+      const r = await fetch("https://trends.google.com/trending/rss?geo=KR");
       if (r.ok) {
         const xml = await r.text();
-        const items = [...xml.matchAll(/<title>([^<]+)<\/title>/g)].slice(1, 21);
-        const keywords = items.map((m, i) => ({
-          rank: i + 1,
-          keyword: m[1].trim(),
-          change: i < 5 ? "up" : i < 10 ? "same" : "new",
-        }));
-        if (keywords.length > 0) return res.json({ keywords, source: "google_trends_rss", live: true });
-      }
-      // Fallback: Google Trends JSON
-      const r2 = await fetch("https://trends.google.co.kr/trending/rss?geo=KR");
-      if (r2.ok) {
-        const xml2 = await r2.text();
-        const items2 = [...xml2.matchAll(/<title>([^<]+)<\/title>/g)].slice(1, 21);
-        const kw2 = items2.map((m, i) => ({ rank: i+1, keyword: m[1].trim(), change: i<5?"up":"same" }));
-        if (kw2.length > 0) return res.json({ keywords: kw2, source: "google_trends_rss2", live: true });
+        const titles = [...xml.matchAll(/<item>\s*<title>([^<]+)<\/title>/gs)];
+        const volumes = [...xml.matchAll(/<ht:approx_traffic>([^<]+)<\/ht:approx_traffic>/g)];
+        if (titles.length > 0) {
+          const keywords = titles.slice(0, 20).map((m, i) => {
+            const vol = volumes[i] ? parseInt((volumes[i][1] || "0").replace(/[^0-9]/g, "")) : 0;
+            return { rank: i + 1, keyword: m[1].trim(), change: i < 3 ? "up" : i < 8 ? "new" : "same", volume: vol };
+          });
+          return res.json({ keywords, source: "google_trends_rss", live: true });
+        }
       }
     }
 
     if (platform === "naver") {
-      // Naver 실시간 검색 (자동완성 기반)
-      const seeds = ["AI","챗GPT","인스타","유튜브","블로그","마케팅","디자인","부동산","주식","여행","맛집","다이어트","영화","게임","패션"];
+      // Naver 모바일 자동완성 (실시간 인기 검색어 추출)
+      const seeds = ["오늘","뉴스","날씨","주식","부동산","맛집","여행","AI","인스타","유튜브","건강","다이어트","영화","드라마","패션","재테크","코인","취업","대출","보험"];
       const all = [];
-      for (const q of seeds.slice(0, 8)) {
+      const seen = new Set();
+      for (const q of seeds) {
         try {
-          const r = await fetch(`https://ac.search.naver.com/nx/ac?q=${encodeURIComponent(q)}&con=1&frm=nv&ans=2&r_format=json&r_enc=UTF-8&t_koreng=1&run=2`);
+          const r = await fetch(`https://mac.search.naver.com/mobile/ac?q=${encodeURIComponent(q)}&st=100&frm=mobile_nv&r_format=json&r_enc=UTF-8&r_unicode=0&t_koreng=1`);
           if (r.ok) {
             const d = await r.json();
-            (d.items || []).flat().forEach(s => {
-              if (s && s[0] && !all.find(x => x.keyword === s[0])) all.push({ keyword: s[0], change: "same" });
+            const items = (d.items || []).flat();
+            items.forEach(s => {
+              const kw = s && s[0] ? s[0].trim() : "";
+              if (kw && !seen.has(kw) && kw.length >= 2) {
+                seen.add(kw);
+                all.push({ keyword: kw, change: all.length < 3 ? "up" : all.length < 8 ? "new" : "same" });
+              }
             });
           }
         } catch {}
+        if (all.length >= 20) break;
       }
       if (all.length > 0) return res.json({ keywords: all.slice(0, 20).map((k, i) => ({ ...k, rank: i+1 })), source: "naver_autocomplete", live: true });
     }
 
     if (platform === "youtube") {
+      // YouTube 자동완성 (UTF-8 강제)
       const seeds = ["AI","숏폼","마케팅","브이로그","뉴스","주식","요리","운동","게임","음악","공부","여행"];
       const all = [];
-      for (const q of seeds.slice(0, 8)) {
+      const seen = new Set();
+      for (const q of seeds.slice(0, 10)) {
         try {
-          const r = await fetch(`https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${encodeURIComponent(q)}&hl=ko`);
+          const r = await fetch(`https://clients1.google.com/complete/search?client=youtube&hl=ko&gl=kr&gs_ri=youtube&ds=yt&q=${encodeURIComponent(q)}`);
           if (r.ok) {
-            const d = await r.json();
-            (d[1] || []).slice(0, 3).forEach(s => {
-              if (!all.find(x => x.keyword === s)) all.push({ keyword: s, change: "same" });
-            });
+            const raw = await r.arrayBuffer();
+            const text = new TextDecoder("utf-8").decode(raw);
+            // JSONP 파싱: window.google.ac.h(...) → JSON 배열 추출
+            const jsonMatch = text.match(/\[.*\]/s);
+            if (jsonMatch) {
+              const parsed = JSON.parse(jsonMatch[0]);
+              (parsed[1] || []).slice(0, 3).forEach(item => {
+                const kw = (Array.isArray(item) ? item[0] : item) || "";
+                // HTML 태그 제거
+                const clean = kw.replace(/<[^>]+>/g, "").trim();
+                if (clean && !seen.has(clean)) {
+                  seen.add(clean);
+                  all.push({ keyword: clean, change: "same" });
+                }
+              });
+            }
           }
         } catch {}
       }
