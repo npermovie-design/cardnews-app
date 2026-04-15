@@ -352,8 +352,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         if (selectedOverlay) { setOverlays(prev => prev.filter(o => o.id !== selectedOverlay)); setSelectedOverlay(null); }
       }
       // ← →: playhead 이동 (Shift: 5초)
-      if (e.key === "ArrowLeft") { e.preventDefault(); setPlayhead(prev => Math.max(0, prev - (e.shiftKey ? 5 : 1))); }
-      if (e.key === "ArrowRight") { e.preventDefault(); setPlayhead(prev => Math.min(clipDuration, prev + (e.shiftKey ? 5 : 1))); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); userSeekRef.current = true; setPlayhead(prev => Math.max(0, prev - (e.shiftKey ? 5 : 1))); }
+      if (e.key === "ArrowRight") { e.preventDefault(); userSeekRef.current = true; setPlayhead(prev => Math.min(clipDuration, prev + (e.shiftKey ? 5 : 1))); }
       // Home/End: 처음/끝
       if (e.key === "Home") { e.preventDefault(); setPlayhead(0); }
       if (e.key === "End") { e.preventDefault(); setPlayhead(clipDuration); }
@@ -432,15 +432,19 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     return videoSegs.length > 0 ? videoSegs[videoSegs.length - 1].end : ph;
   };
 
-  // seek: 재생 중이 아닐 때만 currentTime 설정
+  // seek: playhead 변경 시 비디오 currentTime 동기화 (재생 중에도 가능)
+  const userSeekRef = useRef(false); // 사용자 직접 seek 플래그
   useEffect(() => {
     const v = videoRef.current;
-    if (!v || step !== "edit" || isPlaying) return;
+    if (!v || step !== "edit") return;
+    // 재생 중에는 사용자 직접 seek만 허용 (자동 tick 업데이트는 무시)
+    if (isPlaying && !userSeekRef.current) return;
     const target = playheadToAbsolute(playhead);
     if (Math.abs(v.currentTime - target) > 0.3) {
       seekingRef.current = true;
       v.currentTime = target;
     }
+    userSeekRef.current = false;
   }, [playhead, editIdx, step, videoSegs]);
 
   // play/pause
@@ -1265,17 +1269,17 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         </div>
 
         {/* CENTER: Preview (검은바 레이아웃 + 드래그 가능 오버레이) */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#0c0c1a", padding: 12, minWidth: 0 }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#0c0c1a", padding: 12, minWidth: 0, overflow: "hidden" }}>
           {/* 레이아웃 전환 */}
-          <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+          <div style={{ display: "flex", gap: 4, marginBottom: 8, flexShrink: 0 }}>
             {[["bars","검은바"],["full","전체화면"]].map(([k,l]) => (
               <button key={k} onClick={() => setLayoutMode(k)}
                 style={{ padding: "4px 12px", borderRadius: 6, border: layoutMode===k ? "1px solid #7c6aff" : "1px solid #2a2a4a", background: layoutMode===k ? "rgba(124,106,255,0.15)" : "#1a1a30", color: layoutMode===k ? "#a5b4fc" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
             ))}
           </div>
 
-          {/* 9:16 프리뷰 (화면에 맞게 자동 크기) */}
-          <div ref={previewRef} style={{ width: "min(420px, 45vh * 9 / 16)", height: "min(746px, 80vh)", aspectRatio: "9/16", borderRadius: 8, background: "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", flexShrink: 0, position: "relative", userSelect: "none" }}>
+          {/* 9:16 프리뷰 (고정 비율) */}
+          <div ref={previewRef} style={{ width: 360, maxWidth: "100%", aspectRatio: "9/16", maxHeight: "calc(100% - 40px)", borderRadius: 8, background: "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", flexShrink: 1, position: "relative", userSelect: "none" }}>
 
             {layoutMode === "bars" ? (<>
               {/* 검은바 레이아웃: 상단바 + 영상 + 하단바 */}
@@ -1765,7 +1769,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 window.removeEventListener("mousemove", onMove);
                 window.removeEventListener("mouseup", onUp);
                 if (!moved) {
-                  // 단순 클릭 → playhead 이동만
+                  // 단순 클릭 → playhead 이동 (재생 중에도 가능)
+                  userSeekRef.current = true;
                   setPlayhead(startPh);
                   setRangeSelecting(null);
                   return;
