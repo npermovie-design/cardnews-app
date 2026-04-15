@@ -32,6 +32,11 @@ const CAPTION_ANIMATIONS = [
   { id: "slide", name: "슬라이드", desc: "아래에서 올라옴" },
   { id: "karaoke", name: "가라오케", desc: "발음에 맞춰 색상 변경" },
   { id: "glow", name: "글로우", desc: "빛나는 텍스트 효과" },
+  { id: "pop", name: "팝", desc: "톡 튀어나오는 효과" },
+  { id: "wave", name: "웨이브", desc: "글자가 물결처럼" },
+  { id: "shake", name: "쉐이크", desc: "흔들림 강조" },
+  { id: "blur_in", name: "블러 인", desc: "흐림에서 선명하게" },
+  { id: "color_cycle", name: "컬러 사이클", desc: "색상이 변하는 효과" },
 ];
 
 // ── 반복 단어 감지 ──
@@ -109,9 +114,9 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
   });
 
   // 무음 감지/제거
-  const [silenceThreshold, setSilenceThreshold] = useState(-35); // dB
-  const [silenceMinDuration, setSilenceMinDuration] = useState(0.5); // 초
-  const [silenceGap, setSilenceGap] = useState(0.15); // 무음 제거 후 남길 간격 (초)
+  const [silenceThreshold, setSilenceThreshold] = useState(-40); // dB (더 보수적)
+  const [silenceMinDuration, setSilenceMinDuration] = useState(0.8); // 초 (짧은 쉼은 유지)
+  const [silenceGap, setSilenceGap] = useState(0.25); // 무음 제거 후 남길 간격 (자연스러운 전환)
   const [silenceRegions, setSilenceRegions] = useState([]); // [{start, end}]
   const [silenceRemoved, setSilenceRemoved] = useState(false);
   const [waveformData, setWaveformData] = useState(null); // Float32Array (다운샘플된 파형)
@@ -469,20 +474,32 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
       const d = await r.json();
       setFileId(d.file_id);
 
-      // 3. STT (음성인식)
-      setLoadingMsg("음성 인식 중... (자막 생성)");
+      // 3. STT (음성인식) - 전체 영상 자막 생성
+      setLoadingMsg("음성 인식 중... (전체 자막 생성, 긴 영상은 시간이 걸릴 수 있습니다)");
       const sttResult = await apiCall(`/analyze/${d.file_id}`, {
         method: "POST",
-        body: JSON.stringify({ max_segments: 1, longform: true }),
-        timeout: 300000,
+        body: JSON.stringify({ max_segments: 1, longform: true, full_subtitles: true }),
+        timeout: 600000, // 10분 타임아웃 (긴 영상 대응)
       });
 
-      // 자막 추출
-      const seg = sttResult.segments?.[0];
-      const subs = seg?.subtitles || [];
-      setSubtitles(subs);
+      // 자막 추출 - 모든 세그먼트의 자막 합침
+      const allSubs = [];
+      for (const seg of (sttResult.segments || [])) {
+        if (seg.subtitles) allSubs.push(...seg.subtitles);
+      }
+      // 자막이 없으면 스크립트에서 추출 시도
+      if (allSubs.length === 0 && sttResult.segments?.[0]?.script) {
+        const script = sttResult.segments[0].script;
+        const chunks = script.match(/.{1,40}/g) || [];
+        const segDur = (sttResult.segments[0].end_seconds || 60) / Math.max(1, chunks.length);
+        chunks.forEach((text, i) => {
+          allSubs.push({ start: Math.round(i * segDur * 100) / 100, end: Math.round((i + 1) * segDur * 100) / 100, text: text.trim() });
+        });
+      }
+      setSubtitles(allSubs);
 
       // 비디오 세그먼트 (전체 영상)
+      const seg = sttResult.segments?.[0];
       const dur = audioResult?.duration || (seg?.end_seconds || 60);
       setVideoDuration(dur);
       setVideoSegs([{ start: 0, end: dur }]);
@@ -507,12 +524,20 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
     try {
       const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify({ url: parsed.url }), timeout: 120000 });
       setFileId(d.file_id);
-      setLoadingMsg("음성 인식 중...");
+      setLoadingMsg("음성 인식 중... (전체 자막 생성)");
       const sttResult = await apiCall(`/analyze/${d.file_id}`, {
-        method: "POST", body: JSON.stringify({ max_segments: 1, longform: true }), timeout: 300000,
+        method: "POST", body: JSON.stringify({ max_segments: 1, longform: true, full_subtitles: true }), timeout: 600000,
       });
+      const allSubs = [];
+      for (const s of (sttResult.segments || [])) { if (s.subtitles) allSubs.push(...s.subtitles); }
+      if (allSubs.length === 0 && sttResult.segments?.[0]?.script) {
+        const script = sttResult.segments[0].script;
+        const chunks = script.match(/.{1,40}/g) || [];
+        const segDur = (sttResult.segments[0].end_seconds || 60) / Math.max(1, chunks.length);
+        chunks.forEach((t, i) => { allSubs.push({ start: Math.round(i * segDur * 100) / 100, end: Math.round((i + 1) * segDur * 100) / 100, text: t.trim() }); });
+      }
+      setSubtitles(allSubs);
       const seg = sttResult.segments?.[0];
-      setSubtitles(seg?.subtitles || []);
       const dur = seg?.end_seconds || 60;
       setVideoDuration(dur);
       setVideoSegs([{ start: 0, end: dur }]);
@@ -646,6 +671,45 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
       case "glow": {
         const glow = Math.sin(elapsed * 4) * 0.5 + 0.5;
         return <span style={{ ...style, textShadow: `0 0 ${8 + glow * 12}px ${captionStyle.highlightColor || "#FFD700"}, 0 0 ${4 + glow * 6}px ${captionStyle.color}` }}>{t}</span>;
+      }
+      case "pop": {
+        const chars = t.split("");
+        return (
+          <span style={style}>
+            {chars.map((ch, ci) => {
+              const delay = ci * 0.04;
+              const charElapsed = Math.max(0, elapsed - delay);
+              const s = charElapsed < 0.15 ? 0.3 + charElapsed / 0.15 * 1.2 : charElapsed < 0.25 ? 1.5 - (charElapsed - 0.15) / 0.1 * 0.5 : 1;
+              return <span key={ci} style={{ display: "inline-block", transform: `scale(${s})`, opacity: charElapsed > 0 ? 1 : 0 }}>{ch}</span>;
+            })}
+          </span>
+        );
+      }
+      case "wave": {
+        const chars = t.split("");
+        return (
+          <span style={style}>
+            {chars.map((ch, ci) => {
+              const y = Math.sin(elapsed * 5 - ci * 0.5) * 4;
+              return <span key={ci} style={{ display: "inline-block", transform: `translateY(${y}px)`, transition: "none" }}>{ch}</span>;
+            })}
+          </span>
+        );
+      }
+      case "shake": {
+        const intensity = elapsed < 0.3 ? 3 : 0;
+        const x = intensity ? (Math.random() - 0.5) * intensity * 2 : 0;
+        const y = intensity ? (Math.random() - 0.5) * intensity * 2 : 0;
+        return <span style={{ ...style, transform: `translate(${x}px, ${y}px)`, display: "inline-block" }}>{t}</span>;
+      }
+      case "blur_in": {
+        const blur = elapsed < 0.4 ? (1 - elapsed / 0.4) * 8 : 0;
+        const o = elapsed < 0.4 ? elapsed / 0.4 : 1;
+        return <span style={{ ...style, filter: `blur(${blur}px)`, opacity: o * (captionStyle.opacity / 100) }}>{t}</span>;
+      }
+      case "color_cycle": {
+        const hue = (elapsed * 120) % 360;
+        return <span style={{ ...style, color: `hsl(${hue}, 80%, 65%)` }}>{t}</span>;
       }
       default:
         return <span style={style}>{t}</span>;
@@ -844,8 +908,8 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
         <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
           {/* CENTER: 16:9 Preview */}
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#0c0c1a", padding: 12, minWidth: 0 }}>
-            <div style={{ width: "100%", maxWidth: 800, aspectRatio: "16/9", borderRadius: 8, background: "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", position: "relative" }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#0c0c1a", padding: 12, minWidth: 0, overflow: "hidden" }}>
+            <div style={{ width: "min(100%, 800px)", maxHeight: "calc(100% - 60px)", aspectRatio: "16/9", borderRadius: 8, background: "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", position: "relative", flexShrink: 0 }}>
               <video ref={videoRef} src={sourceUrl || undefined}
                 style={{ width: "100%", height: "100%", objectFit: "contain" }}
                 preload="metadata" playsInline
@@ -1158,12 +1222,18 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
 
           {/* 타임라인 트랙 */}
           <div ref={timelineRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative" }}
-            onClick={e => {
-              if (e.target === timelineRef.current || e.target.closest("[data-ruler]")) {
-                const rect = timelineRef.current.getBoundingClientRect();
-                const x = e.clientX - rect.left + timelineRef.current.scrollLeft;
-                setPlayhead(Math.max(0, Math.min(clipDuration, x / pxPerSec)));
-              }
+            onMouseDown={e => {
+              // 타임라인 아무 곳 클릭/드래그로 플레이헤드 이동 (세그먼트/자막 클릭 제외)
+              const rect = timelineRef.current.getBoundingClientRect();
+              const calcPh = (ev) => {
+                const x = ev.clientX - rect.left + timelineRef.current.scrollLeft - 30; // 30px = 트랙 라벨 너비
+                return Math.max(0, Math.min(clipDuration, x / pxPerSec));
+              };
+              setPlayhead(calcPh(e));
+              const onMove = (ev) => { setPlayhead(calcPh(ev)); };
+              const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
+              window.addEventListener("mousemove", onMove);
+              window.addEventListener("mouseup", onUp);
             }}>
             <div style={{ width: tlWidth, minHeight: "100%", position: "relative" }}>
               {/* Ruler */}
