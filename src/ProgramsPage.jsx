@@ -1157,7 +1157,15 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
               {mediaResults.map(m => (
                 <div key={m.id} style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg === "#fff" ? "#fff" : "rgba(255,255,255,0.04)", cursor: "pointer", transition: "all 0.2s" }}
-                  onClick={() => { const a = document.createElement("a"); a.href = m.url; a.download = (m.title || "media").slice(0,30); a.target = "_blank"; a.click(); }}>
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(m.url); const blob = await res.blob();
+                      const ext = m.type === "video" ? ".mp4" : ".jpg";
+                      const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+                      a.download = (m.title || "media").slice(0,30).replace(/[^a-zA-Z0-9가-힣\s]/g,"_") + ext;
+                      a.click(); URL.revokeObjectURL(a.href);
+                    } catch { window.open(m.url, "_blank"); }
+                  }}>
                   <div style={{ aspectRatio: category === "free_video" ? "16/9" : "4/3", overflow: "hidden", background: "#000" }}>
                     {m.type === "video" ? (
                       <video src={m.url} poster={m.preview} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} onMouseEnter={e => e.target.play()} onMouseLeave={e => { e.target.pause(); e.target.currentTime = 0; }} />
