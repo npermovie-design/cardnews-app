@@ -98,7 +98,7 @@ export default function AdminPage({ C, user: adminUser }) {
   // ── 관리자 API 호출 헬퍼 (service_role 키로 RLS 우회) ──
   const adminApi = async (action, extra = "") => {
     const uid = adminUser?.uid || "";
-    const r = await fetch(`/api/admin?action=${action}&admin_uid=${encodeURIComponent(uid)}${extra}`);
+    const r = await fetch(`/api/sns?action=admin&sub_action=${action}&admin_uid=${encodeURIComponent(uid)}${extra}`);
     if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || r.statusText); }
     return r.json();
   };
@@ -108,7 +108,7 @@ export default function AdminPage({ C, user: adminUser }) {
     if (tab !== "newsletter") return;
     (async () => {
       try {
-        const r = await fetch(`/api/admin?action=newsletter_subscribers&admin_uid=${encodeURIComponent(adminUser?.uid || "")}&extra=select&order=subscribed_at.desc`);
+        const r = await fetch(`/api/sns?action=admin&sub_action=newsletter_subscribers&admin_uid=${encodeURIComponent(adminUser?.uid || "")}&extra=select&order=subscribed_at.desc`);
         if (r.ok) { const d = await r.json(); setNlSubs(d.data || []); }
       } catch (e) { console.error(e); }
       setNlLoading(false);

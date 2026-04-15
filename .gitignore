@@ -45,3 +45,4 @@ shorts-factory/*.pyc
 .vercel
 .env*.local
 preview_section_*.html
+메이킷_자료실/

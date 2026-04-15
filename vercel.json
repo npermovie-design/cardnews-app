@@ -1,12 +1,9 @@
 {
   "functions": {
-    "api/gemini-generate.js": {
+    "api/ai-proxy.js": {
       "maxDuration": 120
     },
-    "api/ai-ppt.js": {
-      "maxDuration": 60
-    },
-    "api/naverbot/content-generate.js": {
+    "api/naverbot.js": {
       "maxDuration": 120
     },
     "api/**/*.js": {
@@ -69,7 +66,7 @@
   ],
   "redirects": [],
   "rewrites": [
-    { "source": "/naver13ff0ecd787361289eef4e82f97736a.html", "destination": "/api/naver-verify" },
+    { "source": "/naver13ff0ecd787361289eef4e82f97736a.html", "destination": "/api/seo?action=naver-verify" },
     { "source": "/sitemap.xml", "destination": "/api/seo?action=sitemap" },
     { "source": "/rss.xml", "destination": "/api/seo?action=rss" },
     { "source": "/feed", "destination": "/api/seo?action=rss" },
@@ -87,6 +84,7 @@
     { "source": "/api/fetch-youtube", "destination": "/api/youtube?action=fetch" },
     { "source": "/api/transcript", "destination": "/api/youtube?action=transcript" },
     { "source": "/api/yt-dl", "destination": "/api/youtube?action=dl" },
+    { "source": "/api/youtube-stream-url", "destination": "/api/youtube?action=stream-url" },
 
     { "source": "/api/sns-publish", "destination": "/api/sns?action=publish" },
     { "source": "/api/sns-connections", "destination": "/api/sns?action=connections" },
@@ -94,6 +92,7 @@
     { "source": "/api/sns-auth-tistory", "destination": "/api/sns?action=auth-tistory" },
     { "source": "/api/threads-media", "destination": "/api/sns?action=threads-media" },
     { "source": "/api/fetch-sns-feed", "destination": "/api/sns?action=feed" },
+    { "source": "/api/webhooks/lemonsqueezy", "destination": "/api/sns?action=webhook-lemonsqueezy" },
 
     { "source": "/api/insta-auto-dm", "destination": "/api/insta?action=auto-dm" },
     { "source": "/api/insta-auto-reply", "destination": "/api/insta?action=auto-reply" },
@@ -107,6 +106,7 @@
     { "source": "/api/fetch-trending-videos", "destination": "/api/content?action=trending-videos" },
     { "source": "/api/keyword-analysis", "destination": "/api/content?action=keyword-analysis" },
     { "source": "/api/trends", "destination": "/api/content?action=trends" },
+    { "source": "/api/auto-publish", "destination": "/api/content?action=auto-publish" },
 
     { "source": "/api/proxy-klipy", "destination": "/api/proxy?action=klipy" },
     { "source": "/api/proxy-pexels", "destination": "/api/proxy?action=pexels" },
@@ -118,12 +118,25 @@
     { "source": "/api/rss", "destination": "/api/seo?action=rss" },
     { "source": "/api/archive-auto-tag", "destination": "/api/seo?action=archive-auto-tag" },
     { "source": "/api/cron-briefing", "destination": "/api/seo?action=cron-briefing" },
+    { "source": "/api/naver-verify", "destination": "/api/seo?action=naver-verify" },
+
+    { "source": "/api/ai-ppt", "destination": "/api/ai-proxy?target=ppt" },
+    { "source": "/api/gemini-generate", "destination": "/api/ai-proxy?target=gemini" },
+    { "source": "/api/tts", "destination": "/api/ai-proxy?target=tts" },
+    { "source": "/api/whisper", "destination": "/api/ai-proxy?target=whisper" },
+
+    { "source": "/api/naverbot/account-verify", "destination": "/api/naverbot?action=account-verify" },
+    { "source": "/api/naverbot/license-verify", "destination": "/api/naverbot?action=license-verify" },
+    { "source": "/api/naverbot/analyze-keyword", "destination": "/api/naverbot?action=analyze-keyword" },
+    { "source": "/api/naverbot/content-generate", "destination": "/api/naverbot?action=content-generate" },
+    { "source": "/api/naverbot/login-page", "destination": "/api/naverbot?action=login-page" },
+    { "source": "/naverbot-auth.html", "destination": "/api/naverbot?action=login-page" },
 
     { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|_vercel|naver[0-9a-f]+\\.html|naverbot-auth\\.html).*)", "destination": "/index.html" }
   ],
   "crons": [
     {
-      "path": "/api/cron-briefing",
+      "path": "/api/seo?action=cron-briefing",
       "schedule": "0 22 * * *"
     }
   ]

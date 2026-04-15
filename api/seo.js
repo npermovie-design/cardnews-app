@@ -249,6 +249,14 @@ async function handleBulkIndex(req, res) {
   } catch (e) { return res.status(500).json({ error: e.message }); }
 }
 
+// ── Naver 서치어드바이저 인증 ──
+function handleNaverVerify(req, res) {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("X-Middleware-Skip", "1");
+  return res.status(200).send("naver13ff0ecd787361289eef4e82f97736a");
+}
+
 // ── Router ──
 export default async function handler(req, res) {
   const action = req.query.action;
@@ -266,8 +274,10 @@ export default async function handler(req, res) {
       return handleIndexNow(req, res);
     case "bulk-index":
       return handleBulkIndex(req, res);
+    case "naver-verify":
+      return handleNaverVerify(req, res);
     default:
-      return res.status(400).json({ error: "action 파라미터 필요: sitemap|rss|archive-auto-tag|cron-briefing|index-now|bulk-index" });
+      return res.status(400).json({ error: "action 파라미터 필요: sitemap|rss|archive-auto-tag|cron-briefing|index-now|bulk-index|naver-verify" });
   }
 }
 

@@ -559,6 +559,293 @@ JSON배열:
 }
 
 // ══════════════════════════════════════════════════════════════════
+// ACTION: webhook-lemonsqueezy — LemonSqueezy 결제 웹훅
+// ══════════════════════════════════════════════════════════════════
+
+// 일회 충전 팩: product_name → points
+const ONE_OFF_POINTS = {
+  "Starter":  1000,
+  "Basic":    2000,
+  "Standard": 3500,
+  "Plus":     5500,
+  "Pro":      9500,
+};
+
+// 구독 tier: product_name → { monthly, yearly }
+const SUB_TIERS = {
+  "Basic":   { monthly: 1800, yearly: 21600 },
+  "Pro":     { monthly: 3800, yearly: 45600 },
+  "Premium": { monthly: 7000, yearly: 84000 },
+};
+
+function detectInterval(attrs) {
+  if (!attrs?.created_at || !attrs?.renews_at) return "monthly";
+  const created = new Date(attrs.created_at);
+  const renews = new Date(attrs.renews_at);
+  const days = (renews - created) / (1000 * 60 * 60 * 24);
+  return days > 200 ? "yearly" : "monthly";
+}
+
+async function addPoints(uid, points, reason) {
+  const { data: user, error: err1 } = await supabase
+    .from("users").select("points").eq("uid", uid).single();
+  if (err1 || !user) { console.error("[LS] User not found:", uid); return null; }
+
+  const newPoints = (user.points || 0) + points;
+  const { error: err2 } = await supabase
+    .from("users").update({ points: newPoints }).eq("uid", uid);
+  if (err2) { console.error("[LS] Update fail:", err2.message); return null; }
+
+  await supabase.from("point_history").insert({ uid, delta: points, reason, balance: newPoints });
+  return newPoints;
+}
+
+async function saveSubscription(subId, uid, productName, interval, status, attrs = {}) {
+  const { error } = await supabase.from("subscriptions").upsert({
+    subscription_id: String(subId),
+    uid,
+    product_name: productName,
+    interval,
+    status,
+    renews_at: attrs.renews_at || null,
+    ends_at: attrs.ends_at || null,
+    customer_portal_url: attrs.urls?.customer_portal || null,
+    update_payment_url: attrs.urls?.update_payment_method || null,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: "subscription_id" });
+  if (error) console.error("[LS] saveSubscription fail:", error.message);
+}
+
+async function getSubscription(subId) {
+  const { data, error } = await supabase
+    .from("subscriptions")
+    .select("*")
+    .eq("subscription_id", String(subId))
+    .single();
+  if (error) { console.error("[LS] getSubscription fail:", error.message); return null; }
+  return data;
+}
+
+async function handleWebhookLemonsqueezy(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  try {
+    const url = new URL(req.url, `https://${req.headers.host}`);
+    const token = (url.searchParams.get("token") || "").trim();
+    const secret = (process.env.LEMONSQUEEZY_WEBHOOK_SECRET || "").trim();
+
+    if (!secret) {
+      console.error("[LS] Auth failed — LEMONSQUEEZY_WEBHOOK_SECRET env var NOT SET on Vercel");
+      return res.status(401).json({ error: "Server misconfigured" });
+    }
+    if (token !== secret) {
+      console.error(`[LS] Auth failed — token mismatch (len ${token.length} vs ${secret.length})`);
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    const payload = req.body;
+    const eventName = payload.meta?.event_name;
+    const userId = payload.meta?.custom_data?.user_id;
+    const data = payload.data;
+    const attrs = data?.attributes;
+
+    console.log(`[LS] ${eventName} | user:${userId} | product:${attrs?.product_name} | status:${attrs?.status}`);
+
+    switch (eventName) {
+      case "order_created": {
+        if (!userId || attrs.status !== "paid") break;
+        const productName = attrs.first_order_item?.product_name;
+        const pts = ONE_OFF_POINTS[productName];
+        if (pts) {
+          const n = await addPoints(userId, pts, `포인트 충전 (${productName})`);
+          console.log(`[LS] +${pts}P (one-off) → ${n}`);
+        } else {
+          console.warn(`[LS] Unknown pack product: "${productName}"`);
+        }
+        break;
+      }
+
+      case "subscription_created": {
+        if (!userId) break;
+        const productName = attrs.product_name;
+        const tier = SUB_TIERS[productName];
+        if (!tier) { console.warn(`[LS] Unknown sub product: "${productName}"`); break; }
+
+        const interval = detectInterval(attrs);
+        const pts = interval === "yearly" ? tier.yearly : tier.monthly;
+        const label = interval === "yearly" ? "연간" : "월간";
+
+        await saveSubscription(data.id, userId, productName, interval, attrs.status || "active", attrs);
+
+        const n = await addPoints(userId, pts, `구독 시작 (${productName} ${label})`);
+        console.log(`[LS] +${pts}P (${label} start) → ${n}`);
+        break;
+      }
+
+      case "subscription_payment_success": {
+        if (attrs.billing_reason === "initial") {
+          console.log(`[LS] Initial payment skipped (handled by subscription_created)`);
+          break;
+        }
+
+        const subId = attrs.subscription_id;
+        if (!subId) { console.warn(`[LS] No subscription_id in payload`); break; }
+
+        const sub = await getSubscription(subId);
+        if (!sub) { console.warn(`[LS] Subscription mapping not found: ${subId}`); break; }
+
+        const tier = SUB_TIERS[sub.product_name];
+        if (!tier) { console.warn(`[LS] Unknown sub tier: ${sub.product_name}`); break; }
+
+        const pts = sub.interval === "yearly" ? tier.yearly : tier.monthly;
+        const label = sub.interval === "yearly" ? "연간 갱신" : "월간 갱신";
+        const n = await addPoints(sub.uid, pts, `구독 갱신 (${sub.product_name} ${label})`);
+        console.log(`[LS] +${pts}P (${label}) → ${n}`);
+        break;
+      }
+
+      case "subscription_updated": {
+        const subId = data?.id;
+        if (subId) {
+          await supabase.from("subscriptions")
+            .update({
+              status: attrs.status || "active",
+              renews_at: attrs.renews_at || null,
+              ends_at: attrs.ends_at || null,
+              cancelled_at: attrs.cancelled ? new Date().toISOString() : null,
+              customer_portal_url: attrs.urls?.customer_portal || null,
+              update_payment_url: attrs.urls?.update_payment_method || null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("subscription_id", String(subId));
+          console.log(`[LS] Subscription ${subId} updated → status:${attrs.status}`);
+        }
+        break;
+      }
+
+      case "subscription_cancelled":
+      case "subscription_expired": {
+        const subId = data?.id;
+        if (subId) {
+          const isExpired = eventName === "subscription_expired";
+          await supabase.from("subscriptions")
+            .update({
+              status: isExpired ? "expired" : "cancelled",
+              ends_at: attrs?.ends_at || null,
+              cancelled_at: isExpired ? null : new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq("subscription_id", String(subId));
+          console.log(`[LS] Subscription ${subId} → ${eventName}`);
+        }
+        break;
+      }
+    }
+
+    return res.status(200).json({ received: true });
+  } catch (error) {
+    console.error("[LS Error]", error.message);
+    return res.status(500).json({ error: error.message });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ACTION: admin — 관리자 전용 API (service_role 키로 RLS 우회)
+// ══════════════════════════════════════════════════════════════════
+
+function getServiceClient() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
+
+async function handleAdmin(req, res) {
+  const action = req.query.sub_action || req.query.admin_action;
+  const sb = getServiceClient();
+  if (!sb) return res.status(500).json({ error: "서버 설정 오류" });
+
+  // 인증: Supabase JWT 또는 admin_uid로 admin 확인
+  let authUid = "";
+  const authHeader = req.headers.authorization || "";
+  if (authHeader.startsWith("Bearer ")) {
+    const anonClient = createClient(process.env.SUPABASE_URL, process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || "");
+    const { data: { user } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (user) authUid = user.id;
+  }
+  if (!authUid) {
+    const origin = req.headers.origin || req.headers.referer || "";
+    const isTrusted = origin.includes("snsmakeit.com") || origin.includes("localhost");
+    if (isTrusted) authUid = req.query.admin_uid || req.headers["x-admin-uid"] || "";
+  }
+  if (!authUid) return res.status(403).json({ error: "관리자 인증 필요" });
+  const { data: adminCheck } = await sb.from("users").select("role").eq("uid", authUid).single();
+  if (!adminCheck || adminCheck.role !== "admin") {
+    return res.status(403).json({ error: "관리자 권한 필요" });
+  }
+
+  try {
+    if (action === "members") {
+      let allMembers = [];
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data, error } = await sb.from("users").select("*").range(from, from + PAGE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allMembers = allMembers.concat(data);
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      return res.status(200).json({ members: allMembers, total: allMembers.length });
+    }
+
+    if (action === "update_points") {
+      const { uid: targetUid, points } = req.query;
+      if (!targetUid || points === undefined) return res.status(400).json({ error: "uid, points 필요" });
+      const { error } = await sb.from("users").update({ points: Number(points) }).eq("uid", targetUid);
+      if (error) throw error;
+      return res.status(200).json({ success: true });
+    }
+
+    if (action === "delete_member") {
+      const targetUid = req.query.target_uid;
+      if (!targetUid) return res.status(400).json({ error: "target_uid 필요" });
+      const { error } = await sb.from("users").delete().eq("uid", targetUid);
+      if (error) throw error;
+      return res.status(200).json({ success: true });
+    }
+
+    if (action === "ai_logs") {
+      const { data, error } = await sb.from("point_history").select("*").order("created_at", { ascending: false }).limit(200);
+      if (error) throw error;
+      return res.status(200).json({ logs: data || [] });
+    }
+
+    if (action === "daily_signups") {
+      const since = new Date(Date.now() - 7 * 86400000).toISOString();
+      const { data } = await sb.from("users").select("join_date,created_at").gte("join_date", since);
+      return res.status(200).json({ data: data || [] });
+    }
+
+    if (action === "daily_ai") {
+      const since = new Date(Date.now() - 7 * 86400000).toISOString();
+      const { data } = await sb.from("point_history").select("created_at").lt("delta", 0).gte("created_at", since);
+      return res.status(200).json({ data: data || [] });
+    }
+
+    if (action === "online_count") {
+      const { count } = await sb.from("online_users").select("*", { count: "exact", head: true });
+      return res.status(200).json({ count: count || 0 });
+    }
+
+    return res.status(400).json({ error: "알 수 없는 admin action" });
+  } catch (e) {
+    return res.status(500).json({ error: e.message || "서버 오류" });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
 // 라우터: ?action= 파라미터로 분기
 // ══════════════════════════════════════════════════════════════════
 const ACTION_MAP = {
@@ -568,6 +855,8 @@ const ACTION_MAP = {
   "auth-tistory": handleAuthTistory,
   "threads-media": handleThreadsMedia,
   feed: handleFeed,
+  "webhook-lemonsqueezy": handleWebhookLemonsqueezy,
+  admin: handleAdmin,
 };
 
 export default async function handler(req, res) {

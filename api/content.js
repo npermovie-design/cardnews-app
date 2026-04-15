@@ -626,6 +626,40 @@ async function handleTrends(req, res) {
 
 // ── Router ───────────────────────────────────────────────────────────────
 
+// ── Action: auto-publish (Render 프록시: 네이버 블로그 자동 발행) ─────────
+
+const AUTO_PUBLISH_RENDER_URL = process.env.VITE_SHORTS_FACTORY_URL || "https://shorts-factory-r33o.onrender.com";
+
+async function handleAutoPublish(req, res) {
+  setCors(req, res, { methods: "POST,OPTIONS" });
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const { action, platform, naverId, naverPw, blogId, post } = req.body || {};
+
+  if (!action) return res.status(400).json({ error: "action 필요" });
+
+  try {
+    if (action === "test-publish" || action === "publish") {
+      if (platform === "naver_blog") {
+        // Render 서버로 프록시
+        const resp = await fetch(`${AUTO_PUBLISH_RENDER_URL}/naver-publish`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ naverId, naverPw, blogId, post }),
+        });
+        const result = await resp.json();
+        return res.status(200).json(result);
+      }
+      return res.status(400).json({ error: `미지원 플랫폼: ${platform}` });
+    }
+
+    return res.status(400).json({ error: `알 수 없는 action: ${action}` });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message || "서버 오류" });
+  }
+}
+
 const ACTION_HANDLERS = {
   "crawl": handleCrawl,
   "fetch-url": handleFetchUrl,
@@ -634,6 +668,7 @@ const ACTION_HANDLERS = {
   "keyword-analysis": handleKeywordAnalysis,
   "trends": handleTrends,
   "sns-profile": handleSnsProfile,
+  "auto-publish": handleAutoPublish,
 };
 
 // ── Action: sns-profile (SNS 프로필 크롤링 — 메타태그/구조화 데이터 추출) ──
