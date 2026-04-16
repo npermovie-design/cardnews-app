@@ -610,6 +610,7 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
   // ── 파일 업로드 + 분석 ──
   const handleUpload = async () => {
     if (!videoFile) return;
+    if (showPointConfirm && user && !(await showPointConfirm(35))) return;
     setStep("loading"); setLoadingMsg("업로드 중..."); setError("");
     try {
       // 1. 오디오 파형 분석 (로컬)
@@ -673,6 +674,7 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
   const handleYoutube = async () => {
     const parsed = parseYoutubeUrl(ytUrl);
     if (!parsed) { setError("올바른 유튜브 링크를 입력해주세요"); return; }
+    if (showPointConfirm && user && !(await showPointConfirm(35))) return;
     setStep("loading"); setLoadingMsg("영상 다운로드 중..."); setError("");
     try {
       const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify({ url: parsed.url }), timeout: 120000 });
@@ -902,7 +904,7 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
                 <div><div style={{ fontSize: 12, fontWeight: 700, color: acc }}>영상 감지됨</div><div style={{ fontSize: 11, color: muted }}>ID: {ytParsed.id}</div></div>
               </div>
             )}
-            <button onClick={handleYoutube} style={{ ...btnStyle, opacity: !ytParsed ? 0.4 : 1 }} disabled={!ytParsed}>롱폼 편집 시작</button>
+            <button onClick={handleYoutube} style={{ ...btnStyle, opacity: !ytParsed ? 0.4 : 1 }} disabled={!ytParsed}>롱폼 편집 시작 <span style={{ opacity: 0.7, fontSize: 12 }}>(35P)</span></button>
           </div>
         ) : (
           <div>
@@ -938,7 +940,7 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
               </div>
             )}
             <button onClick={handleUpload} style={{ ...btnStyle, opacity: !videoFile ? 0.4 : 1 }} disabled={!videoFile}>
-              롱폼 편집 시작
+              롱폼 편집 시작 <span style={{ opacity: 0.7, fontSize: 12 }}>(35P)</span>
             </button>
           </div>
         )}
@@ -1497,7 +1499,7 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
             <div style={{ padding: "12px", borderTop: "1px solid #2a2a4a" }}>
               <button onClick={handleExport}
                 style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 14, fontWeight: 900, cursor: "pointer" }}>
-                내보내기
+                내보내기 <span style={{ opacity: 0.7, fontSize: 12 }}>(200P)</span>
               </button>
               {subtitles.length > 0 && (
                 <button onClick={() => {
