@@ -264,7 +264,10 @@ ${fullBody ? `<article>${esc(fullBody)}</article>` : ""}
   return new Response(html, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "public, s-maxage=600, stale-while-revalidate=1200",
+      "Cache-Control": isBot
+        ? "public, s-maxage=600, stale-while-revalidate=1200"
+        : "private, no-cache, no-store",
+      "Vary": "User-Agent",
     },
   });
 }
