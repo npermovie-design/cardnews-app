@@ -346,8 +346,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           });
         }
       } else {
-        // 목록에 없으면 Supabase에서 직접 로드
-        getPostByIdFromDB(Number(pendingPostId)).then(full=>{
+        // 목록에 없으면 Supabase에서 직접 로드 (숫자/문자열 ID 모두 지원)
+        const numId = Number(pendingPostId);
+        const queryId = isNaN(numId) ? pendingPostId : numId;
+        getPostByIdFromDB(queryId).then(full=>{
           if(full){
             const updated={...full, views:(full.views||0)+1};
             const cat = full.subCat||full.cat||subCat;
@@ -356,7 +358,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             updatePostInDB(full.id, {views: updated.views}).catch(()=>{});
             updatePostSeoMeta(updated, cat);
           }
-        });
+          if(onPendingPostClear) onPendingPostClear();
+        }).catch(()=>{ if(onPendingPostClear) onPendingPostClear(); });
+        return; // 비동기 완료 후 clear
       }
       if(onPendingPostClear) onPendingPostClear();
     }
@@ -1635,8 +1639,13 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                         {p.priceType==="free"&&subCat==="archive"&&<span style={{position:"absolute",top:6,right:6,fontSize:9,background:"rgba(34,197,94,0.9)",color:"#fff",padding:"2px 8px",borderRadius:4,fontWeight:700}}>🆓 무료</span>}
                         {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}}
                           style={{position:"absolute",bottom:6,right:6,padding:"4px 9px",borderRadius:7,border:"none",background:"rgba(0,0,0,0.72)",color:"#fff",fontSize:12,cursor:"pointer",fontWeight:700}}>⬇</button>}
+                        {/* 공유 버튼 */}
+                        <button onClick={e=>{e.stopPropagation();const url=`${window.location.origin}/community/archive/${p.id}`;navigator.clipboard.writeText(url).then(()=>alert("링크가 복사되었습니다!")).catch(()=>{const t=document.createElement("textarea");t.value=url;document.body.appendChild(t);t.select();document.execCommand("copy");document.body.removeChild(t);alert("링크가 복사되었습니다!");});}}
+                          style={{position:"absolute",bottom:6,left:6,padding:"4px 9px",borderRadius:7,border:"none",background:"rgba(0,0,0,0.72)",color:"#fff",fontSize:12,cursor:"pointer",fontWeight:700}}
+                          title="링크 공유">🔗</button>
                       </div>
-                      <div style={{padding:"10px 12px"}}>
+                      {/* 자료실이면 하단 텍스트 숨김, 그 외는 기존처럼 표시 */}
+                      {subCat!=="archive" && <div style={{padding:"10px 12px"}}>
                         <div style={{fontSize:13,fontWeight:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",lineHeight:1.4,marginBottom:6}}>
                           {p.tag&&<span style={{fontSize:10,padding:"1px 6px",borderRadius:4,background:(subInfo?.color||"#7c6aff")+"22",color:subInfo?.color||"#7c6aff",fontWeight:700,marginRight:5}}>{p.tag}</span>}
                           {p.title}
@@ -1649,7 +1658,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                             {(p.comments||[]).length>0&&<span style={{color:C.purpleL,fontWeight:700}}>{p.comments.length}댓글</span>}
                           </div>
                         </div>
-                      </div>
+                      </div>}
                     </div>
                   );
                 })}

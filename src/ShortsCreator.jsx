@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 
 const API = import.meta.env.VITE_SHORTS_FACTORY_URL || "https://shorts-factory-r33o.onrender.com";
@@ -227,6 +227,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const captionColor = captionStyle.color;
   const fontSize = titleStyle.fontSize;
   const [removeSilence, setRemoveSilence] = useState(false);
+  const [silenceThreshold, setSilenceThreshold] = useState(-35); // dB
+  const [silenceMinGap, setSilenceMinGap] = useState(0.5); // 초
+  const [showSilenceSettings, setShowSilenceSettings] = useState(false);
   const [maxChars, setMaxChars] = useState(0);
   const [shortsLength, setShortsLength] = useState("s30");
   const [userPrompt, setUserPrompt] = useState("");
@@ -265,7 +268,15 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // 속성 패널 탭
   const [propTab, setPropTab] = useState("style"); // style | overlay
   // 레이아웃 모드: full(전체화면) | bars(검은바+중앙영상)
-  const [layoutMode, setLayoutMode] = useState("bars");
+  const [layoutMode, setLayoutModeRaw] = useState("bars");
+  const setLayoutMode = (mode) => {
+    setLayoutModeRaw(mode);
+    if (mode === "bars") {
+      // bars 모드에서 자막은 반드시 하단 검은바 영역(78% 이하)에 위치
+      setCaptionPos(prev => ({ ...prev, y: Math.max(prev.y, 85) }));
+      setTitlePos(prev => ({ ...prev, y: Math.min(prev.y, 12) }));
+    }
+  };
   // 스냅 가이드 표시
   const [snapGuide, setSnapGuide] = useState(null);
   // 단축키 가이드 모달
@@ -315,6 +326,12 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const videoRef = useRef(null);
   const previewRef = useRef(null);
   const overlayFileRef = useRef(null);
+  const pollRef = useRef(null);
+
+  // ── 폴링 인터벌 정리 (언마운트 시) ──
+  useEffect(() => {
+    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+  }, []);
 
   // ── 현재 클립 (타임라인 등에서 사용) ────────────
   const curClip = editClips[editIdx] || {};
@@ -323,7 +340,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   };
 
   // 세그먼트 총 재생 길이 (키보드 단축키보다 먼저 선언)
-  const totalSegsDuration = videoSegs.reduce((acc, s) => acc + (s.end - s.start), 0);
+  const totalSegsDuration = useMemo(() => videoSegs.reduce((acc, s) => acc + (s.end - s.start), 0), [videoSegs]);
   const clipDuration = totalSegsDuration || Math.max(1, (curClip.end_seconds || 30) - (curClip.start_seconds || 0));
 
   // ── 키보드 단축키 ──
@@ -854,10 +871,11 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     try {
       const d = await apiCall("/generate-async", {
         method: "POST",
-        body: JSON.stringify({ file_id: fileId, clips: editClips, remove_silence: removeSilence, template, title_color: titleColor, caption_color: captionColor, subtitles_enabled: subtitlesEnabled }),
+        body: JSON.stringify({ file_id: fileId, clips: editClips, remove_silence: removeSilence, silence_threshold: silenceThreshold, silence_min_gap: silenceMinGap, template, title_color: titleColor, caption_color: captionColor, subtitles_enabled: subtitlesEnabled, layout_mode: layoutMode, title_pos: titlePos, caption_pos: layoutMode === "bars" ? { x: 50, y: 88 } : captionPos, title_style: titleStyle, caption_style: captionStyle }),
       });
       setJobId(d.job_id);
-      const poll = setInterval(async () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      pollRef.current = setInterval(async () => {
         try {
           const j = await apiCall(`/jobs/${d.job_id}`);
           setJobStatus(j);
@@ -871,7 +889,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           }));
 
           if (j.status === "complete") {
-            clearInterval(poll);
+            clearInterval(pollRef.current); pollRef.current = null;
             // 완료 알림
             window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
               detail: { action: "complete", task: { id: "shorts_gen", message: `쇼츠 ${done}개 생성 완료!` } }
@@ -900,6 +918,33 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         detail: { action: "complete", task: { id: "shorts_gen", message: "생성 실패" } }
       }));
     }
+  };
+
+  // SRT 자막 파일 다운로드 헬퍼
+  const downloadSrt = (clip) => {
+    if (!clip || !(clip.subtitles || []).length) return;
+    const fmtSrt = (sec) => {
+      const h = Math.floor(sec / 3600);
+      const m = Math.floor((sec % 3600) / 60);
+      const s = Math.floor(sec % 60);
+      const ms = Math.round((sec % 1) * 1000);
+      return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")},${String(ms).padStart(3,"0")}`;
+    };
+    let srt = "";
+    (clip.subtitles || []).forEach((sub, idx) => {
+      const start = sub.start || 0;
+      const end = sub.end || (start + 3);
+      srt += `${idx + 1}\n${fmtSrt(start)} --> ${fmtSrt(end)}\n${sub.text || ""}\n\n`;
+    });
+    const blob = new Blob([srt], { type: "text/srt;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${(clip.title || "subtitles").replace(/[^가-힣a-zA-Z0-9_-]/g, "_")}.srt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   // 연계
@@ -1100,7 +1145,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // Step: 로딩
   // ═══════════════════════════════════
   if (step === "loading") return (
-    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: D ? "transparent" : "#f4f4f8" }}>
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh", background: D ? "transparent" : "#f4f4f8" }}>
       <style>{`
         @keyframes shorts-icon-bounce{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-8px) rotate(-5deg)}50%{transform:translateY(0) rotate(0deg)}75%{transform:translateY(-4px) rotate(5deg)}}
         @keyframes shorts-ring-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
@@ -1203,7 +1248,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const visibleOverlays = overlays.filter(o => playhead >= o.start && playhead <= o.end);
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#1a1a2e", color: "#e0e0e0" }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#1a1a2e", color: "#e0e0e0", minHeight: 0, maxHeight: "100vh", height: "100%" }}>
       {/* 숨겨진 inputs */}
       <input ref={overlayFileRef} type="file" accept="image/*" style={{ display: "none" }} />
       {bgmFile && <audio ref={bgmRef} src={bgmFile.url} loop preload="auto" style={{ display: "none" }} />}
@@ -1238,7 +1283,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       )}
 
       {/* 모바일 안내 */}
-      {typeof window !== "undefined" && window.innerWidth < 768 && (
+      {typeof window !== "undefined" && window.innerWidth < 768 ? (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#0f0f1a", padding: 40 }}>
           <div style={{ textAlign: "center", maxWidth: 320 }}>
             <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>
@@ -1248,10 +1293,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             <div style={{ fontSize: 13, color: "#888", lineHeight: 1.7 }}>쇼츠 편집기는 타임라인, 미리보기, 속성 패널이 필요하여 데스크탑 환경에서 최적으로 작동합니다.</div>
           </div>
         </div>
-      )}
+      ) : (<>
 
       {/* Top 3-panel area */}
-      {(typeof window === "undefined" || window.innerWidth >= 768) && (
       <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: 0 }}>
 
         {/* LEFT: Clip list */}
@@ -1267,9 +1311,18 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 8px" }}>
             {editClips.map((c, i) => (
               <div key={i} onClick={() => { setEditIdx(i); setSelectedSubIdx(-1); setPlayhead(0); setIsPlaying(false); }}
-                style={{ padding: "10px 10px", borderRadius: 8, cursor: "pointer", marginBottom: 4, background: editIdx === i ? "rgba(124,106,255,0.18)" : "transparent", borderLeft: `3px solid ${editIdx === i ? "#7c6aff" : "transparent"}`, transition: "all 0.15s" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: editIdx === i ? "#7c6aff" : "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title || c.hook || c.subtitle_text || `Short ${i + 1}`}</div>
-                <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{fmt(c.start_seconds)} ~ {fmt(c.end_seconds)}</div>
+                style={{ padding: "10px 10px", borderRadius: 8, cursor: "pointer", marginBottom: 4, background: editIdx === i ? "rgba(124,106,255,0.18)" : "transparent", borderLeft: `3px solid ${editIdx === i ? "#7c6aff" : "transparent"}`, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 6 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: editIdx === i ? "#7c6aff" : "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title || c.hook || c.subtitle_text || `Short ${i + 1}`}</div>
+                  <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{fmt(c.start_seconds)} ~ {fmt(c.end_seconds)}</div>
+                </div>
+                {editClips.length > 1 && (
+                  <button onClick={e => { e.stopPropagation(); pushUndo(); setEditClips(prev => prev.filter((_, idx) => idx !== i)); if (editIdx >= i && editIdx > 0) setEditIdx(editIdx - 1); }}
+                    title="클립 삭제"
+                    style={{ flexShrink: 0, width: 20, height: 20, borderRadius: 4, border: "none", background: "rgba(248,113,113,0.1)", color: "#f87171", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.6, transition: "opacity 0.15s" }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                    onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>X</button>
+                )}
               </div>
             ))}
           </div>
@@ -1288,24 +1341,29 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             ))}
           </div>
 
-          {/* 9:16 프리뷰 (고정 비율) */}
-          <div ref={previewRef} style={{ width: 360, maxWidth: "100%", aspectRatio: "9/16", maxHeight: "calc(100% - 40px)", borderRadius: 8, background: "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", flexShrink: 1, position: "relative", userSelect: "none" }}>
+          {/* 9:16 프리뷰 (고정 비율, 크기 안정화) */}
+          <div ref={previewRef} style={{ width: 360, maxWidth: "100%", aspectRatio: "9/16", maxHeight: "calc(100% - 40px)", borderRadius: 8, background: "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", flexShrink: 0, flexGrow: 0, position: "relative", userSelect: "none" }}>
 
             {layoutMode === "bars" ? (<>
               {/* 검은바 레이아웃: 상단바 + 영상 + 하단바 */}
-              {/* 상단 검은바 (제목) */}
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, display: "flex", alignItems: "center", justifyContent: titleStyle.align === "left" ? "flex-start" : titleStyle.align === "right" ? "flex-end" : "center", padding: "0 12px" }}>
+              {/* 상단 검은바 (제목 + 부제) */}
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 12, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 12px", gap: 2 }}>
                 <div style={{ maxWidth: "90%", textAlign: titleStyle.align || "center", opacity: titleStyle.opacity / 100 }}>
                   <span style={{
-                    fontSize: Math.min(titleStyle.fontSize + 2, 28), fontWeight: 900, color: titleStyle.color,
+                    fontSize: Math.min(titleStyle.fontSize, 20), fontWeight: 900, color: titleStyle.color,
                     fontFamily: titleStyle.font === "default" ? "inherit" : titleStyle.font,
-                    lineHeight: 1.3, wordBreak: "keep-all", display: "inline-block", textAlign: titleStyle.align || "center",
-                    textShadow: titleStyle.shadow ? "0 2px 8px rgba(0,0,0,0.8), 0 0 4px rgba(0,0,0,0.5)" : "none",
+                    lineHeight: 1.2, wordBreak: "keep-all", display: "inline-block",
+                    textShadow: titleStyle.shadow ? "0 1px 4px rgba(0,0,0,0.6)" : "none",
                     WebkitTextStroke: titleStyle.border ? `1px ${titleStyle.borderColor}` : "none",
                     background: titleStyle.bgBox ? titleStyle.bgColor : "transparent",
-                    padding: titleStyle.bgBox ? "4px 12px" : 0, borderRadius: titleStyle.bgBox ? 6 : 0,
+                    padding: titleStyle.bgBox ? "3px 10px" : 0, borderRadius: titleStyle.bgBox ? 4 : 0,
                   }}>{curClip.title || "제목을 입력하세요"}</span>
                 </div>
+                {curClip.subtitle_text && (
+                  <div style={{ maxWidth: "90%", textAlign: "center" }}>
+                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontWeight: 500, lineHeight: 1.2 }}>{curClip.subtitle_text}</span>
+                  </div>
+                )}
               </div>
 
               {/* 중앙 영상 (원본 비율 유지) */}
@@ -1320,36 +1378,23 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 )}
               </div>
 
-              {/* 하단 검은바 — 부제(고정) + 자막(시간별) 분리 */}
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "6px 12px", gap: 4 }}>
-                {/* 부제 (고정 텍스트) */}
-                {curClip.subtitle_text && (
-                  <div style={{ maxWidth: "90%", textAlign: captionStyle.align || "center" }}>
-                    <span style={{
-                      fontSize: Math.min(captionStyle.fontSize - 2, 16), color: captionStyle.color, fontWeight: 600,
-                      fontFamily: captionStyle.font === "default" ? "inherit" : captionStyle.font,
-                      lineHeight: 1.3, wordBreak: "keep-all", display: "inline-block", opacity: 0.75,
-                      textShadow: captionStyle.shadow ? "0 1px 4px rgba(0,0,0,0.6)" : "none",
-                    }}>{curClip.subtitle_text}</span>
-                  </div>
-                )}
-                {/* 자막 (시간별 변경) */}
+              {/* 하단 검은바 — 자막만 표시 (부제는 상단으로 이동됨) */}
+              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 11, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "6px 12px" }}>
                 {subtitlesEnabled && currentSub && (
                   <div style={{ maxWidth: "90%", textAlign: captionStyle.align || "center", opacity: captionStyle.opacity / 100 }}>
                     <span style={{
-                      fontSize: Math.min(captionStyle.fontSize, 22), color: captionStyle.color, fontWeight: 700,
+                      fontSize: Math.min(captionStyle.fontSize, 22), color: captionStyle.color, fontWeight: 800,
                       fontFamily: captionStyle.font === "default" ? "inherit" : captionStyle.font,
-                      lineHeight: 1.4, wordBreak: "keep-all", display: "inline-block", textAlign: captionStyle.align || "center",
-                      textShadow: captionStyle.shadow ? "0 2px 6px rgba(0,0,0,0.8)" : "none",
+                      lineHeight: 1.4, wordBreak: "keep-all", display: "inline-block",
+                      textShadow: captionStyle.shadow ? "0 2px 8px rgba(0,0,0,0.9)" : "none",
                       WebkitTextStroke: captionStyle.border ? `1px ${captionStyle.borderColor}` : "none",
                       background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
-                      padding: captionStyle.bgBox ? "4px 12px" : 0, borderRadius: captionStyle.bgBox ? 6 : 0,
+                      padding: captionStyle.bgBox ? "5px 14px" : 0, borderRadius: captionStyle.bgBox ? 6 : 0,
                     }}>{currentSub.text}</span>
                   </div>
                 )}
-                {/* 자막 없을 때 빈 영역 표시 (편집 안내) */}
-                {subtitlesEnabled && !currentSub && !(curClip.subtitles || []).length && !curClip.subtitle_text && (
-                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>자막 없음 (+ 자막 버튼으로 추가)</span>
+                {subtitlesEnabled && !currentSub && !(curClip.subtitles || []).length && (
+                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>자막 없음</span>
                 )}
               </div>
             </>) : (<>
@@ -1660,8 +1705,6 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         </div>
       </div>
 
-      )} {/* 3-panel 조건부 닫기 */}
-
       {/* BOTTOM: AlphaCut 스타일 하단 (툴바 + 타임라인) — 높이 조절 가능 */}
       <div style={{ flexShrink: 0, background: "#0f0f1a", borderTop: "2px solid #2a2a4a", display: "flex", flexDirection: "column", position: "relative" }}>
         {/* 높이 조절 핸들 */}
@@ -1700,9 +1743,35 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               </button>
             )}
             <div style={{ width: 1, height: 20, background: "#2a2a4a", margin: "0 2px" }} />
-            <button onClick={() => { setRemoveSilence(!removeSilence); }} style={{ padding: "5px 10px", borderRadius: 6, border: removeSilence ? "1px solid #4ade80" : "1px solid #2a2a4a", background: removeSilence ? "rgba(74,222,128,0.12)" : "#1a1a30", color: removeSilence ? "#4ade80" : "#888", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-              무음삭제 {removeSilence ? "ON" : ""}
-            </button>
+            <div style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 2 }}>
+              <button onClick={() => { setRemoveSilence(!removeSilence); }} style={{ padding: "5px 10px", borderRadius: "6px 0 0 6px", border: removeSilence ? "1px solid #4ade80" : "1px solid #2a2a4a", borderRight: "none", background: removeSilence ? "rgba(74,222,128,0.12)" : "#1a1a30", color: removeSilence ? "#4ade80" : "#888", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+                무음삭제 {removeSilence ? "ON" : ""}
+              </button>
+              <button onClick={() => setShowSilenceSettings(!showSilenceSettings)} style={{ padding: "5px 6px", borderRadius: "0 6px 6px 0", border: removeSilence ? "1px solid #4ade80" : "1px solid #2a2a4a", background: showSilenceSettings ? "rgba(74,222,128,0.2)" : (removeSilence ? "rgba(74,222,128,0.12)" : "#1a1a30"), color: removeSilence ? "#4ade80" : "#888", cursor: "pointer", fontSize: 10, fontWeight: 700 }} title="무음삭제 설정">
+                {showSilenceSettings ? "▲" : "▼"}
+              </button>
+              {showSilenceSettings && (
+                <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, width: 220, background: "#16162a", border: "1px solid #2a2a4a", borderRadius: 10, padding: 12, zIndex: 100, boxShadow: "0 -4px 20px rgba(0,0,0,0.5)" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", marginBottom: 10 }}>무음삭제 설정</div>
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <span style={{ fontSize: 10, color: "#888" }}>임계값 (dB)</span>
+                      <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 700 }}>{silenceThreshold} dB</span>
+                    </div>
+                    <input type="range" min="-60" max="-10" value={silenceThreshold} onChange={e => setSilenceThreshold(Number(e.target.value))} style={{ width: "100%", accentColor: "#4ade80" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: "#555" }}><span>민감</span><span>둔감</span></div>
+                  </div>
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                      <span style={{ fontSize: 10, color: "#888" }}>최소 무음 길이 (초)</span>
+                      <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 700 }}>{silenceMinGap}s</span>
+                    </div>
+                    <input type="range" min="0.1" max="3" step="0.1" value={silenceMinGap} onChange={e => setSilenceMinGap(Number(e.target.value))} style={{ width: "100%", accentColor: "#4ade80" }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: "#555" }}><span>0.1s</span><span>3.0s</span></div>
+                  </div>
+                </div>
+              )}
+            </div>
             <div style={{ width: 1, height: 20, background: "#2a2a4a", margin: "0 2px" }} />
             {/* 볼륨 */}
             <span style={{ fontSize: 10, color: "#888" }}>🔊</span>
@@ -1962,6 +2031,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           </div>
         </div>
       </div>
+    </>)}
     </div>
   );
   }
@@ -1976,7 +2046,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     const doneResults = results.filter(r => r.type === "done");
 
     return (
-      <div style={{ flex: 1, display: "flex", overflow: "hidden", background: D ? "transparent" : "#f4f4f8" }}>
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", minHeight: "60vh", background: D ? "transparent" : "#f4f4f8" }}>
+        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         {/* 좌측: 생성된 쇼츠 리스트 */}
         <div style={{ width: 240, flexShrink: 0, padding: "18px", overflowY: "auto", borderRight: `1px solid ${bdr}` }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 12 }}>
@@ -2019,11 +2090,21 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
               {/* 다운로드 */}
               <div style={{ marginTop: 20, textAlign: "center", width: "100%", maxWidth: 480 }}>
-                <a href={`${API}/outputs/${fileId}/${doneResults.find(r => r.index === previewIdx)?.filename || doneResults[0]?.filename}`}
-                  download={doneResults.find(r => r.index === previewIdx)?.filename || doneResults[0]?.filename}
-                  style={{ display: "block", padding: "14px 24px", borderRadius: 14, background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 15, fontWeight: 800, textDecoration: "none", textAlign: "center", boxShadow: `0 4px 20px ${acc}40` }}>
+                <button onClick={() => {
+                    // 영상 다운로드
+                    const videoA = document.createElement("a");
+                    videoA.href = `${API}/outputs/${fileId}/${doneResults.find(r => r.index === previewIdx)?.filename || doneResults[0]?.filename}`;
+                    videoA.download = doneResults.find(r => r.index === previewIdx)?.filename || doneResults[0]?.filename;
+                    document.body.appendChild(videoA); videoA.click(); document.body.removeChild(videoA);
+                    // 자막이 있으면 SRT도 함께 다운로드
+                    const clip = editClips[previewIdx];
+                    if (clip && (clip.subtitles || []).length > 0) {
+                      setTimeout(() => downloadSrt(clip), 500);
+                    }
+                  }}
+                  style={{ display: "block", width: "100%", padding: "14px 24px", borderRadius: 14, background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 15, fontWeight: 800, textDecoration: "none", textAlign: "center", boxShadow: `0 4px 20px ${acc}40`, border: "none", cursor: "pointer" }}>
                   다운로드
-                </a>
+                </button>
                 {doneResults.length > 1 && (
                   <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "center", flexWrap: "wrap" }}>
                     {doneResults.filter(r => r.index !== previewIdx).map(r => (
@@ -2036,32 +2117,6 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 )}
               </div>
 
-              {/* 공유 & 연계 */}
-              <div style={{ marginTop: 16, width: "100%", maxWidth: 480 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8, textAlign: "center" }}>다른 기능과 연계</div>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8 }}>
-                  <button onClick={() => linkTo("blog_write", previewIdx)}
-                    style={{ padding: "12px", borderRadius: 12, border: `1px solid ${bdr}`, background: card, color: text, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                    <span style={{ fontSize: 16 }}>&#x1F4DD;</span> 블로그 글쓰기
-                  </button>
-                  <button onClick={() => linkTo("content_create", previewIdx)}
-                    style={{ padding: "12px", borderRadius: 12, border: `1px solid ${bdr}`, background: card, color: text, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                    <span style={{ fontSize: 16 }}>&#x1F3A8;</span> 카드뉴스 제작
-                  </button>
-                  <button onClick={() => linkTo("sns_post", previewIdx)}
-                    style={{ padding: "12px", borderRadius: 12, border: `1px solid ${bdr}`, background: card, color: text, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                    <span style={{ fontSize: 16 }}>&#x1F4F1;</span> SNS 발행
-                  </button>
-                  <button onClick={() => {
-                    const url = `${API}/outputs/${fileId}/${doneResults.find(r => r.index === previewIdx)?.filename}`;
-                    if (navigator.share) navigator.share({ title: editClips[previewIdx]?.title || "쇼츠 영상", url }).catch(() => {});
-                    else { navigator.clipboard.writeText(url).then(() => alert("링크가 복사되었습니다!")); }
-                  }}
-                    style={{ padding: "12px", borderRadius: 12, border: `1px solid ${bdr}`, background: card, color: text, fontSize: 12, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                    <span style={{ fontSize: 16 }}>&#x1F517;</span> 공유하기
-                  </button>
-                </div>
-              </div>
 
               {isComplete && (
                 <button onClick={() => { setStep("upload"); setFileId(null); setSegments([]); setResults([]); setError(""); }}

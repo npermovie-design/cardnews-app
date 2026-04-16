@@ -45,10 +45,10 @@ function VideoEditHub({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, s
   // 숏폼 선택
   if (mode === "shortform") {
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <div style={{ padding:"12px 24px 0", display:"flex", alignItems:"center", gap:10 }}>
-          <button onClick={() => setMode(null)} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, fontWeight:700, cursor:"pointer" }}>← 영상 유형 선택</button>
-          <div style={{ display:"inline-block", padding:"4px 12px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:11, fontWeight:700, color:acc }}>숏폼 편집</div>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8", height:"calc(100vh - 56px)", maxHeight:"calc(100vh - 56px)" }}>
+        <div style={{ padding:"6px 24px 0", display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
+          <button onClick={() => setMode(null)} style={{ padding:"4px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, fontWeight:700, cursor:"pointer" }}>← 영상 유형 선택</button>
+          <div style={{ display:"inline-block", padding:"3px 10px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:10, fontWeight:700, color:acc }}>숏폼 편집</div>
         </div>
         <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>불러오는 중...</div>}>
           <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={() => {}} />
@@ -60,10 +60,10 @@ function VideoEditHub({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, s
   // 롱폼 선택
   if (mode === "longform") {
     return (
-      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <div style={{ padding:"12px 24px 0", display:"flex", alignItems:"center", gap:10 }}>
-          <button onClick={() => setMode(null)} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, fontWeight:700, cursor:"pointer" }}>← 영상 유형 선택</button>
-          <div style={{ display:"inline-block", padding:"4px 12px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:11, fontWeight:700, color:acc }}>롱폼 편집</div>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8", height:"calc(100vh - 56px)", maxHeight:"calc(100vh - 56px)" }}>
+        <div style={{ padding:"6px 24px 0", display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
+          <button onClick={() => setMode(null)} style={{ padding:"4px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, fontWeight:700, cursor:"pointer" }}>← 영상 유형 선택</button>
+          <div style={{ display:"inline-block", padding:"3px 10px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:10, fontWeight:700, color:acc }}>롱폼 편집</div>
         </div>
         <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>불러오는 중...</div>}>
           <LongFormEditor isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={() => {}} />
