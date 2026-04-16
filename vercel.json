@@ -117,6 +117,8 @@
     { "source": "/api/rss", "destination": "/api/seo?action=rss" },
     { "source": "/api/archive-auto-tag", "destination": "/api/seo?action=archive-auto-tag" },
     { "source": "/api/cron-briefing", "destination": "/api/seo?action=cron-briefing" },
+    { "source": "/api/cron-social", "destination": "/api/seo?action=cron-social" },
+    { "source": "/api/cron-ai", "destination": "/api/seo?action=cron-ai" },
     { "source": "/api/naver-verify", "destination": "/api/seo?action=naver-verify" },
 
     { "source": "/api/ai-ppt", "destination": "/api/ai-proxy?target=ppt" },
@@ -137,6 +139,14 @@
     {
       "path": "/api/seo?action=cron-briefing",
       "schedule": "0 22 * * *"
+    },
+    {
+      "path": "/api/seo?action=cron-social",
+      "schedule": "0 23 * * *"
+    },
+    {
+      "path": "/api/seo?action=cron-ai",
+      "schedule": "10 23 * * *"
     }
   ]
 }
