@@ -86,11 +86,24 @@ export default async function handler(req) {
   const path = url.pathname;
   const segments = path.split("/").filter(Boolean);
 
-  let title = "SNS메이킷";
-  let description = "SNS메이킷 - AI 블로그·상세페이지·이미지 자동 생성";
+  let title = "SNS메이킷 - AI 카드뉴스·상세페이지·블로그 자동 생성";
+  let description = "주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 비회원 5회 무료 체험!";
   let image = `${SITE_URL}/og-image.png`;
-  let canonicalUrl = `${SITE_URL}${path}`;
-  let keywords = "SNS메이킷, AI 콘텐츠";
+  let canonicalUrl = `${SITE_URL}${path === "/" ? "" : path}`;
+  let keywords = "카드뉴스 만들기, AI 카드뉴스, 상세페이지 제작, AI 상세페이지, 블로그 자동 생성, SNS 콘텐츠";
+  let ogType = "website";
+
+  // ── 페이지별 메타 설정 ──
+  const PAGE_META = {
+    community: { title: "커뮤니티 - SNS메이킷", description: "SNS메이킷 사용자들과 정보 공유, 질문답변, 사용후기를 나누세요." },
+    programs: { title: "프로그램 - SNS메이킷", description: "SNS 운영과 사업 확장을 위한 필수 솔루션 패키지." },
+    newsletter: { title: "뉴스레터 - SNS메이킷", description: "SNS 마케팅 최신 트렌드와 인사이트를 매주 받아보세요." },
+  };
+
+  if (segments[0] && PAGE_META[segments[0]] && !segments[1]) {
+    title = PAGE_META[segments[0]].title;
+    description = PAGE_META[segments[0]].description;
+  }
 
   // ── 프로그램 상세 페이지 ──
   if (segments[0] === "programs" && segments[1]) {
@@ -132,6 +145,7 @@ export default async function handler(req) {
       const bodyImg = extractFirstImageUrl(post.content);
       image = firstUsable || (isUsableOgImage(bodyImg) ? bodyImg : "") || image;
       keywords = extractKeywords(titleClean, plainBody, catName);
+      ogType = "article";
       postData = { ...post, title: titleClean };
     } else {
       // Supabase 실패 시에도 URL 기반 최소 정보 제공
@@ -187,11 +201,13 @@ export default async function handler(req) {
 <meta name="keywords" content="${esc(keywords)}">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="${esc(canonicalUrl)}">
-<meta property="og:type" content="article">
+<meta property="og:type" content="${ogType}">
 <meta property="og:url" content="${esc(canonicalUrl)}">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:image" content="${esc(image)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:site_name" content="SNS메이킷">
 <meta property="og:locale" content="ko_KR">
 <meta name="twitter:card" content="summary_large_image">
@@ -219,11 +235,13 @@ ${fullBody ? `<article>${esc(fullBody)}</article>` : ""}
 <meta name="description" content="${esc(description)}">
 <meta name="keywords" content="${esc(keywords)}">
 <link rel="canonical" href="${esc(canonicalUrl)}">
-<meta property="og:type" content="article">
+<meta property="og:type" content="${ogType}">
 <meta property="og:url" content="${esc(canonicalUrl)}">
 <meta property="og:title" content="${esc(title)}">
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:image" content="${esc(image)}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="twitter:title" content="${esc(title)}">
 <meta name="twitter:description" content="${esc(description)}">
 <meta name="twitter:image" content="${esc(image)}">`;

@@ -70,8 +70,6 @@
     { "source": "/sitemap.xml", "destination": "/api/seo?action=sitemap" },
     { "source": "/rss.xml", "destination": "/api/seo?action=rss" },
     { "source": "/feed", "destination": "/api/seo?action=rss" },
-    { "source": "/programs/:id", "destination": "/api/render" },
-    { "source": "/community/:cat/post-:id", "destination": "/api/render" },
 
     { "source": "/api/analyze-creator", "destination": "/api/image?action=analyze-creator" },
     { "source": "/api/generate-image", "destination": "/api/image?action=generate" },
@@ -133,7 +131,7 @@
     { "source": "/api/naverbot/login-page", "destination": "/api/naverbot?action=login-page" },
     { "source": "/naverbot-auth.html", "destination": "/api/naverbot?action=login-page" },
 
-    { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|_vercel|naver[0-9a-f]+\\.html|naverbot-auth\\.html).*)", "destination": "/index.html" }
+    { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|_vercel|naver[0-9a-f]+\\.html|naverbot-auth\\.html|index\\.html).*)", "destination": "/api/render" }
   ],
   "crons": [
     {
