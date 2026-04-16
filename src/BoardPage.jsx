@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { getPosts, setPosts, changePoints, getPostsFromDB, getPostByIdFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB, uploadFileToStorage, supabase } from "./storage";
 import { useI18n } from "./i18n.jsx";
 import { KlipyButton } from "./KlipyPicker";
@@ -134,13 +134,18 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const archiveThumbRef = useRef(null);
 
   // 뒤로가기 시 게시글 상세→목록으로 복원
+  const backToList = useCallback(() => {
+    setView(null);
+    setMode("list");
+    resetBoardSeoMeta();
+    window.history.replaceState(null, "", "/community/" + subCat);
+  }, [subCat]);
+
   useEffect(() => {
     const handlePop = () => {
       const path = window.location.pathname;
       if (view && !path.includes("/post-")) {
-        // 게시글 상세에서 목록으로 돌아가기
-        setView(null);
-        setMode("list");
+        backToList();
       }
     };
     window.addEventListener("popstate", handlePop);
@@ -542,8 +547,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   /* 공유 */
   const sharePost = post => {
     const url = window.location.origin + "/community/"+(post.subCat||post.cat||subCat)+"/post-"+post.id;
-    if(navigator.share){ navigator.share({title:post.title,text:post.title,url}); }
-    else { navigator.clipboard.writeText(url); showToast("링크가 복사됐어요","info"); }
+    navigator.clipboard.writeText(url).then(() => showToast("링크가 복사됐어요","info")).catch(() => {
+      const ta = document.createElement("textarea"); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
+      showToast("링크가 복사됐어요","info");
+    });
   };
 
   /* 파일 다운로드 */
@@ -592,7 +599,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       {/* 토스트 */}
       {toast&&<div style={{position:"fixed",top:20,right:20,zIndex:9999,background:toast.type==="success"?"#22c55e":"#7c6aff",color:"#fff",padding:"12px 20px",borderRadius:12,fontSize:14,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,0.25)"}}>{toast.msg}</div>}
       <div style={{maxWidth:900,margin:"0 auto",padding:"24px 16px 60px"}}>
-        <button onClick={()=>{setView(null);setTranslatedBody(null);window.history.pushState(null,"","/community/"+subCat);resetBoardSeoMeta();}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,marginBottom:18,padding:"8px 0",fontWeight:600}}>← 목록으로</button>
+        <button onClick={()=>{setView(null);setTranslatedBody(null);window.history.back();resetBoardSeoMeta();}} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:13,marginBottom:18,padding:"8px 0",fontWeight:600}}>← 목록으로</button>
         <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:16,overflow:"hidden",marginBottom:16}}>
           <div style={{padding:"20px 20px 16px",borderBottom:"1px solid "+bdr}}>
             {subInfo&&<span style={{fontSize:11,padding:"3px 10px",borderRadius:6,background:subInfo.color+"20",color:subInfo.color,fontWeight:700,display:"inline-block",marginBottom:12}}>{subInfo.icon} {subInfo.label}</span>}
@@ -725,7 +732,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
         })()}
         {/* 목록으로 버튼 (하단) */}
         <div style={{display:"flex",justifyContent:"center",marginBottom:16}}>
-          <button onClick={()=>{setView(null);window.history.pushState(null,"","/community/"+subCat);resetBoardSeoMeta();}}
+          <button onClick={()=>{setView(null);window.history.back();resetBoardSeoMeta();}}
             style={{padding:"10px 32px",borderRadius:10,border:"1px solid "+bdr,background:C.card,color:C.muted,fontSize:14,fontWeight:700,cursor:"pointer"}}>
             ≡ 목록으로
           </button>

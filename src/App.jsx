@@ -889,7 +889,6 @@ export default function App() {
           {/* AI 도구 - 드롭다운 없이 바로 진입 */}
           <NavBtn id="ai" label="AI 도구" />
           <NavBtn id="programs" label="자료실" />
-          <NavBtn id="snsnews" label="SNS뉴스" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
           {/* 커뮤니티 */}
           <div style={{ position: "relative" }}>
@@ -1131,7 +1130,7 @@ export default function App() {
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
             { id: "ai",       label: "AI 도구",       onClick: () => { navigate("ai"); setMobileOpen(false); },       active: page==="ai"||page==="analyzer" },
             { id: "programs", label: "자료실", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
-            { id: "snsnews",  label: "SNS뉴스",       onClick: () => { navigate("snsnews"); setMobileOpen(false); }, active: page==="snsnews" },
+
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
             { id: "pricing",  label: t("pricing"),    onClick: () => { navigate("pricing"); setMobileOpen(false); }, active: page==="pricing" },
           ].map(m => (
