@@ -25,7 +25,6 @@ const AttendanceModal = lazy(() => import("./AttendanceModal"));
 const EventPage = lazy(() => import("./EventPage.jsx"));
 const CasePage = lazy(() => import("./CasePage.jsx"));
 const AnalyzerPage = lazy(() => import("./AnalyzerPage.jsx"));
-const SnsNewsPage = lazy(() => import("./SnsNewsPage.jsx"));
 const ProgramsPage = lazy(() => import("./ProgramsPage.jsx"));
 
 // 로딩 폴백
@@ -463,9 +462,9 @@ export default function App() {
     // SEO: 다국어 동적 타이틀
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
     const titleMap = {
-      ko: { home:"SNS메이킷 - AI 블로그·상세페이지·이미지 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자료실", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책", snsnews:"SNS뉴스" },
-      en: { home:"SNS Makeit - AI Card News · Blog · Image Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy", snsnews:"SNS News" },
-      ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", programs:"プログラムストア", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約", snsnews:"SNSニュース" },
+      ko: { home:"SNS메이킷 - AI 블로그·상세페이지·이미지 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자료실", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책", community:"커뮤니티" },
+      en: { home:"SNS Makeit - AI Card News · Blog · Image Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy", community:"Community" },
+      ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", programs:"プログラムストア", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約", community:"コミュニティ" },
     };
     // 페이지별 meta description (SEO 최적화)
     const descMap = {
@@ -646,7 +645,7 @@ export default function App() {
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "event")    return <EventPage C={C} navigate={navigate} />;
     if (page === "programs") return <ProgramsPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} initialProductId={programId} onProductIdChange={setProgramId} />;
-    if (page === "snsnews")  return <SnsNewsPage C={C} user={user} navigate={navigate} />;
+    if (page === "snsnews")  { navigate("community"); return null; }
     if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} user={user} />;
     if (page === "payment/success") return <PaymentSuccessPage C={C} navigate={navigate} />;
     if (page === "payment/fail")    return <PaymentFailPage C={C} navigate={navigate} />;

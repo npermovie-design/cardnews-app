@@ -96,11 +96,16 @@ export default async function handler(req) {
   // ── 페이지별 메타 설정 ──
   const PAGE_META = {
     community: { title: "커뮤니티 - SNS메이킷", description: "SNS메이킷 사용자들과 정보 공유, 질문답변, 사용후기를 나누세요." },
-    programs: { title: "프로그램 - SNS메이킷", description: "SNS 운영과 사업 확장을 위한 필수 솔루션 패키지." },
+    programs: { title: "자료실 - SNS메이킷", description: "SNS 운영과 사업 확장을 위한 필수 솔루션 패키지." },
     newsletter: { title: "뉴스레터 - SNS메이킷", description: "SNS 마케팅 최신 트렌드와 인사이트를 매주 받아보세요." },
+    pricing: { title: "가격정책 - SNS메이킷", description: "SNS메이킷 요금제 안내. Basic $9.90/월, Pro $19.90/월, Premium $34.90/월. 연간 결제 시 2개월 무료." },
+    about: { title: "소개 - SNS메이킷", description: "SNS메이킷은 AI로 SNS 콘텐츠 제작 전 과정을 자동화하는 올인원 플랫폼입니다." },
+    ai: { title: "AI 도구 - SNS메이킷", description: "AI로 블로그, 상세페이지, 이미지, 숏폼 영상을 자동 생성하세요. 비회원 5회 무료." },
+    contact: { title: "문의하기 - SNS메이킷", description: "SNS메이킷 문의하기. 결제, 기능, 오류 등 1:1 문의를 받고 있어요." },
+    howto: { title: "이용방법 - SNS메이킷", description: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 숏폼 편집까지 단계별로 안내합니다." },
   };
 
-  if (segments[0] && PAGE_META[segments[0]] && !segments[1]) {
+  if (segments[0] && PAGE_META[segments[0]]) {
     title = PAGE_META[segments[0]].title;
     description = PAGE_META[segments[0]].description;
   }
@@ -156,7 +161,7 @@ export default async function handler(req) {
 
   // 봇/크롤러 판별
   const ua = (req.headers.get("user-agent") || "").toLowerCase();
-  const isBot = /bot|crawl|spider|slurp|facebookexternalhit|kakaotalk-scrap|twitterbot|linkedinbot|telegram|whatsapp|discord|preview|fetcher|curl|wget|python|go-http/i.test(ua);
+  const isBot = /bot|crawl|spider|slurp|facebookexternalhit|kakaotalk-scrap|twitterbot|linkedinbot|telegram|whatsapp|discord|preview|fetcher|curl|wget|python|go-http|gptbot|claude-web|ccbot|petalbot|yandexbot|bingpreview|applebot|duckduckbot|bytespider|semrush|ahrefs/i.test(ua);
 
   // Article JSON-LD 구조화 데이터
   let jsonLd = "";

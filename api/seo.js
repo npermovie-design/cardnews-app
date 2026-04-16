@@ -100,7 +100,7 @@ async function handleRss(req, res) {
       console.log("RSS: Supabase env vars missing");
       return;
     }
-    const { data: posts } = await sb.from("posts").select("id,title,content,subCat,author,created_at,images").order("id", { ascending: false }).limit(50);
+    const { data: posts } = await sb.from("posts").select("id,title,content,subCat,author,created_at,images").order("created_at", { ascending: false }).limit(50);
 
     if (posts) {
       items = posts.map(p => {
