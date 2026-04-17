@@ -1722,11 +1722,19 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     } catch { setSelectionPopup(null); }
   };
 
-  const handleAiReplace = async () => {
+  const handleAiReplace = async (mode = "rewrite") => {
     if (!selectionPopup?.text) return;
     setAiReplacing(true);
+    const prompts = {
+      rewrite: `다음 문장을 같은 의미를 유지하면서 더 자연스럽고 매력적으로 다시 작성해주세요. 원문과 같은 말투를 유지하세요. 다시 쓴 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`,
+      expand: `다음 문장의 내용을 2~3배로 늘려서 더 상세하고 풍부하게 작성해주세요. 원문과 같은 말투를 유지하세요. 늘린 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`,
+      shorten: `다음 문장을 핵심만 남기고 간결하게 줄여주세요. 원문과 같은 말투를 유지하세요. 줄인 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`,
+      formal: `다음 문장을 합니다체(~입니다, ~했습니다)로 바꿔주세요. 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`,
+      casual: `다음 문장을 해요체(~요, ~이에요)로 친근하게 바꿔주세요. 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`,
+      friendly: `다음 문장을 경험 공유체(~거든요, ~더라고요, ~해보세요)로 바꿔주세요. 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`,
+    };
     try {
-      const replacement = await callAI("claude-haiku-4-5", [{role:"user",content:`다음 문장을 같은 의미를 유지하면서 더 자연스럽고 매력적으로 다시 작성해주세요. 원문과 같은 말투를 유지하세요. 다시 쓴 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`}], 500);
+      const replacement = await callAI("claude-haiku-4-5", [{role:"user",content:prompts[mode]||prompts.rewrite}], mode==="expand"?1000:500);
       if (replacement) {
         const cleaned = replacement.trim().replace(/^["']|["']$/g, "");
         setResult(prev => prev.replace(selectionPopup.text, cleaned));
@@ -2006,14 +2014,29 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           </div>}
           {/* AI 교체 플로팅 버튼 */}
           {selectionPopup && (
-            <div style={{position:"fixed",left:selectionPopup.x,top:selectionPopup.y,transform:"translate(-50%,-100%)",zIndex:9999,display:"flex",gap:4}}
+            <div style={{position:"fixed",left:selectionPopup.x,top:selectionPopup.y,transform:"translate(-50%,-100%)",zIndex:9999,display:"flex",gap:3,flexWrap:"wrap",justifyContent:"center",maxWidth:420}}
               onMouseDown={e => e.stopPropagation()}>
-              <button onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleAiReplace(); }} disabled={aiReplacing}
-                style={{padding:"8px 16px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:aiReplacing?"wait":"pointer",boxShadow:"0 4px 16px rgba(124,106,255,0.4)",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
-                {aiReplacing ? <><div style={{width:12,height:12,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>교체 중...</> : "AI로 교체"}
-              </button>
-              <button onMouseDown={e => { e.preventDefault(); setSelectionPopup(null); }}
-                style={{padding:"8px 10px",borderRadius:10,border:"none",background:"rgba(0,0,0,0.65)",color:"#fff",fontSize:12,cursor:"pointer"}}>x</button>
+              {aiReplacing ? (
+                <div style={{padding:"8px 18px",borderRadius:10,background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:5,boxShadow:"0 4px 16px rgba(124,106,255,0.4)"}}>
+                  <div style={{width:12,height:12,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>변환 중...
+                </div>
+              ) : <>
+                {[
+                  {mode:"rewrite",label:"다시쓰기",color:"#7c6aff"},
+                  {mode:"expand",label:"늘리기",color:"#10b981"},
+                  {mode:"shorten",label:"줄이기",color:"#f59e0b"},
+                  {mode:"formal",label:"합니다체",color:"#3b82f6"},
+                  {mode:"casual",label:"해요체",color:"#ec4899"},
+                  {mode:"friendly",label:"거든요체",color:"#8b5cf6"},
+                ].map(o => (
+                  <button key={o.mode} onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleAiReplace(o.mode); }}
+                    style={{padding:"6px 12px",borderRadius:8,border:"none",background:o.color,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",boxShadow:`0 2px 8px ${o.color}44`,whiteSpace:"nowrap"}}>
+                    {o.label}
+                  </button>
+                ))}
+                <button onMouseDown={e => { e.preventDefault(); setSelectionPopup(null); }}
+                  style={{padding:"6px 8px",borderRadius:8,border:"none",background:"rgba(0,0,0,0.5)",color:"#fff",fontSize:11,cursor:"pointer"}}>x</button>
+              </>}
             </div>
           )}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}

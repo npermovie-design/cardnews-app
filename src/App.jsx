@@ -635,7 +635,7 @@ export default function App() {
   /* ── 페이지 렌더 ── */
   const renderPage = () => {
     if (page === "home")     return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} />;
-    if (page === "login")    return <AuthPage C={C} onAuth={handleAuth} navigate={navigate} />;
+    if (page === "login")    { if (user) { navigate("home"); return null; } return <AuthPage C={C} onAuth={handleAuth} navigate={navigate} />; }
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "howto" || page === "guide")  return <HowToPage C={C} navigate={navigate} />;
     if (page === "faq")      return <FaqPage C={C} navigate={navigate} />;
