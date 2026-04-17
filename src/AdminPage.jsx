@@ -417,7 +417,7 @@ export default function AdminPage({ C, user: adminUser }) {
 
       {/* 탭 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 24, background: isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6", borderRadius: 12, padding: 4 }}>
-        {[["stats","통계"], ["members","회원 관리"], ["newsletter","뉴스레터"], ["guest","비회원 관리"], ["posts","게시글 관리"], ["board","게시판 관리"], ["templates","템플릿 관리"], ["inquiries","문의 관리"], ["videos","영상 관리"]].map(([t,l]) => (
+        {[["stats","통계"], ["members","회원 관리"], ["newsletter","뉴스레터"], ["guest","비회원 관리"], ["posts","게시글 관리"], ["board","게시판 관리"], ["templates","템플릿 관리"], ["inquiries","문의 관리"], ["videos","영상 관리"], ["appFeedback","앱 피드백"], ["appChat","잡담방"]].map(([t,l]) => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: "10px 14px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
             background: tab === t ? C.card : "transparent",
@@ -1303,6 +1303,101 @@ function InquiryManager({ C, isDark }) {
           })}
         </div>
       )}
+
+      {/* ── 앱 피드백 ── */}
+      {tab === "appFeedback" && <AppFeedbackTab C={C} isDark={isDark} />}
+
+      {/* ── 잡담방 ── */}
+      {tab === "appChat" && <AppChatTab C={C} isDark={isDark} />}
+    </div>
+  );
+}
+
+function AppFeedbackTab({ C, isDark }) {
+  const [feedbacks, setFeedbacks] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const catLabels = { feature:"기능 요청", bug:"버그 신고", improve:"개선 제안", other:"기타" };
+  const catColors = { feature:"#7c6aff", bug:"#ef4444", improve:"#f59e0b", other:"#888" };
+  const statusOpts = ["pending","reviewed","done","rejected"];
+  const statusLabels = { pending:"검토 대기", reviewed:"검토 중", done:"반영 완료", rejected:"보류" };
+  const statusColors = { pending:"#888", reviewed:"#3b82f6", done:"#10b981", rejected:"#ef4444" };
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await (await import("./storage")).supabase.from("app_feedback").select("*").order("created_at", { ascending: false });
+        setFeedbacks(data || []);
+      } catch {}
+      setLoading(false);
+    })();
+  }, []);
+
+  const updateStatus = async (id, newStatus) => {
+    const { supabase } = await import("./storage");
+    await supabase.from("app_feedback").update({ status: newStatus }).eq("id", id);
+    setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, status: newStatus } : f));
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:16 }}>앱 피드백 ({feedbacks.length}건)</div>
+      {loading && <div style={{ color:C.muted }}>로딩 중...</div>}
+      {feedbacks.map(f => (
+        <div key={f.id} style={{ padding:"16px 18px", borderRadius:12, background:C.card, border:`1px solid ${isDark?"rgba(255,255,255,0.06)":"#f0f0f0"}`, marginBottom:10 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+            <span style={{ fontSize:11, padding:"2px 8px", borderRadius:4, background:(catColors[f.category]||"#888")+"18", color:catColors[f.category]||"#888", fontWeight:700 }}>{catLabels[f.category]||f.category}</span>
+            <span style={{ fontSize:15, fontWeight:700, color:C.text, flex:1 }}>{f.title}</span>
+            <select value={f.status} onChange={e => updateStatus(f.id, e.target.value)}
+              style={{ padding:"4px 8px", borderRadius:6, border:`1px solid ${statusColors[f.status]}`, background:"transparent", color:statusColors[f.status], fontSize:11, fontWeight:700, cursor:"pointer" }}>
+              {statusOpts.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}
+            </select>
+          </div>
+          <div style={{ fontSize:13, color:C.muted, lineHeight:1.7, whiteSpace:"pre-wrap" }}>{f.body}</div>
+          <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>{f.email} · {f.app_version} · {new Date(f.created_at).toLocaleDateString("ko-KR")}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AppChatTab({ C, isDark }) {
+  const [messages, setMessages] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await (await import("./storage")).supabase.from("app_chat").select("*").order("created_at", { ascending: false }).limit(100);
+        setMessages(data || []);
+      } catch {}
+      setLoading(false);
+    })();
+  }, []);
+
+  const deleteMsg = async (id) => {
+    if (!confirm("삭제하시겠습니까?")) return;
+    const { supabase } = await import("./storage");
+    await supabase.from("app_chat").delete().eq("id", id);
+    setMessages(prev => prev.filter(m => m.id !== id));
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:16 }}>잡담방 메시지 ({messages.length}건)</div>
+      {loading && <div style={{ color:C.muted }}>로딩 중...</div>}
+      {messages.map(m => (
+        <div key={m.id} style={{ padding:"12px 16px", borderRadius:10, background:C.card, border:`1px solid ${isDark?"rgba(255,255,255,0.06)":"#f0f0f0"}`, marginBottom:8, display:"flex", gap:12, alignItems:"flex-start" }}>
+          <div style={{ flex:1 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+              <span style={{ fontSize:13, fontWeight:700, color:C.text }}>{m.nick || m.email?.split("@")[0] || "익명"}</span>
+              <span style={{ fontSize:10, color:C.muted }}>{m.email}</span>
+              <span style={{ fontSize:10, color:C.muted }}>{new Date(m.created_at).toLocaleString("ko-KR")}</span>
+            </div>
+            <div style={{ fontSize:13, color:C.text, lineHeight:1.6 }}>{m.message}</div>
+          </div>
+          <button onClick={() => deleteMsg(m.id)} style={{ padding:"4px 10px", borderRadius:6, border:"1px solid #ef4444", background:"transparent", color:"#ef4444", fontSize:11, cursor:"pointer", flexShrink:0 }}>삭제</button>
+        </div>
+      ))}
     </div>
   );
 }

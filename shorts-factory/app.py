@@ -241,7 +241,7 @@ async def download_setup_exe():
         media_type="application/octet-stream",
         headers={
             "Content-Disposition": 'attachment; filename="makeit-sns-automation-setup-0.1.2.exe"',
-            "Content-Length": str(328877507),
+            "Content-Length": str(328879612),
         },
     )
 
@@ -267,7 +267,7 @@ async def download_setup_zip():
         media_type="application/zip",
         headers={
             "Content-Disposition": 'attachment; filename="makeit-sns-automation-setup-0.1.2.zip"',
-            "Content-Length": str(328802685),
+            "Content-Length": str(328990579),
         },
     )
 
