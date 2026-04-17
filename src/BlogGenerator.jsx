@@ -314,12 +314,24 @@ function AutomationPanel({ isDark, text, muted, accent, border, cardBg, user, on
   const [progress, setProgress] = useState("");
   const [showSetup, setShowSetup] = useState(false);
   const [resultPreview, setResultPreview] = useState("");
+  const [liveSteps, setLiveSteps] = useState([]);
+  const [loginChecking, setLoginChecking] = useState(false);
+  const [pendingSession, setPendingSession] = useState(null);
+  const [zoomScreenshot, setZoomScreenshot] = useState(null);
+  const [captchaInput, setCaptchaInput] = useState("");
+  const [loginConfirmed, setLoginConfirmed] = useState(false);
+  const [blogCategories, setBlogCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
 
   const chip = (active, c) => ({
     padding:"7px 14px", borderRadius:8, border: active ? `1.5px solid ${c}` : `1px solid ${border}`,
     background: active ? c+"15" : "transparent", color: active ? c : muted,
     fontSize:12, fontWeight: active ? 700 : 500, cursor:"pointer", transition:"all 0.12s",
   });
+
+  const onLoginSuccess = async () => {
+    setLoginConfirmed(true);
+  };
 
   const saveAccount = () => {
     if (!naverId.trim() || !naverPw.trim()) return alert("아이디와 비밀번호를 입력해주세요.");
@@ -339,32 +351,61 @@ function AutomationPanel({ isDark, text, muted, accent, border, cardBg, user, on
       const wcMap = { short:"3000자", medium:"5000자", long:"7000자" };
       const subtypeMap = { info:"정보성 글 (핵심 정보 전달)", visit:"방문기/체험기 (장소 소개)", review:"리뷰/비교 분석 (장단점)", product:"제품/서비스 소개", column:"칼럼/의견 (전문가 관점)" };
 
-      const result = await callAI("claude-sonnet-4-20250514", [{role:"user",content:`"${kw}" 주제로 네이버 블로그에 올릴 글을 작성해주세요.
-
-글 유형: ${subtypeMap[subtype]||"정보성"}
-말투: ${spMap[speech]||"해요체"}로 작성
-톤: ${toneMap[tone]||"친근하게"}
-분량: ${wcMap[wordCount]||"5000자"} 이상, 7~8개 섹션
-${extra ? "추가 요청: " + extra : ""}
-
-형식:
-[TITLE] 제목 (30자 이내, 검색 최적화)
-[BODY] 본문 (소제목은 빈 줄로 구분)
-[TAGS] 태그1, 태그2, ... (10개)
-
-규칙:
-- 마크다운 기호(#, *, -, **) 사용 금지
-- 이모지 사용 금지
-- 배경색 형광펜 스타일 사용 금지
-- 자연스러운 문장 흐름, 실전 경험 위주
-- 각 섹션 사이에 [image: 관련키워드] 태그 삽입`}], wordCount==="long"?8000:wordCount==="short"?4000:6000);
+      const result = await callAI("claude-haiku-4-5", [{role:"user",content:`"${kw}" 주제로 네이버 블로그 글 작성.
+유형:${subtypeMap[subtype]||"정보성"} / 말투:${spMap[speech]||"해요체"} / 톤:${toneMap[tone]||"친근하게"} / 분량:${wcMap[wordCount]||"5000자"}이상
+${extra ? "추가:"+extra : ""}
+[TITLE] 제목30자이내
+[BODY] 본문 (소제목은 빈줄구분, 마크다운/#/*/-금지, 이모지금지)
+[TAGS] 태그10개`}], wordCount==="long"?6000:wordCount==="short"?3000:4500);
 
       const title = (result.match(/\[TITLE\]\s*\n([^\n]+)/)||["",kw])[1].trim().replace(/'/g,"\\'");
       const body = result.replace(/\[TITLE\]\s*\n[^\n]+\n?/,"").replace(/\[BODY\]\s*\n?/,"").replace(/\[TAGS\]\s*\n?[^\n]*/,"").replace(/\[image:[^\]]+\]/g,"").replace(/\*\*([^*]+)\*\*/g,"$1").replace(/#{1,6}\s*/g,"").replace(/^[-*]\s+/gm,"").trim().replace(/'/g,"\\'").slice(0,10000);
       const tags = (result.match(/\[TAGS\]\s*\n([^\n]+)/)||["",kw])[1].replace(/'/g,"");
       setResultPreview(`제목: ${title}\n\n${body.slice(0,500)}...`);
-      generateBatFile(naverId, naverPw, title, body, tags, kw);
-      setStatus("done"); setProgress("글 생성 완료! 자동 발행 파일이 다운로드되었습니다.");
+
+      // 발행 서버로 직접 발행 요청
+      setProgress("네이버 블로그에 발행 중... (30초~1분 소요)");
+      setLiveSteps([{ step: "Render 서버에 발행 요청 중...", screenshot: null }]);
+      const PUBLISH_SERVER = "https://shorts-factory-r33o.onrender.com";
+      try {
+        const pubRes = await fetch(`${PUBLISH_SERVER}/naver-publish`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            naverId: naverId.replace(/@.*$/, ""),
+            naverPw: naverPw,
+            post: {
+              title,
+              body,
+              tags: tags ? tags.split(",").map(t => t.trim().replace("#", "")).filter(Boolean) : [],
+              category: selectedCategory || "",
+            },
+          }),
+        });
+        const pubData = await pubRes.json();
+        if (pubData.success) {
+          setStatus("done");
+          setProgress("네이버 블로그에 발행 완료!");
+          setLiveSteps([{ step: "발행 성공!", screenshot: null }]);
+          if (pubData.postUrl) setResultPreview(prev => prev + `\n\n블로그 확인: ${pubData.postUrl}`);
+        } else {
+          setStatus("error");
+          const errMsg = pubData.error || "발행 실패";
+          const isCaptcha = errMsg.includes("캡차") || errMsg.includes("인증") || errMsg.includes("로그인 실패");
+          setProgress(isCaptcha
+            ? "네이버 보안 인증(캡차)이 필요합니다."
+            : errMsg);
+          setLiveSteps(isCaptcha ? [
+            { step: "네이버 보안 인증(캡차)으로 자동 로그인이 차단되었습니다.", screenshot: null },
+            { step: "해결 방법: 네이버(naver.com)에 직접 로그인 후 다시 시도하면 캡차가 줄어듭니다.", screenshot: null },
+            { step: "또는 잠시 후(10~30분) 다시 시도해주세요.", screenshot: null },
+          ] : [{ step: errMsg, screenshot: null }]);
+        }
+      } catch (pubErr) {
+        setStatus("error");
+        setProgress("발행 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
+        setLiveSteps([]);
+      }
     } catch(e) {
       const msg = e.message || "알 수 없는 오류";
       if (msg.includes("role") || msg.includes("null") || msg.includes("로그인")) {
@@ -480,6 +521,15 @@ ${extra ? "추가 요청: " + extra : ""}
         <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12, display:"flex", alignItems:"center", gap:8 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={green} strokeWidth="2.5" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           네이버 계정 설정
+          {loginConfirmed && (
+            <button onClick={() => {
+              try { localStorage.removeItem("makeit_naver_id"); localStorage.removeItem("makeit_naver_pw"); } catch {}
+              setNaverId(""); setNaverPw(""); setLoginConfirmed(false); setLiveSteps([]); setBlogCategories([]); setStatus("idle"); setResultPreview("");
+            }}
+              style={{ marginLeft:"auto", padding:"4px 12px", borderRadius:6, border:`1px solid #ef4444`, background:"transparent", color:"#ef4444", fontSize:11, fontWeight:600, cursor:"pointer" }}>
+              계정 해제
+            </button>
+          )}
         </div>
         <div style={{ display:"flex", gap:8, marginBottom:8 }}>
           <input value={naverId} onChange={e=>setNaverId(e.target.value)} placeholder="네이버 아이디"
@@ -487,14 +537,118 @@ ${extra ? "추가 요청: " + extra : ""}
           <input value={naverPw} onChange={e=>setNaverPw(e.target.value)} placeholder="비밀번호" type="password"
             style={{ flex:1, padding:"11px 14px", borderRadius:10, border:`1px solid ${border}`, background:"transparent", color:text, fontSize:13, outline:"none" }} />
           <button onClick={saveAccount}
-            style={{ padding:"11px 18px", borderRadius:10, border:"none", background: acctSaved ? green : accent, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, transition:"all 0.2s" }}>
+            style={{ padding:"11px 14px", borderRadius:10, border:"none", background: acctSaved ? green : accent, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, transition:"all 0.2s" }}>
             {acctSaved ? "저장됨" : "저장"}
           </button>
+          <button onClick={async () => {
+            if (!naverId.trim() || !naverPw.trim()) return alert("아이디와 비밀번호를 입력해주세요.");
+            saveAccount();
+            setLoginChecking(true);
+            try {
+              const r = await fetch("https://shorts-factory-r33o.onrender.com/health");
+              const d = await r.json();
+              if (d.status === "ok") {
+                onLoginSuccess();
+                setLiveSteps([{ step: "서버 연결 확인 완료! 계정 저장됨.", screenshot: null }]);
+              }
+            } catch {
+              setLiveSteps([{ step: "발행 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.", screenshot: null }]);
+            }
+            setLoginChecking(false);
+          }} disabled={loginChecking}
+            style={{ padding:"11px 14px", borderRadius:10, border:`1px solid ${green}`, background:loginChecking?green+"15":"transparent", color:green, fontSize:12, fontWeight:700, cursor:loginChecking?"wait":"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+            {loginChecking ? "확인 중..." : "연결 확인"}
+          </button>
         </div>
-        <div style={{ fontSize:11, color:muted }}>계정 정보는 이 브라우저에만 저장됩니다 (서버 전송 없음).</div>
+        <div style={{ fontSize:11, color:muted }}>저장 후 "로그인 확인"을 클릭하면 네이버 로그인이 검증됩니다.</div>
       </div>
 
-      {/* ── 3. 글 설정 ── */}
+      {/* ── 실시간 스크린샷 뷰어 (글 설정 위에) ── */}
+      {liveSteps.length > 0 && (
+        <div style={{ marginBottom:16, padding:"18px 20px", borderRadius:14, background:cardBg, border:`1px solid ${loginConfirmed ? green+"40" : border}` }}>
+          <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12, display:"flex", alignItems:"center", gap:8 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={green} strokeWidth="2.5" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            네이버 자동화 진행 상황
+            {(loginChecking) && <div style={{ width:12, height:12, borderRadius:"50%", border:"2px solid "+green+"40", borderTopColor:green, animation:"spin 0.8s linear infinite", marginLeft:4 }} />}
+            {!loginChecking && !pendingSession && <button onClick={() => { setLiveSteps([]); }} style={{ marginLeft:"auto", background:"none", border:"none", color:muted, fontSize:14, cursor:"pointer" }}>x</button>}
+          </div>
+          {/* 단계 */}
+          <div style={{ display:"flex", flexDirection:"column", gap:4, marginBottom:10 }}>
+            {liveSteps.map((s, i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:8, fontSize:12 }}>
+                <span style={{ width:16, height:16, borderRadius:"50%", background: i === liveSteps.length-1 ? green : green+"30", color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:8, fontWeight:800, flexShrink:0 }}>
+                  {i === liveSteps.length-1 && loginChecking ? "..." : "\u2713"}
+                </span>
+                <span style={{ color: i === liveSteps.length-1 ? text : muted }}>{s.step}</span>
+              </div>
+            ))}
+          </div>
+          {/* 스크린샷 (클릭하면 확대) */}
+          {liveSteps.filter(s => s.screenshot).length > 0 && (() => {
+            const latestShot = liveSteps.filter(s => s.screenshot).slice(-1)[0].screenshot;
+            return (
+              <div style={{ borderRadius:10, overflow:"hidden", border:`1px solid ${border}`, cursor:"pointer", position:"relative" }}
+                onClick={() => setZoomScreenshot(latestShot)}>
+                <img src={`data:image/jpeg;base64,${latestShot}`} alt="진행 상황" style={{ width:"100%", display:"block" }} />
+                <div style={{ position:"absolute", bottom:8, right:8, padding:"4px 10px", borderRadius:6, background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:11, fontWeight:600 }}>
+                  클릭하면 크게 보기
+                </div>
+              </div>
+            );
+          })()}
+          {/* 캡차/2차인증 입력 */}
+          {pendingSession && (
+            <div style={{ marginTop:12, padding:"14px 16px", borderRadius:10, background:isDark?"rgba(245,158,11,0.08)":"#fffbeb", border:"1px solid rgba(245,158,11,0.2)" }}>
+              <div style={{ fontSize:14, fontWeight:700, color:"#d97706", marginBottom:8 }}>{pendingSession.hint}</div>
+              <div style={{ fontSize:12, color:muted, marginBottom:8 }}>위 화면에 보이는 문자 또는 인증 코드를 입력해주세요.</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <input value={captchaInput} onChange={e => setCaptchaInput(e.target.value)}
+                  placeholder="인증 문자 입력"
+                  onKeyDown={async e => {
+                    if (e.key !== "Enter" || !captchaInput.trim()) return;
+                    setLoginChecking(true);
+                    try {
+                      const r = await fetch("https://shorts-factory-r33o.onrender.com/api/naver-input", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: pendingSession.id, value: captchaInput }) });
+                      const d = await r.json();
+                      if (d.steps) setLiveSteps(prev => [...prev, ...d.steps]);
+                      if (d.loggedIn) { setPendingSession(null); setCaptchaInput(""); onLoginSuccess(); }
+                      else if (d.needInput) setPendingSession({ ...pendingSession, hint: "다시 입력해주세요" });
+                      else setPendingSession(null);
+                    } catch {}
+                    setLoginChecking(false);
+                  }}
+                  style={{ flex:1, padding:"12px 16px", borderRadius:8, border:"1.5px solid #d97706", background:"transparent", color:text, fontSize:15, outline:"none" }} />
+                <button disabled={loginChecking} onClick={async () => {
+                  if (!captchaInput.trim()) return;
+                  setLoginChecking(true);
+                  try {
+                    const r = await fetch("https://shorts-factory-r33o.onrender.com/api/naver-input", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId: pendingSession.id, value: captchaInput }) });
+                    const d = await r.json();
+                    if (d.steps) setLiveSteps(prev => [...prev, ...d.steps]);
+                    if (d.loggedIn) { setPendingSession(null); setCaptchaInput(""); onLoginSuccess(); }
+                    else if (d.needInput) setPendingSession({ ...pendingSession, hint: "다시 입력해주세요" });
+                    else setPendingSession(null);
+                  } catch {}
+                  setLoginChecking(false);
+                }}
+                  style={{ padding:"12px 24px", borderRadius:8, border:"none", background:loginChecking?"#92400e":"#d97706", color:"#fff", fontSize:14, fontWeight:700, cursor:loginChecking?"wait":"pointer", flexShrink:0, display:"flex", alignItems:"center", gap:6 }}>
+                  {loginChecking ? <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>진행 중...</> : "확인"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 로그인 미완료 안내 */}
+      {!loginConfirmed && !loginChecking && liveSteps.length === 0 && (
+        <div style={{ marginBottom:16, padding:"16px 20px", borderRadius:12, background:isDark?"rgba(245,158,11,0.06)":"#fffbeb", border:"1px solid rgba(245,158,11,0.15)", textAlign:"center" }}>
+          <div style={{ fontSize:13, color:"#d97706", fontWeight:600 }}>네이버 계정을 입력하고 "로그인 확인"을 먼저 진행해주세요.</div>
+        </div>
+      )}
+
+      {/* ── 3. 글 설정 (로그인 완료 후에만 표시) ── */}
+      {loginConfirmed && <>
       <div style={{ padding:"18px 20px", borderRadius:14, background:cardBg, border:`1px solid ${border}`, marginBottom:16 }}>
         <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>
@@ -530,6 +684,18 @@ ${extra ? "추가 요청: " + extra : ""}
         </div>
 
         {/* 추가 요청 */}
+        {/* 카테고리 선택 */}
+        {blogCategories.length > 0 && (
+          <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:12, flexWrap:"wrap" }}>
+            <span style={{ fontSize:12, color:muted, fontWeight:600, width:44 }}>카테고리</span>
+            <select value={selectedCategory} onChange={e=>setSelectedCategory(e.target.value)}
+              style={{ flex:1, padding:"8px 12px", borderRadius:8, border:`1px solid ${border}`, background:"transparent", color:text, fontSize:12, outline:"none", maxWidth:200 }}>
+              <option value="">선택 안함</option>
+              {blogCategories.map((c,i) => <option key={i} value={c.name}>{c.name}</option>)}
+            </select>
+          </div>
+        )}
+
         <input value={extra} onChange={e=>setExtra(e.target.value)} placeholder="추가 요청사항 (선택)"
           style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1px solid ${border}`, background:"transparent", color:text, fontSize:12, outline:"none", boxSizing:"border-box", marginTop:12 }} />
       </div>
@@ -559,18 +725,23 @@ ${extra ? "추가 요청: " + extra : ""}
             <>
               {resultPreview && (
                 <div style={{ maxHeight:180, overflow:"auto", padding:"12px 14px", borderRadius:10, background:isDark?"#0f1116":"#fff", border:`1px solid ${border}`, fontSize:12, color:muted, lineHeight:1.7, whiteSpace:"pre-wrap", marginBottom:12 }}>
-                  {resultPreview}
+                  {resultPreview.split("\n").map((line, i) => {
+                    const urlMatch = line.match(/(https?:\/\/[^\s]+)/);
+                    if (urlMatch) return <div key={i}>{line.replace(urlMatch[0], "")} <a href={urlMatch[0]} target="_blank" rel="noopener noreferrer" style={{color:green, fontWeight:700}}>{urlMatch[0]} &rarr;</a></div>;
+                    return <div key={i}>{line}</div>;
+                  })}
                 </div>
               )}
-              <div style={{ fontSize:13, color:text, lineHeight:1.8 }}>
-                <b>다음 단계:</b><br/>
-                1. 다운로드된 <b style={{color:green}}>메이킷_자동발행.bat</b> 파일을 더블클릭<br/>
-                2. 브라우저가 열리고 네이버에 자동 로그인<br/>
-                3. 글이 자동으로 작성됨 → <b>발행 버튼만 클릭</b>하면 끝!
+              <div style={{ display:"flex", gap:8, marginTop:4 }}>
+                <button onClick={()=>{ setStatus("idle"); setKw(""); setResultPreview(""); setLiveSteps([]); }} style={{ padding:"10px 20px", borderRadius:10, border:`1.5px solid ${green}`, background:"transparent", color:green, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                  다른 주제로 다시 생성
+                </button>
+                <a href={`https://blog.naver.com/${(naverId||"").replace(/@.*$/,"")}`} target="_blank" rel="noopener noreferrer"
+                  style={{ padding:"10px 20px", borderRadius:10, border:"none", background:green, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", textDecoration:"none", display:"flex", alignItems:"center", gap:6 }}>
+                  내 블로그 확인하기
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                </a>
               </div>
-              <button onClick={handleStart} style={{ marginTop:12, padding:"10px 20px", borderRadius:10, border:`1.5px solid ${green}`, background:"transparent", color:green, fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                다른 주제로 다시 생성
-              </button>
             </>
           )}
           {status==="error" && (
@@ -580,6 +751,20 @@ ${extra ? "추가 요청: " + extra : ""}
           )}
         </div>
       )}
+      </>}
+
+      {/* 스크린샷 확대 모달 */}
+      {zoomScreenshot && (
+        <div onClick={() => setZoomScreenshot(null)}
+          style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"zoom-out", padding:20 }}>
+          <img src={`data:image/jpeg;base64,${zoomScreenshot}`} alt="확대 보기"
+            style={{ maxWidth:"95vw", maxHeight:"90vh", borderRadius:12, boxShadow:"0 20px 60px rgba(0,0,0,0.5)" }} />
+          <div style={{ position:"absolute", top:20, right:20, color:"#fff", fontSize:14, fontWeight:600, background:"rgba(255,255,255,0.15)", padding:"8px 16px", borderRadius:8 }}>
+            클릭하면 닫힘
+          </div>
+        </div>
+      )}
+
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
@@ -1699,33 +1884,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 {copyLoading?"복사 중":copied?"복사됨":isMobile?"복사":"복사 (이미지 포함)"}
               </button>
               {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
-              {result && !isMobile && (
-                <button onClick={()=>{
-                  // 자동화 모드에서 이미 ID/PW 입력했으면 바로 발행 파일 생성
-                  const idEl = document.getElementById("auto-naver-id");
-                  const pwEl = document.getElementById("auto-naver-pw");
-                  if (idEl && pwEl && idEl.value && pwEl.value) {
-                    // 바로 .bat 다운로드
-                    const title = (result.match(/\[TITLE\]\s*\n([^\n]+)/) || ["", fields?.keyword||""])[1].trim().replace(/"""/g,"'''");
-                    const body = result.replace(/\[TITLE\]\s*\n[^\n]+\n?/,"").replace(/\[BODY\]\s*\n?/,"").replace(/\[TAGS\]\s*\n?[^\n]*/,"").replace(/\[image:[^\]]+\]/g,"").replace(/\*\*([^*]+)\*\*/g,"$1").replace(/#{1,6}\s*/g,"").replace(/^[-*]\s+/gm,"").trim().replace(/"""/g,"'''").slice(0,10000);
-                    const tags = (result.match(/\[TAGS\]\s*\n([^\n]+)/) || ["", fields?.keyword||""])[1].replace(/"/g,"");
-                    generateBatFile(idEl.value, pwEl.value, title, body, tags, fields?.keyword||"");
-                  } else {
-                    setShowAutoPublish(true);
-                  }
-                }}
-                  style={{padding:"10px 18px",borderRadius:11,border:"none",
-                    background:"linear-gradient(135deg,#10b981,#059669)",
-                    color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",
-                    display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap",minHeight:42,fontFamily:"inherit"}}>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>
-                  네이버 자동발행
-                </button>
-              )}
             </div>
           )}
-          {/* 네이버 자동발행 모달 */}
-          {showAutoPublish && result && <NaverAutoPublishModal result={result} keyword={fields?.keyword||""} isDark={isDark} onClose={()=>setShowAutoPublish(false)} />}
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"18px 22px"}}>
           {/* AI 생성 이미지 */}
@@ -2039,14 +2199,13 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               {[
                 {id:"write", label:"글쓰기", color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
                 {id:"shorts", label:"영상 생성", color:"#ef4444", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>},
-                {id:"automation", label:"자동화", color:"#10b981", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>},
               ].map(m => (
-                <button key={m.id} onClick={()=>{if(m.id==="shorts"){setShortsMode(true);setShowAutoPublish(false);setVideoSubMode(null);setShortsYtUrl("");}else if(m.id==="automation"){setShortsMode(false);setVideoSubMode(null);setMode("write");setShowAutoPublish(true);}else{setShortsMode(false);setShowAutoPublish(false);setVideoSubMode(null);setMode(m.id);}}} style={{
+                <button key={m.id} onClick={()=>{if(m.id==="shorts"){setShortsMode(true);setVideoSubMode(null);setShortsYtUrl("");}else{setShortsMode(false);setVideoSubMode(null);setMode(m.id);}}} style={{
                   padding:"10px 20px", borderRadius:20,
-                  border: (m.id==="automation"?showAutoPublish:m.id==="shorts"?shortsMode:(!showAutoPublish&&mode===m.id)) ? `2px solid ${m.color}` : `1.5px solid ${border}`,
-                  background: (m.id==="automation"?showAutoPublish:m.id==="shorts"?shortsMode:(!showAutoPublish&&mode===m.id)) ? (isDark?`${m.color}15`:`${m.color}08`) : "transparent",
-                  color: (m.id==="automation"?showAutoPublish:m.id==="shorts"?shortsMode:(!showAutoPublish&&mode===m.id)) ? m.color : muted,
-                  fontSize:14, fontWeight: (m.id==="automation"?showAutoPublish:m.id==="shorts"?shortsMode:(!showAutoPublish&&mode===m.id))?800:600,
+                  border: (m.id==="shorts"?shortsMode:mode===m.id) ? `2px solid ${m.color}` : `1.5px solid ${border}`,
+                  background: (m.id==="shorts"?shortsMode:mode===m.id) ? (isDark?`${m.color}15`:`${m.color}08`) : "transparent",
+                  color: (m.id==="shorts"?shortsMode:mode===m.id) ? m.color : muted,
+                  fontSize:14, fontWeight: (m.id==="shorts"?shortsMode:mode===m.id)?800:600,
                   cursor:"pointer", display:"flex", alignItems:"center", gap:6,
                   fontFamily:"inherit", transition:"all 0.15s",
                 }}>
@@ -2055,13 +2214,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               ))}
             </div>
 
-            {/* 자동화 모드: 독립 패널 */}
-            {showAutoPublish && mode==="write" && !result && (
-              <AutomationPanel isDark={isDark} text={text} muted={muted} accent={accent} border={border} cardBg={cardBg} user={user} onLoginRequest={onLoginRequest} />
-            )}
-
-            {/* 현재 선택된 플랫폼 표시 (글쓰기 모드에서만, 자동화 모드 아닐 때) */}
-            {showAutoPublish && !result ? null :<>
+            {/* 현재 선택된 플랫폼 표시 (글쓰기 모드에서만) */}
             {mode==="write" && (
             <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:14}}>
               <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:20,background:isDark?"rgba(255,255,255,0.06)":"#f5f5f5",fontSize:13,color:text,fontWeight:700}}>
@@ -2264,7 +2417,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 <button onClick={()=>window.location.hash="#pricing"} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
               )}
             </div>}
-            </>}
 
             {/* ══════ 설정 패널 (토글) ══════ */}
             {showSettings && (

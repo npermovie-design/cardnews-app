@@ -220,6 +220,33 @@ async def health_check():
     return {"status": "ok", "service": "shorts-factory"}
 
 
+@app.get("/download/makeit-setup.exe")
+async def download_setup():
+    """Supabase에 분할 저장된 exe를 합쳐서 단일 파일로 스트리밍"""
+    import httpx
+
+    SB_BASE = "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/downloads"
+    PARTS = ["makeit-exe-part-aa", "makeit-exe-part-ab", "makeit-exe-part-ac",
+             "makeit-exe-part-ad", "makeit-exe-part-ae", "makeit-exe-part-af", "makeit-exe-part-ag"]
+
+    async def stream_parts():
+        async with httpx.AsyncClient(timeout=120) as client:
+            for part in PARTS:
+                url = f"{SB_BASE}/{part}"
+                r = await client.get(url)
+                if r.status_code == 200:
+                    yield r.content
+
+    return StreamingResponse(
+        stream_parts(),
+        media_type="application/octet-stream",
+        headers={
+            "Content-Disposition": 'attachment; filename="makeit-sns-automation-setup-0.1.2.exe"',
+            "Content-Length": str(328877507),  # 314MB
+        },
+    )
+
+
 @app.get("/virality", response_class=HTMLResponse)
 async def virality_page():
     html_path = BASE_DIR / "templates" / "virality.html"

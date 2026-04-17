@@ -1357,10 +1357,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return <TodayKeywordsPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} />;
   }
 
-  // SNS 자동화
-  if (aiMenu === "sns_automation") {
-    return <SnsAutomationPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} />;
-  }
 
   // SNS 뉴스 + 뉴스레터 구독
   if (aiMenu === "hot_keyword") {

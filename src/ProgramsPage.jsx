@@ -39,13 +39,13 @@ const CATEGORIES = [
 const DEMO_PRODUCTS = [
   {
     id: 1, title: "SNS 자동화 봇 v0.1.2",
-    desc: "네이버 블로그/카페에 AI 글을 자동 생성하고 발행하는 데스크톱 프로그램입니다. 키워드만 입력하면 글 작성부터 발행까지 원클릭 자동화.",
+    desc: "네이버 블로그/카페에 AI 글을 자동 생성하고 발행하는 데스크톱 프로그램입니다. 키워드만 입력하면 글 작성부터 발행까지 원클릭 자동화. Python, Playwright 등 별도 설치 불필요.",
     category: "automation", price: 0, priceLabel: "무료",
     version: "v0.1.2", platform: "Windows 10/11",
-    fileSize: "48MB", downloadCount: 124, viewCount: 312,
+    fileSize: "314MB", downloadCount: 124, viewCount: 312,
     tags: ["자동화", "블로그", "네이버"],
-    downloadUrl: "https://github.com/npermovie-design/naverbot-saas/releases/download/v0.1.2/makeit-sns-setup-win.zip",
-    thumbnail: null,
+    downloadUrl: "https://github.com/npermovie-design/naverbot-saas/releases/download/v0.1.2/%EB%A9%94%EC%9D%B4%ED%82%B7+SNS%EC%9E%90%EB%8F%99%ED%99%94+Setup+0.1.2.exe",
+    thumbnail: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/uploads/automation-thumb.png",
     detailContent: [
       { type: "heading", value: "SNS 자동화 봇이란?" },
       { type: "text", value: "SNS 자동화 봇은 네이버 블로그와 카페 운영을 완전히 자동화하는 데스크톱 프로그램입니다.\n키워드를 입력하면 AI가 네이버 상위 노출 글을 분석하고, SEO에 최적화된 제목과 본문을 자동 생성합니다.\n생성된 글은 이미지와 함께 네이버 블로그/카페에 자동 발행되며, 예약 발행과 매일 자동 운영 모드도 지원합니다." },
