@@ -417,7 +417,7 @@ export default function AdminPage({ C, user: adminUser }) {
 
       {/* 탭 */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 24, background: isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6", borderRadius: 12, padding: 4 }}>
-        {[["stats","통계"], ["members","회원 관리"], ["newsletter","뉴스레터"], ["guest","비회원 관리"], ["posts","게시글 관리"], ["board","게시판 관리"], ["templates","템플릿 관리"], ["inquiries","문의 관리"], ["videos","영상 관리"], ["appFeedback","앱 피드백"], ["appChat","잡담방"]].map(([t,l]) => (
+        {[["stats","통계"], ["members","회원 관리"], ["pointHistory","포인트 내역"], ["guest","비회원 관리"], ["posts","게시글 관리"], ["board","게시판 관리"], ["inquiries","문의 관리"], ["appFeedback","앱 피드백"], ["appChat","잡담방"]].map(([t,l]) => (
           <button key={t} onClick={() => setTab(t)} style={{
             padding: "10px 14px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
             background: tab === t ? C.card : "transparent",
@@ -1305,10 +1305,66 @@ function InquiryManager({ C, isDark }) {
       )}
 
       {/* ── 앱 피드백 ── */}
+      {tab === "pointHistory" && <PointHistoryTab C={C} isDark={isDark} />}
+
       {tab === "appFeedback" && <AppFeedbackTab C={C} isDark={isDark} />}
 
       {/* ── 잡담방 ── */}
       {tab === "appChat" && <AppChatTab C={C} isDark={isDark} />}
+    </div>
+  );
+}
+
+function PointHistoryTab({ C, isDark }) {
+  const [history, setHistory] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [filterUid, setFilterUid] = React.useState("");
+
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await (await import("./storage")).supabase
+          .from("point_history").select("*").order("created_at", { ascending: false }).limit(200);
+        setHistory(data || []);
+      } catch {}
+      setLoading(false);
+    })();
+  }, []);
+
+  const filtered = filterUid ? history.filter(h => h.uid?.includes(filterUid) || h.reason?.includes(filterUid)) : history;
+
+  return (
+    <div>
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+        <div style={{ fontSize:15, fontWeight:800, color:C.text }}>포인트 사용 내역 ({filtered.length}건)</div>
+        <input value={filterUid} onChange={e => setFilterUid(e.target.value)} placeholder="UID 또는 사유 검색"
+          style={{ padding:"8px 12px", borderRadius:8, border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:"transparent", color:C.text, fontSize:12, outline:"none", width:200 }} />
+      </div>
+      {loading && <div style={{ color:C.muted }}>로딩 중...</div>}
+      <div style={{ overflowX:"auto" }}>
+        <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+          <thead>
+            <tr style={{ borderBottom:`2px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}` }}>
+              <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:700 }}>날짜</th>
+              <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:700 }}>UID</th>
+              <th style={{ padding:"8px 10px", textAlign:"right", color:C.muted, fontWeight:700 }}>변동</th>
+              <th style={{ padding:"8px 10px", textAlign:"right", color:C.muted, fontWeight:700 }}>잔액</th>
+              <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:700 }}>사유</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((h, i) => (
+              <tr key={i} style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.05)":"#f3f4f6"}` }}>
+                <td style={{ padding:"8px 10px", color:C.muted, whiteSpace:"nowrap" }}>{new Date(h.created_at).toLocaleString("ko-KR", {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</td>
+                <td style={{ padding:"8px 10px", color:C.text, fontSize:11, maxWidth:120, overflow:"hidden", textOverflow:"ellipsis" }}>{h.uid?.slice(0,12)}...</td>
+                <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, color: h.delta > 0 ? "#10b981" : h.delta < 0 ? "#ef4444" : C.muted }}>{h.delta > 0 ? "+" : ""}{h.delta}</td>
+                <td style={{ padding:"8px 10px", textAlign:"right", color:C.text, fontWeight:600 }}>{(h.balance||0).toLocaleString()}</td>
+                <td style={{ padding:"8px 10px", color:C.muted, maxWidth:200, overflow:"hidden", textOverflow:"ellipsis" }}>{h.reason}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

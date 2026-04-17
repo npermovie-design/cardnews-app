@@ -45,8 +45,37 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
   const [imgSrc, setImgSrc] = React.useState(src);
   const [showMenu, setShowMenu] = React.useState(false);
   const [dragOver, setDragOver] = React.useState(false);
+  const [showSearch, setShowSearch] = React.useState(false);
+  const [searchQuery, setSearchQuery] = React.useState(desc || "");
+  const [searchResults, setSearchResults] = React.useState([]);
+  const [searching, setSearching] = React.useState(false);
   const fileRef = React.useRef(null);
   const userReplacedRef = React.useRef(false);
+
+  const searchPhotos = async (q) => {
+    if (!q?.trim()) return;
+    setSearching(true);
+    setSearchResults([]);
+    // Pixabay 직접 호출 (CORS 허용됨)
+    try {
+      const r = await fetch(`https://pixabay.com/api/?key=44421803-926acb8f55c34beaafae6de8a&q=${encodeURIComponent(q)}&image_type=photo&per_page=18&lang=ko`);
+      const d = await r.json();
+      if (d.hits?.length) {
+        setSearchResults(d.hits.map(h => ({ url: h.webformatURL, alt: h.tags || q })));
+        setSearching(false);
+        return;
+      }
+    } catch {}
+    // 폴백: Pexels 프록시
+    try {
+      const r = await fetch(`/api/proxy?action=pexels&q=${encodeURIComponent(q)}&per_page=18`);
+      const d = await r.json();
+      if (d.photos?.length) {
+        setSearchResults(d.photos.map(p => ({ url: p.src?.large || p.src?.medium, alt: p.alt || q })));
+      }
+    } catch {}
+    setSearching(false);
+  };
 
   // 부모에서 새 src가 오면 업데이트 (사용자가 직접 교체한 건 유지)
   React.useEffect(() => {
@@ -72,6 +101,19 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
         onError={e => { e.target.onerror=null; e.target.src=`https://picsum.photos/seed/${fallbackSeed}/800/450`; }}
         style={{width:"100%",display:"block",height:320,objectFit:"cover",cursor:"pointer"}}
         onClick={() => setShowMenu(!showMenu)} />
+      {/* 항상 보이는 빠른 교체 바 */}
+      {!showMenu && !showSearch && (
+        <div style={{position:"absolute",bottom:8,right:8,display:"flex",gap:4}}>
+          <button onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
+            style={{padding:"5px 10px",borderRadius:6,border:"none",background:"rgba(0,0,0,0.6)",color:"#fff",fontSize:10,fontWeight:600,cursor:"pointer",backdropFilter:"blur(4px)"}}>
+            PC 교체
+          </button>
+          <button onClick={e => { e.stopPropagation(); setShowSearch(true); setSearchQuery(desc||""); searchPhotos(desc||""); }}
+            style={{padding:"5px 10px",borderRadius:6,border:"none",background:"rgba(124,106,255,0.85)",color:"#fff",fontSize:10,fontWeight:600,cursor:"pointer",backdropFilter:"blur(4px)"}}>
+            사진 검색
+          </button>
+        </div>
+      )}
       {/* 교체 메뉴 */}
       {showMenu && (
         <div style={{position:"absolute",top:8,right:8,background:"#fff",borderRadius:10,boxShadow:"0 4px 20px rgba(0,0,0,0.2)",padding:4,zIndex:10,minWidth:140}}
@@ -91,11 +133,44 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
             onMouseEnter={e=>e.currentTarget.style.background="#f5f5f5"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
             🎲 랜덤 이미지
           </button>
+          <button onClick={() => { setShowSearch(true); setShowMenu(false); setSearchQuery(desc || ""); searchPhotos(desc || ""); }}
+            style={{width:"100%",padding:"8px 12px",border:"none",background:"transparent",cursor:"pointer",fontSize:12,fontWeight:600,color:"#7c6aff",textAlign:"left",borderRadius:6,display:"flex",alignItems:"center",gap:6}}
+            onMouseEnter={e=>e.currentTarget.style.background="#f0f0ff"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+            🔍 무료 사진 검색
+          </button>
           <div style={{height:1,background:"#eee",margin:"2px 0"}}/>
           <button onClick={() => setShowMenu(false)}
             style={{width:"100%",padding:"6px 12px",border:"none",background:"transparent",cursor:"pointer",fontSize:11,color:"#999",textAlign:"center",borderRadius:6}}>
             닫기
           </button>
+        </div>
+      )}
+      {/* 무료 사진 검색 패널 */}
+      {showSearch && (
+        <div style={{position:"absolute",inset:0,background:"rgba(255,255,255,0.97)",zIndex:20,display:"flex",flexDirection:"column",borderRadius:14,overflow:"hidden"}}
+          onClick={e => e.stopPropagation()}>
+          <div style={{padding:"10px 14px",display:"flex",gap:8,borderBottom:"1px solid #eee"}}>
+            <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && searchPhotos(searchQuery)}
+              placeholder="검색어 입력 (예: 건강, 음식, 여행)" autoFocus
+              style={{flex:1,padding:"8px 12px",borderRadius:8,border:"1.5px solid #e5e7eb",fontSize:13,outline:"none"}} />
+            <button onClick={() => searchPhotos(searchQuery)}
+              style={{padding:"8px 14px",borderRadius:8,border:"none",background:"#7c6aff",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+              {searching ? "..." : "검색"}
+            </button>
+            <button onClick={() => setShowSearch(false)}
+              style={{padding:"8px 10px",borderRadius:8,border:"1px solid #ddd",background:"transparent",color:"#999",fontSize:14,cursor:"pointer"}}>x</button>
+          </div>
+          <div style={{flex:1,overflow:"auto",padding:8,display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
+            {searchResults.map((r, i) => (
+              <img key={i} src={r.url} alt={r.alt} loading="lazy"
+                onClick={() => { userReplacedRef.current = true; setImgSrc(r.url); setShowSearch(false); }}
+                style={{width:"100%",height:80,objectFit:"cover",borderRadius:6,cursor:"pointer",transition:"transform 0.1s"}}
+                onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"} />
+            ))}
+            {!searching && searchResults.length === 0 && <div style={{gridColumn:"1/-1",textAlign:"center",color:"#999",fontSize:12,padding:20}}>검색 결과가 없습니다</div>}
+          </div>
         </div>
       )}
       <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}}
@@ -170,12 +245,12 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
 
     if (isHeading) {
       elements.push(<div key={`br${i}`} style={{height:28}}/>);
-      elements.push(<p key={i} style={{margin:"0 0 14px",fontSize:16,fontWeight:800,color:textColor,lineHeight:1.5}}>{trimmed}</p>);
-      // [image:] 태그가 글에 없으면 (예전 스타일) 소제목 뒤에 순서대로 삽입 (폴백)
+      // [image:] 태그가 글에 없으면 소제목 위에 이미지 삽입
       if (!hasInlineTags && imgUrls.length > 0 && imgIdx < imgUrls.length) {
         elements.push(<ReplaceableImage key={`img${i}`} src={imgUrls[imgIdx]} desc={trimmed} isDark={isDark} mutedColor={mutedColor} fallbackSeed={encodeURIComponent(trimmed.slice(0,20))} />);
         imgIdx++;
       }
+      elements.push(<p key={i} style={{margin:"0 0 14px",fontSize:16,fontWeight:800,color:textColor,lineHeight:1.5}}>{trimmed}</p>);
     } else {
       elements.push(<p key={i} style={{margin:"4px 0",lineHeight:1.95,color:textColor}}>{trimmed}</p>);
     }

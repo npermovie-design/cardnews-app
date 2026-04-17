@@ -1705,6 +1705,37 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const blogContentRef = useRef(null);
   const isMobile = typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
+  // 텍스트 선택 시 AI 교체 플로팅 버튼
+  const [selectionPopup, setSelectionPopup] = useState(null); // {x, y, text}
+  const [aiReplacing, setAiReplacing] = useState(false);
+
+  const handleTextSelect = () => {
+    try {
+      const sel = window.getSelection();
+      const selectedText = sel?.toString()?.trim();
+      if (!selectedText || selectedText.length < 5) { setSelectionPopup(null); return; }
+      if (!sel.rangeCount) { setSelectionPopup(null); return; }
+      const range = sel.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      if (!rect.width) { setSelectionPopup(null); return; }
+      setSelectionPopup({ x: rect.left + rect.width / 2, y: rect.top - 10, text: selectedText });
+    } catch { setSelectionPopup(null); }
+  };
+
+  const handleAiReplace = async () => {
+    if (!selectionPopup?.text) return;
+    setAiReplacing(true);
+    try {
+      const replacement = await callAI("claude-haiku-4-5", [{role:"user",content:`다음 문장을 같은 의미를 유지하면서 더 자연스럽고 매력적으로 다시 작성해주세요. 원문과 같은 말투를 유지하세요. 다시 쓴 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`}], 500);
+      if (replacement) {
+        const cleaned = replacement.trim().replace(/^["']|["']$/g, "");
+        setResult(prev => prev.replace(selectionPopup.text, cleaned));
+      }
+    } catch {}
+    setAiReplacing(false);
+    setSelectionPopup(null);
+  };
+
   const handleCopy = async (content, withImages) => {
     const cleaned = cleanForCopy(content);
     if (withImages && blogContentRef.current && !isMobile) {
@@ -1857,6 +1888,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           {result && (
             <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <button onClick={()=>{
+                if (!confirm("현재 작성된 글이 사라집니다. 새로 쓰시겠습니까?")) return;
                 setResult_raw("");setHtmlResult("");setGenStep(0);
                 setError("");setSuggestedImages([]);setInlineImages({});setCopied(false);
                 setTitleSugg([]);setSeoKeys([]);setFields({});setUrlInput("");setUrlResult(null);
@@ -1908,6 +1940,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           {(viewMode==="text"||!isTistory)&&<div
             contentEditable
             suppressContentEditableWarning
+            onMouseUp={handleTextSelect}
             onDragOver={e => { e.preventDefault(); e.currentTarget.style.outline = "2px dashed #7c6aff"; }}
             onDragLeave={e => { e.currentTarget.style.outline = "none"; }}
             onDrop={e => {
@@ -1969,7 +2002,20 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"26px 28px",fontSize:16,color:text,minHeight:140,lineHeight:1.95,cursor:"text",outline:"none",transition:"outline 0.15s"}}>
             <div ref={blogContentRef}>{renderMarkdown(result, isDark, text, muted, accentRaw, suggestedImages)}</div>
             {loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}
+            {/* AI 교체 플로팅 버튼 - contentEditable 밖에 렌더링 */}
           </div>}
+          {/* AI 교체 플로팅 버튼 */}
+          {selectionPopup && (
+            <div style={{position:"fixed",left:selectionPopup.x,top:selectionPopup.y,transform:"translate(-50%,-100%)",zIndex:9999,display:"flex",gap:4}}
+              onMouseDown={e => e.stopPropagation()}>
+              <button onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleAiReplace(); }} disabled={aiReplacing}
+                style={{padding:"8px 16px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:aiReplacing?"wait":"pointer",boxShadow:"0 4px 16px rgba(124,106,255,0.4)",display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+                {aiReplacing ? <><div style={{width:12,height:12,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>교체 중...</> : "AI로 교체"}
+              </button>
+              <button onMouseDown={e => { e.preventDefault(); setSelectionPopup(null); }}
+                style={{padding:"8px 10px",borderRadius:10,border:"none",background:"rgba(0,0,0,0.65)",color:"#fff",fontSize:12,cursor:"pointer"}}>x</button>
+            </div>
+          )}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}
           {isTistory&&viewMode==="preview"&&htmlResult&&<div style={{background:"#fff",border:"1px solid #e9ecef",borderRadius:12,padding:"24px 28px"}} dangerouslySetInnerHTML={{__html:DOMPurify.sanitize(htmlResult,{ALLOWED_TAGS:["b","i","u","strong","em","br","p","div","span","a","img","ul","ol","li","h1","h2","h3","h4","blockquote","pre","code","hr","table","thead","tbody","tr","td","th"],ALLOWED_ATTR:["href","src","alt","style","class","target","rel","width","height"]})}}/>}
 

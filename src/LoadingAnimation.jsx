@@ -89,7 +89,7 @@ export default function LoadingAnimation({
   }));
 
   return (
-    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", padding: "60px 24px", textAlign: "center" }}>
+    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", padding: "60px 24px", textAlign: "center", minHeight: "60vh" }}>
       <style>{`
         @keyframes ld-float{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-12px) scale(1.05)}}
         @keyframes ld-progress{from{width:0%}to{width:100%}}

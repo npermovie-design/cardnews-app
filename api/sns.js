@@ -562,20 +562,20 @@ JSON배열:
 // ACTION: webhook-lemonsqueezy — LemonSqueezy 결제 웹훅
 // ══════════════════════════════════════════════════════════════════
 
-// 일회 충전 팩: product_name → points
+// 일회 충전 팩: product_name → points (가격 페이지 기준)
 const ONE_OFF_POINTS = {
-  "Starter":  1000,
-  "Basic":    2000,
-  "Standard": 3500,
-  "Plus":     5500,
-  "Pro":      9500,
+  "Starter":  600,
+  "Basic":    1300,
+  "Standard": 2400,
+  "Plus":     3800,
+  "Pro":      6500,
 };
 
-// 구독 tier: product_name → { monthly, yearly }
+// 구독 tier: product_name → { monthly, yearly } (가격 페이지 기준)
 const SUB_TIERS = {
-  "Basic":   { monthly: 1800, yearly: 21600 },
-  "Pro":     { monthly: 3800, yearly: 45600 },
-  "Premium": { monthly: 7000, yearly: 84000 },
+  "Basic":   { monthly: 1200, yearly: 14400 },
+  "Pro":     { monthly: 2800, yearly: 33600 },
+  "Premium": { monthly: 5500, yearly: 66000 },
 };
 
 function detectInterval(attrs) {
