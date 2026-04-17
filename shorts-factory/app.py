@@ -221,7 +221,7 @@ async def health_check():
 
 
 @app.get("/download/makeit-setup.exe")
-async def download_setup():
+async def download_setup_exe():
     """Supabase에 분할 저장된 exe를 합쳐서 단일 파일로 스트리밍"""
     import httpx
 
@@ -232,8 +232,7 @@ async def download_setup():
     async def stream_parts():
         async with httpx.AsyncClient(timeout=120) as client:
             for part in PARTS:
-                url = f"{SB_BASE}/{part}"
-                r = await client.get(url)
+                r = await client.get(f"{SB_BASE}/{part}")
                 if r.status_code == 200:
                     yield r.content
 
@@ -242,7 +241,33 @@ async def download_setup():
         media_type="application/octet-stream",
         headers={
             "Content-Disposition": 'attachment; filename="makeit-sns-automation-setup-0.1.2.exe"',
-            "Content-Length": str(328877507),  # 314MB
+            "Content-Length": str(328877507),
+        },
+    )
+
+
+@app.get("/download/makeit-setup.zip")
+async def download_setup_zip():
+    """Supabase에 분할 저장된 zip을 합쳐서 단일 파일로 스트리밍"""
+    import httpx
+
+    SB_BASE = "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/downloads"
+    PARTS = ["makeit-zip-part-aa", "makeit-zip-part-ab", "makeit-zip-part-ac",
+             "makeit-zip-part-ad", "makeit-zip-part-ae", "makeit-zip-part-af", "makeit-zip-part-ag"]
+
+    async def stream_parts():
+        async with httpx.AsyncClient(timeout=120) as client:
+            for part in PARTS:
+                r = await client.get(f"{SB_BASE}/{part}")
+                if r.status_code == 200:
+                    yield r.content
+
+    return StreamingResponse(
+        stream_parts(),
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": 'attachment; filename="makeit-sns-automation-setup-0.1.2.zip"',
+            "Content-Length": str(328802685),
         },
     )
 
