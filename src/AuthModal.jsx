@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { fbLogin, fbRegister, fbGoogleLogin, fbKakaoLogin, isValidEmail, supabase } from "./storage";
 import { useI18n } from "./i18n.jsx";
 
-export default function AuthModal({ onClose, onAuth, C }) {
+export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
   const { lang } = useI18n();
   const ko = lang === "ko";
 
@@ -140,11 +140,11 @@ export default function AuthModal({ onClose, onAuth, C }) {
   const fs = { background: inputBg, border: "1px solid " + inputBdr, borderRadius: 10, padding: "12px 14px", color: inputClr, fontSize: 14, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box", minHeight: 44 };
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(26,23,48,0.45)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(8px)" }}>
+    <div onClick={embedded ? undefined : onClose} style={embedded ? {} : { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(26,23,48,0.45)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(8px)" }}>
       <style>{".nper-auth-input::placeholder{color:rgba(255,255,255,0.35)!important}"}</style>
-      <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.98)", border: "1px solid rgba(124,106,255,0.25)", borderRadius: 22, padding: "clamp(24px,5vw,36px) clamp(18px,4vw,30px)", width: "100%", maxWidth: 420, position: "relative", boxShadow: "0 24px 64px rgba(0,0,0,0.3)", margin: "0 16px" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.98)", border: "1px solid rgba(124,106,255,0.25)", borderRadius: 22, padding: "clamp(24px,5vw,36px) clamp(18px,4vw,30px)", width: "100%", maxWidth: 420, position: "relative", boxShadow: embedded ? "0 8px 32px rgba(0,0,0,0.2)" : "0 24px 64px rgba(0,0,0,0.3)", margin: "0 auto" }}>
 
-        <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,0.08)", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 16, width: 36, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+        <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,0.08)", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: embedded ? 12 : 16, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", padding: embedded ? "0 12px" : "0 10px" }}>{embedded ? "홈으로" : "✕"}</button>
 
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ width: 44, height: 44, borderRadius: 13, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>N</div>

@@ -6,6 +6,7 @@ import { useI18n, LANGUAGES } from "./i18n.jsx";
 // 핵심 컴포넌트 (즉시 로드)
 import HomePage from "./HomePage";
 import AuthModal from "./AuthModal";
+import AuthPage from "./AuthPage";
 import Footer from "./Footer.jsx";
 
 // 지연 로드 컴포넌트 (코드 스플리팅)
@@ -452,7 +453,7 @@ export default function App() {
 
   const [legalTab, setLegalTab] = useState("terms");
   const navigate = async (target, extra) => {
-    if (target === "login_trigger") { setShowAuth(true); return; }
+    if (target === "login_trigger") { navigate("login"); return; }
     if (!(await confirmGuard())) return;
     const urlTarget = target === "home" ? "/" : "/" + target;
     window.history.pushState(null, "", urlTarget);
@@ -537,7 +538,7 @@ export default function App() {
     } catch {}
   };
   // AiPage에 전달하는 콜백 안정화 (인라인 함수 → useCallback)
-  const stableOnLoginRequest = useCallback(() => setShowAuth(true), []);
+  const stableOnLoginRequest = useCallback(() => navigate("login"), [navigate]);
   const stableOnUserUpdate = useCallback(u => { setLocalUser(u); setUserState(u); }, []);
   const logout = async () => {
     // 로그아웃 플래그 → onAuthStateChange 재로그인 차단
@@ -633,18 +634,19 @@ export default function App() {
 
   /* ── 페이지 렌더 ── */
   const renderPage = () => {
-    if (page === "home")     return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => setShowAuth(true)} />;
+    if (page === "home")     return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} />;
+    if (page === "login")    return <AuthPage C={C} onAuth={handleAuth} navigate={navigate} />;
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "howto" || page === "guide")  return <HowToPage C={C} navigate={navigate} />;
     if (page === "faq")      return <FaqPage C={C} navigate={navigate} />;
 
     if (page === "analyzer")  return <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (page === "ai")       return null; /* AiPage는 keep-alive로 별도 렌더 */
-    if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => setShowAuth(true)} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
-    if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} />;
+    if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => navigate("login")} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
+    if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => navigate("login")} />;
     if (page === "contact")  return <ContactPage C={C} />;
     if (page === "event")    return <EventPage C={C} navigate={navigate} />;
-    if (page === "programs") return <ProgramsPage C={C} navigate={navigate} user={user} onLogin={() => setShowAuth(true)} initialProductId={programId} onProductIdChange={setProgramId} />;
+    if (page === "programs") return <ProgramsPage C={C} navigate={navigate} user={user} onLogin={() => navigate("login")} initialProductId={programId} onProductIdChange={setProgramId} />;
     if (page === "snsnews")  { navigate("community"); return null; }
     if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} user={user} />;
     if (page === "payment/success") return <PaymentSuccessPage C={C} navigate={navigate} />;
@@ -653,7 +655,7 @@ export default function App() {
     if (page === "mypage" || page === "profile")   return <MyPage C={C} theme={theme} user={user} setUser={u => { setLocalUser(u); setUserState(u); }} navigate={navigate} />;
     if (page === "xk9m2p4q7") {
       if (!user) return <div style={{ minHeight: "80vh" }} />;
-      if (user.role !== "admin") return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => setShowAuth(true)} />;
+      if (user.role !== "admin") return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} />;
       return <AdminPage C={C} user={user} />;
     }
     // 404 - 알 수 없는 페이지
@@ -668,7 +670,7 @@ export default function App() {
         </button>
       </div>
     );
-    return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => setShowAuth(true)} />;
+    return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} />;
   };
 
   return (
@@ -826,7 +828,7 @@ export default function App() {
 
       {/* 생성 중 이탈 방지 모달 */}
       {guardModal && <GuardModal cost={guardModal.cost} onConfirm={guardModal.onConfirm} onCancel={guardModal.onCancel} lang={lang} />}
-      {showAuth && <AuthModal C={C} onClose={() => setShowAuth(false)} onAuth={handleAuth} />}
+      {/* 로그인은 별도 페이지로 이동 */}
       {showWelcome && (
         <WelcomeModal
           userName={user?.nick}
@@ -847,7 +849,7 @@ export default function App() {
               로그인하면 <b style={{ color: "#7c6aff" }}>10회 추가</b> + 포인트로 무제한 이용 가능해요!
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <button onClick={() => { setShowPointsModal(false); setShowAuth(true); }}
+              <button onClick={() => { setShowPointsModal(false); navigate("login"); }}
                 style={{ padding: "13px", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 800 }}>
                 로그인 / 회원가입
               </button>
@@ -1059,7 +1061,7 @@ export default function App() {
                   </div>
                 );
               })()}
-              <button onClick={() => setShowAuth(true)} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)", minHeight: 36 }}>로그인</button>
+              <button onClick={() => navigate("login")} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)", minHeight: 36 }}>로그인</button>
             </div>
           )}
         </div>
@@ -1102,7 +1104,7 @@ export default function App() {
               {(user.nick||"U")[0].toUpperCase()}
             </button>
           ) : (
-            <button onClick={() => setShowAuth(true)} style={{ padding: "6px 12px", borderRadius: 8, border: "none",
+            <button onClick={() => navigate("login")} style={{ padding: "6px 12px", borderRadius: 8, border: "none",
               cursor: "pointer", fontWeight: 700, fontSize: 12,
               background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", flexShrink: 0, whiteSpace: "nowrap" }}>
               로그인
@@ -1205,7 +1207,7 @@ export default function App() {
                     </div>
                   );
                 })()}
-                <button onClick={() => { setShowAuth(true); setMobileOpen(false); }} style={{ width: "100%", padding: "12px 28px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>
+                <button onClick={() => { navigate("login"); setMobileOpen(false); }} style={{ width: "100%", padding: "12px 28px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>
                   {t("login")}
                 </button>
               </div>
