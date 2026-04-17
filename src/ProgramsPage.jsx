@@ -960,11 +960,7 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
     if (initialProductId && products.length > 0 && !selectedProduct) {
       const found = products.find(p => p.id === initialProductId);
       if (found) {
-        setSelectedProduct(found);
-        // 조회수 증가
-        const newCount = (found.viewCount || 0) + 1;
-        setProducts(prev => prev.map(p => p.id === found.id ? { ...p, viewCount: newCount } : p));
-        if (found.dbId) supabase.from("programs").update({ view_count: newCount }).eq("id", found.dbId).then(() => {});
+        handleView(found);
       }
     }
   }, [initialProductId, products]);
@@ -1002,8 +998,22 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
     supabase.from("programs").update({ detail_content: newBlocks }).eq("id", productId).then(() => {});
   };
 
-  // 조회수 증가
+  // 하루 1회 제한 체크
+  const canCountToday = (type, id) => {
+    try {
+      const key = `prog_${type}_${id}`;
+      const last = localStorage.getItem(key);
+      const today = new Date().toISOString().slice(0, 10);
+      if (last === today) return false;
+      localStorage.setItem(key, today);
+      return true;
+    } catch { return true; }
+  };
+
+  // 조회수 증가 (하루 1회)
   const handleView = (product) => {
+    setSelectedProduct(product);
+    if (!canCountToday("view", product.id)) return;
     const newCount = (product.viewCount || 0) + 1;
     const updated = { ...product, viewCount: newCount };
     setProducts(prev => prev.map(p => p.id === product.id ? updated : p));
@@ -1013,8 +1023,9 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
     }
   };
 
-  // 다운로드 카운트 증가
+  // 다운로드 카운트 증가 (하루 1회)
   const handleDownload = (productId) => {
+    if (!canCountToday("dl", productId)) return;
     setProducts(prev => prev.map(p => {
       if (p.id === productId) {
         const newCount = (p.downloadCount || 0) + 1;

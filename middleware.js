@@ -201,8 +201,8 @@ export default async function middleware(request) {
   const url = new URL(request.url);
   const path = url.pathname;
 
-  // 앱 UI 페이지는 크롤러에게 noindex 반환 (색인 불필요)
-  const NOINDEX_PATHS = ["/ai", "/analyzer", "/mypage"];
+  // 마이페이지만 noindex (AI 도구/분석기는 색인 허용)
+  const NOINDEX_PATHS = ["/mypage"];
   const isNoindex = NOINDEX_PATHS.some(p => path === p || path.startsWith(p + "/"));
   if (isNoindex) {
     return new Response("", {

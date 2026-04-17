@@ -9,13 +9,13 @@ async function handleSitemap(req, res) {
   const today = new Date().toISOString().slice(0, 10);
 
   // 정적 페이지
-  // 실질적 콘텐츠가 있는 정적 페이지만 포함
-  // 앱 UI 페이지(/ai, /analyzer)와 콘텐츠 부족 페이지(/cases)는 제외
   const staticPages = [
     { url: "/", priority: "1.0", freq: "weekly", langs: true },
     { url: "/about", priority: "0.8", freq: "monthly", langs: true },
     { url: "/howto", priority: "0.7", freq: "monthly", langs: true },
     { url: "/pricing", priority: "0.8", freq: "monthly", langs: true },
+    { url: "/ai", priority: "0.9", freq: "weekly", langs: true },
+    { url: "/programs", priority: "0.8", freq: "weekly" },
     { url: "/snsnews", priority: "0.8", freq: "daily" },
     { url: "/community/info", priority: "0.7", freq: "daily" },
     { url: "/community/qna", priority: "0.7", freq: "daily" },
@@ -60,6 +60,21 @@ async function handleSitemap(req, res) {
     }
   } catch (e) { console.log("Sitemap error:", e.message); }
 
+  // 자료실 프로그램 페이지
+  let programUrls = [];
+  try {
+    const sb2 = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_KEY);
+    const { data: progs } = await sb2.from("programs").select("id,created_at").order("created_at", { ascending: false });
+    if (progs) {
+      programUrls = progs.map(p => ({
+        url: `/programs/${p.id}`,
+        priority: "0.7",
+        freq: "monthly",
+        lastmod: p.created_at ? p.created_at.slice(0, 10) : today,
+      }));
+    }
+  } catch {}
+
   // XML 생성
   const hreflang = (url) => `
     <xhtml:link rel="alternate" hreflang="ko" href="${SITE}${url}"/>
@@ -78,7 +93,7 @@ async function handleSitemap(req, res) {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
-${[...staticPages, ...postUrls].map(urlEntry).join("\n")}
+${[...staticPages, ...postUrls, ...programUrls].map(urlEntry).join("\n")}
 </urlset>`;
 
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
