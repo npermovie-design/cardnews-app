@@ -116,7 +116,7 @@ async function handleLicenseVerify(req, res) {
 // ACTION: analyze-keyword — 키워드 분석 (Claude)
 // ══════════════════════════════════════════════════════════
 
-const NAVERBOT_ANTHROPIC_KEY = process.env.NAVERBOT_ANTHROPIC_KEY;
+const NAVERBOT_ANTHROPIC_KEY = process.env.NAVERBOT_ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-4-5-20250514";
 
@@ -201,7 +201,7 @@ const PEXELS_KEY = process.env.PEXELS_KEY;
 
 const VALID_SUBTYPES = ["info", "visit", "travel", "product", "column", "article"];
 const VALID_TONES = ["friendly", "diary", "review", "professional"];
-const VALID_SPEECH = ["polite_yo", "formal", "casual", "mixed"];
+const VALID_SPEECH = ["polite_yo", "formal", "casual", "friendly", "mixed"];
 const VALID_WORDCOUNTS = ["short", "medium", "long"];
 
 const WORDCOUNT_TO_TOKENS = {
