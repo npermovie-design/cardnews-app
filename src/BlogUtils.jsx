@@ -169,8 +169,8 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
     const isHeading = trimmed.length >= 3 && trimmed.length <= 50 && prevEmpty && !trimmed.startsWith("-") && !trimmed.startsWith("#") && !/^\d+\./.test(trimmed);
 
     if (isHeading) {
-      elements.push(<div key={`br${i}`} style={{height:20}}/>);
-      elements.push(<p key={i} style={{margin:"0 0 8px",fontSize:16,fontWeight:800,color:textColor,lineHeight:1.5}}>{trimmed}</p>);
+      elements.push(<div key={`br${i}`} style={{height:28}}/>);
+      elements.push(<p key={i} style={{margin:"0 0 14px",fontSize:16,fontWeight:800,color:textColor,lineHeight:1.5}}>{trimmed}</p>);
       // [image:] 태그가 글에 없으면 (예전 스타일) 소제목 뒤에 순서대로 삽입 (폴백)
       if (!hasInlineTags && imgUrls.length > 0 && imgIdx < imgUrls.length) {
         elements.push(<ReplaceableImage key={`img${i}`} src={imgUrls[imgIdx]} desc={trimmed} isDark={isDark} mutedColor={mutedColor} fallbackSeed={encodeURIComponent(trimmed.slice(0,20))} />);
@@ -991,6 +991,7 @@ const SPEECH_STYLES = [
   { id:"polite_yo",  label:"~요 체", desc:"해요체 (친근한 존댓말)", prompt:"해요체(~요, ~이에요, ~했어요)로 작성" },
   { id:"formal",     label:"~합니다 체", desc:"합니다체 (격식 존댓말)", prompt:"합니다체(~입니다, ~했습니다, ~됩니다)로 작성" },
   { id:"casual",     label:"반말 체", desc:"반말 (친구 대화체)", prompt:"반말(~야, ~거든, ~했어, ~인데)로 작성. 자연스러운 구어체" },
+  { id:"friendly",   label:"~거든요 체", desc:"친근한 경험 공유체", prompt:"친근한 경험 공유체(~거든요, ~해보세요, ~더라고요, ~있잖아요)로 작성. 친구에게 경험을 공유하듯 자연스럽게" },
   { id:"mixed",      label:"혼합 체", desc:"상황에 맞게 자유롭게", prompt:"상황에 맞게 존댓말과 반말을 자연스럽게 섞어서 작성" },
 ];
 

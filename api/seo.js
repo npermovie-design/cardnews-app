@@ -291,8 +291,8 @@ async function handleCronBriefing(req, res) {
   if (!SEO_ANTHROPIC_KEY) return res.status(500).json({ error: "ANTHROPIC_API_KEY 미설정" });
 
   const supabase = createClient(
-    process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
-    process.env.VITE_SUPABASE_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY
+    process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY
   );
 
   const now = new Date(Date.now() + 9 * 60 * 60 * 1000);

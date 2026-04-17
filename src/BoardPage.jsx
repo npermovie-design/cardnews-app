@@ -452,9 +452,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     // 1P 지급
     if(user.uid){
       try {
-        const newPts = await changePoints(user.uid, 2, "커뮤니티 글 작성");
+        const newPts = await changePoints(user.uid, 1, "커뮤니티 글 작성");
         if(onUserUpdate) onUserUpdate({...user, points: newPts});
-        showToast("글이 등록됐어요! +2P 포인트가 지급됐습니다","success");
+        showToast("글이 등록됐어요! +1P 포인트가 지급됐습니다","success");
       } catch(e) {
         showToast("글이 등록됐어요!","success");
       }
@@ -1507,7 +1507,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             {viewMode==="list" && pageItems.length>0 && <>
               {!isMobile && (
                 <div style={{background:head,border:"1px solid "+bdr,borderRadius:"12px 12px 0 0",padding:"12px 16px",
-                  display:"grid",gridTemplateColumns:"50px 1fr 100px 82px 56px 52px 42px",gap:6,
+                  display:"grid",gridTemplateColumns:"50px 1fr 100px 82px 56px 52px",gap:6,
                   fontSize:12,fontWeight:800,color:C.muted,alignItems:"center",letterSpacing:0.2}}>
                   <span style={{textAlign:"center"}}>{t("colImage")}</span>
                   <span style={{paddingLeft:6}}>{t("colTitle")}</span>
@@ -1515,7 +1515,6 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                   <span style={{textAlign:"center"}}>{t("colDate")}</span>
                   <span style={{textAlign:"center"}}>{t("colViews")}</span>
                   <span style={{textAlign:"center"}}>{t("colLikes")}</span>
-                  <span style={{textAlign:"center"}}>{t("colDownload")}</span>
                 </div>
               )}
               {isMobile && (
@@ -1549,10 +1548,6 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                             <span style={{color:C.purpleL,fontWeight:600}}>{p.nick}</span>
                             <span>{p.date}</span><span>{p.views||0}</span>
                             {(p.likes||0)>0&&<span style={{color:"#f59e0b",fontWeight:700}}>{p.likes}</span>}
-                            {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}} style={{padding:"6px 12px",borderRadius:8,border:"1.5px solid #3b82f6",background:"transparent",color:"#3b82f6",fontSize:12,cursor:"pointer",fontWeight:700,display:"inline-flex",alignItems:"center",gap:4,minHeight:34,fontFamily:"inherit"}}>
-                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                              다운
-                            </button>}
                           </div>
                         </div>
                         {/* 번호 제거 */}
@@ -1560,7 +1555,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                     </div>
                   ) : (
                     <div key={p.id} onClick={()=>openPost(p)}
-                      style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 82px 56px 52px 42px",gap:6,
+                      style={{display:"grid",gridTemplateColumns:"50px 1fr 100px 82px 56px 52px",gap:6,
                         padding:"14px 16px",borderBottom:"1px solid "+bdr,cursor:"pointer",transition:"background 0.1s",alignItems:"center",minHeight:56}}
                       onMouseEnter={e=>{
                         e.currentTarget.style.background=hover;
@@ -1598,12 +1593,6 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       <span style={{textAlign:"center",fontSize:12,color:C.muted,fontWeight:500}}>{p.date}</span>
                       <span style={{textAlign:"center",fontSize:13,color:C.muted,fontWeight:600}}>{p.views||0}</span>
                       <span style={{textAlign:"center",fontSize:13,fontWeight:(p.likes||0)>0?800:500,color:(p.likes||0)>0?"#f59e0b":C.muted}}>{p.likes||0}</span>
-                      <div style={{display:"flex",alignItems:"center",justifyContent:"center"}}>
-                        {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}} title="첫 번째 첨부 다운로드"
-                          style={{padding:"6px",borderRadius:7,border:"1.5px solid #3b82f6",background:"transparent",color:"#3b82f6",cursor:"pointer",display:"inline-flex",alignItems:"center",justifyContent:"center",width:30,height:30}} aria-label="다운로드">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                        </button>}
-                      </div>
                     </div>
                   );
                 })}
@@ -1637,8 +1626,6 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                         {/* 유료/무료 배지 */}
                         {p.priceType==="paid"&&<span style={{position:"absolute",top:6,right:6,fontSize:9,background:"rgba(245,158,11,0.95)",color:"#fff",padding:"2px 8px",borderRadius:4,fontWeight:800}}>💰 유료{p.price?` ${p.price}`:""}</span>}
                         {p.priceType==="free"&&subCat==="archive"&&<span style={{position:"absolute",top:6,right:6,fontSize:9,background:"rgba(34,197,94,0.9)",color:"#fff",padding:"2px 8px",borderRadius:4,fontWeight:700}}>🆓 무료</span>}
-                        {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}}
-                          style={{position:"absolute",bottom:6,right:6,padding:"4px 9px",borderRadius:7,border:"none",background:"rgba(0,0,0,0.72)",color:"#fff",fontSize:12,cursor:"pointer",fontWeight:700}}>⬇</button>}
                         {/* 공유 버튼 */}
                         <button onClick={e=>{e.stopPropagation();const url=`${window.location.origin}/community/archive/${p.id}`;navigator.clipboard.writeText(url).then(()=>alert("링크가 복사되었습니다!")).catch(()=>{const t=document.createElement("textarea");t.value=url;document.body.appendChild(t);t.select();document.execCommand("copy");document.body.removeChild(t);alert("링크가 복사되었습니다!");});}}
                           style={{position:"absolute",bottom:6,left:6,padding:"4px 9px",borderRadius:7,border:"none",background:"rgba(0,0,0,0.72)",color:"#fff",fontSize:12,cursor:"pointer",fontWeight:700}}
@@ -1696,8 +1683,6 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                         <span style={{fontSize:11,color:C.muted,flexShrink:0,width:38,textAlign:"center"}}>{p.views||0}</span>
                         {(p.likes||0)>0&&<span style={{fontSize:11,color:"#f59e0b",fontWeight:700,flexShrink:0}}>+{p.likes}</span>}
                       </>}
-                      {hasDl&&<button onClick={e=>{e.stopPropagation();downloadFile(p.images[0]);}}
-                        style={{flexShrink:0,padding:"3px 8px",borderRadius:6,border:"1px solid #3b82f6",background:"transparent",color:"#3b82f6",fontSize:11,cursor:"pointer",fontWeight:700}}>⬇</button>}
                     </div>
                   );
                 })}

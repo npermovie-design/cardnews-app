@@ -43,7 +43,13 @@ export async function callAI(model, messages, maxTokens = 2000, system = null) {
     });
     if (!res.ok) {
       const err = await res.text().catch(() => res.statusText);
-      throw new Error(`AI API 오류 ${res.status}: ${err}`);
+      const isAdmin = !!localStorage.getItem("nper_user") && JSON.parse(localStorage.getItem("nper_user") || "{}").role === "admin";
+      if (isAdmin) {
+        throw new Error(`[관리자] API ${res.status}: ${err.slice(0, 200)}`);
+      }
+      if (res.status === 429) throw new Error("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
+      if (res.status >= 500) throw new Error("AI 서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      throw new Error("AI 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");
     }
     const data = await res.json();
     return data.choices?.[0]?.message?.content || "";
@@ -82,7 +88,13 @@ export async function callAIStream(model, messages, maxTokens = 4000, onChunk, s
     });
     if (!res.ok) {
       const err = await res.text().catch(() => res.statusText);
-      throw new Error(`AI API 오류 ${res.status}: ${err}`);
+      const isAdmin = !!localStorage.getItem("nper_user") && JSON.parse(localStorage.getItem("nper_user") || "{}").role === "admin";
+      if (isAdmin) {
+        throw new Error(`[관리자] API ${res.status}: ${err.slice(0, 200)}`);
+      }
+      if (res.status === 429) throw new Error("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
+      if (res.status >= 500) throw new Error("AI 서버에 일시적인 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      throw new Error("AI 생성에 실패했습니다. 잠시 후 다시 시도해주세요.");
     }
 
     const reader = res.body.getReader();

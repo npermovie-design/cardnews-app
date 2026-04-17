@@ -7,6 +7,7 @@ import { useI18n } from "./i18n.jsx";
 
 import { callAI, callAIStream } from "./aiClient";
 import { isDarkTheme } from "./theme";
+import DOMPurify from "dompurify";
 import ShareButton from "./ShareButton";
 import LoadingAnimation from "./LoadingAnimation";
 import KeywordInsightPanel from "./KeywordInsightPanel";
@@ -377,27 +378,29 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     setUrlLoading(false);
   };
 
-  const suggestTitle = async () => {
-    if (!fields.keyword || !fields.keyword.trim()) { return; }
+  const suggestTitle = async (kw) => {
+    const keyword = kw || fields.keyword;
+    if (!keyword || !keyword.trim()) { return; }
     setTitleLoading(true);
     try {
-      const txt = await callAI("claude-haiku-4-5", [{role:"user",content:`키워드: ${fields.keyword}\nSEO 최적화 블로그 제목 3개만 번호 목록으로 답하세요.`}], 300);
-      const ls = txt.split("\n").map(function(l){return l.replace(/^\d+\.?\s*/,"").trim();}).filter(function(l){return l.length>2;}).slice(0,3);
+      const txt = await callAI("claude-haiku-4-5", [{role:"user",content:`키워드: ${keyword}\n이 키워드로 블로그/SNS에 올릴 매력적인 제목 5개만 번호 목록으로 답하세요. 클릭하고 싶은 제목으로.`}], 500);
+      const ls = txt.split("\n").map(function(l){return l.replace(/^\d+\.?\s*/,"").trim();}).filter(function(l){return l.length>2;}).slice(0,5);
       setTitleSugg(ls);
     } catch(e) {}
     finally { setTitleLoading(false); }
   };
 
-  const suggestSeo = async () => {
-    if (!fields.keyword || !fields.keyword.trim()) { return; }
-    setSeoLoading(true);
-    try {
-      const txt = (await callAI("claude-haiku-4-5", [{role:"user",content:`메인 키워드: ${fields.keyword}\n연관 SEO 키워드 7개를 쉼표로만 나열하세요.`}], 150)).trim();
-      const ks = txt.split(/[,，]/).map(function(k){return k.trim();}).filter(function(k){return k.length>0;}).slice(0,7);
-      setSeoKeys(ks);
-    } catch(e) {}
-    finally { setSeoLoading(false); }
-  };
+  // 키워드 입력 후 1.5초 뒤 자동으로 제목 추천
+  const titleTimerRef = useRef(null);
+  useEffect(() => {
+    if (titleTimerRef.current) clearTimeout(titleTimerRef.current);
+    if (fields.keyword && fields.keyword.trim().length >= 2 && mode === "write") {
+      titleTimerRef.current = setTimeout(() => suggestTitle(fields.keyword), 1500);
+    } else {
+      setTitleSugg([]);
+    }
+    return () => { if (titleTimerRef.current) clearTimeout(titleTimerRef.current); };
+  }, [fields.keyword]);
 
   const generate = async () => {
     // 주제 자동 폴백: URL 결과가 있으면 title, 파일이 있으면 첫 파일명
@@ -831,10 +834,24 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const handleCopy = async (content, withImages) => {
     const cleaned = cleanForCopy(content);
     if (withImages && blogContentRef.current && !isMobile) {
-      // PC: DOM 선택 복사 (이미지 포함)
+      // PC: 외부 URL 이미지를 base64로 변환 후 DOM 복사
       setCopyLoading(true);
       try {
         const el = blogContentRef.current;
+        // 외부 URL 이미지를 base64로 변환 (복사 시 이미지가 넘어가도록)
+        const imgs = el.querySelectorAll("img");
+        const originals = [];
+        await Promise.all([...imgs].map(async (img, idx) => {
+          if (img.src && !img.src.startsWith("data:")) {
+            originals.push({ idx, src: img.src });
+            try {
+              const res = await fetch(img.src);
+              const blob = await res.blob();
+              const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
+              img.src = b64;
+            } catch { /* 변환 실패 시 원본 유지 */ }
+          }
+        }));
         const range = document.createRange();
         range.selectNodeContents(el);
         const sel = window.getSelection();
@@ -842,6 +859,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         sel.addRange(range);
         document.execCommand("copy");
         sel.removeAllRanges();
+        // 원본 URL 복원
+        originals.forEach(o => { if (imgs[o.idx]) imgs[o.idx].src = o.src; });
       } catch {
         try { if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(cleaned); } else { fallbackCopy(cleaned); } }
         catch { fallbackCopy(cleaned); }
@@ -1078,7 +1097,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}
           </div>}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}
-          {isTistory&&viewMode==="preview"&&htmlResult&&<div style={{background:"#fff",border:"1px solid #e9ecef",borderRadius:12,padding:"24px 28px"}} dangerouslySetInnerHTML={{__html:htmlResult}}/>}
+          {isTistory&&viewMode==="preview"&&htmlResult&&<div style={{background:"#fff",border:"1px solid #e9ecef",borderRadius:12,padding:"24px 28px"}} dangerouslySetInnerHTML={{__html:DOMPurify.sanitize(htmlResult,{ALLOWED_TAGS:["b","i","u","strong","em","br","p","div","span","a","img","ul","ol","li","h1","h2","h3","h4","blockquote","pre","code","hr","table","thead","tbody","tr","td","th"],ALLOWED_ATTR:["href","src","alt","style","class","target","rel","width","height"]})}}/>}
 
           {publishResult&&<div style={{marginTop:14,padding:"16px 18px",borderRadius:14,display:"flex",alignItems:"center",gap:14,background:publishResult.success?(isDark?"rgba(74,222,128,0.08)":"#f0fdf4"):(isDark?"rgba(245,158,11,0.08)":"#fffbeb"),border:`1px solid ${publishResult.success?"rgba(74,222,128,0.25)":"rgba(245,158,11,0.25)"}`}}>
             <div style={{width:36,height:36,borderRadius:10,background:publishResult.success?"rgba(34,197,94,0.15)":publishResult.clipboard?"rgba(245,158,11,0.15)":"rgba(239,68,68,0.15)",color:publishResult.success?"#22c55e":publishResult.clipboard?"#f59e0b":"#ef4444",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -1497,36 +1516,26 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               </div>
             </div>
 
-            {/* AI 제목/SEO 추천 (글쓰기 모드만) */}
-            {mode==="write" && fields.keyword && fields.keyword.trim() && (
-              <div style={{maxWidth:720,margin:"10px auto 0",display:"flex",gap:6,justifyContent:"center"}}>
-                <button onClick={suggestTitle} disabled={titleLoading} style={{padding:"6px 14px",borderRadius:12,border:`1px solid ${isDark?"rgba(99,102,241,0.2)":"rgba(99,102,241,0.15)"}`,background:"transparent",color:accent,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
-                  {titleLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid "+accent,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>추천 중...</>:"AI 제목 추천"}
-                </button>
-                <button onClick={suggestSeo} disabled={seoLoading} style={{padding:"6px 14px",borderRadius:12,border:"1px solid rgba(16,185,129,0.2)",background:"transparent",color:"#10b981",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
-                  {seoLoading?<><div style={{width:10,height:10,borderRadius:"50%",border:"2px solid #10b981",borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>조회 중...</>:"SEO 키워드"}
-                </button>
+            {/* 제목 추천 (키워드 입력 시 자동 표시) */}
+            {mode==="write" && titleLoading && (
+              <div style={{maxWidth:720,margin:"10px auto 0",textAlign:"center",padding:"12px",fontSize:12,color:accent,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                <div style={{width:12,height:12,borderRadius:"50%",border:"2px solid "+accent,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>
+                제목 추천 중...
               </div>
             )}
-            {mode==="write" && titleSugg.length>0 && (
-              <div style={{maxWidth:720,margin:"10px auto 0",background:isDark?"rgba(99,102,241,0.08)":"#f0f0ff",borderRadius:14,padding:"12px 16px",border:"1px solid rgba(99,102,241,0.15)"}}>
-                <div style={{fontSize:12,color:accent,fontWeight:700,marginBottom:8}}>추천 제목 (클릭 시 적용)</div>
+            {mode==="write" && !titleLoading && titleSugg.length>0 && (
+              <div style={{maxWidth:720,margin:"10px auto 0",background:isDark?"rgba(99,102,241,0.08)":"#f0f0ff",borderRadius:14,padding:"14px 18px",border:"1px solid rgba(99,102,241,0.15)"}}>
+                <div style={{fontSize:12,color:accent,fontWeight:700,marginBottom:10}}>추천 제목 (클릭 시 적용)</div>
                 {titleSugg.map(function(t2,i){return(
-                  <div key={i} onClick={function(){setField("keyword",t2);setTitleSugg([]);}} style={{fontSize:13,color:text,padding:"5px 0",cursor:"pointer",borderBottom:i<titleSugg.length-1?"1px solid "+border:"none",lineHeight:1.6}}>{t2}</div>
+                  <div key={i} onClick={function(){setField("keyword",t2);setTitleSugg([]);}}
+                    style={{fontSize:13,color:text,padding:"8px 12px",cursor:"pointer",borderRadius:8,lineHeight:1.6,transition:"background 0.1s",marginBottom:i<titleSugg.length-1?4:0}}
+                    onMouseEnter={function(e){e.currentTarget.style.background=isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.06)";}}
+                    onMouseLeave={function(e){e.currentTarget.style.background="transparent";}}>
+                    <span style={{color:accent,fontWeight:700,marginRight:8}}>{i+1}.</span>{t2}
+                  </div>
                 );})}
               </div>
             )}
-            {mode==="write" && seoKeys.length>0 && (
-              <div style={{maxWidth:720,margin:"10px auto 0",background:isDark?"rgba(16,185,129,0.06)":"#f0fdf9",borderRadius:14,padding:"12px 16px",border:"1px solid rgba(16,185,129,0.15)"}}>
-                <div style={{fontSize:12,color:"#10b981",fontWeight:700,marginBottom:8}}>SEO 연관 키워드</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                  {seoKeys.map(function(k,i){return(
-                    <span key={i} onClick={function(){setField("extra",(fields.extra?fields.extra+", ":"")+k);}} style={{fontSize:12,padding:"4px 11px",borderRadius:12,background:"rgba(16,185,129,0.12)",color:"#10b981",cursor:"pointer",border:"1px solid rgba(16,185,129,0.2)"}}>{k}</span>
-                  );})}
-                </div>
-              </div>
-            )}
-            {mode==="write" && <KeywordInsightPanel keyword={fields.keyword} isDark={isDark} onKeywordSelect={(kw)=>setField("keyword",kw)}/>}
 
             {/* 에러 메시지 */}
             {error&&<div style={{maxWidth:720,margin:"12px auto 0",fontSize:13,color:"#ef4444",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",padding:"10px 14px",borderRadius:12,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)"}}>{error}

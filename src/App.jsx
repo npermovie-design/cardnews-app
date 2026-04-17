@@ -426,10 +426,10 @@ export default function App() {
       } else if (mainSeg === "ai") {
         setAiMenu("home");
       }
-      // 게시글 뷰 복원 (post-ID)
-      if (segments.some(s => s.startsWith("post-"))) {
-        const pid = rawPath.split("/post-")[1];
-        if (pid) setPendingPostId(pid);
+      // 게시글 뷰 복원은 BoardPage popstate에서 처리
+      // App.jsx는 페이지 전환만 담당
+      if (!segments.some(s => s.startsWith("post-"))) {
+        setPendingPostId(null);
       }
 
       setPage(mainSeg); setOpenMenu(null); setMobileOpen(false);

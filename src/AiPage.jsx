@@ -373,6 +373,286 @@ function MiniPlanner({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
   );
 }
 
+// ── 네이버 쇼핑인사이트 실시간 컴포넌트 ──────────────────────
+function NaverShoppingInsight({ isDark, homeText, homeMuted, border, setAiMenu }) {
+  const [data, setData] = useState(null);
+  const [activeCatN, setActiveCatN] = useState("전체");
+  const nGreen = "#03c75a";
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch("/api/naver-datalab?action=all");
+        const d = await r.json();
+        if (d.categories) setData(d.categories);
+      } catch {}
+    })();
+  }, []);
+
+  if (!data) return null;
+
+  const catNames = Object.keys(data);
+  const catColorMap = {
+    "전체":"#03c75a", "패션의류":"#e1306c", "화장품/미용":"#d946ef", "디지털/가전":"#2563eb",
+    "식품":"#ea580c", "가구/인테리어":"#0d9488", "출산/유아동":"#ec4899", "스포츠/레저":"#16a34a", "생활/건강":"#0891b2",
+  };
+  const currentItems = data[activeCatN] || [];
+  const c = catColorMap[activeCatN] || nGreen;
+
+  return (
+    <div style={{ marginBottom:24, padding:"18px 20px", borderRadius:12, background:isDark?"rgba(3,199,90,0.05)":"#f8fdf9", border:`1px solid ${isDark?"rgba(3,199,90,0.1)":"rgba(3,199,90,0.15)"}` }}>
+      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={nGreen} strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 7h3l2 5 2-5h3v10h-2.5V11l-2 4h-1l-2-4v6H8V7z"/></svg>
+        <span style={{ fontSize:14, fontWeight:800, color:homeText }}>네이버 쇼핑 인기검색어</span>
+        <a href="https://datalab.naver.com/shoppingInsight/sCategory.naver" target="_blank" rel="noopener noreferrer"
+          style={{ marginLeft:"auto", fontSize:11, color:homeMuted, textDecoration:"none", display:"flex", alignItems:"center", gap:3 }}>
+          데이터랩
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+        </a>
+      </div>
+
+      {/* 카테고리 탭 */}
+      <div style={{ display:"flex", gap:4, marginBottom:14, overflowX:"auto", flexWrap:"wrap" }}>
+        {catNames.map(cat => {
+          const cc = catColorMap[cat] || "#6b7280";
+          const isA = activeCatN === cat;
+          return (
+            <button key={cat} onClick={() => setActiveCatN(cat)}
+              style={{ padding:"5px 12px", borderRadius:6, border: isA ? `1.5px solid ${cc}` : `1px solid ${cc}25`,
+                background: isA ? cc+"15" : "transparent", color: isA ? cc : cc+"88",
+                fontSize:11, fontWeight: isA ? 700 : 500, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, transition:"all 0.12s" }}>
+              {cat}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 키워드 태그 */}
+      <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+        {currentItems.map((kw, i) => (
+          <span key={i}
+            onClick={() => { sessionStorage.setItem("nper_trend_keyword", kw); setAiMenu("blog_write"); }}
+            style={{ padding:"6px 12px", borderRadius:8, background:isDark?"rgba(255,255,255,0.05)":"#fff", border:`1px solid ${border}`,
+              fontSize:12, color:homeText, cursor:"pointer", transition:"all 0.12s", display:"inline-flex", alignItems:"center", gap:5 }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = c; e.currentTarget.style.color = c; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = border; e.currentTarget.style.color = homeText; }}>
+            <span style={{ fontSize:10, fontWeight:800, color: i < 3 ? c : homeMuted }}>{i+1}</span>
+            {kw}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── 오늘의 키워드 페이지 ──────────────────────────────────────
+function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
+  const [keywords, setKeywords] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [dateStr, setDateStr] = useState("");
+  const [activeCat, setActiveCat] = useState("all");
+  const [showTop, setShowTop] = useState(false);
+  const scrollRef = useRef(null);
+  const accent = "#7c6aff";
+  const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { createClient } = await import("@supabase/supabase-js");
+        const sb = createClient(
+          import.meta.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co",
+          import.meta.env.VITE_SUPABASE_KEY || ""
+        );
+        const today = new Date().toISOString().slice(0, 10);
+        setDateStr(today);
+        const { data } = await sb.from("daily_keywords").select("*").eq("date", today).single();
+        if (data && data.keywords) {
+          setKeywords(typeof data.keywords === "string" ? JSON.parse(data.keywords) : data.keywords);
+        } else {
+          setKeywords(null);
+        }
+      } catch (e) {
+        console.error("키워드 로드 실패:", e);
+        setKeywords(null);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const catColors = {
+    "AI 도구": "#6366f1", "AI 트렌드": "#7c3aed", "블로그": "#059669", "유튜브": "#dc2626",
+    "인스타": "#e1306c", "틱톡": "#0891b2", "마케팅": "#d97706", "광고": "#2563eb",
+    "이커머스": "#0284c7", "부업/수익화": "#0d9488", "트렌드": "#ea580c", "뷰티": "#c026d3",
+    "건강/운동": "#16a34a", "여행/맛집": "#e11d48", "재테크": "#9333ea", "자기계발": "#0891b2",
+    "AI/테크": "#6366f1", "SNS": "#e1306c", "비즈니스": "#2563eb", "라이프": "#16a34a",
+    "기타": "#6b7280",
+  };
+
+  // 카테고리별 그룹핑
+  const grouped = React.useMemo(() => {
+    if (!keywords) return {};
+    const g = {};
+    keywords.forEach(kw => {
+      const cat = kw.category || "기타";
+      if (!g[cat]) g[cat] = [];
+      g[cat].push(kw);
+    });
+    return g;
+  }, [keywords]);
+
+  const categories = Object.keys(grouped);
+  const filtered = activeCat === "all" ? keywords : (grouped[activeCat] || []);
+
+  return (
+    <div ref={scrollRef} onScroll={e => setShowTop(e.target.scrollTop > 300)} style={{ flex:1, overflow:"auto", padding:"32px 20px", background: isDark ? "transparent" : "#f4f4f8", position:"relative" }}>
+      <div style={{ maxWidth:760, margin:"0 auto" }}>
+        {/* 헤더 */}
+        <div style={{ marginBottom:24 }}>
+          <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:12, fontWeight:700, color:accent, marginBottom:14 }}>
+            {dateStr} 업데이트
+          </div>
+          <div style={{ fontSize:"clamp(22px,4vw,30px)", fontWeight:900, color:homeText, lineHeight:1.3, marginBottom:8 }}>
+            오늘의 추천 키워드
+          </div>
+          <div style={{ fontSize:13, color:homeMuted, lineHeight:1.6 }}>
+            네이버, 구글, 다음 등 실시간 검색 관심도 기반. 키워드를 클릭하면 바로 글쓰기를 시작할 수 있습니다.
+          </div>
+        </div>
+
+        {/* 네이버 쇼핑인사이트 실시간 + 데이터랩 바로가기 */}
+        <NaverShoppingInsight isDark={isDark} homeText={homeText} homeMuted={homeMuted} border={border} setAiMenu={setAiMenu} />
+
+        {loading && (
+          <div style={{ textAlign:"center", padding:60, color:homeMuted, fontSize:14 }}>
+            <div style={{ width:36, height:36, border:`3px solid ${border}`, borderTopColor:accent, borderRadius:"50%", animation:"spin 1s linear infinite", margin:"0 auto 16px" }} />
+            키워드를 불러오는 중...
+          </div>
+        )}
+
+        {!loading && !keywords && (
+          <div style={{ textAlign:"center", padding:60, color:homeMuted }}>
+            <div style={{ fontSize:48, marginBottom:16, opacity:0.3 }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            </div>
+            <div style={{ fontSize:15, fontWeight:700, color:homeText, marginBottom:6 }}>오늘의 키워드가 아직 준비되지 않았습니다</div>
+            <div style={{ fontSize:13 }}>매일 오전 7시에 자동으로 업데이트됩니다.</div>
+          </div>
+        )}
+
+        {!loading && keywords && <>
+          {/* 카테고리 탭 */}
+          <div style={{ display:"flex", gap:6, marginBottom:20, overflowX:"auto", flexWrap:"wrap" }}>
+            <button onClick={() => setActiveCat("all")}
+              style={{ padding:"7px 14px", borderRadius:8, border: activeCat==="all" ? `1.5px solid ${accent}` : `1px solid ${accent}30`,
+                background: activeCat==="all" ? accent+"18" : "transparent",
+                color: activeCat==="all" ? accent : accent+"88", fontSize:12, fontWeight: activeCat==="all" ? 700 : 500,
+                cursor:"pointer", transition:"all 0.15s", whiteSpace:"nowrap", flexShrink:0 }}>
+              전체 ({keywords.length})
+            </button>
+            {categories.map(cat => {
+              const c = catColors[cat] || "#6b7280";
+              const isA = activeCat === cat;
+              return (
+                <button key={cat} onClick={() => setActiveCat(cat)}
+                  style={{ padding:"7px 14px", borderRadius:8, border: isA ? `1.5px solid ${c}` : `1px solid ${c}30`,
+                    background: isA ? c+"18" : "transparent",
+                    color: isA ? c : c+"88", fontSize:12, fontWeight: isA ? 700 : 500,
+                    cursor:"pointer", transition:"all 0.15s", whiteSpace:"nowrap", flexShrink:0 }}>
+                  {cat} ({(grouped[cat]||[]).length})
+                </button>
+              );
+            })}
+          </div>
+
+          {activeCat === "all" ? (
+            /* 전체: 카테고리별 섹션 */
+            <div style={{ display:"flex", flexDirection:"column", gap:28 }}>
+              {categories.map(cat => {
+                const c = catColors[cat] || "#6b7280";
+                const items = grouped[cat] || [];
+                if (!items.length) return null;
+                return (
+                  <div key={cat}>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                      <div style={{ width:4, height:20, borderRadius:2, background:c }} />
+                      <span style={{ fontSize:15, fontWeight:800, color:homeText }}>{cat}</span>
+                      <span style={{ fontSize:11, color:c, fontWeight:600 }}>{items.length}개</span>
+                      <span onClick={() => setActiveCat(cat)} style={{ fontSize:11, color:accent, cursor:"pointer", fontWeight:600, marginLeft:"auto" }}>전체보기 &rarr;</span>
+                    </div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:0, border:`1px solid ${border}`, borderRadius:10, overflow:"hidden" }}>
+                      {items.slice(0, 5).map((kw, i) => (
+                        <div key={i}
+                          style={{ padding:"12px 16px", cursor:"pointer", transition:"background 0.1s", borderBottom: i < Math.min(items.length, 5) - 1 ? `1px solid ${border}` : "none", display:"flex", alignItems:"center", gap:12 }}
+                          onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.04)" : c+"06"}
+                          onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                          onClick={() => { sessionStorage.setItem("nper_trend_keyword", kw.keyword); setAiMenu("blog_write"); }}>
+                          <span style={{ width:22, height:22, borderRadius:6, background:c+"15", color:c, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:900, flexShrink:0 }}>{i+1}</span>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{kw.keyword}</span>
+                          </div>
+                          <div style={{ display:"flex", gap:4, flexShrink:0 }}>
+                            {kw.platforms && kw.platforms.slice(0,2).map(p => (
+                              <span key={p} style={{ fontSize:9, padding:"2px 6px", borderRadius:5, background:c+"10", color:c, fontWeight:600 }}>{p}</span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* 특정 카테고리 키워드 세로 리스트 */
+            (() => {
+              const items = grouped[activeCat] || [];
+              const c = catColors[activeCat] || "#6b7280";
+              return (
+                <div style={{ display:"flex", flexDirection:"column", gap:0, border:`1px solid ${border}`, borderRadius:12, overflow:"hidden" }}>
+                  {items.map((kw, i) => (
+                    <div key={i}
+                      style={{ padding:"14px 20px", cursor:"pointer", transition:"background 0.1s", borderBottom: i < items.length - 1 ? `1px solid ${border}` : "none", display:"flex", alignItems:"center", gap:14 }}
+                      onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.04)" : c+"06"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      onClick={() => { sessionStorage.setItem("nper_trend_keyword", kw.keyword); setAiMenu("blog_write"); }}>
+                      <span style={{ width:24, height:24, borderRadius:6, background:c+"15", color:c, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, flexShrink:0 }}>{i+1}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:3 }}>{kw.keyword}</div>
+                        <div style={{ fontSize:12, color:homeMuted, lineHeight:1.6, overflow:"hidden", display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical" }}>{kw.reason}</div>
+                      </div>
+                      <div style={{ display:"flex", gap:4, flexShrink:0 }}>
+                        {kw.platforms && kw.platforms.map(p => (
+                          <span key={p} style={{ fontSize:9, padding:"2px 7px", borderRadius:5, background:c+"12", color:c, fontWeight:600 }}>{p}</span>
+                        ))}
+                      </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={homeMuted} strokeWidth="2" strokeLinecap="round" style={{flexShrink:0,opacity:0.3}}><path d="M9 18l6-6-6-6"/></svg>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()
+          )}
+        </>}
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      {showTop && (
+        <button onClick={() => scrollRef.current?.scrollTo({ top:0, behavior:"smooth" })}
+          style={{ position:"fixed", bottom:32, right:32, width:46, height:46, borderRadius:"50%", border:"none",
+            background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:18, cursor:"pointer",
+            boxShadow:"0 4px 16px rgba(124,106,255,0.4)", display:"flex", alignItems:"center", justifyContent:"center",
+            transition:"opacity 0.2s, transform 0.2s", zIndex:20 }}
+          onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 15l-6-6-6 6"/></svg>
+        </button>
+      )}
+    </div>
+  );
+}
+
 // ── 트렌드 키워드 섹션 ──────────────────────────────────────
 function TrendKeywords({ isDark, homeText, homeMuted, cardBdr, setAiMenu, _s }) {
   const [trendPlatform, setTrendPlatform] = useState(0);
@@ -656,6 +936,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
+
+  // 오늘의 키워드
+  if (aiMenu === "today_keywords") {
+    return <TodayKeywordsPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} />;
+  }
 
   // SNS 뉴스 + 뉴스레터 구독
   if (aiMenu === "hot_keyword") {
