@@ -445,6 +445,421 @@ function NaverShoppingInsight({ isDark, homeText, homeMuted, border, setAiMenu }
   );
 }
 
+// ── SNS 자동화 페이지 ──────────────────────────────────────
+function SnsAutomationPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, user, onLoginRequest }) {
+  const [step, setStep] = useState(0); // 0: 안내, 1: 설정, 2: 글생성, 3: 발행
+  const [keyword, setKeyword] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [generatedContent, setGeneratedContent] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const accent = "#7c6aff";
+  const green = "#10b981";
+  const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
+
+  const INSTALL_STEPS = [
+    {
+      title: "Python(파이썬) 설치하기",
+      desc: "자동화 프로그램을 실행하려면 Python이라는 프로그램이 필요합니다. 무료이며 1분이면 설치됩니다.",
+      details: [
+        "아래 링크를 클릭하여 Python 공식 사이트에 접속하세요.",
+        "노란색 'Download Python 3.xx' 버튼을 클릭하세요.",
+        "다운로드된 파일을 실행하세요.",
+        "중요: 설치 화면 하단의 'Add Python to PATH' 체크박스를 반드시 체크한 후 'Install Now'를 클릭하세요.",
+        "설치가 완료되면 'Close'를 클릭하세요.",
+      ],
+      link: { label: "Python 다운로드 페이지 열기", url: "https://www.python.org/downloads/" },
+      verify: { label: "설치 확인 방법", steps: ["키보드에서 Win + R 키를 동시에 누르세요.", "'cmd' 입력 후 Enter를 누르세요.", "검은 창이 열리면 아래 명령어를 입력하세요.", "python --version 이라고 나오면 성공입니다."], cmd: "python --version" },
+    },
+    {
+      title: "자동화 도구 설치하기",
+      desc: "위에서 열었던 검은 창(명령 프롬프트)에 아래 명령어를 복사해서 붙여넣기하세요.",
+      details: [
+        "'복사' 버튼을 클릭하세요.",
+        "검은 창(명령 프롬프트)에서 마우스 우클릭 → 붙여넣기 하세요.",
+        "Enter를 누르면 자동으로 설치됩니다.",
+        "설치 완료까지 약 1~2분 소요됩니다. 'Successfully installed' 메시지가 나오면 완료입니다.",
+      ],
+      cmd: "pip install playwright requests",
+    },
+    {
+      title: "자동화 브라우저 설치하기",
+      desc: "같은 검은 창에서 아래 명령어를 실행하세요. 자동 발행에 사용할 브라우저가 설치됩니다.",
+      details: [
+        "'복사' 버튼을 클릭하세요.",
+        "검은 창에 붙여넣기 → Enter를 누르세요.",
+        "약 170MB 다운로드가 진행됩니다. 인터넷 속도에 따라 1~3분 소요됩니다.",
+        "'Chromium ... downloaded' 메시지가 나오면 설치 완료입니다.",
+      ],
+      cmd: "playwright install chromium",
+    },
+  ];
+
+  const generatePost = async () => {
+    if (!keyword.trim()) return;
+    setGenerating(true);
+    setGeneratedContent(null);
+    try {
+      const { callAI } = await import("./aiClient.js");
+      const prompt = `"${keyword}" 주제로 네이버 블로그에 올릴 정보성 글을 작성해주세요.
+
+규칙:
+- 6000자 이상, 7~8개 섹션
+- 해요체(~요, ~이에요)로 작성
+- [TITLE] 제목 (30자 이내)
+- [BODY] 본문
+- [TAGS] 태그1, 태그2, 태그3 (10개)
+- 소제목은 빈 줄로 구분, 마크다운 기호(#, *, -) 사용 금지
+- 각 섹션 사이에 [image: 관련키워드] 태그 삽입`;
+
+      const result = await callAI("claude-sonnet-4-5", [{ role: "user", content: prompt }], 6000);
+      setGeneratedContent(result);
+    } catch (e) {
+      setGeneratedContent("ERROR: " + (e.message || "글 생성 실패"));
+    }
+    setGenerating(false);
+  };
+
+  const publishScript = generatedContent ? `# -*- coding: utf-8 -*-
+# 메이킷 SNS 자동화 - 네이버 블로그 발행 스크립트
+# 사용법: python publish.py
+
+from playwright.sync_api import sync_playwright
+import time, os
+
+NAVER_ID = input("네이버 아이디: ")
+NAVER_PW = input("네이버 비밀번호: ")
+
+TITLE = """${(generatedContent.match(/\[TITLE\]\s*\n([^\n]+)/) || ["", keyword])[1].replace(/"/g, '\\"')}"""
+
+BODY = """${generatedContent
+  .replace(/\[TITLE\]\s*\n[^\n]+\n?/, "")
+  .replace(/\[BODY\]\s*\n?/, "")
+  .replace(/\[TAGS\]\s*\n?[^\n]*/, "")
+  .replace(/\[image:[^\]]+\]/g, "")
+  .trim()
+  .replace(/"""/g, "'''")
+  .slice(0, 8000)}"""
+
+TAGS = "${(generatedContent.match(/\[TAGS\]\s*\n([^\n]+)/) || ["", keyword])[1].replace(/"/g, '')}"
+
+def publish():
+    profile_dir = os.path.join(os.environ.get("APPDATA", os.path.expanduser("~")), "MakeitBot", "profile")
+    os.makedirs(profile_dir, exist_ok=True)
+
+    with sync_playwright() as pw:
+        ctx = pw.chromium.launch_persistent_context(
+            user_data_dir=profile_dir,
+            headless=False,
+            viewport={"width": 1280, "height": 900},
+            locale="ko-KR",
+            args=["--disable-blink-features=AutomationControlled"],
+        )
+        page = ctx.pages[0] if ctx.pages else ctx.new_page()
+
+        # 1. 로그인
+        page.goto("https://nid.naver.com/nidlogin.login", wait_until="domcontentloaded")
+        time.sleep(2)
+
+        if "nidlogin" in page.url:
+            page.evaluate(f"""([id, pw]) => {{
+                const idEl = document.querySelector('#id');
+                const pwEl = document.querySelector('#pw');
+                if (idEl) {{ idEl.value = id; idEl.dispatchEvent(new Event('input', {{bubbles: true}})); }}
+                if (pwEl) {{ pwEl.value = pw; pwEl.dispatchEvent(new Event('input', {{bubbles: true}})); }}
+            }}""", [NAVER_ID, NAVER_PW])
+            time.sleep(0.5)
+
+            btn = page.query_selector(".btn_login, #log\\\\.login, button[type='submit']")
+            if btn: btn.click()
+
+            for _ in range(15):
+                time.sleep(1)
+                if "nidlogin" not in page.url:
+                    print("[OK] 로그인 성공")
+                    break
+            else:
+                print("[!] 로그인 실패 - 캡차/2차인증 확인 후 수동 로그인하세요")
+                input("로그인 완료 후 Enter...")
+
+        # 2. 글쓰기 페이지
+        page.goto("https://blog.naver.com/" + NAVER_ID + "/postwrite", wait_until="domcontentloaded")
+        time.sleep(3)
+
+        # 3. 제목 입력
+        title_sel = page.query_selector(".se-documentTitle .se-text-paragraph")
+        if title_sel:
+            title_sel.click()
+            page.keyboard.type(TITLE, delay=30)
+
+        # 4. 본문 입력
+        page.keyboard.press("Enter")
+        time.sleep(0.5)
+
+        paragraphs = BODY.split("\\n\\n")
+        for p in paragraphs:
+            p = p.strip()
+            if not p:
+                continue
+            page.keyboard.type(p, delay=5)
+            page.keyboard.press("Enter")
+            page.keyboard.press("Enter")
+            time.sleep(0.1)
+
+        # 5. 태그 입력
+        tag_btn = page.query_selector(".se-tag-label, button[class*='tag']")
+        if tag_btn:
+            tag_btn.click()
+            time.sleep(0.5)
+            for tag in TAGS.split(","):
+                tag = tag.strip().replace("#", "")
+                if tag:
+                    tag_input = page.query_selector(".se-tag-input input, input[placeholder*='태그']")
+                    if tag_input:
+                        tag_input.fill(tag)
+                        page.keyboard.press("Enter")
+                        time.sleep(0.2)
+
+        print("\\n[완료] 글 작성이 완료되었습니다!")
+        print("발행 버튼을 직접 클릭해주세요.")
+        input("브라우저를 닫으려면 Enter...")
+        ctx.close()
+
+if __name__ == "__main__":
+    publish()
+` : "";
+
+  const copyScript = () => {
+    navigator.clipboard.writeText(publishScript).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  return (
+    <div style={{ flex:1, overflow:"auto", padding:"32px 20px", background: isDark ? "transparent" : "#f4f4f8" }}>
+      <div style={{ maxWidth:720, margin:"0 auto" }}>
+        {/* 헤더 */}
+        <div style={{ marginBottom:28 }}>
+          <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:12, fontWeight:700, color:accent, marginBottom:14 }}>
+            Beta
+          </div>
+          <div style={{ fontSize:"clamp(22px,4vw,28px)", fontWeight:900, color:homeText, lineHeight:1.3, marginBottom:8 }}>
+            SNS 자동화
+          </div>
+          <div style={{ fontSize:13, color:homeMuted, lineHeight:1.6 }}>
+            AI로 블로그 글을 생성하고, 네이버 블로그에 자동으로 발행할 수 있습니다.
+          </div>
+        </div>
+
+        {/* 탭 */}
+        <div style={{ display:"flex", gap:0, marginBottom:24, borderBottom:`2px solid ${border}` }}>
+          {["설치 안내", "글 생성 & 발행"].map((label, i) => (
+            <button key={i} onClick={() => setStep(i)}
+              style={{ padding:"10px 20px", border:"none", borderBottom: step===i ? `3px solid ${accent}` : "3px solid transparent",
+                background:"transparent", color: step===i ? accent : homeMuted, fontSize:14, fontWeight: step===i ? 800 : 500,
+                cursor:"pointer", transition:"all 0.15s" }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* 설치 안내 탭 */}
+        {step === 0 && (
+          <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+            {/* 안내 배너 */}
+            <div style={{ padding:"20px 24px", borderRadius:14, background:`linear-gradient(135deg,${accent}12,#8b5cf612)`, border:`1px solid ${accent}22` }}>
+              <div style={{ fontSize:16, fontWeight:800, color:homeText, marginBottom:8 }}>처음이신가요? 걱정 마세요!</div>
+              <div style={{ fontSize:13, color:homeMuted, lineHeight:1.8 }}>
+                네이버 블로그 자동 발행을 위해 <b style={{color:homeText}}>최초 1회만</b> 아래 3가지를 설치하면 됩니다.<br/>
+                모두 <b style={{color:homeText}}>무료</b>이고, 컴퓨터 초보자도 5분이면 완료할 수 있어요.<br/>
+                한 번 설치하면 이후에는 바로 자동 발행을 사용할 수 있습니다.
+              </div>
+            </div>
+
+            {/* 사전 준비: 명령 프롬프트 여는 법 */}
+            <div style={{ padding:"18px 20px", borderRadius:12, background:isDark?"rgba(245,158,11,0.06)":"#fffbeb", border:"1px solid rgba(245,158,11,0.15)" }}>
+              <div style={{ fontSize:14, fontWeight:800, color:"#d97706", marginBottom:10 }}>먼저! 명령 프롬프트 여는 법</div>
+              <div style={{ fontSize:13, color:homeMuted, lineHeight:1.8 }}>
+                아래 설치 과정에서 "명령 프롬프트"라는 검은 창을 사용합니다.<br/>
+                <b style={{color:homeText}}>여는 방법:</b> 키보드에서 <span style={{padding:"2px 8px",borderRadius:4,background:isDark?"rgba(255,255,255,0.1)":"#f1f5f9",fontWeight:700,fontSize:12}}>Win</span> + <span style={{padding:"2px 8px",borderRadius:4,background:isDark?"rgba(255,255,255,0.1)":"#f1f5f9",fontWeight:700,fontSize:12}}>R</span> 동시에 누르기 → <span style={{padding:"2px 8px",borderRadius:4,background:isDark?"rgba(255,255,255,0.1)":"#f1f5f9",fontWeight:700,fontSize:12}}>cmd</span> 입력 → Enter
+              </div>
+            </div>
+
+            {/* 설치 단계들 */}
+            {INSTALL_STEPS.map((s, i) => (
+              <div key={i} style={{ padding:"20px 24px", borderRadius:14, background:bg, border:`1px solid ${border}` }}>
+                {/* 단계 헤더 */}
+                <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
+                  <span style={{ width:32, height:32, borderRadius:"50%", background:accent, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:900, flexShrink:0 }}>
+                    {i+1}
+                  </span>
+                  <div>
+                    <div style={{ fontSize:16, fontWeight:800, color:homeText }}>{s.title}</div>
+                    <div style={{ fontSize:12, color:homeMuted, marginTop:2 }}>{s.desc}</div>
+                  </div>
+                </div>
+
+                {/* 상세 절차 */}
+                <div style={{ padding:"14px 18px", borderRadius:10, background:isDark?"rgba(255,255,255,0.02)":"#fafafa", marginBottom:14 }}>
+                  {s.details.map((d, di) => (
+                    <div key={di} style={{ display:"flex", gap:10, marginBottom: di < s.details.length-1 ? 10 : 0, fontSize:13, color:homeText, lineHeight:1.6 }}>
+                      <span style={{ color:accent, fontWeight:700, flexShrink:0 }}>{di+1}.</span>
+                      <span>{d}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 링크 버튼 (Python 다운로드) */}
+                {s.link && (
+                  <a href={s.link.url} target="_blank" rel="noopener noreferrer"
+                    style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:10,
+                      background:accent, color:"#fff", fontSize:13, fontWeight:700, textDecoration:"none", marginBottom:14 }}>
+                    {s.link.label}
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+                  </a>
+                )}
+
+                {/* 명령어 복사 박스 */}
+                {s.cmd && (
+                  <div style={{ position:"relative" }}>
+                    <div style={{ fontSize:12, color:homeMuted, marginBottom:6, fontWeight:600 }}>
+                      {s.link ? "설치 확인용 명령어:" : "아래 명령어를 복사하세요:"}
+                    </div>
+                    <div style={{ padding:"14px 18px", paddingRight:70, borderRadius:10, background:isDark?"#1a1a2e":"#1e293b", fontFamily:"'Consolas','Monaco','Courier New',monospace", fontSize:14, color:"#e2e8f0", lineHeight:1.6, whiteSpace:"pre-wrap" }}>
+                      {s.cmd}
+                    </div>
+                    <button onClick={() => { navigator.clipboard.writeText(s.cmd); }}
+                      style={{ position:"absolute", bottom:10, right:10, padding:"6px 14px", borderRadius:7, border:"none",
+                        background:"#7c6aff", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                      복사
+                    </button>
+                  </div>
+                )}
+
+                {/* 설치 확인 */}
+                {s.verify && (
+                  <div style={{ marginTop:14, padding:"14px 18px", borderRadius:10, background:isDark?"rgba(16,185,129,0.06)":"#f0fdf4", border:"1px solid rgba(16,185,129,0.12)" }}>
+                    <div style={{ fontSize:12, fontWeight:700, color:green, marginBottom:8 }}>{s.verify.label}</div>
+                    {s.verify.steps.map((vs, vi) => (
+                      <div key={vi} style={{ fontSize:12, color:homeMuted, lineHeight:1.7, marginBottom:2 }}>
+                        {vi+1}. {vs}
+                      </div>
+                    ))}
+                    <div style={{ marginTop:8, padding:"8px 12px", borderRadius:6, background:isDark?"#1a1a2e":"#1e293b", fontFamily:"monospace", fontSize:13, color:"#e2e8f0" }}>
+                      {s.verify.cmd}
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+
+            {/* 완료 배너 */}
+            <div style={{ padding:"20px 24px", borderRadius:14, background:isDark?"rgba(16,185,129,0.06)":"#f0fdf4", border:"1px solid rgba(16,185,129,0.15)", textAlign:"center" }}>
+              <div style={{ fontSize:15, fontWeight:800, color:green, marginBottom:6 }}>설치가 모두 끝났나요?</div>
+              <div style={{ fontSize:13, color:homeMuted, marginBottom:14 }}>이제 AI로 글을 생성하고 네이버 블로그에 자동으로 발행할 수 있습니다.</div>
+              <button onClick={() => setStep(1)}
+                style={{ padding:"14px 40px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${accent},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:800, cursor:"pointer" }}>
+                글 생성하러 가기
+              </button>
+            </div>
+
+            {/* FAQ */}
+            <div style={{ padding:"18px 20px", borderRadius:12, background:bg, border:`1px solid ${border}` }}>
+              <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12 }}>자주 묻는 질문</div>
+              {[
+                { q: "Python이 뭔가요?", a: "프로그래밍 언어입니다. 자동화 프로그램을 실행하기 위해 필요하며, 설치만 하면 직접 코딩할 필요는 없습니다." },
+                { q: "설치 후 컴퓨터가 느려지나요?", a: "아닙니다. 자동 발행할 때만 잠깐 실행되고, 평소에는 컴퓨터에 영향이 없습니다." },
+                { q: "'pip'을 찾을 수 없다는 에러가 나요", a: "Python 설치 시 'Add Python to PATH' 체크를 안 한 경우입니다. Python을 삭제 후 다시 설치하면서 반드시 체크해주세요." },
+                { q: "맥(Mac)에서도 되나요?", a: "네! 맥에서는 터미널 앱을 열고 동일한 명령어를 입력하면 됩니다." },
+              ].map((faq, fi) => (
+                <div key={fi} style={{ marginBottom: fi < 3 ? 12 : 0 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:homeText, marginBottom:3 }}>{faq.q}</div>
+                  <div style={{ fontSize:12, color:homeMuted, lineHeight:1.6 }}>{faq.a}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 글 생성 & 발행 탭 */}
+        {step === 1 && (
+          <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+            {/* 키워드 입력 */}
+            <div style={{ padding:"18px 20px", borderRadius:12, background:bg, border:`1px solid ${border}` }}>
+              <div style={{ fontSize:14, fontWeight:700, color:homeText, marginBottom:12 }}>1. 주제 입력</div>
+              <div style={{ display:"flex", gap:8 }}>
+                <input value={keyword} onChange={e => setKeyword(e.target.value)}
+                  placeholder="블로그 글 주제를 입력하세요 (예: 인스타그램 팔로워 늘리는 법)"
+                  onKeyDown={e => e.key === "Enter" && generatePost()}
+                  style={{ flex:1, padding:"12px 16px", borderRadius:10, border:`1.5px solid ${border}`, background:"transparent", color:homeText, fontSize:13, outline:"none" }} />
+                <button onClick={generatePost} disabled={generating || !keyword.trim()}
+                  style={{ padding:"12px 24px", borderRadius:10, border:"none", background:generating ? homeMuted : accent, color:"#fff", fontSize:13, fontWeight:700, cursor: generating ? "not-allowed" : "pointer", whiteSpace:"nowrap" }}>
+                  {generating ? "생성 중..." : "AI 글 생성"}
+                </button>
+              </div>
+            </div>
+
+            {/* 생성 중 */}
+            {generating && (
+              <div style={{ textAlign:"center", padding:40, color:homeMuted }}>
+                <div style={{ width:36, height:36, border:`3px solid ${border}`, borderTopColor:accent, borderRadius:"50%", animation:"spin 1s linear infinite", margin:"0 auto 16px" }} />
+                AI가 블로그 글을 작성하고 있습니다... (1~2분)
+              </div>
+            )}
+
+            {/* 생성 결과 */}
+            {generatedContent && !generating && (
+              <>
+                <div style={{ padding:"18px 20px", borderRadius:12, background:bg, border:`1px solid ${border}` }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+                    <span style={{ fontSize:14, fontWeight:700, color:homeText }}>2. 생성된 글</span>
+                    <span style={{ fontSize:11, color:green, fontWeight:600 }}>생성 완료</span>
+                  </div>
+                  <div style={{ maxHeight:300, overflow:"auto", padding:"12px 14px", borderRadius:8, background:isDark?"#1a1a2e":"#f8fafc", fontSize:12, color:homeMuted, lineHeight:1.7, whiteSpace:"pre-wrap" }}>
+                    {generatedContent.slice(0, 2000)}{generatedContent.length > 2000 ? "\n\n... (이하 생략)" : ""}
+                  </div>
+                </div>
+
+                <div style={{ padding:"18px 20px", borderRadius:12, background:bg, border:`1px solid ${border}` }}>
+                  <div style={{ fontSize:14, fontWeight:700, color:homeText, marginBottom:12 }}>3. 네이버 블로그에 발행하기</div>
+                  <div style={{ fontSize:13, color:homeMuted, lineHeight:1.7, marginBottom:14 }}>
+                    아래 발행 스크립트를 복사하여 <code style={{ background:isDark?"rgba(255,255,255,0.06)":"#f1f5f9", padding:"2px 6px", borderRadius:4 }}>publish.py</code>로 저장한 후 실행하세요.
+                  </div>
+                  <div style={{ display:"flex", gap:8 }}>
+                    <button onClick={copyScript}
+                      style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:`linear-gradient(135deg,${green},#059669)`, color:"#fff", fontSize:14, fontWeight:800, cursor:"pointer" }}>
+                      {copied ? "복사됨!" : "발행 스크립트 복사"}
+                    </button>
+                    <button onClick={() => {
+                      const blob = new Blob([publishScript], { type: "text/plain;charset=utf-8" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url; a.download = "publish.py"; a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                      style={{ padding:"12px 20px", borderRadius:10, border:`1.5px solid ${green}`, background:"transparent", color:green, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                      .py 다운로드
+                    </button>
+                  </div>
+                  <div style={{ marginTop:14, padding:"12px 14px", borderRadius:8, background:isDark?"rgba(16,185,129,0.06)":"#f0fdf4", border:"1px solid rgba(16,185,129,0.15)", fontSize:12, color:homeMuted, lineHeight:1.7 }}>
+                    <b style={{ color:green }}>실행 방법:</b><br/>
+                    1. 위 스크립트를 <code>publish.py</code>로 저장<br/>
+                    2. 터미널에서 <code>python publish.py</code> 실행<br/>
+                    3. 네이버 아이디/비밀번호 입력 → 자동 작성<br/>
+                    4. 발행 버튼만 직접 클릭하면 완료
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
 // ── 오늘의 키워드 페이지 ──────────────────────────────────────
 function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
   const [keywords, setKeywords] = useState(null);
@@ -940,6 +1355,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // 오늘의 키워드
   if (aiMenu === "today_keywords") {
     return <TodayKeywordsPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} />;
+  }
+
+  // SNS 자동화
+  if (aiMenu === "sns_automation") {
+    return <SnsAutomationPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} setAiMenu={setAiMenu} user={user} onLoginRequest={onLoginRequest} />;
   }
 
   // SNS 뉴스 + 뉴스레터 구독

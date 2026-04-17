@@ -29,18 +29,18 @@ function setCors(req, res) {
 const ANTHROPIC_MODEL_MAP = {
   "claude-haiku-4-5": "claude-haiku-4-5-20251001",
   "claude-haiku-4-5-20251001": "claude-haiku-4-5-20251001",
-  "claude-sonnet-4-5": "claude-sonnet-4-5-20250514",
-  "claude-sonnet-4-20250514": "claude-sonnet-4-5-20250514",
-  "claude-3-5-sonnet-20241022": "claude-sonnet-4-5-20250514",
+  "claude-sonnet-4-5": "claude-sonnet-4-20250514",
+  "claude-sonnet-4-20250514": "claude-sonnet-4-20250514",
+  "claude-3-5-sonnet-20241022": "claude-sonnet-4-20250514",
   "gpt-4o": "claude-haiku-4-5-20251001",
   "gpt-4o-mini": "claude-haiku-4-5-20251001",
   "gemini-2.5-flash": "claude-haiku-4-5-20251001",
-  "gemini-2.5-pro": "claude-sonnet-4-5-20250514",
+  "gemini-2.5-pro": "claude-sonnet-4-20250514",
   "gemini-2.0-flash": "claude-haiku-4-5-20251001",
 };
 
 function toAnthropicMessages(messages) {
-  return messages.map(msg => {
+  return messages.filter(msg => msg && typeof msg === "object").map(msg => {
     if (typeof msg.content === "string") return { role: msg.role === "assistant" ? "assistant" : "user", content: msg.content };
     if (Array.isArray(msg.content)) {
       const parts = msg.content.map(p => {
@@ -151,9 +151,9 @@ async function handleDefault(req, res) {
 const PPT_MODEL_MAP = {
   "claude-haiku-4-5": "claude-haiku-4-5-20251001",
   "claude-haiku-4-5-20251001": "claude-haiku-4-5-20251001",
-  "claude-sonnet-4-5": "claude-sonnet-4-5-20250514",
-  "claude-sonnet-4-20250514": "claude-sonnet-4-5-20250514",
-  "claude-3-5-sonnet-20241022": "claude-sonnet-4-5-20250514",
+  "claude-sonnet-4-5": "claude-sonnet-4-20250514",
+  "claude-sonnet-4-20250514": "claude-sonnet-4-20250514",
+  "claude-3-5-sonnet-20241022": "claude-sonnet-4-20250514",
 };
 
 function resolvePptModel(m) {

@@ -118,7 +118,7 @@ async function handleLicenseVerify(req, res) {
 
 const NAVERBOT_ANTHROPIC_KEY = process.env.NAVERBOT_ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-5-20250514";
+const MODEL = "claude-sonnet-4-20250514";
 
 async function handleAnalyzeKeyword(req, res) {
   if (req.method !== "POST") return safeError(res, 405, "POST only");
