@@ -138,8 +138,9 @@
     { "source": "/api/naverbot/content-generate", "destination": "/api/naverbot?action=content-generate" },
     { "source": "/api/naverbot/login-page", "destination": "/api/naverbot?action=login-page" },
     { "source": "/naverbot-auth.html", "destination": "/api/naverbot?action=login-page" },
+    { "source": "/naverbot-callback", "destination": "/index.html" },
 
-    { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|_vercel|naver[0-9a-f]+\\.html|naverbot-auth\\.html|index\\.html).*)", "destination": "/api/render" }
+    { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|_vercel|naver[0-9a-f]+\\.html|naverbot-auth\\.html|naverbot-callback|index\\.html).*)", "destination": "/api/render" }
   ],
   "crons": [
     {
