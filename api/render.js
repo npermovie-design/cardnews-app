@@ -142,7 +142,7 @@ export default async function handler(req) {
       const catName = catNames[segments[1]] || "커뮤니티";
       const plainBody = stripMdHtml(post.content || "");
       const titleClean = stripMdHtml(post.title || "").slice(0, 70);
-      fullBody = plainBody.slice(0, 2000);
+      fullBody = plainBody.slice(0, 5000);
       title = `${titleClean} | ${catName} - SNS메이킷`;
       description = (plainBody.replace(/\n/g, " ").slice(0, 155) + (plainBody.length > 155 ? "..." : "")) || description;
       const imgs = Array.isArray(post.images) ? post.images : [];
@@ -224,8 +224,14 @@ ${jsonLd}
 <body>
 <h1>${esc(title)}</h1>
 <p>${esc(description)}</p>
-${fullBody ? `<article>${esc(fullBody)}</article>` : ""}
-<a href="${esc(canonicalUrl)}">SNS메이킷에서 보기</a>
+${fullBody ? `<article><div>${fullBody.split('\n').filter(l => l.trim()).map(l => `<p>${esc(l.trim())}</p>`).join('\n')}</div></article>` : ""}
+<nav>
+<a href="https://snsmakeit.com">SNS메이킷 홈</a>
+<a href="https://snsmakeit.com/community/info">정보공유</a>
+<a href="https://snsmakeit.com/community/qna">질문답변</a>
+<a href="https://snsmakeit.com/snsnews">SNS뉴스</a>
+<a href="https://snsmakeit.com/programs">자료실</a>
+</nav>
 </body>
 </html>`;
   } else {

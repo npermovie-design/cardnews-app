@@ -722,8 +722,35 @@ async function handleCronPost(req, res, opts) {
       created_at: now.toISOString(),
     }, { onConflict: "id" });
 
+    // 검색엔진에 새 글 색인 요청 (비동기, 실패 무시)
+    const postUrl = `https://snsmakeit.com/community/info/post-${postId}`;
+    pingSearchEngines(postUrl).catch(() => {});
+
     return res.status(200).json({ success: true, date: todayKey, tag: opts.tag, title, length: body.length });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
+}
+
+// ── 검색엔진 색인 요청 ──
+async function pingSearchEngines(pageUrl) {
+  const sitemapUrl = "https://snsmakeit.com/sitemap.xml";
+  const indexNowKey = process.env.INDEXNOW_KEY || "";
+
+  const pings = [
+    // Google sitemap ping
+    fetch(`https://www.google.com/ping?sitemap=${encodeURIComponent(sitemapUrl)}`).catch(() => {}),
+    // IndexNow (Bing, Yandex, Seznam)
+    indexNowKey ? fetch("https://api.indexnow.org/indexnow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        host: "snsmakeit.com",
+        key: indexNowKey,
+        urlList: [pageUrl],
+      }),
+    }).catch(() => {}) : Promise.resolve(),
+  ];
+
+  await Promise.allSettled(pings);
 }

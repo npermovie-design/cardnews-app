@@ -464,6 +464,37 @@ function handleLoginPage(req, res) {
 }
 
 // ══════════════════════════════════════════════════════════
+// ACTION: token-refresh — Supabase 토큰 갱신
+// ══════════════════════════════════════════════════════════
+
+async function handleTokenRefresh(req, res) {
+  if (req.method !== "POST") return safeError(res, 405, "POST only");
+  const { refresh_token } = req.body || {};
+  if (!refresh_token) return safeError(res, 400, "refresh_token 필요");
+
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_KEY;
+  const authClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  try {
+    const { data, error } = await authClient.auth.refreshSession({ refresh_token });
+    if (error || !data?.session) {
+      return res.status(200).json({ ok: false, error: error?.message || "갱신 실패" });
+    }
+    return res.status(200).json({
+      ok: true,
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      expires_at: data.session.expires_at,
+    });
+  } catch (e) {
+    return safeError(res, 500, "토큰 갱신 오류", e);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
 // 라우터
 // ══════════════════════════════════════════════════════════
 
@@ -473,6 +504,7 @@ const ACTION_MAP = {
   "analyze-keyword": handleAnalyzeKeyword,
   "content-generate": handleContentGenerate,
   "login-page": handleLoginPage,
+  "token-refresh": handleTokenRefresh,
 };
 
 export default async function handler(req, res) {
