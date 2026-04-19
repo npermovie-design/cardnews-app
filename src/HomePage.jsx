@@ -236,6 +236,13 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
     <div>
       <style>{`
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+        @keyframes kw-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+        .kw-scroll-wrap { overflow:hidden; }
+        .kw-scroll-inner { display:flex; gap:6px; animation:kw-scroll 20s linear infinite; width:max-content; }
+        .kw-scroll-inner:hover { animation-play-state:paused; }
+        .platform-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px; }
+        .platform-row img { width:22px; height:22px; border-radius:6px; opacity:0.85; transition:all 0.2s; }
+        .platform-row img:hover { opacity:1; transform:scale(1.15); }
         @media(max-width:768px){
           .hero-particle{display:none!important}
           .tool-card:hover,.review-card:hover,.stat-card:hover,.hover-lift:hover{transform:none!important;box-shadow:none!important}
@@ -550,6 +557,12 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, margin: 0 }}>
                   {lang === "ko" ? "네이버 블로그, 인스타, 유튜브 대본까지 20개+ 플랫폼 지원" : "Supports 20+ platforms including Naver Blog, Instagram, YouTube"}
                 </p>
+                <div className="platform-row">
+                  {[{src:"/icon-naver-blog.png",alt:"네이버"},{src:"/icon-naver-cafe.webp",alt:"카페"},{src:"/icon-tistory.png",alt:"티스토리"},{src:"/icon-instagram.webp",alt:"인스타"},{src:"/icon-threads.png",alt:"스레드"},{src:"/icon-youtube.png",alt:"유튜브"}].map(p => (
+                    <img key={p.alt} src={p.src} alt={p.alt} title={p.alt} />
+                  ))}
+                  <span style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>+14</span>
+                </div>
               </div>
               <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 16px 16px" }}>
                 <div style={{ borderRadius: "12px 12px 0 0", overflow: "hidden", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}>
@@ -573,14 +586,19 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               </div>
               <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 16px 16px" }}>
                 <div style={{ borderRadius: "12px 12px 0 0", overflow: "hidden", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)", background: theme === "dark" ? "rgba(255,255,255,0.03)" : "#f8f7ff", padding: "16px 14px" }}>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {["AI 도구","블로그","유튜브","인스타","틱톡","마케팅","이커머스","트렌드","뷰티","건강"].map((t, i) => (
-                      <span key={t} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 20, background: i === 0 ? "#7c6aff" : theme === "dark" ? "rgba(255,255,255,0.06)" : "#f0eeff", color: i === 0 ? "#fff" : theme === "dark" ? "rgba(255,255,255,0.6)" : "#6b5ce7", fontWeight: 600, border: `1px solid ${i === 0 ? "#7c6aff" : theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(124,106,255,0.15)"}` }}>{t}</span>
-                    ))}
+                  <div className="kw-scroll-wrap">
+                    <div className="kw-scroll-inner">
+                      {["AI 도구","블로그","유튜브","인스타","틱톡","마케팅","이커머스","트렌드","뷰티","건강","부업","재테크","자기계발","여행","AI 도구","블로그","유튜브","인스타","틱톡","마케팅","이커머스","트렌드","뷰티","건강","부업","재테크","자기계발","여행"].map((t, i) => (
+                        <span key={i} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 20, whiteSpace: "nowrap", background: i % 14 === 0 ? "#7c6aff" : theme === "dark" ? "rgba(255,255,255,0.06)" : "#f0eeff", color: i % 14 === 0 ? "#fff" : theme === "dark" ? "rgba(255,255,255,0.6)" : "#6b5ce7", fontWeight: 600, border: `1px solid ${i % 14 === 0 ? "#7c6aff" : theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(124,106,255,0.15)"}` }}>{t}</span>
+                      ))}
+                    </div>
                   </div>
                   <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                     {["AI 마케팅 자동화","숏폼 콘텐츠 전략","네이버 SEO 최적화","인스타 릴스 트렌드"].map(k => (
-                      <div key={k} style={{ fontSize: 11, padding: "6px 10px", borderRadius: 8, background: theme === "dark" ? "rgba(255,255,255,0.04)" : "#fff", color: C.text, fontWeight: 600, border: `1px solid ${theme === "dark" ? "rgba(255,255,255,0.06)" : "#eee"}` }}>{k}</div>
+                      <div key={k} style={{ fontSize: 11, padding: "6px 10px", borderRadius: 8, background: theme === "dark" ? "rgba(255,255,255,0.04)" : "#fff", color: C.text, fontWeight: 600, border: `1px solid ${theme === "dark" ? "rgba(255,255,255,0.06)" : "#eee"}`, transition: "all 0.2s", cursor: "pointer" }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = "#7c6aff"; e.currentTarget.style.background = "rgba(124,106,255,0.06)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = theme === "dark" ? "rgba(255,255,255,0.06)" : "#eee"; e.currentTarget.style.background = theme === "dark" ? "rgba(255,255,255,0.04)" : "#fff"; }}
+                      >{k}</div>
                     ))}
                   </div>
                 </div>
@@ -592,23 +610,23 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         {/* 하단 3열 소형 카드 */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(200px, 100%), 1fr))", gap: 16, marginTop: 16 }}>
           {[
-            { title: lang === "ko" ? "AI 이미지" : "AI Image", desc: lang === "ko" ? "제품컷, 로고, 목업, 모델 생성 · 얼굴·의상 교체, 여백 확장" : "Product shots, logos, mockups, models · Face/outfit swap, outpainting", color: "#ec4899", items: "10" },
-            { title: lang === "ko" ? "무료 자료실" : "Free Resources", desc: lang === "ko" ? "프리미어프로 자동편집, SNS 자동화 등 무료 프로그램 다운로드" : "Free downloads: Premiere auto-edit, SNS automation tools", color: "#f59e0b", items: "10" },
-            { title: lang === "ko" ? "리퍼포징" : "Repurpose", desc: lang === "ko" ? "유튜브·뉴스·파일을 블로그·SNS로 변환" : "Convert YouTube, news, files to blog & SNS", color: "#ef4444", items: "3" },
-            { title: lang === "ko" ? "SEO 분석기" : "SEO Analyzer", desc: lang === "ko" ? "실시간 검색어, 인플루언서 랭킹" : "Trending keywords, influencer rankings", color: "#22c55e", items: "4" },
+            { title: lang === "ko" ? "20개+ 플랫폼" : "20+ Platforms", desc: lang === "ko" ? "네이버·카페·티스토리·인스타·스레드·유튜브·X·페이스북·LinkedIn·Medium 등" : "Naver, Cafe, Tistory, Instagram, Threads, YouTube, X, Facebook, LinkedIn, Medium & more", color: "#7c6aff",
+              icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7c6aff" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>, nav: "ai" },
+            { title: lang === "ko" ? "무료 자료실" : "Free Resources", desc: lang === "ko" ? "프리미어프로 자동편집, SNS 자동화 등 무료 프로그램 다운로드" : "Free downloads: Premiere auto-edit, SNS automation tools", color: "#f59e0b",
+              icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>, nav: "programs" },
+            { title: lang === "ko" ? "정보공유 커뮤니티" : "Community", desc: lang === "ko" ? "마케팅·AI 뉴스, 키워드 추천, 노하우 가이드가 매일 자동 업데이트" : "Daily auto-updated marketing & AI news, keyword tips, guides", color: "#22c55e",
+              icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>, nav: "community/info" },
+            { title: lang === "ko" ? "SNS 자동 발행" : "Auto Publish", desc: lang === "ko" ? "스레드·네이버 블로그·티스토리 계정 연동 후 원클릭 발행" : "One-click publish to Threads, Naver Blog, Tistory after linking", color: "#ec4899",
+              icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ec4899" strokeWidth="2" strokeLinecap="round"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>, nav: "ai" },
           ].map((f, i) => (
             <FadeIn key={f.title} delay={i * 0.08}>
-              <div onClick={() => navigate(f.color === "#22c55e" ? "analyzer" : f.color === "#f59e0b" ? "programs" : "ai")} className="hover-lift" style={{
+              <div onClick={() => navigate(f.nav)} className="hover-lift" style={{
                 background: C.card, border: "1px solid " + C.border, borderRadius: 16,
                 padding: "24px 20px", cursor: "pointer", height: "100%",
               }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 12, background: `${f.color}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 800, color: f.color }}>{f.items}</div>
-                  <div style={{ fontSize: 11, color: f.color, fontWeight: 700 }}>{f.items}{lang === "ko" ? "개 도구" : " tools"}</div>
-                </div>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: `${f.color}12`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, marginBottom: 12 }}>{f.icon}</div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: C.text, marginBottom: 6 }}>{f.title}</div>
                 <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7 }}>{f.desc}</div>
-                <div style={{ marginTop: 14, fontSize: 12, color: f.color, fontWeight: 700 }}>{lang === "ko" ? "기능 둘러보기" : "Explore features"} →</div>
               </div>
             </FadeIn>
           ))}
