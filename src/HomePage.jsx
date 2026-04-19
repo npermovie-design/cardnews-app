@@ -572,15 +572,15 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 </p>
               </div>
               <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 16px 16px" }}>
-                <div style={{ borderRadius: "12px 12px 0 0", overflow: "hidden", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)", background: isDark ? "rgba(255,255,255,0.03)" : "#f8f7ff", padding: "16px 14px" }}>
+                <div style={{ borderRadius: "12px 12px 0 0", overflow: "hidden", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)", background: theme === "dark" ? "rgba(255,255,255,0.03)" : "#f8f7ff", padding: "16px 14px" }}>
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
                     {["AI 도구","블로그","유튜브","인스타","틱톡","마케팅","이커머스","트렌드","뷰티","건강"].map((t, i) => (
-                      <span key={t} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 20, background: i === 0 ? "#7c6aff" : isDark ? "rgba(255,255,255,0.06)" : "#f0eeff", color: i === 0 ? "#fff" : isDark ? "rgba(255,255,255,0.6)" : "#6b5ce7", fontWeight: 600, border: `1px solid ${i === 0 ? "#7c6aff" : isDark ? "rgba(255,255,255,0.08)" : "rgba(124,106,255,0.15)"}` }}>{t}</span>
+                      <span key={t} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 20, background: i === 0 ? "#7c6aff" : theme === "dark" ? "rgba(255,255,255,0.06)" : "#f0eeff", color: i === 0 ? "#fff" : theme === "dark" ? "rgba(255,255,255,0.6)" : "#6b5ce7", fontWeight: 600, border: `1px solid ${i === 0 ? "#7c6aff" : theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(124,106,255,0.15)"}` }}>{t}</span>
                     ))}
                   </div>
                   <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                     {["AI 마케팅 자동화","숏폼 콘텐츠 전략","네이버 SEO 최적화","인스타 릴스 트렌드"].map(k => (
-                      <div key={k} style={{ fontSize: 11, padding: "6px 10px", borderRadius: 8, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", color: C.text, fontWeight: 600, border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "#eee"}` }}>{k}</div>
+                      <div key={k} style={{ fontSize: 11, padding: "6px 10px", borderRadius: 8, background: theme === "dark" ? "rgba(255,255,255,0.04)" : "#fff", color: C.text, fontWeight: 600, border: `1px solid ${theme === "dark" ? "rgba(255,255,255,0.06)" : "#eee"}` }}>{k}</div>
                     ))}
                   </div>
                 </div>
