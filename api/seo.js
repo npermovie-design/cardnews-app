@@ -293,6 +293,8 @@ export default async function handler(req, res) {
       return handleCronKeyword(req, res);
     case "cron-info":
       return handleCronInfo(req, res);
+    case "cron-threads":
+      return handleCronThreads(req, res);
     case "index-now":
       return handleIndexNow(req, res);
     case "bulk-index":
@@ -507,6 +509,161 @@ HEADLINE: [글의 핵심을 담은 SEO 친화적 40자 이내 제목]`,
     titleFormat: (todayLabel, headline) => `[${todayLabel.replace(/\./g, "월 ").replace(/월 (\d+)$/, "월 $1일")} ${topic.theme}] ${headline}`,
     image: "https://images.unsplash.com/photo-1432888622747-4eb9a8efeb07?w=1200&q=80",
   });
+}
+
+// ── Threads @choi.openai 모니터링 → 정보공유 자동 발행 ──
+async function handleCronThreads(req, res) {
+  const API_KEY = process.env.ANTHROPIC_API_KEY;
+  if (!API_KEY) return res.status(500).json({ error: "ANTHROPIC_API_KEY 미설정" });
+
+  const sb = createClient(
+    process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY
+  );
+
+  const now = new Date(Date.now() + 9 * 60 * 60 * 1000);
+  const results = { checked: false, published: false, pending: false };
+
+  // ── Step 1: 예약된 pending 글이 있으면 발행 ──
+  try {
+    const { data: pendings } = await sb.from("sns_news")
+      .select("*")
+      .eq("category", "threads_pending");
+
+    for (const p of (pendings || [])) {
+      const publishAt = new Date(p.summary);
+      if (publishAt > new Date()) continue; // 아직 시간 안 됨
+
+      // AI로 정보글 생성
+      const threadContent = p.content;
+      const prompt = `다음은 AI/기술 전문가 @choi.openai의 최신 Threads 게시물입니다:
+
+${threadContent}
+
+위 내용을 바탕으로 SNS 마케팅/AI 정보공유 글을 작성해줘.
+
+형식 (HTML):
+<div style="margin-bottom:20px;padding:18px 22px;border-radius:14px;background:rgba(124,106,255,0.03);border:1px solid rgba(124,106,255,0.08)">
+<h2 style="margin:0 0 16px;font-size:18px;font-weight:800;color:#1a1730">[소제목]</h2>
+<p style="margin:0 0 12px;font-size:14px;line-height:1.9;color:#333">[본문 내용]</p>
+</div>
+
+요구사항:
+- 원문의 핵심 인사이트를 바탕으로 확장 분석
+- 실무자가 바로 활용할 수 있는 깊이 있는 해설
+- 원문 출처(@choi.openai Threads) 하단에 명시
+- 1500~3000자
+- 이모지 사용 금지. 볼드(**) 사용 금지.
+
+마지막 줄:
+HEADLINE: [핵심을 담은 SEO 친화적 40자 이내 제목]`;
+
+      try {
+        const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-api-key": API_KEY, "anthropic-version": "2023-06-01" },
+          body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 6000, messages: [{ role: "user", content: prompt }] }),
+        });
+        const aiData = await aiRes.json();
+        const content = aiData.content?.[0]?.text || "";
+        if (!content || content.length < 200) continue;
+
+        const headlineMatch = content.match(/HEADLINE:\s*(.+)/);
+        const headline = headlineMatch ? headlineMatch[1].trim() : "AI 트렌드 인사이트";
+        const cleanContent = content.replace(/\n?HEADLINE:.*$/m, "").trim();
+
+        const todayLabel = now.toISOString().slice(0, 10).replace(/-/g, ".");
+        const title = `[AI 인사이트] ${headline}`;
+        const postId = p.id.replace("threads_pending_", "threads_");
+        const image = "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=1200&q=80";
+        const body = `<div style="margin-bottom:28px"><img src="${image}" alt="${title}" style="width:100%;max-width:800px;border-radius:14px;display:block"></div>\n${cleanContent}\n<div style="margin-top:24px;padding:12px 16px;border-radius:10px;background:rgba(124,106,255,0.04);font-size:12px;color:#999">출처: <a href="https://www.threads.com/@choi.openai" target="_blank" style="color:#7c6aff">@choi.openai Threads</a></div>`;
+
+        await sb.from("posts").upsert({
+          id: postId,
+          title,
+          content: body,
+          cat: "info",
+          subCat: "info",
+          tag: "AI",
+          author: "AI알리미",
+          author_uid: "system_cron",
+          images: [image],
+          views: 0,
+          likes: 0,
+          comments: [],
+          created_at: new Date().toISOString(),
+        }, { onConflict: "id" });
+
+        // pending → published로 변경
+        await sb.from("sns_news").update({ category: "threads_published" }).eq("id", p.id);
+        results.published = true;
+      } catch (e) {
+        console.log("Threads publish error:", e.message);
+      }
+    }
+  } catch (e) {
+    console.log("Threads pending check error:", e.message);
+  }
+
+  // ── Step 2: Threads 새 글 감지 ──
+  try {
+    const threadsRes = await fetch("https://www.threads.com/@choi.openai", {
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
+    });
+    const html = await threadsRes.text();
+    results.checked = true;
+
+    // 포스트 텍스트 추출
+    const textMatches = [...html.matchAll(/"text":"((?:[^"\\]|\\.)*)"/g)];
+    const texts = textMatches
+      .map(m => { try { return JSON.parse('"' + m[1] + '"'); } catch { return ""; } })
+      .filter(t => t.length > 50);
+
+    if (!texts.length) return res.status(200).json({ ...results, message: "포스트 추출 실패" });
+
+    // 최신 글의 해시 생성 (앞 80자 기준)
+    const latestText = texts[0];
+    const hashStr = Buffer.from(latestText.slice(0, 80)).toString("base64").replace(/[^a-zA-Z0-9]/g, "").slice(0, 16);
+
+    // 이미 처리했는지 확인 (pending 또는 published)
+    const { data: existing } = await sb.from("sns_news")
+      .select("id")
+      .or(`id.eq.threads_pending_${hashStr},id.eq.threads_${hashStr}`)
+      .limit(1);
+
+    if (existing?.length) return res.status(200).json({ ...results, message: "이미 감지된 글", hash: hashStr });
+
+    // 새 글 발견! 1~5시간 랜덤 딜레이로 예약
+    const delayHours = 1 + Math.random() * 4; // 1~5시간
+    const publishAt = new Date(Date.now() + delayHours * 60 * 60 * 1000);
+
+    // 최근 글 3개까지 합쳐서 저장
+    const threadContent = texts.slice(0, 3).join("\n\n───\n\n");
+
+    await sb.from("sns_news").upsert({
+      id: `threads_pending_${hashStr}`,
+      title: `[대기] ${latestText.slice(0, 60)}...`,
+      content: threadContent,
+      category: "threads_pending",
+      summary: publishAt.toISOString(),
+      author_uid: "system_cron",
+      platforms: ["threads"],
+      pinned: false,
+      views: 0,
+      created_at: new Date().toISOString(),
+    }, { onConflict: "id" });
+
+    results.pending = true;
+    return res.status(200).json({
+      ...results,
+      message: "새 글 감지, 발행 예약됨",
+      hash: hashStr,
+      publishAt: publishAt.toISOString(),
+      delayHours: Math.round(delayHours * 10) / 10,
+    });
+  } catch (e) {
+    return res.status(500).json({ ...results, error: e.message });
+  }
 }
 
 // ── 공통: posts 테이블에 자동 발행 ──

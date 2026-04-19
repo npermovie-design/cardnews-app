@@ -124,6 +124,7 @@
     { "source": "/api/cron-ai", "destination": "/api/seo?action=cron-ai" },
     { "source": "/api/cron-keyword", "destination": "/api/seo?action=cron-keyword" },
     { "source": "/api/cron-info", "destination": "/api/seo?action=cron-info" },
+    { "source": "/api/cron-threads", "destination": "/api/seo?action=cron-threads" },
     { "source": "/api/naver-verify", "destination": "/api/seo?action=naver-verify" },
 
     { "source": "/api/ai-ppt", "destination": "/api/ai-proxy?target=ppt" },
@@ -160,6 +161,10 @@
     {
       "path": "/api/seo?action=cron-info",
       "schedule": "30 21 * * *"
+    },
+    {
+      "path": "/api/seo?action=cron-threads",
+      "schedule": "0 */2 * * *"
     }
   ]
 }
