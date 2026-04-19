@@ -463,8 +463,8 @@ export default function App() {
     // SEO: 다국어 동적 타이틀
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
     const titleMap = {
-      ko: { home:"SNS메이킷 - AI 블로그·상세페이지·이미지 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자료실", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책", community:"커뮤니티" },
-      en: { home:"SNS Makeit - AI Card News · Blog · Image Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy", community:"Community" },
+      ko: { home:"SNS메이킷 - AI 블로그·이미지·쇼츠 영상 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자료실", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책", community:"커뮤니티" },
+      en: { home:"SNS Makeit - AI Blog · Image · Shorts Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy", community:"Community" },
       ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", programs:"プログラムストア", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約", community:"コミュニティ" },
     };
     // 페이지별 meta description (SEO 최적화)
@@ -474,7 +474,7 @@ export default function App() {
         pricing: "SNS메이킷 요금제 안내. Basic $9.90/월, Pro $19.90/월, Premium $34.90/월. 연간 결제 시 2개월 무료. 일회 충전 $5.90부터.",
         about: "SNS메이킷은 AI로 SNS 콘텐츠 제작 전 과정을 자동화하는 올인원 플랫폼입니다.",
         howto: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 숏폼 편집까지 단계별로 안내합니다.",
-        ai: "AI로 블로그, 상세페이지, 이미지, 숏폼 영상을 자동 생성하세요. 비회원 5회 무료.",
+        ai: "AI로 블로그, 이미지, 숏폼 영상을 자동 생성하세요. 비회원 5회 무료.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류 등 1:1 문의를 받고 있어요.",
         community: "SNS메이킷 커뮤니티. 마케터와 크리에이터를 위한 정보, Q&A, 자료실.",
         programs: "자동화 도구, 템플릿, 유틸리티 프로그램을 다운로드하세요. 무료부터 프리미엄까지.",
