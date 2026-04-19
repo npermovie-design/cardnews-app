@@ -548,7 +548,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                   {lang === "ko" ? "키워드만 입력하면\nAI가 글을 완성해요" : "Just enter keywords,\nAI completes the article"}
                 </h3>
                 <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, margin: 0 }}>
-                  {lang === "ko" ? "네이버 블로그, 인스타, 유튜브 대본까지 6개 플랫폼 지원" : "Supports 6 platforms including Naver Blog, Instagram, YouTube"}
+                  {lang === "ko" ? "네이버 블로그, 인스타, 유튜브 대본까지 20개+ 플랫폼 지원" : "Supports 20+ platforms including Naver Blog, Instagram, YouTube"}
                 </p>
               </div>
               <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 16px 16px" }}>
@@ -559,21 +559,30 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             </div>
           </FadeIn>
 
-          {/* 상세페이지 */}
+          {/* 오늘의 추천 키워드 */}
           <FadeIn delay={0.1} style={{ gridColumn: "span 1" }}>
             <div onClick={() => navigate("ai")} className="hover-lift" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", cursor: "pointer", height: "100%" }}>
               <div style={{ padding: "28px 24px 0" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#8b5cf6", marginBottom: 8 }}>{lang === "ko" ? "콘텐츠 제작" : "Content Creation"}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", marginBottom: 8 }}>{lang === "ko" ? "추천 키워드" : "Trending Keywords"}</div>
                 <h3 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: "0 0 8px", lineHeight: 1.3 }}>
-                  {lang === "ko" ? "상세페이지를\n자동으로 디자인해요" : "Auto-design\ndetail pages"}
+                  {lang === "ko" ? "오늘 뜨는 키워드로\n바로 글쓰기 시작" : "Start writing with\ntoday's hot keywords"}
                 </h3>
                 <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, margin: 0 }}>
-                  {lang === "ko" ? "제품 정보만 입력하면 섹션 구성부터 디자인까지 AI가 완성" : "AI handles everything from section planning to design"}
+                  {lang === "ko" ? "네이버·구글 실시간 트렌드 320개+ 키워드, 클릭 한 번으로 글쓰기" : "320+ real-time trending keywords from Naver & Google, one-click writing"}
                 </p>
               </div>
               <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 16px 16px" }}>
-                <div style={{ borderRadius: "12px 12px 0 0", overflow: "hidden", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}>
-                  <MockupDetailPage />
+                <div style={{ borderRadius: "12px 12px 0 0", overflow: "hidden", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)", background: isDark ? "rgba(255,255,255,0.03)" : "#f8f7ff", padding: "16px 14px" }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {["AI 도구","블로그","유튜브","인스타","틱톡","마케팅","이커머스","트렌드","뷰티","건강"].map((t, i) => (
+                      <span key={t} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 20, background: i === 0 ? "#7c6aff" : isDark ? "rgba(255,255,255,0.06)" : "#f0eeff", color: i === 0 ? "#fff" : isDark ? "rgba(255,255,255,0.6)" : "#6b5ce7", fontWeight: 600, border: `1px solid ${i === 0 ? "#7c6aff" : isDark ? "rgba(255,255,255,0.08)" : "rgba(124,106,255,0.15)"}` }}>{t}</span>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                    {["AI 마케팅 자동화","숏폼 콘텐츠 전략","네이버 SEO 최적화","인스타 릴스 트렌드"].map(k => (
+                      <div key={k} style={{ fontSize: 11, padding: "6px 10px", borderRadius: 8, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", color: C.text, fontWeight: 600, border: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "#eee"}` }}>{k}</div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -584,12 +593,12 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(200px, 100%), 1fr))", gap: 16, marginTop: 16 }}>
           {[
             { title: lang === "ko" ? "AI 이미지" : "AI Image", desc: lang === "ko" ? "제품컷, 로고, 목업, 모델 생성 · 얼굴·의상 교체, 여백 확장" : "Product shots, logos, mockups, models · Face/outfit swap, outpainting", color: "#ec4899", items: "10" },
-            { title: lang === "ko" ? "이미지 편집" : "Image Edit", desc: lang === "ko" ? "배경 제거, 화질 개선, 스타일 변환을 AI가 즉시 처리" : "Background removal, upscale, style transfer", color: "#f59e0b", items: "5" },
+            { title: lang === "ko" ? "무료 자료실" : "Free Resources", desc: lang === "ko" ? "프리미어프로 자동편집, SNS 자동화 등 무료 프로그램 다운로드" : "Free downloads: Premiere auto-edit, SNS automation tools", color: "#f59e0b", items: "10" },
             { title: lang === "ko" ? "리퍼포징" : "Repurpose", desc: lang === "ko" ? "유튜브·뉴스·파일을 블로그·SNS로 변환" : "Convert YouTube, news, files to blog & SNS", color: "#ef4444", items: "3" },
             { title: lang === "ko" ? "SEO 분석기" : "SEO Analyzer", desc: lang === "ko" ? "실시간 검색어, 인플루언서 랭킹" : "Trending keywords, influencer rankings", color: "#22c55e", items: "4" },
           ].map((f, i) => (
             <FadeIn key={f.title} delay={i * 0.08}>
-              <div onClick={() => navigate(f.color === "#22c55e" ? "analyzer" : "ai")} className="hover-lift" style={{
+              <div onClick={() => navigate(f.color === "#22c55e" ? "analyzer" : f.color === "#f59e0b" ? "programs" : "ai")} className="hover-lift" style={{
                 background: C.card, border: "1px solid " + C.border, borderRadius: 16,
                 padding: "24px 20px", cursor: "pointer", height: "100%",
               }}>
