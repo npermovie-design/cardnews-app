@@ -84,80 +84,43 @@ function FaqItem({ q, a, C }) {
 }
 
 /* ── 추상 SVG mockup: 실제 스크린샷 대용 (지금 서비스 형태 반영) ── */
-function MockupAiHome() {
-  // 큰 카드 그리드 형태 (현재 AI 홈)
-  const cards = [
-    { x: 30, y: 80, c: "#7c6aff" },
-    { x: 270, y: 80, c: "#8b5cf6" },
-    { x: 510, y: 80, c: "#ec4899" },
-    { x: 30, y: 200, c: "#ef4444" },
-    { x: 270, y: 200, c: "#22c55e" },
-    { x: 510, y: 200, c: "#f59e0b" },
-  ];
-  return (
-    <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", display: "block" }}>
-      <defs>
-        <linearGradient id="mh-bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#fafafa"/>
-          <stop offset="1" stopColor="#f4f3ff"/>
-        </linearGradient>
-      </defs>
-      <rect width="760" height="360" fill="url(#mh-bg)"/>
-      {/* 헤더 텍스트 */}
-      <rect x="240" y="22" width="280" height="14" rx="3" fill="#1a1a2e" opacity="0.85"/>
-      <rect x="290" y="46" width="180" height="9" rx="2" fill="#1a1a2e" opacity="0.35"/>
-      {/* 카드 6개 */}
-      {cards.map((card, i) => (
-        <g key={i}>
-          <rect x={card.x} y={card.y} width="220" height="100" rx="14" fill="#fff" stroke="#e5e7eb" strokeWidth="1.5"/>
-          <rect x={card.x + 18} y={card.y + 22} width="56" height="56" rx="14" fill={card.c} fillOpacity="0.12"/>
-          <circle cx={card.x + 46} cy={card.y + 50} r="14" fill={card.c} fillOpacity="0.6"/>
-          <rect x={card.x + 88} y={card.y + 28} width="100" height="11" rx="2" fill="#1a1a2e" opacity="0.85"/>
-          <rect x={card.x + 88} y={card.y + 48} width="120" height="7" rx="2" fill="#1a1a2e" opacity="0.35"/>
-          <rect x={card.x + 88} y={card.y + 60} width="80" height="7" rx="2" fill="#1a1a2e" opacity="0.35"/>
-        </g>
-      ))}
-    </svg>
-  );
-}
+function MockupAiHome() { return null; }
 
 function MockupBlogWriter() {
-  // 글쓰기 wizard: 진행 바 + 글 입력 영역
+  // 실제 인터페이스와 유사한 글쓰기 목업
+  const platforms = [
+    { name: "네이버 블로그", color: "#03c75a", active: true },
+    { name: "네이버 카페", color: "#03c75a", active: false },
+    { name: "티스토리", color: "#eb5d00", active: false },
+    { name: "인스타그램", color: "#e4405f", active: false },
+    { name: "스레드", color: "#000", active: false },
+  ];
   return (
-    <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", display: "block" }}>
-      <defs>
-        <linearGradient id="bw-bg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#f8f7ff"/>
-          <stop offset="1" stopColor="#fff"/>
-        </linearGradient>
-      </defs>
-      <rect width="760" height="360" fill="url(#bw-bg)"/>
-      {/* 진행 바 */}
-      <g transform="translate(60, 30)">
-        {[0, 1, 2, 3].map(i => (
-          <g key={i}>
-            <circle cx={i * 200 + 16} cy="16" r="16" fill={i <= 1 ? "#7c6aff" : "#e5e7eb"}/>
-            <text x={i * 200 + 16} y="21" fontSize="13" fontWeight="700" fill={i <= 1 ? "#fff" : "#999"} textAnchor="middle">{i + 1}</text>
-            {i < 3 && <rect x={i * 200 + 36} y="14" width="160" height="4" rx="2" fill={i < 1 ? "#7c6aff" : "#e5e7eb"}/>}
-          </g>
+    <div style={{ background: "linear-gradient(180deg, #f8f7ff 0%, #fff 100%)", padding: "20px 16px 0" }}>
+      {/* 입력 필드 */}
+      <div style={{ background: "#fff", border: "1.5px solid #e5e7eb", borderRadius: 12, padding: "12px 16px", marginBottom: 12 }}>
+        <div style={{ fontSize: 13, color: "#bbb", fontWeight: 500 }}>핵심 키워드를 입력하세요</div>
+      </div>
+      {/* 옵션 버튼 행 */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
+        {["파일", "링크", "설정"].map(t => (
+          <span key={t} style={{ fontSize: 11, padding: "5px 12px", borderRadius: 8, border: "1px solid #e5e7eb", color: "#666", fontWeight: 600, background: "#fff" }}>{t}</span>
         ))}
-      </g>
-      {/* 주제 입력 영역 */}
-      <rect x="60" y="100" width="640" height="46" rx="12" fill="#fff" stroke="#7c6aff" strokeWidth="1.5"/>
-      <rect x="80" y="118" width="180" height="11" rx="2" fill="#1a1a2e" opacity="0.65"/>
-      {/* 글타입 카드 4개 */}
-      {[0, 1, 2, 3].map(i => (
-        <g key={i}>
-          <rect x={60 + i * 165} y="170" width="150" height="84" rx="12" fill="#fff" stroke="#e5e7eb" strokeWidth="1.5"/>
-          <rect x={75 + i * 165} y="186" width="32" height="32" rx="8" fill="#7c6aff" fillOpacity="0.12"/>
-          <rect x={75 + i * 165} y="228" width="100" height="9" rx="2" fill="#1a1a2e" opacity="0.7"/>
-          <rect x={75 + i * 165} y="240" width="70" height="7" rx="2" fill="#1a1a2e" opacity="0.3"/>
-        </g>
-      ))}
-      {/* 생성 버튼 */}
-      <rect x="280" y="290" width="200" height="44" rx="12" fill="#7c6aff"/>
-      <rect x="340" y="307" width="80" height="11" rx="2" fill="#fff"/>
-    </svg>
+        <span style={{ marginLeft: "auto", fontSize: 12, padding: "6px 18px", borderRadius: 10, background: "#7c6aff", color: "#fff", fontWeight: 700 }}>생성 30P</span>
+      </div>
+      {/* 플랫폼 탭 */}
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", paddingBottom: 16 }}>
+        {platforms.map(p => (
+          <span key={p.name} style={{
+            fontSize: 11, padding: "5px 12px", borderRadius: 8, fontWeight: 600,
+            background: p.active ? "#fff" : "transparent",
+            color: p.active ? p.color : "#999",
+            border: p.active ? `1.5px solid ${p.color}` : "1px solid #e5e7eb",
+          }}>{p.name}</span>
+        ))}
+        <span style={{ fontSize: 11, padding: "5px 10px", color: "#999", fontWeight: 500 }}>+15</span>
+      </div>
+    </div>
   );
 }
 
@@ -335,15 +298,26 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             ))}
           </div>
 
-          {/* 제품 미리보기 */}
-          <div style={{ marginTop: 48, maxWidth: 700, width: "100%", margin: "48px auto 0", borderRadius: 20, overflow: "hidden", boxShadow: "0 20px 60px rgba(124,106,255,0.18), 0 0 0 1px rgba(124,106,255,0.08)", border: "1px solid " + C.border, position: "relative" }}>
-            <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 32, background: "#f5f4ff", display: "flex", alignItems: "center", gap: 6, padding: "0 12px", borderBottom: "1px solid " + C.border }}>
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#ef4444" }} />
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#f59e0b" }} />
-              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#22c55e" }} />
-              <span style={{ flex: 1, textAlign: "center", fontSize: 10, color: C.muted, fontWeight: 600 }}>snsmakeit.com</span>
-            </div>
-            <div style={{ marginTop: 32 }}><MockupAiHome /></div>
+          {/* 히어로 이미지 그리드 */}
+          <div style={{ marginTop: 48, maxWidth: 820, width: "100%", margin: "48px auto 0", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, padding: "0 12px" }}>
+            {[
+              { img: "/icon-naver-blog.png", title: lang === "ko" ? "블로그 글쓰기" : "Blog Writing", desc: lang === "ko" ? "20개+ 플랫폼" : "20+ platforms", color: "#22c55e", delay: "0s" },
+              { img: "/icon-youtube.png", title: lang === "ko" ? "쇼츠 영상" : "Shorts Video", desc: lang === "ko" ? "자동 자막·편집" : "Auto subtitles", color: "#ef4444", delay: "0.5s" },
+              { img: "/icon-threads.png", title: lang === "ko" ? "추천 키워드" : "Keywords", desc: lang === "ko" ? "320개+ 트렌드" : "320+ trends", color: "#f59e0b", delay: "1s" },
+            ].map((card, i) => (
+              <div key={i} className="hover-lift" onClick={() => navigate("ai")} style={{
+                background: C.card, border: "1px solid " + C.border, borderRadius: 20,
+                padding: "28px 20px", textAlign: "center", cursor: "pointer",
+                boxShadow: "0 8px 32px rgba(124,106,255,0.08)",
+                animation: `float 3s ease-in-out ${card.delay} infinite`,
+              }}>
+                <div style={{ width: 52, height: 52, borderRadius: 16, background: `${card.color}12`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", border: `1px solid ${card.color}25` }}>
+                  <img src={card.img} alt={card.title} style={{ width: 28, height: 28, borderRadius: 6 }} />
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 4 }}>{card.title}</div>
+                <div style={{ fontSize: 12, color: C.muted, fontWeight: 500 }}>{card.desc}</div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -370,8 +344,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               {
                 svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
                 color: "#7c6aff",
-                title: lang === "ko" ? "상세페이지 한 개에 2시간" : "2 hours for a detail page",
-                quote: lang === "ko" ? "디자인 감각이 없어 매번 외주를 맡기고 있어요" : "I have no design skills and always outsource",
+                title: lang === "ko" ? "키워드 찾는 데만 1시간" : "1 hour just finding keywords",
+                quote: lang === "ko" ? "뭘 써야 할지 몰라 매번 검색만 하다 시간이 다 가요" : "I spend all my time searching without knowing what to write",
               },
               {
                 svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
@@ -388,8 +362,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               {
                 svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>,
                 color: "#f59e0b",
-                title: lang === "ko" ? "전문가 수준의 이미지 필요" : "Need professional images",
-                quote: lang === "ko" ? "제품 사진, 로고, 목업을 직접 만들 수가 없어요" : "I can't create product photos, logos, or mockups myself",
+                title: lang === "ko" ? "매일 올리기가 너무 힘들어요" : "Posting daily is exhausting",
+                quote: lang === "ko" ? "꾸준히 올려야 되는 건 알지만 매번 아이디어가 바닥나요" : "I know I need to post consistently but I always run out of ideas",
               },
               {
                 svg: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="3"/><polygon points="10 8 17 12 10 16 10 8" fill="currentColor"/></svg>,
