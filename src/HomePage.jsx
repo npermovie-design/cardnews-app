@@ -206,6 +206,9 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         .platform-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px; }
         .platform-row img { width:22px; height:22px; border-radius:6px; opacity:0.85; transition:all 0.2s; }
         .platform-row img:hover { opacity:1; transform:scale(1.15); }
+        .hero-shot:hover { transform:rotate(0deg) scale(1.05) translateY(-8px) !important; box-shadow:0 24px 60px rgba(124,106,255,0.25), 0 0 0 2px rgba(124,106,255,0.3) !important; z-index:10 !important; }
+        .hero-gallery { overflow:visible; }
+        @media(max-width:768px){ .hero-gallery { height:240px !important; } .hero-shot img { border-radius:10px; } }
         @media(max-width:768px){
           .hero-particle{display:none!important}
           .tool-card:hover,.review-card:hover,.stat-card:hover,.hover-lift:hover{transform:none!important;box-shadow:none!important}
@@ -298,24 +301,28 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             ))}
           </div>
 
-          {/* 히어로 이미지 그리드 */}
-          <div style={{ marginTop: 48, maxWidth: 820, width: "100%", margin: "48px auto 0", display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, padding: "0 12px" }}>
+          {/* 히어로 서비스 스크린샷 갤러리 */}
+          <div className="hero-gallery" style={{ marginTop: 48, maxWidth: 900, width: "100%", margin: "48px auto 0", position: "relative", height: "clamp(280px, 40vw, 420px)", perspective: 1200 }}>
             {[
-              { img: "/icon-naver-blog.png", title: lang === "ko" ? "블로그 글쓰기" : "Blog Writing", desc: lang === "ko" ? "20개+ 플랫폼" : "20+ platforms", color: "#22c55e", delay: "0s" },
-              { img: "/icon-youtube.png", title: lang === "ko" ? "쇼츠 영상" : "Shorts Video", desc: lang === "ko" ? "자동 자막·편집" : "Auto subtitles", color: "#ef4444", delay: "0.5s" },
-              { img: "/icon-threads.png", title: lang === "ko" ? "추천 키워드" : "Keywords", desc: lang === "ko" ? "320개+ 트렌드" : "320+ trends", color: "#f59e0b", delay: "1s" },
-            ].map((card, i) => (
-              <div key={i} className="hover-lift" onClick={() => navigate("ai")} style={{
-                background: C.card, border: "1px solid " + C.border, borderRadius: 20,
-                padding: "28px 20px", textAlign: "center", cursor: "pointer",
-                boxShadow: "0 8px 32px rgba(124,106,255,0.08)",
-                animation: `float 3s ease-in-out ${card.delay} infinite`,
+              { src: "/hero-writing.png", label: lang === "ko" ? "AI 글쓰기" : "AI Writing", x: "2%", y: "5%", w: "52%", rot: -3, z: 3, delay: "0s" },
+              { src: "/hero-settings.png", label: lang === "ko" ? "세부 설정" : "Settings", x: "48%", y: "0%", w: "50%", rot: 2, z: 2, delay: "0.8s" },
+              { src: "/hero-keywords.png", label: lang === "ko" ? "추천 키워드" : "Keywords", x: "5%", y: "52%", w: "44%", rot: 1, z: 4, delay: "1.6s" },
+              { src: "/hero-generating.png", label: lang === "ko" ? "AI 생성 중" : "Generating", x: "55%", y: "48%", w: "38%", rot: -2, z: 5, delay: "0.4s" },
+            ].map((s, i) => (
+              <div key={i} className="hero-shot" onClick={() => navigate("ai")} style={{
+                position: "absolute", left: s.x, top: s.y, width: s.w,
+                borderRadius: 14, overflow: "hidden", cursor: "pointer",
+                boxShadow: "0 12px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(124,106,255,0.1)",
+                transform: `rotate(${s.rot}deg)`, zIndex: s.z,
+                animation: `float 4s ease-in-out ${s.delay} infinite`,
+                transition: "transform 0.35s, box-shadow 0.35s, z-index 0s",
               }}>
-                <div style={{ width: 52, height: 52, borderRadius: 16, background: `${card.color}12`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", border: `1px solid ${card.color}25` }}>
-                  <img src={card.img} alt={card.title} style={{ width: 28, height: 28, borderRadius: 6 }} />
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 4 }}>{card.title}</div>
-                <div style={{ fontSize: 12, color: C.muted, fontWeight: 500 }}>{card.desc}</div>
+                <img src={s.src} alt={s.label} style={{ width: "100%", display: "block" }} loading="lazy" />
+                <div style={{
+                  position: "absolute", bottom: 0, left: 0, right: 0,
+                  background: "linear-gradient(transparent, rgba(0,0,0,0.65))",
+                  padding: "16px 12px 8px", fontSize: 11, fontWeight: 700, color: "#fff",
+                }}>{s.label}</div>
               </div>
             ))}
           </div>
