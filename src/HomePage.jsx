@@ -666,9 +666,9 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
                 <tbody>
                   {[
                     { feature: lang === "ko" ? "콘텐츠 제작 시간" : "Content creation time", vals: [lang === "ko" ? "3분" : "3min", lang === "ko" ? "30분+" : "30min+", lang === "ko" ? "20분+" : "20min+", lang === "ko" ? "2시간+" : "2hrs+"] },
-                    { feature: lang === "ko" ? "상세페이지+블로그+영상 통합" : "Detail+Blog+Video integrated", vals: ["check", "cross", "cross", "cross"] },
+                    { feature: lang === "ko" ? "블로그+키워드+영상 통합" : "Detail+Blog+Video integrated", vals: ["check", "cross", "cross", "cross"] },
                     { feature: lang === "ko" ? "SEO 최적화 글쓰기" : "SEO writing", vals: ["check", "cross", "cross", "cross"] },
-                    { feature: lang === "ko" ? "AI 이미지 생성/수정" : "AI image gen/edit", vals: ["check", "cross", "partial", "partial"] },
+                    { feature: lang === "ko" ? "추천 키워드 320+" : "AI image gen/edit", vals: ["check", "cross", "partial", "partial"] },
                     { feature: lang === "ko" ? "한국 SNS 최적화" : "Korean SNS", vals: ["check", "cross", "cross", "partial"] },
                     { feature: lang === "ko" ? "SNS 자동 발행" : "Auto-publish", vals: ["check", "cross", "cross", "cross"] },
                     { feature: lang === "ko" ? "무료 체험 (카드 불필요)" : "Free (no card)", vals: ["check", "partial", "partial", "partial"] },
@@ -746,10 +746,10 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           </FadeIn>
           <div style={{ display: "grid", gap: 14 }}>
             {[
-              { before: lang === "ko" ? "제품 이미지 촬영에 반나절, 스튜디오 비용 10만원+" : "Half a day for product shots, 100k KRW+ studio cost", after: lang === "ko" ? "AI가 30초 만에 제품컷·로고·목업 완성" : "AI creates product shots, logos, mockups in 30 sec" },
+              { before: lang === "ko" ? "키워드 조사에 매번 1시간, 무슨 글 쓸지 고민" : "Half a day for product shots, 100k KRW+ studio cost", after: lang === "ko" ? "AI가 추천 키워드로 바로 글쓰기 시작" : "AI creates product shots, logos, mockups in 30 sec" },
               { before: lang === "ko" ? "블로그 글 하나에 반나절, SEO 키워드 별도 조사" : "Half a day per blog post, separate SEO research", after: lang === "ko" ? "SEO 최적화 블로그 글 5분 완성, 키워드 자동 반영" : "SEO-optimized blog in 5 min, auto keywords" },
               { before: lang === "ko" ? "인스타·블로그·스레드 각각 따로 작성" : "Write separately for Instagram, blog, Threads", after: lang === "ko" ? "한 번에 6개 플랫폼용 콘텐츠 동시 생성" : "Generate for 6 platforms at once" },
-              { before: lang === "ko" ? "제품 사진 촬영 + 보정에 하루, 스튜디오 비용 별도" : "Full day for product photos + editing, studio costs", after: lang === "ko" ? "AI 제품컷 즉시 생성, 배경 자동 교체" : "AI product shots instantly, auto background swap" },
+              { before: lang === "ko" ? "쇼츠 영상 만들려면 촬영·편집·자막 반나절" : "Full day for product photos + editing, studio costs", after: lang === "ko" ? "유튜브 링크 하나로 AI가 60초 쇼츠 자동 제작" : "AI product shots instantly, auto background swap" },
             ].map((item, i) => (
               <FadeIn key={i} delay={i * 0.08}>
                 <BeforeAfterCard before={item.before} after={item.after} C={C} lang={lang} />
@@ -771,7 +771,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
               initial: "K", color: "#7c6aff",
               name: lang === "ko" ? "김** 대표님" : "Kim, CEO",
               industry: lang === "ko" ? "패션 쇼핑몰 운영 | 사용 3개월" : "Fashion e-commerce | 3 months",
-              text: lang === "ko" ? "상세페이지 제작 시간이 2시간에서 5분으로 줄었어요. 외주비만 월 50만원 이상 절약하고 있습니다. 디자이너 없이도 프로급 결과물이 나옵니다." : "Detail page creation went from 2 hours to 5 minutes. Saving over 500K KRW monthly in outsourcing costs.",
+              text: lang === "ko" ? "블로그 글 작성 시간이 2시간에서 5분으로 줄었어요. 외주비만 월 50만원 이상 절약하고 있습니다. 디자이너 없이도 프로급 결과물이 나옵니다." : "Detail page creation went from 2 hours to 5 minutes. Saving over 500K KRW monthly in outsourcing costs.",
               metric: lang === "ko" ? "제작 시간 95% 단축" : "95% time reduction",
               stars: 5,
             },
@@ -856,8 +856,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
             <FadeIn delay={0.1}>
               <div className="point-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 {[
-                  { title: lang === "ko" ? "회원가입 보너스" : "Sign-up bonus", point: "+50P", desc: lang === "ko" ? "가입 즉시 지급" : "Instant upon sign-up", color: "#ec4899" },
-                  { title: lang === "ko" ? "매일 로그인" : "Daily login", point: "+2P", desc: lang === "ko" ? "하루 한 번 접속만 해도" : "Just log in once a day", color: "#7c6aff" },
+                  { title: lang === "ko" ? "회원가입 보너스" : "Sign-up bonus", point: "+150P", desc: lang === "ko" ? "가입 즉시 지급" : "Instant upon sign-up", color: "#ec4899" },
+                  { title: lang === "ko" ? "매일 로그인" : "Daily login", point: "+3P", desc: lang === "ko" ? "하루 한 번 접속만 해도" : "Just log in once a day", color: "#7c6aff" },
                   { title: lang === "ko" ? "게시글 작성" : "Write a post", point: "+1P", desc: lang === "ko" ? "하루 최대 10회까지" : "Up to 10 times a day", color: "#22c55e" },
                   { title: lang === "ko" ? "비회원 무료" : "Guest free trial", point: "5" + (lang === "ko" ? "회" : "x"), desc: lang === "ko" ? "로그인 없이 체험" : "Try without login", color: "#f59e0b" },
                 ].map(item => (
@@ -879,7 +879,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14 }}>
           {[
             { icon: "FREE", title: lang==="ko"?"비회원 무료":"Guest Free", point: lang==="ko"?"5회":"5x", desc: lang==="ko"?"로그인 없이 AI 생성기 5회 무료 체험":"5 free AI uses without login", color: "#888", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
-            { icon: "+50P", title: lang==="ko"?"회원 가입":"Sign up", point: "50P", desc: lang==="ko"?"가입 즉시 50P 지급 + 매일 로그인·게시글로 적립":"50P upon signup + earn daily", color: "#22c55e", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
+            { icon: "+150P", title: lang==="ko"?"회원 가입":"Sign up", point: "150P", desc: lang==="ko"?"가입 즉시 150P 지급 + 매일 로그인·게시글로 적립":"150P upon signup + earn daily", color: "#22c55e", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
             { icon: "$19.9", title: lang==="ko"?"Standard 충전":"Standard", point: "3,500P", desc: lang==="ko"?"가장 많이 선택하는 패키지 · 유효기간 없음":"Most popular · No expiry", color: "#7c6aff", btnText: lang==="ko"?"요금 알아보기":"View pricing", onClick: () => navigate("pricing"), highlight: true },
             { icon: "$49.9", title: lang==="ko"?"Pro 충전":"Pro", point: "9,500P", desc: lang==="ko"?"장기 사용자 · 포인트당 단가 최저":"Best value · Lowest per-point", color: "#8b5cf6", btnText: lang==="ko"?"요금 알아보기":"View pricing", onClick: () => navigate("pricing") },
           ].map((p, i) => (
@@ -920,19 +920,19 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           {(lang === "ko" ? [
             { q: "SNS메이킷은 어떤 서비스인가요?", a: "SNS메이킷은 AI 기반 콘텐츠 자동 생성 플랫폼입니다. 블로그 글쓰기, 상세페이지 제작, AI 이미지 생성, 숏폼 영상 편집까지 20가지 이상의 AI 도구를 하나의 플랫폼에서 제공합니다." },
             { q: "어떤 콘텐츠를 만들 수 있나요?", a: "네이버 블로그, 인스타그램 캡션, 유튜브 대본, 티스토리 글, 상세페이지, AI 제품컷, 로고, 목업, 숏폼 영상 등 SNS 마케팅에 필요한 거의 모든 콘텐츠를 AI로 자동 생성할 수 있습니다." },
-            { q: "무료로 사용할 수 있나요?", a: "네. 비회원도 로그인 없이 5회까지 무료로 체험할 수 있습니다. 회원가입 시 50포인트가 즉시 지급되며, 매일 로그인(+2P), 게시글 작성(+1P, 하루 10회) 등으로 포인트를 적립해 무료로 계속 사용할 수 있어요." },
+            { q: "무료로 사용할 수 있나요?", a: "네. 비회원도 로그인 없이 5회까지 무료로 체험할 수 있습니다. 회원가입 시 150포인트가 즉시 지급되며, 매일 로그인(+3P), 게시글 작성(+1P, 하루 10회) 등으로 포인트를 적립해 무료로 계속 사용할 수 있어요." },
             { q: "생성된 콘텐츠의 품질은 어떤가요?", a: "최신 AI 모델(Claude 계열)을 사용하여 사람이 작성한 것과 구분하기 어려운 높은 품질의 콘텐츠를 생성합니다. SEO 최적화까지 자동으로 적용되어 검색 노출에도 유리합니다." },
             { q: "어떤 플랫폼을 지원하나요?", a: "네이버 블로그, 티스토리, 인스타그램, 유튜브, 스레드, 네이버 카페 등 주요 SNS 플랫폼을 지원합니다. 스레드, 네이버 블로그, 티스토리는 원클릭 자동 발행 기능도 제공합니다." },
-            { q: "포인트는 어떻게 적립하나요?", a: "회원가입 시 50P가 즉시 지급됩니다. 이후 매일 로그인(+2P), 커뮤니티 게시글 작성(+1P, 하루 최대 10회)으로 포인트를 적립할 수 있어요. 추가 포인트가 필요하면 합리적인 가격으로 충전할 수도 있습니다." },
+            { q: "포인트는 어떻게 적립하나요?", a: "회원가입 시 150P가 즉시 지급됩니다. 이후 매일 로그인(+3P), 커뮤니티 게시글 작성(+1P, 하루 최대 10회)으로 포인트를 적립할 수 있어요. 추가 포인트가 필요하면 합리적인 가격으로 충전할 수도 있습니다." },
             { q: "생성된 콘텐츠를 상업적으로 사용할 수 있나요?", a: "네, SNS메이킷으로 생성한 모든 콘텐츠(글, 이미지 등)는 상업적 용도로 자유롭게 사용할 수 있습니다. 별도의 라이선스 비용 없이 블로그, SNS, 쇼핑몰 등에 바로 활용하세요." },
             { q: "개인정보는 안전하게 보호되나요?", a: "SNS메이킷은 Supabase 인프라를 사용하여 데이터를 안전하게 관리합니다. 소셜 로그인(Google, Kakao)은 각 플랫폼의 공식 OAuth 인증을 통해 처리되며, 비밀번호는 암호화되어 저장됩니다." },
           ] : [
             { q: "What is SNS Makeit?", a: "SNS Makeit is an AI-powered content auto-generation platform. It provides 20+ AI tools in one place, including blog writing, detail page creation, AI image generation, and short-form video editing." },
             { q: "What content can I create?", a: "You can create Naver blog posts, Instagram captions, YouTube scripts, detail pages, AI product shots, logos, mockups, short-form videos, and more." },
-            { q: "Can I use it for free?", a: "Yes. Guests can try 5 times without login. Sign up to get 50P instantly, plus earn more through daily login (+2P) and community posts (+1P, up to 10/day)." },
+            { q: "Can I use it for free?", a: "Yes. Guests can try 5 times without login. Sign up to get 150P instantly, plus earn more through daily login (+3P) and community posts (+1P, up to 10/day)." },
             { q: "What is the quality of generated content?", a: "We use the latest AI models (Claude family) to produce high-quality content that is virtually indistinguishable from human-written text, with automatic SEO optimization." },
             { q: "Which platforms are supported?", a: "We support Naver Blog, Tistory, Instagram, YouTube, Threads, and Naver Cafe. Auto-publishing is available for Threads, Naver Blog, and Tistory." },
-            { q: "How do I earn points?", a: "Get 50P on sign-up. Earn +2P daily login, +1P per community post (up to 10/day). You can also purchase additional points at affordable prices." },
+            { q: "How do I earn points?", a: "Get 150P on sign-up. Earn +3P daily login, +1P per community post (up to 10/day). You can also purchase additional points at affordable prices." },
             { q: "Can I use generated content commercially?", a: "Yes. All content created with SNS Makeit (text, images, etc.) can be freely used for commercial purposes without any additional licensing fees." },
             { q: "Is my data safe?", a: "SNS Makeit uses Supabase infrastructure for secure data management. Social logins (Google, Kakao) are processed through official OAuth authentication, and passwords are encrypted." },
           ]).map((item, i) => (
@@ -960,7 +960,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           {/* 핵심 수치 강조 */}
           <div style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap", marginBottom: 36 }}>
             {[
-              { num: "50P", label: lang === "ko" ? "가입 즉시 지급" : "Signup bonus" },
+              { num: "150P", label: lang === "ko" ? "가입 즉시 지급" : "Signup bonus" },
               { num: lang === "ko" ? "5회" : "5x", label: lang === "ko" ? "비회원 무료" : "Guest free" },
               { num: lang === "ko" ? "0원" : "$0", label: lang === "ko" ? "카드 등록 불필요" : "No card needed" },
             ].map(s => (

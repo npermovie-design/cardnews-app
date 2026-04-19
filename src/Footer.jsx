@@ -35,7 +35,7 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
             </div>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: C.text, marginBottom: 12, letterSpacing: 1.5 }}>{t("service") || "서비스"}</div>
-              {[{ai:"blog_naver_intro",label:t("blogWrite")||"블로그 글쓰기"},{ai:"product_shot",label:t("imageGen")||"이미지 생성"},{ai:"logo_gen",label:"로고 생성"},{ai:"shorts_make",label:"영상 제작"}].map(cc => (
+              {[{ai:"blog_naver_intro",label:t("blogWrite")||"블로그 글쓰기"},{ai:"ai",label:t("recommendKeyword")||"추천 키워드"},{ai:"programs",label:"자료실"},{ai:"shorts_make",label:"영상 제작"}].map(cc => (
                 <div key={cc.ai} onClick={() => navigateAi?.(cc.ai)} style={{ fontSize: 13, color: C.muted, padding: "7px 0", cursor: "pointer", transition: "color 0.12s" }}
                   onMouseEnter={e => e.currentTarget.style.color = C.purpleL}
                   onMouseLeave={e => e.currentTarget.style.color = C.muted}>
