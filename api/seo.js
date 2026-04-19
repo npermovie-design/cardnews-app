@@ -289,6 +289,10 @@ export default async function handler(req, res) {
       return handleCronSocial(req, res);
     case "cron-ai":
       return handleCronAI(req, res);
+    case "cron-keyword":
+      return handleCronKeyword(req, res);
+    case "cron-info":
+      return handleCronInfo(req, res);
     case "index-now":
       return handleIndexNow(req, res);
     case "bulk-index":
@@ -296,7 +300,7 @@ export default async function handler(req, res) {
     case "naver-verify":
       return handleNaverVerify(req, res);
     default:
-      return res.status(400).json({ error: "action 파라미터 필요: sitemap|rss|archive-auto-tag|cron-briefing|index-now|bulk-index|naver-verify" });
+      return res.status(400).json({ error: "action 파라미터 필요: sitemap|rss|archive-auto-tag|cron-briefing|cron-social|cron-ai|cron-keyword|cron-info|index-now|bulk-index|naver-verify" });
   }
 }
 
@@ -428,6 +432,80 @@ async function handleCronAI(req, res) {
 HEADLINE: [20개 중 가장 화제인 뉴스를 SEO 친화적 40자 이내 제목으로]`,
     titleFormat: (todayLabel, headline) => `[${todayLabel.replace(/\./g, "월 ").replace(/월 (\d+)$/, "월 $1일")} AI뉴스] ${headline} 외`,
     image: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&q=80",
+  });
+}
+
+// ── 매일 자동 키워드 추천 (posts 테이블 발행) ──
+async function handleCronKeyword(req, res) {
+  return handleCronPost(req, res, {
+    tag: "키워드",
+    idPrefix: "keyword",
+    prompt: (todayLabel, yesterday) => `[${todayLabel} 키워드 추천] 오늘 SNS/블로그 마케팅에 활용할 수 있는 트렌딩 키워드 15개를 추천해줘.
+
+각 키워드 항목 형식 (HTML):
+<div style="margin-bottom:24px;padding:18px 22px;border-radius:14px;background:rgba(124,106,255,0.03);border:1px solid rgba(124,106,255,0.08)">
+<h3 style="margin:0 0 10px;font-size:16px;font-weight:800;color:#1a1730">[번호]. [키워드]</h3>
+<p style="margin:0 0 8px;font-size:14px;line-height:1.85;color:#333">[이 키워드가 왜 지금 뜨는지 배경 설명 2~3줄. 검색량 추이, 관련 이슈, 계절성 등]</p>
+<p style="margin:0 0 6px;font-size:13px;color:#555">활용법: [블로그/인스타/유튜브 등에서 이 키워드를 어떻게 콘텐츠로 만들 수 있는지 구체적 팁 1~2줄]</p>
+<p style="margin:0;font-size:12px;color:#999">경쟁도: [높음/보통/낮음] | 추천 플랫폼: [네이버블로그/인스타그램/유튜브/틱톡 중 적합한 것]</p>
+</div>
+
+구성:
+- 시즌/계절 키워드 3개 (현재 시기에 맞는 것)
+- 실시간 트렌드 키워드 5개 (최근 이슈/뉴스 기반)
+- 롱테일 키워드 4개 (경쟁도 낮고 전환율 높은 것)
+- 에버그린 키워드 3개 (꾸준히 검색되는 것)
+
+이모지 사용 금지. 볼드(**) 사용 금지. 각 키워드는 실제 검색될 만한 구체적인 단어/구문으로 작성.
+
+마지막 줄:
+HEADLINE: [15개 중 가장 활용도 높은 키워드를 포함한 SEO 친화적 40자 이내 제목]`,
+    titleFormat: (todayLabel, headline) => `[${todayLabel.replace(/\./g, "월 ").replace(/월 (\d+)$/, "월 $1일")} 키워드 추천] ${headline}`,
+    image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=1200&q=80",
+  });
+}
+
+// ── 매일 자동 정보공유 (posts 테이블 발행) ──
+async function handleCronInfo(req, res) {
+  // 요일별 주제 로테이션
+  const dayOfWeek = new Date(Date.now() + 9 * 60 * 60 * 1000).getDay();
+  const topics = [
+    { theme: "SNS 알고리즘 공략법", focus: "인스타그램/틱톡/유튜브 알고리즘 최신 변화와 대응 전략" },
+    { theme: "콘텐츠 제작 노하우", focus: "릴스/숏폼/카드뉴스/블로그 등 콘텐츠 제작 실전 팁" },
+    { theme: "마케팅 성공 사례 분석", focus: "최근 화제된 브랜드/크리에이터의 SNS 마케팅 전략 분석" },
+    { theme: "SNS 트렌드 리포트", focus: "이번 주 SNS 플랫폼별 트렌드, 밈, 챌린지, 해시태그 분석" },
+    { theme: "수익화 전략 가이드", focus: "SNS/블로그 수익화, 협찬, 제휴마케팅, 쿠팡파트너스 등 실전 노하우" },
+    { theme: "브랜딩 & 퍼스널브랜딩", focus: "개인/기업 브랜딩 전략, 포지셔닝, 차별화 방법론" },
+    { theme: "AI 마케팅 활용법", focus: "ChatGPT/Claude/미드저니 등 AI 도구를 마케팅에 활용하는 실전 방법" },
+  ];
+  const topic = topics[dayOfWeek];
+
+  return handleCronPost(req, res, {
+    tag: "정보",
+    idPrefix: "info",
+    prompt: (todayLabel, yesterday) => `[${todayLabel} 정보공유] 오늘의 주제: "${topic.theme}"
+
+${topic.focus}에 대해 실무자가 바로 활용할 수 있는 깊이 있는 정보 글을 작성해줘.
+
+형식 (HTML):
+<div style="margin-bottom:20px;padding:18px 22px;border-radius:14px;background:rgba(124,106,255,0.03);border:1px solid rgba(124,106,255,0.08)">
+<h2 style="margin:0 0 16px;font-size:18px;font-weight:800;color:#1a1730">[소제목]</h2>
+<p style="margin:0 0 12px;font-size:14px;line-height:1.9;color:#333">[본문 내용]</p>
+</div>
+
+구성 요건:
+- 도입부: 왜 이 주제가 지금 중요한지 (2~3문장)
+- 본론: 핵심 내용 5~7개 섹션 (각 섹션에 소제목 + 구체적 설명 + 실전 적용법)
+- 실전 체크리스트: 오늘 바로 실행할 수 있는 액션 아이템 3~5개
+- 마무리: 핵심 요약 2~3문장
+
+총 분량: 2000~3000자. 이모지 사용 금지. 볼드(**) 사용 금지.
+구체적인 수치, 사례, 도구명을 포함해서 실용적으로 작성.
+
+마지막 줄:
+HEADLINE: [글의 핵심을 담은 SEO 친화적 40자 이내 제목]`,
+    titleFormat: (todayLabel, headline) => `[${todayLabel.replace(/\./g, "월 ").replace(/월 (\d+)$/, "월 $1일")} ${topic.theme}] ${headline}`,
+    image: "https://images.unsplash.com/photo-1432888622747-4eb9a8efeb07?w=1200&q=80",
   });
 }
 
