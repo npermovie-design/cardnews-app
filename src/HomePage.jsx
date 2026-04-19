@@ -285,8 +285,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           </h1>
           <p style={{ fontSize: "clamp(15px,2vw,20px)", color: C.muted, lineHeight: 1.8, maxWidth: 620, margin: "0 auto 20px" }}>
             {lang === "ko"
-              ? "주제만 입력하면 AI가 블로그, 상세페이지, 쇼츠 영상까지 3분 만에 완성합니다"
-              : "Just enter a topic — AI creates blogs, detail pages, and shorts videos in 3 minutes"}
+              ? "주제만 입력하면 AI가 블로그, 이미지, 쇼츠 영상까지 3분 만에 완성합니다"
+              : "Just enter a topic — AI creates blogs, images, and shorts videos in 3 minutes"}
           </p>
           <div style={{ display: "flex", gap: 20, justifyContent: "center", flexWrap: "wrap", marginBottom: 36 }}>
             {[
@@ -730,7 +730,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           </FadeIn>
           <div style={{ display: "grid", gap: 14 }}>
             {[
-              { before: lang === "ko" ? "상세페이지 1개 제작에 2시간, 디자이너 외주비 5만원+" : "2 hours per detail page, 50k KRW+ design outsourcing", after: lang === "ko" ? "AI가 3분 만에 완성, 소액 포인트 차감" : "AI completes in 3 min, small point cost" },
+              { before: lang === "ko" ? "제품 이미지 촬영에 반나절, 스튜디오 비용 10만원+" : "Half a day for product shots, 100k KRW+ studio cost", after: lang === "ko" ? "AI가 30초 만에 제품컷·로고·목업 완성" : "AI creates product shots, logos, mockups in 30 sec" },
               { before: lang === "ko" ? "블로그 글 하나에 반나절, SEO 키워드 별도 조사" : "Half a day per blog post, separate SEO research", after: lang === "ko" ? "SEO 최적화 블로그 글 5분 완성, 키워드 자동 반영" : "SEO-optimized blog in 5 min, auto keywords" },
               { before: lang === "ko" ? "인스타·블로그·스레드 각각 따로 작성" : "Write separately for Instagram, blog, Threads", after: lang === "ko" ? "한 번에 6개 플랫폼용 콘텐츠 동시 생성" : "Generate for 6 platforms at once" },
               { before: lang === "ko" ? "제품 사진 촬영 + 보정에 하루, 스튜디오 비용 별도" : "Full day for product photos + editing, studio costs", after: lang === "ko" ? "AI 제품컷 즉시 생성, 배경 자동 교체" : "AI product shots instantly, auto background swap" },

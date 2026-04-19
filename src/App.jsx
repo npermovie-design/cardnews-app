@@ -145,9 +145,9 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
         {/* 혜택 리스트 */}
         <div style={{ textAlign: "left", marginBottom: 24 }}>
           {[
-            { icon: "1", text: ko ? "AI 글쓰기 20P · 이미지 200P부터" : "AI writing from 20P · Images from 200P" },
+            { icon: "1", text: ko ? "AI 글쓰기 30P · 이미지 250P부터" : "AI writing from 30P · Images from 250P" },
             { icon: "2", text: ko ? "게시글 작성 시 +1P 자동 적립 (하루 10회)" : "Earn +1P per post (up to 10/day)" },
-            { icon: "3", text: ko ? "매일 로그인 +2P 적립" : "Daily login earns +2P" },
+            { icon: "3", text: ko ? "매일 로그인 +3P 적립" : "Daily login earns +3P" },
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
               <div style={{
@@ -470,7 +470,7 @@ export default function App() {
     // 페이지별 meta description (SEO 최적화)
     const descMap = {
       ko: {
-        home: "주제만 입력하면 AI가 블로그, 상세페이지, 쇼츠 영상을 자동으로 만들어드려요. 비회원 5회 무료!",
+        home: "주제만 입력하면 AI가 블로그, 이미지, 쇼츠 영상을 자동으로 만들어드려요. 비회원 5회 무료!",
         pricing: "SNS메이킷 요금제 안내. Basic $9.90/월, Pro $19.90/월, Premium $34.90/월. 연간 결제 시 2개월 무료. 일회 충전 $5.90부터.",
         about: "SNS메이킷은 AI로 SNS 콘텐츠 제작 전 과정을 자동화하는 올인원 플랫폼입니다.",
         howto: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 숏폼 편집까지 단계별로 안내합니다.",
@@ -1007,7 +1007,7 @@ export default function App() {
                         <div style={{ height: "100%", borderRadius: 4, width: Math.min(((user.points||0)/500)*100,100)+"%",
                           background: "linear-gradient(90deg,#7c6aff,#8b5cf6)" }} />
                       </div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 글쓰기 20P · 약 {Math.floor((user.points||0)/20)}회 가능</div>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 글쓰기 30P · 약 {Math.floor((user.points||0)/30)}회 가능</div>
                     </div>
                   </div>
                   {/* 메뉴 */}

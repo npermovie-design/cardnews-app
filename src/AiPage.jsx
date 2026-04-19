@@ -277,7 +277,7 @@ function OnboardingModal({ isDark, onClose, _s }) {
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const steps = [
-    { icon:"✍️", title:_s("AI 도구로 콘텐츠를 만들어보세요","Create content with AI tools"), desc:_s("블로그 글쓰기, 카드뉴스, 썸네일 등\nAI가 전문가 수준의 콘텐츠를 만들어줘요.","Blog writing, card news, thumbnails\nAI creates professional-level content.") },
+    { icon:"✍️", title:_s("AI 도구로 콘텐츠를 만들어보세요","Create content with AI tools"), desc:_s("블로그 글쓰기, AI 이미지, 쇼츠 영상 등\nAI가 전문가 수준의 콘텐츠를 만들어줘요.","Blog writing, AI images, shorts videos\nAI creates professional-level content.") },
     { icon:"🔥", title:_s("트렌드 키워드로 빠르게 시작","Start fast with trend keywords"), desc:_s("실시간 인기 키워드를 클릭하면\n바로 콘텐츠 작성이 시작돼요.","Click trending keywords to\ninstantly start creating content.") },
     { icon:"📅", title:_s("소셜 플래너로 일정 관리","Manage schedules with Social Planner"), desc:_s("콘텐츠 발행 일정을 캘린더에 등록하고\n체계적으로 SNS를 관리하세요.","Register publishing schedules\nand manage your SNS systematically.") },
     { icon:"🎉", title:_s("무료 5회 체험 가능!","5 free trials available!"), desc:_s("지금 바로 무료로 시작해보세요.\n회원가입 없이도 체험할 수 있어요!","Start for free right now.\nNo sign-up required to try!") },

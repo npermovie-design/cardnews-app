@@ -77,7 +77,7 @@ function LoginRightPanel({ accent }) {
         </h2>
 
         <p style={{ fontSize: 14, color: "rgba(255,255,255,0.55)", textAlign: "center", lineHeight: 1.7, marginBottom: 18 }}>
-          주제만 입력하면 AI가 블로그, 상세페이지, 쇼츠 영상까지 완성합니다
+          주제만 입력하면 AI가 블로그, 이미지, 쇼츠 영상까지 완성합니다
         </p>
 
         {/* 기능 태그 */}

@@ -6,37 +6,37 @@ export const config = {
 
 const SITE = "https://snsmakeit.com";
 const DEFAULT_OG = {
-  title: "SNS메이킷 - AI 카드뉴스·상세페이지·블로그 자동 생성",
-  desc: "주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 네이버·인스타·유튜브 콘텐츠까지 비회원 5회 무료!",
+  title: "SNS메이킷 - AI 블로그·이미지·쇼츠 영상 자동 생성",
+  desc: "주제만 입력하면 AI가 블로그 글, 이미지, 쇼츠 영상을 자동으로 만들어드려요. 네이버·인스타·유튜브 콘텐츠까지 비회원 5회 무료!",
   image: `${SITE}/og-image.png`,
 };
 
 // 페이지별 고유 SEO 메타
 const PAGE_META = {
   "/": {
-    title: "SNS메이킷 - AI 카드뉴스·상세페이지·블로그 자동 생성",
-    desc: "주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 네이버 블로그, 인스타그램, 유튜브 대본까지 비회원 5회 무료 체험!",
-    keywords: "카드뉴스 만들기, AI 카드뉴스, 상세페이지 제작, 블로그 자동 생성, SNS 콘텐츠",
+    title: "SNS메이킷 - AI 블로그·이미지·쇼츠 영상 자동 생성",
+    desc: "주제만 입력하면 AI가 네이버 블로그, 이미지, 쇼츠 영상을 자동으로 만들어드려요. 인스타그램, 유튜브 대본까지 비회원 5회 무료 체험!",
+    keywords: "AI 블로그 자동 생성, AI 이미지 생성, 쇼츠 영상 만들기, SNS 콘텐츠, AI 글쓰기",
   },
   "/about": {
     title: "SNS메이킷 소개 - AI 콘텐츠 자동화 플랫폼",
-    desc: "AI 기반 SNS 콘텐츠 자동 생성 서비스 SNS메이킷을 소개합니다. 블로그, 카드뉴스, 상세페이지를 원클릭으로 제작하세요.",
+    desc: "AI 기반 SNS 콘텐츠 자동 생성 서비스 SNS메이킷을 소개합니다. 블로그, 이미지, 쇼츠 영상을 원클릭으로 제작하세요.",
     keywords: "SNS메이킷 소개, AI 콘텐츠 플랫폼, 자동 콘텐츠 생성",
   },
   "/howto": {
     title: "SNS메이킷 이용방법 - 3단계로 콘텐츠 완성",
     desc: "SNS메이킷 사용법을 단계별로 안내합니다. 주제 입력 → AI 생성 → 다운로드, 3단계면 충분합니다.",
-    keywords: "SNS메이킷 사용법, AI 콘텐츠 만드는 방법, 카드뉴스 만드는 법",
+    keywords: "SNS메이킷 사용법, AI 콘텐츠 만드는 방법, AI 블로그 자동 생성",
   },
   "/pricing": {
     title: "SNS메이킷 가격정책 - 합리적인 AI 콘텐츠 요금제",
-    desc: "비회원 5회 무료 체험! 합리적인 가격으로 AI 카드뉴스, 블로그 글, 상세페이지를 무제한 생성하세요.",
-    keywords: "SNS메이킷 가격, AI 콘텐츠 요금, 카드뉴스 가격",
+    desc: "비회원 5회 무료 체험! 합리적인 가격으로 AI 블로그, 이미지, 쇼츠 영상을 무제한 생성하세요.",
+    keywords: "SNS메이킷 가격, AI 콘텐츠 요금, AI 블로그 가격, AI 이미지 요금",
   },
   "/ai": {
-    title: "SNS메이킷 AI 생성기 - 블로그·카드뉴스·이미지 자동 제작",
-    desc: "AI가 네이버 블로그, 인스타그램 캡션, 유튜브 대본, 카드뉴스, 상세페이지, 로고, 목업까지 자동으로 만들어드립니다.",
-    keywords: "AI 블로그 생성기, AI 카드뉴스, AI 이미지 생성, 네이버 블로그 자동, 인스타그램 캡션 생성",
+    title: "SNS메이킷 AI 생성기 - 블로그·이미지·영상 자동 제작",
+    desc: "AI가 네이버 블로그, 인스타그램 캡션, 유튜브 대본, 로고, 목업, 제품컷, 쇼츠 영상까지 자동으로 만들어드립니다.",
+    keywords: "AI 블로그 생성기, AI 이미지 생성, AI 쇼츠 영상, 네이버 블로그 자동, 인스타그램 캡션 생성",
   },
   "/contact": {
     title: "SNS메이킷 문의하기 - 고객지원",
@@ -51,7 +51,7 @@ const PAGE_META = {
   "/cases": {
     title: "SNS메이킷 고객사례 - AI 콘텐츠 성공 사례",
     desc: "SNS메이킷으로 만든 성공 사례를 확인하세요. 다양한 업종의 실제 활용 사례를 소개합니다.",
-    keywords: "SNS메이킷 사례, AI 콘텐츠 사례, 카드뉴스 사례",
+    keywords: "SNS메이킷 사례, AI 콘텐츠 사례, AI 블로그 사례",
   },
   "/community": {
     title: "SNS메이킷 커뮤니티 - 정보공유·질문답변·자료실",
@@ -308,7 +308,7 @@ export default async function middleware(request) {
     const pg = PAGE_META[path] || {};
     title = pg.title || DEFAULT_OG.title;
     desc = pg.desc || DEFAULT_OG.desc;
-    keywords = pg.keywords || "SNS메이킷, AI 콘텐츠, 카드뉴스";
+    keywords = pg.keywords || "SNS메이킷, AI 콘텐츠, AI 블로그";
   }
 
   image = image || DEFAULT_OG.image;
