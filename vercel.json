@@ -6,6 +6,9 @@
     "api/naverbot.js": {
       "maxDuration": 120
     },
+    "api/seo.js": {
+      "maxDuration": 120
+    },
     "api/**/*.js": {
       "maxDuration": 30
     }
