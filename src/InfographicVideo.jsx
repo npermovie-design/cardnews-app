@@ -886,33 +886,34 @@ function Scene08_Resources({ lang = "ko" }) {
           {T("s08_sub", lang)}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 28 }}>
           {resources.map((r, i) => {
             const s = spring({ frame: Math.max(0, frame - (0.8 + i * 0.25) * fps), fps, config: { damping: 12, stiffness: 80 } });
+            const floatY = Math.sin((frame + i * 25) * 0.05) * 3;
             return (
               <div key={i} style={{
                 transform: `scale(${s}) translateY(${(1 - s) * 20}px)`, opacity: s,
                 background: "rgba(255,255,255,0.025)", border: `1px solid ${r.color}25`,
-                borderRadius: 20, padding: "32px 20px", textAlign: "center",
+                borderRadius: 24, padding: "40px 24px", textAlign: "center",
               }}>
                 <div style={{
-                  width: 72, height: 72, borderRadius: 18, margin: "0 auto 16px",
+                  width: 80, height: 80, borderRadius: 20, margin: "0 auto 20px",
                   background: `${r.color}12`, border: `1px solid ${r.color}25`,
                   display: "flex", alignItems: "center", justifyContent: "center",
+                  transform: `translateY(${floatY}px)`,
                 }}>
                   <Icon type={r.icon} size={40} color={r.color} />
                 </div>
-                <div style={{ fontSize: 26, fontWeight: 800, color: K.white, marginBottom: 12, whiteSpace: "pre-line", lineHeight: 1.3 }}>{r.title}</div>
-                <div style={{ fontSize: 13, color: K.muted }}>{r.desc}</div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: K.white, marginBottom: 12, lineHeight: 1.3 }}>{r.title}</div>
+                <div style={{ fontSize: 16, color: K.muted, lineHeight: 1.5 }}>{r.desc}</div>
 
-                {/* 다운로드 버튼 모의 */}
                 <div style={{
-                  marginTop: 16, padding: "8px 16px", borderRadius: 10,
-                  background: `${r.color}15`, border: `1px solid ${r.color}25`,
-                  display: "inline-flex", alignItems: "center", gap: 6,
+                  marginTop: 20, padding: "10px 20px", borderRadius: 12,
+                  background: `${r.color}12`, border: `1px solid ${r.color}20`,
+                  display: "inline-flex", alignItems: "center", gap: 8,
                 }}>
-                  <Icon type="download" size={14} color={r.color} />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: r.color }}>{T("s08_dl", lang)}</span>
+                  <Icon type="download" size={16} color={r.color} />
+                  <span style={{ fontSize: 14, fontWeight: 700, color: r.color }}>{T("s08_dl", lang)}</span>
                 </div>
               </div>
             );
