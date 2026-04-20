@@ -302,6 +302,21 @@ export default function App() {
 
   const toggleTheme = () => {};
 
+  // 방문자 추적 (페이지 로드 시 1회, 프로덕션만)
+  useEffect(() => {
+    if (window.location.hostname === "localhost") return;
+    try {
+      const key = "nper_visit_" + new Date().toISOString().slice(0, 13);
+      if (!sessionStorage.getItem(key)) {
+        fetch("/api/track?action=log", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ page: window.location.pathname, referrer: document.referrer }),
+        }).catch(() => {});
+        sessionStorage.setItem(key, "1");
+      }
+    } catch {}
+  }, []);
+
   // 포인트 소진 이벤트 수신
   useEffect(() => {
     const handler = () => setShowPointsModal(true);

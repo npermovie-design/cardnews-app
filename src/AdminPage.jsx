@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { getPosts, getMembers, saveMembers, supabase, changePoints, getPostsFromDB, deletePostFromDB } from "./storage";
 import { Btn, Inp } from "./UI";
 
@@ -402,30 +402,66 @@ export default function AdminPage({ C, user: adminUser }) {
   const usage = getAllUsage();
 
   return (
-    <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 24px 80px", fontFamily: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif" }}>
+    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif" }}>
       {/* 토스트 */}
       {toast && (
         <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: "#22c55e", color: "#fff", padding: "12px 20px", borderRadius: 12, fontSize: 14, fontWeight: 700, boxShadow: "0 4px 20px rgba(0,0,0,0.2)", animation: "fadein 0.2s" }}>
-          ✅ {toast}
+          {toast}
         </div>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
-        <h2 style={{ color: C.text, fontSize: 22, fontWeight: 900, margin: 0 }}>⚙️ 관리자 페이지</h2>
-        <span style={{ fontSize: 12, color: C.muted, background: isDark ? "rgba(255,255,255,0.06)" : "#f3f4f6", padding: "4px 12px", borderRadius: 20 }}>회원 {loadingMembers ? "로딩중..." : members.length + "명"} · 게시글 {posts.length}개</span>
-      </div>
+      {/* ── 사이드바 ── */}
+      <aside style={{
+        width: 220, flexShrink: 0, padding: "20px 12px",
+        background: isDark ? "rgba(0,0,0,0.4)" : "#f8f8fc",
+        borderRight: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "#e5e5f0"}`,
+        overflowY: "auto", position: "sticky", top: 0, height: "100vh",
+      }}>
+        {/* 로고 */}
+        <div style={{ padding: "8px 10px 20px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "#e5e5f0"}`, marginBottom: 16 }}>
+          <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>SNS메이킷</div>
+          <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>관리자</div>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 8, background: isDark ? "rgba(255,255,255,0.06)" : "#eee", padding: "4px 10px", borderRadius: 8, textAlign: "center" }}>
+            회원 {loadingMembers ? "..." : members.length}명 · 글 {posts.length}개
+          </div>
+        </div>
 
-      {/* 탭 */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 24, background: isDark ? "rgba(255,255,255,0.05)" : "#f3f4f6", borderRadius: 12, padding: 4 }}>
-        {[["stats","통계"], ["members","회원 관리"], ["pointHistory","포인트 내역"], ["guest","비회원 관리"], ["posts","게시글 관리"], ["board","게시판 관리"], ["inquiries","문의 관리"], ["appFeedback","앱 피드백"], ["appChat","잡담방"]].map(([t,l]) => (
-          <button key={t} onClick={() => setTab(t)} style={{
-            padding: "10px 14px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
-            background: tab === t ? C.card : "transparent",
-            color: tab === t ? C.purpleL : C.muted,
-            boxShadow: tab === t ? "0 1px 4px rgba(0,0,0,0.1)" : "none", transition: "all 0.15s",
-          }}>{l}</button>
+        {/* 메뉴 그룹 */}
+        {[
+          { group: "대시보드", items: [["stats", "통계"], ["visitors", "접속 분석"]] },
+          { group: "회원", items: [["members", "회원 관리"], ["pointHistory", "포인트 내역"], ["guest", "비회원 관리"]] },
+          { group: "콘텐츠", items: [["posts", "게시글 관리"], ["board", "게시판 관리"]] },
+          { group: "고객", items: [["inquiries", "문의 관리"], ["appFeedback", "앱 피드백"], ["appChat", "잡담방"]] },
+        ].map(({ group, items }) => (
+          <div key={group} style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", padding: "0 10px", marginBottom: 6, letterSpacing: 1 }}>{group}</div>
+            {items.map(([id, label]) => {
+              const active = tab === id;
+              return (
+                <button key={id} onClick={() => setTab(id)} style={{
+                  width: "100%", padding: "9px 12px", borderRadius: 8, border: "none", cursor: "pointer",
+                  textAlign: "left", fontSize: 13, fontWeight: active ? 700 : 500, fontFamily: "inherit",
+                  background: active ? (isDark ? "rgba(99,102,241,0.25)" : "rgba(99,102,241,0.1)") : "transparent",
+                  color: active ? C.purpleL : (isDark ? "rgba(255,255,255,0.55)" : "#666"),
+                  borderLeft: active ? "3px solid #7c6aff" : "3px solid transparent",
+                  marginBottom: 2, transition: "all 0.12s", display: "block",
+                }}>
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         ))}
-      </div>
+      </aside>
+
+      {/* ── 메인 콘텐츠 ── */}
+      <main style={{ flex: 1, padding: "32px 28px 80px", overflowY: "auto", background: isDark ? "transparent" : "#fff" }}>
+        {/* 상단 타이틀 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
+          <h2 style={{ color: C.text, fontSize: 20, fontWeight: 900, margin: 0 }}>
+            {{stats:"통계 대시보드", visitors:"접속 분석", members:"회원 관리", pointHistory:"포인트 내역", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백", appChat:"잡담방"}[tab] || tab}
+          </h2>
+        </div>
 
       {/* ─────────────── 통계 대시보드 ─────────────── */}
       {tab === "stats" && (() => {
@@ -950,13 +986,11 @@ export default function AdminPage({ C, user: adminUser }) {
             {boardLoading && <div style={{ color:C.muted, fontSize:13 }}>불러오는 중...</div>}
             {boardCats.map(cat => (
               <div key={cat.id} onClick={()=>handleSelectBoardCat(cat)}
-                style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`2px solid ${selBoardCat?.id===cat.id?cat.color:bdr}`, background:selBoardCat?.id===cat.id?cat.color+"15":"transparent", cursor:"pointer", marginBottom:8, transition:"all 0.15s" }}>
-                <span style={{ fontSize:20 }}>{cat.icon}</span>
+                style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`2px solid ${selBoardCat?.id===cat.id?"#7c6aff":bdr}`, background:selBoardCat?.id===cat.id?"rgba(124,106,255,0.08)":"transparent", cursor:"pointer", marginBottom:8, transition:"all 0.15s" }}>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{cat.label}</div>
                   <div style={{ fontSize:11, color:C.muted }}>ID: {cat.id}</div>
                 </div>
-                <div style={{ width:14, height:14, borderRadius:"50%", background:cat.color, flexShrink:0 }}/>
               </div>
             ))}
           </div>
@@ -965,17 +999,13 @@ export default function AdminPage({ C, user: adminUser }) {
           <div style={{ flex:"1 1 320px", background:C.card, border:"1px solid "+bdr, borderRadius:16, padding:"20px" }}>
             {!selBoardCat ? (
               <div style={{ textAlign:"center", padding:"40px 0", color:C.muted }}>
-                <div style={{ fontSize:32, marginBottom:8 }}>👈</div>
                 <div style={{ fontSize:14 }}>왼쪽에서 카테고리를 선택하세요</div>
               </div>
             ) : (
               <>
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
-                  <span style={{ fontSize:22 }}>{selBoardCat.icon}</span>
-                  <div>
-                    <div style={{ fontSize:15, fontWeight:900, color:C.text }}>{selBoardCat.label}</div>
-                    <div style={{ fontSize:11, color:C.muted }}>서브 카테고리 {boardTags.length}개</div>
-                  </div>
+                <div style={{ marginBottom:16 }}>
+                  <div style={{ fontSize:15, fontWeight:900, color:C.text }}>{selBoardCat.label}</div>
+                  <div style={{ fontSize:11, color:C.muted }}>서브 카테고리 {boardTags.length}개</div>
                 </div>
 
                 {/* 기존 태그 목록 */}
@@ -986,9 +1016,8 @@ export default function AdminPage({ C, user: adminUser }) {
                 ) : (
                   <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:16 }}>
                     {boardTags.map(tag => (
-                      <div key={tag.id} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:20, background:tag.color+"20", border:`1px solid ${tag.color}50` }}>
-                        <div style={{ width:8, height:8, borderRadius:"50%", background:tag.color }}/>
-                        <span style={{ fontSize:13, fontWeight:600, color:isDark?C.text:"#333" }}>{tag.label}</span>
+                      <div key={tag.id} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:20, background:isDark?"rgba(255,255,255,0.06)":"#f3f4f6", border:`1px solid ${bdr}` }}>
+                        <span style={{ fontSize:13, fontWeight:600, color:C.text }}>{tag.label}</span>
                         <button onClick={()=>handleDeleteTag(tag.id)} style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(239,68,68,0.7)", fontSize:14, lineHeight:1, padding:"0 2px" }}>×</button>
                       </div>
                     ))}
@@ -1003,18 +1032,7 @@ export default function AdminPage({ C, user: adminUser }) {
                       onKeyDown={e=>{ if(e.key==="Enter") handleAddTag(); }}
                       placeholder="예: AI, 마케팅, 디자인..."
                       style={{ flex:1, padding:"9px 12px", borderRadius:9, border:"1px solid "+bdr, background:inputBg, color:C.text, fontSize:13, outline:"none" }}/>
-                    <input type="color" value={newTagColor} onChange={e=>setNewTagColor(e.target.value)}
-                      style={{ width:36, height:36, borderRadius:8, border:"1px solid "+bdr, cursor:"pointer", padding:2 }}/>
                   </div>
-                  {newTagLabel.trim() && (
-                    <div style={{ marginBottom:10 }}>
-                      <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>미리보기</div>
-                      <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"5px 12px", borderRadius:20, background:newTagColor+"20", border:`1px solid ${newTagColor}50` }}>
-                        <div style={{ width:8,height:8,borderRadius:"50%",background:newTagColor }}/>
-                        <span style={{ fontSize:13,fontWeight:600,color:isDark?C.text:"#333" }}>{newTagLabel}</span>
-                      </div>
-                    </div>
-                  )}
                   <button onClick={handleAddTag} disabled={!newTagLabel.trim()}
                     style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", cursor:newTagLabel.trim()?"pointer":"not-allowed", background:newTagLabel.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":"rgba(99,102,241,0.3)", color:"#fff", fontSize:13, fontWeight:800, opacity:newTagLabel.trim()?1:0.6 }}>
                     + 서브 카테고리 추가
@@ -1185,6 +1203,20 @@ export default function AdminPage({ C, user: adminUser }) {
       })()}
 
       {tab === "inquiries" && <InquiryManager C={C} isDark={isDark} />}
+    {/* 나머지 탭들은 pointHistory 등 아래에서 계속... → 1340줄 부근 */}
+
+      {/* ── 포인트 내역 ── */}
+      {tab === "pointHistory" && <PointHistoryTab C={C} isDark={isDark} members={members} />}
+
+      {/* ── 앱 피드백 ── */}
+      {tab === "appFeedback" && <AppFeedbackTab C={C} isDark={isDark} />}
+
+      {/* ── 잡담방 ── */}
+      {tab === "appChat" && <AppChatTab C={C} isDark={isDark} />}
+
+      {/* ── 접속 분석 ── */}
+      {tab === "visitors" && <VisitorAnalyticsTab C={C} isDark={isDark} />}
+      </main>
     </div>
   );
 }
@@ -1303,19 +1335,11 @@ function InquiryManager({ C, isDark }) {
           })}
         </div>
       )}
-
-      {/* ── 앱 피드백 ── */}
-      {tab === "pointHistory" && <PointHistoryTab C={C} isDark={isDark} />}
-
-      {tab === "appFeedback" && <AppFeedbackTab C={C} isDark={isDark} />}
-
-      {/* ── 잡담방 ── */}
-      {tab === "appChat" && <AppChatTab C={C} isDark={isDark} />}
     </div>
   );
 }
 
-function PointHistoryTab({ C, isDark }) {
+function PointHistoryTab({ C, isDark, members = [] }) {
   const [history, setHistory] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [filterUid, setFilterUid] = React.useState("");
@@ -1331,13 +1355,18 @@ function PointHistoryTab({ C, isDark }) {
     })();
   }, []);
 
-  const filtered = filterUid ? history.filter(h => h.uid?.includes(filterUid) || h.reason?.includes(filterUid)) : history;
+  const getName = (uid) => {
+    const m = members.find(u => u.uid === uid);
+    if (m) return m.nick || m.email?.split("@")[0] || "?";
+    return uid?.slice(0, 8) + "...";
+  };
+  const filtered = filterUid ? history.filter(h => getName(h.uid).toLowerCase().includes(filterUid.toLowerCase()) || h.reason?.toLowerCase().includes(filterUid.toLowerCase())) : history;
 
   return (
     <div>
       <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
         <div style={{ fontSize:15, fontWeight:800, color:C.text }}>포인트 사용 내역 ({filtered.length}건)</div>
-        <input value={filterUid} onChange={e => setFilterUid(e.target.value)} placeholder="UID 또는 사유 검색"
+        <input value={filterUid} onChange={e => setFilterUid(e.target.value)} placeholder="닉네임 또는 사유 검색"
           style={{ padding:"8px 12px", borderRadius:8, border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:"transparent", color:C.text, fontSize:12, outline:"none", width:200 }} />
       </div>
       {loading && <div style={{ color:C.muted }}>로딩 중...</div>}
@@ -1346,7 +1375,7 @@ function PointHistoryTab({ C, isDark }) {
           <thead>
             <tr style={{ borderBottom:`2px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}` }}>
               <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:700 }}>날짜</th>
-              <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:700 }}>UID</th>
+              <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:700 }}>회원</th>
               <th style={{ padding:"8px 10px", textAlign:"right", color:C.muted, fontWeight:700 }}>변동</th>
               <th style={{ padding:"8px 10px", textAlign:"right", color:C.muted, fontWeight:700 }}>잔액</th>
               <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:700 }}>사유</th>
@@ -1356,7 +1385,7 @@ function PointHistoryTab({ C, isDark }) {
             {filtered.map((h, i) => (
               <tr key={i} style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.05)":"#f3f4f6"}` }}>
                 <td style={{ padding:"8px 10px", color:C.muted, whiteSpace:"nowrap" }}>{new Date(h.created_at).toLocaleString("ko-KR", {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</td>
-                <td style={{ padding:"8px 10px", color:C.text, fontSize:11, maxWidth:120, overflow:"hidden", textOverflow:"ellipsis" }}>{h.uid?.slice(0,12)}...</td>
+                <td style={{ padding:"8px 10px", color:C.text, fontSize:12, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis" }} title={h.uid}>{getName(h.uid)}</td>
                 <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, color: h.delta > 0 ? "#10b981" : h.delta < 0 ? "#ef4444" : C.muted }}>{h.delta > 0 ? "+" : ""}{h.delta}</td>
                 <td style={{ padding:"8px 10px", textAlign:"right", color:C.text, fontWeight:600 }}>{(h.balance||0).toLocaleString()}</td>
                 <td style={{ padding:"8px 10px", color:C.muted, maxWidth:200, overflow:"hidden", textOverflow:"ellipsis" }}>{h.reason}</td>
@@ -1454,6 +1483,223 @@ function AppChatTab({ C, isDark }) {
           <button onClick={() => deleteMsg(m.id)} style={{ padding:"4px 10px", borderRadius:6, border:"1px solid #ef4444", background:"transparent", color:"#ef4444", fontSize:11, cursor:"pointer", flexShrink:0 }}>삭제</button>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ── 접속 분석 탭 ──
+const COUNTRY_NAMES = {KR:"한국",US:"미국",JP:"일본",CN:"중국",TW:"대만",HK:"홍콩",VN:"베트남",TH:"태국",SG:"싱가포르",IN:"인도",DE:"독일",FR:"프랑스",GB:"영국",CA:"캐나다",AU:"호주",BR:"브라질",RU:"러시아",ID:"인도네시아",MY:"말레이시아",PH:"필리핀",NL:"네덜란드",IT:"이탈리아",ES:"스페인",SE:"스웨덴",MX:"멕시코",AR:"아르헨티나",unknown:"미확인"};
+
+function VisitorMap({ geoPoints, isDark }) {
+  const mapRef = React.useRef(null);
+  const [ready, setReady] = React.useState(false);
+
+  React.useEffect(() => {
+    let map;
+    (async () => {
+      const L = (await import("leaflet")).default;
+      await import("leaflet/dist/leaflet.css");
+      if (!mapRef.current || mapRef.current._leaflet_id) return;
+      map = L.map(mapRef.current, { scrollWheelZoom: false, zoomControl: true, attributionControl: false }).setView([30, 20], 2);
+      L.tileLayer(isDark
+        ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+        : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+        { maxZoom: 10 }
+      ).addTo(map);
+      const maxCnt = Math.max(...geoPoints.map(p => p.count), 1);
+      geoPoints.forEach(p => {
+        const r = Math.max(6, Math.min(30, (p.count / maxCnt) * 30));
+        const color = p.country === "KR" ? "#10b981" : p.country === "US" ? "#3b82f6" : p.country === "JP" ? "#f59e0b" : "#7c6aff";
+        L.circleMarker([p.lat, p.lng], { radius: r, fillColor: color, color: "rgba(255,255,255,0.5)", weight: 1, fillOpacity: 0.7 })
+          .bindTooltip(`${p.city || "?"} (${COUNTRY_NAMES[p.country] || p.country}) — ${p.count}회`, { direction: "top" })
+          .addTo(map);
+      });
+      setReady(true);
+    })();
+    return () => { if (map) map.remove(); };
+  }, [geoPoints, isDark]);
+
+  return <div ref={mapRef} style={{ width: "100%", height: 350, borderRadius: 12, overflow: "hidden" }} />;
+}
+
+function VisitorAnalyticsTab({ C, isDark }) {
+  const [data, setData] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+  const [days, setDays] = React.useState(30);
+  const [dateFrom, setDateFrom] = React.useState("");
+  const [dateTo, setDateTo] = React.useState("");
+  const [sessionSec, setSessionSec] = React.useState(0);
+
+  // 세션 타이머
+  React.useEffect(() => {
+    const t = setInterval(() => setSessionSec(s => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const mm = String(Math.floor(sessionSec / 60)).padStart(2, "0");
+  const ss = String(sessionSec % 60).padStart(2, "0");
+
+  const load = async (d) => {
+    setLoading(true);
+    try {
+      const r = await fetch(`/api/track?action=stats&days=${d}`);
+      if (!r.ok) throw new Error("API error");
+      const j = await r.json();
+      if (j.error) throw new Error(j.error);
+      setData(j);
+    } catch { setData(null); }
+    setLoading(false);
+  };
+  React.useEffect(() => { load(days); }, [days]);
+
+  const loadCustomRange = async () => {
+    if (!dateFrom || !dateTo) return;
+    const diffMs = new Date(dateTo) - new Date(dateFrom);
+    const diffDays = Math.max(1, Math.ceil(diffMs / 86400000));
+    setDays(diffDays);
+  };
+
+  const text = C.text;
+  const muted = C.muted;
+  const card = C.card;
+  const bdr = isDark ? "rgba(255,255,255,0.06)" : "#f0f0f0";
+  const inputSt = { padding: "6px 10px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, outline: "none", fontFamily: "inherit" };
+
+  if (loading) return <div style={{ padding: 40, textAlign: "center", color: muted }}>로딩 중...</div>;
+  if (!data) return <div style={{ padding: 40, textAlign: "center", color: muted }}>데이터를 불러올 수 없습니다. 배포 후 사용 가능합니다.</div>;
+
+  const sortedCountries = Object.entries(data.countryCounts || {}).sort((a, b) => b[1] - a[1]);
+  const sortedCities = Object.entries(data.cityCounts || {}).sort((a, b) => b[1] - a[1]).slice(0, 15);
+  const dailyEntries = Object.entries(data.dailyCounts || {}).sort((a, b) => a[0].localeCompare(b[0]));
+  const maxDaily = Math.max(...dailyEntries.map(e => e[1]), 1);
+
+  return (
+    <div>
+      {/* 기간 선택 + 세션 타이머 */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 24, alignItems: "center", flexWrap: "wrap" }}>
+        {[7, 30, 90].map(d => (
+          <button key={d} onClick={() => setDays(d)} style={{
+            padding: "7px 16px", borderRadius: 8, border: days === d ? "2px solid #7c6aff" : `1px solid ${bdr}`,
+            background: days === d ? (isDark ? "rgba(99,102,241,0.2)" : "rgba(99,102,241,0.08)") : "transparent",
+            color: days === d ? "#7c6aff" : muted, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+          }}>{d}일</button>
+        ))}
+        <div style={{ display: "flex", gap: 4, alignItems: "center", marginLeft: 8 }}>
+          <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={inputSt} />
+          <span style={{ color: muted, fontSize: 12 }}>~</span>
+          <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={inputSt} />
+          <button onClick={loadCustomRange} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "#7c6aff", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>조회</button>
+        </div>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 11, color: muted, background: isDark ? "rgba(255,255,255,0.06)" : "#f3f4f6", padding: "4px 12px", borderRadius: 8 }}>세션 {mm}:{ss}</span>
+          <button onClick={() => load(days)} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>새로고침</button>
+        </div>
+      </div>
+
+      {/* 통계 카드 */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
+        {[
+          ["국가 수", data.countries, `${data.days}일 고유 국가`],
+          ["도시 수", data.cities, "도시 식별 기준"],
+          ["방문 수", data.totalVisits, `${data.days}일 고유 방문`],
+          ["페이지뷰", Object.values(data.dailyCounts || {}).reduce((s, v) => s + v, 0), `${data.days}일 전체 조회`],
+        ].map(([label, val, desc], i) => (
+          <div key={i} style={{ padding: "18px 20px", borderRadius: 14, background: card, border: `1px solid ${bdr}` }}>
+            <div style={{ fontSize: 12, color: "#7c6aff", fontWeight: 600, marginBottom: 6 }}>{label}</div>
+            <div style={{ fontSize: 28, fontWeight: 900, color: text }}>{val?.toLocaleString?.() || val || 0}</div>
+            <div style={{ fontSize: 11, color: muted, marginTop: 4 }}>{desc}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 세계 지도 */}
+      {(data.geoPoints || []).length > 0 && (
+        <div style={{ marginBottom: 28, padding: "20px", borderRadius: 14, background: card, border: `1px solid ${bdr}` }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 4 }}>세계 지도 분포</div>
+          <div style={{ fontSize: 12, color: muted, marginBottom: 12 }}>원형 크기는 해당 국가의 방문 수를 나타냅니다.</div>
+          <VisitorMap geoPoints={data.geoPoints} isDark={isDark} />
+        </div>
+      )}
+
+      {/* 일별 방문 추이 차트 */}
+      {dailyEntries.length > 0 && (
+        <div style={{ marginBottom: 28, padding: "20px", borderRadius: 14, background: card, border: `1px solid ${bdr}` }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 16 }}>일별 방문 추이</div>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: 120 }}>
+            {dailyEntries.map(([date, cnt]) => (
+              <div key={date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                <div style={{ fontSize: 9, color: muted }}>{cnt}</div>
+                <div style={{ width: "100%", maxWidth: 24, height: Math.max(4, (cnt / maxDaily) * 100), borderRadius: 4, background: "linear-gradient(180deg, #7c6aff, #a78bfa)", transition: "height 0.3s" }} />
+                <div style={{ fontSize: 8, color: muted, transform: "rotate(-45deg)", transformOrigin: "center", whiteSpace: "nowrap" }}>{date.slice(5)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 국가별 / 도시별 */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 28 }}>
+        <div style={{ padding: "20px", borderRadius: 14, background: card, border: `1px solid ${bdr}` }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 14 }}>국가별 방문</div>
+          {sortedCountries.length === 0 && <div style={{ fontSize: 13, color: muted }}>데이터 없음</div>}
+          {sortedCountries.map(([code, cnt]) => {
+            const pct = Math.round(cnt / data.totalVisits * 100);
+            return (
+              <div key={code} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: text, minWidth: 80 }}>{COUNTRY_NAMES[code] || code}</span>
+                <div style={{ flex: 1, height: 6, borderRadius: 3, background: isDark ? "rgba(255,255,255,0.06)" : "#eee" }}>
+                  <div style={{ width: pct + "%", height: "100%", borderRadius: 3, background: "#7c6aff" }} />
+                </div>
+                <span style={{ fontSize: 12, color: muted, minWidth: 50, textAlign: "right" }}>{cnt} ({pct}%)</span>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ padding: "20px", borderRadius: 14, background: card, border: `1px solid ${bdr}` }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 14 }}>도시별 방문 TOP 15</div>
+          {sortedCities.length === 0 && <div style={{ fontSize: 13, color: muted }}>데이터 없음</div>}
+          {sortedCities.map(([key, cnt]) => {
+            const [city, country] = key.split("|");
+            return (
+              <div key={key} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13 }}>
+                <span style={{ color: text }}>{city === "unknown" ? "미확인" : city} <span style={{ color: muted, fontSize: 11 }}>({COUNTRY_NAMES[country] || country})</span></span>
+                <span style={{ color: muted, fontWeight: 600 }}>{cnt}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 리퍼러 / 디바이스 / 인기 페이지 */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+        <div style={{ padding: "20px", borderRadius: 14, background: card, border: `1px solid ${bdr}` }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 14 }}>유입 경로</div>
+          {(data.referrerCounts || []).length === 0 && <div style={{ fontSize: 13, color: muted }}>데이터 없음</div>}
+          {(data.referrerCounts || []).map(([ref, cnt]) => (
+            <div key={ref} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12 }}>
+              <span style={{ color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "70%" }}>{ref}</span>
+              <span style={{ color: muted, fontWeight: 600 }}>{cnt}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: "20px", borderRadius: 14, background: card, border: `1px solid ${bdr}` }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 14 }}>디바이스</div>
+          {Object.entries(data.deviceCounts || {}).map(([device, cnt]) => (
+            <div key={device} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", fontSize: 13 }}>
+              <span style={{ color: text, fontWeight: 600 }}>{device === "mobile" ? "모바일" : "데스크톱"}</span>
+              <span style={{ color: muted }}>{cnt} ({Math.round(cnt / data.totalVisits * 100)}%)</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ padding: "20px", borderRadius: 14, background: card, border: `1px solid ${bdr}` }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 14 }}>인기 페이지</div>
+          {(data.pageCounts || []).map(([page, cnt]) => (
+            <div key={page} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 12 }}>
+              <span style={{ color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "70%" }}>{page}</span>
+              <span style={{ color: muted, fontWeight: 600 }}>{cnt}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

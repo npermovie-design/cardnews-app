@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useI18n } from "./i18n.jsx";
 import { supabase } from "./storage";
+import { getConsultingSaves, CONSULTING_SAVES_KEY } from "./SnsConsulting";
 
 // 기획 저장 헬퍼 (LibraryPage에서 사용)
 const PLAN_SAVES_KEY = "nper_plans_v1";
@@ -63,9 +64,11 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
   const [simpleDetailList, setSimpleDetailList] = useState(getSimpleDetailSaves);
   const [pptList, setPptList] = useState(getPptSaves);
   const [docList, setDocList] = useState(getPlanSaves);
+  const [consultList, setConsultList] = useState(getConsultingSaves);
   const [search, setSearch] = useState("");
   const [selectedBlog, setSelectedBlog] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
+  const [selectedConsult, setSelectedConsult] = useState(null);
 
   const text  = homeText;
   const muted = homeMuted;
@@ -80,7 +83,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
   const filteredCard = cardList.filter(x =>
     !search || (x.topic||"").toLowerCase().includes(search.toLowerCase())
   );
-  const total = blogList.length + cardList.length + detailList.length + imgCardList.length + simpleDetailList.length + pptList.length + docList.length;
+  const total = blogList.length + cardList.length + detailList.length + imgCardList.length + simpleDetailList.length + pptList.length + docList.length + consultList.length;
 
   const typeLabel = {
     blog_naver:"네이버", blog_tistory:"티스토리", blog_insta:"인스타",
@@ -113,8 +116,9 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
         {[
           ["blog","글 생성", blogList.filter(x=>x.type!=="shorts").length],
           ["shorts","영상 편집", blogList.filter(x=>x.type==="shorts").length],
+          ["consulting","SNS 길잡이", consultList.length],
         ].map(([id, label, cnt]) => (
-          <button key={id} onClick={()=>{ setTab(id); setSelectedBlog(null); setSelectedDoc(null); }}
+          <button key={id} onClick={()=>{ setTab(id); setSelectedBlog(null); setSelectedDoc(null); setSelectedConsult(null); }}
             style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
               background: tab===id ? (isDark?"rgba(99,102,241,0.5)":"#fff") : "transparent",
               color: tab===id ? (isDark?"#fff":accent) : muted,
@@ -613,6 +617,76 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
       )}
       {/* 공유 템플릿 탭 */}
       {tab === "shared" && <SharedTemplatesTab isDark={isDark} text={text} muted={muted} bdr={bdr} bg={bg} accent={accent} setAiMenu={setAiMenu} />}
+
+      {/* SNS 길잡이 탭 */}
+      {tab === "consulting" && (() => {
+        if (selectedConsult) {
+          return (
+            <div>
+              <button onClick={() => setSelectedConsult(null)} style={{ padding:"6px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:12, fontWeight:600, cursor:"pointer", marginBottom:16, fontFamily:"inherit" }}>
+                ← 목록으로
+              </button>
+              <div style={{ background:bg, border:`1px solid ${bdr}`, borderRadius:16, padding:"24px 20px" }}>
+                <div style={{ fontSize:18, fontWeight:800, color:text, marginBottom:8 }}>{selectedConsult.title}</div>
+                <div style={{ fontSize:12, color:muted, marginBottom:4 }}>{selectedConsult.date} · {selectedConsult.sns}</div>
+                <div style={{ fontSize:12, color:muted, marginBottom:16 }}>MBTI: {selectedConsult.mbti || "-"} · 직업: {selectedConsult.job || "-"}</div>
+                <hr style={{ border:"none", borderTop:`1px solid ${bdr}`, margin:"12px 0 16px" }} />
+                <div style={{ fontSize:14, lineHeight:2, color:text, whiteSpace:"pre-wrap", wordBreak:"break-word" }}>{selectedConsult.content}</div>
+                <div style={{ display:"flex", gap:8, marginTop:20 }}>
+                  <button onClick={() => {
+                    navigator.clipboard.writeText(selectedConsult.content);
+                  }} style={{ padding:"8px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                    복사
+                  </button>
+                  <button onClick={() => {
+                    const printWin = window.open("", "_blank", "width=800,height=600");
+                    printWin.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${selectedConsult.title}</title>
+                      <style>body{font-family:-apple-system,sans-serif;max-width:700px;margin:40px auto;padding:0 20px;color:#1a1a2e;line-height:2;font-size:15px}
+                      h1{font-size:20px}p.meta{font-size:13px;color:#888;margin-bottom:20px}@media print{body{margin:20px auto}}</style></head>
+                      <body><h1>${selectedConsult.title}</h1><p class="meta">${selectedConsult.date} · ${selectedConsult.sns} · MBTI: ${selectedConsult.mbti||"-"}</p>
+                      <div style="white-space:pre-wrap">${selectedConsult.content}</div></body></html>`);
+                    printWin.document.close();
+                    setTimeout(() => printWin.print(), 300);
+                  }} style={{ padding:"8px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                    인쇄 / PDF
+                  </button>
+                  <button onClick={() => {
+                    const list = getConsultingSaves().filter(x => x.id !== selectedConsult.id);
+                    try { localStorage.setItem(CONSULTING_SAVES_KEY, JSON.stringify(list)); } catch {}
+                    setConsultList(list);
+                    setSelectedConsult(null);
+                  }} style={{ padding:"8px 14px", borderRadius:8, border:"1px solid #ef4444", background:"transparent", color:"#ef4444", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", marginLeft:"auto" }}>
+                    삭제
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+        const filtered = consultList.filter(x => !search || x.title.toLowerCase().includes(search.toLowerCase()) || (x.sns||"").includes(search));
+        if (!filtered.length) return <div style={{ textAlign:"center", padding:"60px 0", color:muted, fontSize:14 }}>저장된 SNS 길잡이 결과가 없습니다</div>;
+        return (
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {filtered.map(item => (
+              <div key={item.id} onClick={() => setSelectedConsult(item)} style={{
+                padding:"16px 18px", borderRadius:14, border:`1px solid ${bdr}`,
+                background:bg, cursor:"pointer", transition:"border-color 0.15s",
+              }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = accent}
+                onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                  <span style={{ fontSize:14, fontWeight:700, color:text }}>{item.title}</span>
+                  <span style={{ fontSize:11, color:muted }}>{item.date}</span>
+                </div>
+                <div style={{ fontSize:12, color:muted }}>{item.sns} · MBTI: {item.mbti || "-"} · {item.job || "-"}</div>
+                <div style={{ fontSize:12, color:muted, marginTop:6, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {item.content?.slice(0, 100)}...
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
 
       </div>{/* maxWidth:800 */}
       {renderFooter && renderFooter()}
