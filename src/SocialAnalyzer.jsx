@@ -422,7 +422,10 @@ export default function SocialAnalyzer({ isDark, user }) {
 - 인스타그램 해당 분야의 성공 공식, 트렌드, 콘텐츠 전략을 상세히 제시
 - "데이터 부족" 같은 변명 없이 전문가 관점에서 최대한 분석` : "";
 
-    return `SNS 전문 분석가로서 이 ${c.plat?.label} 계정을 분석하세요.
+    const today = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+    return `오늘 날짜는 ${today}입니다. 반드시 ${new Date().getFullYear()}년 기준으로 분석하세요. 2024년이 아닙니다.
+
+SNS 전문 분석가로서 이 ${c.plat?.label} 계정을 분석하세요.
 [핵심] 채널명/URL이 아닌, 영상 제목이나 크롤링 텍스트 등 실제 콘텐츠 기반으로 판단하세요.
 ${instaExtra}
 
