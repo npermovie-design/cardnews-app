@@ -116,7 +116,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
         {[
           ["blog","글 생성", blogList.filter(x=>x.type!=="shorts").length],
           ["shorts","영상 편집", blogList.filter(x=>x.type==="shorts").length],
-          ["consulting","SNS 길잡이", consultList.length],
+          ["consulting","SNS 사주팔자", consultList.length],
         ].map(([id, label, cnt]) => (
           <button key={id} onClick={()=>{ setTab(id); setSelectedBlog(null); setSelectedDoc(null); setSelectedConsult(null); }}
             style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
@@ -618,7 +618,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
       {/* 공유 템플릿 탭 */}
       {tab === "shared" && <SharedTemplatesTab isDark={isDark} text={text} muted={muted} bdr={bdr} bg={bg} accent={accent} setAiMenu={setAiMenu} />}
 
-      {/* SNS 길잡이 탭 */}
+      {/* SNS 사주팔자 탭 */}
       {tab === "consulting" && (() => {
         if (selectedConsult) {
           return (
@@ -664,7 +664,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
           );
         }
         const filtered = consultList.filter(x => !search || x.title.toLowerCase().includes(search.toLowerCase()) || (x.sns||"").includes(search));
-        if (!filtered.length) return <div style={{ textAlign:"center", padding:"60px 0", color:muted, fontSize:14 }}>저장된 SNS 길잡이 결과가 없습니다</div>;
+        if (!filtered.length) return <div style={{ textAlign:"center", padding:"60px 0", color:muted, fontSize:14 }}>저장된 SNS 사주팔자 결과가 없습니다</div>;
         return (
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             {filtered.map(item => (

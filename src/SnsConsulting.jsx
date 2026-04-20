@@ -1,4 +1,4 @@
-// SNS 길잡이 — 상담형 챗봇 (사용자 성향 분석 → SNS 전략 추천)
+// SNS 사주팔자 — 상담형 챗봇 (사용자 성향 분석 → SNS 전략 추천)
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { callAIStream } from "./aiClient";
 
@@ -85,7 +85,7 @@ export default function SnsConsulting({ isDark, user }) {
     const id = `consulting_${Date.now()}`;
     const snsLabels = snsList.map(sid => SNS_OPTIONS.find(s => s.id === sid)?.label || sid).join(", ");
     saveConsultingWork({
-      id, title: `${name}님의 SNS 길잡이`,
+      id, title: `${name}님의 SNS 사주팔자`,
       content: finalText,
       profile: buildProfile(),
       name, gender, job: job === "기타" ? jobCustom : job,
@@ -119,7 +119,11 @@ MBTI: ${mbti || "미입력"}
 추가 정보: ${extra || "없음"}`;
   };
 
+  const todayStr = new Date().toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" });
+  const currentYear = new Date().getFullYear();
   const systemPrompt = `당신은 사주명리학과 성격 분석을 기반으로 SNS 콘텐츠 방향을 잡아주는 전문 상담가입니다.
+
+중요: 오늘 날짜는 ${todayStr}이며, 현재 연도는 ${currentYear}년입니다. 올해는 ${currentYear}년 을사년(乙巳年)입니다. 절대로 2024년이나 갑진년으로 분석하지 마세요. 반드시 ${currentYear}년 기준으로 운세와 콘텐츠 전략을 분석하세요.
 
 응답 구조 (3파트):
 
@@ -252,7 +256,7 @@ MBTI: ${mbti || "미입력"}
                 <path d="M8 10h.01M12 10h.01M16 10h.01" strokeWidth="2"/>
               </svg>
             </div>
-            <div style={{ fontSize: 24, fontWeight: 900, color: text, marginBottom: 6 }}>SNS 길잡이</div>
+            <div style={{ fontSize: 24, fontWeight: 900, color: text, marginBottom: 6 }}>SNS 사주팔자</div>
             <div style={{ fontSize: 14, color: muted, lineHeight: 1.7 }}>
               나에게 딱 맞는 SNS 전략을 AI가 분석해드려요<br/>
               아래 정보를 입력하면 맞춤 컨설팅이 시작됩니다
@@ -557,7 +561,7 @@ MBTI: ${mbti || "미입력"}
                         { id: "threads", label: "스레드", color: "#000", tc: "#fff", url: (t, u) => `https://www.threads.net/intent/post?text=${t}%20${u}` },
                       ].map(p => (
                         <button key={p.id} onClick={() => {
-                          const shareTitle = encodeURIComponent(`${name}님의 SNS 길잡이 결과`);
+                          const shareTitle = encodeURIComponent(`${name}님의 SNS 사주팔자 결과`);
                           const shareUrl = encodeURIComponent(window.location.href);
                           window.open(p.url(shareTitle, shareUrl), "_blank", "width=600,height=500");
                           setShareToast("");
@@ -569,7 +573,7 @@ MBTI: ${mbti || "미입력"}
                       ))}
                       <button onClick={() => {
                         const lastAi = messages.filter(m => m.role === "assistant").pop();
-                        if (lastAi) navigator.clipboard.writeText(`[${name}님의 SNS 길잡이 결과]\n\n${lastAi.content}`);
+                        if (lastAi) navigator.clipboard.writeText(`[${name}님의 SNS 사주팔자 결과]\n\n${lastAi.content}`);
                         setShareToast("copied");
                         setTimeout(() => setShareToast(""), 2000);
                       }} style={{
@@ -591,13 +595,13 @@ MBTI: ${mbti || "미입력"}
                 if (!lastAi) return;
                 const printWin = window.open("", "_blank", "width=800,height=600");
                 const profileText = buildProfile().replace(/\n/g, "<br/>");
-                printWin.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${name}님의 SNS 길잡이</title>
+                printWin.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${name}님의 SNS 사주팔자</title>
                   <style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:700px;margin:40px auto;padding:0 20px;color:#1a1a2e;line-height:2;font-size:15px}
                   table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px}th,td{padding:10px 14px;text-align:left;border-bottom:1px solid #e5e5f0}
                   th{font-weight:700;background:#f8f8fc}hr{border:none;border-top:1px solid #e5e5f0;margin:24px 0}
                   .profile{padding:16px 20px;border-radius:12px;background:#f8f8fc;margin-bottom:24px;font-size:13px;line-height:1.8}
                   h1{font-size:22px;margin-bottom:8px}@media print{body{margin:20px auto}}</style></head>
-                  <body><h1>${name}님의 SNS 길잡이</h1><div class="profile">${profileText}</div>${formatContent(lastAi.content)}</body></html>`);
+                  <body><h1>${name}님의 SNS 사주팔자</h1><div class="profile">${profileText}</div>${formatContent(lastAi.content)}</body></html>`);
                 printWin.document.close();
                 setTimeout(() => printWin.print(), 300);
               }} style={{
