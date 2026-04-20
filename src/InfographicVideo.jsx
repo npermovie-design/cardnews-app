@@ -975,8 +975,25 @@ function CCOverlay({ lang = "ko", secondLang = null, show = true }) {
   const current = NARRATION[idx];
   const nextStart = idx < NARRATION.length - 1 ? NARRATION[idx + 1].start : current.end + 2;
 
-  const mainText = current[lang] || "";
-  const subText = secondLang && secondLang !== lang ? (current[secondLang] || "") : "";
+  // 20자 단위 줄바꿈
+  const wrap20 = (txt) => {
+    if (!txt || txt.length <= 20) return txt;
+    const result = [];
+    let remain = txt;
+    while (remain.length > 20) {
+      let cut = 20;
+      // 공백/쉼표 기준으로 자연스럽게 자르기
+      for (let j = 20; j > 10; j--) {
+        if (remain[j] === " " || remain[j] === "," || remain[j] === ".") { cut = j; break; }
+      }
+      result.push(remain.slice(0, cut).trim());
+      remain = remain.slice(cut).trim();
+    }
+    if (remain) result.push(remain);
+    return result.join("\n");
+  };
+  const mainText = wrap20(current[lang] || "");
+  const subText = secondLang && secondLang !== lang ? wrap20(current[secondLang] || "") : "";
 
   // 자막 진입/퇴장 애니메이션
   const elapsed = timeSec - current.start;
@@ -1000,7 +1017,7 @@ function CCOverlay({ lang = "ko", secondLang = null, show = true }) {
         }}>
           <div style={{
             fontSize: 28, fontWeight: 700, color: "#fff",
-            lineHeight: 1.4, wordBreak: "keep-all", whiteSpace: "nowrap",
+            lineHeight: 1.5, wordBreak: "keep-all", whiteSpace: "pre-line",
             textShadow: "0 1px 4px rgba(0,0,0,0.5)",
           }}>
             {mainText}
