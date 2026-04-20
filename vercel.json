@@ -123,6 +123,7 @@
     { "source": "/api/cron-social", "destination": "/api/seo?action=cron-social" },
     { "source": "/api/cron-ai", "destination": "/api/seo?action=cron-ai" },
     { "source": "/api/cron-keyword", "destination": "/api/seo?action=cron-keyword" },
+    { "source": "/api/cron-daily-keywords", "destination": "/api/seo?action=cron-daily-keywords" },
     { "source": "/api/cron-info", "destination": "/api/seo?action=cron-info" },
     { "source": "/api/cron-threads", "destination": "/api/seo?action=cron-threads" },
     { "source": "/api/naver-verify", "destination": "/api/seo?action=naver-verify" },
@@ -162,6 +163,10 @@
     {
       "path": "/api/seo?action=cron-info",
       "schedule": "30 21 * * *"
+    },
+    {
+      "path": "/api/seo?action=cron-daily-keywords",
+      "schedule": "0 22 * * *"
     },
     {
       "path": "/api/seo?action=cron-threads",
