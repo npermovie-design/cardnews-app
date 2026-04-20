@@ -966,17 +966,22 @@ function CCOverlay({ lang = "ko", secondLang = null, show = true }) {
   if (!show) return null;
 
   // 현재 시간에 해당하는 자막 찾기
-  const current = NARRATION.find(n => timeSec >= n.start && timeSec < n.end);
-  if (!current) return null;
+  // 각 자막은 다음 자막이 시작될 때까지 유지
+  const idx = NARRATION.findIndex((n, i) => {
+    const nextStart = i < NARRATION.length - 1 ? NARRATION[i + 1].start : n.end + 2;
+    return timeSec >= n.start && timeSec < nextStart;
+  });
+  if (idx < 0) return null;
+  const current = NARRATION[idx];
+  const nextStart = idx < NARRATION.length - 1 ? NARRATION[idx + 1].start : current.end + 2;
 
   const mainText = current[lang] || "";
   const subText = secondLang && secondLang !== lang ? (current[secondLang] || "") : "";
 
   // 자막 진입/퇴장 애니메이션
-  const segDur = current.end - current.start;
   const elapsed = timeSec - current.start;
   const enterOp = Math.min(1, elapsed / 0.3);
-  const exitOp = Math.min(1, (current.end - timeSec) / 0.3);
+  const exitOp = Math.min(1, (nextStart - timeSec) / 0.3);
   const opacity = Math.min(enterOp, exitOp);
 
   return (
