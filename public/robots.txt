@@ -1,14 +1,16 @@
 User-agent: *
 Allow: /
+Allow: /community/
+Allow: /pricing
+Allow: /about
+Allow: /library
 Disallow: /api/
 Disallow: /_vercel/
 Disallow: /xk9m2p4q7
-Disallow: /ai/
-Disallow: /ai
-Disallow: /analyzer/
-Disallow: /analyzer
 Disallow: /mypage/
 Disallow: /mypage
+Disallow: /admin
+Disallow: /login
 
 # Sitemaps
 Sitemap: https://snsmakeit.com/sitemap.xml

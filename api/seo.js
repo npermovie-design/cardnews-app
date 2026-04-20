@@ -19,12 +19,13 @@ async function handleSitemap(req, res) {
     { url: "/snsnews", priority: "0.8", freq: "daily" },
     { url: "/community/info", priority: "0.7", freq: "daily" },
     { url: "/community/qna", priority: "0.7", freq: "daily" },
-    { url: "/community/showcase", priority: "0.7", freq: "daily" },
-    { url: "/community/archive", priority: "0.5", freq: "weekly" },
+    { url: "/community/free", priority: "0.7", freq: "daily" },
+    { url: "/community/review", priority: "0.7", freq: "daily" },
     { url: "/community/sns_briefing", priority: "0.7", freq: "daily" },
     { url: "/contact", priority: "0.5", freq: "monthly" },
     { url: "/event", priority: "0.6", freq: "weekly" },
     { url: "/legal", priority: "0.3", freq: "yearly" },
+    { url: "/library", priority: "0.6", freq: "weekly" },
   ];
 
   // Supabase에서 게시글 가져오기
@@ -38,7 +39,7 @@ async function handleSitemap(req, res) {
       console.log("Sitemap: Supabase env vars missing");
       return;
     }
-    const { data: posts, error } = await sb.from("posts").select("id,subCat,created_at").order("id", { ascending: false }).limit(2000);
+    const { data: posts, error } = await sb.from("posts").select("id,subCat,created_at").order("id", { ascending: false }).limit(5000);
     if (error) console.log("Sitemap Supabase error:", error.message);
     if (posts && posts.length) {
       const now = Date.now();
@@ -97,7 +98,7 @@ ${[...staticPages, ...postUrls, ...programUrls].map(urlEntry).join("\n")}
 </urlset>`;
 
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
-  res.setHeader("Cache-Control", "public, s-maxage=86400, stale-while-revalidate=172800");
+  res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
   res.status(200).send(xml);
 }
 
