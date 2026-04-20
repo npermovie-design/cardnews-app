@@ -69,6 +69,7 @@ export default function AdminPage({ C, user: adminUser }) {
   const [pw, setPw]        = useState("");
   const [auth, setAuth]    = useState(isAdminRole);
   const [tab, setTab]      = useState("stats");
+  const [sideOpen, setSideOpen] = useState(false);
   const [onlineCount, setOnlineCount] = useState(0);
   // 게시판 관리 상태
   const [boardCats, setBoardCats] = useState(DEFAULT_BOARD_CATS);
@@ -410,12 +411,27 @@ export default function AdminPage({ C, user: adminUser }) {
         </div>
       )}
 
+      {/* 모바일 메뉴 토글 */}
+      <button onClick={() => setSideOpen(!sideOpen)} style={{
+        display: "none", position: "fixed", top: 12, left: 12, zIndex: 1001,
+        width: 40, height: 40, borderRadius: 10, border: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "#ddd"}`,
+        background: isDark ? "#1e1940" : "#fff", cursor: "pointer",
+        alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+        ...(typeof window !== "undefined" && window.innerWidth < 768 ? { display: "flex" } : {}),
+      }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.text} strokeWidth="2.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+
+      {/* 모바일 오버레이 */}
+      {sideOpen && <div onClick={() => setSideOpen(false)} style={{ display: "none", position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 999, ...(typeof window !== "undefined" && window.innerWidth < 768 ? { display: "block" } : {}) }} />}
+
       {/* ── 사이드바 ── */}
       <aside style={{
         width: 220, flexShrink: 0, padding: "20px 12px",
         background: isDark ? "rgba(0,0,0,0.4)" : "#f8f8fc",
         borderRight: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "#e5e5f0"}`,
         overflowY: "auto", position: "sticky", top: 0, height: "100vh",
+        ...(typeof window !== "undefined" && window.innerWidth < 768 ? { position: "fixed", left: sideOpen ? 0 : -240, zIndex: 1000, transition: "left 0.2s", boxShadow: sideOpen ? "4px 0 20px rgba(0,0,0,0.2)" : "none" } : {}),
       }}>
         {/* 로고 */}
         <div style={{ padding: "8px 10px 20px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "#e5e5f0"}`, marginBottom: 16 }}>
@@ -438,7 +454,7 @@ export default function AdminPage({ C, user: adminUser }) {
             {items.map(([id, label]) => {
               const active = tab === id;
               return (
-                <button key={id} onClick={() => setTab(id)} style={{
+                <button key={id} onClick={() => { setTab(id); setSideOpen(false); }} style={{
                   width: "100%", padding: "9px 12px", borderRadius: 8, border: "none", cursor: "pointer",
                   textAlign: "left", fontSize: 13, fontWeight: active ? 700 : 500, fontFamily: "inherit",
                   background: active ? (isDark ? "rgba(99,102,241,0.25)" : "rgba(99,102,241,0.1)") : "transparent",

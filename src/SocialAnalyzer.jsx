@@ -312,7 +312,7 @@ export default function SocialAnalyzer({ isDark, user }) {
       const s = info.statistics || {}; const sn = info.snippet || {};
       const subs = parseInt(s.subscriberCount)||0, views = parseInt(s.viewCount)||0, vids = parseInt(s.videoCount)||0;
       let recent = [];
-      if (info.id) { const vr = await fetch(`/api/youtube-search?action=channel-videos&channelId=${info.id}&maxResults=10`); if (vr.ok) { const vd = await vr.json(); recent = vd.videos || []; } }
+      if (info.id) { const vr = await fetch(`/api/youtube-search?action=channel-videos&channelId=${info.id}&maxResults=30`); if (vr.ok) { const vd = await vr.json(); recent = vd.videos || []; } }
       const avgRecent = recent.length > 0 ? Math.round(recent.reduce((a,v)=>a+v.viewCount,0)/recent.length) : 0;
       const engage = recent.length > 0 ? (recent.reduce((a,v)=>a+v.likeCount+v.commentCount,0) / Math.max(1, recent.reduce((a,v)=>a+v.viewCount,0)) * 100).toFixed(2) : "0";
       return { type:"youtube", name: sn.title||"", thumb: sn.thumbnails?.medium?.url||"", subs, views, vids, avgViews: vids>0?Math.round(views/vids):0, avgRecent, engage, desc: (sn.description||"").slice(0,500), created: sn.publishedAt||"", recent };
@@ -354,7 +354,24 @@ export default function SocialAnalyzer({ isDark, user }) {
     if (c.yt) {
       const d = c.yt;
       data += `\n채널명: ${d.name}\n구독자: ${d.subs.toLocaleString()}\n총조회수: ${d.views.toLocaleString()}\n영상수: ${d.vids}\n평균조회수: ${d.avgViews.toLocaleString()}\n최근평균: ${d.avgRecent.toLocaleString()}\n참여율: ${d.engage}%\n설명: ${d.desc}`;
-      if (d.recent?.length) { data += "\n\n=== 최근 영상 (이 목록으로 카테고리를 판단하세요) ==="; d.recent.forEach((v,i) => { data += `\n${i+1}. "${v.title}" | 조회 ${v.viewCount.toLocaleString()} | 좋아요 ${v.likeCount} | 댓글 ${v.commentCount} | ${fmtDate(v.publishedAt)}`; }); }
+      if (d.recent?.length) {
+        data += "\n\n=== 최근 영상 (이 목록으로 카테고리와 활동 패턴을 판단하세요) ===";
+        d.recent.forEach((v,i) => { data += `\n${i+1}. "${v.title}" | 조회 ${v.viewCount.toLocaleString()} | 좋아요 ${v.likeCount} | 댓글 ${v.commentCount} | ${fmtDate(v.publishedAt)}`; });
+        // 업로드 간격 분석 데이터
+        const dates = d.recent.map(v => new Date(v.publishedAt)).sort((a,b) => b-a);
+        if (dates.length >= 2) {
+          const gaps = [];
+          for (let gi = 0; gi < dates.length - 1; gi++) gaps.push(Math.round((dates[gi] - dates[gi+1]) / 86400000));
+          const avgGap = Math.round(gaps.reduce((s,g) => s+g, 0) / gaps.length);
+          const maxGap = Math.max(...gaps);
+          const daysSinceLast = Math.round((Date.now() - dates[0]) / 86400000);
+          data += `\n\n=== 업로드 패턴 데이터 ===`;
+          data += `\n평균 업로드 간격: ${avgGap}일`;
+          data += `\n최대 공백: ${maxGap}일`;
+          data += `\n마지막 업로드: ${daysSinceLast}일 전`;
+          data += `\n분석 기간 영상 수: ${d.recent.length}개`;
+        }
+      }
     }
     if (c.instaApi) {
       const a = c.instaApi;
@@ -390,7 +407,10 @@ export default function SocialAnalyzer({ isDark, user }) {
       if (m["og:description"]) data += `\n설명: ${m["og:description"]}`;
       if (m._visitors) data += `\n방문자: ${m._visitors}`;
       if (m._postCount) data += `\n게시글: ${m._postCount}`;
-      if (c.profile.texts?.length) data += `\n\n=== 크롤링된 콘텐츠 ===\n${c.profile.texts.slice(0, 15).join("\n")}`;
+      if (c.profile.texts?.length) data += `\n\n=== 크롤링된 콘텐츠 (이 목록에서 포스팅 빈도와 주제를 분석하세요) ===\n${c.profile.texts.slice(0, 20).join("\n")}`;
+      if (c.profile.dates?.length) {
+        data += `\n\n=== 포스팅 날짜 목록 ===\n${c.profile.dates.slice(0, 20).join("\n")}`;
+      }
     }
 
     const isInsta = c.plat?.id === "instagram";
@@ -419,6 +439,20 @@ ${data}
 | 강점 | (3가지) |
 | 약점 | (3가지) |
 | 타겟 | (구체적 오디언스) |
+
+## 활동 패턴 분석
+최근 게시물/영상의 업로드 날짜를 기반으로 활동 패턴을 분석하세요:
+
+| 항목 | 분석 결과 |
+|---|---|
+| 평균 포스팅 빈도 | (주 n회 또는 월 n회) |
+| 가장 활발한 요일 | (데이터 기반) |
+| 가장 활발한 시간대 | (데이터 기반) |
+| 최근 활동 공백 | (마지막 포스팅 이후 경과일) |
+| 꾸준함 점수 | (10점 만점, 근거 포함) |
+| 활동 추세 | (증가/유지/감소 + 설명) |
+
+활동 공백이 있다면 구체적으로 언제부터 언제까지인지 지적하고, 개선 방안을 제시하세요.
 
 ## 30일 콘텐츠 주제
 최근 1주일 트렌드와 관심도가 높은 키워드를 반영하여, 이 계정 분야에 맞는 한 달치 주제 30개:
