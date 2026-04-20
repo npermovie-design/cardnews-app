@@ -160,30 +160,57 @@ const Icon = ({ type, size = 28, color = "#fff" }) => {
 };
 
 /* ── 배경 요소들 ── */
+
+/* 파티클 — 위로 흐르는 빛 입자 */
 function ParticleBg() {
   const frame = useCurrentFrame();
-  const dots = Array.from({ length: 30 }, (_, i) => {
-    const x = (i * 137.5) % 100;
-    const y = (i * 73.3) % 100;
-    const size = 2 + (i % 4);
-    const speed = 0.2 + (i % 5) * 0.08;
-    const yy = (y + frame * speed * 0.05) % 110 - 5;
-    const op = 0.08 + (i % 3) * 0.06;
+  const dots = Array.from({ length: 40 }, (_, i) => {
+    const x = (i * 137.5 + i * 17) % 100;
+    const baseY = (i * 73.3) % 100;
+    const size = 2 + (i % 5);
+    const speed = 0.15 + (i % 7) * 0.06;
+    const yy = (baseY + frame * speed * 0.06) % 115 - 8;
+    const op = 0.06 + (i % 4) * 0.04;
+    // 일부는 길쭉한 선으로
+    const isLine = i % 5 === 0;
     return (
       <div key={i} style={{
         position: "absolute", left: `${x}%`, top: `${yy}%`,
-        width: size, height: size, borderRadius: "50%",
-        background: i % 2 === 0 ? K.purple : K.pink, opacity: op,
+        width: isLine ? 1.5 : size, height: isLine ? size * 6 : size,
+        borderRadius: isLine ? 1 : "50%",
+        background: i % 3 === 0 ? K.purple : i % 3 === 1 ? K.pink : "#06b6d4",
+        opacity: op,
       }} />
     );
   });
   return <AbsoluteFill style={{ overflow: "hidden" }}>{dots}</AbsoluteFill>;
 }
 
-function GridBg({ opacity = 0.04 }) {
+/* 흐르는 웨이브 배경 */
+function WaveBg({ color = K.purple, speed = 0.02, yOffset = 60 }) {
+  const frame = useCurrentFrame();
+  const shift = frame * speed;
+  const points = [];
+  for (let x = 0; x <= 1920; x += 20) {
+    const y = yOffset + Math.sin((x / 300) + shift) * 30 + Math.sin((x / 150) + shift * 1.5) * 15;
+    points.push(`${x},${y}`);
+  }
+  const d = `M0,${1080} L${points.join(" L")} L1920,${1080} Z`;
   return (
-    <AbsoluteFill style={{ opacity }}>
-      <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+    <AbsoluteFill style={{ opacity: 0.03 }}>
+      <svg viewBox="0 0 1920 1080" style={{ width: "100%", height: "100%" }}>
+        <path d={d} fill={color} />
+      </svg>
+    </AbsoluteFill>
+  );
+}
+
+function GridBg({ opacity = 0.04 }) {
+  const frame = useCurrentFrame();
+  const drift = frame * 0.03;
+  return (
+    <AbsoluteFill style={{ opacity, transform: `translateY(${drift % 60}px)` }}>
+      <svg width="100%" height="120%" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
             <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#7c6aff" strokeWidth="0.5" />
@@ -195,11 +222,17 @@ function GridBg({ opacity = 0.04 }) {
   );
 }
 
+/* 글로우 오브 — 느리게 움직이는 */
 function GlowOrb({ x, y, color, size = 300 }) {
+  const frame = useCurrentFrame();
+  const dx = Math.sin(frame * 0.008) * 20;
+  const dy = Math.cos(frame * 0.006) * 15;
   return (
     <div style={{
       position: "absolute", left: x, top: y, width: size, height: size,
-      borderRadius: "50%", background: color, filter: `blur(${size / 2}px)`, opacity: 0.15,
+      borderRadius: "50%", background: color,
+      filter: `blur(${size / 2}px)`, opacity: 0.15,
+      transform: `translate(${dx}px, ${dy}px)`,
     }} />
   );
 }
@@ -247,8 +280,10 @@ function Scene01_Empathy({ lang = "ko" }) {
   return (
     <AbsoluteFill style={{ background: K.gradBg, justifyContent: "center", alignItems: "center" }}>
       <GridBg opacity={0.03} />
+      <WaveBg color="#ff6b6b" speed={0.025} yOffset={850} />
       <GlowOrb x="20%" y="25%" color="#ff6b6b" size={350} />
       <GlowOrb x="75%" y="60%" color={K.purple} size={300} />
+      <ParticleBg />
 
       <div style={{ textAlign: "center", zIndex: 1, maxWidth: 1000 }}>
         <div style={{ ...fadeSlide(frame, fps, "up", 0), fontSize: 64, fontWeight: 900, color: K.white, lineHeight: 1.4, marginBottom: 20 }}>
@@ -318,6 +353,7 @@ function Scene02_Intro({ lang = "ko" }) {
   return (
     <AbsoluteFill style={{ background: K.gradBg, justifyContent: "center", alignItems: "center" }}>
       <GridBg />
+      <WaveBg color={K.purple} speed={0.02} yOffset={820} />
       <ParticleBg />
       <GlowOrb x="45%" y="35%" color={K.purple} size={500} />
       <GlowOrb x="55%" y="55%" color={K.pink} size={400} />
@@ -412,67 +448,120 @@ function Scene03_UserPain({ lang = "ko" }) {
 // ═══════════════════════════════════════════════════════════
 function Scene04_Solution({ lang = "ko" }) {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
+  const { fps, durationInFrames } = useVideoConfig();
 
   const steps = [
-    { icon: "search", label: T("s04_step1", lang), desc: T("s04_step1d", lang), color: K.purple },
-    { icon: "zap", label: T("s04_step2", lang), desc: T("s04_step2d", lang), color: K.pink },
-    { icon: "send", label: T("s04_step3", lang), desc: T("s04_step3d", lang), color: "#06b6d4" },
-    { icon: "chart", label: T("s04_step4", lang), desc: T("s04_step4d", lang), color: "#10b981" },
+    { icon: "search", label: T("s04_step1", lang), desc: T("s04_step1d", lang), color: K.purple, num: "01" },
+    { icon: "zap", label: T("s04_step2", lang), desc: T("s04_step2d", lang), color: K.pink, num: "02" },
+    { icon: "send", label: T("s04_step3", lang), desc: T("s04_step3d", lang), color: "#06b6d4", num: "03" },
+    { icon: "chart", label: T("s04_step4", lang), desc: T("s04_step4d", lang), color: "#10b981", num: "04" },
   ];
 
-  const lineWidth = interpolate(frame, [fps * 1, fps * 4], [0, 100], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  // 진행 라인 애니메이션
+  const lineProgress = interpolate(frame, [fps * 1, fps * 5], [0, 100], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
 
   return (
     <AbsoluteFill style={{ background: K.gradBg, justifyContent: "center", alignItems: "center" }}>
-      <GridBg />
-      <GlowOrb x="50%" y="40%" color={K.purple} size={450} />
+      <GridBg opacity={0.03} />
+      <WaveBg color={K.purple} speed={0.03} yOffset={800} />
+      <WaveBg color={K.pink} speed={0.02} yOffset={850} />
+      <GlowOrb x="25%" y="30%" color={K.purple} size={400} />
+      <GlowOrb x="75%" y="60%" color={K.pink} size={350} />
       <ParticleBg />
 
-      <div style={{ textAlign: "center", zIndex: 1, maxWidth: 1100 }}>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0), fontSize: 18, color: K.purple, fontWeight: 700, letterSpacing: 2, marginBottom: 14 }}>
-          HOW IT WORKS
-        </div>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 56, fontWeight: 900, color: K.white, marginBottom: 28, lineHeight: 1.3 }}>
-          {T("s04_title1", lang)}<br />
-          <span style={{ background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            {T("s04_title2", lang)}
-          </span>
-        </div>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0.5), fontSize: 22, color: K.muted, marginBottom: 48 }}>
-          {T("s04_sub", lang)}
-        </div>
-
-        {/* 4단계 플로우 */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "center", gap: 12, position: "relative" }}>
-          {/* 연결선 */}
-          <div style={{
-            position: "absolute", top: 40, left: "12%", right: "12%", height: 2,
-            background: "rgba(255,255,255,0.06)", borderRadius: 1, overflow: "hidden",
-          }}>
-            <div style={{ width: `${lineWidth}%`, height: "100%", background: K.grad }} />
+      <div style={{ zIndex: 1, width: "100%", padding: "0 80px" }}>
+        {/* 상단 타이틀 */}
+        <div style={{ textAlign: "center", marginBottom: 52 }}>
+          <div style={{ ...fadeSlide(frame, fps, "up", 0), fontSize: 16, color: K.purple, fontWeight: 700, letterSpacing: 3, marginBottom: 16 }}>
+            HOW IT WORKS
           </div>
+          <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 52, fontWeight: 900, color: K.white, lineHeight: 1.3 }}>
+            {T("s04_title1", lang)}{" "}
+            <span style={{ background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              {T("s04_title2", lang)}
+            </span>
+          </div>
+        </div>
 
+        {/* 4단계 카드 — 가로 배열 + 연결 화살표 */}
+        <div style={{ display: "flex", alignItems: "stretch", justifyContent: "center", gap: 24 }}>
           {steps.map((st, i) => {
-            const s = spring({ frame: Math.max(0, frame - (0.8 + i * 0.4) * fps), fps, config: { damping: 12, stiffness: 80 } });
+            const delay = 0.6 + i * 0.4;
+            const s = spring({ frame: Math.max(0, frame - delay * fps), fps, config: { damping: 14, stiffness: 80 } });
+            // 아이콘 부유 애니메이션
+            const floatY = Math.sin((frame + i * 20) * 0.06) * 4;
+            // 카드 배경 글로우 펄스
+            const glowPulse = 0.08 + Math.sin((frame + i * 30) * 0.04) * 0.04;
+
             return (
-              <div key={i} style={{
-                flex: 1, textAlign: "center", position: "relative", zIndex: 1,
-                transform: `scale(${s})`, opacity: s,
-              }}>
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 24 }}>
                 <div style={{
-                  width: 84, height: 84, borderRadius: 22, margin: "0 auto 16px",
-                  background: `${st.color}15`, border: `2px solid ${st.color}35`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
+                  transform: `scale(${s}) translateY(${(1 - s) * 30}px)`, opacity: s,
+                  background: `rgba(255,255,255,0.02)`,
+                  border: `1px solid ${st.color}30`,
+                  borderRadius: 24, padding: "36px 28px", textAlign: "center",
+                  width: 200, position: "relative", overflow: "hidden",
+                  boxShadow: `0 0 ${40 + glowPulse * 200}px ${st.color}${Math.round(glowPulse * 255).toString(16).padStart(2, "0")}`,
                 }}>
-                  <Icon type={st.icon} size={44} color={st.color} />
+                  {/* 배경 번호 */}
+                  <div style={{
+                    position: "absolute", top: -10, right: -5, fontSize: 100, fontWeight: 900,
+                    color: st.color, opacity: 0.04, lineHeight: 1,
+                  }}>{st.num}</div>
+
+                  {/* 아이콘 */}
+                  <div style={{
+                    width: 80, height: 80, borderRadius: 20, margin: "0 auto 18px",
+                    background: `${st.color}12`, border: `2px solid ${st.color}30`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transform: `translateY(${floatY}px)`,
+                  }}>
+                    <Icon type={st.icon} size={40} color={st.color} />
+                  </div>
+
+                  {/* 스텝 라벨 */}
+                  <div style={{
+                    fontSize: 12, color: st.color, fontWeight: 800, letterSpacing: 2, marginBottom: 8,
+                    textTransform: "uppercase",
+                  }}>STEP {st.num}</div>
+
+                  {/* 제목 */}
+                  <div style={{ fontSize: 22, fontWeight: 800, color: K.white, marginBottom: 8 }}>{st.label}</div>
+
+                  {/* 설명 */}
+                  <div style={{ fontSize: 14, color: K.muted, lineHeight: 1.5 }}>{st.desc}</div>
+
+                  {/* 하단 진행 바 */}
+                  <div style={{
+                    marginTop: 18, height: 3, borderRadius: 2,
+                    background: "rgba(255,255,255,0.05)", overflow: "hidden",
+                  }}>
+                    <div style={{
+                      width: `${Math.min(100, Math.max(0, lineProgress - i * 25))}%`,
+                      height: "100%", background: st.color, borderRadius: 2,
+                    }} />
+                  </div>
                 </div>
-                <div style={{ fontSize: 11, color: st.color, fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>STEP 0{i + 1}</div>
-                <div style={{ fontSize: 26, fontWeight: 800, color: K.white, marginBottom: 10 }}>{st.label}</div>
-                <div style={{ fontSize: 13, color: K.muted }}>{st.desc}</div>
+
+                {/* 화살표 연결 */}
+                {i < steps.length - 1 && (
+                  <div style={{
+                    opacity: interpolate(frame, [fps * (1.5 + i * 0.5), fps * (2 + i * 0.5)], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }),
+                    color: "rgba(255,255,255,0.15)", fontSize: 24, fontWeight: 300,
+                  }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                      <path d="M5 12h14M13 6l6 6-6 6" />
+                    </svg>
+                  </div>
+                )}
               </div>
             );
           })}
+        </div>
+
+        {/* 하단 서브텍스트 */}
+        <div style={{ ...fadeSlide(frame, fps, "up", 2.5), textAlign: "center", marginTop: 40, fontSize: 20, color: K.muted }}>
+          {T("s04_sub", lang)}
         </div>
       </div>
     </AbsoluteFill>
@@ -504,6 +593,7 @@ function Scene05_AITools({ lang = "ko" }) {
   return (
     <AbsoluteFill style={{ background: K.gradBg, justifyContent: "center", alignItems: "center" }}>
       <GridBg />
+      <WaveBg color="#06b6d4" speed={0.02} yOffset={820} />
       <GlowOrb x="25%" y="35%" color={K.purple} size={400} />
       <GlowOrb x="75%" y="55%" color={K.pink} size={350} />
 
@@ -598,6 +688,7 @@ function Scene06_TimeSave({ lang = "ko" }) {
   return (
     <AbsoluteFill style={{ background: K.gradBg, justifyContent: "center", alignItems: "center" }}>
       <GridBg />
+      <WaveBg color="#10b981" speed={0.03} yOffset={840} />
       <GlowOrb x="30%" y="40%" color={K.purple} size={400} />
       <GlowOrb x="70%" y="50%" color="#10b981" size={350} />
 
@@ -777,6 +868,7 @@ function Scene08_Resources({ lang = "ko" }) {
   return (
     <AbsoluteFill style={{ background: K.gradBg, justifyContent: "center", alignItems: "center" }}>
       <GridBg />
+      <WaveBg color="#7c6aff" speed={0.04} yOffset={860} />
       <GlowOrb x="40%" y="40%" color={K.purple} size={450} />
       <ParticleBg />
 
@@ -849,6 +941,7 @@ function Scene09_ForEveryone({ lang = "ko" }) {
   return (
     <AbsoluteFill style={{ background: K.gradBg, justifyContent: "center", alignItems: "center" }}>
       <GridBg />
+      <WaveBg color="#f59e0b" speed={0.02} yOffset={880} />
       <GlowOrb x="30%" y="30%" color={K.purple} size={400} />
       <GlowOrb x="70%" y="60%" color={K.pink} size={350} />
 
@@ -907,6 +1000,7 @@ function Scene10_CTA({ lang = "ko" }) {
   return (
     <AbsoluteFill style={{ background: K.gradBg, justifyContent: "center", alignItems: "center" }}>
       <GridBg />
+      <WaveBg color="#ec4899" speed={0.03} yOffset={820} />
       <ParticleBg />
       <GlowOrb x="45%" y="35%" color={K.purple} size={600} />
       <GlowOrb x="55%" y="55%" color={K.pink} size={500} />
