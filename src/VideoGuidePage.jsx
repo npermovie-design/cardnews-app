@@ -178,19 +178,55 @@ function VideoPlayerModal({ video, onClose, C }) {
     }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      {/* 닫기 */}
-      <button onClick={onClose} style={{
-        position: "absolute", top: 20, right: 24,
-        background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)",
-        borderRadius: 10, padding: "8px 16px", color: "#fff", cursor: "pointer",
-        fontSize: 14, fontWeight: 600,
-      }}>
-        ESC
-      </button>
+      {/* 상단 바: 닫기 + 공유 */}
+      <div style={{ position: "absolute", top: 20, right: 24, display: "flex", gap: 10, zIndex: 10 }}>
+        {/* 링크 복사 */}
+        <button onClick={() => {
+          const url = window.location.origin + "/ai/video_guide?v=" + video.id;
+          navigator.clipboard.writeText(url).then(() => alert("링크가 복사되었습니다"));
+        }} style={{
+          background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: 10, padding: "8px 16px", color: "#fff", cursor: "pointer",
+          fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+          링크 복사
+        </button>
+        {/* 공유 */}
+        <button onClick={() => {
+          const url = window.location.origin + "/ai/video_guide?v=" + video.id;
+          if (navigator.share) {
+            navigator.share({ title: video.title, text: video.description, url });
+          } else {
+            navigator.clipboard.writeText(url).then(() => alert("링크가 복사되었습니다"));
+          }
+        }} style={{
+          background: "rgba(124,106,255,0.15)", border: "1px solid rgba(124,106,255,0.3)",
+          borderRadius: 10, padding: "8px 16px", color: "#7c6aff", cursor: "pointer",
+          fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6,
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+            <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
+          </svg>
+          공유
+        </button>
+        {/* 닫기 */}
+        <button onClick={onClose} style={{
+          background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.1)",
+          borderRadius: 10, padding: "8px 16px", color: "#fff", cursor: "pointer",
+          fontSize: 13, fontWeight: 600,
+        }}>
+          ESC
+        </button>
+      </div>
 
       {/* 제목 */}
       <h2 style={{
-        fontSize: 22, fontWeight: 800, color: "#fff", marginBottom: 16,
+        fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 16,
         background: "linear-gradient(135deg,#7c6aff,#ec4899)",
         WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
       }}>
@@ -211,7 +247,7 @@ function VideoPlayerModal({ video, onClose, C }) {
           compositionWidth={1920}
           compositionHeight={1080}
           fps={FPS}
-          style={{ width: Math.min(960, window.innerWidth - 48), height: Math.min(540, (window.innerWidth - 48) * 9 / 16) }}
+          style={{ width: Math.min(1120, window.innerWidth - 48), height: Math.min(630, (window.innerWidth - 48) * 9 / 16) }}
           controls
           autoPlay
           loop={false}
@@ -280,6 +316,16 @@ export default function VideoGuidePage({ C, theme }) {
 
   // 영상 목록 — 나중에 추가할 수 있는 구조
   const [videos, setVideos] = useState([]);
+
+  // URL 파라미터로 영상 자동 재생 (?v=intro)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const videoId = params.get("v");
+    if (videoId && videos.length > 0) {
+      const idx = videos.findIndex(v => v.id === videoId);
+      if (idx >= 0) setPlaying(idx);
+    }
+  }, [videos]);
 
   useEffect(() => {
     // 동적 import로 각 영상의 Composition을 로드

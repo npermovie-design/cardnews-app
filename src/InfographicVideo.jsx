@@ -251,7 +251,7 @@ function Scene01_Empathy({ lang = "ko" }) {
       <GlowOrb x="75%" y="60%" color={K.purple} size={300} />
 
       <div style={{ textAlign: "center", zIndex: 1, maxWidth: 1000 }}>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0), fontSize: 54, fontWeight: 900, color: K.white, lineHeight: 1.4, marginBottom: 16 }}>
+        <div style={{ ...fadeSlide(frame, fps, "up", 0), fontSize: 64, fontWeight: 900, color: K.white, lineHeight: 1.4, marginBottom: 20 }}>
           {T("s01_title", lang)}
         </div>
         <div style={{ ...fadeSlide(frame, fps, "up", 0.4), fontSize: 20, color: K.muted, marginBottom: 48 }}>
@@ -270,7 +270,7 @@ function Scene01_Empathy({ lang = "ko" }) {
                   borderRadius: 16, padding: "20px 24px", textAlign: "center", minWidth: 120,
                 }}>
                   <div style={{ marginBottom: 8, display: "flex", justifyContent: "center" }}>
-                    <Icon type={t.icon} size={34} color="#ff6b6b" />
+                    <Icon type={t.icon} size={40} color="#ff6b6b" />
                   </div>
                   <div style={{ fontSize: 14, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>{t.label}</div>
                 </div>
@@ -375,7 +375,7 @@ function Scene03_UserPain({ lang = "ko" }) {
         <div style={{ ...fadeSlide(frame, fps, "up", 0), fontSize: 18, color: K.pink, fontWeight: 700, letterSpacing: 2, marginBottom: 14 }}>
           YOUR PAIN POINTS
         </div>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 48, fontWeight: 900, color: K.white, marginBottom: 52, lineHeight: 1.3 }}>
+        <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 56, fontWeight: 900, color: K.white, marginBottom: 52, lineHeight: 1.3 }}>
           {T("s03_title", lang)}
         </div>
 
@@ -389,14 +389,14 @@ function Scene03_UserPain({ lang = "ko" }) {
                 borderRadius: 24, padding: "40px 32px", textAlign: "center", flex: 1, maxWidth: 300,
               }}>
                 <div style={{
-                  width: 64, height: 64, borderRadius: 18, margin: "0 auto 20px",
+                  width: 76, height: 76, borderRadius: 20, margin: "0 auto 20px",
                   background: `${p.color}12`, border: `1px solid ${p.color}25`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  <Icon type={p.icon} size={36} color={p.color} />
+                  <Icon type={p.icon} size={42} color={p.color} />
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 800, color: K.white, marginBottom: 14 }}>{p.title}</div>
-                <div style={{ fontSize: 18, color: K.muted, lineHeight: 1.7, whiteSpace: "pre-line" }}>{p.desc}</div>
+                <div style={{ fontSize: 34, fontWeight: 800, color: K.white, marginBottom: 16 }}>{p.title}</div>
+                <div style={{ fontSize: 22, color: K.muted, lineHeight: 1.7, whiteSpace: "pre-line" }}>{p.desc}</div>
               </div>
             );
           })}
@@ -433,13 +433,13 @@ function Scene04_Solution({ lang = "ko" }) {
         <div style={{ ...fadeSlide(frame, fps, "up", 0), fontSize: 18, color: K.purple, fontWeight: 700, letterSpacing: 2, marginBottom: 14 }}>
           HOW IT WORKS
         </div>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 48, fontWeight: 900, color: K.white, marginBottom: 24, lineHeight: 1.3 }}>
+        <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 56, fontWeight: 900, color: K.white, marginBottom: 28, lineHeight: 1.3 }}>
           {T("s04_title1", lang)}<br />
           <span style={{ background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
             {T("s04_title2", lang)}
           </span>
         </div>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0.5), fontSize: 18, color: K.muted, marginBottom: 48 }}>
+        <div style={{ ...fadeSlide(frame, fps, "up", 0.5), fontSize: 22, color: K.muted, marginBottom: 48 }}>
           {T("s04_sub", lang)}
         </div>
 
@@ -461,14 +461,14 @@ function Scene04_Solution({ lang = "ko" }) {
                 transform: `scale(${s})`, opacity: s,
               }}>
                 <div style={{
-                  width: 72, height: 72, borderRadius: 20, margin: "0 auto 16px",
+                  width: 84, height: 84, borderRadius: 22, margin: "0 auto 16px",
                   background: `${st.color}15`, border: `2px solid ${st.color}35`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  <Icon type={st.icon} size={38} color={st.color} />
+                  <Icon type={st.icon} size={44} color={st.color} />
                 </div>
                 <div style={{ fontSize: 11, color: st.color, fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>STEP 0{i + 1}</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: K.white, marginBottom: 8 }}>{st.label}</div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: K.white, marginBottom: 10 }}>{st.label}</div>
                 <div style={{ fontSize: 13, color: K.muted }}>{st.desc}</div>
               </div>
             );
@@ -513,7 +513,7 @@ function Scene05_AITools({ lang = "ko" }) {
           <div style={{ ...fadeSlide(frame, fps, "left", 0), fontSize: 14, color: K.purple, fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>
             AI-POWERED
           </div>
-          <div style={{ ...fadeSlide(frame, fps, "left", 0.2), fontSize: 46, fontWeight: 900, color: K.white, lineHeight: 1.3, marginBottom: 20 }}>
+          <div style={{ ...fadeSlide(frame, fps, "left", 0.2), fontSize: 54, fontWeight: 900, color: K.white, lineHeight: 1.3, marginBottom: 24 }}>
             {T("s05_title1", lang)}<br />
             <span style={{ background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               {T("s05_title2", lang)}
@@ -605,7 +605,7 @@ function Scene06_TimeSave({ lang = "ko" }) {
         <div style={{ ...fadeSlide(frame, fps, "up", 0), fontSize: 18, color: K.purple, fontWeight: 700, letterSpacing: 2, marginBottom: 14 }}>
           TIME SAVED
         </div>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 42, fontWeight: 900, color: K.white, marginBottom: 56, lineHeight: 1.3 }}>
+        <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 52, fontWeight: 900, color: K.white, marginBottom: 56, lineHeight: 1.3 }}>
           {T("s06_title1", lang)}<br />
           <span style={{ background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
             {T("s06_title2", lang)}
@@ -650,7 +650,7 @@ function Scene06_TimeSave({ lang = "ko" }) {
             borderRadius: 16, padding: "16px 32px",
           }}>
             <Icon type="zap" size={28} color="#10b981" />
-            <span style={{ fontSize: 22, fontWeight: 800, color: "#10b981" }}>{T("s06_time_save", lang)}</span>
+            <span style={{ fontSize: 28, fontWeight: 800, color: "#10b981" }}>{T("s06_time_save", lang)}</span>
           </div>
         </div>
       </div>
@@ -691,7 +691,7 @@ function Scene07_Community({ lang = "ko" }) {
           <div style={{ ...fadeSlide(frame, fps, "left", 0), fontSize: 14, color: K.purple, fontWeight: 700, letterSpacing: 2, marginBottom: 12 }}>
             COMMUNITY
           </div>
-          <div style={{ ...fadeSlide(frame, fps, "left", 0.2), fontSize: 46, fontWeight: 900, color: K.white, lineHeight: 1.3, marginBottom: 20 }}>
+          <div style={{ ...fadeSlide(frame, fps, "left", 0.2), fontSize: 54, fontWeight: 900, color: K.white, lineHeight: 1.3, marginBottom: 24 }}>
             {T("s07_title1", lang)}<br />
             <span style={{ background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               {T("s07_title2", lang)}
@@ -784,13 +784,13 @@ function Scene08_Resources({ lang = "ko" }) {
         <div style={{ ...fadeSlide(frame, fps, "up", 0), fontSize: 14, color: "#06b6d4", fontWeight: 700, letterSpacing: 2, marginBottom: 14 }}>
           RESOURCES
         </div>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 48, fontWeight: 900, color: K.white, marginBottom: 20, lineHeight: 1.3 }}>
+        <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 56, fontWeight: 900, color: K.white, marginBottom: 24, lineHeight: 1.3 }}>
           {T("s08_title1", lang)}<br />
           <span style={{ background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
             {T("s08_title2", lang)}
           </span>
         </div>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0.5), fontSize: 18, color: K.muted, marginBottom: 48 }}>
+        <div style={{ ...fadeSlide(frame, fps, "up", 0.5), fontSize: 22, color: K.muted, marginBottom: 48 }}>
           {T("s08_sub", lang)}
         </div>
 
@@ -804,13 +804,13 @@ function Scene08_Resources({ lang = "ko" }) {
                 borderRadius: 20, padding: "32px 20px", textAlign: "center",
               }}>
                 <div style={{
-                  width: 60, height: 60, borderRadius: 16, margin: "0 auto 16px",
+                  width: 72, height: 72, borderRadius: 18, margin: "0 auto 16px",
                   background: `${r.color}12`, border: `1px solid ${r.color}25`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  <Icon type={r.icon} size={34} color={r.color} />
+                  <Icon type={r.icon} size={40} color={r.color} />
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: K.white, marginBottom: 10, whiteSpace: "pre-line", lineHeight: 1.3 }}>{r.title}</div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: K.white, marginBottom: 12, whiteSpace: "pre-line", lineHeight: 1.3 }}>{r.title}</div>
                 <div style={{ fontSize: 13, color: K.muted }}>{r.desc}</div>
 
                 {/* 다운로드 버튼 모의 */}
@@ -856,13 +856,13 @@ function Scene09_ForEveryone({ lang = "ko" }) {
         <div style={{ ...fadeSlide(frame, fps, "up", 0), fontSize: 14, color: K.pink, fontWeight: 700, letterSpacing: 2, marginBottom: 14 }}>
           FOR EVERYONE
         </div>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 48, fontWeight: 900, color: K.white, marginBottom: 20, lineHeight: 1.3 }}>
+        <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 56, fontWeight: 900, color: K.white, marginBottom: 24, lineHeight: 1.3 }}>
           {T("s09_title1", lang)}<br />
           <span style={{ background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
             {T("s09_title2", lang)}
           </span>
         </div>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0.5), fontSize: 18, color: K.muted, marginBottom: 52 }}>
+        <div style={{ ...fadeSlide(frame, fps, "up", 0.5), fontSize: 22, color: K.muted, marginBottom: 52 }}>
           {T("s09_sub", lang)}
         </div>
 
@@ -880,10 +880,10 @@ function Scene09_ForEveryone({ lang = "ko" }) {
                   background: `${t.color}12`, border: `1px solid ${t.color}25`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  <Icon type={t.icon} size={34} color={t.color} />
+                  <Icon type={t.icon} size={40} color={t.color} />
                 </div>
-                <div style={{ fontSize: 23, fontWeight: 800, color: K.white, marginBottom: 12 }}>{t.title}</div>
-                <div style={{ fontSize: 17, color: K.muted, lineHeight: 1.6, whiteSpace: "pre-line" }}>{t.desc}</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: K.white, marginBottom: 14 }}>{t.title}</div>
+                <div style={{ fontSize: 20, color: K.muted, lineHeight: 1.6, whiteSpace: "pre-line" }}>{t.desc}</div>
               </div>
             );
           })}
@@ -917,11 +917,11 @@ function Scene10_CTA({ lang = "ko" }) {
         </div>
 
         <div style={{ ...fadeSlide(frame, fps, "up", 0.3) }}>
-          <div style={{ fontSize: 52, fontWeight: 900, color: K.white, lineHeight: 1.3, marginBottom: 8 }}>
+          <div style={{ fontSize: 62, fontWeight: 900, color: K.white, lineHeight: 1.3, marginBottom: 10 }}>
             {T("s10_line1", lang)}
           </div>
           <div style={{
-            fontSize: 52, fontWeight: 900, lineHeight: 1.3,
+            fontSize: 62, fontWeight: 900, lineHeight: 1.3,
             background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
           }}>
             {T("s10_line2", lang)}
@@ -936,7 +936,7 @@ function Scene10_CTA({ lang = "ko" }) {
           <div style={{
             display: "inline-block", background: K.grad,
             borderRadius: 18, padding: "22px 64px",
-            fontSize: 24, fontWeight: 800, color: K.white,
+            fontSize: 30, fontWeight: 800, color: K.white,
             boxShadow: "0 8px 40px rgba(124,106,255,0.4)",
           }}>
             {T("s10_cta", lang)}
@@ -945,7 +945,7 @@ function Scene10_CTA({ lang = "ko" }) {
 
         <div style={{
           ...fadeSlide(frame, fps, "up", 2.5),
-          marginTop: 36, fontSize: 40, fontWeight: 900,
+          marginTop: 36, fontSize: 48, fontWeight: 900,
           background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
         }}>
           snsmakeit.com
@@ -969,26 +969,8 @@ function CCOverlay({ lang = "ko", secondLang = null, show = true }) {
   const current = NARRATION.find(n => timeSec >= n.start && timeSec < n.end);
   if (!current) return null;
 
-  // 2줄 제한, 줄당 24자 이내
-  const wrapText = (txt, max = 24) => {
-    if (!txt) return "";
-    if (txt.length <= max) return txt;
-    // 절반 지점에서 공백 기준 분리
-    const mid = Math.floor(txt.length / 2);
-    let splitAt = -1;
-    // 중간 근처에서 가장 가까운 공백 찾기
-    for (let d = 0; d < mid; d++) {
-      if (txt[mid + d] === " " || txt[mid + d] === ",") { splitAt = mid + d; break; }
-      if (txt[mid - d] === " " || txt[mid - d] === ",") { splitAt = mid - d; break; }
-    }
-    if (splitAt <= 0) return txt; // 공백 없으면 그대로
-    const line1 = txt.slice(0, splitAt).trim();
-    const line2 = txt.slice(splitAt).trim().replace(/^,\s*/, "");
-    return line1 + "\n" + line2;
-  };
-
-  const mainText = wrapText(current[lang] || "");
-  const subText = secondLang && secondLang !== lang ? wrapText(current[secondLang] || "", 30) : "";
+  const mainText = current[lang] || "";
+  const subText = secondLang && secondLang !== lang ? (current[secondLang] || "") : "";
 
   // 자막 진입/퇴장 애니메이션
   const segDur = current.end - current.start;
@@ -1012,8 +994,8 @@ function CCOverlay({ lang = "ko", secondLang = null, show = true }) {
           border: "1px solid rgba(124,106,255,0.12)",
         }}>
           <div style={{
-            fontSize: 30, fontWeight: 700, color: "#fff",
-            lineHeight: 1.55, wordBreak: "keep-all", whiteSpace: "pre-line",
+            fontSize: 28, fontWeight: 700, color: "#fff",
+            lineHeight: 1.4, wordBreak: "keep-all", whiteSpace: "nowrap",
             textShadow: "0 1px 4px rgba(0,0,0,0.5)",
           }}>
             {mainText}
@@ -1073,7 +1055,7 @@ function InfographicComposition({ lang = "ko", secondLang = null, showCC = true,
       <CCOverlay lang={lang} secondLang={secondLang} show={showCC} />
 
       {/* 배경음악 (잔잔한 앰비언트, 음성보다 작게) */}
-      <Audio src="/tts/bgm-ambient.wav" volume={0.15} loop />
+      <Audio src="/tts/bgm-ambient.mp3" volume={0.12} loop />
 
       {/* TTS 단일 트랙 (끊김 없음) */}
       {hasAudio && <TTSFullAudio lang={lang} />}
@@ -1282,7 +1264,7 @@ export default function InfographicVideoPage() {
           compositionWidth={1920}
           compositionHeight={1080}
           fps={FPS}
-          style={{ width: 960, height: 540 }}
+          style={{ width: 1120, height: 630 }}
           controls
           autoPlay={false}
           loop={false}
