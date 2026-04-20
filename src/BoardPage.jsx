@@ -1713,19 +1713,6 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           {/* 우측 사이드바 - 데스크톱만 */}
           {!isMobile && (
           <aside style={{width:240,flexShrink:0,display:"flex",flexDirection:"column",gap:14}}>
-            {/* 카톡방 배너 */}
-            <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer"
-              style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:12, background:"#FEE500", textDecoration:"none", transition:"opacity 0.15s" }}
-              onMouseEnter={e=>e.currentTarget.style.opacity="0.9"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-              <div style={{ width:32, height:32, borderRadius:8, background:"#191919", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#FEE500" d="M12 3C6.48 3 2 6.36 2 10.44c0 2.62 1.75 4.93 4.38 6.24-.13.47-.85 3.04-.88 3.23 0 0-.02.15.08.21.1.06.21.01.21.01.28-.04 3.24-2.13 3.76-2.49.79.11 1.6.17 2.45.17 5.52 0 10-3.36 10-7.37S17.52 3 12 3z"/></svg>
-              </div>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:12, fontWeight:800, color:"#191919" }}>카톡방 소통하기</div>
-                <div style={{ fontSize:10, color:"rgba(25,25,25,0.55)" }}>마케팅 인사이트 공유</div>
-              </div>
-              <span style={{ fontSize:11, fontWeight:800, color:"#191919" }}>→</span>
-            </a>
 
             {/* 전체 인기글 TOP10 */}
             {hotPostsAll.length>0&&(
