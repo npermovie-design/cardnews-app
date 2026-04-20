@@ -975,18 +975,17 @@ function CCOverlay({ lang = "ko", secondLang = null, show = true }) {
   const current = NARRATION[idx];
   const nextStart = idx < NARRATION.length - 1 ? NARRATION[idx + 1].start : current.end + 2;
 
-  const fullText = current[lang] || "";
+  const fullMain = current[lang] || "";
   const fullSub = secondLang && secondLang !== lang ? (current[secondLang] || "") : "";
 
-  // 20자 이내로 쪼개기
-  const splitTo20 = (txt) => {
-    if (!txt) return [""];
-    if (txt.length <= 20) return [txt];
+  // 25자 단위로 쪼개기
+  const split25 = (txt) => {
+    if (!txt || txt.length <= 25) return [txt];
     const chunks = [];
     let remain = txt;
-    while (remain.length > 20) {
-      let cut = 20;
-      for (let j = 20; j > 8; j--) {
+    while (remain.length > 25) {
+      let cut = 25;
+      for (let j = 25; j > 12; j--) {
         if (" ,.，。、".includes(remain[j])) { cut = j + 1; break; }
       }
       chunks.push(remain.slice(0, cut).trim());
@@ -996,47 +995,32 @@ function CCOverlay({ lang = "ko", secondLang = null, show = true }) {
     return chunks;
   };
 
-  const mainChunks = splitTo20(fullText);
-  const subChunks = splitTo20(fullSub);
+  const mainChunks = split25(fullMain);
+  const subChunks = split25(fullSub);
   const segDur = nextStart - current.start;
-
-  // 현재 시간에 맞는 청크 선택
-  const progress = (timeSec - current.start) / segDur;
+  const progress = Math.min(1, (timeSec - current.start) / segDur);
   const mainIdx = Math.min(Math.floor(progress * mainChunks.length), mainChunks.length - 1);
   const subIdx = Math.min(Math.floor(progress * subChunks.length), subChunks.length - 1);
   const mainText = mainChunks[Math.max(0, mainIdx)];
   const subText = fullSub ? subChunks[Math.max(0, subIdx)] : "";
 
-  // 청크 전환 애니메이션
-  const chunkDur = segDur / mainChunks.length;
-  const chunkElapsed = (timeSec - current.start) - mainIdx * chunkDur;
-  const chunkEnter = Math.min(1, chunkElapsed / 0.2);
-  const chunkExit = Math.min(1, (chunkDur - chunkElapsed) / 0.2);
-  const opacity = Math.min(chunkEnter, chunkExit, Math.min(1, (timeSec - current.start) / 0.3), Math.min(1, (nextStart - timeSec) / 0.3));
-
   return (
     <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", padding: "0 5% 48px", pointerEvents: "none", zIndex: 50 }}>
-      <div style={{
-        opacity,
-        transform: `translateY(${(1 - opacity) * 6}px)`,
-        textAlign: "center", maxWidth: "92%",
-      }}>
-        {/* 메인 자막 */}
+      <div style={{ textAlign: "center", maxWidth: "92%" }}>
         <div style={{
           display: "inline-block",
           background: "rgba(0,0,0,0.75)", backdropFilter: "blur(12px)",
-          borderRadius: 14, padding: "12px 32px",
+          borderRadius: 14, padding: "14px 36px",
           border: "1px solid rgba(124,106,255,0.12)",
         }}>
           <div style={{
-            fontSize: 28, fontWeight: 700, color: "#fff",
+            fontSize: 26, fontWeight: 700, color: "#fff",
             lineHeight: 1.4, wordBreak: "keep-all", whiteSpace: "nowrap",
             textShadow: "0 1px 4px rgba(0,0,0,0.5)",
           }}>
             {mainText}
           </div>
 
-          {/* 보조 자막 (이중언어) */}
           {subText && (
             <div style={{
               fontSize: 17, fontWeight: 500, color: "rgba(255,255,255,0.6)",
