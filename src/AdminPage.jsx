@@ -1541,7 +1541,7 @@ function VisitorAnalyticsTab({ C, isDark }) {
   const load = async (d) => {
     setLoading(true);
     try {
-      const r = await fetch(`/api/track?action=stats&days=${d}`);
+      const r = await fetch(`/api/sns?action=track-stats&days=${d}`);
       if (!r.ok) throw new Error("API error");
       const j = await r.json();
       if (j.error) throw new Error(j.error);

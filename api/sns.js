@@ -848,6 +848,56 @@ async function handleAdmin(req, res) {
 // ══════════════════════════════════════════════════════════════════
 // 라우터: ?action= 파라미터로 분기
 // ══════════════════════════════════════════════════════════════════
+// ── 방문자 추적 ──
+async function handleTrackLog(req, res) {
+  try {
+    const country = req.headers["x-vercel-ip-country"] || req.headers["cf-ipcountry"] || "unknown";
+    const city = decodeURIComponent(req.headers["x-vercel-ip-city"] || "unknown");
+    const region = req.headers["x-vercel-ip-country-region"] || "";
+    const lat = req.headers["x-vercel-ip-latitude"] || null;
+    const lng = req.headers["x-vercel-ip-longitude"] || null;
+    const ua = req.headers["user-agent"] || "";
+    const body = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
+    const isMobile = /mobile|android|iphone|ipad/i.test(ua);
+    await supabase.from("visitor_logs").insert({
+      country, city, region, lat: lat ? parseFloat(lat) : null, lng: lng ? parseFloat(lng) : null,
+      page: body.page || "/", referrer: body.referrer || "", device: isMobile ? "mobile" : "desktop", ua: ua.slice(0, 200),
+    });
+    return res.status(200).json({ ok: true });
+  } catch (e) { return res.status(500).json({ error: e.message }); }
+}
+
+async function handleTrackStats(req, res) {
+  try {
+    const days = parseInt(req.query.days || "30");
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const { count: totalVisits } = await supabase.from("visitor_logs").select("id", { count: "exact", head: true }).gte("created_at", since);
+    const { data: allData } = await supabase.from("visitor_logs").select("country, city, device, page, referrer, lat, lng, created_at").gte("created_at", since).order("created_at").limit(5000);
+    const rows = allData || [];
+    const countryCounts = {}, cityCounts = {}, dailyCounts = {}, deviceCounts = {}, pageCounts = {}, refCounts = {}, geoPoints = {};
+    rows.forEach(r => {
+      countryCounts[r.country] = (countryCounts[r.country] || 0) + 1;
+      const ck = `${r.city}|${r.country}`; cityCounts[ck] = (cityCounts[ck] || 0) + 1;
+      const d = r.created_at.slice(0, 10); dailyCounts[d] = (dailyCounts[d] || 0) + 1;
+      deviceCounts[r.device] = (deviceCounts[r.device] || 0) + 1;
+      pageCounts[r.page] = (pageCounts[r.page] || 0) + 1;
+      if (r.referrer) { try { const h = new URL(r.referrer).hostname; refCounts[h] = (refCounts[h] || 0) + 1; } catch {} }
+      if (r.lat && r.lng) {
+        const gk = `${r.lat.toFixed(1)},${r.lng.toFixed(1)}`;
+        if (!geoPoints[gk]) geoPoints[gk] = { lat: r.lat, lng: r.lng, country: r.country, city: r.city, count: 0 };
+        geoPoints[gk].count++;
+      }
+    });
+    return res.status(200).json({
+      totalVisits: totalVisits || 0, countries: Object.keys(countryCounts).length, cities: Object.keys(cityCounts).length,
+      countryCounts, cityCounts, dailyCounts, deviceCounts, days,
+      pageCounts: Object.entries(pageCounts).sort((a, b) => b[1] - a[1]).slice(0, 20),
+      geoPoints: Object.values(geoPoints),
+      referrerCounts: Object.entries(refCounts).sort((a, b) => b[1] - a[1]).slice(0, 15),
+    });
+  } catch (e) { return res.status(500).json({ error: e.message }); }
+}
+
 const ACTION_MAP = {
   publish: handlePublish,
   connections: handleConnections,
@@ -857,6 +907,8 @@ const ACTION_MAP = {
   feed: handleFeed,
   "webhook-lemonsqueezy": handleWebhookLemonsqueezy,
   admin: handleAdmin,
+  "track-log": handleTrackLog,
+  "track-stats": handleTrackStats,
 };
 
 export default async function handler(req, res) {

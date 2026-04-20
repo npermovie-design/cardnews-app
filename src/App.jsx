@@ -308,7 +308,7 @@ export default function App() {
     try {
       const key = "nper_visit_" + new Date().toISOString().slice(0, 13);
       if (!sessionStorage.getItem(key)) {
-        fetch("/api/track?action=log", {
+        fetch("/api/sns?action=track-log", {
           method: "POST", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ page: window.location.pathname, referrer: document.referrer }),
         }).catch(() => {});

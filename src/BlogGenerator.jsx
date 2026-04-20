@@ -886,7 +886,7 @@ import LoadingAnimation from "./LoadingAnimation";
 import KeywordInsightPanel from "./KeywordInsightPanel";
 import { cleanBlogText, mdToHtml, renderMarkdown, inlineFormat, PLATFORMS, PointsExhausted, FIELD_LABELS, SPEECH_STYLES } from "./BlogUtils.jsx";
 
-export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest, onUserUpdate, showPointConfirm, setAiMenu }) {
+export default function BlogGenerator({ initialType, embedded, menuLabel, theme, user, onLoginRequest, onUserUpdate, showPointConfirm, setAiMenu, initialVideoMode }) {
   // SNS 플랫폼 드롭다운 (폼 내에서 선택)
   const SNS_OPTIONS = [
     { id: "blog_naver", label: "네이버 블로그", icon: "/icon-naver-blog.png", color: "#03C75A" },
@@ -1013,8 +1013,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [imageResult, setImageResult] = useState(null);
   const [imageStyle, setImageStyle] = useState("realistic");
   const [imageAspect, setImageAspect] = useState("1:1");
-  const [shortsMode, setShortsMode] = useState(false); // 영상 모드 (선택 화면 표시)
-  const [videoSubMode, setVideoSubMode] = useState(null); // null(선택) | "shortform" | "longform"
+  const [shortsMode, setShortsMode] = useState(!!initialVideoMode || false); // 영상 모드 (선택 화면 표시)
+  const [videoSubMode, setVideoSubMode] = useState(initialVideoMode || null); // null(선택) | "shortform" | "longform"
   const [shortsYtUrl, setShortsYtUrl] = useState("");
 
   const [showAdvanced, setShowAdvanced] = useState(true);
@@ -2103,8 +2103,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   // eslint-disable-next-line no-unused-vars
   const [mobileTab, setMobileTab] = useState("input");
   // 표시 모드: 입력(검색창) vs 생성중/결과
-  const showResult = (mode === "write" && ((loading || (genStep > 0 && genStep < 5)) || (!loading && genStep === 5 && result)))
-    || shortsMode;
+  const showResult = (mode === "write" && ((loading || (genStep > 0 && genStep < 5)) || (!loading && genStep === 5 && result)));
 
   // 파일 입력 핸들러 (드래그앤드롭/버튼 공용)
   const [fileLoading, setFileLoading] = useState(false);
@@ -2249,10 +2248,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         </div>
       )}
 
-      <div style={{flex:1,overflowY:"auto",position:"relative"}}>
+      <div style={{flex:1,overflowY: (shortsMode && videoSubMode) ? "hidden" : "auto",position:"relative",display: (shortsMode && videoSubMode) ? "flex" : "block",flexDirection:"column"}}>
         {/* ══════ 입력 화면 (검색창 스타일) ══════ */}
         {!showResult && (
-          <div className="bl-search-wrap" style={{maxWidth:720,margin:"0 auto",padding:"0 24px",display:"flex",flexDirection:"column",justifyContent:"center",minHeight:"100%"}}>
+          <div className="bl-search-wrap" style={{maxWidth:720,margin:"0 auto",padding:"0 24px",display:"flex",flexDirection:"column",justifyContent: (shortsMode && videoSubMode) ? "flex-start" : "center",minHeight: (shortsMode && videoSubMode) ? "auto" : "100%",flexShrink:0}}>
             {/* 타이틀 */}
             <div style={{textAlign:"center",marginBottom:32}}>
               <div style={{fontSize:28,fontWeight:900,color:text,letterSpacing:-0.5,lineHeight:1.3}}>
@@ -2267,22 +2266,29 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}>
               {[
                 {id:"write", label:"글쓰기", color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
-                {id:"shorts", label:"영상 생성", color:"#ef4444", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>},
-              ].map(m => (
+                {id:"shorts", label:"영상 생성", color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>},
+              ].map(m => {
+                const isActive = m.id==="shorts" ? shortsMode : mode===m.id && !shortsMode;
+                return (
                 <button key={m.id} onClick={()=>{if(m.id==="shorts"){setShortsMode(true);setVideoSubMode(null);setShortsYtUrl("");}else{setShortsMode(false);setVideoSubMode(null);setMode(m.id);}}} style={{
                   padding:"10px 20px", borderRadius:20,
-                  border: (m.id==="shorts"?shortsMode:mode===m.id) ? `2px solid ${m.color}` : `1.5px solid ${border}`,
-                  background: (m.id==="shorts"?shortsMode:mode===m.id) ? (isDark?`${m.color}15`:`${m.color}08`) : "transparent",
-                  color: (m.id==="shorts"?shortsMode:mode===m.id) ? m.color : muted,
-                  fontSize:14, fontWeight: (m.id==="shorts"?shortsMode:mode===m.id)?800:600,
+                  border: isActive ? `2px solid ${m.color}` : `1.5px solid ${border}`,
+                  background: isActive ? (isDark?`${m.color}15`:`${m.color}08`) : "transparent",
+                  color: isActive ? m.color : muted,
+                  fontSize:14, fontWeight: isActive?800:600,
                   cursor:"pointer", display:"flex", alignItems:"center", gap:6,
                   fontFamily:"inherit", transition:"all 0.15s",
                 }}>
                   {m.icon} {m.label}
                 </button>
-              ))}
+              );})}
             </div>
 
+            {/* 영상 모드: 모드 칩 아래에 인라인으로 에디터 표시 */}
+            {shortsMode ? (
+              null /* 아래 별도 블록에서 렌더링 — 검색창/설정을 숨기기 위해 여기서 차단 */
+            ) : (
+            <>
             {/* 현재 선택된 플랫폼 표시 (글쓰기 모드에서만) */}
             {mode==="write" && (
             <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:14}}>
@@ -2599,81 +2605,78 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               </button>
             </div>}
             {/* 이미지 모드 도구 칩 — 제거됨 */}
-          </div>
-        )}
+            </>
+            )}
 
-        {/* 결과 화면 */}
-        {showResult && (
-          shortsMode && _getUsageState().exhausted ? (
-            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",padding:40}}>
-              <div style={{maxWidth:400,textAlign:"center"}}>
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                <div style={{fontSize:20,fontWeight:900,color:text,marginTop:16,marginBottom:8}}>프로 버전에서 사용 가능합니다</div>
-                <div style={{fontSize:14,color:muted,lineHeight:1.7,marginBottom:24}}>무료 체험 횟수를 모두 사용했습니다.<br/>프로 버전으로 업그레이드하면 무제한으로 영상을 생성할 수 있어요.</div>
-                <div style={{display:"flex",gap:10,justifyContent:"center"}}>
-                  <button onClick={()=>{setShortsMode(false);}} style={{padding:"12px 24px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",color:text,fontSize:14,fontWeight:700,cursor:"pointer"}}>돌아가기</button>
-                  <button onClick={()=>{try{window.location.hash="#pricing";}catch{}}} style={{padding:"12px 24px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>프로 버전 보기</button>
+            {/* 영상 모드: 숏폼/롱폼 선택 및 에디터 인라인 표시 */}
+            {shortsMode && (
+              _getUsageState().exhausted ? (
+                <div style={{textAlign:"center",padding:"40px 0"}}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  <div style={{fontSize:20,fontWeight:900,color:text,marginTop:16,marginBottom:8}}>프로 버전에서 사용 가능합니다</div>
+                  <div style={{fontSize:14,color:muted,lineHeight:1.7,marginBottom:24}}>무료 체험 횟수를 모두 사용했습니다.<br/>프로 버전으로 업그레이드하면 무제한으로 영상을 생성할 수 있어요.</div>
+                  <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+                    <button onClick={()=>{setShortsMode(false);}} style={{padding:"12px 24px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",color:text,fontSize:14,fontWeight:700,cursor:"pointer"}}>돌아가기</button>
+                    <button onClick={()=>{try{window.location.hash="#pricing";}catch{}}} style={{padding:"12px 24px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>프로 버전 보기</button>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ) : shortsMode ? (
-            <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
-              <div style={{padding:"8px 16px",display:"flex",alignItems:"center",gap:8,borderBottom:`1px solid ${border}`}}>
-                <button onClick={()=>{if(videoSubMode){setVideoSubMode(null);}else{setShortsMode(false);setShortsYtUrl("");}}}
-                  style={{padding:"6px 14px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:text,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit"}}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-                  {videoSubMode ? "영상 유형 선택" : "돌아가기"}
-                </button>
-                {videoSubMode && <span style={{fontSize:12,fontWeight:700,color:accent,padding:"3px 10px",borderRadius:20,background:`${accent}12`}}>{videoSubMode==="shortform"?"숏폼 편집":"롱폼 편집"}</span>}
-              </div>
-              {!videoSubMode ? (
-                /* 숏폼/롱폼 선택 화면 */
-                <div style={{flex:1,overflowY:"auto",padding:"40px 20px"}}>
-                  <div style={{maxWidth:520,margin:"0 auto",textAlign:"center"}}>
-                    <div style={{fontSize:22,fontWeight:900,color:text,marginBottom:6}}>영상 편집</div>
-                    <div style={{fontSize:13,color:muted,marginBottom:32}}>어떤 영상을 편집하시겠어요?</div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
-                      <div onClick={()=>setVideoSubMode("shortform")} style={{padding:"28px 16px",borderRadius:16,border:`1.5px solid ${border}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}
-                        onMouseEnter={e=>e.currentTarget.style.borderColor=accent} onMouseLeave={e=>e.currentTarget.style.borderColor=border}>
-                        <div style={{width:72,height:72,borderRadius:18,background:`${accent}10`,margin:"0 auto 14px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                          <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="6" y="2" width="12" height="20" rx="3" stroke={accent} strokeWidth="1.8"/><path d="M10 14V10l4 2-4 2z" fill={accent}/></svg>
-                        </div>
-                        <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>숏폼 편집</div>
-                        <div style={{fontSize:11,color:muted,lineHeight:1.5}}>긴 영상에서 AI가<br/>핵심 쇼츠를 자동 추출</div>
-                        <div style={{display:"flex",flexWrap:"wrap",gap:3,justifyContent:"center",marginTop:10}}>
-                          {["AI 추출","9:16","자막"].map(t=><span key={t} style={{padding:"2px 7px",borderRadius:12,background:`${accent}08`,fontSize:9,color:accent,fontWeight:600}}>{t}</span>)}
-                        </div>
+              ) : !videoSubMode ? (
+                <div style={{maxWidth:520,margin:"0 auto",padding:"20px 0 40px"}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}}>
+                    <div onClick={()=>setVideoSubMode("shortform")} style={{padding:"32px 16px",borderRadius:20,border:`1.5px solid ${border}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}
+                      onMouseEnter={e=>e.currentTarget.style.borderColor=accent} onMouseLeave={e=>e.currentTarget.style.borderColor=border}>
+                      <div style={{width:110,height:110,borderRadius:26,background:`${accent}08`,margin:"0 auto 18px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        <svg width="56" height="56" viewBox="0 0 24 24" fill="none"><rect x="6" y="2" width="12" height="20" rx="3" stroke={accent} strokeWidth="1.5"/><path d="M10 14V10l4 2-4 2z" fill={accent}/></svg>
                       </div>
-                      <div onClick={()=>setVideoSubMode("longform")} style={{padding:"28px 16px",borderRadius:16,border:`1.5px solid ${border}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}
-                        onMouseEnter={e=>e.currentTarget.style.borderColor=accent} onMouseLeave={e=>e.currentTarget.style.borderColor=border}>
-                        <div style={{width:72,height:72,borderRadius:18,background:`${accent}10`,margin:"0 auto 14px",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                          <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke={accent} strokeWidth="1.8"/><path d="M8 4v16M16 4v16" stroke={accent} strokeWidth="1" opacity="0.4"/><path d="M2 12h20" stroke={accent} strokeWidth="1" opacity="0.4"/></svg>
-                        </div>
-                        <div style={{fontSize:16,fontWeight:800,color:text,marginBottom:4}}>롱폼 편집</div>
-                        <div style={{fontSize:11,color:muted,lineHeight:1.5}}>무음 제거 + 반복 삭제<br/>자막 애니메이션</div>
-                        <div style={{display:"flex",flexWrap:"wrap",gap:3,justifyContent:"center",marginTop:10}}>
-                          {["무음제거","반복삭제","애니메이션"].map(t=><span key={t} style={{padding:"2px 7px",borderRadius:12,background:`${accent}08`,fontSize:9,color:accent,fontWeight:600}}>{t}</span>)}
-                        </div>
+                      <div style={{fontSize:17,fontWeight:900,color:text,marginBottom:6}}>숏폼 편집</div>
+                      <div style={{fontSize:12,color:muted,lineHeight:1.6}}>긴 영상에서 AI가<br/>핵심 쇼츠를 자동 추출</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:4,justifyContent:"center",marginTop:12}}>
+                        {["AI 추출","9:16","자막"].map(t=><span key={t} style={{padding:"3px 9px",borderRadius:12,background:`${accent}08`,fontSize:10,color:accent,fontWeight:600}}>{t}</span>)}
+                      </div>
+                    </div>
+                    <div onClick={()=>setVideoSubMode("longform")} style={{padding:"32px 16px",borderRadius:20,border:`1.5px solid ${border}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}
+                      onMouseEnter={e=>e.currentTarget.style.borderColor=accent} onMouseLeave={e=>e.currentTarget.style.borderColor=border}>
+                      <div style={{width:110,height:110,borderRadius:26,background:`${accent}08`,margin:"0 auto 18px",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                        <svg width="56" height="56" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke={accent} strokeWidth="1.5"/><path d="M8 4v16M16 4v16" stroke={accent} strokeWidth="0.8" opacity="0.4"/><path d="M2 12h20" stroke={accent} strokeWidth="0.8" opacity="0.4"/></svg>
+                      </div>
+                      <div style={{fontSize:17,fontWeight:900,color:text,marginBottom:6}}>롱폼 편집</div>
+                      <div style={{fontSize:12,color:muted,lineHeight:1.6}}>무음 제거 + 반복 삭제<br/>자막 애니메이션</div>
+                      <div style={{display:"flex",flexWrap:"wrap",gap:4,justifyContent:"center",marginTop:12}}>
+                        {["무음제거","반복삭제","애니메이션"].map(t=><span key={t} style={{padding:"3px 9px",borderRadius:12,background:`${accent}08`,fontSize:10,color:accent,fontWeight:600}}>{t}</span>)}
                       </div>
                     </div>
                   </div>
                 </div>
-              ) : videoSubMode === "shortform" ? (
-                <div style={{flex:1,overflow:"hidden"}}>
-                  <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>로딩 중...</div>}>
-                    <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} />
-                  </Suspense>
-                </div>
-              ) : (
-                <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-                  <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>로딩 중...</div>}>
-                    <LongFormEditor isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} />
-                  </Suspense>
-                </div>
-              )}
-            </div>
-          ) : renderResult()
+              ) : null
+            )}
+          </div>
         )}
+
+        {/* 영상 에디터 (숏폼/롱폼 선택 후 — 입력 화면 아래 flex로 표시) */}
+        {!showResult && shortsMode && videoSubMode && (
+          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderTop:`1px solid ${border}`}}>
+            <div style={{padding:"6px 16px",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+              <button onClick={()=>setVideoSubMode(null)}
+                style={{padding:"5px 12px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:text,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"}}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                유형 선택
+              </button>
+              <span style={{fontSize:11,fontWeight:700,color:accent,padding:"3px 10px",borderRadius:20,background:`${accent}12`}}>{videoSubMode==="shortform"?"숏폼 편집":"롱폼 편집"}</span>
+            </div>
+            {videoSubMode === "shortform" ? (
+              <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>로딩 중...</div>}>
+                <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} />
+              </Suspense>
+            ) : (
+              <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>로딩 중...</div>}>
+                <LongFormEditor isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} />
+              </Suspense>
+            )}
+          </div>
+        )}
+
+        {/* 결과 화면 */}
+        {showResult && renderResult()}
       </div>
     </div>
   );

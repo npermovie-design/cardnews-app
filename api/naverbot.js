@@ -257,13 +257,23 @@ function stripMarkdown(text) {
 
 function parseResponse(text, fallbackKeyword) {
   const titleMatch = text.match(/\[TITLE\]\s*\n([^\n]+)/);
-  const bodyMatch = text.match(/\[BODY\]\s*\n([\s\S]+?)(?=\n\[TAGS\]|$)/);
   const tagsMatch = text.match(/\[TAGS\]\s*\n([^\n]+)/);
 
-  const rawBody = bodyMatch ? bodyMatch[1].trim() : text.trim();
+  // [TITLE] 이후 ~ [TAGS] 전까지가 본문 ([BODY] 마커 유무 무관)
+  let rawBody = "";
+  const bodyMatch = text.match(/\[BODY\]\s*\n([\s\S]+?)(?=\n\[TAGS\]|$)/);
+  if (bodyMatch) {
+    rawBody = bodyMatch[1].trim();
+  } else {
+    // [BODY] 없으면 [TITLE] 다음줄 ~ [TAGS] 전까지
+    const afterTitle = text.match(/\[TITLE\]\s*\n[^\n]+\n([\s\S]+?)(?=\n\[TAGS\]|$)/);
+    rawBody = afterTitle ? afterTitle[1].trim() : text.trim();
+  }
 
+  // 마커들을 보호하면서 마크다운 제거
   const placeholders = [];
-  const protectedBody = rawBody.replace(/\[image:\s*[^\]]+\]/gi, (m) => {
+  const markerRegex = /\[(?:image|SUBTITLE|QUOTE|gif):\s*[^\]]+\]|\[(?:SUBTITLE|QUOTE)\]\s*[^\n]+/gi;
+  const protectedBody = rawBody.replace(markerRegex, (m) => {
     placeholders.push(m);
     return `PIXMARK${placeholders.length - 1}PIXEND`;
   });
@@ -297,6 +307,63 @@ async function searchImage(keyword) {
     console.error("[naverbot] Pexels:", e.message);
     return null;
   }
+}
+
+const KLIPY_KEY = process.env.KLIPY_KEY;
+
+async function searchGif(keyword) {
+  if (!keyword) return null;
+
+  // 1차: Klipy API
+  if (KLIPY_KEY) {
+    try {
+      const url = `https://api.klipy.com/api/v1/${KLIPY_KEY}/gifs/search?q=${encodeURIComponent(keyword)}&per_page=8&locale=ko_KR&content_filter=g`;
+      const r = await fetch(url, { timeout: 8000 });
+      if (r.ok) {
+        const data = await r.json();
+        const items = data?.data?.data || [];
+        if (items.length > 0) {
+          // 랜덤으로 하나 선택 (다양성)
+          const item = items[Math.floor(Math.random() * Math.min(items.length, 5))];
+          // Klipy 응답에서 GIF URL 추출 (여러 포맷 중 작은 사이즈 선택)
+          const gifUrl = item?.media_formats?.gif?.url
+            || item?.media_formats?.tinygif?.url
+            || item?.media?.gif?.url
+            || item?.url
+            || "";
+          if (gifUrl) {
+            return { url: gifUrl, keyword, source: "klipy" };
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[naverbot] Klipy:", e.message);
+    }
+  }
+
+  // 2차: GIPHY 폴백
+  const GIPHY_KEY = process.env.GIPHY_KEY;
+  if (GIPHY_KEY) {
+    try {
+      const url = `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(keyword)}&lang=ko&limit=5&rating=g`;
+      const r = await fetch(url, { timeout: 8000 });
+      if (r.ok) {
+        const data = await r.json();
+        const items = data?.data || [];
+        if (items.length > 0) {
+          const item = items[Math.floor(Math.random() * Math.min(items.length, 3))];
+          const gifUrl = item?.images?.downsized_medium?.url || item?.images?.original?.url || "";
+          if (gifUrl) {
+            return { url: gifUrl, keyword, source: "giphy" };
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[naverbot] GIPHY:", e.message);
+    }
+  }
+
+  return null;
 }
 
 async function handleContentGenerate(req, res) {
@@ -339,6 +406,8 @@ async function handleContentGenerate(req, res) {
   const trends = await fetchRecentTrends(fields.keyword, { days: 7, limit: 8 });
   const trendsText = trendsToPromptText(trends);
 
+  const useGif = !!req.body.use_gif;
+
   const { system, user } = buildBlogPrompt({
     subtype,
     tone,
@@ -347,6 +416,7 @@ async function handleContentGenerate(req, res) {
     fields,
     userPrompt: user_prompt,
     trendsText,
+    useGif,
   });
 
   let aiText = "";
@@ -381,16 +451,29 @@ async function handleContentGenerate(req, res) {
   }
 
   const parsed = parseResponse(aiText, fields.keyword || "글");
+
+  // 태그 fallback: Claude가 TAGS를 누락하면 키워드 기반 자동 생성
+  if (!parsed.tags.length && fields.keyword) {
+    const kw = fields.keyword.trim();
+    const words = kw.split(/[\s,]+/).filter(w => w.length >= 2);
+    parsed.tags = [kw, ...words.slice(0, 4)].filter((v, i, a) => a.indexOf(v) === i).slice(0, 5);
+  }
+
   const rawBlocks = splitBodyByImageMarkers(parsed.body);
 
   const blocks = [];
   for (const blk of rawBlocks) {
-    if (blk.type === "text") {
+    if (blk.type === "text" || blk.type === "subtitle" || blk.type === "quote") {
       blocks.push(blk);
     } else if (blk.type === "image") {
       const photo = await searchImage(blk.keyword);
       if (photo) {
         blocks.push({ type: "image", url: photo.url, alt: photo.alt, keyword: blk.keyword });
+      }
+    } else if (blk.type === "gif" && useGif) {
+      const gif = await searchGif(blk.keyword);
+      if (gif) {
+        blocks.push({ type: "image", url: gif.url, alt: blk.keyword, keyword: blk.keyword, isGif: true });
       }
     }
   }
