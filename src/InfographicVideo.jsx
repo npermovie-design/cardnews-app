@@ -975,31 +975,61 @@ function CCOverlay({ lang = "ko", secondLang = null, show = true }) {
   const current = NARRATION[idx];
   const nextStart = idx < NARRATION.length - 1 ? NARRATION[idx + 1].start : current.end + 2;
 
-  const mainText = current[lang] || "";
-  const subText = secondLang && secondLang !== lang ? (current[secondLang] || "") : "";
+  const fullText = current[lang] || "";
+  const fullSub = secondLang && secondLang !== lang ? (current[secondLang] || "") : "";
 
-  // 자막 진입/퇴장 애니메이션
-  const elapsed = timeSec - current.start;
-  const enterOp = Math.min(1, elapsed / 0.3);
-  const exitOp = Math.min(1, (nextStart - timeSec) / 0.3);
-  const opacity = Math.min(enterOp, exitOp);
+  // 20자 이내로 쪼개기
+  const splitTo20 = (txt) => {
+    if (!txt) return [""];
+    if (txt.length <= 20) return [txt];
+    const chunks = [];
+    let remain = txt;
+    while (remain.length > 20) {
+      let cut = 20;
+      for (let j = 20; j > 8; j--) {
+        if (" ,.，。、".includes(remain[j])) { cut = j + 1; break; }
+      }
+      chunks.push(remain.slice(0, cut).trim());
+      remain = remain.slice(cut).trim();
+    }
+    if (remain) chunks.push(remain);
+    return chunks;
+  };
+
+  const mainChunks = splitTo20(fullText);
+  const subChunks = splitTo20(fullSub);
+  const segDur = nextStart - current.start;
+
+  // 현재 시간에 맞는 청크 선택
+  const progress = (timeSec - current.start) / segDur;
+  const mainIdx = Math.min(Math.floor(progress * mainChunks.length), mainChunks.length - 1);
+  const subIdx = Math.min(Math.floor(progress * subChunks.length), subChunks.length - 1);
+  const mainText = mainChunks[Math.max(0, mainIdx)];
+  const subText = fullSub ? subChunks[Math.max(0, subIdx)] : "";
+
+  // 청크 전환 애니메이션
+  const chunkDur = segDur / mainChunks.length;
+  const chunkElapsed = (timeSec - current.start) - mainIdx * chunkDur;
+  const chunkEnter = Math.min(1, chunkElapsed / 0.2);
+  const chunkExit = Math.min(1, (chunkDur - chunkElapsed) / 0.2);
+  const opacity = Math.min(chunkEnter, chunkExit, Math.min(1, (timeSec - current.start) / 0.3), Math.min(1, (nextStart - timeSec) / 0.3));
 
   return (
     <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", padding: "0 5% 48px", pointerEvents: "none", zIndex: 50 }}>
       <div style={{
         opacity,
-        transform: `translateY(${(1 - opacity) * 8}px)`,
-        textAlign: "center", maxWidth: "88%",
+        transform: `translateY(${(1 - opacity) * 6}px)`,
+        textAlign: "center", maxWidth: "92%",
       }}>
         {/* 메인 자막 */}
         <div style={{
           display: "inline-block",
           background: "rgba(0,0,0,0.75)", backdropFilter: "blur(12px)",
-          borderRadius: 14, padding: "12px 28px",
+          borderRadius: 14, padding: "12px 32px",
           border: "1px solid rgba(124,106,255,0.12)",
         }}>
           <div style={{
-            fontSize: 26, fontWeight: 700, color: "#fff",
+            fontSize: 28, fontWeight: 700, color: "#fff",
             lineHeight: 1.4, wordBreak: "keep-all", whiteSpace: "nowrap",
             textShadow: "0 1px 4px rgba(0,0,0,0.5)",
           }}>
