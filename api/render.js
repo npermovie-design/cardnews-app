@@ -128,7 +128,23 @@ export default async function handler(req) {
   }
 
   const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", sns_briefing: "SNS 브리핑" };
-  if (segments[1]) {
+  let catPosts = []; // 카테고리 목록용
+  if (segments[0] === "community" && segments[1] && !segments[2]) {
+    title = `${catNames[segments[1]] || "커뮤니티"} - SNS메이킷 커뮤니티`;
+    description = `SNS메이킷 ${catNames[segments[1]] || "커뮤니티"} 게시판입니다. 최신 글을 확인하세요.`;
+    // 카테고리 페이지: 최근 게시글 50개 링크 제공 (크롤러 내부링크)
+    try {
+      const catFilter = segments[1] === "info" ? "" : `&subCat=eq.${segments[1]}`;
+      const catData = await sbQuery("posts", `select=id,title,subCat,created_at&order=created_at.desc&limit=50${catFilter}`);
+      // sbQuery는 단일 객체 반환이므로 배열 쿼리 별도 처리
+      if (SB_URL && SB_KEY) {
+        const r = await fetch(`${SB_URL}/rest/v1/posts?select=id,title,subCat,created_at&order=created_at.desc&limit=50${catFilter}`, {
+          headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+        });
+        if (r.ok) catPosts = await r.json();
+      }
+    } catch {}
+  } else if (segments[1]) {
     title = `${catNames[segments[1]] || "커뮤니티"} - SNS메이킷 커뮤니티`;
   }
 
@@ -163,35 +179,44 @@ export default async function handler(req) {
   const ua = (req.headers.get("user-agent") || "").toLowerCase();
   const isBot = /bot|crawl|spider|slurp|facebookexternalhit|kakaotalk-scrap|twitterbot|linkedinbot|telegram|whatsapp|discord|preview|fetcher|curl|wget|python|go-http|gptbot|claude-web|ccbot|petalbot|yandexbot|bingpreview|applebot|duckduckbot|bytespider|semrush|ahrefs/i.test(ua);
 
-  // Article JSON-LD 구조화 데이터
+  // Article + BreadcrumbList JSON-LD 구조화 데이터
   let jsonLd = "";
   if (postData) {
-    const schema = {
-      "@context": "https://schema.org",
-      "@type": "Article",
-      headline: (postData.title || "").substring(0, 110),
-      description: (description || "").substring(0, 300),
-      image: image,
-      datePublished: postData.created_at || new Date().toISOString(),
-      author: {
-        "@type": "Person",
-        name: postData.author || "SNS메이킷 사용자",
-      },
-      publisher: {
-        "@type": "Organization",
-        name: "SNS메이킷",
-        url: SITE_URL,
-        logo: {
-          "@type": "ImageObject",
-          url: `${SITE_URL}/og-image.png`,
+    const catName = catNames[segments[1]] || "커뮤니티";
+    const schemas = [
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        headline: (postData.title || "").substring(0, 110),
+        description: (description || "").substring(0, 300),
+        image: image,
+        datePublished: postData.created_at || new Date().toISOString(),
+        dateModified: postData.created_at || new Date().toISOString(),
+        author: {
+          "@type": "Person",
+          name: postData.author || "SNS메이킷 사용자",
         },
+        publisher: {
+          "@type": "Organization",
+          name: "SNS메이킷",
+          url: SITE_URL,
+          logo: { "@type": "ImageObject", url: `${SITE_URL}/og-image.png` },
+        },
+        mainEntityOfPage: { "@type": "WebPage", "@id": canonicalUrl },
+        inLanguage: "ko-KR",
       },
-      mainEntityOfPage: {
-        "@type": "WebPage",
-        "@id": canonicalUrl,
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "홈", item: SITE_URL },
+          { "@type": "ListItem", position: 2, name: "커뮤니티", item: `${SITE_URL}/community/info` },
+          { "@type": "ListItem", position: 3, name: catName, item: `${SITE_URL}/community/${segments[1] || "info"}` },
+          { "@type": "ListItem", position: 4, name: (postData.title || "게시글").substring(0, 60) },
+        ],
       },
-    };
-    jsonLd = `<script type="application/ld+json">${JSON.stringify(schema)}</script>`;
+    ];
+    jsonLd = schemas.map(s => `<script type="application/ld+json">${JSON.stringify(s)}</script>`).join("\n");
   }
 
   let html;
@@ -224,13 +249,19 @@ ${jsonLd}
 <body>
 <h1>${esc(title)}</h1>
 <p>${esc(description)}</p>
-${fullBody ? `<article><div>${fullBody.split('\n').filter(l => l.trim()).map(l => `<p>${esc(l.trim())}</p>`).join('\n')}</div></article>` : ""}
+${fullBody ? `<article><h2>${esc(title)}</h2>${postData ? `<p><strong>작성자:</strong> ${esc(postData.author || "SNS메이킷")}</p>` : ""}${fullBody.split('\n').filter(l => l.trim()).map(l => `<p>${esc(l.trim())}</p>`).join('\n')}</article>` : ""}
+${catPosts.length > 0 ? `<section><h2>${esc(catNames[segments[1]] || "커뮤니티")} 최근 게시글</h2><ul>${catPosts.map(p => `<li><a href="${SITE_URL}/community/${p.subCat || "info"}/post-${p.id}">${esc(stripMdHtml(p.title || "").slice(0, 80))}</a> <time>${(p.created_at || "").slice(0, 10)}</time></li>`).join("\n")}</ul></section>` : ""}
 <nav>
 <a href="https://snsmakeit.com">SNS메이킷 홈</a>
 <a href="https://snsmakeit.com/community/info">정보공유</a>
 <a href="https://snsmakeit.com/community/qna">질문답변</a>
+<a href="https://snsmakeit.com/community/free">자유게시판</a>
+<a href="https://snsmakeit.com/community/review">사용후기</a>
+<a href="https://snsmakeit.com/community/sns_briefing">SNS 브리핑</a>
 <a href="https://snsmakeit.com/snsnews">SNS뉴스</a>
 <a href="https://snsmakeit.com/programs">자료실</a>
+<a href="https://snsmakeit.com/ai">AI 도구</a>
+<a href="https://snsmakeit.com/pricing">가격정책</a>
 </nav>
 </body>
 </html>`;
