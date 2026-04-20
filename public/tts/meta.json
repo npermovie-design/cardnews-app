@@ -1,0 +1,10 @@
+{
+  "generated": true,
+  "languages": [
+    "es"
+  ],
+  "segments": 24,
+  "voices": {
+    "es": "es-ES-ElviraNeural"
+  }
+}

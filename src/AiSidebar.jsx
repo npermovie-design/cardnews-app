@@ -86,6 +86,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 
   // 메뉴 정의
   const menuItems = [
+    { id:"video_guide", label:"이용방법", icon:"/icons3d/sns-share.png", ids:["video_guide"] },
     { id:"home", label:t("home"), icon:"/icons3d/sns-heart.png", ids:["home","blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link","blog_write"] },
     { id:"today_keywords", label:"오늘의 키워드", icon:"/icons3d/sns-app.png", ids:["today_keywords"] },
     { id:"sns_consulting", label:"SNS 사주팔자", icon:"/icons3d/sns-content.png", ids:["sns_consulting"] },

@@ -28,6 +28,7 @@ const ShortsCreator = React.lazy(() => import("./ShortsCreator"));
 const LongFormEditor = React.lazy(() => import("./LongFormEditor"));
 const BlogGenerator = React.lazy(() => import("./BlogGenerator"));
 const SocialAnalyzer = React.lazy(() => import("./SocialAnalyzer"));
+const VideoGuidePage = React.lazy(() => import("./VideoGuidePage"));
 const AutoPublisher = React.lazy(() => import("./AutoPublisher"));
 const AnalyzerPage = React.lazy(() => import("./AnalyzerPage"));
 const SnsConnectionManager = React.lazy(() => import("./SnsConnectionManager"));
@@ -1433,6 +1434,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     shorts_make: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
     repurpose: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
   };
+
+  // 이용방법 (영상 갤러리)
+  if (aiMenu === "video_guide") {
+    return <VideoGuidePage C={C} theme={theme} />;
+  }
 
   // 홈
   if (!aiMenu || aiMenu === "home") {

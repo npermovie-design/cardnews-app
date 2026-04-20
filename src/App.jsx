@@ -27,6 +27,7 @@ const EventPage = lazy(() => import("./EventPage.jsx"));
 const CasePage = lazy(() => import("./CasePage.jsx"));
 const AnalyzerPage = lazy(() => import("./AnalyzerPage.jsx"));
 const ProgramsPage = lazy(() => import("./ProgramsPage.jsx"));
+const InfographicVideoPage = lazy(() => import("./InfographicVideo.jsx"));
 
 // 로딩 폴백
 const PageLoader = () => (
@@ -664,6 +665,7 @@ export default function App() {
     if (page === "programs") return <ProgramsPage C={C} navigate={navigate} user={user} onLogin={() => navigate("login")} initialProductId={programId} onProductIdChange={setProgramId} />;
     if (page === "snsnews")  { navigate("community"); return null; }
     if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} user={user} />;
+    if (page === "intro-video") return <InfographicVideoPage />;
     if (page === "payment/success") return <PaymentSuccessPage C={C} navigate={navigate} />;
     if (page === "payment/fail")    return <PaymentFailPage C={C} navigate={navigate} />;
     if (page === "legal")           return <LegalPage C={C} navigate={navigate} initialTab={legalTab} />;
