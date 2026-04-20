@@ -1705,43 +1705,74 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const blogContentRef = useRef(null);
   const isMobile = typeof navigator !== "undefined" && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-  // 텍스트 선택 시 AI 교체 플로팅 버튼
+  // 텍스트 선택 시 AI 교체 플로팅 툴바
   const [selectionPopup, setSelectionPopup] = useState(null); // {x, y, text}
   const [aiReplacing, setAiReplacing] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null); // {x, y} 우클릭 메뉴
+  const imageInputRef = useRef(null);
 
   const handleTextSelect = () => {
     try {
       const sel = window.getSelection();
       const selectedText = sel?.toString()?.trim();
-      if (!selectedText || selectedText.length < 5) { setSelectionPopup(null); return; }
+      if (!selectedText || selectedText.length < 3) { setSelectionPopup(null); return; }
       if (!sel.rangeCount) { setSelectionPopup(null); return; }
       const range = sel.getRangeAt(0);
       const rect = range.getBoundingClientRect();
       if (!rect.width) { setSelectionPopup(null); return; }
       setSelectionPopup({ x: rect.left + rect.width / 2, y: rect.top - 10, text: selectedText });
+      setContextMenu(null);
     } catch { setSelectionPopup(null); }
   };
 
-  const handleAiReplace = async (mode = "rewrite") => {
-    if (!selectionPopup?.text) return;
+  // 우클릭 컨텍스트 메뉴
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    const sel = window.getSelection()?.toString()?.trim();
+    setContextMenu({ x: e.clientX, y: e.clientY, hasSelection: sel && sel.length >= 3, selectedText: sel || "" });
+    if (!sel || sel.length < 3) setSelectionPopup(null);
+  };
+
+  // 커서 위치에 이미지 삽입
+  const insertImageAtCursor = async (file) => {
+    if (!file) return;
+    try {
+      const { uploadFileToStorage } = await import("./storage");
+      const ext = file.type.split("/")[1] || "png";
+      const path = `blog-images/${Date.now()}.${ext}`;
+      const publicUrl = await uploadFileToStorage(file, path);
+      setResult(prev => prev + `\n\n![image](${publicUrl})\n\n`);
+    } catch {
+      // 업로드 실패 시 base64
+      const reader = new FileReader();
+      reader.onload = (ev) => setResult(prev => prev + `\n\n![image](${ev.target.result})\n\n`);
+      reader.readAsDataURL(file);
+    }
+    setContextMenu(null);
+  };
+
+  const handleAiReplace = async (mode = "rewrite", customText = null) => {
+    const targetText = customText || selectionPopup?.text;
+    if (!targetText) return;
     setAiReplacing(true);
     const prompts = {
-      rewrite: `다음 문장을 같은 의미를 유지하면서 더 자연스럽고 매력적으로 다시 작성해주세요. 원문과 같은 말투를 유지하세요. 다시 쓴 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`,
-      expand: `다음 문장의 내용을 2~3배로 늘려서 더 상세하고 풍부하게 작성해주세요. 원문과 같은 말투를 유지하세요. 늘린 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`,
-      shorten: `다음 문장을 핵심만 남기고 간결하게 줄여주세요. 원문과 같은 말투를 유지하세요. 줄인 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`,
-      formal: `다음 문장을 합니다체(~입니다, ~했습니다)로 바꿔주세요. 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`,
-      casual: `다음 문장을 해요체(~요, ~이에요)로 친근하게 바꿔주세요. 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`,
-      friendly: `다음 문장을 경험 공유체(~거든요, ~더라고요, ~해보세요)로 바꿔주세요. 문장만 출력하세요.\n\n원문: ${selectionPopup.text}`,
+      rewrite: `다음 문장을 같은 의미를 유지하면서 더 자연스럽고 매력적으로 다시 작성해주세요. 원문과 같은 말투를 유지하세요. 다시 쓴 문장만 출력하세요.\n\n원문: ${targetText}`,
+      expand: `다음 문장의 내용을 2~3배로 늘려서 더 상세하고 풍부하게 작성해주세요. 원문과 같은 말투를 유지하세요. 늘린 문장만 출력하세요.\n\n원문: ${targetText}`,
+      shorten: `다음 문장을 핵심만 남기고 간결하게 줄여주세요. 원문과 같은 말투를 유지하세요. 줄인 문장만 출력하세요.\n\n원문: ${targetText}`,
+      formal: `다음 문장을 합니다체(~입니다, ~했습니다)로 바꿔주세요. 문장만 출력하세요.\n\n원문: ${targetText}`,
+      casual: `다음 문장을 해요체(~요, ~이에요)로 친근하게 바꿔주세요. 문장만 출력하세요.\n\n원문: ${targetText}`,
+      friendly: `다음 문장을 경험 공유체(~거든요, ~더라고요, ~해보세요)로 바꿔주세요. 문장만 출력하세요.\n\n원문: ${targetText}`,
     };
     try {
       const replacement = await callAI("claude-haiku-4-5", [{role:"user",content:prompts[mode]||prompts.rewrite}], mode==="expand"?1000:500);
       if (replacement) {
         const cleaned = replacement.trim().replace(/^["']|["']$/g, "");
-        setResult(prev => prev.replace(selectionPopup.text, cleaned));
+        setResult(prev => prev.replace(targetText, cleaned));
       }
     } catch {}
     setAiReplacing(false);
     setSelectionPopup(null);
+    setContextMenu(null);
   };
 
   const handleCopy = async (content, withImages) => {
@@ -1945,10 +1976,15 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               </div>
             </div>
           )}
+          {/* 숨겨진 이미지 파일 input */}
+          <input ref={imageInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) insertImageAtCursor(e.target.files[0]); e.target.value = ""; }} />
+
           {(viewMode==="text"||!isTistory)&&<div
             contentEditable
             suppressContentEditableWarning
             onMouseUp={handleTextSelect}
+            onContextMenu={handleContextMenu}
+            onClick={() => setContextMenu(null)}
             onDragOver={e => { e.preventDefault(); e.currentTarget.style.outline = "2px dashed #7c6aff"; }}
             onDragLeave={e => { e.currentTarget.style.outline = "none"; }}
             onDrop={e => {
@@ -2012,31 +2048,73 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
             {loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}
             {/* AI 교체 플로팅 버튼 - contentEditable 밖에 렌더링 */}
           </div>}
-          {/* AI 교체 플로팅 버튼 */}
+          {/* AI 교체 플로팅 툴바 */}
           {selectionPopup && (
-            <div style={{position:"fixed",left:selectionPopup.x,top:selectionPopup.y,transform:"translate(-50%,-100%)",zIndex:9999,display:"flex",gap:3,flexWrap:"wrap",justifyContent:"center",maxWidth:420}}
+            <div style={{position:"fixed",left:selectionPopup.x,top:selectionPopup.y,transform:"translate(-50%,-100%)",zIndex:9999,
+              background:isDark?"#1e1940":"#fff",borderRadius:12,padding:"8px 10px",
+              boxShadow:"0 8px 32px rgba(0,0,0,0.18)",border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e5f0"}`,
+              display:"flex",gap:4,flexWrap:"wrap",justifyContent:"center",maxWidth:400}}
               onMouseDown={e => e.stopPropagation()}>
               {aiReplacing ? (
-                <div style={{padding:"8px 18px",borderRadius:10,background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:5,boxShadow:"0 4px 16px rgba(124,106,255,0.4)"}}>
-                  <div style={{width:12,height:12,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>변환 중...
+                <div style={{padding:"8px 18px",borderRadius:8,background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
+                  <div style={{width:12,height:12,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>AI 변환 중...
                 </div>
               ) : <>
                 {[
-                  {mode:"rewrite",label:"다시쓰기",color:"#7c6aff"},
-                  {mode:"expand",label:"늘리기",color:"#10b981"},
-                  {mode:"shorten",label:"줄이기",color:"#f59e0b"},
-                  {mode:"formal",label:"합니다체",color:"#3b82f6"},
-                  {mode:"casual",label:"해요체",color:"#ec4899"},
-                  {mode:"friendly",label:"거든요체",color:"#8b5cf6"},
+                  {mode:"rewrite",label:"다시쓰기"},
+                  {mode:"expand",label:"늘리기"},
+                  {mode:"shorten",label:"줄이기"},
+                  {mode:"formal",label:"합니다체"},
+                  {mode:"casual",label:"해요체"},
+                  {mode:"friendly",label:"거든요체"},
                 ].map(o => (
                   <button key={o.mode} onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleAiReplace(o.mode); }}
-                    style={{padding:"6px 12px",borderRadius:8,border:"none",background:o.color,color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",boxShadow:`0 2px 8px ${o.color}44`,whiteSpace:"nowrap"}}>
+                    style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e5f0"}`,
+                      background:"transparent",color:isDark?"#fff":text,fontSize:11,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",
+                      fontFamily:"inherit"}}>
                     {o.label}
                   </button>
                 ))}
                 <button onMouseDown={e => { e.preventDefault(); setSelectionPopup(null); }}
-                  style={{padding:"6px 8px",borderRadius:8,border:"none",background:"rgba(0,0,0,0.5)",color:"#fff",fontSize:11,cursor:"pointer"}}>x</button>
+                  style={{padding:"5px 8px",borderRadius:6,border:"none",background:"transparent",color:isDark?"rgba(255,255,255,0.4)":"#999",fontSize:13,cursor:"pointer",fontFamily:"inherit"}}>x</button>
               </>}
+            </div>
+          )}
+
+          {/* 우클릭 컨텍스트 메뉴 */}
+          {contextMenu && (
+            <div style={{position:"fixed",left:contextMenu.x,top:contextMenu.y,zIndex:9999,
+              background:isDark?"#1e1940":"#fff",borderRadius:12,padding:"6px",minWidth:180,
+              boxShadow:"0 8px 32px rgba(0,0,0,0.18)",border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e5f0"}`}}
+              onMouseDown={e => e.stopPropagation()}>
+              {/* 이미지 삽입 */}
+              <button onMouseDown={e => { e.preventDefault(); imageInputRef.current?.click(); }}
+                style={{width:"100%",padding:"9px 14px",borderRadius:8,border:"none",background:"transparent",
+                  color:isDark?"#fff":text,fontSize:13,fontWeight:600,cursor:"pointer",textAlign:"left",
+                  display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}
+                onMouseEnter={e => e.currentTarget.style.background = isDark?"rgba(255,255,255,0.06)":"#f5f5f8"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                이미지 삽입
+              </button>
+              {/* 구분선 */}
+              {contextMenu.hasSelection && <div style={{height:1,background:isDark?"rgba(255,255,255,0.06)":"#f0f0f0",margin:"4px 8px"}}/>}
+              {/* 선택 영역 AI 교체 */}
+              {contextMenu.hasSelection && [
+                {mode:"rewrite",label:"AI로 다시쓰기"},
+                {mode:"expand",label:"AI로 늘리기"},
+                {mode:"shorten",label:"AI로 줄이기"},
+              ].map(o => (
+                <button key={o.mode} onMouseDown={e => { e.preventDefault(); handleAiReplace(o.mode, contextMenu.selectedText); }}
+                  style={{width:"100%",padding:"9px 14px",borderRadius:8,border:"none",background:"transparent",
+                    color:isDark?"#fff":text,fontSize:13,fontWeight:600,cursor:"pointer",textAlign:"left",
+                    display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}
+                  onMouseEnter={e => e.currentTarget.style.background = isDark?"rgba(255,255,255,0.06)":"#f5f5f8"}
+                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7c6aff" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                  {o.label}
+                </button>
+              ))}
             </div>
           )}
           {isTistory&&viewMode==="html"&&htmlResult&&<div style={{background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"18px 20px"}}><pre style={{fontSize:12,color:isDark?"#a5b4fc":"#4f46e5",lineHeight:1.7,whiteSpace:"pre-wrap",fontFamily:"'Consolas','Monaco',monospace",margin:0}}>{htmlResult}</pre></div>}
