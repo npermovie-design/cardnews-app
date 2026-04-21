@@ -2024,18 +2024,18 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           <input ref={imageInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) insertImageAtCursor(e.target.files[0]); e.target.value = ""; }} />
 
           {(viewMode==="text"||!isTistory)&&<div style={{ display: "flex", gap: 0 }}>
-          {/* ── 왼쪽 도구 바 (미리캔버스 스타일) ── */}
+          {/* ── 왼쪽 도구 바 ── */}
           <div style={{
-            width: 44, flexShrink: 0, display: "flex", flexDirection: "column", gap: 2, padding: "8px 4px",
+            width: 80, flexShrink: 0, display: "flex", flexDirection: "column", gap: 4, padding: "10px 6px",
             background: isDark ? "rgba(255,255,255,0.03)" : "#f8f8fc",
             borderRadius: "12px 0 0 12px", border: `1px solid ${border}`, borderRight: "none",
           }}>
             {[
-              { label: "이미지", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>,
+              { label: "내 사진", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>,
                 action: () => imageInputRef.current?.click() },
-              { label: "사진검색", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+              { label: "무료사진", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
                 action: () => {
-                  const kw = prompt("검색할 사진 키워드", fields.keyword || "");
+                  const kw = prompt("삽입할 사진 키워드를 입력하세요", fields.keyword || "");
                   if (!kw) return;
                   (async () => {
                     try {
@@ -2043,28 +2043,28 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                       if (/[가-힣]/.test(kw)) { try { enKw = (await callAI("claude-haiku-4-5", [{ role: "user", content: `다음 한국어를 영어 키워드 2단어로:\n"${kw}"` }], 40))?.trim() || kw; } catch {} }
                       const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(enKw)}&per_page=6&safesearch=true&image_type=photo&orientation=horizontal`);
                       const d = await r.json();
-                      const img = d.hits?.[0]?.webformatURL;
+                      const img = d.hits?.[0]?.largeImageURL || d.hits?.[0]?.webformatURL;
                       if (img) setResult(prev => prev + `\n\n![${kw}](${img})\n\n`);
-                    } catch {}
+                      else alert("검색 결과가 없습니다. 다른 키워드를 시도해보세요.");
+                    } catch { alert("사진 검색에 실패했습니다."); }
                   })();
                 }},
               { label: "표", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>,
-                action: () => setResult(prev => prev + "\n\n| 항목 | 내용 |\n|------|------|\n| 항목1 | 내용1 |\n| 항목2 | 내용2 |\n| 항목3 | 내용3 |\n\n") },
+                action: () => { setResult(prev => prev.trimEnd() + "\n\n| 항목 | 내용 |\n|------|------|\n| 항목1 | 내용1 |\n| 항목2 | 내용2 |\n| 항목3 | 내용3 |\n\n"); } },
               { label: "구분선", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12"/></svg>,
-                action: () => setResult(prev => prev + "\n\n---\n\n") },
-              { label: "AI교체", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
-                action: () => { const sel = window.getSelection()?.toString()?.trim(); if (sel && sel.length >= 3) handleAiReplace("rewrite", sel); else alert("텍스트를 먼저 드래그로 선택해주세요"); } },
+                action: () => { setResult(prev => prev.trimEnd() + "\n\n---\n\n"); } },
             ].map((tool, i) => (
-              <button key={i} onClick={tool.action} title={tool.label}
+              <button key={i} onClick={tool.action}
                 style={{
-                  width: 36, height: 36, borderRadius: 8, border: "none", cursor: "pointer",
+                  width: "100%", padding: "8px 4px", borderRadius: 8, border: "none", cursor: "pointer",
                   background: "transparent", color: isDark ? "rgba(255,255,255,0.5)" : "#888",
-                  display: "flex", alignItems: "center", justifyContent: "center",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
                   transition: "all 0.15s", fontFamily: "inherit",
                 }}
                 onMouseEnter={e => { e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.08)" : "#eee"; e.currentTarget.style.color = "#7c6aff"; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = isDark ? "rgba(255,255,255,0.5)" : "#888"; }}>
                 {tool.icon}
+                <span style={{ fontSize: 9, fontWeight: 600 }}>{tool.label}</span>
               </button>
             ))}
           </div>

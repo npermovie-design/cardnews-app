@@ -499,7 +499,7 @@ const BLOG_NARRATION = [
   { id: "blog-10", ko: "여기서 한 가지 더 알려드리자면, 외부 링크를 활용하면 더 풍부한 글을 만들 수 있습니다.", en: "One more tip — using external links can make your posts even richer.", ja: "もう一つお伝えすると、外部リンクを活用するとより豊かな記事が作れます。", zh: "再告诉你一个技巧——利用外部链接可以让文章更加丰富。", es: "Un consejo mas — usar enlaces externos puede hacer tus publicaciones aun mas ricas." },
   { id: "blog-11", ko: "유튜브 영상이나 뉴스 기사 링크를 넣으면, AI가 해당 내용을 분석해서 블로그 글로 변환해 줍니다.", en: "Add a YouTube video or news article link, and AI will analyze it and convert it into a blog post.", ja: "YouTube動画やニュース記事のリンクを入れると、AIがその内容を分析してブログ記事に変換してくれます。", zh: "添加YouTube视频或新闻文章链接，AI会分析内容并转换为博客文章。", es: "Agrega un enlace de video de YouTube o articulo de noticias, y la IA lo analizara y convertira en una publicacion de blog." },
   { id: "blog-12", ko: "추가 지시사항 칸에 구체적인 요청을 적으면, 본인만의 맞춤형 결과물도 얻을 수 있어요.", en: "Write specific requests in the additional instructions field to get customized results just for you.", ja: "追加指示欄に具体的なリクエストを書けば、自分だけのカスタマイズ結果を得ることもできます。", zh: "在附加说明栏写入具体要求，就能获得专属的定制结果。", es: "Escribe solicitudes especificas en el campo de instrucciones adicionales para obtener resultados personalizados." },
-  { id: "blog-13", ko: "이렇게 하면 매번 몇 시간씩 걸리던 블로그 포스팅을, 몇 분이면 완성할 수 있습니다.", en: "This way, blog posts that used to take hours can now be done in just minutes.", ja: "こうすれば、毎回何時間もかかっていたブログ投稿が、数分で完成できます。", zh: "这样一来，以前需要几个小时的博客文章，现在几分钟就能完成。", es: "De esta manera, las publicaciones de blog que solian tomar horas ahora se pueden completar en solo minutos." },
+  { id: "blog-13", ko: "이렇게 하면 매번 몇 시간씩 걸리던 블로그 포스팅을, 몇 분이면 완성할 수 있습니다. 쉬운 SNS의 시작, SNS메이킷과 함께하세요.", en: "Blog posts that used to take hours can now be done in minutes. The easy start to SNS — start with SNS MakeIt.", ja: "何時間もかかっていたブログ投稿が数分で完成。簡単なSNSのスタート、SNSメイキットと一緒に。", zh: "以前需要几个小时的博客文章，现在几分钟就能完成。轻松开启SNS之旅，和SNS MakeIt一起开始吧。", es: "Las publicaciones que tomaban horas ahora se completan en minutos. El inicio facil en redes sociales — comienza con SNS MakeIt." },
 ];
 
 // 씬별 세그먼트 매핑
@@ -512,24 +512,24 @@ const BLOG_SCENES = [
   { id: "bs06", segs: ["blog-13"], Component: SceneBlog06 },
 ];
 
-// TTS 실측 기반 타임스탬프 (91.6초, 구분자 없음)
+// TTS 실측 기반 타임스탬프 (93.5초)
 const BLOG_TIMESTAMPS = {
-  "blog-01": { start: 0, end: 4.99 },
-  "blog-02": { start: 4.99, end: 13.44 },
-  "blog-03": { start: 13.44, end: 18.43 },
-  "blog-04": { start: 18.43, end: 25.92 },
-  "blog-05": { start: 25.92, end: 32.71 },
-  "blog-06": { start: 32.71, end: 41.16 },
-  "blog-07": { start: 41.16, end: 48.37 },
-  "blog-08": { start: 48.37, end: 55.3 },
-  "blog-09": { start: 55.3, end: 63.89 },
-  "blog-10": { start: 63.89, end: 70.82 },
-  "blog-11": { start: 70.82, end: 78.44 },
-  "blog-12": { start: 78.44, end: 85.1 },
-  "blog-13": { start: 85.1, end: 91.61 },
+  "blog-01": { start: 0, end: 4.89 },
+  "blog-02": { start: 4.89, end: 13.19 },
+  "blog-03": { start: 13.19, end: 18.08 },
+  "blog-04": { start: 18.08, end: 25.42 },
+  "blog-05": { start: 25.42, end: 32.08 },
+  "blog-06": { start: 32.08, end: 40.38 },
+  "blog-07": { start: 40.38, end: 47.45 },
+  "blog-08": { start: 47.45, end: 54.24 },
+  "blog-09": { start: 54.24, end: 62.67 },
+  "blog-10": { start: 62.67, end: 69.47 },
+  "blog-11": { start: 69.47, end: 76.95 },
+  "blog-12": { start: 76.95, end: 83.47 },
+  "blog-13": { start: 83.47, end: 93.53 },
 };
 
-const BLOG_TOTAL = 95; // 91.6초 + 엔딩 여유
+const BLOG_TOTAL = 97; // 93.5초 + 엔딩 여유
 
 // 씬 타이밍 계산
 function getBlogSceneTimings() {
