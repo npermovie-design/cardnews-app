@@ -1382,7 +1382,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         const cleaned = cleanBlogText(fullText);
         // 첨부 이미지가 있으면 본문 중간에 균등 배치
         const userImages = (fields._files || []).filter(f => f.type === "image" && f.b64);
-        setResult(userImages.length > 0 ? insertUserImages(cleaned, userImages) : cleaned);
+        const finalText = userImages.length > 0 ? await insertUserImages(cleaned, userImages) : cleaned;
+        setResult(finalText);
         if (isTistory) setHtmlResult(mdToHtml(fullText));
       } else {
         setError("글 생성에 실패했습니다. 다시 시도해주세요.");
@@ -1392,7 +1393,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         setGenStep(5);
         const cleaned2 = cleanBlogText(_savedFull);
         const userImages2 = (fields._files || []).filter(f => f.type === "image" && f.b64);
-        setResult(userImages2.length > 0 ? insertUserImages(cleaned2, userImages2) : cleaned2);
+        const finalText2 = userImages2.length > 0 ? await insertUserImages(cleaned2, userImages2) : cleaned2;
+        setResult(finalText2);
         if (isTistory) setHtmlResult(mdToHtml(_savedFull));
       } else {
         setError((e.message || "생성 중 오류") + " 다시 시도해주세요.");
@@ -1612,24 +1614,40 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   };
 
   // 사용자 첨부 이미지를 본문 단락 사이에 균등 배치
-  const insertUserImages = (text, images) => {
+  const insertUserImages = async (text, images) => {
     if (!images || !images.length || !text) return text;
+    // base64 이미지를 Supabase URL로 업로드
+    let uploadedImages = images;
+    try {
+      const { uploadFileToStorage } = await import("./storage");
+      uploadedImages = await Promise.all(images.map(async (img, idx) => {
+        if (img.b64 && img.b64.startsWith("data:")) {
+          try {
+            const resp = await fetch(img.b64);
+            const blob = await resp.blob();
+            const ext = blob.type.split("/")[1] || "png";
+            const path = `blog-images/gen-${Date.now()}-${idx}.${ext}`;
+            const url = await uploadFileToStorage(blob, path);
+            return { ...img, b64: url || img.b64 };
+          } catch { return img; }
+        }
+        return img;
+      }));
+    } catch {}
     const paragraphs = text.split("\n\n");
-    if (paragraphs.length <= 1) return text + "\n\n" + images.map(img => `![${img.name}](${img.b64})`).join("\n\n");
-    // 이미지를 단락 사이에 균등 배치
-    const interval = Math.max(2, Math.floor(paragraphs.length / (images.length + 1)));
+    if (paragraphs.length <= 1) return text + "\n\n" + uploadedImages.map(img => `![${img.name}](${img.b64})`).join("\n\n");
+    const interval = Math.max(2, Math.floor(paragraphs.length / (uploadedImages.length + 1)));
     const result = [];
     let imgIdx = 0;
     for (let i = 0; i < paragraphs.length; i++) {
       result.push(paragraphs[i]);
-      if (imgIdx < images.length && (i + 1) % interval === 0 && i < paragraphs.length - 1) {
-        result.push(`![${images[imgIdx].name}](${images[imgIdx].b64})`);
+      if (imgIdx < uploadedImages.length && (i + 1) % interval === 0 && i < paragraphs.length - 1) {
+        result.push(`![${uploadedImages[imgIdx].name}](${uploadedImages[imgIdx].b64})`);
         imgIdx++;
       }
     }
-    // 남은 이미지 끝에 추가
-    while (imgIdx < images.length) {
-      result.push(`![${images[imgIdx].name}](${images[imgIdx].b64})`);
+    while (imgIdx < uploadedImages.length) {
+      result.push(`![${uploadedImages[imgIdx].name}](${uploadedImages[imgIdx].b64})`);
       imgIdx++;
     }
     return result.join("\n\n");
@@ -1778,23 +1796,29 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const handleCopy = async (content, withImages) => {
     const cleaned = cleanForCopy(content);
     if (withImages && blogContentRef.current && !isMobile) {
-      // PC: 외부 URL 이미지를 base64로 변환 후 DOM 복사
+      // PC: base64 이미지를 Supabase 공개 URL로 변환 후 DOM 복사
       setCopyLoading(true);
       try {
         const el = blogContentRef.current;
-        // 외부 URL 이미지를 base64로 변환 (복사 시 이미지가 넘어가도록)
         const imgs = el.querySelectorAll("img");
         const originals = [];
+        const { uploadFileToStorage } = await import("./storage");
         await Promise.all([...imgs].map(async (img, idx) => {
-          if (img.src && !img.src.startsWith("data:")) {
-            originals.push({ idx, src: img.src });
-            try {
-              const res = await fetch(img.src);
-              const blob = await res.blob();
-              const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(blob); });
-              img.src = b64;
-            } catch { /* 변환 실패 시 원본 유지 */ }
-          }
+          originals.push({ idx, src: img.src });
+          try {
+            if (img.src.startsWith("data:")) {
+              // base64 → Blob → Supabase 업로드 → 공개 URL
+              const resp = await fetch(img.src);
+              const blob = await resp.blob();
+              const ext = blob.type.split("/")[1] || "png";
+              const path = `blog-images/copy-${Date.now()}-${idx}.${ext}`;
+              const publicUrl = await uploadFileToStorage(blob, path);
+              if (publicUrl) img.src = publicUrl;
+            } else if (!img.src.startsWith("http")) {
+              // 상대 경로 → 절대 경로
+              img.src = new URL(img.src, window.location.origin).href;
+            }
+          } catch { /* 변환 실패 시 원본 유지 */ }
         }));
         const range = document.createRange();
         range.selectNodeContents(el);
