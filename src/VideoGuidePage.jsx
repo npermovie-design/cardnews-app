@@ -153,10 +153,14 @@ function VideoPlayerModal({ video, onClose, C }) {
   const [hasAudio, setHasAudio] = useState(false);
 
   useEffect(() => {
-    const ext = lang === "ko" ? "wav" : "mp3";
-    fetch(`/tts/${lang}/narration_full_${lang}.${ext}`, { method: "HEAD" })
-      .then(r => setHasAudio(r.ok))
-      .catch(() => setHasAudio(false));
+    // 영상별 오디오 파일 체크
+    const audioFiles = [
+      `/tts/${lang}/narration_full_${lang}.wav`,
+      `/tts/${lang}/narration_full_${lang}.mp3`,
+      `/tts/${lang}/blog_tutorial_${lang}.wav`,
+    ];
+    Promise.all(audioFiles.map(f => fetch(f, { method: "HEAD" }).then(r => r.ok).catch(() => false)))
+      .then(results => setHasAudio(results.some(Boolean)));
   }, [lang]);
 
   // ESC 닫기

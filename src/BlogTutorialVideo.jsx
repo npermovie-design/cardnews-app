@@ -604,7 +604,7 @@ export function BlogTutorialComposition({ lang = "ko", showCC = true, hasAudio =
 
       <BlogCCOverlay lang={lang} show={showCC} />
       <Audio src="/tts/bgm-ambient.mp3" volume={0.12} loop />
-      {hasAudio && <Audio src="/tts/ko/blog_tutorial_ko.wav" volume={1} />}
+      {hasAudio && <Audio src={`/tts/${lang}/blog_tutorial_${lang}.wav`} volume={1} />}
     </AbsoluteFill>
   );
 }
