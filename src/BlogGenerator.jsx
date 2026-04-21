@@ -1382,7 +1382,23 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         const cleaned = cleanBlogText(fullText);
         // 첨부 이미지가 있으면 본문 중간에 균등 배치
         const userImages = (fields._files || []).filter(f => f.type === "image" && f.b64);
-        const finalText = userImages.length > 0 ? await insertUserImages(cleaned, userImages) : cleaned;
+        let finalText = userImages.length > 0 ? await insertUserImages(cleaned, userImages) : cleaned;
+        // 상단 대표 이미지 자동 삽입
+        try {
+          let headerKw = fields.keyword || "";
+          if (headerKw && !/^http/.test(headerKw)) {
+            let enKw = headerKw;
+            if (/[가-힣]/.test(enKw)) {
+              try { enKw = (await callAI("claude-haiku-4-5", [{ role: "user", content: `다음 한국어 주제를 이미지 검색용 영어 키워드 2단어로 바꿔주세요. 답변은 영어 단어만:\n"${headerKw}"` }], 40))?.trim() || headerKw; } catch {}
+            }
+            const hr = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(enKw)}&per_page=5&safesearch=true&image_type=photo&orientation=horizontal`);
+            const hd = await hr.json();
+            const headerImg = hd.hits?.[0]?.largeImageURL || hd.hits?.[0]?.webformatURL;
+            if (headerImg) {
+              finalText = `![${headerKw}](${headerImg})\n\n${finalText}`;
+            }
+          }
+        } catch {}
         setResult(finalText);
         if (isTistory) setHtmlResult(mdToHtml(fullText));
       } else {
