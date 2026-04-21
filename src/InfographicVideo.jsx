@@ -422,7 +422,7 @@ function Scene03_UserPain({ lang = "ko" }) {
               <div key={i} style={{
                 transform: `scale(${s}) translateY(${(1 - s) * 30}px)`, opacity: s,
                 background: "rgba(255,255,255,0.025)", border: `1px solid ${p.color}30`,
-                borderRadius: 24, padding: "40px 32px", textAlign: "center", flex: 1, maxWidth: 300,
+                borderRadius: 24, padding: "44px 36px", textAlign: "center", flex: 1, maxWidth: 340,
               }}>
                 <div style={{
                   width: 76, height: 76, borderRadius: 20, margin: "0 auto 20px",
@@ -431,7 +431,7 @@ function Scene03_UserPain({ lang = "ko" }) {
                 }}>
                   <Icon type={p.icon} size={42} color={p.color} />
                 </div>
-                <div style={{ fontSize: 34, fontWeight: 800, color: K.white, marginBottom: 16 }}>{p.title}</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: K.white, marginBottom: 16 }}>{p.title}</div>
                 <div style={{ fontSize: 22, color: K.muted, lineHeight: 1.7, whiteSpace: "pre-line" }}>{p.desc}</div>
               </div>
             );
@@ -968,10 +968,10 @@ function Scene09_ForEveryone({ lang = "ko" }) {
               <div key={i} style={{
                 transform: `scale(${s})`, opacity: s,
                 background: "rgba(255,255,255,0.025)", border: `1px solid ${t.color}20`,
-                borderRadius: 20, padding: "36px 20px", textAlign: "center",
+                borderRadius: 24, padding: "40px 28px", textAlign: "center",
               }}>
                 <div style={{
-                  width: 60, height: 60, borderRadius: "50%", margin: "0 auto 16px",
+                  width: 76, height: 76, borderRadius: "50%", margin: "0 auto 20px",
                   background: `${t.color}12`, border: `1px solid ${t.color}25`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
@@ -1061,21 +1061,23 @@ function CCOverlay({ lang = "ko", secondLang = null, show = true }) {
 
   if (!show) return null;
 
-  // 자막 딜레이 — 음성보다 약간 뒤에 표시 (음성이 먼저, 자막이 따라감)
-  const SUBTITLE_DELAY = 0.8; // 초
-  const delayed = timeSec - SUBTITLE_DELAY;
-
-  // 딜레이 적용된 시간으로 자막 찾기
-  const idx = NARRATION.findIndex((n, i) => {
-    const nextStart = i < NARRATION.length - 1 ? NARRATION[i + 1].start : n.end + 2;
-    return delayed >= n.start && delayed < nextStart;
+  // 현재 씬 찾기 (씬 전환과 자막 전환을 동기화)
+  const sceneIdx = SCENE_TIMINGS.findIndex((s, i) => {
+    const nextFrom = i < SCENE_TIMINGS.length - 1 ? SCENE_TIMINGS[i + 1].from : s.from + s.dur;
+    return timeSec >= s.from && timeSec < nextFrom;
   });
-  if (idx < 0) return null;
-  const current = NARRATION[idx];
-  const nextStart = idx < NARRATION.length - 1 ? NARRATION[idx + 1].start : current.end + 2;
 
-  // 전체 텍스트를 그대로 표시 (25자 분할 없이)
-  // 분할하면 타이밍이 더 어긋나므로, 전체 텍스트로 보여주고 음성과 맞춤
+  // 현재 씬에 속하는 나레이션 세그먼트들만 필터
+  const sceneId = sceneIdx >= 0 ? SCENE_TIMINGS[sceneIdx].id : null;
+  const sceneSegs = sceneId ? NARRATION.filter(n => n.id.startsWith(sceneId + "-")) : [];
+
+  // 현재 씬 내에서 시간 비례로 자막 선택
+  if (!sceneSegs.length) return null;
+  const scene = SCENE_TIMINGS[sceneIdx];
+  const sceneProgress = (timeSec - scene.from) / (scene.dur || 1);
+  const segIdx = Math.min(Math.floor(sceneProgress * sceneSegs.length), sceneSegs.length - 1);
+  const current = sceneSegs[Math.max(0, segIdx)];
+
   const mainText = current[lang] || "";
   const subText = secondLang && secondLang !== lang ? (current[secondLang] || "") : "";
 
@@ -1358,7 +1360,7 @@ export default function InfographicVideoPage() {
           compositionWidth={1920}
           compositionHeight={1080}
           fps={FPS}
-          style={{ width: 1120, height: 630 }}
+          style={{ width: "min(1280px, 95vw)", height: "min(720px, 53.4vw)" }}
           controls
           autoPlay={false}
           loop={false}

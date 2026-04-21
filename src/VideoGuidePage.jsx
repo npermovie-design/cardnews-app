@@ -211,7 +211,7 @@ function VideoPlayerModal({ video, onClose, C }) {
           compositionWidth={1920}
           compositionHeight={1080}
           fps={FPS}
-          style={{ width: Math.min(1120, window.innerWidth - 48), height: Math.min(630, (window.innerWidth - 48) * 9 / 16) }}
+          style={{ width: Math.min(1280, window.innerWidth - 40), height: Math.min(720, (window.innerWidth - 40) * 9 / 16) }}
           controls
           autoPlay
           loop={false}

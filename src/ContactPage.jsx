@@ -3,12 +3,23 @@ import { useI18n } from "./i18n.jsx";
 import { getPageText } from "./i18n-pages.js";
 import { supabase } from "./storage";
 
+const FAQ_LIST = [
+  { q: "SNS메이킷은 어떤 서비스인가요?", a: "SNS메이킷은 AI 기반 콘텐츠 자동 생성 플랫폼입니다. 블로그 글쓰기, 이미지 생성, 숏폼 영상 편집까지 20가지 이상의 AI 도구를 하나의 플랫폼에서 제공합니다." },
+  { q: "어떤 콘텐츠를 만들 수 있나요?", a: "네이버 블로그, 인스타그램 캡션, 유튜브 대본, 티스토리 글, AI 이미지, 쇼츠 영상 등 SNS 마케팅에 필요한 거의 모든 콘텐츠를 AI로 자동 생성할 수 있습니다." },
+  { q: "무료로 사용할 수 있나요?", a: "네. 비회원도 로그인 없이 무료로 체험할 수 있습니다. 회원가입 시 150포인트가 즉시 지급되며, 매일 로그인(+3P), 게시글 작성(+1P, 하루 10회) 등으로 포인트를 적립해 무료로 계속 사용할 수 있어요." },
+  { q: "포인트는 어떻게 적립하나요?", a: "회원가입 시 150P가 즉시 지급됩니다. 이후 매일 로그인(+3P), 커뮤니티 게시글 작성(+1P, 하루 최대 10회)으로 포인트를 적립할 수 있어요. 추가 포인트가 필요하면 합리적인 가격으로 충전할 수도 있습니다." },
+  { q: "어떤 플랫폼을 지원하나요?", a: "네이버 블로그, 티스토리, 인스타그램, 유튜브, 스레드, 네이버 카페, X(트위터), 페이스북, LinkedIn, Medium 등 20개 이상의 플랫폼을 지원합니다." },
+  { q: "생성된 콘텐츠를 상업적으로 사용할 수 있나요?", a: "네, SNS메이킷으로 생성한 모든 콘텐츠(글, 이미지 등)는 상업적 용도로 자유롭게 사용할 수 있습니다." },
+  { q: "환불이 가능한가요?", a: "사용하지 않은 포인트에 한해 환불이 가능합니다. 문의하기 폼 또는 채널톡으로 결제 이메일과 결제일을 알려주시면 처리해드립니다." },
+];
+
 export function ContactPage({ C }) {
   const { lang } = useI18n();
   const p = (key) => getPageText(lang, key);
   const [form, setForm] = useState({ name: "", email: "", subject: "", msg: "" });
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [openFaq, setOpenFaq] = useState(null);
   const f = k => e => setForm(p2 => ({ ...p2, [k]: e.target.value }));
 
   const fs = { background: C.inputBg, border: "1px solid " + C.inputBorder, borderRadius: 10, padding: "12px 14px", color: C.text, fontSize: 14, fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box", minHeight: 44 };
@@ -31,10 +42,46 @@ export function ContactPage({ C }) {
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", padding: "48px 20px 80px" }}>
 
-      <div style={{ textAlign: "center", marginBottom: 48 }}>
-        <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>{p("contactBadge")}</div>
+      <div style={{ textAlign: "center", marginBottom: 32 }}>
         <h2 style={{ fontSize: "clamp(24px,4vw,38px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 12 }}>{p("contactTitle")}</h2>
         <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.7 }}>{p("contactSub")}</p>
+      </div>
+
+      {/* 채널톡 바로 상담 */}
+      <button onClick={() => { if (window.ChannelIO) window.ChannelIO("showMessenger"); }}
+        style={{
+          width: "100%", padding: "16px 20px", marginBottom: 32, borderRadius: 14,
+          border: `1px solid ${C.border}`, background: C.card,
+          cursor: "pointer", display: "flex", alignItems: "center", gap: 14, fontFamily: "inherit",
+          transition: "border-color 0.15s",
+        }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = "#7c6aff"}
+        onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <div style={{ flex: 1, textAlign: "left" }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>실시간 채팅 상담</div>
+          <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>채널톡으로 빠르게 답변받으세요</div>
+        </div>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#7c6aff", flexShrink: 0 }}>상담하기 →</span>
+      </button>
+
+      {/* 자주 묻는 질문 */}
+      <div style={{ marginBottom: 40 }}>
+        <h3 style={{ fontSize: 18, fontWeight: 900, color: C.text, marginBottom: 16 }}>자주 묻는 질문</h3>
+        {FAQ_LIST.map((faq, i) => (
+          <div key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
+            <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
+              style={{ width: "100%", padding: "16px 0", border: "none", background: "transparent", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: "inherit" }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: C.text, textAlign: "left" }}>{faq.q}</span>
+              <span style={{ fontSize: 18, color: C.muted, flexShrink: 0, marginLeft: 12, transition: "transform 0.2s", transform: openFaq === i ? "rotate(45deg)" : "none" }}>+</span>
+            </button>
+            {openFaq === i && (
+              <div style={{ padding: "0 0 16px", fontSize: 13, color: C.muted, lineHeight: 1.8 }}>{faq.a}</div>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* 문의 폼 */}

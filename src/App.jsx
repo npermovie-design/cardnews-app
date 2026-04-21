@@ -920,18 +920,7 @@ export default function App() {
             )}
           </div>
           <NavBtn id="pricing" label={t("pricing")} />
-          {/* 고객센터 */}
-          <div style={{ position: "relative" }}>
-            <DropBtn label={t("support")} open={openMenu==="support"} active={["about","contact","howto","faq"].includes(page)} onClick={() => setOpenMenu(m => m==="support"?null:"support")} />
-            {openMenu==="support" && (
-              <DropMenu right>
-                <DropItem id="about" label={t("about")} onClick={() => { navigate("about"); setOpenMenu(null); }} />
-                <DropItem id="faq" label="자주 묻는 질문" onClick={() => { navigate("faq"); setOpenMenu(null); }} />
-                <DropItem id="contact" label={t("contact")} onClick={() => { navigate("contact"); setOpenMenu(null); }} />
-                <DropItem id="howto" label={t("howto")} onClick={() => { navigate("howto"); setOpenMenu(null); }} />
-              </DropMenu>
-            )}
-          </div>
+          <NavBtn id="contact" label={t("contact")} />
         </div>
 
         {/* 오른쪽: 테마 + 로그인 */}
@@ -1153,15 +1142,10 @@ export default function App() {
             }}>{m.label}</button>
           ))}
 
-          {/* 고객센터 */}
-          <div style={{ margin: "12px 0 6px", paddingTop: 8, borderTop: "1px solid " + C.border }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, letterSpacing: 0.5, padding: "0 4px", marginBottom: 6 }}>고객센터</div>
-          </div>
+          {/* 문의하기 */}
+          <div style={{ margin: "12px 0 6px", paddingTop: 8, borderTop: "1px solid " + C.border }}></div>
           {[
-            { id: "faq",     label: "자주 묻는 질문",  onClick: () => { navigate("faq"); setMobileOpen(false); },     active: page==="faq" },
-            { id: "about",   label: t("about"),       onClick: () => { navigate("about"); setMobileOpen(false); },   active: page==="about" },
-            { id: "contact", label: t("contact"),     onClick: () => { navigate("contact"); setMobileOpen(false); }, active: page==="contact" },
-            { id: "howto",   label: t("howto"),        onClick: () => { navigate("howto"); setMobileOpen(false); },   active: page==="howto" },
+            { id: "contact", label: t("contact"), onClick: () => { navigate("contact"); setMobileOpen(false); }, active: page==="contact" },
           ].map(m => (
             <button key={m.id} onClick={m.onClick} style={{
               display: "block", width: "100%", textAlign: "left",

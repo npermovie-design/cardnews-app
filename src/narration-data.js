@@ -12,21 +12,21 @@ export const LANGUAGES = {
 
 export const DEFAULT_LANG = "ko";
 
-// ── 씬 타이밍 (글자수 비례 — 단일 TTS 동기화) ──
+// ── 씬 타이밍 (글자수 비례 — 각 씬 +3초 여유 추가) ──
 export const SCENE_TIMINGS = [
-  { id: "s01", from: 0,      dur: 14.1 },
-  { id: "s02", from: 14.11,  dur: 6.3 },
-  { id: "s03", from: 20.38,  dur: 19.2 },
-  { id: "s04", from: 39.58,  dur: 11.0 },
-  { id: "s05", from: 50.55,  dur: 25.9 },
-  { id: "s06", from: 76.41,  dur: 14.8 },
-  { id: "s07", from: 91.17,  dur: 24.6 },
-  { id: "s08", from: 115.73, dur: 21.2 },
-  { id: "s09", from: 136.89, dur: 12.7 },
-  { id: "s10", from: 149.56, dur: 18.4 },  // +2.5s 엔딩 여유
+  { id: "s01", from: 0,      dur: 17.1 },
+  { id: "s02", from: 17.11,  dur: 9.3 },
+  { id: "s03", from: 26.38,  dur: 22.2 },
+  { id: "s04", from: 48.58,  dur: 14.0 },
+  { id: "s05", from: 62.55,  dur: 28.9 },
+  { id: "s06", from: 91.41,  dur: 17.8 },
+  { id: "s07", from: 109.17, dur: 27.6 },
+  { id: "s08", from: 136.73, dur: 24.2 },
+  { id: "s09", from: 160.89, dur: 15.7 },
+  { id: "s10", from: 176.56, dur: 21.4 },
 ];
 
-export const TOTAL_DURATION = 168; // 165.5s 오디오 + 엔딩 여유
+export const TOTAL_DURATION = 198; // 각 씬 +3초 여유
 
 // ── 세그먼트별 오디오 길이 (초) — 글자수 비례 계산 ──
 export const SEGMENT_AUDIO_DURATIONS = {
@@ -42,32 +42,32 @@ export const SEGMENT_AUDIO_DURATIONS = {
   "s10-01": 4.57, "s10-02": 5.49, "s10-03": 5.88,
 };
 
-// ── 세그먼트 절대 타임스탬프 (전체 WAV 내 위치, 글자수 비례) ──
+// ── 세그먼트 절대 타임스탬프 (씬 타이밍에 맞춰 조정) ──
 export const SEGMENT_TIMESTAMPS = {
-  "s01-01": { start: 0,      end: 4.70 },
-  "s01-02": { start: 4.70,   end: 14.11 },
-  "s02-01": { start: 14.11,  end: 18.68 },
-  "s02-02": { start: 18.68,  end: 20.38 },
-  "s03-01": { start: 20.38,  end: 25.86 },
-  "s03-02": { start: 25.86,  end: 31.87 },
-  "s03-03": { start: 31.87,  end: 39.58 },
-  "s04-01": { start: 39.58,  end: 44.15 },
-  "s04-02": { start: 44.15,  end: 50.55 },
-  "s05-01": { start: 50.55,  end: 55.12 },
-  "s05-02": { start: 55.12,  end: 64.79 },
-  "s05-03": { start: 64.79,  end: 76.41 },
-  "s06-01": { start: 76.41,  end: 80.72 },
-  "s06-02": { start: 80.72,  end: 91.17 },
-  "s07-01": { start: 91.17,  end: 97.57 },
-  "s07-02": { start: 97.57,  end: 107.63 },
-  "s07-03": { start: 107.63, end: 115.73 },
-  "s08-01": { start: 115.73, end: 119.25 },
-  "s08-02": { start: 119.25, end: 129.44 },
-  "s08-03": { start: 129.44, end: 136.89 },
-  "s09-01": { start: 136.89, end: 149.56 },
-  "s10-01": { start: 149.56, end: 154.13 },
-  "s10-02": { start: 154.13, end: 159.61 },
-  "s10-03": { start: 159.61, end: 165.49 },
+  "s01-01": { start: 0,      end: 7.55 },
+  "s01-02": { start: 7.55,   end: 17.11 },
+  "s02-01": { start: 17.11,  end: 23.38 },
+  "s02-02": { start: 23.38,  end: 26.38 },
+  "s03-01": { start: 26.38,  end: 33.58 },
+  "s03-02": { start: 33.58,  end: 41.18 },
+  "s03-03": { start: 41.18,  end: 48.58 },
+  "s04-01": { start: 48.58,  end: 55.58 },
+  "s04-02": { start: 55.58,  end: 62.55 },
+  "s05-01": { start: 62.55,  end: 69.55 },
+  "s05-02": { start: 69.55,  end: 80.55 },
+  "s05-03": { start: 80.55,  end: 91.41 },
+  "s06-01": { start: 91.41,  end: 99.41 },
+  "s06-02": { start: 99.41,  end: 109.17 },
+  "s07-01": { start: 109.17, end: 117.17 },
+  "s07-02": { start: 117.17, end: 127.73 },
+  "s07-03": { start: 127.73, end: 136.73 },
+  "s08-01": { start: 136.73, end: 143.73 },
+  "s08-02": { start: 143.73, end: 152.73 },
+  "s08-03": { start: 152.73, end: 160.89 },
+  "s09-01": { start: 160.89, end: 176.56 },
+  "s10-01": { start: 176.56, end: 183.56 },
+  "s10-02": { start: 183.56, end: 190.56 },
+  "s10-03": { start: 190.56, end: 197.96 },
 };
 
 // ── 나레이션 세그먼트 (WAV 절대 타임스탬프 직접 사용) ──
