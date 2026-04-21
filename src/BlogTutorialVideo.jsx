@@ -3,6 +3,44 @@ import {
   AbsoluteFill, useCurrentFrame, useVideoConfig,
   interpolate, spring, Sequence, Img, Audio,
 } from "remotion";
+import { LANGUAGES } from "./narration-data.js";
+
+// ── 블로그 튜토리얼 다국어 사전 ──
+const BLOG_DICT = {
+  // 씬1
+  blog_s1_step: { ko: "STEP 01", en: "STEP 01", ja: "STEP 01", zh: "STEP 01", es: "PASO 01" },
+  blog_s1_title1: { ko: "키워드 입력하고", en: "Enter a keyword", ja: "キーワードを入力して", zh: "输入关键词", es: "Ingresa una palabra clave" },
+  blog_s1_title2: { ko: "제목 선택", en: "Pick a title", ja: "タイトルを選択", zh: "选择标题", es: "Elige un titulo" },
+  blog_s1_desc: { ko: "입력창에 주제를 넣으면\nAI가 제목 5개를 추천합니다", en: "Type a topic and\nAI suggests 5 titles", ja: "入力欄にテーマを入れると\nAIが5つのタイトルを提案", zh: "输入主题后\nAI会推荐5个标题", es: "Escribe un tema y\nla IA sugiere 5 titulos" },
+  // 씬2
+  blog_s2_title1: { ko: "플랫폼, 글타입,", en: "Platform, type,", ja: "プラットフォーム、タイプ、", zh: "平台、类型、", es: "Plataforma, tipo," },
+  blog_s2_title2: { ko: "톤앤매너 설정", en: "Tone & style setup", ja: "トーン＆スタイル設定", zh: "风格设置", es: "Configurar tono y estilo" },
+  blog_s2_desc: { ko: "네이버 블로그 선택 후\n글톤, 말투, 분량까지 세부 조정", en: "Select Naver Blog, then\nfine-tune tone, style, and length", ja: "ネイバーブログを選択後\n文体や分量を細かく調整", zh: "选择Naver博客后\n细调文风、语气和篇幅", es: "Selecciona Naver Blog, luego\najusta tono, estilo y extension" },
+  // 씬3
+  blog_s3_title1: { ko: "설정 완료,", en: "Setup done,", ja: "設定完了、", zh: "设置完成，", es: "Configuracion lista," },
+  blog_s3_title2: { ko: "생성 버튼 클릭", en: "Click Generate", ja: "生成ボタンをクリック", zh: "点击生成按钮", es: "Haz clic en Generar" },
+  blog_s3_desc: { ko: "AI가 자동으로 블로그 글을 작성합니다", en: "AI automatically writes the blog post", ja: "AIが自動でブログ記事を作成します", zh: "AI自动撰写博客文章", es: "La IA escribe automaticamente la publicacion" },
+  // 씬4
+  blog_s4_title1: { ko: "복사해서", en: "Copy and", ja: "コピーして", zh: "复制后", es: "Copia y" },
+  blog_s4_title2: { ko: "바로 발행", en: "Publish now", ja: "すぐ発行", zh: "立即发布", es: "Publica ahora" },
+  blog_s4_desc: { ko: "완성된 글을 복사 → 네이버 에디터에\n붙여넣기 → 이미지/태그 추가 → 발행", en: "Copy the result → Paste in\nNaver editor → Add images/tags → Publish", ja: "完成した記事をコピー → ネイバーエディターに\n貼り付け → 画像/タグ追加 → 発行", zh: "复制结果 → 粘贴到\nNaver编辑器 → 添加图片/标签 → 发布", es: "Copia el resultado → Pega en\nel editor Naver → Agrega imagenes/tags → Publica" },
+  blog_s4_copy: { ko: "복사", en: "Copy", ja: "コピー", zh: "复制", es: "Copiar" },
+  blog_s4_paste: { ko: "붙여넣기", en: "Paste", ja: "貼り付け", zh: "粘贴", es: "Pegar" },
+  blog_s4_publish: { ko: "발행", en: "Publish", ja: "発行", zh: "发布", es: "Publicar" },
+  // 씬5
+  blog_s5_title1: { ko: "외부 링크로", en: "With external links,", ja: "外部リンクで", zh: "通过外部链接", es: "Con enlaces externos," },
+  blog_s5_title2: { ko: "더 풍부하게", en: "Make it richer", ja: "もっと豊かに", zh: "更加丰富", es: "Hazlo mas rico" },
+  blog_s5_desc: { ko: "유튜브, 뉴스 링크를 넣으면\nAI가 분석해서 블로그 글로 변환", en: "Add YouTube or news links and\nAI converts them into blog posts", ja: "YouTubeやニュースリンクを入れると\nAIが分析してブログ記事に変換", zh: "添加YouTube或新闻链接\nAI分析后转换为博客文章", es: "Agrega enlaces de YouTube o noticias y\nla IA los convierte en publicaciones" },
+  // 씬6 CTA
+  blog_cta_pre: { ko: "쉬운 SNS의 시작", en: "The easy start to SNS", ja: "簡単なSNSのスタート", zh: "轻松开启SNS之旅", es: "El inicio facil en redes sociales" },
+  blog_cta_line1: { ko: "SNS메이킷과", en: "Start with", ja: "SNSメイキットと", zh: "和SNS MakeIt", es: "Comienza con" },
+  blog_cta_line2: { ko: "함께하세요", en: "SNS MakeIt", ja: "一緒に始めましょう", zh: "一起开始吧", es: "SNS MakeIt" },
+  blog_cta_btn: { ko: "지금 시작하기", en: "Get Started", ja: "今すぐ始める", zh: "立即开始", es: "Empieza Ahora" },
+};
+
+function T(key, lang = "ko") {
+  return BLOG_DICT[key]?.[lang] || BLOG_DICT[key]?.ko || key;
+}
 
 // ═══════════════════════════════════════════════
 // 블로그 작성 튜토리얼 영상 — 스크린샷 기반
@@ -154,14 +192,14 @@ function SceneBlog01({ lang }) {
         <div style={{ flex: "0 0 400px" }}>
           <div style={{ ...fadeSlide(frame, fps, "left", 0), display: "flex", alignItems: "center", gap: 14, marginBottom: 20 }}>
             <StepBadge num="1" color={K.naver} />
-            <span style={{ fontSize: 16, color: K.naver, fontWeight: 700, letterSpacing: 2 }}>STEP 01</span>
+            <span style={{ fontSize: 16, color: K.naver, fontWeight: 700, letterSpacing: 2 }}>{T("blog_s1_step", lang)}</span>
           </div>
           <div style={{ ...fadeSlide(frame, fps, "left", 0.2), fontSize: 48, fontWeight: 900, color: K.white, lineHeight: 1.3, marginBottom: 20 }}>
-            키워드 입력하고{"\n"}
-            <span style={{ color: K.naver }}>제목 선택</span>
+            {T("blog_s1_title1", lang)}{"\n"}
+            <span style={{ color: K.naver }}>{T("blog_s1_title2", lang)}</span>
           </div>
-          <div style={{ ...fadeSlide(frame, fps, "left", 0.5), fontSize: 20, color: K.muted, lineHeight: 1.7 }}>
-            입력창에 주제를 넣으면{"\n"}AI가 제목 5개를 추천합니다
+          <div style={{ ...fadeSlide(frame, fps, "left", 0.5), fontSize: 20, color: K.muted, lineHeight: 1.7, whiteSpace: "pre-line" }}>
+            {T("blog_s1_desc", lang)}
           </div>
         </div>
 
@@ -203,13 +241,13 @@ function SceneBlog02({ lang }) {
             <span style={{ fontSize: 16, color: K.purple, fontWeight: 700, letterSpacing: 2 }}>STEP 02</span>
           </div>
           <div style={{ ...fadeSlide(frame, fps, "right", 0.2), fontSize: 48, fontWeight: 900, color: K.white, lineHeight: 1.3, marginBottom: 20 }}>
-            플랫폼, 글타입,{"\n"}
+            {T("blog_s2_title1", lang)}{"\n"}
             <span style={{ background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              톤앤매너 설정
+              {T("blog_s2_title2", lang)}
             </span>
           </div>
-          <div style={{ ...fadeSlide(frame, fps, "right", 0.5), fontSize: 20, color: K.muted, lineHeight: 1.7 }}>
-            네이버 블로그 선택 후{"\n"}글톤, 말투, 분량까지 세부 조정
+          <div style={{ ...fadeSlide(frame, fps, "right", 0.5), fontSize: 20, color: K.muted, lineHeight: 1.7, whiteSpace: "pre-line" }}>
+            {T("blog_s2_desc", lang)}
           </div>
 
           {/* 설정 태그들 */}
@@ -255,13 +293,13 @@ function SceneBlog03({ lang }) {
           <StepBadge num="3" color={K.purple} />
         </div>
         <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 56, fontWeight: 900, color: K.white, lineHeight: 1.3, marginBottom: 16 }}>
-          설정 완료,{"\n"}
+          {T("blog_s3_title1", lang)}{"\n"}
           <span style={{ background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            생성 버튼 클릭
+            {T("blog_s3_title2", lang)}
           </span>
         </div>
         <div style={{ ...fadeSlide(frame, fps, "up", 0.5), fontSize: 22, color: K.muted, marginBottom: 40 }}>
-          AI가 자동으로 블로그 글을 작성합니다
+          {T("blog_s3_desc", lang)}
         </div>
 
         {/* 생성 버튼 모의 */}
@@ -300,16 +338,16 @@ function SceneBlog04({ lang }) {
             <span style={{ fontSize: 16, color: K.naver, fontWeight: 700, letterSpacing: 2 }}>STEP 04</span>
           </div>
           <div style={{ ...fadeSlide(frame, fps, "left", 0.2), fontSize: 48, fontWeight: 900, color: K.white, lineHeight: 1.3, marginBottom: 20 }}>
-            복사해서{"\n"}
-            <span style={{ color: K.naver }}>바로 발행</span>
+            {T("blog_s4_title1", lang)}{"\n"}
+            <span style={{ color: K.naver }}>{T("blog_s4_title2", lang)}</span>
           </div>
-          <div style={{ ...fadeSlide(frame, fps, "left", 0.5), fontSize: 20, color: K.muted, lineHeight: 1.7 }}>
-            완성된 글을 복사 → 네이버 에디터에{"\n"}붙여넣기 → 이미지/태그 추가 → 발행
+          <div style={{ ...fadeSlide(frame, fps, "left", 0.5), fontSize: 20, color: K.muted, lineHeight: 1.7, whiteSpace: "pre-line" }}>
+            {T("blog_s4_desc", lang)}
           </div>
 
           {/* 플로우 */}
           <div style={{ ...fadeSlide(frame, fps, "left", 1), display: "flex", gap: 12, marginTop: 28, alignItems: "center" }}>
-            {["복사", "붙여넣기", "발행"].map((step, i) => (
+            {[T("blog_s4_copy", lang), T("blog_s4_paste", lang), T("blog_s4_publish", lang)].map((step, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span style={{
                   padding: "10px 20px", borderRadius: 12, fontSize: 16, fontWeight: 700,
@@ -371,11 +409,11 @@ function SceneBlog05({ lang }) {
             <span style={{ fontSize: 16, color: "#06b6d4", fontWeight: 700, letterSpacing: 2 }}>BONUS TIP</span>
           </div>
           <div style={{ ...fadeSlide(frame, fps, "right", 0.2), fontSize: 48, fontWeight: 900, color: K.white, lineHeight: 1.3, marginBottom: 20 }}>
-            외부 링크로{"\n"}
-            <span style={{ color: "#06b6d4" }}>더 풍부하게</span>
+            {T("blog_s5_title1", lang)}{"\n"}
+            <span style={{ color: "#06b6d4" }}>{T("blog_s5_title2", lang)}</span>
           </div>
-          <div style={{ ...fadeSlide(frame, fps, "right", 0.5), fontSize: 20, color: K.muted, lineHeight: 1.7 }}>
-            유튜브, 뉴스 링크를 넣으면{"\n"}AI가 분석해서 블로그 글로 변환
+          <div style={{ ...fadeSlide(frame, fps, "right", 0.5), fontSize: 20, color: K.muted, lineHeight: 1.7, whiteSpace: "pre-line" }}>
+            {T("blog_s5_desc", lang)}
           </div>
         </div>
 
@@ -409,21 +447,27 @@ function SceneBlog06({ lang }) {
       <ParticleBg />
 
       <div style={{ textAlign: "center", zIndex: 1 }}>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0.3), fontSize: 56, fontWeight: 900, color: K.white, lineHeight: 1.3, marginBottom: 20 }}>
-          몇 시간 걸리던 포스팅을{"\n"}
-          <span style={{ background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            몇 분이면 완성
-          </span>
+        <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 28, color: K.muted, fontWeight: 600, marginBottom: 16 }}>
+          {T("blog_cta_pre", lang)}
+        </div>
+        <div style={{ ...fadeSlide(frame, fps, "up", 0.4), fontSize: 56, fontWeight: 900, color: K.white, lineHeight: 1.3, marginBottom: 8 }}>
+          {T("blog_cta_line1", lang)}
+        </div>
+        <div style={{
+          ...fadeSlide(frame, fps, "up", 0.6), fontSize: 56, fontWeight: 900, lineHeight: 1.3,
+          background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+        }}>
+          {T("blog_cta_line2", lang)}
         </div>
 
-        <div style={{ transform: `scale(${btnScale * pulse})`, marginTop: 32 }}>
+        <div style={{ transform: `scale(${btnScale * pulse})`, marginTop: 36 }}>
           <div style={{
             display: "inline-block", background: K.grad,
             borderRadius: 18, padding: "22px 64px",
             fontSize: 28, fontWeight: 800, color: K.white,
             boxShadow: "0 8px 40px rgba(124,106,255,0.4)",
           }}>
-            지금 시작하기
+            {T("blog_cta_btn", lang)}
           </div>
         </div>
 
@@ -443,19 +487,19 @@ function SceneBlog06({ lang }) {
 // 나레이션 데이터 & 씬 타이밍
 // ═══════════════════════════════════════════════
 const BLOG_NARRATION = [
-  { id: "blog-01", ko: "먼저 메인 화면 중앙에 있는 입력창에 주제나 키워드를 넣어보세요." },
-  { id: "blog-02", ko: "예를 들어 네이버 블로그 잘 쓰는 방법이라고 입력하면, AI가 매력적인 제목 다섯 가지를 바로 추천해 줍니다." },
-  { id: "blog-03", ko: "마음에 드는 제목을 클릭하면 바로 다음 단계로 넘어갈 수 있어요." },
-  { id: "blog-04", ko: "다음은 설정입니다. 설정 버튼을 눌러서 플랫폼을 네이버 블로그로 선택하고, 글 타입도 정해줍니다." },
-  { id: "blog-05", ko: "정보성 글인지, 후기인지, 칼럼인지 선택하면 그에 맞는 톤과 구성으로 글이 만들어집니다." },
-  { id: "blog-06", ko: "그리고 글톤과 말투도 조절할 수 있습니다. 친근한 느낌부터 전문적인 느낌까지 브랜드에 맞게 설정할 수 있어요." },
-  { id: "blog-07", ko: "분량도 중요한데요, 상위 노출이 목적이라면 길게 혹은 아주 길게로 설정하는 것이 효과적입니다." },
-  { id: "blog-08", ko: "모든 설정이 끝나면 생성 버튼 하나만 누르면 됩니다. AI가 자동으로 글을 작성해 줍니다." },
-  { id: "blog-09", ko: "완성된 글은 복사해서 네이버 블로그 에디터에 붙여넣기 하면 되고, 이미지와 태그만 추가하면 포스팅이 완료됩니다." },
-  { id: "blog-10", ko: "여기서 한 가지 더 알려드리자면, 외부 링크를 활용하면 더 풍부한 글을 만들 수 있습니다." },
-  { id: "blog-11", ko: "유튜브 영상이나 뉴스 기사 링크를 넣으면, AI가 해당 내용을 분석해서 블로그 글로 변환해 줍니다." },
-  { id: "blog-12", ko: "추가 지시사항 칸에 구체적인 요청을 적으면, 본인만의 맞춤형 결과물도 얻을 수 있어요." },
-  { id: "blog-13", ko: "이렇게 하면 매번 몇 시간씩 걸리던 블로그 포스팅을, 몇 분이면 완성할 수 있습니다." },
+  { id: "blog-01", ko: "먼저 메인 화면 중앙에 있는 입력창에 주제나 키워드를 넣어보세요.", en: "First, enter a topic or keyword in the input field at the center of the main screen.", ja: "まずメイン画面中央の入力欄にテーマやキーワードを入力してください。", zh: "首先在主页面中央的输入框中输入主题或关键词。", es: "Primero, ingresa un tema o palabra clave en el campo de entrada del centro de la pantalla principal." },
+  { id: "blog-02", ko: "예를 들어 네이버 블로그 잘 쓰는 방법이라고 입력하면, AI가 매력적인 제목 다섯 가지를 바로 추천해 줍니다.", en: "For example, type 'How to write a great Naver blog post' and AI will instantly suggest five attractive titles.", ja: "例えば「ネイバーブログの書き方」と入力すると、AIが魅力的なタイトルを5つすぐに提案してくれます。", zh: "比如输入'如何写好Naver博客'，AI会立即推荐五个吸引人的标题。", es: "Por ejemplo, escribe 'Como escribir un buen post en Naver' y la IA sugerira cinco titulos atractivos al instante." },
+  { id: "blog-03", ko: "마음에 드는 제목을 클릭하면 바로 다음 단계로 넘어갈 수 있어요.", en: "Click a title you like and move right on to the next step.", ja: "気に入ったタイトルをクリックすると、すぐ次のステップに進めます。", zh: "点击喜欢的标题就可以进入下一步。", es: "Haz clic en el titulo que te guste y pasa directamente al siguiente paso." },
+  { id: "blog-04", ko: "다음은 설정입니다. 설정 버튼을 눌러서 플랫폼을 네이버 블로그로 선택하고, 글 타입도 정해줍니다.", en: "Next is settings. Press the settings button to select Naver Blog as the platform and choose your post type.", ja: "次は設定です。設定ボタンを押してプラットフォームをネイバーブログに選び、記事タイプも決めます。", zh: "接下来是设置。点击设置按钮选择Naver博客平台，并确定文章类型。", es: "Lo siguiente es la configuracion. Presiona el boton de ajustes para seleccionar Naver Blog como plataforma y elige el tipo de publicacion." },
+  { id: "blog-05", ko: "정보성 글인지, 후기인지, 칼럼인지 선택하면 그에 맞는 톤과 구성으로 글이 만들어집니다.", en: "Choose whether it's informational, a review, or a column, and the post will be crafted with the right tone and structure.", ja: "情報系か、レビューか、コラムかを選ぶと、それに合ったトーンと構成で記事が作られます。", zh: "选择是信息类、评测还是专栏，文章会按相应的风格和结构生成。", es: "Elige si es informativo, una resena o una columna, y la publicacion se creara con el tono y estructura adecuados." },
+  { id: "blog-06", ko: "그리고 글톤과 말투도 조절할 수 있습니다. 친근한 느낌부터 전문적인 느낌까지 브랜드에 맞게 설정할 수 있어요.", en: "You can also adjust the writing tone and style — from friendly to professional, tailored to your brand.", ja: "そして文体や話し方も調整できます。親しみやすさから専門的な感じまで、ブランドに合わせて設定可能です。", zh: "还可以调整文风和语气，从亲切到专业，根据品牌需求设置。", es: "Tambien puedes ajustar el tono y estilo de escritura, desde amigable hasta profesional, adaptado a tu marca." },
+  { id: "blog-07", ko: "분량도 중요한데요, 상위 노출이 목적이라면 길게 혹은 아주 길게로 설정하는 것이 효과적입니다.", en: "Length matters too — if you want top search rankings, setting it to 'long' or 'very long' is effective.", ja: "分量も大事で、上位表示が目的なら「長め」か「とても長め」に設定するのが効果的です。", zh: "篇幅也很重要，如果目标是搜索排名靠前，设置为'长'或'很长'会更有效。", es: "La extension tambien importa — si buscas aparecer en los primeros resultados, configurar 'largo' o 'muy largo' es efectivo." },
+  { id: "blog-08", ko: "모든 설정이 끝나면 생성 버튼 하나만 누르면 됩니다. AI가 자동으로 글을 작성해 줍니다.", en: "Once all settings are done, just press the Generate button. AI will write the post automatically.", ja: "すべての設定が終わったら、生成ボタンを一つ押すだけです。AIが自動で記事を書いてくれます。", zh: "所有设置完成后，只需点击生成按钮，AI会自动撰写文章。", es: "Una vez que toda la configuracion este lista, solo presiona el boton Generar. La IA escribira la publicacion automaticamente." },
+  { id: "blog-09", ko: "완성된 글은 복사해서 네이버 블로그 에디터에 붙여넣기 하면 되고, 이미지와 태그만 추가하면 포스팅이 완료됩니다.", en: "Copy the finished post, paste it into Naver Blog editor, add images and tags, and your post is done.", ja: "完成した記事をコピーしてネイバーブログエディターに貼り付け、画像とタグを追加すれば投稿完了です。", zh: "复制完成的文章，粘贴到Naver博客编辑器，添加图片和标签就完成了。", es: "Copia la publicacion terminada, pegala en el editor de Naver Blog, agrega imagenes y etiquetas, y tu publicacion esta lista." },
+  { id: "blog-10", ko: "여기서 한 가지 더 알려드리자면, 외부 링크를 활용하면 더 풍부한 글을 만들 수 있습니다.", en: "One more tip — using external links can make your posts even richer.", ja: "もう一つお伝えすると、外部リンクを活用するとより豊かな記事が作れます。", zh: "再告诉你一个技巧——利用外部链接可以让文章更加丰富。", es: "Un consejo mas — usar enlaces externos puede hacer tus publicaciones aun mas ricas." },
+  { id: "blog-11", ko: "유튜브 영상이나 뉴스 기사 링크를 넣으면, AI가 해당 내용을 분석해서 블로그 글로 변환해 줍니다.", en: "Add a YouTube video or news article link, and AI will analyze it and convert it into a blog post.", ja: "YouTube動画やニュース記事のリンクを入れると、AIがその内容を分析してブログ記事に変換してくれます。", zh: "添加YouTube视频或新闻文章链接，AI会分析内容并转换为博客文章。", es: "Agrega un enlace de video de YouTube o articulo de noticias, y la IA lo analizara y convertira en una publicacion de blog." },
+  { id: "blog-12", ko: "추가 지시사항 칸에 구체적인 요청을 적으면, 본인만의 맞춤형 결과물도 얻을 수 있어요.", en: "Write specific requests in the additional instructions field to get customized results just for you.", ja: "追加指示欄に具体的なリクエストを書けば、自分だけのカスタマイズ結果を得ることもできます。", zh: "在附加说明栏写入具体要求，就能获得专属的定制结果。", es: "Escribe solicitudes especificas en el campo de instrucciones adicionales para obtener resultados personalizados." },
+  { id: "blog-13", ko: "이렇게 하면 매번 몇 시간씩 걸리던 블로그 포스팅을, 몇 분이면 완성할 수 있습니다.", en: "This way, blog posts that used to take hours can now be done in just minutes.", ja: "こうすれば、毎回何時間もかかっていたブログ投稿が、数分で完成できます。", zh: "这样一来，以前需要几个小时的博客文章，现在几分钟就能完成。", es: "De esta manera, las publicaciones de blog que solian tomar horas ahora se pueden completar en solo minutos." },
 ];
 
 // 씬별 세그먼트 매핑
@@ -505,7 +549,7 @@ const BLOG_SCENE_TIMINGS = getBlogSceneTimings();
 // ═══════════════════════════════════════════════
 // CC 자막
 // ═══════════════════════════════════════════════
-function BlogCCOverlay({ show = true }) {
+function BlogCCOverlay({ lang = "ko", show = true }) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const timeSec = frame / fps;
@@ -533,7 +577,7 @@ function BlogCCOverlay({ show = true }) {
           borderRadius: 14, padding: "14px 36px", border: "1px solid rgba(124,106,255,0.12)",
         }}>
           <div style={{ fontSize: 24, fontWeight: 700, color: "#fff", lineHeight: 1.5, wordBreak: "keep-all", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
-            {current.ko}
+            {current[lang] || current.ko}
           </div>
         </div>
       </div>
@@ -544,7 +588,7 @@ function BlogCCOverlay({ show = true }) {
 // ═══════════════════════════════════════════════
 // 메인 컴포지션
 // ═══════════════════════════════════════════════
-export function BlogTutorialComposition({ showCC = true, hasAudio = false }) {
+export function BlogTutorialComposition({ lang = "ko", showCC = true, hasAudio = false }) {
   return (
     <AbsoluteFill style={{ background: K.gradBg, fontFamily: "'Pretendard', 'Apple SD Gothic Neo', sans-serif" }}>
       {BLOG_SCENE_TIMINGS.map((scene, i) => {
@@ -553,12 +597,12 @@ export function BlogTutorialComposition({ showCC = true, hasAudio = false }) {
         const extDur = nextFrom - scene.from;
         return (
           <Sequence key={scene.id} from={Math.round(scene.from * FPS)} durationInFrames={Math.round(extDur * FPS)}>
-            <Component />
+            <Component lang={lang} />
           </Sequence>
         );
       })}
 
-      <BlogCCOverlay show={showCC} />
+      <BlogCCOverlay lang={lang} show={showCC} />
       <Audio src="/tts/bgm-ambient.mp3" volume={0.12} loop />
       {hasAudio && <Audio src="/tts/ko/blog_tutorial_ko.wav" volume={1} />}
     </AbsoluteFill>

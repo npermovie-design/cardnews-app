@@ -348,7 +348,7 @@ export default function VideoGuidePage({ C, theme }) {
           description: "SNS메이킷으로 네이버 블로그 포스팅을 빠르고 전문적으로 작성하는 5단계 가이드입니다.",
           duration: "1:32",
           totalDuration: blogMod.BLOG_TUTORIAL_DURATION,
-          languages: ["ko"],
+          languages: Object.keys(LANGUAGES),
           composition: blogMod.BlogTutorialComposition,
         },
       ]);
