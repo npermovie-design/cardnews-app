@@ -328,28 +328,29 @@ export default function VideoGuidePage({ C, theme }) {
   }, [videos]);
 
   useEffect(() => {
-    // 동적 import로 각 영상의 Composition을 로드
-    import("./InfographicVideo.jsx").then(mod => {
+    Promise.all([
+      import("./InfographicVideo.jsx"),
+      import("./BlogTutorialVideo.jsx"),
+    ]).then(([introMod, blogMod]) => {
       setVideos([
         {
           id: "intro",
           title: "SNS메이킷 소개",
           description: "SNS메이킷이 무엇인지, 어떤 문제를 해결하는지, 핵심 기능과 활용 방법을 3분 안에 소개합니다.",
-          duration: "3:18",
+          duration: "2:48",
           totalDuration: TOTAL_DURATION,
           languages: Object.keys(LANGUAGES),
-          composition: mod.InfographicComposition,
+          composition: introMod.InfographicComposition,
         },
-        // 향후 영상 추가 예시:
-        // {
-        //   id: "blog-writer",
-        //   title: "AI 블로그 작성법",
-        //   description: "키워드 하나로 SEO 최적화된 블로그 글을 자동 생성하는 방법",
-        //   duration: "2:30",
-        //   totalDuration: 150,
-        //   languages: ["ko", "en"],
-        //   composition: mod.BlogTutorialComposition,
-        // },
+        {
+          id: "blog-tutorial",
+          title: "네이버 블로그 작성법",
+          description: "SNS메이킷으로 네이버 블로그 포스팅을 빠르고 전문적으로 작성하는 5단계 가이드입니다.",
+          duration: "2:10",
+          totalDuration: blogMod.BLOG_TUTORIAL_DURATION,
+          languages: ["ko"],
+          composition: blogMod.BlogTutorialComposition,
+        },
       ]);
     });
   }, []);
