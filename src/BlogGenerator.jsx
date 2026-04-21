@@ -1391,24 +1391,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           try {
             blogTitle = (await callAI("claude-haiku-4-5", [{ role: "user", content: `키워드: ${headerKw}\n이 키워드로 블로그 대표 제목 1개만 작성하세요. 클릭하고 싶고, SEO에 좋은 제목. 제목만 출력.` }], 100))?.trim()?.replace(/^["']|["']$/g, "") || "";
           } catch {}
-          // 2) 대표 이미지 검색
-          let headerImg = "";
-          if (headerKw && !/^http/.test(headerKw)) {
-            let enKw = headerKw;
-            if (/[가-힣]/.test(enKw)) {
-              try { enKw = (await callAI("claude-haiku-4-5", [{ role: "user", content: `다음 한국어 주제를 이미지 검색용 영어 키워드 2단어로 바꿔주세요. 답변은 영어 단어만:\n"${headerKw}"` }], 40))?.trim() || headerKw; } catch {}
-            }
-            try {
-              const hr = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(enKw)}&per_page=5&safesearch=true&image_type=photo&orientation=horizontal`);
-              const hd = await hr.json();
-              headerImg = hd.hits?.[0]?.largeImageURL || hd.hits?.[0]?.webformatURL || "";
-            } catch {}
-          }
-          // 3) 제목 + 이미지 상단 삽입
-          let header = "";
-          if (blogTitle) header += `# ${blogTitle}\n\n`;
-          if (headerImg) header += `![${headerKw}](${headerImg})\n\n`;
-          if (header) finalText = header + finalText;
+          // 2) 제목만 상단 삽입 (이미지 없이)
+          if (blogTitle) finalText = `# ${blogTitle}\n\n${finalText}`;
         } catch {}
         setResult(finalText);
         if (isTistory) setHtmlResult(mdToHtml(fullText));
@@ -2049,8 +2033,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                     } catch { alert("사진 검색에 실패했습니다."); }
                   })();
                 }},
-              { label: "표", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>,
-                action: () => { setResult(prev => prev.trimEnd() + "\n\n| 항목 | 내용 |\n|------|------|\n| 항목1 | 내용1 |\n| 항목2 | 내용2 |\n| 항목3 | 내용3 |\n\n"); } },
               { label: "구분선", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12"/></svg>,
                 action: () => { setResult(prev => prev.trimEnd() + "\n\n---\n\n"); } },
             ].map((tool, i) => (
@@ -2132,7 +2114,72 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               }
             }}
             style={{flex:1,background:cardBg,border:`1px solid ${border}`,borderRadius:"0 12px 12px 0",padding:"26px 28px",fontSize:16,color:text,minHeight:140,lineHeight:1.95,cursor:"text",outline:"none",transition:"outline 0.15s"}}>
-            <div ref={blogContentRef}>{renderMarkdown(result, isDark, text, muted, accentRaw, suggestedImages)}</div>
+            <div ref={blogContentRef}>
+              {(() => {
+                // 소제목(## 또는 짧은 줄) 기준으로 섹션 분리 → 각 섹션에 AI 재작업 버튼
+                if (!result) return null;
+                const lines = result.split("\n");
+                const sections = [];
+                let current = { heading: "", lines: [] };
+                for (const line of lines) {
+                  const t = line.trim();
+                  const isH = t.length >= 3 && t.length <= 50 && !t.startsWith("-") && !t.startsWith("!") && !t.startsWith("|") && !t.startsWith("[") && !/^\d+\./.test(t) && current.lines.length > 0 && (!lines[lines.indexOf(line)-1]?.trim());
+                  if (isH && current.lines.length > 0) {
+                    sections.push({ ...current });
+                    current = { heading: t, lines: [line] };
+                  } else {
+                    if (!current.heading && t && !current.lines.some(l => l.trim())) current.heading = t;
+                    current.lines.push(line);
+                  }
+                }
+                if (current.lines.length) sections.push(current);
+
+                return sections.map((sec, si) => {
+                  const secText = sec.lines.join("\n");
+                  return (
+                    <div key={si} style={{ position: "relative", marginBottom: 4 }}
+                      className="blog-section-wrap">
+                      {renderMarkdown(secText, isDark, text, muted, accentRaw, suggestedImages)}
+                      {/* 섹션 AI 재작업 버튼 (호버 시 표시) */}
+                      {!loading && sections.length > 1 && sec.heading && (
+                        <div className="section-ai-btn" style={{
+                          position: "absolute", top: 0, right: -8, opacity: 0,
+                          transition: "opacity 0.15s", display: "flex", gap: 4,
+                        }}>
+                          <button onClick={() => {
+                            const mode = prompt("변환 방식을 선택하세요:\n1. 다시쓰기\n2. 늘리기\n3. 줄이기\n4. 직접 입력\n\n번호 또는 직접 프롬프트 입력:", "1");
+                            if (!mode) return;
+                            const modeMap = { "1": "rewrite", "2": "expand", "3": "shorten" };
+                            if (modeMap[mode]) {
+                              handleAiReplace(modeMap[mode], secText.trim());
+                            } else if (mode === "4" || mode.length > 3) {
+                              const customPrompt = mode === "4" ? prompt("원하는 프롬프트를 입력하세요:", "") : mode;
+                              if (customPrompt) {
+                                (async () => {
+                                  setAiReplacing(true);
+                                  try {
+                                    const rep = await callAI("claude-haiku-4-5", [{ role: "user", content: `${customPrompt}\n\n원문:\n${secText.trim()}` }], 2000);
+                                    if (rep) setResult(prev => prev.replace(secText.trim(), rep.trim()));
+                                  } catch {}
+                                  setAiReplacing(false);
+                                })();
+                              }
+                            }
+                          }}
+                            style={{
+                              padding: "3px 8px", borderRadius: 6, border: `1px solid ${border}`,
+                              background: cardBg, color: muted, fontSize: 10, fontWeight: 600,
+                              cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+                            }}>
+                            AI 재작업
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                });
+              })()}
+            </div>
             {loading&&<span style={{display:"inline-block",width:2,height:14,background:accent,marginLeft:2,animation:"blink 1s infinite"}}/>}
           </div>
           </div>}

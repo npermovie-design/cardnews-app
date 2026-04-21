@@ -198,7 +198,7 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
     .replace(/~~([^~]+)~~/g, "$1")                   // ~~취소선~~ 제거
     .replace(/`([^`]+)`/g, "$1")                     // `코드` 제거
     .replace(/^>\s+/gm, "")                          // > 인용 제거
-    .replace(/^[-*]{3,}$/gm, "")                     // --- 구분선 제거
+    .replace(/^[*]{3,}$/gm, "---")                     // *** → --- 통일
     .replace(/^[-*+]\s+/gm, "- ")                    // 리스트 기호 통일
     .replace(/!\[.*?\]\((?!data:).*?\)/g, "");         // ![image](url) 제거 (data: base64는 유지)
 
@@ -215,6 +215,12 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
 
     if (!trimmed) {
       elements.push(<div key={i} style={{height:8}}/>);
+      continue;
+    }
+
+    // 구분선 --- 렌더링
+    if (/^-{3,}$/.test(trimmed)) {
+      elements.push(<hr key={`hr${i}`} style={{ border: "none", borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "#e5e5f0"}`, margin: "20px 0" }} />);
       continue;
     }
 
