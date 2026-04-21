@@ -100,7 +100,7 @@ function StepBadge({ num, color = K.purple }) {
 }
 
 /* ── 스크린샷 프레임 (브라우저 목업) ── */
-function ScreenFrame({ src, scale = 1, frame, fps, delay = 0.3 }) {
+function ScreenFrame({ src, scale = 1, frame, fps, delay = 0.3, maxH = null }) {
   const s = spring({ frame: Math.max(0, frame - delay * fps), fps, config: { damping: 14, stiffness: 80 } });
   return (
     <div style={{
@@ -108,8 +108,28 @@ function ScreenFrame({ src, scale = 1, frame, fps, delay = 0.3 }) {
       borderRadius: 16, overflow: "hidden",
       boxShadow: "0 12px 60px rgba(0,0,0,0.5)",
       border: "1px solid rgba(255,255,255,0.08)",
+      maxHeight: maxH || "auto",
     }}>
       <Img src={src} style={{ width: "100%", display: "block" }} />
+    </div>
+  );
+}
+
+/* ── 스크린샷 + 위→아래 스크롤 애니메이션 ── */
+function ScrollingScreen({ src, frame, fps, delay = 0.3, height = 500, scrollDur = 8 }) {
+  const s = spring({ frame: Math.max(0, frame - delay * fps), fps, config: { damping: 14, stiffness: 80 } });
+  const scrollF = Math.max(0, frame - (delay + 1) * fps);
+  const scrollY = interpolate(scrollF, [0, scrollDur * fps], [0, -60], { extrapolateRight: "clamp" });
+  return (
+    <div style={{
+      opacity: s, transform: `scale(${s})`,
+      borderRadius: 16, overflow: "hidden", height,
+      boxShadow: "0 12px 60px rgba(0,0,0,0.5)",
+      border: "1px solid rgba(255,255,255,0.08)",
+    }}>
+      <div style={{ transform: `translateY(${scrollY}%)` }}>
+        <Img src={src} style={{ width: "100%", display: "block" }} />
+      </div>
     </div>
   );
 }
@@ -145,15 +165,16 @@ function SceneBlog01({ lang }) {
           </div>
         </div>
 
-        {/* 오른쪽: 스크린샷 */}
+        {/* 오른쪽: 스크린샷 — 시차 등장 */}
         <div style={{ flex: 1, position: "relative" }}>
-          <ScreenFrame src={`${IMG}/1.png`} frame={frame} fps={fps} delay={0.3} />
-          {/* 2번 이미지 오버레이 (제목 추천) */}
+          {/* 1번: 메인 화면 (스크롤) */}
+          <ScrollingScreen src={`${IMG}/1.png`} frame={frame} fps={fps} delay={0.3} height={480} scrollDur={12} />
+          {/* 2번: 제목 추천 (3초 후 슬라이드 업) */}
           <div style={{
-            ...fadeSlide(frame, fps, "up", 1.5),
-            position: "absolute", bottom: -30, right: -20,
-            width: 380, borderRadius: 16, overflow: "hidden",
-            boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+            ...fadeSlide(frame, fps, "up", 3),
+            position: "absolute", bottom: -20, right: 20,
+            width: 420, borderRadius: 16, overflow: "hidden",
+            boxShadow: "0 12px 48px rgba(0,0,0,0.7)",
             border: "2px solid rgba(3,199,90,0.3)",
           }}>
             <Img src={`${IMG}/2.png`} style={{ width: "100%", display: "block" }} />
@@ -207,9 +228,9 @@ function SceneBlog02({ lang }) {
           </div>
         </div>
 
-        {/* 왼쪽: 스크린샷 */}
+        {/* 왼쪽: 설정 화면 (위→아래 스크롤) */}
         <div style={{ flex: 1 }}>
-          <ScreenFrame src={`${IMG}/3.png`} frame={frame} fps={fps} delay={0.3} scale={0.95} />
+          <ScrollingScreen src={`${IMG}/3.png`} frame={frame} fps={fps} delay={0.3} height={560} scrollDur={18} />
         </div>
       </div>
     </AbsoluteFill>
@@ -302,15 +323,29 @@ function SceneBlog04({ lang }) {
           </div>
         </div>
 
-        {/* 오른쪽: 스크린샷 조합 */}
-        <div style={{ flex: 1, position: "relative", display: "flex", gap: 20, alignItems: "center", justifyContent: "center" }}>
-          {/* 붙여넣기 메뉴 */}
-          <div style={{ ...fadeSlide(frame, fps, "up", 0.5) }}>
-            <ScreenFrame src={`${IMG}/5.png`} frame={frame} fps={fps} delay={0.5} />
+        {/* 오른쪽: 생성결과 → 복사 → 발행 순차 표시 */}
+        <div style={{ flex: 1, position: "relative" }}>
+          {/* 8번: 생성 결과 (스크롤) */}
+          <ScrollingScreen src={`${IMG}/8.png`} frame={frame} fps={fps} delay={0.3} height={440} scrollDur={8} />
+          {/* 5번: 붙여넣기 Ctrl+V (3초 후) */}
+          <div style={{
+            ...fadeSlide(frame, fps, "right", 3),
+            position: "absolute", top: 20, right: -30,
+            width: 220, borderRadius: 14, overflow: "hidden",
+            boxShadow: "0 8px 36px rgba(0,0,0,0.6)",
+            border: "2px solid rgba(124,106,255,0.3)",
+          }}>
+            <Img src={`${IMG}/5.png`} style={{ width: "100%", display: "block" }} />
           </div>
-          {/* 네이버 버튼 */}
-          <div style={{ ...fadeSlide(frame, fps, "up", 1) }}>
-            <ScreenFrame src={`${IMG}/4.png`} frame={frame} fps={fps} delay={1} />
+          {/* 4번: 네이버 글쓰기 버튼 (5초 후) */}
+          <div style={{
+            ...fadeSlide(frame, fps, "up", 5),
+            position: "absolute", bottom: -10, right: 40,
+            borderRadius: 12, overflow: "hidden",
+            boxShadow: "0 8px 32px rgba(3,199,90,0.3)",
+            border: "2px solid rgba(3,199,90,0.3)",
+          }}>
+            <Img src={`${IMG}/4.png`} style={{ height: 60, display: "block" }} />
           </div>
         </div>
       </div>
@@ -344,10 +379,14 @@ function SceneBlog05({ lang }) {
           </div>
         </div>
 
-        {/* 왼쪽: 스크린샷 2개 */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 20 }}>
-          <ScreenFrame src={`${IMG}/6.png`} frame={frame} fps={fps} delay={0.3} />
-          <ScreenFrame src={`${IMG}/7.png`} frame={frame} fps={fps} delay={0.8} />
+        {/* 왼쪽: 유튜브(3초 후) + 뉴스(6초 후) 순차 등장 */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 24 }}>
+          <div style={fadeSlide(frame, fps, "left", 1)}>
+            <ScreenFrame src={`${IMG}/6.png`} frame={frame} fps={fps} delay={1} />
+          </div>
+          <div style={fadeSlide(frame, fps, "left", 4)}>
+            <ScreenFrame src={`${IMG}/7.png`} frame={frame} fps={fps} delay={4} />
+          </div>
         </div>
       </div>
     </AbsoluteFill>
@@ -429,18 +468,24 @@ const BLOG_SCENES = [
   { id: "bs06", segs: ["blog-13"], Component: SceneBlog06 },
 ];
 
-// TTS 실측 기반 타임스탬프 (글자수 비례)
+// TTS 실측 기반 타임스탬프 (91.6초, 구분자 없음)
 const BLOG_TIMESTAMPS = {
-  "blog-01": { start: 0, end: 7.07 }, "blog-02": { start: 7.07, end: 19.06 },
-  "blog-03": { start: 19.06, end: 26.13 }, "blog-04": { start: 26.13, end: 36.74 },
-  "blog-05": { start: 36.74, end: 46.36 }, "blog-06": { start: 46.36, end: 58.34 },
-  "blog-07": { start: 58.34, end: 68.56 }, "blog-08": { start: 68.56, end: 78.38 },
-  "blog-09": { start: 78.38, end: 90.56 }, "blog-10": { start: 90.56, end: 100.38 },
-  "blog-11": { start: 100.38, end: 111.19 }, "blog-12": { start: 111.19, end: 120.62 },
-  "blog-13": { start: 120.62, end: 129.85 },
+  "blog-01": { start: 0, end: 4.99 },
+  "blog-02": { start: 4.99, end: 13.44 },
+  "blog-03": { start: 13.44, end: 18.43 },
+  "blog-04": { start: 18.43, end: 25.92 },
+  "blog-05": { start: 25.92, end: 32.71 },
+  "blog-06": { start: 32.71, end: 41.16 },
+  "blog-07": { start: 41.16, end: 48.37 },
+  "blog-08": { start: 48.37, end: 55.3 },
+  "blog-09": { start: 55.3, end: 63.89 },
+  "blog-10": { start: 63.89, end: 70.82 },
+  "blog-11": { start: 70.82, end: 78.44 },
+  "blog-12": { start: 78.44, end: 85.1 },
+  "blog-13": { start: 85.1, end: 91.61 },
 };
 
-const BLOG_TOTAL = 133; // 129.85s + 엔딩 여유
+const BLOG_TOTAL = 95; // 91.6초 + 엔딩 여유
 
 // 씬 타이밍 계산
 function getBlogSceneTimings() {
