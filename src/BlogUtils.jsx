@@ -91,15 +91,15 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
   };
 
   return (
-    <div style={{margin:"20px 0",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.08)",position:"relative",
+    <div style={{margin:"12px 0",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.08)",position:"relative",
       outline: dragOver ? "3px dashed #7c6aff" : "none", transition:"outline 0.15s"}}
       onContextMenu={e => { e.preventDefault(); setShowMenu(!showMenu); }}
       onDragOver={e => { e.preventDefault(); setDragOver(true); }}
       onDragLeave={() => setDragOver(false)}
       onDrop={e => { e.preventDefault(); setDragOver(false); replaceWithFile(e.dataTransfer?.files?.[0]); }}>
-      <img src={imgSrc} alt={desc} loading="lazy"
+      <img src={imgSrc} alt={desc} loading="lazy" referrerPolicy="no-referrer"
         onError={e => { e.target.onerror=null; e.target.src=`https://picsum.photos/seed/${fallbackSeed}/800/450`; }}
-        style={{width:"100%",display:"block",height:320,objectFit:"cover",cursor:"pointer"}}
+        style={{width:"100%",display:"block",height:220,objectFit:"cover",cursor:"pointer"}}
         onClick={() => setShowMenu(!showMenu)} />
       {/* 항상 보이는 빠른 교체 바 */}
       {!showMenu && !showSearch && (
@@ -163,7 +163,7 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
           </div>
           <div style={{flex:1,overflow:"auto",padding:8,display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6}}>
             {searchResults.map((r, i) => (
-              <img key={i} src={r.url} alt={r.alt} loading="lazy"
+              <img key={i} src={r.url} alt={r.alt} loading="lazy" referrerPolicy="no-referrer"
                 onClick={() => { userReplacedRef.current = true; setImgSrc(r.url); setShowSearch(false); }}
                 style={{width:"100%",height:80,objectFit:"cover",borderRadius:6,cursor:"pointer",transition:"transform 0.1s"}}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
@@ -204,7 +204,11 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
 
   const lines = cleaned.split("\n");
   const elements = [];
-  let imgIdx = 0;
+  // 7번째 인자: skipFirstImage, 8번째 인자: 시작 이미지 인덱스
+  const skipFirst = arguments[6] === true;
+  const startImgIdx = typeof arguments[7] === "number" ? arguments[7] : 0;
+  let imgIdx = startImgIdx;
+  let headingCount = 0;
 
   // AI가 [image:] 태그를 만들었는지 체크 — 만들었으면 태그 위치 기반, 아니면 소제목 뒤
   const hasInlineTags = /\[(?:image|이미지):\s*[^\]]+\]/i.test(text);
@@ -250,9 +254,10 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
     const isHeading = trimmed.length >= 3 && trimmed.length <= 50 && prevEmpty && !trimmed.startsWith("-") && !trimmed.startsWith("#") && !/^\d+\./.test(trimmed);
 
     if (isHeading) {
+      headingCount++;
       elements.push(<div key={`br${i}`} style={{height:28}}/>);
-      // [image:] 태그가 글에 없으면 소제목 위에 이미지 삽입
-      if (!hasInlineTags && imgUrls.length > 0 && imgIdx < imgUrls.length) {
+      // [image:] 태그가 글에 없으면 소제목 위에 이미지 삽입 (skipFirst면 첫 소제목 제외)
+      if (!hasInlineTags && imgUrls.length > 0 && imgIdx < imgUrls.length && !(skipFirst && headingCount === 1)) {
         elements.push(<ReplaceableImage key={`img${i}`} src={imgUrls[imgIdx]} desc={trimmed} isDark={isDark} mutedColor={mutedColor} fallbackSeed={encodeURIComponent(trimmed.slice(0,20))} />);
         imgIdx++;
       }

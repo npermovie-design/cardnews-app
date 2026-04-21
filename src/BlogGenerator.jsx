@@ -976,6 +976,16 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [inlineImages,    setInlineImages]    = useState({}); // { "키워드": imageUrl }
   const [aiImgLoading,    setAiImgLoading]    = useState(false);
   const [aiImgUrl,        setAiImgUrl]        = useState(null);
+  const [showPhotoSearch, setShowPhotoSearch] = useState(false);
+  const [photoSearchQuery, setPhotoSearchQuery] = useState("");
+  const [photoSearchResults, setPhotoSearchResults] = useState([]);
+  const [photoSearching, setPhotoSearching] = useState(false);
+  const [showSectionMenu, setShowSectionMenu] = useState(null); // 섹션 AI 재작업 메뉴
+  const [sectionReplacing, setSectionReplacing] = useState(null); // {index, label} 섹션 AI 변환 중
+  const [showPromptInput, setShowPromptInput] = useState(false); // 상단 전체 프롬프트 수정
+  const [promptText, setPromptText] = useState("");
+  const [promptLoading, setPromptLoading] = useState(false);
+  const [sectionPrompt, setSectionPrompt] = useState(null); // {index} 섹션별 프롬프트 입력
   // AI 이미지 생성
   const handleAiImage = async () => {
     if (!result || aiImgLoading) return;
@@ -998,6 +1008,22 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       }
     } catch (e) { alert("이미지 생성 실패: " + e.message); }
     setAiImgLoading(false);
+  };
+
+  // ── 무료 사진 인라인 검색 ──
+  const searchFreePhotos = async (q) => {
+    if (!q?.trim()) return;
+    setPhotoSearching(true);
+    setPhotoSearchResults([]);
+    try {
+      // Pixabay 직접 호출 (CORS 허용, lang=ko로 한국어 검색 지원)
+      const r = await fetch(`https://pixabay.com/api/?key=44421803-926acb8f55c34beaafae6de8a&q=${encodeURIComponent(q)}&image_type=photo&per_page=18&lang=ko&safesearch=true&orientation=horizontal`);
+      const d = await r.json();
+      if (d.hits?.length) {
+        setPhotoSearchResults(d.hits.map(h => ({ url: h.largeImageURL || h.webformatURL, preview: h.webformatURL, alt: h.tags || q })));
+      }
+    } catch {}
+    setPhotoSearching(false);
   };
 
   const abortRef = useRef(false);
@@ -1530,35 +1556,61 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         } catch {}
       }
 
-      // 2) 이미지 3개 미만이면 keyword로 보충 (태그 없는 경우도 여기서 처리)
+      // 2) 이미지 부족 시 소제목별 다양한 키워드로 검색
       if (results.length < 3) {
         try {
-          // 소스: fields.keyword 또는 본문에서 첫 소제목 추출
-          let searchKw = fields.keyword || "";
-          if (!searchKw) {
-            const lines = fullText.split("\n").map(l => l.trim()).filter(Boolean);
-            const heading = lines.find(l => l.length >= 4 && l.length <= 40 && !/^\[/.test(l) && !/^#/.test(l));
-            if (heading) searchKw = heading;
+          // 본문에서 소제목들 추출
+          const allLines = fullText.split("\n");
+          const headings = [];
+          for (let li = 0; li < allLines.length; li++) {
+            const t = allLines[li].trim();
+            if (!t || t.length < 3 || t.length > 50 || t.startsWith("[") || t.startsWith("#") || t.startsWith("-") || /^\d+\./.test(t)) continue;
+            const prevEmpty = li === 0 || !allLines[li-1]?.trim();
+            if (prevEmpty) headings.push(t);
           }
-          if (searchKw) {
-            let enKw = searchKw;
-            if (/[가-힣]/.test(enKw)) {
-              try {
-                const txt = await callAI("claude-haiku-4-5", [{
-                  role: "user",
-                  content: `다음 한국어 주제를 이미지 검색용 영어 키워드 2단어로 바꿔주세요. 답변은 영어 단어만:\n"${searchKw}"`
-                }], 40);
-                const en = (txt || "").trim().replace(/[^A-Za-z\s-]/g, " ").replace(/\s+/g, " ").trim();
-                if (en.length >= 3 && en.length < 60) enKw = en;
-              } catch {}
+          // AI 한 번 호출: 소제목들 → 각각 다른 이미지 검색 키워드 (영어 2단어)
+          const subHeadings = headings.slice(1).slice(0, 8);
+          const mainKw = fields.keyword || headings[0] || "";
+          let searchKeywords = [];
+          try {
+            const aiResult = await callAI("claude-haiku-4-5", [{
+              role: "user",
+              content: `블로그 소제목별로 가장 적합한 이미지 검색 키워드를 영어 2~3단어로 만들어주세요.
+각 소제목의 내용에 맞는 서로 다른 키워드를 생성하세요. 한 줄에 하나씩만 출력하세요.
+
+메인 주제: ${mainKw}
+소제목들:
+${subHeadings.map((h,i) => `${i+1}. ${h}`).join("\n")}
+
+예시 출력:
+blood pressure monitor
+medical certificate
+hospital equipment`
+            }], 300);
+            if (aiResult) {
+              searchKeywords = aiResult.split("\n").map(l => l.replace(/^\d+[\.\)]\s*/, "").trim()).filter(l => l.length >= 3 && l.length < 60 && /[a-zA-Z]/.test(l));
             }
-            const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(enKw)}&per_page=10&safesearch=true&image_type=photo&orientation=horizontal`);
-            if (r.ok) {
-              const d = await r.json();
-              (d.hits || []).slice(0, 8 - results.length).forEach(h => {
-                results.push({ id: "px"+h.id, preview: h.webformatURL, url: h.largeImageURL||h.webformatURL, src: "Pixabay" });
-              });
-            }
+          } catch {}
+
+          // 폴백: 메인 키워드만으로
+          if (searchKeywords.length === 0) searchKeywords = [mainKw];
+
+          // 각 키워드별로 Pixabay 검색 (다양한 이미지 확보)
+          const usedIds = new Set(results.map(x => x.id));
+          for (let ki = 0; ki < searchKeywords.length && results.length < 8; ki++) {
+            try {
+              const q = searchKeywords[ki];
+              const lang = /[가-힣]/.test(q) ? "ko" : "en";
+              const r = await fetch(`https://pixabay.com/api/?key=44421803-926acb8f55c34beaafae6de8a&q=${encodeURIComponent(q)}&image_type=photo&per_page=5&lang=${lang}&safesearch=true&orientation=horizontal`);
+              if (r.ok) {
+                const d = await r.json();
+                const hit = (d.hits || []).find(h => !usedIds.has("px"+h.id));
+                if (hit) {
+                  usedIds.add("px"+hit.id);
+                  results.push({ id: "px"+hit.id, preview: hit.webformatURL, url: hit.largeImageURL||hit.webformatURL, src: "Pixabay", keyword: subHeadings[ki] || q });
+                }
+              }
+            } catch {}
           }
         } catch {}
       }
@@ -1777,21 +1829,39 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const targetText = customText || selectionPopup?.text;
     if (!targetText) return;
     setAiReplacing(true);
+    const maxTokens = mode === "expand" ? 3000 : mode === "shorten" ? 1000 : 2000;
     const prompts = {
-      rewrite: `다음 문장을 같은 의미를 유지하면서 더 자연스럽고 매력적으로 다시 작성해주세요. 원문과 같은 말투를 유지하세요. 다시 쓴 문장만 출력하세요.\n\n원문: ${targetText}`,
-      expand: `다음 문장의 내용을 2~3배로 늘려서 더 상세하고 풍부하게 작성해주세요. 원문과 같은 말투를 유지하세요. 늘린 문장만 출력하세요.\n\n원문: ${targetText}`,
-      shorten: `다음 문장을 핵심만 남기고 간결하게 줄여주세요. 원문과 같은 말투를 유지하세요. 줄인 문장만 출력하세요.\n\n원문: ${targetText}`,
-      formal: `다음 문장을 합니다체(~입니다, ~했습니다)로 바꿔주세요. 문장만 출력하세요.\n\n원문: ${targetText}`,
-      casual: `다음 문장을 해요체(~요, ~이에요)로 친근하게 바꿔주세요. 문장만 출력하세요.\n\n원문: ${targetText}`,
-      friendly: `다음 문장을 경험 공유체(~거든요, ~더라고요, ~해보세요)로 바꿔주세요. 문장만 출력하세요.\n\n원문: ${targetText}`,
+      rewrite: `다음 문장을 같은 의미를 유지하면서 더 자연스럽고 매력적으로 다시 작성해주세요. 원문과 같은 말투를 유지하세요. 다시 쓴 문장만 출력하세요.\n\n원문:\n${targetText}`,
+      expand: `다음 문장의 내용을 2~3배로 늘려서 더 상세하고 풍부하게 작성해주세요. 원문과 같은 말투를 유지하세요. 늘린 문장만 출력하세요.\n\n원문:\n${targetText}`,
+      shorten: `다음 문장을 핵심만 남기고 간결하게 줄여주세요. 원문과 같은 말투를 유지하세요. 줄인 문장만 출력하세요.\n\n원문:\n${targetText}`,
+      formal: `다음 문장을 합니다체(~입니다, ~했습니다)로 바꿔주세요. 문장만 출력하세요.\n\n원문:\n${targetText}`,
+      casual: `다음 문장을 해요체(~요, ~이에요)로 친근하게 바꿔주세요. 문장만 출력하세요.\n\n원문:\n${targetText}`,
+      friendly: `다음 문장을 경험 공유체(~거든요, ~더라고요, ~해보세요)로 바꿔주세요. 문장만 출력하세요.\n\n원문:\n${targetText}`,
     };
     try {
-      const replacement = await callAI("claude-haiku-4-5", [{role:"user",content:prompts[mode]||prompts.rewrite}], mode==="expand"?1000:500);
+      const replacement = await callAI("claude-haiku-4-5", [{role:"user",content:prompts[mode]||prompts.rewrite}], maxTokens);
       if (replacement) {
         const cleaned = replacement.trim().replace(/^["']|["']$/g, "");
-        setResult(prev => prev.replace(targetText, cleaned));
+        setResult(prev => {
+          // 정확 매칭 먼저 시도
+          if (prev.includes(targetText)) return prev.replace(targetText, cleaned);
+          // trim 매칭
+          const trimmed = targetText.trim();
+          if (prev.includes(trimmed)) return prev.replace(trimmed, cleaned);
+          // 첫 줄 기반 매칭 (섹션 분리 시 공백 차이 대비)
+          const firstLine = trimmed.split("\n")[0]?.trim();
+          if (firstLine && prev.includes(firstLine)) {
+            const idx = prev.indexOf(firstLine);
+            const endCandidate = trimmed.split("\n").pop()?.trim();
+            if (endCandidate) {
+              const endIdx = prev.indexOf(endCandidate, idx);
+              if (endIdx > idx) return prev.slice(0, idx) + cleaned + prev.slice(endIdx + endCandidate.length);
+            }
+          }
+          return prev; // 매칭 실패 시 원본 유지
+        });
       }
-    } catch {}
+    } catch (e) { console.warn("handleAiReplace error:", e); }
     setAiReplacing(false);
     setSelectionPopup(null);
     setContextMenu(null);
@@ -1971,6 +2041,13 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0115-6.7L21 8M21 3v5h-5M21 12a9 9 0 01-15 6.7L3 16M3 21v-5h5"/></svg>
                 새로 쓰기
               </button>
+              <button onClick={()=>setShowPromptInput(!showPromptInput)}
+                style={{padding:"10px 18px",borderRadius:11,border:`1.5px solid ${showPromptInput?accent:border}`,
+                  background:showPromptInput?accentBg:"transparent",color:showPromptInput?accent:text,fontSize:13,fontWeight:700,cursor:"pointer",
+                  display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap",minHeight:42,fontFamily:"inherit"}}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                수정 요청
+              </button>
               <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result, true)}
                 disabled={copyLoading}
                 style={{padding:"10px 18px",borderRadius:11,border:`1.5px solid ${copied?"rgba(74,222,128,0.5)":accent+"60"}`,
@@ -1983,6 +2060,37 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 {copyLoading?"복사 중":copied?"복사됨":isMobile?"복사":"복사 (이미지 포함)"}
               </button>
               {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
+            </div>
+          )}
+          {/* 전체 프롬프트 수정 패널 */}
+          {showPromptInput && (
+            <div style={{marginTop:12,padding:"14px 16px",borderRadius:14,background:isDark?"rgba(124,106,255,0.06)":"#f8f7ff",border:`1.5px solid ${isDark?"rgba(124,106,255,0.2)":"#e8e5ff"}`,display:"flex",gap:8,alignItems:"flex-start"}}>
+              <textarea value={promptText} onChange={e=>setPromptText(e.target.value)}
+                placeholder="수정할 내용을 입력하세요 (예: 사례를 더 추가해줘, 초보자 눈높이로 바꿔줘, 의료기기 종류별로 정리해줘)"
+                rows={2}
+                onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&promptText.trim()){e.preventDefault();
+                  (async()=>{
+                    setPromptLoading(true);
+                    try{
+                      const rep=await callAI("claude-haiku-4-5",[{role:"user",content:`다음 블로그 글을 아래 요청에 맞게 수정해주세요. 수정된 전체 글만 출력하세요. 원문의 말투와 스타일을 유지하세요.\n\n요청: ${promptText}\n\n원문:\n${result}`}],4000);
+                      if(rep){setResult_raw(rep.trim());setSuggestedImages([]);fetchInlineImages(rep.trim());}
+                    }catch{}
+                    setPromptLoading(false);setPromptText("");setShowPromptInput(false);
+                  })();
+                }}}
+                style={{flex:1,padding:"10px 14px",borderRadius:10,border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e5f0"}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",color:text,fontSize:13,fontFamily:"inherit",outline:"none",resize:"none",lineHeight:1.6}}/>
+              <button disabled={promptLoading||!promptText.trim()} onClick={async()=>{
+                if(!promptText.trim())return;
+                setPromptLoading(true);
+                try{
+                  const rep=await callAI("claude-haiku-4-5",[{role:"user",content:`다음 블로그 글을 아래 요청에 맞게 수정해주세요. 수정된 전체 글만 출력하세요. 원문의 말투와 스타일을 유지하세요.\n\n요청: ${promptText}\n\n원문:\n${result}`}],4000);
+                  if(rep){setResult_raw(rep.trim());setSuggestedImages([]);fetchInlineImages(rep.trim());}
+                }catch{}
+                setPromptLoading(false);setPromptText("");setShowPromptInput(false);
+              }}
+                style={{padding:"10px 18px",borderRadius:10,border:"none",background:promptLoading?"#999":"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:promptLoading?"wait":"pointer",whiteSpace:"nowrap",minHeight:42,opacity:(!promptText.trim()||promptLoading)?0.5:1}}>
+                {promptLoading?<><div style={{width:12,height:12,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite",display:"inline-block",marginRight:6}}/>수정 중...</>:"적용"}
+              </button>
             </div>
           )}
         </div>
@@ -2007,49 +2115,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           {/* 숨겨진 이미지 파일 input */}
           <input ref={imageInputRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => { if (e.target.files?.[0]) insertImageAtCursor(e.target.files[0]); e.target.value = ""; }} />
 
-          {(viewMode==="text"||!isTistory)&&<div style={{ display: "flex", gap: 0 }}>
-          {/* ── 왼쪽 도구 바 ── */}
-          <div style={{
-            width: 80, flexShrink: 0, display: "flex", flexDirection: "column", gap: 4, padding: "10px 6px",
-            background: isDark ? "rgba(255,255,255,0.03)" : "#f8f8fc",
-            borderRadius: "12px 0 0 12px", border: `1px solid ${border}`, borderRight: "none",
-          }}>
-            {[
-              { label: "내 사진", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>,
-                action: () => imageInputRef.current?.click() },
-              { label: "무료사진", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
-                action: () => {
-                  const kw = prompt("삽입할 사진 키워드를 입력하세요", fields.keyword || "");
-                  if (!kw) return;
-                  (async () => {
-                    try {
-                      let enKw = kw;
-                      if (/[가-힣]/.test(kw)) { try { enKw = (await callAI("claude-haiku-4-5", [{ role: "user", content: `다음 한국어를 영어 키워드 2단어로:\n"${kw}"` }], 40))?.trim() || kw; } catch {} }
-                      const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(enKw)}&per_page=6&safesearch=true&image_type=photo&orientation=horizontal`);
-                      const d = await r.json();
-                      const img = d.hits?.[0]?.largeImageURL || d.hits?.[0]?.webformatURL;
-                      if (img) setResult(prev => prev + `\n\n![${kw}](${img})\n\n`);
-                      else alert("검색 결과가 없습니다. 다른 키워드를 시도해보세요.");
-                    } catch { alert("사진 검색에 실패했습니다."); }
-                  })();
-                }},
-              { label: "구분선", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12"/></svg>,
-                action: () => { setResult(prev => prev.trimEnd() + "\n\n---\n\n"); } },
-            ].map((tool, i) => (
-              <button key={i} onClick={tool.action}
-                style={{
-                  width: "100%", padding: "8px 4px", borderRadius: 8, border: "none", cursor: "pointer",
-                  background: "transparent", color: isDark ? "rgba(255,255,255,0.5)" : "#888",
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
-                  transition: "all 0.15s", fontFamily: "inherit",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.08)" : "#eee"; e.currentTarget.style.color = "#7c6aff"; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = isDark ? "rgba(255,255,255,0.5)" : "#888"; }}>
-                {tool.icon}
-                <span style={{ fontSize: 9, fontWeight: 600 }}>{tool.label}</span>
-              </button>
-            ))}
-          </div>
+          {(viewMode==="text"||!isTistory)&&<div style={{ display: "flex", gap: 0, position: "relative" }}>
           {/* ── 에디터 본문 ── */}
           <div
             contentEditable
@@ -2113,7 +2179,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 }
               }
             }}
-            style={{flex:1,background:cardBg,border:`1px solid ${border}`,borderRadius:"0 12px 12px 0",padding:"26px 28px",fontSize:16,color:text,minHeight:140,lineHeight:1.95,cursor:"text",outline:"none",transition:"outline 0.15s"}}>
+            style={{flex:1,background:cardBg,border:`1px solid ${border}`,borderRadius:12,padding:"26px 28px",fontSize:16,color:text,minHeight:140,lineHeight:1.95,cursor:"text",outline:"none",transition:"outline 0.15s"}}>
             <div ref={blogContentRef}>
               {(() => {
                 // 소제목(## 또는 짧은 줄) 기준으로 섹션 분리 → 각 섹션에 AI 재작업 버튼
@@ -2139,40 +2205,105 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                   return (
                     <div key={si} style={{ position: "relative", marginBottom: 4 }}
                       className="blog-section-wrap">
-                      {renderMarkdown(secText, isDark, text, muted, accentRaw, suggestedImages)}
+                      {renderMarkdown(secText, isDark, text, muted, accentRaw, suggestedImages, si === 0, si === 0 ? 0 : si - 1)}
                       {/* 섹션 AI 재작업 버튼 (호버 시 표시) */}
                       {!loading && sections.length > 1 && sec.heading && (
                         <div className="section-ai-btn" style={{
-                          position: "absolute", top: 0, right: -8, opacity: 0,
+                          position: "absolute", top: 0, right: -8, opacity: sectionReplacing?.index === si ? 1 : 0,
                           transition: "opacity 0.15s", display: "flex", gap: 4,
                         }}>
-                          <button onClick={() => {
-                            const mode = prompt("변환 방식을 선택하세요:\n1. 다시쓰기\n2. 늘리기\n3. 줄이기\n4. 직접 입력\n\n번호 또는 직접 프롬프트 입력:", "1");
-                            if (!mode) return;
-                            const modeMap = { "1": "rewrite", "2": "expand", "3": "shorten" };
-                            if (modeMap[mode]) {
-                              handleAiReplace(modeMap[mode], secText.trim());
-                            } else if (mode === "4" || mode.length > 3) {
-                              const customPrompt = mode === "4" ? prompt("원하는 프롬프트를 입력하세요:", "") : mode;
-                              if (customPrompt) {
-                                (async () => {
-                                  setAiReplacing(true);
-                                  try {
-                                    const rep = await callAI("claude-haiku-4-5", [{ role: "user", content: `${customPrompt}\n\n원문:\n${secText.trim()}` }], 2000);
-                                    if (rep) setResult(prev => prev.replace(secText.trim(), rep.trim()));
-                                  } catch {}
-                                  setAiReplacing(false);
-                                })();
-                              }
-                            }
-                          }}
-                            style={{
-                              padding: "3px 8px", borderRadius: 6, border: `1px solid ${border}`,
-                              background: cardBg, color: muted, fontSize: 10, fontWeight: 600,
-                              cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-                            }}>
-                            AI 재작업
-                          </button>
+                          {sectionReplacing?.index === si ? (
+                            <div style={{padding:"4px 12px",borderRadius:8,background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:10,fontWeight:700,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+                              <div style={{width:10,height:10,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
+                              {sectionReplacing.label} 중...
+                            </div>
+                          ) : (
+                            <>
+                              <button onClick={() => setShowSectionMenu(showSectionMenu === si ? null : si)}
+                                style={{
+                                  padding: "3px 8px", borderRadius: 6, border: `1px solid ${border}`,
+                                  background: cardBg, color: muted, fontSize: 10, fontWeight: 600,
+                                  cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+                                }}>
+                                AI 재작업
+                              </button>
+                              {showSectionMenu === si && (
+                                <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:isDark?"#1e1940":"#fff",borderRadius:10,
+                                  boxShadow:"0 4px 20px rgba(0,0,0,0.18)",border:`1px solid ${border}`,padding:6,zIndex:20,display:"flex",flexDirection:"column",gap:3,minWidth:120}}>
+                                  {[
+                                    {mode:"rewrite",label:"다시쓰기"},
+                                    {mode:"expand",label:"늘리기"},
+                                    {mode:"shorten",label:"줄이기"},
+                                  ].map(o=>(
+                                    <button key={o.mode} onClick={async()=>{
+                                      setShowSectionMenu(null);
+                                      setSectionReplacing({index:si,label:o.label.replace("기","는")});
+                                      await handleAiReplace(o.mode,secText.trim());
+                                      setSectionReplacing(null);
+                                    }}
+                                      style={{padding:"7px 14px",borderRadius:6,border:"none",background:"transparent",color:text,fontSize:11,fontWeight:600,
+                                        cursor:"pointer",textAlign:"left",fontFamily:"inherit",whiteSpace:"nowrap"}}
+                                      onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.08)":"#f5f5f5"}
+                                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                                      {o.label}
+                                    </button>
+                                  ))}
+                                  <div style={{height:1,background:isDark?"rgba(255,255,255,0.08)":"#eee",margin:"2px 0"}}/>
+                                  <button onClick={()=>{setShowSectionMenu(null);setSectionPrompt({index:si,text:""});}}
+                                    style={{padding:"7px 14px",borderRadius:6,border:"none",background:"transparent",color:accent,fontSize:11,fontWeight:600,
+                                      cursor:"pointer",textAlign:"left",fontFamily:"inherit",whiteSpace:"nowrap"}}
+                                    onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(124,106,255,0.1)":"#f0f0ff"}
+                                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                                    직접 입력
+                                  </button>
+                                </div>
+                              )}
+                              {/* 섹션 프롬프트 입력 */}
+                              {sectionPrompt?.index === si && (
+                                <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:isDark?"#1e1940":"#fff",borderRadius:10,
+                                  boxShadow:"0 4px 20px rgba(0,0,0,0.18)",border:`1px solid ${border}`,padding:10,zIndex:20,width:280}}
+                                  onClick={e=>e.stopPropagation()}>
+                                  <textarea value={sectionPrompt.text||""} onChange={e=>setSectionPrompt({...sectionPrompt,text:e.target.value})}
+                                    placeholder="이 섹션을 어떻게 수정할까요? (예: 구체적인 예시 추가, 더 쉽게 설명)"
+                                    rows={2} autoFocus
+                                    onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&sectionPrompt.text?.trim()){e.preventDefault();
+                                      (async()=>{
+                                        const p=sectionPrompt.text;setSectionPrompt(null);
+                                        setSectionReplacing({index:si,label:"수정하"});
+                                        setAiReplacing(true);
+                                        try{
+                                          const rep=await callAI("claude-haiku-4-5",[{role:"user",content:`${p}\n\n원문의 말투를 유지하면서 수정된 문장만 출력하세요.\n\n원문:\n${secText.trim()}`}],2000);
+                                          if(rep)setResult(prev=>prev.replace(secText.trim(),rep.trim()));
+                                        }catch{}
+                                        setAiReplacing(false);setSectionReplacing(null);
+                                      })();
+                                    }}}
+                                    style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1.5px solid ${border}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",
+                                      color:text,fontSize:12,fontFamily:"inherit",outline:"none",resize:"none",lineHeight:1.5,boxSizing:"border-box"}}/>
+                                  <div style={{display:"flex",gap:6,marginTop:8,justifyContent:"flex-end"}}>
+                                    <button onClick={()=>setSectionPrompt(null)}
+                                      style={{padding:"5px 12px",borderRadius:6,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+                                      취소
+                                    </button>
+                                    <button disabled={!sectionPrompt.text?.trim()} onClick={async()=>{
+                                      const p=sectionPrompt.text;setSectionPrompt(null);
+                                      setSectionReplacing({index:si,label:"수정하"});
+                                      setAiReplacing(true);
+                                      try{
+                                        const rep=await callAI("claude-haiku-4-5",[{role:"user",content:`${p}\n\n원문의 말투를 유지하면서 수정된 문장만 출력하세요.\n\n원문:\n${secText.trim()}`}],2000);
+                                        if(rep)setResult(prev=>prev.replace(secText.trim(),rep.trim()));
+                                      }catch{}
+                                      setAiReplacing(false);setSectionReplacing(null);
+                                    }}
+                                      style={{padding:"5px 14px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,
+                                        cursor:"pointer",fontFamily:"inherit",opacity:sectionPrompt.text?.trim()?1:0.4}}>
+                                      적용
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
@@ -2382,6 +2513,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes bl-step-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+        .blog-section-wrap:hover .section-ai-btn{opacity:1!important}
+        .blog-section-wrap{border-left:2px solid transparent;padding-left:4px;transition:border-color 0.15s}
+        .blog-section-wrap:hover{border-left-color:rgba(124,106,255,0.2)}
         @keyframes bl-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
         @keyframes bl-progress{from{width:0%}to{width:100%}}
         @keyframes bl-fadein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
@@ -2675,26 +2809,6 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
               <div className="bl-settings-panel" style={{maxWidth:720,margin:"16px auto 0",background:cardBg,border:`1px solid ${border}`,borderRadius:20,padding:"20px 22px",boxShadow:isDark?"0 4px 20px rgba(0,0,0,0.3)":"0 4px 20px rgba(0,0,0,0.06)"}}>
                 {/* 글쓰기 모드 설정 */}
                 {mode==="write" && (<>
-                {/* 플랫폼 선택 */}
-                <div style={{marginBottom:20}}>
-                  <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-                    플랫폼
-                  </div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
-                    {SNS_OPTIONS.map(p=>{
-                      const isA=platformId===p.id;
-                      return <button key={p.id} onClick={()=>setPlatformId(p.id)}
-                        style={{padding:"8px 14px",borderRadius:12,border:`1.5px solid ${isA?(p.color||accent):border}`,background:isA?(`${p.color||"#7c6aff"}10`):"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontSize:12,fontWeight:isA?800:600,color:isA?(p.color||accent):text,transition:"all 0.15s",fontFamily:"inherit"}}>
-                        <div style={{width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",color:p.color||muted,flexShrink:0}}>
-                          {p.svg ? <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">{p.svg.props.children}</svg> : <img src={p.icon} alt="" style={{width:14,height:14,borderRadius:2,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>}
-                        </div>
-                        {p.label}
-                      </button>;
-                    })}
-                  </div>
-                </div>
-
                 {/* 글 타입 */}
                 <div style={{marginBottom:20}}>
                   <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
