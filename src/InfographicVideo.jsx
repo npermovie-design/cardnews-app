@@ -872,48 +872,49 @@ function Scene08_Resources({ lang = "ko" }) {
       <GlowOrb x="40%" y="40%" color={K.purple} size={450} />
       <ParticleBg />
 
-      <div style={{ textAlign: "center", zIndex: 1, maxWidth: 1100 }}>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0), fontSize: 14, color: "#06b6d4", fontWeight: 700, letterSpacing: 2, marginBottom: 14 }}>
-          RESOURCES
-        </div>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 56, fontWeight: 900, color: K.white, marginBottom: 24, lineHeight: 1.3 }}>
-          {T("s08_title1", lang)}<br />
-          <span style={{ background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            {T("s08_title2", lang)}
-          </span>
-        </div>
-        <div style={{ ...fadeSlide(frame, fps, "up", 0.5), fontSize: 22, color: K.muted, marginBottom: 48 }}>
-          {T("s08_sub", lang)}
+      <div style={{ zIndex: 1, width: "100%", padding: "0 60px" }}>
+        <div style={{ textAlign: "center", marginBottom: 44 }}>
+          <div style={{ ...fadeSlide(frame, fps, "up", 0), fontSize: 16, color: "#06b6d4", fontWeight: 700, letterSpacing: 3, marginBottom: 16 }}>
+            RESOURCES
+          </div>
+          <div style={{ ...fadeSlide(frame, fps, "up", 0.2), fontSize: 52, fontWeight: 900, color: K.white, lineHeight: 1.3 }}>
+            {T("s08_title1", lang)}{" "}
+            <span style={{ background: K.grad, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+              {T("s08_title2", lang)}
+            </span>
+          </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 28 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 24, maxWidth: 1400, margin: "0 auto" }}>
           {resources.map((r, i) => {
-            const s = spring({ frame: Math.max(0, frame - (0.8 + i * 0.25) * fps), fps, config: { damping: 12, stiffness: 80 } });
-            const floatY = Math.sin((frame + i * 25) * 0.05) * 3;
+            const s = spring({ frame: Math.max(0, frame - (0.6 + i * 0.25) * fps), fps, config: { damping: 12, stiffness: 80 } });
+            const floatY = Math.sin((frame + i * 25) * 0.05) * 4;
+            const glowPulse = 0.06 + Math.sin((frame + i * 30) * 0.04) * 0.04;
             return (
               <div key={i} style={{
                 transform: `scale(${s}) translateY(${(1 - s) * 20}px)`, opacity: s,
-                background: "rgba(255,255,255,0.025)", border: `1px solid ${r.color}25`,
-                borderRadius: 24, padding: "40px 24px", textAlign: "center",
+                background: "rgba(255,255,255,0.03)", border: `1px solid ${r.color}30`,
+                borderRadius: 24, padding: "44px 28px", textAlign: "center",
+                boxShadow: `0 0 ${30 + glowPulse * 200}px ${r.color}${Math.round(glowPulse * 200).toString(16).padStart(2, "0")}`,
               }}>
                 <div style={{
-                  width: 80, height: 80, borderRadius: 20, margin: "0 auto 20px",
-                  background: `${r.color}12`, border: `1px solid ${r.color}25`,
+                  width: 88, height: 88, borderRadius: 22, margin: "0 auto 22px",
+                  background: `${r.color}12`, border: `2px solid ${r.color}30`,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   transform: `translateY(${floatY}px)`,
                 }}>
-                  <Icon type={r.icon} size={40} color={r.color} />
+                  <Icon type={r.icon} size={44} color={r.color} />
                 </div>
-                <div style={{ fontSize: 26, fontWeight: 800, color: K.white, marginBottom: 12, lineHeight: 1.3 }}>{r.title}</div>
-                <div style={{ fontSize: 16, color: K.muted, lineHeight: 1.5 }}>{r.desc}</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: K.white, marginBottom: 14, lineHeight: 1.3 }}>{r.title}</div>
+                <div style={{ fontSize: 17, color: K.muted, lineHeight: 1.5 }}>{r.desc}</div>
 
                 <div style={{
-                  marginTop: 20, padding: "10px 20px", borderRadius: 12,
-                  background: `${r.color}12`, border: `1px solid ${r.color}20`,
+                  marginTop: 22, padding: "12px 24px", borderRadius: 14,
+                  background: `${r.color}12`, border: `1px solid ${r.color}25`,
                   display: "inline-flex", alignItems: "center", gap: 8,
                 }}>
-                  <Icon type="download" size={16} color={r.color} />
-                  <span style={{ fontSize: 14, fontWeight: 700, color: r.color }}>{T("s08_dl", lang)}</span>
+                  <Icon type="download" size={18} color={r.color} />
+                  <span style={{ fontSize: 15, fontWeight: 700, color: r.color }}>{T("s08_dl", lang)}</span>
                 </div>
               </div>
             );
@@ -1060,44 +1061,23 @@ function CCOverlay({ lang = "ko", secondLang = null, show = true }) {
 
   if (!show) return null;
 
-  // 현재 시간에 해당하는 자막 찾기
-  // 각 자막은 다음 자막이 시작될 때까지 유지
+  // 자막 딜레이 — 음성보다 약간 뒤에 표시 (음성이 먼저, 자막이 따라감)
+  const SUBTITLE_DELAY = 0.8; // 초
+  const delayed = timeSec - SUBTITLE_DELAY;
+
+  // 딜레이 적용된 시간으로 자막 찾기
   const idx = NARRATION.findIndex((n, i) => {
     const nextStart = i < NARRATION.length - 1 ? NARRATION[i + 1].start : n.end + 2;
-    return timeSec >= n.start && timeSec < nextStart;
+    return delayed >= n.start && delayed < nextStart;
   });
   if (idx < 0) return null;
   const current = NARRATION[idx];
   const nextStart = idx < NARRATION.length - 1 ? NARRATION[idx + 1].start : current.end + 2;
 
-  const fullMain = current[lang] || "";
-  const fullSub = secondLang && secondLang !== lang ? (current[secondLang] || "") : "";
-
-  // 25자 단위로 쪼개기
-  const split25 = (txt) => {
-    if (!txt || txt.length <= 25) return [txt];
-    const chunks = [];
-    let remain = txt;
-    while (remain.length > 25) {
-      let cut = 25;
-      for (let j = 25; j > 12; j--) {
-        if (" ,.，。、".includes(remain[j])) { cut = j + 1; break; }
-      }
-      chunks.push(remain.slice(0, cut).trim());
-      remain = remain.slice(cut).trim();
-    }
-    if (remain) chunks.push(remain);
-    return chunks;
-  };
-
-  const mainChunks = split25(fullMain);
-  const subChunks = split25(fullSub);
-  const segDur = nextStart - current.start;
-  const progress = Math.min(1, (timeSec - current.start) / segDur);
-  const mainIdx = Math.min(Math.floor(progress * mainChunks.length), mainChunks.length - 1);
-  const subIdx = Math.min(Math.floor(progress * subChunks.length), subChunks.length - 1);
-  const mainText = mainChunks[Math.max(0, mainIdx)];
-  const subText = fullSub ? subChunks[Math.max(0, subIdx)] : "";
+  // 전체 텍스트를 그대로 표시 (25자 분할 없이)
+  // 분할하면 타이밍이 더 어긋나므로, 전체 텍스트로 보여주고 음성과 맞춤
+  const mainText = current[lang] || "";
+  const subText = secondLang && secondLang !== lang ? (current[secondLang] || "") : "";
 
   return (
     <AbsoluteFill style={{ justifyContent: "flex-end", alignItems: "center", padding: "0 5% 48px", pointerEvents: "none", zIndex: 50 }}>
@@ -1109,8 +1089,8 @@ function CCOverlay({ lang = "ko", secondLang = null, show = true }) {
           border: "1px solid rgba(124,106,255,0.12)",
         }}>
           <div style={{
-            fontSize: 26, fontWeight: 700, color: "#fff",
-            lineHeight: 1.4, wordBreak: "keep-all", whiteSpace: "nowrap",
+            fontSize: 24, fontWeight: 700, color: "#fff",
+            lineHeight: 1.5, wordBreak: "keep-all",
             textShadow: "0 1px 4px rgba(0,0,0,0.5)",
           }}>
             {mainText}
