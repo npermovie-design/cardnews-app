@@ -1383,21 +1383,32 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         // 첨부 이미지가 있으면 본문 중간에 균등 배치
         const userImages = (fields._files || []).filter(f => f.type === "image" && f.b64);
         let finalText = userImages.length > 0 ? await insertUserImages(cleaned, userImages) : cleaned;
-        // 상단 대표 이미지 자동 삽입
+        // 상단 대표 제목 + 이미지 자동 삽입
         try {
           let headerKw = fields.keyword || "";
+          // 1) 대표 제목 생성
+          let blogTitle = "";
+          try {
+            blogTitle = (await callAI("claude-haiku-4-5", [{ role: "user", content: `키워드: ${headerKw}\n이 키워드로 블로그 대표 제목 1개만 작성하세요. 클릭하고 싶고, SEO에 좋은 제목. 제목만 출력.` }], 100))?.trim()?.replace(/^["']|["']$/g, "") || "";
+          } catch {}
+          // 2) 대표 이미지 검색
+          let headerImg = "";
           if (headerKw && !/^http/.test(headerKw)) {
             let enKw = headerKw;
             if (/[가-힣]/.test(enKw)) {
               try { enKw = (await callAI("claude-haiku-4-5", [{ role: "user", content: `다음 한국어 주제를 이미지 검색용 영어 키워드 2단어로 바꿔주세요. 답변은 영어 단어만:\n"${headerKw}"` }], 40))?.trim() || headerKw; } catch {}
             }
-            const hr = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(enKw)}&per_page=5&safesearch=true&image_type=photo&orientation=horizontal`);
-            const hd = await hr.json();
-            const headerImg = hd.hits?.[0]?.largeImageURL || hd.hits?.[0]?.webformatURL;
-            if (headerImg) {
-              finalText = `![${headerKw}](${headerImg})\n\n${finalText}`;
-            }
+            try {
+              const hr = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(enKw)}&per_page=5&safesearch=true&image_type=photo&orientation=horizontal`);
+              const hd = await hr.json();
+              headerImg = hd.hits?.[0]?.largeImageURL || hd.hits?.[0]?.webformatURL || "";
+            } catch {}
           }
+          // 3) 제목 + 이미지 상단 삽입
+          let header = "";
+          if (blogTitle) header += `# ${blogTitle}\n\n`;
+          if (headerImg) header += `![${headerKw}](${headerImg})\n\n`;
+          if (header) finalText = header + finalText;
         } catch {}
         setResult(finalText);
         if (isTistory) setHtmlResult(mdToHtml(fullText));
@@ -2137,6 +2148,46 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
                 이미지 삽입
               </button>
+              {/* GIF/짤 삽입 */}
+              <button onMouseDown={e => {
+                e.preventDefault();
+                const kw = prompt("검색할 짤/GIF 키워드를 입력하세요", fields.keyword || "");
+                if (!kw) { setContextMenu(null); return; }
+                (async () => {
+                  try {
+                    let enKw = kw;
+                    if (/[가-힣]/.test(kw)) { try { enKw = (await callAI("claude-haiku-4-5", [{ role: "user", content: `다음 한국어를 영어 키워드 2단어로:\n"${kw}"` }], 40))?.trim() || kw; } catch {} }
+                    const r = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(enKw)}&per_page=6&safesearch=true&image_type=photo&orientation=horizontal`);
+                    const d = await r.json();
+                    const img = d.hits?.[0]?.webformatURL;
+                    if (img) setResult(prev => prev + `\n\n![${kw}](${img})\n\n`);
+                  } catch {}
+                  setContextMenu(null);
+                })();
+              }}
+                style={{width:"100%",padding:"9px 14px",borderRadius:8,border:"none",background:"transparent",
+                  color:isDark?"#fff":text,fontSize:13,fontWeight:600,cursor:"pointer",textAlign:"left",
+                  display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}
+                onMouseEnter={e => e.currentTarget.style.background = isDark?"rgba(255,255,255,0.06)":"#f5f5f8"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                짤/사진 검색 삽입
+              </button>
+              {/* 표 삽입 */}
+              <button onMouseDown={e => {
+                e.preventDefault();
+                setResult(prev => prev + "\n\n| 항목 | 내용 |\n|------|------|\n| 항목1 | 내용1 |\n| 항목2 | 내용2 |\n| 항목3 | 내용3 |\n\n");
+                setContextMenu(null);
+              }}
+                style={{width:"100%",padding:"9px 14px",borderRadius:8,border:"none",background:"transparent",
+                  color:isDark?"#fff":text,fontSize:13,fontWeight:600,cursor:"pointer",textAlign:"left",
+                  display:"flex",alignItems:"center",gap:8,fontFamily:"inherit"}}
+                onMouseEnter={e => e.currentTarget.style.background = isDark?"rgba(255,255,255,0.06)":"#f5f5f8"}
+                onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                표 삽입
+              </button>
+              <div style={{height:1,background:isDark?"rgba(255,255,255,0.06)":"#f0f0f0",margin:"4px 8px"}}/>
               {/* 구분선 */}
               {contextMenu.hasSelection && <div style={{height:1,background:isDark?"rgba(255,255,255,0.06)":"#f0f0f0",margin:"4px 8px"}}/>}
               {/* 선택 영역 AI 교체 */}
