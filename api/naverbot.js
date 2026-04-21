@@ -248,10 +248,11 @@ function stripMarkdown(text) {
     .replace(/(?<!_)_(?!_)([^_\n]+)_(?!_)/g, "$1")
     .replace(/`([^`\n]+)`/g, "$1")
     .replace(/^[\s]*[-*+]\s+/gm, "")
-    .replace(/^[\s]*\d+\.\s+/gm, "")
+    .replace(/^[\s]*\d+[\.\)]\s*/gm, "")  // "1. " "1) " "1 " 제거
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/```[\s\S]*?```/g, "")
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F2FF}]/gu, "")
+    .replace(/[★●■▶♥☆→◆◇▷▼△▲※◎○☑✓✔✕✗✘]/g, "")  // 특수기호 제거
     .trim();
 }
 
