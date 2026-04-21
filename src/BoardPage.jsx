@@ -246,7 +246,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
     showToast(`${uploaded}개 자료가 등록됐어요!`, "success");
     setBulkUploading(false);
-    try { const db = await getPostsFromDB(); if(db?.length) { setPostsS(db.sort((a,b)=>b.id-a.id)); setPosts(db); } } catch{}
+    try { const db = await getPostsFromDB(); if(db?.length) { setPostsS(db.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0))); setPosts(db); } } catch{}
   };
   const snippetCache = useRef({}); // postId → snippet text
   const hoverTimer = useRef(null);
@@ -1234,7 +1234,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                           priceType: archiveForm.priceType, price: archiveForm.price,
                         });
                         showToast("자료가 등록됐어요!","success");
-                        try { const db = await getPostsFromDB(); if(db?.length) { setPostsS(db.sort((a,b)=>b.id-a.id)); setPosts(db); } } catch{}
+                        try { const db = await getPostsFromDB(); if(db?.length) { setPostsS(db.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0))); setPosts(db); } } catch{}
                       } catch(e){ alert("업로드 실패: "+e.message); }
                       setShowArchiveModal(false); setArchiveUploadFile(null); setArchiveThumb(null);
                       setArchiveForm({title:"",desc:"",priceType:"free",price:"",visibility:"all"});
