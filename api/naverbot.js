@@ -234,7 +234,7 @@ function validateInput(b) {
     errors.push("word_count invalid (short|medium|long)");
 
   if (b.fields?.extra && b.fields.extra.length > 2000) errors.push("extra 2000자 초과");
-  if (b.user_prompt && b.user_prompt.length > 5000) errors.push("user_prompt 5000자 초과");
+  if (b.user_prompt && b.user_prompt.length > 8000) errors.push("user_prompt 8000자 초과");
 
   return errors;
 }
