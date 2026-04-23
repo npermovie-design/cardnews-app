@@ -907,8 +907,33 @@ export default function UnifiedCanvasEditor({
                         <span style={{fontSize:10,color:"#bbb",cursor:"grab"}}>☰</span>
                         <span style={{fontSize:14,width:18,textAlign:"center"}}>{getIcon(obj)}</span>
                         <span style={{flex:1,fontSize:12,fontWeight:isActive?700:400,color:isActive?"#7c6aff":"#333",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{getLabel(obj)}</span>
+                        {isBg&&(
+                          <button onClick={e=>{
+                            e.stopPropagation();
+                            const inp=document.createElement("input");inp.type="file";inp.accept="image/*";
+                            inp.onchange=ev=>{const f=ev.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=e2=>setBgImage(e2.target.result);r.readAsDataURL(f);};
+                            inp.click();
+                          }} style={{padding:"3px 8px",borderRadius:4,border:"1px solid #7c6aff",background:"rgba(124,106,255,0.08)",cursor:"pointer",fontSize:9,fontWeight:700,color:"#7c6aff"}}>교체</button>
+                        )}
                         {!isBg&&(
                           <div style={{display:"flex",gap:2}}>
+                            {obj.type==="image"&&(
+                              <button onClick={e=>{
+                                e.stopPropagation();
+                                const inp=document.createElement("input");inp.type="file";inp.accept="image/*";
+                                inp.onchange=ev=>{const f=ev.target.files?.[0];if(!f)return;const rd=new FileReader();
+                                  rd.onload=e2=>{
+                                    FabricImage.fromURL(e2.target.result,{crossOrigin:"anonymous"}).then(newImg=>{
+                                      if(!newImg)return;
+                                      newImg.set({scaleX:obj.scaleX,scaleY:obj.scaleY,left:obj.left,top:obj.top,originX:obj.originX,originY:obj.originY,selectable:obj.selectable,evented:obj.evented,name:obj.name,opacity:obj.opacity});
+                                      const fc2=fcRef.current;if(!fc2)return;
+                                      const idx2=fc2.getObjects().indexOf(obj);
+                                      fc2.remove(obj);fc2.insertAt(idx2,newImg);fc2.renderAll();setLayerTick(t=>t+1);
+                                    });
+                                  };rd.readAsDataURL(f);};
+                                inp.click();
+                              }} style={{width:20,height:20,borderRadius:3,border:"1px solid #7c6aff",background:"rgba(124,106,255,0.08)",cursor:"pointer",fontSize:8,display:"flex",alignItems:"center",justifyContent:"center",color:"#7c6aff"}}>↻</button>
+                            )}
                             <button onClick={e=>{e.stopPropagation();fc.bringObjectForward(obj);fc.renderAll();setLayerTick(t=>t+1);}}
                               style={{width:20,height:20,borderRadius:3,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:9,display:"flex",alignItems:"center",justifyContent:"center"}}>▲</button>
                             <button onClick={e=>{e.stopPropagation();fc.sendObjectBackwards(obj);fc.renderAll();setLayerTick(t=>t+1);}}
