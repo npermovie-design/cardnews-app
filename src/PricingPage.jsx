@@ -5,12 +5,7 @@ import { supabase } from "./storage";
 
 const PAYMENT_ENABLED = true;
 
-const COMMON_FEATURES = [
-  "SNS 글쓰기 (네이버/티스토리/인스타/유튜브/스레드)",
-  "숏폼 자동 편집",
-  "SNS 분석",
-  "커뮤니티 · 자료실 이용",
-];
+// COMMON_FEATURES moved inside component for i18n
 
 const SUB_PLANS = [
   {
@@ -110,7 +105,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
     }
     return {
       ...pl,
-      badge: pl.id === "pro" ? p("recommend") : (pl.id === "premium" ? (lang === "ko" ? "최고 가성비" : "Best value") : pl.badge),
+      badge: pl.id === "pro" ? p("recommend") : (pl.id === "premium" ? p("bestValue") : pl.badge),
       btnLabel: pl.free ? p("pFreeBtn") : p("pStartBtn"),
       features: featList,
     };
@@ -206,7 +201,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
     if (plan.free) return;
     const lsId = isYearly ? plan.lsIdYearly : plan.lsId;
     if (!lsId) {
-      showToast(isYearly ? "연간 결제 준비 중입니다" : "결제 준비 중입니다");
+      showToast(p("pricingPreparingToast"));
       return;
     }
     openCheckout(lsId, plan.name);
@@ -345,8 +340,8 @@ export function PricingPage({ navigate, C, user, onLogin }) {
           <div style={{ display: "flex", justifyContent: "center", marginBottom: 28 }}>
             <div style={{ display: "flex", gap: 4, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e5ea", borderRadius: 12, padding: 4 }}>
               {[
-                ["monthly", lang === "ko" ? "월간" : "Monthly"],
-                ["yearly", lang === "ko" ? "연간" : "Yearly"],
+                ["monthly", p("pricingMonthly")],
+                ["yearly", p("pricingYearly")],
               ].map(([id, label]) => (
                 <button key={id} onClick={() => setBilling(id)}
                   style={{ padding: "9px 22px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
@@ -389,12 +384,12 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                       </div>
                       <div style={{ fontSize: 12, color: C.muted, marginBottom: isYearly ? 2 : 16 }}>{p("pricingPerMonth")}</div>
                       {isYearly && (
-                        <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>{lang === "ko" ? `연 $${plan.yearlyPrice.toFixed(0)} 청구` : `$${plan.yearlyPrice.toFixed(0)}/year billed`}</div>
+                        <div style={{ fontSize: 11, color: C.muted, marginBottom: 16 }}>{p("pricingYearlyBilled").replace("{n}", plan.yearlyPrice.toFixed(0))}</div>
                       )}
                     </>
                   )}
 
-                  <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, marginBottom: 16 }}>{plan.points.toLocaleString()} P/월</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, marginBottom: 16 }}>{plan.points.toLocaleString()} {p("pricingPerMonthPts")}</div>
 
                   <div style={{ flex: 1, marginBottom: 20 }}>
                     {plan.features.map((f, i) => (

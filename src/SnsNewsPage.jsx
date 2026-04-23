@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "./storage";
 import { RichEditor, RichBody } from "./BoardComponents.jsx";
+import { useI18n } from "./i18n.jsx";
 // Footer는 App.jsx에서 렌더링
 
 /* ════════════════════════════════════════════════════════════
@@ -12,31 +13,39 @@ const accent = "#7c6aff";
 
 // ── RSS 뉴스 카테고리 ──
 // 실시간 뉴스: 큰 카테고리 3개 (국내+해외 통합)
-const NEWS_CATS = [
-  { id: "sns", label: "SNS", queries: [
+const NEWS_CATS_DATA = [
+  { id: "sns", labelKey: null, fallback: "SNS", queries: [
     { query: "SNS+마케팅+인스타그램+틱톡", lang: "ko" },
     { query: "social+media+marketing+instagram+tiktok", lang: "en" },
   ]},
-  { id: "ai", label: "AI/테크", queries: [
+  { id: "ai", labelKey: "news_ai_tech", queries: [
     { query: "AI+마케팅+생성형AI", lang: "ko" },
     { query: "AI+marketing+tools+generative", lang: "en" },
   ]},
-  { id: "trend", label: "트렌드", queries: [
+  { id: "trend", labelKey: "news_trend", queries: [
     { query: "마케팅+트렌드+디지털마케팅", lang: "ko" },
     { query: "digital+marketing+trends+2026", lang: "en" },
   ]},
 ];
 
+function getNewsCats(t) {
+  return NEWS_CATS_DATA.map(c => ({ ...c, label: c.labelKey ? t(c.labelKey) : (c.fallback || c.id) }));
+}
+
 // ── 관리자 글 카테고리 ──
-const ARTICLE_CATS = [
-  { id: "all",       label: "전체",         color: "#7c6aff" },
-  { id: "briefing",  label: "AI 브리핑",    color: "#6366f1" },
-  { id: "platform",  label: "플랫폼 업데이트", color: "#3b82f6" },
-  { id: "algorithm", label: "알고리즘",      color: "#f59e0b" },
-  { id: "trend",     label: "트렌드",        color: "#10b981" },
-  { id: "marketing", label: "마케팅 팁",     color: "#ec4899" },
-  { id: "policy",    label: "정책 변경",     color: "#ef4444" },
+const ARTICLE_CATS_DATA = [
+  { id: "all",       key: "news_cat_all",       color: "#7c6aff" },
+  { id: "briefing",  key: "news_cat_briefing",  color: "#6366f1" },
+  { id: "platform",  key: "news_cat_platform",  color: "#3b82f6" },
+  { id: "algorithm", key: "news_cat_algorithm",  color: "#f59e0b" },
+  { id: "trend",     key: "news_cat_trend",      color: "#10b981" },
+  { id: "marketing", key: "news_cat_marketing",  color: "#ec4899" },
+  { id: "policy",    key: "news_cat_policy",      color: "#ef4444" },
 ];
+
+function getArticleCats(t) {
+  return ARTICLE_CATS_DATA.map(c => ({ id: c.id, label: t(c.key), color: c.color }));
+}
 
 const PLATFORM_TAGS = [
   { id: "instagram", label: "Instagram", color: "#E4405F" },
@@ -47,16 +56,18 @@ const PLATFORM_TAGS = [
   { id: "x",         label: "X",         color: "#1DA1F2" },
 ];
 
-function fmtDate(d) {
+function fmtDate(d, t, lang) {
   if (!d) return "";
   const date = new Date(d);
   const now = new Date();
   const diff = now - date;
-  if (diff < 60000) return "방금 전";
-  if (diff < 3600000) return Math.floor(diff / 60000) + "분 전";
-  if (diff < 86400000) return Math.floor(diff / 3600000) + "시간 전";
-  if (diff < 604800000) return Math.floor(diff / 86400000) + "일 전";
-  return date.toLocaleDateString("ko-KR", { year: "numeric", month: "short", day: "numeric" });
+  const tr = t || ((k) => ({ news_just_now: "방금 전", news_min_ago: "분 전", news_hour_ago: "시간 전", news_day_ago: "일 전" }[k] || k));
+  if (diff < 60000) return tr("news_just_now");
+  if (diff < 3600000) return Math.floor(diff / 60000) + tr("news_min_ago");
+  if (diff < 86400000) return Math.floor(diff / 3600000) + tr("news_hour_ago");
+  if (diff < 604800000) return Math.floor(diff / 86400000) + tr("news_day_ago");
+  const loc = lang === "ja" ? "ja-JP" : lang === "zh" ? "zh-CN" : lang === "en" ? "en-US" : "ko-KR";
+  return date.toLocaleDateString(loc, { year: "numeric", month: "short", day: "numeric" });
 }
 
 function getTodayKey() {
@@ -125,7 +136,7 @@ function renderBriefing(content) {
 }
 
 /* ── 관리자 글 작성 (전체 화면 + 리치 에디터) ── */
-function NewsEditorModal({ article, onSave, onClose }) {
+function NewsEditorModal({ article, onSave, onClose, t }) {
   const [title, setTitle] = useState(article?.title || "");
   const [content, setContent] = useState(article?.content || "");
   const [category, setCategory] = useState(article?.category || "platform");
@@ -134,6 +145,7 @@ function NewsEditorModal({ article, onSave, onClose }) {
   const [summary, setSummary] = useState(article?.summary || "");
   const [pinned, setPinned] = useState(article?.pinned || false);
   const [saving, setSaving] = useState(false);
+  const ARTICLE_CATS = getArticleCats(t);
   const bdr = "rgba(0,0,0,0.08)";
   const inp = { width: "100%", padding: "12px 14px", borderRadius: 10, border: `1px solid ${bdr}`, background: "#f5f5f8", color: "#1a1730", fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit", minHeight: 44 };
 
@@ -148,18 +160,18 @@ function NewsEditorModal({ article, onSave, onClose }) {
       <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 24px 60px" }}>
         {/* 상단 바 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-          <button onClick={onClose} style={{ padding: "8px 18px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: "#888", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>← 돌아가기</button>
-          <div style={{ fontSize: 18, fontWeight: 900, color: "#1a1730" }}>{article ? "아티클 수정" : "새 아티클 작성"}</div>
-          <button onClick={handleSave} disabled={saving || !title.trim() || !content.trim()} style={{ padding: "10px 28px", borderRadius: 10, border: "none", background: accent, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", opacity: saving ? 0.6 : 1 }}>{saving ? "저장 중..." : article ? "수정" : "발행"}</button>
+          <button onClick={onClose} style={{ padding: "8px 18px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: "#888", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{t("news_go_back")}</button>
+          <div style={{ fontSize: 18, fontWeight: 900, color: "#1a1730" }}>{article ? t("news_edit_article") : t("news_new_article")}</div>
+          <button onClick={handleSave} disabled={saving || !title.trim() || !content.trim()} style={{ padding: "10px 28px", borderRadius: 10, border: "none", background: accent, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", opacity: saving ? 0.6 : 1 }}>{saving ? t("news_saving") : article ? t("news_edit") : t("news_publish")}</button>
         </div>
 
         {/* 제목 */}
-        <input value={title} onChange={e => setTitle(e.target.value)} placeholder="제목을 입력하세요" style={{ ...inp, fontSize: 20, fontWeight: 800, padding: "16px 18px", marginBottom: 16, background: "#fff", border: `1.5px solid ${bdr}` }} />
+        <input value={title} onChange={e => setTitle(e.target.value)} placeholder={t("news_title_placeholder")} style={{ ...inp, fontSize: 20, fontWeight: 800, padding: "16px 18px", marginBottom: 16, background: "#fff", border: `1.5px solid ${bdr}` }} />
 
         {/* 카테고리 + 플랫폼 */}
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
           <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>카테고리</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>{t("news_category")}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {ARTICLE_CATS.filter(c => c.id !== "all").map(c => (
                 <button key={c.id} onClick={() => setCategory(c.id)} style={{ padding: "6px 14px", borderRadius: 8, border: `1.5px solid ${category === c.id ? c.color : bdr}`, background: category === c.id ? c.color + "15" : "transparent", color: category === c.id ? c.color : "#888", fontSize: 12, fontWeight: category === c.id ? 700 : 400, cursor: "pointer" }}>{c.label}</button>
@@ -167,7 +179,7 @@ function NewsEditorModal({ article, onSave, onClose }) {
             </div>
           </div>
           <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>관련 플랫폼</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>{t("news_related_platform")}</div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {PLATFORM_TAGS.map(p => (
                 <button key={p.id} onClick={() => setPlatforms(pr => pr.includes(p.id) ? pr.filter(x => x !== p.id) : [...pr, p.id])} style={{ padding: "5px 12px", borderRadius: 7, border: `1.5px solid ${platforms.includes(p.id) ? p.color : bdr}`, background: platforms.includes(p.id) ? p.color + "15" : "transparent", color: platforms.includes(p.id) ? p.color : "#888", fontSize: 11, fontWeight: platforms.includes(p.id) ? 700 : 400, cursor: "pointer" }}>{p.label}</button>
@@ -179,33 +191,33 @@ function NewsEditorModal({ article, onSave, onClose }) {
         {/* 썸네일 + 요약 */}
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 16 }}>
           <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>썸네일 이미지 (선택)</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>{t("news_thumbnail")}</div>
             {thumbnail && <div style={{ marginBottom: 6 }}><img src={thumbnail} alt="" style={{ maxWidth: 160, maxHeight: 90, borderRadius: 8, objectFit: "cover", border: `1px solid ${bdr}` }} /></div>}
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <label style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "#f5f5f8", color: "#1a1730", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                📁 파일
+                {t("news_file")}
                 <input type="file" accept="image/*" style={{ display: "none" }} onChange={async (e) => {
                   const file = e.target.files?.[0]; if (!file) return;
-                  try { const ext = file.name.split(".").pop(); const path = `news-thumbnails/${Date.now()}.${ext}`; const { error } = await supabase.storage.from("images").upload(path, file, { upsert: true }); if (error) throw error; const { data: u } = supabase.storage.from("images").getPublicUrl(path); setThumbnail(u.publicUrl); } catch { alert("업로드 실패"); }
+                  try { const ext = file.name.split(".").pop(); const path = `news-thumbnails/${Date.now()}.${ext}`; const { error } = await supabase.storage.from("images").upload(path, file, { upsert: true }); if (error) throw error; const { data: u } = supabase.storage.from("images").getPublicUrl(path); setThumbnail(u.publicUrl); } catch { alert(t("news_upload_fail")); }
                 }} />
               </label>
-              <input value={thumbnail} onChange={e => setThumbnail(e.target.value)} placeholder="또는 URL 입력" style={{ ...inp, flex: 1, padding: "8px 12px", fontSize: 12 }} />
+              <input value={thumbnail} onChange={e => setThumbnail(e.target.value)} placeholder={t("news_or_url")} style={{ ...inp, flex: 1, padding: "8px 12px", fontSize: 12 }} />
             </div>
           </div>
           <div style={{ flex: 1, minWidth: 200 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>요약 (선택)</div>
-            <textarea value={summary} onChange={e => setSummary(e.target.value)} placeholder="2~3줄 요약" style={{ ...inp, minHeight: 80, resize: "vertical" }} />
+            <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>{t("news_summary")}</div>
+            <textarea value={summary} onChange={e => setSummary(e.target.value)} placeholder={t("news_summary_placeholder")} style={{ ...inp, minHeight: 80, resize: "vertical" }} />
           </div>
         </div>
 
         {/* 본문 - RichEditor (게시판과 동일한 리치 에디터) */}
-        <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>본문</div>
-        <RichEditor value={content} onChange={setContent} placeholder="내용을 작성하세요... (서식, 링크, 이미지 삽입 가능)" minHeight={400} />
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#1a1730", marginBottom: 6 }}>{t("news_body")}</div>
+        <RichEditor value={content} onChange={setContent} placeholder={t("news_body_placeholder")} minHeight={400} />
 
         {/* 하단 옵션 */}
         <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}><input type="checkbox" checked={pinned} onChange={e => setPinned(e.target.checked)} /><span style={{ fontSize: 13, color: "#1a1730" }}>상단 고정</span></label>
-          <button onClick={handleSave} disabled={saving || !title.trim() || !content.trim()} style={{ padding: "12px 36px", borderRadius: 12, border: "none", background: accent, color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", opacity: saving ? 0.6 : 1 }}>{saving ? "저장 중..." : article ? "수정 완료" : "발행하기"}</button>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}><input type="checkbox" checked={pinned} onChange={e => setPinned(e.target.checked)} /><span style={{ fontSize: 13, color: "#1a1730" }}>{t("news_pin_top")}</span></label>
+          <button onClick={handleSave} disabled={saving || !title.trim() || !content.trim()} style={{ padding: "12px 36px", borderRadius: 12, border: "none", background: accent, color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", opacity: saving ? 0.6 : 1 }}>{saving ? t("news_saving") : article ? t("news_edit_done") : t("news_publish_btn")}</button>
         </div>
       </div>
     </div>
@@ -216,6 +228,9 @@ function NewsEditorModal({ article, onSave, onClose }) {
    메인 SnsNewsPage
 ════════════════════════════════════════════════════════════ */
 export default function SnsNewsPage({ C, user, navigate }) {
+  const { t, lang } = useI18n();
+  const ARTICLE_CATS = getArticleCats(t);
+  const NEWS_CATS = getNewsCats(t);
   const c = C || THEME_C;
   const text = c.text || "#1a1730";
   const muted = c.muted || "rgba(26,23,48,0.5)";
@@ -421,11 +436,11 @@ export default function SnsNewsPage({ C, user, navigate }) {
       // 리로드
       const { data: fresh } = await supabase.from("sns_news").select("id,title,content,summary,category,platforms,thumbnail,pinned,created_at").order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(30);
       setArticles(fresh || []);
-    } catch (e) { alert("저장 실패: sns_news 테이블이 생성되지 않았을 수 있습니다. Supabase에서 테이블을 먼저 생성해주세요."); }
+    } catch (e) { alert(t("news_save_fail")); }
   };
 
   const handleDeleteArticle = async (id) => {
-    if (!window.confirm("이 뉴스를 삭제할까요?")) return;
+    if (!window.confirm(t("news_delete_confirm"))) return;
     try {
       await supabase.from("sns_news").delete().eq("id", id).then(() => {});
       setSelectedArticle(null);
@@ -440,45 +455,44 @@ export default function SnsNewsPage({ C, user, navigate }) {
     return (
       <div style={{ minHeight: "80vh", padding: "clamp(20px,4vw,40px) clamp(16px,3vw,28px) 60px", background: "#f8f8fb" }}>
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
-          <button onClick={() => setSelectedArticle(null)} style={{ marginBottom: 20, padding: "10px 16px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer", minHeight: 44 }}>← 목록으로</button>
+          <button onClick={() => setSelectedArticle(null)} style={{ marginBottom: 20, padding: "10px 16px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer", minHeight: 44 }}>{t("news_back_to_list")}</button>
           {a.thumbnail && <div style={{ borderRadius: 16, overflow: "hidden", marginBottom: 24, aspectRatio: "16/9", background: "#111" }}><img src={a.thumbnail} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /></div>}
           <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             {a.pinned && <span style={{ fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 5, background: "rgba(239,68,68,0.1)", color: "#ef4444" }}>PIN</span>}
             <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 6, background: catInfo.color + "15", color: catInfo.color }}>{catInfo.label}</span>
             {(a.platforms || []).map(pid => { const pl = PLATFORM_TAGS.find(p => p.id === pid); return pl ? <span key={pid} style={{ fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 5, background: pl.color + "12", color: pl.color }}>{pl.label}</span> : null; })}
-            <span style={{ fontSize: 12, color: muted }}>{fmtDate(a.created_at)}</span>
+            <span style={{ fontSize: 12, color: muted }}>{fmtDate(a.created_at, t, lang)}</span>
           </div>
           <h1 style={{ fontSize: "clamp(22px,4vw,30px)", fontWeight: 900, color: text, lineHeight: 1.4, marginBottom: 24 }}>{a.title}</h1>
           {isAdmin && <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
-            <button onClick={() => { setEditTarget(a); setEditorOpen(true); }} style={{ padding: "7px 16px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: accent, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>수정</button>
-            <button onClick={() => handleDeleteArticle(a.id)} style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>삭제</button>
+            <button onClick={() => { setEditTarget(a); setEditorOpen(true); }} style={{ padding: "7px 16px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: accent, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("news_edit")}</button>
+            <button onClick={() => handleDeleteArticle(a.id)} style={{ padding: "7px 16px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("news_delete")}</button>
           </div>}
           <div style={{ background: "#fff", borderRadius: 16, border: `1px solid ${bdr}`, padding: "clamp(20px,4vw,36px)" }}>
             {a.content?.includes("<") ? <RichBody html={a.content} /> : renderBriefing(a.content)}
           </div>
           {/* 복사 + 공유 */}
           <div style={{ display: "flex", gap: 10, marginTop: 20, flexWrap: "wrap" }}>
-            <button onClick={() => { const clean = a.content.replace(/^##\s*/gm, "").replace(/📎\s*/g, "- "); navigator.clipboard.writeText(a.title + "\n\n" + clean); alert("복사되었습니다!"); }}
+            <button onClick={() => { const clean = a.content.replace(/^##\s*/gm, "").replace(/📎\s*/g, "- "); navigator.clipboard.writeText(a.title + "\n\n" + clean); alert(t("news_copied_alert")); }}
               style={{ padding: "11px 24px", borderRadius: 10, border: `1px solid ${bdr}`, background: "#fff", color: text, fontSize: 13, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
-              본문 복사
+              {t("news_copy_body")}
             </button>
-            <button onClick={() => { const url = window.location.origin + "/snsnews"; const clean = a.content.replace(/^##\s*/gm, "").replace(/📎\s*/g, "- "); navigator.clipboard.writeText(a.title + "\n\n" + clean + "\n\n" + url); alert("링크 포함 복사되었습니다!"); }}
+            <button onClick={() => { const url = window.location.origin + "/snsnews"; const clean = a.content.replace(/^##\s*/gm, "").replace(/📎\s*/g, "- "); navigator.clipboard.writeText(a.title + "\n\n" + clean + "\n\n" + url); alert(t("news_copied_link_alert")); }}
               style={{ padding: "11px 24px", borderRadius: 10, border: "none", background: accent, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
-              링크 포함 복사
+              {t("news_copy_with_link")}
             </button>
           </div>
           {/* 원문 기사 링크 */}
           <div style={{ marginTop: 24, padding: "16px 20px", borderRadius: 12, background: "rgba(124,106,255,0.04)", border: `1px solid rgba(124,106,255,0.1)` }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 10 }}>원문 기사 링크</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 10 }}>{t("news_original_link")}</div>
             <div style={{ fontSize: 12, color: muted, lineHeight: 1.8 }}>
-              이 브리핑은 AI가 수집한 최신 뉴스를 기반으로 작성되었습니다. 아래에서 관련 뉴스를 직접 확인하세요.
+              {t("news_original_desc")}
             </div>
             <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-              {["SNS 마케팅", "디지털 마케팅", "AI 마케팅"].map(q => (
-                <a key={q} href={`https://news.google.com/search?q=${encodeURIComponent(q)}&hl=ko`} target="_blank" rel="noopener noreferrer"
+              {[{ key: "news_sns_marketing", q: "SNS marketing" }, { key: "news_digital_marketing", q: "digital marketing" }, { key: "news_ai_marketing", q: "AI marketing" }].map(item => (
+                <a key={item.key} href={`https://news.google.com/search?q=${encodeURIComponent(item.q)}&hl=${lang === "ja" ? "ja" : lang === "zh" ? "zh-CN" : lang === "en" ? "en" : "ko"}`} target="_blank" rel="noopener noreferrer"
                   style={{ padding: "8px 16px", borderRadius: 8, background: "#fff", border: `1px solid ${bdr}`, color: accent, fontSize: 12, fontWeight: 700, textDecoration: "none" }}>
-                  {q} 뉴스 →
-                </a>
+                  {t(item.key)} {t("news_arrow")}
               ))}
             </div>
           </div>
@@ -508,8 +522,8 @@ export default function SnsNewsPage({ C, user, navigate }) {
       {/* 헤더 */}
       <div style={{ background: "linear-gradient(165deg,#f5f4ff 0%,#fdf2ff 100%)", padding: "clamp(40px,6vw,70px) clamp(16px,4vw,24px) clamp(24px,4vw,40px)", textAlign: "center", borderBottom: `1px solid ${bdr}` }}>
         <div style={{ maxWidth: 700, margin: "0 auto" }}>
-          <div style={{ fontSize: "clamp(24px,5vw,36px)", fontWeight: 900, color: text, letterSpacing: -0.5, marginBottom: 12, lineHeight: 1.3 }}>SNS뉴스</div>
-          <div style={{ fontSize: "clamp(14px,2.5vw,16px)", color: muted, lineHeight: 1.8 }}>SNS 플랫폼 소식, AI 브리핑, 마케팅 트렌드를 한곳에서</div>
+          <div style={{ fontSize: "clamp(24px,5vw,36px)", fontWeight: 900, color: text, letterSpacing: -0.5, marginBottom: 12, lineHeight: 1.3 }}>{t("news_header_title")}</div>
+          <div style={{ fontSize: "clamp(14px,2.5vw,16px)", color: muted, lineHeight: 1.8 }}>{t("news_header_desc")}</div>
         </div>
       </div>
 
@@ -519,10 +533,10 @@ export default function SnsNewsPage({ C, user, navigate }) {
         {/* 메인 탭 */}
         <div className="snsnews-tab-bar" style={{ display: "flex", gap: 4, marginBottom: 24, background: "#e9e9ef", borderRadius: 12, padding: 4, width: "fit-content", maxWidth: "100%" }}>
           {[
-            { id: "briefing", label: "AI 브리핑" },
-            { id: "news", label: "실시간 뉴스" },
-          ].map(t => (
-            <button key={t.id} onClick={() => setMainTab(t.id)} style={{ padding: "10px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, background: mainTab === t.id ? "#fff" : "transparent", color: mainTab === t.id ? accent : muted, boxShadow: mainTab === t.id ? "0 1px 4px rgba(0,0,0,0.1)" : "none", minHeight: 42 }}>{t.label}</button>
+            { id: "briefing", label: t("news_tab_briefing") },
+            { id: "news", label: t("news_tab_news") },
+          ].map(tab => (
+            <button key={tab.id} onClick={() => setMainTab(tab.id)} style={{ padding: "10px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, background: mainTab === tab.id ? "#fff" : "transparent", color: mainTab === tab.id ? accent : muted, boxShadow: mainTab === tab.id ? "0 1px 4px rgba(0,0,0,0.1)" : "none", minHeight: 42 }}>{tab.label}</button>
           ))}
         </div>
 
@@ -535,17 +549,17 @@ export default function SnsNewsPage({ C, user, navigate }) {
                 <div className="snsnews-briefing-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                     <span style={{ fontSize: 18, flexShrink: 0 }}>📰</span>
-                    <span style={{ fontSize: "clamp(13px,3vw,15px)", fontWeight: 900, color: "#fff", letterSpacing: -0.3, wordBreak: "keep-all" }}>{briefing ? briefing.title : `${getTodayKey().replace(/-/g, ".")} SNS브리핑`}</span>
+                    <span style={{ fontSize: "clamp(13px,3vw,15px)", fontWeight: 900, color: "#fff", letterSpacing: -0.3, wordBreak: "keep-all" }}>{briefing ? briefing.title : `${getTodayKey().replace(/-/g, ".")} ${t("news_briefing_suffix")}`}</span>
                   </div>
                   {briefingLoading ? (
                     <span style={{ display: "inline-block", width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 1s linear infinite", flexShrink: 0 }} />
                   ) : briefingGenerating ? (
-                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", flexShrink: 0, whiteSpace: "nowrap" }}>AI 작성 중...</span>
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", flexShrink: 0, whiteSpace: "nowrap" }}>{t("news_ai_writing")}</span>
                   ) : briefing ? (
                     <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(briefing.title + "\n\n" + briefing.content.replace(/^##\s*/gm, "").replace(/📎\s*/g, "- ")); alert("복사됨!"); }}
+                      <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(briefing.title + "\n\n" + briefing.content.replace(/^##\s*/gm, "").replace(/📎\s*/g, "- ")); alert(t("news_copied")); }}
                         style={{ padding: "6px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.12)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                        복사
+                        {t("news_copy")}
                       </button>
                     </div>
                   ) : null}
@@ -554,11 +568,11 @@ export default function SnsNewsPage({ C, user, navigate }) {
                 {briefing && (
                   <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.15)", wordBreak: "break-word" }}>
                     {briefing.content.split("\n").map((line, i) => {
-                      const t = line.trim();
-                      if (!t) return <div key={i} style={{ height: 6 }} />;
-                      if (t.startsWith("#")) return <div key={i} style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginTop: i === 0 ? 0 : 20, marginBottom: 4, lineHeight: 1.5 }}>{t.replace(/^#{1,3}\s*/, "")}</div>;
-                      if (t.startsWith("📎")) return <div key={i} style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}><span style={{ fontSize: 13 }}>📎</span>{t.replace(/^📎\s*/, "").split(/(#[^\s#]+)/g).filter(Boolean).map((p, j) => p.startsWith("#") ? <span key={j} style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.9)", background: "rgba(255,255,255,0.18)", borderRadius: 20, padding: "2px 8px" }}>{p}</span> : null)}</div>;
-                      return <div key={i} style={{ fontSize: 14, lineHeight: 1.8, color: "rgba(255,255,255,0.93)", marginBottom: 2 }}>{t}</div>;
+                      const ln = line.trim();
+                      if (!ln) return <div key={i} style={{ height: 6 }} />;
+                      if (ln.startsWith("#")) return <div key={i} style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginTop: i === 0 ? 0 : 20, marginBottom: 4, lineHeight: 1.5 }}>{ln.replace(/^#{1,3}\s*/, "")}</div>;
+                      if (ln.startsWith("📎")) return <div key={i} style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 6 }}><span style={{ fontSize: 13 }}>📎</span>{ln.replace(/^📎\s*/, "").split(/(#[^\s#]+)/g).filter(Boolean).map((p, j) => p.startsWith("#") ? <span key={j} style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.9)", background: "rgba(255,255,255,0.18)", borderRadius: 20, padding: "2px 8px" }}>{p}</span> : null)}</div>;
+                      return <div key={i} style={{ fontSize: 14, lineHeight: 1.8, color: "rgba(255,255,255,0.93)", marginBottom: 2 }}>{ln}</div>;
                     })}
                   </div>
                 )}
@@ -571,12 +585,12 @@ export default function SnsNewsPage({ C, user, navigate }) {
               const totalPages = Math.ceil(pastItems.length / HISTORY_PER_PAGE);
               const pageItems = pastItems.slice(historyPage * HISTORY_PER_PAGE, (historyPage + 1) * HISTORY_PER_PAGE);
               if (pastItems.length === 0) return (
-                <div style={{ textAlign: "center", padding: "40px 0", color: muted, fontSize: 13 }}>지난 브리핑이 없습니다.</div>
+                <div style={{ textAlign: "center", padding: "40px 0", color: muted, fontSize: 13 }}>{t("news_no_past_briefing")}</div>
               );
               return (
                 <div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: text }}>지난 브리핑 <span style={{ fontSize: 12, fontWeight: 500, color: muted }}>({pastItems.length}개)</span></div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: text }}>{t("news_past_briefing")} <span style={{ fontSize: 12, fontWeight: 500, color: muted }}>({pastItems.length}{t("news_count_unit")})</span></div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {pageItems.map(h => {
@@ -589,7 +603,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
                               <div style={{ background: "rgba(124,106,255,0.08)", borderRadius: 10, padding: "6px 12px", textAlign: "center", minWidth: 64 }}>
                                 <div style={{ fontSize: 15, fontWeight: 900, color: accent, lineHeight: 1.2 }}>{dl.split(".").slice(1).join(".")}</div>
                               </div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: text }}>{h.title || `${dl} SNS브리핑`}</div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: text }}>{h.title || `${dl} ${t("news_briefing_suffix")}`}</div>
                             </div>
                             <span style={{ fontSize: 11, color: muted, transform: isExp ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.2s" }}>▼</span>
                           </div>
@@ -597,9 +611,9 @@ export default function SnsNewsPage({ C, user, navigate }) {
                             <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${bdr}`, wordBreak: "break-word" }}>
                               {renderBriefing(h.content)}
                               <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-                                <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText((h.title || `${dl} SNS브리핑`) + "\n\n" + (h.content || "").replace(/^##\s*/gm, "").replace(/📎\s*/g, "- ")); alert("복사됨!"); }}
+                                <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText((h.title || `${dl} ${t("news_briefing_suffix")}`) + "\n\n" + (h.content || "").replace(/^##\s*/gm, "").replace(/📎\s*/g, "- ")); alert(t("news_copied")); }}
                                   style={{ padding: "8px 18px", borderRadius: 8, border: `1px solid ${bdr}`, background: "#f8f8fb", color: text, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                                  본문 복사
+                                  {t("news_copy_body")}
                                 </button>
                               </div>
                             </div>
@@ -613,7 +627,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
                     <div className="snsnews-pagination" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 20 }}>
                       <button onClick={() => setHistoryPage(Math.max(0, historyPage - 1))} disabled={historyPage === 0}
                         style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "#fff", color: historyPage === 0 ? "#ccc" : text, fontSize: 12, fontWeight: 700, cursor: historyPage === 0 ? "default" : "pointer", minHeight: 38 }}>
-                        ← 이전
+                        {t("news_prev")}
                       </button>
                       {Array.from({ length: totalPages }, (_, i) => (
                         <button key={i} onClick={() => setHistoryPage(i)}
@@ -623,7 +637,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
                       ))}
                       <button onClick={() => setHistoryPage(Math.min(totalPages - 1, historyPage + 1))} disabled={historyPage === totalPages - 1}
                         style={{ padding: "8px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: "#fff", color: historyPage === totalPages - 1 ? "#ccc" : text, fontSize: 12, fontWeight: 700, cursor: historyPage === totalPages - 1 ? "default" : "pointer", minHeight: 38 }}>
-                        다음 →
+                        {t("news_next_page")}
                       </button>
                     </div>
                   )}
@@ -645,13 +659,13 @@ export default function SnsNewsPage({ C, user, navigate }) {
             {newsRefreshing && (
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, padding: "6px 12px", borderRadius: 8, background: "rgba(124,106,255,0.06)", width: "fit-content" }}>
                 <span style={{ display: "inline-block", width: 12, height: 12, border: "2px solid rgba(124,106,255,0.2)", borderTopColor: accent, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-                <span style={{ fontSize: 11, color: accent, fontWeight: 600 }}>실시간 뉴스 갱신 중...</span>
+                <span style={{ fontSize: 11, color: accent, fontWeight: 600 }}>{t("news_refreshing")}</span>
               </div>
             )}
             {newsItems.length === 0 && newsLoading ? (
               <div style={{ textAlign: "center", padding: "60px 0", color: muted }}>
                 <div style={{ width: 36, height: 36, border: `3px solid ${accent}30`, borderTopColor: accent, borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto 16px" }} />
-                <div style={{ fontSize: 13 }}>뉴스 불러오는 중...</div>
+                <div style={{ fontSize: 13 }}>{t("news_loading")}</div>
               </div>
             ) : (
               <div style={{ background: "#fff", borderRadius: 14, border: `1px solid ${bdr}`, overflow: "hidden" }}>
@@ -667,12 +681,12 @@ export default function SnsNewsPage({ C, user, navigate }) {
                       <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: muted }}>
                         {item.lang === "en" && <span style={{ padding: "1px 5px", borderRadius: 3, fontWeight: 800, fontSize: 9, background: "rgba(59,130,246,0.1)", color: "#3b82f6" }}>EN</span>}
                         {item.source && <span style={{ padding: "2px 7px", borderRadius: 4, fontWeight: 700, fontSize: 10, background: "rgba(124,106,255,0.07)", color: "#6c5ce7" }}>{item.source}</span>}
-                        {item.pubDate && <span style={{ color: "#aaa" }}>{fmtDate(item.pubDate)}</span>}
+                        {item.pubDate && <span style={{ color: "#aaa" }}>{fmtDate(item.pubDate, t, lang)}</span>}
                       </div>
                     </div>
                   </a>
                 ))}
-                {newsItems.length === 0 && <div style={{ textAlign: "center", padding: "40px 0", color: muted, fontSize: 13 }}>뉴스를 불러올 수 없습니다.</div>}
+                {newsItems.length === 0 && <div style={{ textAlign: "center", padding: "40px 0", color: muted, fontSize: 13 }}>{t("news_no_news")}</div>}
               </div>
             )}
           </div>
@@ -682,15 +696,15 @@ export default function SnsNewsPage({ C, user, navigate }) {
         {(mainTab === "notice" || mainTab === "tips") && (
           <div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 20 }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color: text }}>{mainTab === "notice" ? "공지사항" : "마케팅 소식"}</div>
-              {isAdmin && <button onClick={() => { setEditTarget(null); setEditorOpen(true); }} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: accent, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", minHeight: 44 }}>+ 새 글</button>}
+              <div style={{ fontSize: 16, fontWeight: 800, color: text }}>{mainTab === "notice" ? t("news_notice") : t("news_marketing_news")}</div>
+              {isAdmin && <button onClick={() => { setEditTarget(null); setEditorOpen(true); }} style={{ padding: "8px 18px", borderRadius: 10, border: "none", background: accent, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", minHeight: 44 }}>{t("news_new_post")}</button>}
             </div>
             {articlesLoading ? (
               <div style={{ textAlign: "center", padding: "60px 0" }}><div style={{ width: 28, height: 28, border: `3px solid ${accent}20`, borderTopColor: accent, borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto" }} /></div>
             ) : articles.length === 0 ? (
               <div style={{ textAlign: "center", padding: "80px 0", color: muted }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: text, marginBottom: 6 }}>등록된 소식이 없습니다</div>
-                <div style={{ fontSize: 13, lineHeight: 1.8 }}>관리자가 소식을 등록하면 여기서 확인할 수 있어요</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: text, marginBottom: 6 }}>{t("news_no_articles_title")}</div>
+                <div style={{ fontSize: 13, lineHeight: 1.8 }}>{t("news_no_articles_desc")}</div>
               </div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(300px, 100%), 1fr))", gap: 20 }}>
@@ -712,7 +726,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
                         </div>
                         <div style={{ fontSize: 15, fontWeight: 800, color: text, lineHeight: 1.5, marginBottom: 8, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{a.title}</div>
                         <div style={{ fontSize: 13, color: muted, lineHeight: 1.7, marginBottom: 12, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{a.summary || (a.content || "").replace(/<[^>]*>/g, "").slice(0, 200)}</div>
-                        <div style={{ fontSize: 11, color: muted }}>{fmtDate(a.created_at)}</div>
+                        <div style={{ fontSize: 11, color: muted }}>{fmtDate(a.created_at, t, lang)}</div>
                       </div>
                     </div>
                   );
@@ -723,7 +737,7 @@ export default function SnsNewsPage({ C, user, navigate }) {
         )}
       </div>
 
-      {editorOpen && <NewsEditorModal article={editTarget} onSave={handleSaveArticle} onClose={() => { setEditorOpen(false); setEditTarget(null); }} />}
+      {editorOpen && <NewsEditorModal article={editTarget} onSave={handleSaveArticle} onClose={() => { setEditorOpen(false); setEditTarget(null); }} t={t} />}
       {/* Footer는 App.jsx에서 렌더링 */}
     </div>
   );

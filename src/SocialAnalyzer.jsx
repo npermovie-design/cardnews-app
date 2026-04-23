@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { useI18n } from "./i18n.jsx";
 
 const SNS_PLATFORMS = [
   { id: "instagram", label: "인스타그램", placeholder: "https://www.instagram.com/username", color: "#E1306C", match: /instagram\.com/ },
@@ -18,6 +19,7 @@ function parseDuration(iso) { if (!iso) return ""; const m = iso.match(/PT(?:(\d
 
 // ── 키워드 검색량 조회 컴포넌트 ──
 function KeywordVolume({ isDark }) {
+  const { t } = useI18n();
   const [query, setQuery] = React.useState("");
   const [results, setResults] = React.useState(null);
   const [loading, setLoading] = React.useState(false);
@@ -52,17 +54,17 @@ function KeywordVolume({ isDark }) {
 
   return (
     <div style={{ marginBottom: 28, padding: 24, borderRadius: 16, border: `1px solid ${bdr}`, background: cardBg }}>
-      <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 6 }}>키워드 검색량 조회</div>
-      <div style={{ fontSize: 12, color: muted, marginBottom: 16 }}>네이버 기준 월간 검색량, PC/모바일 비율, 경쟁도를 확인하세요. 쉼표로 여러 키워드 입력 가능 (최대 5개)</div>
+      <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 6 }}>{t("sa_keyword_volume")}</div>
+      <div style={{ fontSize: 12, color: muted, marginBottom: 16 }}>{t("sa_keyword_desc")}</div>
 
       <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
         <input value={query} onChange={e => setQuery(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") search(); }}
-          placeholder="키워드 입력 (예: AI 마케팅, 블로그 수익)"
+          placeholder={t("sa_keyword_placeholder")}
           style={{ flex: 1, padding: "12px 16px", borderRadius: 12, border: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.06)" : "#f5f5f8", color: text, fontSize: 14, outline: "none" }} />
         <button onClick={search} disabled={loading || !query.trim()}
           style={{ padding: "12px 24px", borderRadius: 12, border: "none", background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 14, fontWeight: 700, cursor: loading ? "wait" : "pointer", opacity: loading || !query.trim() ? 0.5 : 1, whiteSpace: "nowrap" }}>
-          {loading ? "조회 중..." : "검색량 조회"}
+          {loading ? t("sa_searching") : t("sa_search_btn")}
         </button>
       </div>
 
@@ -76,10 +78,10 @@ function KeywordVolume({ isDark }) {
               <div style={{ fontSize: 16, fontWeight: 800, color: text, marginBottom: 10 }}>{kw.keyword}</div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 10 }}>
                 {[
-                  ["월간 검색량", fmtN(kw.totalSearch), acc],
-                  ["PC 검색량", fmtN(kw.monthlyPcQcCnt), "#3b82f6"],
-                  ["모바일 검색량", fmtN(kw.monthlyMobileQcCnt), "#10b981"],
-                  ["경쟁도", kw.compIdx || "-", compColor(kw.compIdx)],
+                  [t("sa_monthly"), fmtN(kw.totalSearch), acc],
+                  [t("sa_pc_volume"), fmtN(kw.monthlyPcQcCnt), "#3b82f6"],
+                  [t("sa_mobile_volume"), fmtN(kw.monthlyMobileQcCnt), "#10b981"],
+                  [t("sa_competition"), kw.compIdx || "-", compColor(kw.compIdx)],
                 ].map(([label, val, color]) => (
                   <div key={label} style={{ padding: "10px 12px", borderRadius: 10, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", border: `1px solid ${bdr}`, textAlign: "center" }}>
                     <div style={{ fontSize: 10, color: muted, marginBottom: 4 }}>{label}</div>
@@ -91,12 +93,12 @@ function KeywordVolume({ isDark }) {
           ))}
 
           {/* 연관 키워드 테이블 */}
-          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginTop: 16, marginBottom: 10 }}>연관 키워드</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginTop: 16, marginBottom: 10 }}>{t("sa_related_kw")}</div>
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${bdr}` }}>
-                  {["키워드", "월간 검색량", "PC", "모바일", "경쟁도"].map(h => (
+                  {[t("keyword") || "Keyword", t("sa_monthly"), "PC", "Mobile", t("sa_competition")].map(h => (
                     <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: muted, fontWeight: 700, fontSize: 11 }}>{h}</th>
                   ))}
                 </tr>

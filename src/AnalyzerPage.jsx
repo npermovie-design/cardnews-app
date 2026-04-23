@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { callAI } from "./aiClient";
+import { useI18n } from "./i18n.jsx";
 
 const MENU_ITEMS = [
   { id:"seo_home",    label:"실시간 검색어" },
@@ -71,6 +72,7 @@ const HOME_FEATURES = [
 
 /* ── 오늘의 핫키워드 추천 컴포넌트 ── */
 function HotKeywordBox({ isDark, text, muted, bdr, cardBg, accent, onGoTrend }) {
+  const { t } = useI18n();
   const [keywords, setKeywords] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -97,7 +99,7 @@ JSON 배열로만 응답해줘: [{"keyword":"봄동","reason":"봄 제철 식재
     <div style={{ marginBottom:24, padding:"20px 22px", borderRadius:16, background: isDark?"rgba(124,106,255,0.06)":"linear-gradient(135deg,rgba(99,102,241,0.04),rgba(236,72,153,0.03))", border:`1px solid ${isDark?"rgba(124,106,255,0.15)":"rgba(99,102,241,0.08)"}` }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
         <div>
-          <div style={{ fontSize:16, fontWeight:800, color:text }}>오늘의 핫키워드</div>
+          <div style={{ fontSize:16, fontWeight:800, color:text }}>{t("az_hot_keywords")}</div>
           <div style={{ fontSize:11, color:muted, marginTop:2 }}>SNS 콘텐츠 제작에 활용하세요</div>
         </div>
         <button onClick={onGoTrend} style={{ fontSize:11, color:accent, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>

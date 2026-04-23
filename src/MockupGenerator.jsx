@@ -3,6 +3,7 @@ import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken } f
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import StepBar from "./StepBar.jsx";
 import { THEMES, isDarkTheme } from "./theme";
+import { useI18n } from "./i18n.jsx";
 
 /* ═══════════════════════════════════════════════════
    MockupGenerator.jsx  ·  AI 목업 생성기
@@ -133,6 +134,7 @@ async function generateMockup(logoPrompt, mockupType, logoB64, logoMime) {
 }
 
 export default function MockupGenerator({ isDark, user , onUserUpdate, showPointConfirm}) {
+  const { t } = useI18n();
   const C       = THEMES[isDark ? "dark" : "light"];
   const text    = C.text;
   const muted   = C.muted;
@@ -230,7 +232,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate, showPoint
     }
     if (successCount === 0) {
       // 전부 실패: step 2 유지 + 에러 + 재시도 버튼
-      setError(firstError || "생성 실패. 잠시 후 다시 시도해주세요.");
+      setError(firstError || t("mk_gen_fail"));
       return;
     }
     setStep(3);
@@ -259,7 +261,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate, showPoint
 
         {/* 로고 입력 */}
         <div style={{ marginBottom:22 }}>
-          <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:10 }}>① 로고/브랜드 입력 *</div>
+          <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:10 }}>{t("mk_logo_input")}</div>
 
           {/* 이미지 업로드 */}
           <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleLogoUpload}/>
@@ -267,11 +269,11 @@ export default function MockupGenerator({ isDark, user , onUserUpdate, showPoint
             <div style={{ display:"flex", gap:12, alignItems:"center", padding:"12px 16px", borderRadius:12, border:`1.5px solid ${ACC}50`, background:`rgba(124,58,237,0.06)`, marginBottom:10 }}>
               <img src={logoPreview} alt="로고" style={{ width:72, height:72, objectFit:"contain", borderRadius:8, background:"#fff", padding:4, flexShrink:0 }}/>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:2 }}>로고 이미지 업로드됨</div>
-                <div style={{ fontSize:11, color:muted }}>이 이미지를 목업에 적용해요</div>
+                <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:2 }}>{t("mk_logo_uploaded")}</div>
+                <div style={{ fontSize:11, color:muted }}>{t("mk_logo_apply")}</div>
               </div>
               <button onClick={() => { setLogoPreview(null); setLogoB64(null); setLogoMime(null); }}
-                style={{ padding:"4px 10px", borderRadius:6, border:"1px solid rgba(239,68,68,0.3)", background:"transparent", color:"#f87171", fontSize:11, cursor:"pointer" }}>제거</button>
+                style={{ padding:"4px 10px", borderRadius:6, border:"1px solid rgba(239,68,68,0.3)", background:"transparent", color:"#f87171", fontSize:11, cursor:"pointer" }}>{t("mk_logo_remove")}</button>
             </div>
           ) : (
             <button onClick={() => fileRef.current?.click()}
@@ -283,18 +285,18 @@ export default function MockupGenerator({ isDark, user , onUserUpdate, showPoint
           {/* 텍스트 입력 */}
           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
             <div style={{ flex:1, height:1, background:bdr }}/>
-            <span style={{ fontSize:11, color:muted }}>또는 텍스트로 입력</span>
+            <span style={{ fontSize:11, color:muted }}>{t("mk_or_text")}</span>
             <div style={{ flex:1, height:1, background:bdr }}/>
           </div>
           <input value={logoText} onChange={e => setLogoText(e.target.value)}
-            placeholder="브랜드명 또는 로고 설명 입력 (예: MIRI CAFE, 미리 커피)" style={inp}/>
-          <div style={{ fontSize:11, color:muted, marginTop:5 }}>이미지 + 텍스트 둘 다 입력하면 더 정확해요</div>
+            placeholder={t("mk_text_placeholder")} style={inp}/>
+          <div style={{ fontSize:11, color:muted, marginTop:5 }}>{t("mk_both_hint")}</div>
         </div>
 
         {/* 목업 종류 선택 */}
         <div style={{ marginBottom:22 }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-            <div style={{ fontSize:13, fontWeight:800, color:text }}>② 목업 종류 선택 * <span style={{ fontSize:11, color:muted, fontWeight:400 }}>({selTypes.length}개 · 종당 10P)</span></div>
+            <div style={{ fontSize:13, fontWeight:800, color:text }}>{t("mk_type_select")} <span style={{ fontSize:11, color:muted, fontWeight:400 }}>({selTypes.length} · {t("mk_per_type")})</span></div>
             <div style={{ display:"flex", gap:6 }}>
               <button onClick={() => setSelTypes(MOCKUP_TYPES.map(t=>t.id))}
                 style={{ padding:"4px 10px", borderRadius:7, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, cursor:"pointer" }}>전체 선택</button>

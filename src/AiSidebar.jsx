@@ -86,11 +86,11 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 
   // 메뉴 정의
   const menuItems = [
-    { id:"video_guide", label:"이용방법", icon:"/icons3d/sns-share.png", ids:["video_guide"] },
+    { id:"video_guide", label:t("howto"), icon:"/icons3d/sns-share.png", ids:["video_guide"] },
     { id:"home", label:t("home"), icon:"/icons3d/sns-heart.png", ids:["home","blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link","blog_write"] },
-    { id:"today_keywords", label:"오늘의 키워드", icon:"/icons3d/sns-app.png", ids:["today_keywords"] },
-    { id:"sns_consulting", label:"SNS 사주팔자", icon:"/icons3d/sns-content.png", ids:["sns_consulting"] },
-    { id:"social_analyzer", label:"SNS분석", icon:"/icons3d/search-book.png", ids:["social_analyzer"] },
+    { id:"today_keywords", label:t("sideKeywords"), icon:"/icons3d/sns-app.png", ids:["today_keywords"] },
+    { id:"sns_consulting", label:t("sideConsulting"), icon:"/icons3d/sns-content.png", ids:["sns_consulting"] },
+    { id:"social_analyzer", label:t("sideAnalyzer"), icon:"/icons3d/search-book.png", ids:["social_analyzer"] },
     { id:"library", label:t("library"), icon:"/icons3d/search-book.png" },
   ];
 
@@ -164,7 +164,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
           onMouseEnter={e => e.currentTarget.style.background = isDark?"rgba(124,106,255,0.12)":"rgba(124,106,255,0.06)"}
           onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          마이페이지
+          {t("myPage")}
         </button>
         {onCollapse && (
           <button onClick={onCollapse}
@@ -177,7 +177,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
             onMouseEnter={e => e.currentTarget.style.background = isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.03)"}
             onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-            메뉴 접기
+            {t("sideCollapse")}
           </button>
         )}
       </div>
@@ -191,7 +191,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 }
 
 // ── 사이드바 프로필 카드 컴포넌트 ──────────────────────────────────────────────
-function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate, onLogout, onlineCount, usageText, usageBar }) {
+function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate, onLogout, onlineCount, usageText, usageBar, t }) {
   const [open, setOpen] = useState(false);
   const ptLeft = Math.max(0, (freeLimit - info.used) * 10) + (user.points || 0);
   const ptTotal = freeLimit * 10 + (user.points || 0);
@@ -241,7 +241,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
                   <span style={{ fontSize:9, padding:"1px 5px", borderRadius:4, fontWeight:700,
                     background: user.role==="admin"?"rgba(251,191,36,0.15)":"rgba(99,102,241,0.12)",
                     color: user.role==="admin"?"#fbbf24":"#a5b4fc", flexShrink:0 }}>
-                    {user.role==="admin"?"관리자":"회원"}
+                    {user.role==="admin"?(t?.("admin")||"Admin"):(t?.("sideProfileMember")||"Member")}
                   </span>
                 </div>
                 <div style={{ fontSize:10, color:muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.email}</div>
@@ -252,7 +252,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
           {/* 포인트 현황 */}
           <div style={{ padding:"12px 16px", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.06)":"rgba(124,106,255,0.08)"}` }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-              <span style={{ fontSize:11, color:muted }}>보유 포인트</span>
+              <span style={{ fontSize:11, color:muted }}>{t?.("sidePoints")||"Points"}</span>
               <span style={{ fontSize:14, fontWeight:900,
                 color: isEmpty?"#f87171":isLow?"#f59e0b":"#a5b4fc" }}>
                 {ptLeft.toLocaleString()}P
@@ -266,7 +266,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
             </div>
             {(isEmpty||isLow) && (
               <div style={{ fontSize:10, color:isEmpty?"#f87171":"#f59e0b", fontWeight:700 }}>
-                {isEmpty?"포인트 소진 · 충전이 필요해요":"1~2회 생성 가능 · 충전을 권장해요"}
+                {isEmpty?(t?.("sidePointsEmpty")||"Points depleted"):(t?.("sidePointsLow")||"Low points")}
               </div>
             )}
           </div>
@@ -274,9 +274,9 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
           {/* 메뉴 */}
           <div style={{ padding:"6px 8px" }}>
             {[
-              { label:"포인트 충전", sub:"더 많은 AI 생성", onClick:()=>{ navigate("pricing"); setOpen(false); },
+              { label:t?.("pointCharge")||"Buy Points", sub:t?.("sidePointsSub")||"More AI generations", onClick:()=>{ navigate("pricing"); setOpen(false); },
                 accent:true },
-              { label:"내 보관함", sub:"생성한 글·카드뉴스", onClick:()=>{ navigate("library"); setOpen(false); } },
+              { label:t?.("library")||"My Library", sub:t?.("sideLibrarySub")||"Saved content", onClick:()=>{ navigate("library"); setOpen(false); } },
             ].map((item,i) => (
               <button key={i} onClick={item.onClick}
                 style={{ width:"100%", padding:"9px 10px", border:"none", borderRadius:9,
@@ -309,7 +309,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
               <div style={{ width:28, height:28, borderRadius:8, flexShrink:0,
                 background:"rgba(248,113,113,0.1)",
                 display:"flex", alignItems:"center", justifyContent:"center", fontSize:13 }}>X</div>
-              로그아웃
+              {t?.("logout")||"Logout"}
             </button>
           </div>
         </div>
@@ -340,7 +340,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
             overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nick}</div>
           <div style={{ fontSize:10, fontWeight: isLow||isEmpty?700:400,
             color: isEmpty?"#f87171":isLow?"#f59e0b":muted }}>
-            {isEmpty?"포인트 소진":isLow?`${ptLeft}P 남음`:`${ptLeft.toLocaleString()}P 잔여`}
+            {isEmpty?(t?.("sidePointsEmpty")||"Points depleted"):isLow?`${ptLeft}P`:`${ptLeft.toLocaleString()}P`}
           </div>
         </div>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2.5"
@@ -354,14 +354,14 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
 
 // 블로그 타입 매핑
 const BLOG_MAP = {
-  blog_naver:   { type: "blog_naver",   label: "네이버 블로그 글쓰기" },
-  blog_tistory: { type: "blog_tistory", label: "티스토리 블로그 글쓰기" },
-  blog_insta:   { type: "blog_insta",   label: "인스타그램 캡션 생성" },
-  blog_youtube: { type: "blog_youtube", label: "유튜브 대본 & 설명 생성" },
-  blog_thread:  { type: "blog_thread",  label: "스레드 게시물 작성" },
-  blog_yt_blog: { type: "blog_yt_blog", label: "링크 글쓰기" },
-  blog_link:    { type: "blog_link",   label: "링크 글쓰기" },
-  blog_cafe:    { type: "blog_cafe",    label: "네이버 카페 글쓰기" },
+  blog_naver:   { type: "blog_naver",   label: "Naver Blog", labelKey: "naverBlog" },
+  blog_tistory: { type: "blog_tistory", label: "Tistory", labelKey: "tistory" },
+  blog_insta:   { type: "blog_insta",   label: "Instagram", labelKey: "instaCap" },
+  blog_youtube: { type: "blog_youtube", label: "YouTube", labelKey: "youtubeScript" },
+  blog_thread:  { type: "blog_thread",  label: "Threads", labelKey: "thread" },
+  blog_yt_blog: { type: "blog_yt_blog", label: "Link Blog", labelKey: "ytBlog" },
+  blog_link:    { type: "blog_link",    label: "Link Blog", labelKey: "ytBlog" },
+  blog_cafe:    { type: "blog_cafe",    label: "Naver Cafe", labelKey: "naverCafe" },
 };
 
 export { useOnlineCount, AiSidebar, SidebarProfile, BLOG_MAP };

@@ -4,6 +4,7 @@ import { useGeneratingGuard } from "./useGeneratingGuard";
 import StepBar from "./StepBar.jsx";
 import LoadingAnimation from "./LoadingAnimation.jsx";
 import { callAIStream } from "./aiClient";
+import { useI18n } from "./i18n.jsx";
 
 /* ── 유튜브 ID 추출 ── */
 function extractYtId(url) {
@@ -45,6 +46,7 @@ function transcriptToText(items) {
 
 // ── 포인트 소진 화면 ──────────────────────────────────────────────────────────
 function PointsExhausted({ isDark, isGuest, title }) {
+  const { t } = useI18n();
   const bg = isDark ? "linear-gradient(160deg,#0f0c29,#1a1740)" : "#f4f4f8";
   const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const text = isDark ? "#fff" : "#1a1a2e";
@@ -56,7 +58,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
       <div style={{ maxWidth:420, width:"100%" }}>
         <div style={{ fontSize:64, marginBottom:16 }}>💎</div>
         <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:8 }}>
-          {isGuest ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
+          {isGuest ? t("yt_free_used") : t("yt_points_used")}
         </div>
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
@@ -69,19 +71,19 @@ function PointsExhausted({ isDark, isGuest, title }) {
             <button onClick={() => { if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); else window.location.hash="#home"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:15, fontWeight:800 }}>
-              🚀 회원가입 / 로그인하기
+              {t("yt_signup")}
             </button>
           ) : (
             <button onClick={() => { window.location.hash = "#pricing"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800 }}>
-              💎 포인트 충전하기
+              {t("yt_charge")}
             </button>
           )}
           <button onClick={() => window.open("https://open.kakao.com/o/gIw9vTFg", "_blank")}
             style={{ width:"100%", padding:"12px", borderRadius:12,
               border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:14, cursor:"pointer" }}>
-            💬 관리자에게 문의하기
+            {t("yt_contact")}
           </button>
         </div>
       </div>

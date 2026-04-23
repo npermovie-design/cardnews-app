@@ -13,6 +13,7 @@ import { getAiUsage, setAiUsage, getAiLeft, FREE_MEMBER, FREE_GUEST, changePoint
 ════════════════════════════════════════════════════════════ */
 
 function RepurposePage({ isDark, user, onLoginRequest, onUserUpdate, showPointConfirm }) {
+  const { t } = useI18n();
   const [sourceType, setSourceType] = useState("text"); // "text" | "url"
   const [sourceText, setSourceText] = useState("");
   const [sourceUrl, setSourceUrl] = useState("");
@@ -33,11 +34,11 @@ function RepurposePage({ isDark, user, onLoginRequest, onUserUpdate, showPointCo
   const accent = "#7c6aff";
 
   const FORMAT_LIST = [
-    { id: "insta",    label: "인스타그램 캡션", desc: "해시태그 포함" },
-    { id: "thread",   label: "스레드 포스트", desc: "280자 이내" },
-    { id: "cardnews", label: "카드뉴스 슬라이드 기획", desc: "5-7장" },
-    { id: "naver",    label: "네이버 블로그", desc: "SEO 최적화" },
-    { id: "shorts",   label: "유튜브 숏폼 대본", desc: "60초 이내" },
+    { id: "insta",    label: t("at_insta_caption"), desc: t("at_insta_desc") },
+    { id: "thread",   label: t("at_thread_post"), desc: t("at_thread_desc") },
+    { id: "cardnews", label: t("at_cardnews_plan"), desc: t("at_cardnews_desc") },
+    { id: "naver",    label: t("at_naver_blog"), desc: t("at_naver_desc") },
+    { id: "shorts",   label: t("at_shorts_script"), desc: t("at_shorts_desc") },
   ];
 
   const selectedCount = Object.values(formats).filter(Boolean).length;
@@ -147,8 +148,8 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
       <div style={{ flexShrink: 0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)", borderBottom: `1px solid ${bdr}` }}>
         <div style={{ maxWidth: 720, margin: "0 auto", padding: "16px 24px" }}>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 3 }}>콘텐츠 리퍼포징</div>
-            <div style={{ fontSize: 12, color: muted }}>하나의 콘텐츠를 여러 플랫폼에 맞게 자동 변환합니다 (35P)</div>
+            <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 3 }}>{t("at_repurpose")}</div>
+            <div style={{ fontSize: 12, color: muted }}>{t("at_repurpose_desc")}</div>
           </div>
         </div>
       </div>
@@ -159,13 +160,13 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
 
           {/* 소스 입력 영역 */}
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 10 }}>원본 콘텐츠</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 10 }}>{t("at_source")}</div>
 
             {/* 탭: 직접 입력 / URL */}
             <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
               {[
-                { id: "text", label: "직접 입력" },
-                { id: "url", label: "URL에서 가져오기" },
+                { id: "text", label: t("at_direct_input") },
+                { id: "url", label: t("at_from_url") },
               ].map(t => (
                 <button key={t.id} onClick={() => setSourceType(t.id)}
                   style={{
@@ -181,7 +182,7 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
             {sourceType === "url" && (
               <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
                 <input value={sourceUrl} onChange={e => setSourceUrl(e.target.value)}
-                  placeholder="https://blog.naver.com/... 또는 유튜브, 뉴스 URL"
+                  placeholder={t("at_url_placeholder")}
                   style={{
                     flex: 1, padding: "10px 14px", borderRadius: 10, border: `1px solid ${bdr}`,
                     background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: text, fontSize: 13, outline: "none",
@@ -191,13 +192,13 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
                     padding: "10px 18px", borderRadius: 10, border: "none", cursor: "pointer",
                     background: accent, color: "#fff", fontSize: 12, fontWeight: 700, opacity: fetchingUrl ? 0.6 : 1, whiteSpace: "nowrap",
                   }}>
-                  {fetchingUrl ? "가져오는 중..." : "가져오기"}
+                  {fetchingUrl ? t("at_fetching") : t("at_fetch")}
                 </button>
               </div>
             )}
 
             <textarea value={sourceText} onChange={e => setSourceText(e.target.value)}
-              placeholder="블로그 글, 기사, SNS 포스트 등 원본 콘텐츠를 붙여넣으세요..."
+              placeholder={t("at_paste_placeholder")}
               style={{
                 width: "100%", minHeight: 180, padding: "14px 16px", borderRadius: 12,
                 border: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.06)" : "#fff",
@@ -205,13 +206,13 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
                 fontFamily: "inherit",
               }} />
             <div style={{ fontSize: 11, color: muted, marginTop: 4, textAlign: "right" }}>
-              {sourceText.length.toLocaleString()}자
+              {sourceText.length.toLocaleString()}{t("at_char_unit")}
             </div>
           </div>
 
           {/* 형식 선택 */}
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 10 }}>변환 형식 선택</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 10 }}>{t("at_format_select")}</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: 8 }}>
               {FORMAT_LIST.map(f => {
                 const checked = formats[f.id];
@@ -234,7 +235,7 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
                 );
               })}
             </div>
-            <div style={{ fontSize: 11, color: muted, marginTop: 6 }}>{selectedCount}개 형식 선택됨</div>
+            <div style={{ fontSize: 11, color: muted, marginTop: 6 }}>{selectedCount}{t("at_format_selected")}</div>
           </div>
 
           {/* 에러 */}
@@ -253,13 +254,13 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
               boxShadow: loading ? "none" : `0 6px 24px ${accent}40`,
               opacity: loading ? 0.7 : 1, transition: "all 0.2s",
             }}>
-            {loading ? "변환 중..." : `한 번에 변환하기 (${selectedCount}개 형식 · 35P)`}
+            {loading ? t("at_converting") : `${t("at_convert_btn")} (${selectedCount}${t("at_format_unit")} · 35P)`}
           </button>
 
           {/* 결과 영역 */}
           {results && (
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 12 }}>변환 결과</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 12 }}>{t("at_result")}</div>
 
               {/* 탭 */}
               <div style={{ display: "flex", gap: 2, marginBottom: 16, overflowX: "auto", borderBottom: `1px solid ${bdr}` }}>
@@ -290,7 +291,7 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
                         background: copied === f.id ? "rgba(74,222,128,0.1)" : "transparent",
                         color: copied === f.id ? "#4ade80" : muted, fontSize: 12, fontWeight: 600, cursor: "pointer",
                       }}>
-                      {copied === f.id ? "복사 완료" : "복사"}
+                      {copied === f.id ? t("at_copy_done") : t("at_copy")}
                     </button>
                   </div>
                   <div style={{ padding: "16px", whiteSpace: "pre-wrap", fontSize: 13, lineHeight: 1.8, color: text }}>
@@ -371,6 +372,7 @@ const MARKETING_TABS = [
 
 function MarketingHub({ theme, isDark, user, C, navigate, onUserUpdate, defaultTab }) {
   /* SNS 분석만 남아있으므로 탭 없이 직접 렌더링 */
+  const { t } = useI18n();
   const D = isDark;
   const text = D ? "#e8eaed" : "#1a1a2e";
   const muted = D ? "rgba(255,255,255,0.5)" : "#888";
@@ -378,8 +380,8 @@ function MarketingHub({ theme, isDark, user, C, navigate, onUserUpdate, defaultT
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
       <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)", padding:"16px 24px 12px", textAlign:"center" }}>
-        <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:3 }}>마케팅</div>
-        <div style={{ fontSize:12, color:muted }}>경쟁사 SNS 분석 도구를 활용해보세요</div>
+        <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:3 }}>{t("at_marketing_title")}</div>
+        <div style={{ fontSize:12, color:muted }}>{t("at_marketing_desc")}</div>
       </div>
       <div style={{ flex:1, overflowY:"auto" }}>
         <ViralityAnalyzer isDark={isDark} />

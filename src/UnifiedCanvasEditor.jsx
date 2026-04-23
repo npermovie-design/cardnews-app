@@ -192,22 +192,20 @@ export default function UnifiedCanvasEditor({
     // 하이라이트/뱃지 텍스트
     if (s.highlight || s.subtitle) {
       const hl = new Textbox(s.highlight || s.subtitle || "", {
-        left:width/2, top:height*0.15, width:width*0.84,
+        left:width/2, top:height*0.13, width:width*0.78,
         originX:"center", originY:"center",
-        fontSize:16, fontWeight:"700", fill:s.textColor||"#000000",
-        fontFamily:s.fontFamily||"Pretendard", opacity:0.6,
+        fontSize:18, fontWeight:"700", fill:s.textColor||"#000000",
+        fontFamily:s.fontFamily||"Pretendard", opacity:0.55,
         textAlign:"center", name:"highlight",
       });
       fc.add(hl);
     }
 
-    // 제목 — 정중앙 배치, 글씨에 맞는 너비
+    // 제목 — 정중앙 배치, 고정 너비로 안정적 정렬
     if (s.title) {
       const titleFontSize = s.fontSize||42;
-      // 글자 수 기반 너비 계산 (최소 40%, 최대 90%)
-      const estW = Math.min(width*0.9, Math.max(width*0.4, s.title.length * titleFontSize * 0.7));
       const t = new Textbox(s.title, {
-        left:width/2, top:height*0.38, width:estW,
+        left:width/2, top:height*0.40, width:width*0.78,
         originX:"center", originY:"center",
         fontSize:titleFontSize, fontWeight:"bold",
         fill:s.textColor||"#000000",
@@ -217,12 +215,11 @@ export default function UnifiedCanvasEditor({
       fc.add(t);
     }
 
-    // 본문 — 제목 아래 중앙 배치, 글씨에 맞는 너비
+    // 본문 — 제목 아래 중앙 배치, 고정 너비
     if (s.body) {
       const bodyFontSize = Math.round((s.fontSize||42)*0.38);
-      const estW = Math.min(width*0.9, Math.max(width*0.35, s.body.length * bodyFontSize * 0.65));
       const b = new Textbox(s.body, {
-        left:width/2, top:height*0.58, width:estW,
+        left:width/2, top:height*0.65, width:width*0.78,
         originX:"center", originY:"center",
         fontSize:bodyFontSize,
         fill:s.textColor||"#000000", opacity:0.85,
@@ -556,15 +553,21 @@ export default function UnifiedCanvasEditor({
                       if(tmpl.grad) addShape(tmpl.grad);
                       // 레이아웃 재배치
                       const texts=fc.getObjects().filter(o=>o.type==="textbox"&&o.name!=="bg");
+                      const gap=height*0.14;
                       if(tmpl.layout==="bottom"&&texts.length>0){
-                        texts.forEach((t,i)=>t.set("top",height*0.55+i*height*0.12));
+                        const startY=height-texts.length*gap-height*0.06;
+                        texts.forEach((t,i)=>{t.set({left:width/2,top:startY+i*gap,originX:"center",originY:"center",textAlign:"center",width:width*0.78});});
                       } else if(tmpl.layout==="top"&&texts.length>0){
-                        texts.forEach((t,i)=>t.set("top",height*0.08+i*height*0.12));
+                        texts.forEach((t,i)=>{t.set({left:width/2,top:height*0.1+i*gap,originX:"center",originY:"center",textAlign:"center",width:width*0.78});});
                       } else if(tmpl.layout==="center"&&texts.length>0){
-                        const totalH=texts.length*height*0.12;
-                        texts.forEach((t,i)=>t.set("top",(height-totalH)/2+i*height*0.12));
+                        const totalH=(texts.length-1)*gap;
+                        texts.forEach((t,i)=>{t.set({left:width/2,top:(height-totalH)/2+i*gap,originX:"center",originY:"center",textAlign:"center",width:width*0.78});});
                       } else if(tmpl.layout==="left"&&texts.length>0){
-                        texts.forEach(t=>{t.set("textAlign","left");t.set("left",width*0.06);t.set("width",width*0.5);});
+                        const totalH=(texts.length-1)*gap;
+                        texts.forEach((t,i)=>{t.set({textAlign:"left",left:width*0.1,top:(height-totalH)/2+i*gap,originX:"left",originY:"center",width:width*0.55});});
+                      } else if(tmpl.layout==="overlay"&&texts.length>0){
+                        const totalH=(texts.length-1)*gap;
+                        texts.forEach((t,i)=>{t.set({left:width/2,top:(height-totalH)/2+i*gap,originX:"center",originY:"center",textAlign:"center",width:width*0.78});});
                       }
                       fc.renderAll();
                     }} style={{padding:"10px 6px",borderRadius:8,border:"1px solid #eee",cursor:"pointer",fontSize:11,fontWeight:600,

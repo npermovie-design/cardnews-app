@@ -37,6 +37,7 @@ function buildSources() {
 }
 
 function MediaCard({ item, isDark, bdr, C, onDl, dlId }) {
+  const { t } = useI18n();
   const [hov, setHov] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const cardRef = useRef(null);
@@ -57,7 +58,7 @@ function MediaCard({ item, isDark, bdr, C, onDl, dlId }) {
             style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}}
             onError={e=>{ e.target.style.display="none"; }}/>
         : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32}}>
-            {isVid?"영상":"이미지"}
+            {isVid?t("board_video"):t("board_image")}
           </div>
       }
       {badge && <div style={{position:"absolute",top:4,left:4,fontSize:9,padding:"2px 6px",
@@ -70,7 +71,7 @@ function MediaCard({ item, isDark, bdr, C, onDl, dlId }) {
           <button onClick={e=>onDl(item,e)}
             style={{padding:"7px 14px",borderRadius:8,border:"none",
               background:"rgba(255,255,255,0.92)",color:"#ec4899",fontSize:12,fontWeight:700,cursor:"pointer"}}>
-            {dlId===item.id?"저장중...":"저장"}
+            {dlId===item.id?t("board_saving"):t("board_saveBtn")}
           </button>
         </div>
       )}
@@ -93,11 +94,11 @@ function MediaCard({ item, isDark, bdr, C, onDl, dlId }) {
               overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{item.title}</div>
             <div style={{display:"flex",gap:8,flexWrap:"wrap",fontSize:10,color:isDark?"rgba(255,255,255,0.5)":"#888",lineHeight:1.8}}>
               <span>{item.src}</span>
-              <span>{item.type==="gif"?"GIF":item.type==="video"?"영상":"사진"}</span>
+              <span>{item.type==="gif"?"GIF":item.type==="video"?t("board_video"):t("board_photo")}</span>
               {item.credit && <span>{item.credit}</span>}
             </div>
             <div style={{fontSize:9,color:isDark?"rgba(255,255,255,0.3)":"#aaa",marginTop:4}}>
-              클릭하면 원본 열기 · 저장 가능
+              {t("board_clickOriginal")}
             </div>
           </div>
         </div>
@@ -107,13 +108,14 @@ function MediaCard({ item, isDark, bdr, C, onDl, dlId }) {
 }
 
 function FreeMediaSearch({ C, isDark, bdr }) {
+  const { t } = useI18n();
   const tenorCursor = useRef("");
 
   // 3탭: GIF / 사진 / 영상
   const TABS = [
-    { id:"gif",   label:"GIF / 짤" },
-    { id:"photo", label:"무료 사진" },
-    { id:"video", label:"무료 영상" },
+    { id:"gif",   label:t("board_gifTab") },
+    { id:"photo", label:t("board_freePhoto") },
+    { id:"video", label:t("board_freeVideo") },
   ];
   const [tab, setTab] = useState("gif");
   const [inputVal, setInputVal] = useState("");
@@ -135,9 +137,9 @@ function FreeMediaSearch({ C, isDark, bdr }) {
       ...(UNSPLASH_KEY ? [{ id:"unsplash", label:"Unsplash" }] : []),
       { id:"openverse", label:"Openverse" },
       { id:"wikimedia", label:"Wikimedia" },
-      { id:"aic", label:"미술관" },
+      { id:"aic", label:t("board_museum") },
       { id:"nasa", label:"NASA" },
-      { id:"picsum", label:"랜덤" },
+      { id:"picsum", label:t("board_random") },
     ],
     video: [
       ...(USE_PIXABAY_PROXY ? [{ id:"pixvid", label:"Pixabay" }] : []),
@@ -236,14 +238,14 @@ function FreeMediaSearch({ C, isDark, bdr }) {
       {/* 검색창 */}
       <div style={{display:"flex",gap:8,marginBottom:16}}>
         <input value={inputVal} onChange={e=>setInputVal(e.target.value)}
-          onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder="키워드로 검색 (예: 풍경, 음식, 사람...)"
+          onKeyDown={e=>e.key==="Enter"&&doSearch()} placeholder={t("board_searchPlaceholder")}
           style={{flex:1,padding:"10px 14px",borderRadius:10,border:"1px solid "+bdr,
             background:isDark?"rgba(255,255,255,0.05)":"#fff",color:C.text,fontSize:13,outline:"none"}}/>
         <button onClick={doSearch} disabled={loading}
           style={{padding:"10px 20px",borderRadius:10,border:"none",
             background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,
             cursor:loading?"not-allowed":"pointer",opacity:loading?0.6:1,whiteSpace:"nowrap",flexShrink:0}}>
-          {loading?"검색중...":"검색"}
+          {loading?t("board_searching"):t("board_searchBtn")}
         </button>
       </div>
 
@@ -258,9 +260,9 @@ function FreeMediaSearch({ C, isDark, bdr }) {
 
       {!loading && totalItems===0 && (
         <div style={{textAlign:"center",padding:"40px 0",color:C.muted}}>
-          <div style={{fontSize:14,color:"#94a3b8",marginBottom:8,fontWeight:600}}>{tab==="gif"?"GIF":"사진"}</div>
-          <div style={{fontSize:14,fontWeight:700}}>결과가 없어요</div>
-          <div style={{fontSize:12,marginTop:4}}>다른 키워드로 검색해보세요</div>
+          <div style={{fontSize:14,color:"#94a3b8",marginBottom:8,fontWeight:600}}>{tab==="gif"?"GIF":t("board_photo")}</div>
+          <div style={{fontSize:14,fontWeight:700}}>{t("board_noResultLabel")}</div>
+          <div style={{fontSize:12,marginTop:4}}>{t("board_noResultHint")}</div>
         </div>
       )}
 
@@ -272,7 +274,7 @@ function FreeMediaSearch({ C, isDark, bdr }) {
           <div key={s.id} style={{marginBottom:20}}>
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
               <span style={{fontSize:13,fontWeight:800,color:C.text}}>{s.label}</span>
-              <span style={{fontSize:11,color:C.muted}}>{items.length}개</span>
+              <span style={{fontSize:11,color:C.muted}}>{items.length}{t("board_itemCount")}</span>
               <div style={{flex:1,height:1,background:bdr}}/>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))",gap:8}}>
@@ -288,18 +290,18 @@ function FreeMediaSearch({ C, isDark, bdr }) {
       <div style={{marginTop:16,padding:"14px 16px",borderRadius:12,
         background:isDark?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.04)",
         border:"1px solid "+(isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)")}}>
-        <div style={{fontSize:13,fontWeight:800,color:isDark?"#a5b4fc":"#7c6aff",marginBottom:8}}>이용 가이드</div>
+        <div style={{fontSize:13,fontWeight:800,color:isDark?"#a5b4fc":"#7c6aff",marginBottom:8}}>{t("board_guideTitle")}</div>
         <div style={{fontSize:12,color:C.muted,lineHeight:2}}>
-          <b style={{color:C.text}}>저장</b> — 이미지/GIF를 PC에 바로 다운로드<br/>
-          <b style={{color:C.text}}>클릭</b> — 원본 사이트에서 고해상도로 보기<br/>
-          <b style={{color:C.text}}>검색</b> — 키워드를 입력하면 모든 소스에서 동시 검색<br/>
-          <b style={{color:C.text}}>마우스 올리기</b> — 이미지 확대 프리뷰 + 상세 정보 확인
+          <b style={{color:C.text}}>{t("board_guideSaveLabel")}</b> — {t("board_guideSave")}<br/>
+          <b style={{color:C.text}}>{t("board_guideClickLabel")}</b> — {t("board_guideClick")}<br/>
+          <b style={{color:C.text}}>{t("board_guideSearchLabel")}</b> — {t("board_guideSearch")}<br/>
+          <b style={{color:C.text}}>{t("board_guideHoverLabel")}</b> — {t("board_guideHover")}
         </div>
         <div style={{fontSize:10,color:C.muted,marginTop:8,opacity:0.6,lineHeight:1.8}}>
-          Pixabay / Pexels: 무료 상업적 이용 가능 (별도 출처 표기 불요)<br/>
-          Giphy / Tenor: GIF 공유 목적, 상업적 이용 시 출처 표기 권장<br/>
-          Openverse / Wikimedia: CC 라이선스, 출처 표기 필수<br/>
-          NASA / 미술관: 퍼블릭 도메인, 자유롭게 사용 가능
+          {t("board_licensePixabay")}<br/>
+          {t("board_licenseGiphy")}<br/>
+          {t("board_licenseOpenverse")}<br/>
+          {t("board_licenseNasa")}
         </div>
       </div>
     </div>
@@ -308,6 +310,7 @@ function FreeMediaSearch({ C, isDark, bdr }) {
 
 /* ─── 리치 텍스트 에디터 ───────────────────────────────────── */
 function RichEditor({ value, onChange, isDark }) {
+  const { t } = useI18n();
   const editorRef = useRef(null);
   const imgInputRef = useRef(null);
   const [imgUploading, setImgUploading] = useState(false);
@@ -338,8 +341,8 @@ function RichEditor({ value, onChange, isDark }) {
   const closeModal = () => { setModal(null); setModalVals({}); };
 
   const insertTable = () => openModal("table", [
-    { key: "rows", label: "행 수", default: "3", type: "number" },
-    { key: "cols", label: "열 수", default: "3", type: "number" },
+    { key: "rows", label: t("board_rowCount"), default: "3", type: "number" },
+    { key: "cols", label: t("board_colCount"), default: "3", type: "number" },
   ]);
 
   // 이미지 직접 업로드 (파일 선택 or 드래그&드롭)
@@ -348,7 +351,7 @@ function RichEditor({ value, onChange, isDark }) {
     setImgUploading(true);
     for (const file of Array.from(files)) {
       if (!file.type.startsWith("image/")) continue;
-      if (file.size > 20 * 1024 * 1024) { alert(`${file.name}: 이미지는 20MB 이하만 가능합니다.`); continue; }
+      if (file.size > 20 * 1024 * 1024) { alert(`${file.name}: ${t("board_imageSizeError")}`); continue; }
       try {
         // WebP 변환 (GIF 제외)
         let uploadFile = file;
@@ -377,7 +380,7 @@ function RichEditor({ value, onChange, isDark }) {
         editorRef.current.focus();
         document.execCommand("insertHTML", false, `<img src="${url}" style="max-width:100%;border-radius:8px;margin:8px 0" alt=""/>`);
         onChange(editorRef.current.innerHTML);
-      } catch (e) { alert(`이미지 업로드 실패: ${e.message}`); }
+      } catch (e) { alert(`${t("board_imageUploadFail")}: ${e.message}`); }
     }
     setImgUploading(false);
   };
@@ -387,16 +390,16 @@ function RichEditor({ value, onChange, isDark }) {
   };
 
   const insertImageByUrl = () => openModal("imageUrl", [
-    { key: "url", label: "이미지 URL", default: "", type: "url" },
+    { key: "url", label: t("board_imageUrlLabel"), default: "", type: "url" },
   ]);
 
   const insertVideo = () => openModal("video", [
-    { key: "url", label: "유튜브 URL", default: "", type: "url" },
+    { key: "url", label: t("board_youtubeUrlLabel"), default: "", type: "url" },
   ]);
 
   const insertLink = () => openModal("link", [
-    { key: "url", label: "링크 URL", default: "", type: "url" },
-    { key: "text", label: "링크 텍스트", default: "", type: "text" },
+    { key: "url", label: t("board_linkUrl"), default: "", type: "url" },
+    { key: "text", label: t("board_linkText"), default: "", type: "text" },
   ]);
 
   const handleModalSubmit = () => {
@@ -448,39 +451,39 @@ function RichEditor({ value, onChange, isDark }) {
       {/* 툴바 — 모바일에서 가로 스크롤 */}
       <div style={{display:"flex",flexWrap:"nowrap",alignItems:"center",gap:2,padding:"8px 10px",borderBottom:`1px solid ${tbBdr}`,background:tbBg,overflowX:"auto",WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
         {/* 텍스트 스타일 */}
-        <ToolBtn onClick={()=>exec("bold")} title="굵게 (Ctrl+B)"><b>B</b></ToolBtn>
-        <ToolBtn onClick={()=>exec("italic")} title="기울임 (Ctrl+I)"><i>I</i></ToolBtn>
-        <ToolBtn onClick={()=>exec("underline")} title="밑줄 (Ctrl+U)"><u>U</u></ToolBtn>
-        <ToolBtn onClick={()=>exec("strikeThrough")} title="취소선"><s>S</s></ToolBtn>
+        <ToolBtn onClick={()=>exec("bold")} title={t("board_bold")}><b>B</b></ToolBtn>
+        <ToolBtn onClick={()=>exec("italic")} title={t("board_italic")}><i>I</i></ToolBtn>
+        <ToolBtn onClick={()=>exec("underline")} title={t("board_underline")}><u>U</u></ToolBtn>
+        <ToolBtn onClick={()=>exec("strikeThrough")} title={t("board_strike")}><s>S</s></ToolBtn>
         <Divider/>
         {/* 폰트 크기 */}
         <select value={fontSize} onChange={e=>{setFontSize(e.target.value);exec("fontSize",e.target.value);}}
           style={{padding:"4px 6px",border:"none",borderRadius:6,background:isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.05)",color:btnClr,fontSize:12,cursor:"pointer"}}>
-          {[["1","작게"],["3","보통"],["5","크게"],["7","매우 크게"]].map(([v,l])=>(
+          {[["1",t("board_fontSmall")],["3",t("board_fontNormal")],["5",t("board_fontLarge")],["7",t("board_fontXLarge")]].map(([v,l])=>(
             <option key={v} value={v}>{l}</option>
           ))}
         </select>
         <Divider/>
         {/* 정렬 */}
-        <ToolBtn onClick={()=>exec("justifyLeft")} title="왼쪽 정렬">≡</ToolBtn>
-        <ToolBtn onClick={()=>exec("justifyCenter")} title="가운데 정렬">☰</ToolBtn>
-        <ToolBtn onClick={()=>exec("justifyRight")} title="오른쪽 정렬">≡</ToolBtn>
+        <ToolBtn onClick={()=>exec("justifyLeft")} title={t("board_alignLeft")}>≡</ToolBtn>
+        <ToolBtn onClick={()=>exec("justifyCenter")} title={t("board_alignCenter")}>☰</ToolBtn>
+        <ToolBtn onClick={()=>exec("justifyRight")} title={t("board_alignRight")}>≡</ToolBtn>
         <Divider/>
         {/* 목록 */}
-        <ToolBtn onClick={()=>exec("insertUnorderedList")} title="글머리 목록">• 목록</ToolBtn>
-        <ToolBtn onClick={()=>exec("insertOrderedList")} title="번호 목록">1. 목록</ToolBtn>
+        <ToolBtn onClick={()=>exec("insertUnorderedList")} title={t("board_bulletList")}>{"• "+t("board_bulletListLabel")}</ToolBtn>
+        <ToolBtn onClick={()=>exec("insertOrderedList")} title={t("board_numberList")}>{"1. "+t("board_numberListLabel")}</ToolBtn>
         <Divider/>
         {/* 삽입 */}
-        <ToolBtn onClick={insertImage} title="사진 업로드">{imgUploading ? "..." : "IMG"}</ToolBtn>
-        <ToolBtn onClick={insertImageByUrl} title="이미지 URL">URL</ToolBtn>
+        <ToolBtn onClick={insertImage} title={t("board_uploadImage")}>{imgUploading ? "..." : "IMG"}</ToolBtn>
+        <ToolBtn onClick={insertImageByUrl} title={t("board_imageUrlBtn")}>URL</ToolBtn>
         <input ref={imgInputRef} type="file" multiple accept="image/*" style={{display:"none"}} onChange={e=>{handleImageUpload(e.target.files);e.target.value="";}}/>
-        <ToolBtn onClick={insertVideo} title="유튜브 동영상">▶</ToolBtn>
-        <ToolBtn onClick={insertLink} title="링크 삽입">🔗</ToolBtn>
-        <ToolBtn onClick={insertTable} title="표 삽입">⊞</ToolBtn>
+        <ToolBtn onClick={insertVideo} title={t("board_youtubeBtn")}>▶</ToolBtn>
+        <ToolBtn onClick={insertLink} title={t("board_insertLink")}>🔗</ToolBtn>
+        <ToolBtn onClick={insertTable} title={t("board_insertTable")}>⊞</ToolBtn>
         <Divider/>
         {/* 이모티콘 */}
         <div style={{position:"relative"}}>
-          <ToolBtn onClick={()=>setShowEmoji(p=>!p)} title="이모티콘">😊</ToolBtn>
+          <ToolBtn onClick={()=>setShowEmoji(p=>!p)} title={t("board_emoticon")}>😊</ToolBtn>
           {showEmoji && (
             <div style={{position:"absolute",top:"calc(100% + 6px)",left:0,zIndex:999,
               background:isDark?"#1e1c3a":"#fff",border:`1px solid ${edBdr}`,borderRadius:12,padding:10,
@@ -496,9 +499,9 @@ function RichEditor({ value, onChange, isDark }) {
         </div>
         <Divider/>
         {/* 실행취소/재실행 */}
-        <ToolBtn onClick={()=>exec("undo")} title="실행취소">↩</ToolBtn>
-        <ToolBtn onClick={()=>exec("redo")} title="다시실행">↪</ToolBtn>
-        <ToolBtn onClick={()=>exec("removeFormat")} title="서식 지우기">✕ 서식</ToolBtn>
+        <ToolBtn onClick={()=>exec("undo")} title={t("board_undo")}>↩</ToolBtn>
+        <ToolBtn onClick={()=>exec("redo")} title={t("board_redo")}>↪</ToolBtn>
+        <ToolBtn onClick={()=>exec("removeFormat")} title={t("board_clearFormat")}>{"✕ "+t("board_formatLabel")}</ToolBtn>
       </div>
 
       {/* 에디터 */}
@@ -520,7 +523,7 @@ function RichEditor({ value, onChange, isDark }) {
             if (imgFiles.length > 0) { e.preventDefault(); handleImageUpload(imgFiles); }
           }
         }}
-        data-placeholder="내용을 입력해주세요... (이미지를 드래그하거나 붙여넣기 할 수 있어요)"
+        data-placeholder={t("board_editorPlaceholder")}
         style={{minHeight:280,padding:"16px 18px",color:edTxt,fontSize:15,lineHeight:1.8,outline:"none",
           wordBreak:"break-word",overflowY:"auto"}}
       />
@@ -537,11 +540,11 @@ function RichEditor({ value, onChange, isDark }) {
           ))}
           <button type="button" onClick={handleModalSubmit}
             style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#7c6aff",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
-            삽입
+            {t("board_insert")}
           </button>
           <button type="button" onClick={closeModal}
             style={{padding:"8px 12px",borderRadius:8,border:`1px solid ${edBdr}`,background:"transparent",color:btnClr,fontSize:12,cursor:"pointer"}}>
-            취소
+            {t("cancel")}
           </button>
         </div>
       )}
@@ -615,7 +618,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
     if (!files || files.length === 0) return;
     setUploading(true);
     for (let file of Array.from(files)) {
-      if (file.size > 50 * 1024 * 1024) { alert(`${file.name}: 파일 크기는 50MB 이하여야 합니다.`); continue; }
+      if (file.size > 50 * 1024 * 1024) { alert(`${file.name}: ${t("board_fileSizeError")}`); continue; }
       try {
         let type = "file";
         if (file.type.startsWith("image/")) type = "image";
@@ -629,7 +632,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
         const url = await uploadFileToStorage(file, path);
         setUploadedFiles(prev => [...prev, { url, type, name: file.name }]);
       } catch(e) {
-        alert(`${file.name} 업로드 실패: ${e.message}`);
+        alert(`${file.name} ${t("board_uploadFail")}: ${e.message}`);
       }
     }
     setUploading(false);
@@ -639,13 +642,13 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
     <div style={{maxWidth:900,margin:"0 auto",padding:"20px 12px 60px"}}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:22}}>
         <button type="button" onClick={onCancel} style={{background:"none",border:"none",cursor:"pointer",color:C.muted,fontSize:18,padding:"8px",margin:"-8px"}}>←</button>
-        <h2 style={{fontSize:18,fontWeight:900,color:C.text,margin:0}}>{initial?"글 수정":"새 글 작성"}</h2>
-        {!initial&&<span style={{fontSize:11,color:"#4ade80",marginLeft:"auto"}}>글 등록 시 1P 적립!</span>}
+        <h2 style={{fontSize:18,fontWeight:900,color:C.text,margin:0}}>{initial?t("board_editPost"):t("board_newPost")}</h2>
+        {!initial&&<span style={{fontSize:11,color:"#4ade80",marginLeft:"auto"}}>{t("board_postPointBonus")}</span>}
       </div>
       <div style={{display:"flex",flexDirection:"column",gap:14}}>
         {/* 카테고리 선택 */}
         <div>
-          <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:8}}>카테고리 선택</div>
+          <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:8}}>{t("board_selectCategory")}</div>
           <div style={{display:"flex",flexWrap:"nowrap",gap:8,overflowX:"auto",paddingBottom:4,WebkitOverflowScrolling:"touch",scrollbarWidth:"none"}}>
             {cats.map(s=>(
               <button key={s.id} type="button" onClick={()=>{ setPickedCat(s.id); setPickedTag(""); }} style={{
@@ -662,14 +665,14 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
         {/* 세부 태그 선택 (해당 카테고리에 태그가 있을 때만) */}
         {tags.length > 0 && (
           <div>
-            <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:8}}>세부 카테고리 <span style={{fontWeight:400}}>(선택)</span></div>
+            <div style={{fontSize:11,fontWeight:700,color:C.muted,marginBottom:8}}>{t("board_subCategory")} <span style={{fontWeight:400}}>{t("board_subCategoryOptional")}</span></div>
             <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
               <button type="button" onClick={()=>setPickedTag("")} style={{
                 padding:"5px 14px", borderRadius:16, fontSize:12, cursor:"pointer",
                 border:"1px solid "+(pickedTag==="" ? (sub?.color||"#7c6aff") : bdr),
                 background: pickedTag==="" ? (sub?.color||"#7c6aff")+"18" : "transparent",
                 color: pickedTag==="" ? (sub?.color||"#7c6aff") : C.muted, fontWeight: pickedTag===""?700:400,
-              }}>전체</button>
+              }}>{t("board_allTag")}</button>
               {tags.map(t=>(
                 <button key={t.id} type="button" onClick={()=>setPickedTag(t.label)} style={{
                   padding:"5px 14px", borderRadius:16, fontSize:12, cursor:"pointer",
@@ -683,17 +686,17 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
           </div>
         )}
 
-        <input placeholder="제목을 입력해주세요" value={title} maxLength={100} onChange={e=>setTitle(e.target.value)}
+        <input placeholder={t("board_titlePlaceholder")} value={title} maxLength={100} onChange={e=>setTitle(e.target.value)}
           style={{padding:"13px 16px",borderRadius:10,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.05)":"#fff",color:C.text,fontSize:15,outline:"none"}}/>
         <RichEditor value={body} onChange={setBody} isDark={isDark}/>
 
         {/* 파일 첨부 */}
         <div style={{border:"1px solid "+bdr,borderRadius:12,padding:"14px 16px",background:isDark?"rgba(255,255,255,0.02)":"#fafafa"}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:uploadedFiles.length>0?12:0}}>
-            <span style={{fontSize:13,fontWeight:700,color:C.muted}}>+ 파일 첨부 <span style={{fontWeight:400,fontSize:11}}>(이미지·영상·PDF·문서, 최대 50MB)</span></span>
+            <span style={{fontSize:13,fontWeight:700,color:C.muted}}>+ {t("board_fileAttach")} <span style={{fontWeight:400,fontSize:11}}>{t("board_fileAttachDesc")}</span></span>
             <button type="button" onClick={()=>fileInputRef.current?.click()} disabled={uploading}
               style={{padding:"6px 14px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.purpleL||"#7c6aff",fontSize:12,fontWeight:700,cursor:uploading?"not-allowed":"pointer",opacity:uploading?0.6:1}}>
-              {uploading?"업로드 중...":"+ 파일 추가"}
+              {uploading?t("board_uploading"):("+ "+t("board_addFile"))}
             </button>
             <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.hwp,.txt"
               style={{display:"none"}} onChange={e=>handleFileUpload(e.target.files)}/>
@@ -735,15 +738,15 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
               setBody(prev=>prev+imgTag);
             }
           }} />
-          <span style={{fontSize:11,color:C.muted}}>GIF · 스티커 · 밈을 본문에 삽입</span>
+          <span style={{fontSize:11,color:C.muted}}>{t("board_gifInsertHint")}</span>
         </div>
 
         {/* 자료실 유료/무료 선택 */}
         {pickedCat==="archive" && (
           <div style={{marginBottom:16,padding:"14px 18px",borderRadius:12,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.02)":"#fafafa"}}>
-            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>자료 유형</div>
+            <div style={{fontSize:13,fontWeight:700,color:C.text,marginBottom:10}}>{t("board_resourceType")}</div>
             <div style={{display:"flex",gap:8,marginBottom:priceType==="paid"?12:0}}>
-              {[["free","무료","#22c55e"],["paid","유료","#f59e0b"]].map(([v,l,c])=>(
+              {[["free",t("board_free"),"#22c55e"],["paid",t("board_paid"),"#f59e0b"]].map(([v,l,c])=>(
                 <button key={v} type="button" onClick={()=>setPriceType(v)}
                   style={{flex:1,padding:"10px 16px",borderRadius:10,border:`2px solid ${priceType===v?c:bdr}`,
                     background:priceType===v?c+"15":"transparent",
@@ -753,7 +756,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
               ))}
             </div>
             {priceType==="paid" && (
-              <input value={price} onChange={e=>setPrice(e.target.value)} placeholder="가격 입력 (예: 5,000원)"
+              <input value={price} onChange={e=>setPrice(e.target.value)} placeholder={t("board_pricePlaceholder")}
                 style={{width:"100%",padding:"10px 14px",borderRadius:9,border:"1px solid "+bdr,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:C.text,fontSize:13,outline:"none",boxSizing:"border-box"}}/>
             )}
           </div>
@@ -764,9 +767,9 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
           <button type="button" onClick={()=>{
             if(title.trim()&&body.replace(/<[^>]*>/g,"").trim()) onDone({title:title.trim(),body,subCat:pickedCat,tag:pickedTag,images:uploadedFiles.map(f=>f.url),
               ...(pickedCat==="archive"?{priceType,price:priceType==="paid"?price:""}:{})});
-            else alert("제목과 내용을 입력해주세요.");
+            else alert(t("board_titleBodyRequired"));
           }} style={{padding:"11px 28px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,cursor:"pointer",fontWeight:800}}>
-            {initial?"수정 완료":"등록하기"}
+            {initial?t("board_editDone"):t("board_submit")}
           </button>
         </div>
       </div>

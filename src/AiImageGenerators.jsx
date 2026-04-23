@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { getAuthToken } from "./storage";
+import { useI18n } from "./i18n.jsx";
 
 /* ════════════════════════════════════════════════════════════
    AI 이미지 생성기 모듈
@@ -64,6 +65,7 @@ function TabbedGroup({ isDark, theme, title, subtitle, tabs, defaultTab, renderT
 }
 
 function GenLoading({ emoji, title, subtitle, ACC, isDark }) {
+  const { t: tr } = useI18n();
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const text = isDark ? "#fff" : "#1a1a2e";
   return (
@@ -75,7 +77,7 @@ function GenLoading({ emoji, title, subtitle, ACC, isDark }) {
       </div>
       <div style={{ fontSize:13, color:muted, lineHeight:1.8 }}>{subtitle}</div>
       <div style={{ marginTop:20, display:"flex", gap:8 }}>
-        {["레이아웃 구성","스타일 적용","디테일 추가"].map((t,i)=>(
+        {[tr("aig_layout"),tr("aig_style_apply"),tr("aig_detail_add")].map((t,i)=>(
           <div key={i} style={{ padding:"4px 10px", borderRadius:20, fontSize:11, fontWeight:600,
             background:`${ACC}18`, color:ACC, border:`1px solid ${ACC}30`,
             animation:`ai-fadein 0.5s ease ${i*0.3}s both` }}>{t}</div>
@@ -105,6 +107,7 @@ function SelectGroup({ label, options, value, onChange, cols=3, ACC, bdr, muted,
 
 /* ── 모델 생성기 ─────────────────────────────────────────── */
 function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuFn, showPointConfirm }) {
+  const { t } = useI18n();
   const C = useGenColors(isDark);
   const { ACC, bg, card, bdr, text, muted, ibg } = C;
   const [step, setStep] = useState(1);
@@ -162,7 +165,7 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
 
   if (step === 4) return (
     <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", background:bg }}>
-      <GenLoading emoji="" title="모델 이미지 생성 중..." subtitle={"AI가 모델 이미지를 생성하고 있어요\n예상 시간: 15~25초"} ACC={ACC} isDark={isDark} />
+      <GenLoading emoji="" title={t("aig_generating")} subtitle={t("aig_gen_subtitle")} ACC={ACC} isDark={isDark} />
     </div>
   );
 
@@ -171,8 +174,8 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
       <div style={W}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
           <div style={{ width:10, height:10, borderRadius:"50%", background:"#4ade80" }} />
-          <span style={{ fontSize:13, fontWeight:700, color:"#4ade80" }}>생성 완료!</span>
-          <span style={{ fontSize:13, color:muted }}>모델 이미지가 생성되었어요</span>
+          <span style={{ fontSize:13, fontWeight:700, color:"#4ade80" }}>{t("aig_gen_done")}</span>
+          <span style={{ fontSize:13, color:muted }}>{t("aig_gen_done_desc")}</span>
         </div>
         <div style={{ borderRadius:16, overflow:"hidden", border:`1px solid ${bdr}`, marginBottom:20, animation:"ai-fadein 0.5s ease" }}>
           <img src={result} alt="generated model" style={{ width:"100%", display:"block" }} />
@@ -181,11 +184,11 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
           <a href={result} download="model.png" style={{
             flex:1, padding:"13px", borderRadius:12, background:`linear-gradient(135deg,${ACC},#8b5cf6)`,
             color:"#fff", fontSize:14, fontWeight:800, textAlign:"center", textDecoration:"none",
-          }}>⬇ PNG 다운로드</a>
+          }}>{t("aig_download_png")}</a>
           <button onClick={() => { setResult(null); setStep(1); }} style={{
             flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`,
             background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer",
-          }}>🔄 다시 생성하기</button>
+          }}>{t("aig_regen")}</button>
         </div>
         {err && <div style={{ marginTop:12, padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>window.location.href="/pricing"} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
       </div>
@@ -195,46 +198,46 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
   return (
     <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 60px", background:bg }}>
       <div style={W}>
-        <StepBar step={step} total={3} labels={["기본 설정","스타일 설정","참고·생성"]} ACC={ACC} />
+        <StepBar step={step} total={3} labels={[t("aig_basic_setup"),t("aig_style_setup"),t("aig_ref_gen")]} ACC={ACC} />
         {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>window.location.href="/pricing"} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
 
         {step === 1 && (
           <div>
-            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>기본 설정</div>
-            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>모델의 성별, 나이대, 국적을 선택해요.</div>
-            <SelectGroup label="성별" value={gender} onChange={setGender} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={[{v:"female",l:"여자"},{v:"male",l:"남자"},{v:"both",l:"커플"}]} />
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>{t("aig_basic_setup")}</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>{t("aig_basic_desc")}</div>
+            <SelectGroup label={t("aig_gender")} value={gender} onChange={setGender} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"female",l:t("aig_female")},{v:"male",l:t("aig_male")},{v:"both",l:t("aig_couple")}]} />
             <SelectGroup label="나이대" value={age} onChange={setAge} cols={4} ACC={ACC} bdr={bdr} muted={muted} text={text}
               options={[{v:"10대",l:"10대"},{v:"20대",l:"20대"},{v:"30대",l:"30대"},{v:"40대",l:"40대"},{v:"50대",l:"50대+"}]} />
-            <SelectGroup label="국적 / 인종" value={nationality} onChange={setNationality} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={[{v:"한국인",l:"한국인"},{v:"일본인",l:"일본인"},{v:"중국인",l:"중국인"},{v:"서양인",l:"서양인"},{v:"흑인",l:"흑인"},{v:"다양한",l:"다양한"}]} />
+            <SelectGroup label={t("aig_nationality")} value={nationality} onChange={setNationality} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"한국인",l:t("aig_korean")},{v:"일본인",l:t("aig_japanese")},{v:"중국인",l:t("aig_chinese")},{v:"서양인",l:t("aig_western")},{v:"흑인",l:t("aig_black")},{v:"다양한",l:t("aig_diverse")}]} />
             <button onClick={() => setStep(2)} style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900 }}>
-              다음 → 스타일 설정
+              {t("aig_next_style")}
             </button>
           </div>
         )}
 
         {step === 2 && (
           <div>
-            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>스타일 설정</div>
-            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>의상, 배경, 포즈를 선택해요.</div>
-            <SelectGroup label="의상 / 스타일" value={outfit} onChange={setOutfit} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={[{v:"캐주얼",l:"캐주얼"},{v:"비즈니스",l:"비즈니스"},{v:"스트릿",l:"스트릿"},{v:"스포츠",l:"스포츠"},{v:"드레스",l:"드레스"},{v:"한복",l:"한복"},{v:"코트",l:"코트"},{v:"수영복",l:"수영복"}]} />
-            <SelectGroup label="배경" value={bgType} onChange={setBgType} cols={2} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={[{v:"화이트 스튜디오",l:"화이트 스튜디오"},{v:"카페 인테리어",l:"카페"},{v:"도시 거리",l:"도시 거리"},{v:"자연/공원",l:"자연/공원"},{v:"해변",l:"해변"}]} />
-            <SelectGroup label="포즈" value={pose} onChange={setPose} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
-              options={[{v:"정면",l:"정면"},{v:"측면",l:"측면"},{v:"앉기",l:"앉기"},{v:"걷기",l:"걷기"},{v:"자연스러운",l:"자연스러운"}]} />
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>{t("aig_style_setup")}</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>{t("aig_style_desc")}</div>
+            <SelectGroup label={t("aig_outfit")} value={outfit} onChange={setOutfit} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"캐주얼",l:t("aig_casual")},{v:"비즈니스",l:t("aig_business")},{v:"스트릿",l:t("aig_street")},{v:"스포츠",l:t("aig_sports")},{v:"드레스",l:t("aig_dress")},{v:"한복",l:t("aig_hanbok")},{v:"코트",l:t("aig_coat")},{v:"수영복",l:t("aig_swimwear")}]} />
+            <SelectGroup label={t("aig_background")} value={bgType} onChange={setBgType} cols={2} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"화이트 스튜디오",l:t("aig_white_studio")},{v:"카페 인테리어",l:t("aig_cafe")},{v:"도시 거리",l:t("aig_city_street")},{v:"자연/공원",l:t("aig_nature_park")},{v:"해변",l:t("aig_beach")}]} />
+            <SelectGroup label={t("aig_pose")} value={pose} onChange={setPose} cols={3} ACC={ACC} bdr={bdr} muted={muted} text={text}
+              options={[{v:"정면",l:t("aig_front")},{v:"측면",l:t("aig_side")},{v:"앉기",l:t("aig_sitting")},{v:"걷기",l:t("aig_walking")},{v:"자연스러운",l:t("aig_natural")}]} />
             <div style={{ display:"flex", gap:10 }}>
-              <button onClick={() => setStep(1)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>← 이전</button>
-              <button onClick={() => setStep(3)} style={{ flex:2, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900 }}>다음 → 참고 이미지</button>
+              <button onClick={() => setStep(1)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>{t("aig_prev")}</button>
+              <button onClick={() => setStep(3)} style={{ flex:2, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900 }}>{t("aig_next_ref")}</button>
             </div>
           </div>
         )}
 
         {step === 3 && (
           <div>
-            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>참고 이미지 & 생성</div>
-            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>참고 이미지를 추가하거나 직접 프롬프트를 입력할 수 있어요.</div>
+            <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:4 }}>{t("aig_ref_gen")}</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:20 }}>{t("aig_ref_desc")}</div>
 
             {/* 직접 프롬프트 토글 */}
             <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16, padding:"12px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:card }}>
@@ -242,8 +245,8 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
                 <div style={{ position:"absolute", top:2, left: useCustom?20:2, width:18, height:18, borderRadius:"50%", background:"#fff", transition:"left 0.2s" }} />
               </button>
               <div>
-                <div style={{ fontSize:13, fontWeight:700, color:text }}>직접 프롬프트 입력</div>
-                <div style={{ fontSize:11, color:muted }}>설정 대신 영문 프롬프트를 직접 작성해요</div>
+                <div style={{ fontSize:13, fontWeight:700, color:text }}>{t("aig_custom_prompt")}</div>
+                <div style={{ fontSize:11, color:muted }}>{t("aig_custom_prompt_desc")}</div>
               </div>
             </div>
 
@@ -255,17 +258,17 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
               </div>
             ) : (
               <div style={{ padding:"12px 14px", borderRadius:10, border:`1px solid ${bdr}`, background:card, marginBottom:16 }}>
-                <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:6 }}>생성될 프롬프트 미리보기</div>
+                <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:6 }}>{t("aig_preview_prompt")}</div>
                 <div style={{ fontSize:12, color:text, lineHeight:1.6 }}>{buildPrompt()}</div>
               </div>
             )}
 
             {/* 참고 이미지 */}
             <div style={{ marginBottom:20 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>참고 이미지 (선택) – 분위기·스타일 반영</div>
+              <div style={{ fontSize:12, fontWeight:700, color:text, marginBottom:8 }}>{t("aig_ref_image")}</div>
               <label style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 16px", borderRadius:10, border:`1.5px dashed ${refImg?ACC:bdr}`, cursor:"pointer", background:card }}>
                 <span style={{ fontSize:14, fontWeight:700, color:refImg?ACC:muted }}>{refImg?"V":"+"}</span>
-                <span style={{ fontSize:13, color:refImg?ACC:muted }}>{refImg?"참고 이미지 선택됨 (클릭하여 변경)":"이미지 파일 선택하기"}</span>
+                <span style={{ fontSize:13, color:refImg?ACC:muted }}>{refImg?t("aig_ref_selected"):t("aig_ref_select_file")}</span>
                 <input type="file" accept="image/*" onChange={readRef} style={{ display:"none" }} />
               </label>
               {refImg && <div style={{ marginTop:8, borderRadius:8, overflow:"hidden", maxHeight:120 }}><img src={refImg.url} alt="" style={{ width:"100%", objectFit:"cover" }} /></div>}
@@ -274,9 +277,9 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
             {err && <div style={{ padding:"10px 14px", borderRadius:9, background:"rgba(239,68,68,0.1)", color:"#f87171", fontSize:13, marginBottom:14, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>window.location.href="/pricing"} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
 
             <div style={{ display:"flex", gap:10 }}>
-              <button onClick={() => setStep(2)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>← 이전</button>
+              <button onClick={() => setStep(2)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>{t("aig_prev")}</button>
               <button onClick={generate} style={{ flex:2, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900, boxShadow:`0 6px 20px ${ACC}40` }}>
-                모델 이미지 생성 (50P)
+                {t("aig_gen_model")}
               </button>
             </div>
           </div>

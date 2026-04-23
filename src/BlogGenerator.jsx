@@ -12,6 +12,7 @@ import ShareButton from "./ShareButton";
 
 // ── 네이버 자동발행 모달 ──
 function NaverAutoPublishModal({ result, keyword, isDark, onClose }) {
+  const { t } = useI18n();
   const [naverId, setNaverId] = useState("");
   const [naverPw, setNaverPw] = useState("");
   const [downloaded, setDownloaded] = useState(false);
@@ -44,8 +45,8 @@ function NaverAutoPublishModal({ result, keyword, isDark, onClose }) {
   };
 
   const downloadScript = () => {
-    if (!naverId.trim()) return alert("네이버 아이디를 입력해주세요.");
-    if (!naverPw.trim()) return alert("네이버 비밀번호를 입력해주세요.");
+    if (!naverId.trim()) return alert(t("bg_alertNaverId"));
+    if (!naverPw.trim()) return alert(t("bg_alertNaverPw"));
 
     const title = getTitle().replace(/"""/g, "'''");
     const body = cleanContent(result).replace(/"""/g, "'''").slice(0, 10000);
@@ -243,7 +244,7 @@ if __name__ == "__main__":
             <div style={{ width:36, height:36, borderRadius:10, background:green+"15", display:"flex", alignItems:"center", justifyContent:"center" }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={green} strokeWidth="2.5" strokeLinecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
             </div>
-            <span style={{ fontSize:17, fontWeight:800, color:text }}>네이버 블로그 자동발행</span>
+            <span style={{ fontSize:17, fontWeight:800, color:text }}>{t("bg_naverAutoPublish")}</span>
           </div>
           <button onClick={onClose} style={{ background:"none", border:"none", color:muted, fontSize:20, cursor:"pointer", padding:4 }}>x</button>
         </div>
@@ -252,17 +253,17 @@ if __name__ == "__main__":
           <>
             {/* 네이버 계정 입력 */}
             <div style={{ fontSize:13, color:muted, marginBottom:14, lineHeight:1.6 }}>
-              네이버 아이디와 비밀번호를 입력하면 자동 발행 파일이 다운로드됩니다.
-              <br/><span style={{ fontSize:11, color:muted }}>계정 정보는 서버에 저장되지 않으며, 다운로드 파일에만 포함됩니다.</span>
+              {t("bg_naverAutoPublishDesc")}
+              <br/><span style={{ fontSize:11, color:muted }}>{t("bg_naverAutoPublishSafe")}</span>
             </div>
-            <input value={naverId} onChange={e => setNaverId(e.target.value)} placeholder="네이버 아이디"
+            <input value={naverId} onChange={e => setNaverId(e.target.value)} placeholder={t("bg_naverIdPlaceholder")}
               style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${border}`, background:"transparent", color:text, fontSize:14, marginBottom:10, outline:"none", boxSizing:"border-box" }} />
-            <input value={naverPw} onChange={e => setNaverPw(e.target.value)} placeholder="네이버 비밀번호" type="password"
+            <input value={naverPw} onChange={e => setNaverPw(e.target.value)} placeholder={t("bg_naverPwPlaceholder")} type="password"
               onKeyDown={e => e.key === "Enter" && downloadScript()}
               style={{ width:"100%", padding:"12px 14px", borderRadius:10, border:`1.5px solid ${border}`, background:"transparent", color:text, fontSize:14, marginBottom:16, outline:"none", boxSizing:"border-box" }} />
             <button onClick={downloadScript}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", background:`linear-gradient(135deg,${green},#059669)`, color:"#fff", fontSize:15, fontWeight:800, cursor:"pointer" }}>
-              발행 파일 다운로드 (publish.py)
+              {t("bg_downloadPublishFile")}
             </button>
           </>
         ) : (
@@ -272,7 +273,7 @@ if __name__ == "__main__":
               <div style={{ width:52, height:52, borderRadius:"50%", background:green+"15", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 14px" }}>
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke={green} strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
               </div>
-              <div style={{ fontSize:16, fontWeight:800, color:text, marginBottom:8 }}>다운로드 완료!</div>
+              <div style={{ fontSize:16, fontWeight:800, color:text, marginBottom:8 }}>{t("bg_downloadComplete")}</div>
               <div style={{ fontSize:13, color:muted, lineHeight:1.7 }}>
                 다운로드된 <b style={{color:text}}>publish.py</b> 파일을 더블클릭하거나<br/>
                 명령 프롬프트에서 아래 명령어로 실행하세요.
@@ -290,7 +291,7 @@ if __name__ == "__main__":
             </div>
             <button onClick={onClose}
               style={{ width:"100%", padding:"12px", borderRadius:10, border:`1.5px solid ${border}`, background:"transparent", color:text, fontSize:13, fontWeight:700, cursor:"pointer" }}>
-              닫기
+              {t("bg_close")}
             </button>
           </>
         )}
@@ -300,6 +301,7 @@ if __name__ == "__main__":
 }
 // ── 자동화 패널 (exe 앱 스타일 + 설치안내 + 계정확인) ──
 function AutomationPanel({ isDark, text, muted, accent, border, cardBg, user, onLoginRequest }) {
+  const { t } = useI18n();
   const green = "#10b981";
   const [naverId, setNaverId] = useState(() => { try { return localStorage.getItem("makeit_naver_id") || ""; } catch { return ""; } });
   const [naverPw, setNaverPw] = useState(() => { try { return localStorage.getItem("makeit_naver_pw") || ""; } catch { return ""; } });
@@ -334,16 +336,16 @@ function AutomationPanel({ isDark, text, muted, accent, border, cardBg, user, on
   };
 
   const saveAccount = () => {
-    if (!naverId.trim() || !naverPw.trim()) return alert("아이디와 비밀번호를 입력해주세요.");
+    if (!naverId.trim() || !naverPw.trim()) return alert(t("bg_alertIdPw"));
     try { localStorage.setItem("makeit_naver_id", naverId); localStorage.setItem("makeit_naver_pw", naverPw); } catch {}
     setAcctSaved(true); setTimeout(() => setAcctSaved(false), 2000);
   };
 
   const handleStart = async () => {
-    if (!kw.trim()) return alert("주제를 입력해주세요.");
-    if (!naverId.trim() || !naverPw.trim()) return alert("네이버 아이디와 비밀번호를 먼저 저장해주세요.");
+    if (!kw.trim()) return alert(t("bg_alertTopicRequired"));
+    if (!naverId.trim() || !naverPw.trim()) return alert(t("bg_alertNaverIdPwFirst"));
     saveAccount();
-    setStatus("generating"); setProgress("AI가 글을 작성하고 있습니다... (1~2분 소요)"); setResultPreview("");
+    setStatus("generating"); setProgress(t("bg_aiWritingProgress")); setResultPreview("");
     try {
       const { callAI } = await import("./aiClient.js");
       const spMap = { polite_yo:"해요체(~요, ~이에요, ~했어요)", formal:"합니다체(~입니다, ~했습니다)", casual:"반말(~야, ~거든, ~했어)", friendly:"친근한 경험 공유체(~거든요, ~해보세요, ~더라고요)", mixed:"상황에 맞게 존댓말과 반말을 자연스럽게 섞어서" };
@@ -364,7 +366,7 @@ ${extra ? "추가:"+extra : ""}
       setResultPreview(`제목: ${title}\n\n${body.slice(0,500)}...`);
 
       // 발행 서버로 직접 발행 요청
-      setProgress("네이버 블로그에 발행 중... (30초~1분 소요)");
+      setProgress(t("bg_publishingNaver"));
       setLiveSteps([{ step: "Render 서버에 발행 요청 중...", screenshot: null }]);
       const PUBLISH_SERVER = "https://shorts-factory-r33o.onrender.com";
       try {
@@ -385,33 +387,33 @@ ${extra ? "추가:"+extra : ""}
         const pubData = await pubRes.json();
         if (pubData.success) {
           setStatus("done");
-          setProgress("네이버 블로그에 발행 완료!");
-          setLiveSteps([{ step: "발행 성공!", screenshot: null }]);
+          setProgress(t("bg_publishDone"));
+          setLiveSteps([{ step: t("bg_publishSuccess"), screenshot: null }]);
           if (pubData.postUrl) setResultPreview(prev => prev + `\n\n블로그 확인: ${pubData.postUrl}`);
         } else {
           setStatus("error");
-          const errMsg = pubData.error || "발행 실패";
+          const errMsg = pubData.error || t("bg_publishFail");
           const isCaptcha = errMsg.includes("캡차") || errMsg.includes("인증") || errMsg.includes("로그인 실패");
           setProgress(isCaptcha
-            ? "네이버 보안 인증(캡차)이 필요합니다."
+            ? t("bg_captchaRequired")
             : errMsg);
           setLiveSteps(isCaptcha ? [
-            { step: "네이버 보안 인증(캡차)으로 자동 로그인이 차단되었습니다.", screenshot: null },
-            { step: "해결 방법: 네이버(naver.com)에 직접 로그인 후 다시 시도하면 캡차가 줄어듭니다.", screenshot: null },
-            { step: "또는 잠시 후(10~30분) 다시 시도해주세요.", screenshot: null },
+            { step: t("bg_captchaBlocked"), screenshot: null },
+            { step: t("bg_captchaTip"), screenshot: null },
+            { step: t("bg_captchaWait"), screenshot: null },
           ] : [{ step: errMsg, screenshot: null }]);
         }
       } catch (pubErr) {
         setStatus("error");
-        setProgress("발행 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
+        setProgress(t("bg_serverConnFail"));
         setLiveSteps([]);
       }
     } catch(e) {
-      const msg = e.message || "알 수 없는 오류";
+      const msg = e.message || t("bg_unknownError");
       if (msg.includes("role") || msg.includes("null") || msg.includes("로그인")) {
-        setStatus("error"); setProgress("메이킷 로그인이 필요합니다. 우측 상단에서 먼저 로그인해주세요.");
+        setStatus("error"); setProgress(t("bg_loginRequired"));
       } else {
-        setStatus("error"); setProgress("실패: " + msg);
+        setStatus("error"); setProgress(t("bg_failPrefix") + msg);
       }
     }
   };
@@ -425,7 +427,7 @@ ${extra ? "추가:"+extra : ""}
           style={{ width:"100%", padding:"16px 20px", background:"transparent", border:"none", cursor:"pointer",
             display:"flex", alignItems:"center", gap:10, color:text, fontSize:15, fontWeight:800, textAlign:"left" }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="#f59e0b" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span>처음 사용하시나요? 반드시 읽어주세요!</span>
+          <span>{t("bg_firstTimeGuide")}</span>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2.5" strokeLinecap="round" style={{marginLeft:"auto",transform:showSetup?"rotate(180deg)":"none",transition:"transform 0.2s"}}><path d="M6 9l6 6 6-6"/></svg>
         </button>
         {showSetup && (
@@ -440,7 +442,7 @@ ${extra ? "추가:"+extra : ""}
             <div style={{ marginBottom:16, padding:"16px 18px", borderRadius:12, background:isDark?"rgba(255,255,255,0.03)":"#fff", border:`1px solid ${border}` }}>
               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
                 <span style={{ width:28, height:28, borderRadius:"50%", background:green, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:900 }}>1</span>
-                <span style={{ fontSize:15, fontWeight:800, color:text }}>Python(파이썬) 설치</span>
+                <span style={{ fontSize:15, fontWeight:800, color:text }}>{t("bg_pythonInstall")}</span>
               </div>
               <div style={{ fontSize:13, color:muted, lineHeight:1.8, marginBottom:12 }}>
                 1. 아래 버튼을 클릭해서 Python 공식 사이트에 접속하세요.<br/>
@@ -451,7 +453,7 @@ ${extra ? "추가:"+extra : ""}
               </div>
               <a href="https://www.python.org/downloads/" target="_blank" rel="noopener noreferrer"
                 style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"10px 20px", borderRadius:10, background:accent, color:"#fff", fontSize:13, fontWeight:700, textDecoration:"none" }}>
-                Python 다운로드 페이지 열기
+                {t("bg_pythonDownload")}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
               </a>
             </div>
@@ -460,7 +462,7 @@ ${extra ? "추가:"+extra : ""}
             <div style={{ marginBottom:16, padding:"16px 18px", borderRadius:12, background:isDark?"rgba(255,255,255,0.03)":"#fff", border:`1px solid ${border}` }}>
               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
                 <span style={{ width:28, height:28, borderRadius:"50%", background:green, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:900 }}>2</span>
-                <span style={{ fontSize:15, fontWeight:800, color:text }}>자동화 도구 설치</span>
+                <span style={{ fontSize:15, fontWeight:800, color:text }}>{t("bg_autoToolInstall")}</span>
               </div>
               <div style={{ fontSize:13, color:muted, lineHeight:1.8, marginBottom:12 }}>
                 <b style={{color:text}}>명령 프롬프트</b>라는 검은 창을 열어야 합니다:<br/>
@@ -480,7 +482,7 @@ ${extra ? "추가:"+extra : ""}
             <div style={{ marginBottom:16, padding:"16px 18px", borderRadius:12, background:isDark?"rgba(255,255,255,0.03)":"#fff", border:`1px solid ${border}` }}>
               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
                 <span style={{ width:28, height:28, borderRadius:"50%", background:green, color:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:13, fontWeight:900 }}>3</span>
-                <span style={{ fontSize:15, fontWeight:800, color:text }}>브라우저 다운로드</span>
+                <span style={{ fontSize:15, fontWeight:800, color:text }}>{t("bg_browserDownload")}</span>
               </div>
               <div style={{ fontSize:13, color:muted, lineHeight:1.8, marginBottom:12 }}>
                 같은 검은 창에서 아래 명령어를 복사 → 붙여넣기 → Enter<br/>
@@ -494,14 +496,14 @@ ${extra ? "추가:"+extra : ""}
 
             {/* 완료/도움 안내 */}
             <div style={{ padding:"14px 16px", borderRadius:10, background:isDark?"rgba(16,185,129,0.06)":"#f0fdf4", border:"1px solid rgba(16,185,129,0.15)", marginBottom:12 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:green, marginBottom:4 }}>3단계 모두 완료했으면 준비 끝!</div>
-              <div style={{ fontSize:12, color:muted }}>아래에서 바로 자동 발행을 시작할 수 있습니다.</div>
+              <div style={{ fontSize:13, fontWeight:700, color:green, marginBottom:4 }}>{t("bg_setupAllDone")}</div>
+              <div style={{ fontSize:12, color:muted }}>{t("bg_setupReady")}</div>
             </div>
 
             <div style={{ padding:"14px 16px", borderRadius:10, background:isDark?"rgba(239,68,68,0.06)":"#fef2f2", border:"1px solid rgba(239,68,68,0.12)" }}>
               <div style={{ fontSize:13, fontWeight:700, color:"#ef4444", marginBottom:6, display:"flex", alignItems:"center", gap:6 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                설치가 어려우신가요?
+                {t("bg_setupDifficult")}
               </div>
               <div style={{ fontSize:12, color:muted, lineHeight:1.7 }}>
                 설치 과정이 어렵거나 오류가 발생하면 <b style={{color:text}}>원격 지원</b>을 요청해주세요.<br/>
@@ -509,7 +511,7 @@ ${extra ? "추가:"+extra : ""}
               </div>
               <a href="https://snsmakeit.com/contact" target="_blank" rel="noopener noreferrer"
                 style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:8, padding:"8px 16px", borderRadius:8, background:"#ef4444", color:"#fff", fontSize:12, fontWeight:700, textDecoration:"none" }}>
-                원격 지원 요청하기
+                {t("bg_remoteSupport")}
               </a>
             </div>
           </div>
@@ -520,28 +522,28 @@ ${extra ? "추가:"+extra : ""}
       <div style={{ padding:"18px 20px", borderRadius:14, background:isDark?"rgba(16,185,129,0.05)":"#f7fdf9", border:`1px solid ${green}22`, marginBottom:16 }}>
         <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12, display:"flex", alignItems:"center", gap:8 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={green} strokeWidth="2.5" strokeLinecap="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          네이버 계정 설정
+          {t("bg_naverAccountSetting")}
           {loginConfirmed && (
             <button onClick={() => {
               try { localStorage.removeItem("makeit_naver_id"); localStorage.removeItem("makeit_naver_pw"); } catch {}
               setNaverId(""); setNaverPw(""); setLoginConfirmed(false); setLiveSteps([]); setBlogCategories([]); setStatus("idle"); setResultPreview("");
             }}
               style={{ marginLeft:"auto", padding:"4px 12px", borderRadius:6, border:`1px solid #ef4444`, background:"transparent", color:"#ef4444", fontSize:11, fontWeight:600, cursor:"pointer" }}>
-              계정 해제
+              {t("bg_accountRelease")}
             </button>
           )}
         </div>
         <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-          <input value={naverId} onChange={e=>setNaverId(e.target.value)} placeholder="네이버 아이디"
+          <input value={naverId} onChange={e=>setNaverId(e.target.value)} placeholder={t("bg_naverIdPlaceholder")}
             style={{ flex:1, padding:"11px 14px", borderRadius:10, border:`1px solid ${border}`, background:"transparent", color:text, fontSize:13, outline:"none" }} />
-          <input value={naverPw} onChange={e=>setNaverPw(e.target.value)} placeholder="비밀번호" type="password"
+          <input value={naverPw} onChange={e=>setNaverPw(e.target.value)} placeholder={t("bg_pwPlaceholder")} type="password"
             style={{ flex:1, padding:"11px 14px", borderRadius:10, border:`1px solid ${border}`, background:"transparent", color:text, fontSize:13, outline:"none" }} />
           <button onClick={saveAccount}
             style={{ padding:"11px 14px", borderRadius:10, border:"none", background: acctSaved ? green : accent, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, transition:"all 0.2s" }}>
-            {acctSaved ? "저장됨" : "저장"}
+            {acctSaved ? t("bg_saved") : t("save")}
           </button>
           <button onClick={async () => {
-            if (!naverId.trim() || !naverPw.trim()) return alert("아이디와 비밀번호를 입력해주세요.");
+            if (!naverId.trim() || !naverPw.trim()) return alert(t("bg_alertIdPw"));
             saveAccount();
             setLoginChecking(true);
             try {
@@ -549,18 +551,18 @@ ${extra ? "추가:"+extra : ""}
               const d = await r.json();
               if (d.status === "ok") {
                 onLoginSuccess();
-                setLiveSteps([{ step: "서버 연결 확인 완료! 계정 저장됨.", screenshot: null }]);
+                setLiveSteps([{ step: t("bg_serverConnOk"), screenshot: null }]);
               }
             } catch {
-              setLiveSteps([{ step: "발행 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.", screenshot: null }]);
+              setLiveSteps([{ step: t("bg_serverConnFail"), screenshot: null }]);
             }
             setLoginChecking(false);
           }} disabled={loginChecking}
             style={{ padding:"11px 14px", borderRadius:10, border:`1px solid ${green}`, background:loginChecking?green+"15":"transparent", color:green, fontSize:12, fontWeight:700, cursor:loginChecking?"wait":"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
-            {loginChecking ? "확인 중..." : "연결 확인"}
+            {loginChecking ? t("bg_checking") : t("bg_connCheck")}
           </button>
         </div>
-        <div style={{ fontSize:11, color:muted }}>저장 후 "로그인 확인"을 클릭하면 네이버 로그인이 검증됩니다.</div>
+        <div style={{ fontSize:11, color:muted }}>{t("bg_connCheckDesc")}</div>
       </div>
 
       {/* ── 실시간 스크린샷 뷰어 (글 설정 위에) ── */}
@@ -568,7 +570,7 @@ ${extra ? "추가:"+extra : ""}
         <div style={{ marginBottom:16, padding:"18px 20px", borderRadius:14, background:cardBg, border:`1px solid ${loginConfirmed ? green+"40" : border}` }}>
           <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:12, display:"flex", alignItems:"center", gap:8 }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={green} strokeWidth="2.5" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            네이버 자동화 진행 상황
+            {t("bg_naverAutoProgress")}
             {(loginChecking) && <div style={{ width:12, height:12, borderRadius:"50%", border:"2px solid "+green+"40", borderTopColor:green, animation:"spin 0.8s linear infinite", marginLeft:4 }} />}
             {!loginChecking && !pendingSession && <button onClick={() => { setLiveSteps([]); }} style={{ marginLeft:"auto", background:"none", border:"none", color:muted, fontSize:14, cursor:"pointer" }}>x</button>}
           </div>
@@ -591,7 +593,7 @@ ${extra ? "추가:"+extra : ""}
                 onClick={() => setZoomScreenshot(latestShot)}>
                 <img src={`data:image/jpeg;base64,${latestShot}`} alt="진행 상황" style={{ width:"100%", display:"block" }} />
                 <div style={{ position:"absolute", bottom:8, right:8, padding:"4px 10px", borderRadius:6, background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:11, fontWeight:600 }}>
-                  클릭하면 크게 보기
+                  {t("bg_clickToEnlarge")}
                 </div>
               </div>
             );
@@ -600,10 +602,10 @@ ${extra ? "추가:"+extra : ""}
           {pendingSession && (
             <div style={{ marginTop:12, padding:"14px 16px", borderRadius:10, background:isDark?"rgba(245,158,11,0.08)":"#fffbeb", border:"1px solid rgba(245,158,11,0.2)" }}>
               <div style={{ fontSize:14, fontWeight:700, color:"#d97706", marginBottom:8 }}>{pendingSession.hint}</div>
-              <div style={{ fontSize:12, color:muted, marginBottom:8 }}>위 화면에 보이는 문자 또는 인증 코드를 입력해주세요.</div>
+              <div style={{ fontSize:12, color:muted, marginBottom:8 }}>{t("bg_captchaHint")}</div>
               <div style={{ display:"flex", gap:8 }}>
                 <input value={captchaInput} onChange={e => setCaptchaInput(e.target.value)}
-                  placeholder="인증 문자 입력"
+                  placeholder={t("bg_captchaInputPlaceholder")}
                   onKeyDown={async e => {
                     if (e.key !== "Enter" || !captchaInput.trim()) return;
                     setLoginChecking(true);
@@ -612,7 +614,7 @@ ${extra ? "추가:"+extra : ""}
                       const d = await r.json();
                       if (d.steps) setLiveSteps(prev => [...prev, ...d.steps]);
                       if (d.loggedIn) { setPendingSession(null); setCaptchaInput(""); onLoginSuccess(); }
-                      else if (d.needInput) setPendingSession({ ...pendingSession, hint: "다시 입력해주세요" });
+                      else if (d.needInput) setPendingSession({ ...pendingSession, hint: t("bg_retryInput") });
                       else setPendingSession(null);
                     } catch {}
                     setLoginChecking(false);
@@ -632,7 +634,7 @@ ${extra ? "추가:"+extra : ""}
                   setLoginChecking(false);
                 }}
                   style={{ padding:"12px 24px", borderRadius:8, border:"none", background:loginChecking?"#92400e":"#d97706", color:"#fff", fontSize:14, fontWeight:700, cursor:loginChecking?"wait":"pointer", flexShrink:0, display:"flex", alignItems:"center", gap:6 }}>
-                  {loginChecking ? <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>진행 중...</> : "확인"}
+                  {loginChecking ? <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>{t("bg_inProgress")}</> : t("confirm")}
                 </button>
               </div>
             </div>
@@ -643,7 +645,7 @@ ${extra ? "추가:"+extra : ""}
       {/* 로그인 미완료 안내 */}
       {!loginConfirmed && !loginChecking && liveSteps.length === 0 && (
         <div style={{ marginBottom:16, padding:"16px 20px", borderRadius:12, background:isDark?"rgba(245,158,11,0.06)":"#fffbeb", border:"1px solid rgba(245,158,11,0.15)", textAlign:"center" }}>
-          <div style={{ fontSize:13, color:"#d97706", fontWeight:600 }}>네이버 계정을 입력하고 "로그인 확인"을 먼저 진행해주세요.</div>
+          <div style={{ fontSize:13, color:"#d97706", fontWeight:600 }}>{t("bg_naverAccountFirst")}</div>
         </div>
       )}
 
@@ -652,33 +654,33 @@ ${extra ? "추가:"+extra : ""}
       <div style={{ padding:"18px 20px", borderRadius:14, background:cardBg, border:`1px solid ${border}`, marginBottom:16 }}>
         <div style={{ fontSize:14, fontWeight:800, color:text, marginBottom:14, display:"flex", alignItems:"center", gap:8 }}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>
-          글 설정
+          {t("bg_postSettings")}
         </div>
 
         {/* 주제 입력 */}
-        <input value={kw} onChange={e=>setKw(e.target.value)} placeholder="블로그 글 주제를 입력하세요 (예: 인스타그램 팔로워 늘리는 법)"
+        <input value={kw} onChange={e=>setKw(e.target.value)} placeholder={t("bg_topicPlaceholder")}
           style={{ width:"100%", padding:"14px 16px", borderRadius:12, border:`1.5px solid ${border}`, background:"transparent", color:text, fontSize:15, outline:"none", boxSizing:"border-box", marginBottom:14 }} />
 
         {/* 칩 설정 */}
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
           <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-            <span style={{ fontSize:12, color:muted, fontWeight:600, width:44 }}>유형</span>
-            {[{v:"info",l:"정보성"},{v:"visit",l:"방문기"},{v:"review",l:"리뷰"},{v:"product",l:"제품"},{v:"column",l:"칼럼"}].map(o=>
+            <span style={{ fontSize:12, color:muted, fontWeight:600, width:44 }}>{t("bg_chipType")}</span>
+            {[{v:"info",l:t("bg_typeInfo")},{v:"visit",l:t("bg_typeVisit")},{v:"review",l:t("bg_typeReview")},{v:"product",l:t("bg_typeProduct")},{v:"column",l:t("bg_typeColumn")}].map(o=>
               <button key={o.v} onClick={()=>setSub(o.v)} style={chip(subtype===o.v, green)}>{o.l}</button>)}
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-            <span style={{ fontSize:12, color:muted, fontWeight:600, width:44 }}>톤</span>
-            {[{v:"friendly",l:"친근"},{v:"diary",l:"일기체"},{v:"review",l:"후기"},{v:"professional",l:"전문적"}].map(o=>
+            <span style={{ fontSize:12, color:muted, fontWeight:600, width:44 }}>{t("bg_chipTone")}</span>
+            {[{v:"friendly",l:t("bg_toneFriendly")},{v:"diary",l:t("bg_toneDiary")},{v:"review",l:t("bg_toneReview")},{v:"professional",l:t("bg_toneProfessional")}].map(o=>
               <button key={o.v} onClick={()=>setTone(o.v)} style={chip(tone===o.v, "#ec4899")}>{o.l}</button>)}
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-            <span style={{ fontSize:12, color:muted, fontWeight:600, width:44 }}>말투</span>
-            {[{v:"polite_yo",l:"~요 체"},{v:"formal",l:"~합니다"},{v:"friendly",l:"~거든요"},{v:"casual",l:"반말"},{v:"mixed",l:"혼합"}].map(o=>
+            <span style={{ fontSize:12, color:muted, fontWeight:600, width:44 }}>{t("bg_chipSpeech")}</span>
+            {[{v:"polite_yo",l:t("bg_speechPolite")},{v:"formal",l:t("bg_speechFormal")},{v:"friendly",l:t("bg_speechFriendly")},{v:"casual",l:t("bg_speechCasual")},{v:"mixed",l:t("bg_speechMixed")}].map(o=>
               <button key={o.v} onClick={()=>setSp(o.v)} style={chip(speech===o.v, accent)}>{o.l}</button>)}
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-            <span style={{ fontSize:12, color:muted, fontWeight:600, width:44 }}>분량</span>
-            {[{v:"short",l:"짧게 (3천자)"},{v:"medium",l:"보통 (5천자)"},{v:"long",l:"길게 (7천자)"}].map(o=>
+            <span style={{ fontSize:12, color:muted, fontWeight:600, width:44 }}>{t("bg_chipVolume")}</span>
+            {[{v:"short",l:t("bg_volumeShort")},{v:"medium",l:t("bg_volumeMedium")},{v:"long",l:t("bg_volumeLong")}].map(o=>
               <button key={o.v} onClick={()=>setWc(o.v)} style={chip(wordCount===o.v, "#f59e0b")}>{o.l}</button>)}
           </div>
         </div>
@@ -687,16 +689,16 @@ ${extra ? "추가:"+extra : ""}
         {/* 카테고리 선택 */}
         {blogCategories.length > 0 && (
           <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:12, flexWrap:"wrap" }}>
-            <span style={{ fontSize:12, color:muted, fontWeight:600, width:44 }}>카테고리</span>
+            <span style={{ fontSize:12, color:muted, fontWeight:600, width:44 }}>{t("bg_categoryLabel")}</span>
             <select value={selectedCategory} onChange={e=>setSelectedCategory(e.target.value)}
               style={{ flex:1, padding:"8px 12px", borderRadius:8, border:`1px solid ${border}`, background:"transparent", color:text, fontSize:12, outline:"none", maxWidth:200 }}>
-              <option value="">선택 안함</option>
+              <option value="">{t("bg_categoryNone")}</option>
               {blogCategories.map((c,i) => <option key={i} value={c.name}>{c.name}</option>)}
             </select>
           </div>
         )}
 
-        <input value={extra} onChange={e=>setExtra(e.target.value)} placeholder="추가 요청사항 (선택)"
+        <input value={extra} onChange={e=>setExtra(e.target.value)} placeholder={t("bg_extraPlaceholder")}
           style={{ width:"100%", padding:"10px 14px", borderRadius:10, border:`1px solid ${border}`, background:"transparent", color:text, fontSize:12, outline:"none", boxSizing:"border-box", marginTop:12 }} />
       </div>
 
@@ -707,8 +709,8 @@ ${extra ? "추가:"+extra : ""}
           color:"#fff", fontSize:17, fontWeight:800, cursor: status==="generating"?"not-allowed":"pointer",
           display:"flex", alignItems:"center", justifyContent:"center", gap:10, boxShadow: status==="generating" ? "none" : `0 4px 16px rgba(16,185,129,0.3)` }}>
         {status==="generating"
-          ? <><div style={{ width:18, height:18, border:"2.5px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", borderRadius:"50%", animation:"spin 0.8s linear infinite" }}/>AI 글 생성 중...</>
-          : <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>AI 글 생성 + 네이버 자동 발행</>}
+          ? <><div style={{ width:18, height:18, border:"2.5px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", borderRadius:"50%", animation:"spin 0.8s linear infinite" }}/>{t("bg_aiGenInProgress")}</>
+          : <><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg>{t("bg_aiGenPublish")}</>}
       </button>
 
       {/* ── 5. 상태 + 결과 미리보기 ── */}
@@ -734,11 +736,11 @@ ${extra ? "추가:"+extra : ""}
               )}
               <div style={{ display:"flex", gap:8, marginTop:4 }}>
                 <button onClick={()=>{ setStatus("idle"); setKw(""); setResultPreview(""); setLiveSteps([]); }} style={{ padding:"10px 20px", borderRadius:10, border:`1.5px solid ${green}`, background:"transparent", color:green, fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                  다른 주제로 다시 생성
+                  {t("bg_anotherTopic")}
                 </button>
                 <a href={`https://blog.naver.com/${(naverId||"").replace(/@.*$/,"")}`} target="_blank" rel="noopener noreferrer"
                   style={{ padding:"10px 20px", borderRadius:10, border:"none", background:green, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", textDecoration:"none", display:"flex", alignItems:"center", gap:6 }}>
-                  내 블로그 확인하기
+                  {t("bg_checkMyBlog")}
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
                 </a>
               </div>
@@ -746,7 +748,7 @@ ${extra ? "추가:"+extra : ""}
           )}
           {status==="error" && (
             <button onClick={()=>setStatus("idle")} style={{ marginTop:10, padding:"8px 16px", borderRadius:8, border:`1px solid ${border}`, background:"transparent", color:text, fontSize:12, fontWeight:600, cursor:"pointer" }}>
-              다시 시도
+              {t("bg_retryBtn")}
             </button>
           )}
         </div>
@@ -760,7 +762,7 @@ ${extra ? "추가:"+extra : ""}
           <img src={`data:image/jpeg;base64,${zoomScreenshot}`} alt="확대 보기"
             style={{ maxWidth:"95vw", maxHeight:"90vh", borderRadius:12, boxShadow:"0 20px 60px rgba(0,0,0,0.5)" }} />
           <div style={{ position:"absolute", top:20, right:20, color:"#fff", fontSize:14, fontWeight:600, background:"rgba(255,255,255,0.15)", padding:"8px 16px", borderRadius:8 }}>
-            클릭하면 닫힘
+            {t("bg_clickToClose")}
           </div>
         </div>
       )}
@@ -1004,9 +1006,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       } else if (d.base64) {
         setAiImgUrl(`data:image/png;base64,${d.base64}`);
       } else {
-        alert("이미지 생성 실패");
+        alert(t("bg_imgGenFailAlert"));
       }
-    } catch (e) { alert("이미지 생성 실패: " + e.message); }
+    } catch (e) { alert(t("bg_imgGenFailAlert") + ": " + e.message); }
     setAiImgLoading(false);
   };
 
@@ -1042,6 +1044,13 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [shortsMode, setShortsMode] = useState(!!initialVideoMode || false); // 영상 모드 (선택 화면 표시)
   const [videoSubMode, setVideoSubMode] = useState(initialVideoMode || null); // null(선택) | "shortform" | "longform"
   const [shortsYtUrl, setShortsYtUrl] = useState("");
+
+  // ── 디자인(카드뉴스) 모드 상태 ──
+  const [designSlides, setDesignSlides] = useState(null); // AI 생성된 슬라이드 배열
+  const [designLoading, setDesignLoading] = useState(false);
+  const [showLibraryPicker, setShowLibraryPicker] = useState(false);
+  const [designStep, setDesignStep] = useState("input"); // "input" | "preview" | "editor"
+  const UnifiedCanvasEditorLazy = React.lazy(() => import("./UnifiedCanvasEditor"));
 
   const [showAdvanced, setShowAdvanced] = useState(true);
   const [advTone,      setAdvTone]      = useState(""); // 글 분위기
@@ -1223,6 +1232,64 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const exhausted = isGuest ? (_used >= _lim) : (_pts < 30);
     return { used: _used, limit: _lim, points: _pts, exhausted, isGuest };
   };
+  // ── 카드뉴스 생성 함수 ──
+  const generateCardNews = async () => {
+    const content = (fields.keyword || "").trim();
+    if (!content) return;
+    // 포인트/횟수 체크
+    const usage = _getUsageState();
+    if (usage.exhausted) {
+      setError(usage.isGuest ? "무료 횟수를 모두 사용했습니다. 로그인 후 이용해주세요." : "포인트가 부족합니다. 충전 후 이용해주세요.");
+      return;
+    }
+    if (user && showPointConfirm) {
+      const ok = await showPointConfirm(30);
+      if (!ok) return;
+    }
+    setDesignLoading(true); setDesignSlides(null); setDesignStep("input"); setError("");
+    try {
+      const sysMsg = `인스타그램 카드뉴스 전문 카피라이터.
+주어진 글 내용을 분석하여 핵심 메시지를 추출하고 카드뉴스 슬라이드로 재구성하세요.
+내용 길이와 핵심 포인트 수에 따라 적절한 슬라이드 수(4~10장)를 자동으로 결정하세요.
+첫 번째 슬라이드는 눈길을 끄는 표지(커버)로 만드세요.
+마지막 슬라이드는 핵심 요약 또는 CTA(행동 유도)로 마무리하세요.
+각 슬라이드의 title은 짧고 임팩트 있게 (15자 이내), body는 핵심만 2-3줄로 작성하세요.
+반드시 JSON만 반환하세요.
+형식:{"slides":[{"title":"제목","subtitle":"부제목","body":"본문 (2-3줄)","highlight":"핵심문구"}]}`;
+      const userMsg = `다음 내용을 카드뉴스로 만들어줘 (슬라이드 수는 내용에 맞게 자동 결정):\n\n${content.slice(0, 6000)}`;
+      const text = await callAI("claude-haiku-4-5", [{role:"user",content:userMsg}], 4000, sysMsg);
+      if (!text) throw new Error("AI 응답 없음");
+      const clean = text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();
+      const parsed = JSON.parse(clean);
+      const slides = (parsed.slides || []).map(s => ({
+        title: s.title || "",
+        subtitle: s.subtitle || "",
+        body: s.body || "",
+        highlight: s.highlight || "",
+        bgColor: "#1c1c1e",
+        textColor: "#ffffff",
+        fontSize: 42,
+        fontFamily: "Pretendard",
+      }));
+      setDesignSlides(slides);
+      setDesignStep("preview");
+      // 포인트 차감
+      if (user && user.uid) {
+        const { changePoints: cp, setLocalUser } = await import("./storage.js");
+        const newPts = await cp(user.uid, -30, "카드뉴스 생성");
+        const newUser = { ...user, points: newPts };
+        setLocalUser(newUser);
+        if (onUserUpdate) onUserUpdate(newUser);
+      } else {
+        incrementGuestUsage();
+      }
+    } catch (e) {
+      setError("카드뉴스 생성 오류: " + (e.message || e));
+    } finally {
+      setDesignLoading(false);
+    }
+  };
+
   const handleGenerateClick = () => {
     if (mode === "write") {
       if (result && !loading) {
@@ -1232,6 +1299,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       }
     } else if (mode === "image") {
       generateImage();
+    } else if (mode === "design") {
+      generateCardNews();
     }
   };
 
@@ -1273,8 +1342,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       // keyword = title, extra = description + content
       if (data.title) setField("keyword", data.title.slice(0, 80));
       const desc = [data.description, data.content].filter(Boolean).join(" ").slice(0, 200);
-      if (desc) setField("extra", (fields.extra ? fields.extra + "\n" : "") + "참고 내용: " + desc);
-    } catch(e) { alert("URL 불러오기 실패: " + e.message); }
+      if (desc) setField("extra", (fields.extra ? fields.extra + "\n" : "") + t("bg_referenceContent") + desc);
+    } catch(e) { alert(t("bg_urlFetchFail") + e.message); }
     setUrlLoading(false);
   };
 
@@ -1313,7 +1382,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         setField("keyword", fallback);
         fields.keyword = fallback;
       } else {
-        setError("주제를 입력해주세요."); return;
+        setError(t("bg_topicRequired")); return;
       }
     }
     if (!user && guestLimitExceeded()) return;
@@ -1325,7 +1394,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const _aiPoints = user ? (user.points || 0) : 0;
     // 회원: 포인트 부족 시 차단
     if (user && _aiPoints < 30) {
-      setError("포인트가 부족합니다. 구독 후 이용해주세요.");
+      setError(t("bg_pointsLow"));
       return;
     }
     // 회원: 포인트 차감 확인
@@ -1338,7 +1407,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     try { sessionStorage.setItem(_ssStartTimeKey, String(_startTime)); } catch {}
     setGenStep(1); // 자료 조사
     // 백그라운드 작업 표시기 등록 (메뉴 이동 시 진행 상태 표시)
-    window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "blog_gen_" + (initialType || "blog"), type: initialType || "blog_write", message: "글 작성 중..." } } }));
+    window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "blog_gen_" + (initialType || "blog"), type: initialType || "blog_write", message: t("bg_taskWriting") } } }));
 
     // 회원: 항상 30P 즉시 차감
     if (user && user.uid) {
@@ -1423,7 +1492,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         setResult(finalText);
         if (isTistory) setHtmlResult(mdToHtml(fullText));
       } else {
-        setError("글 생성에 실패했습니다. 다시 시도해주세요.");
+        setError(t("bg_genFailed"));
       }
     } catch(e) {
       if (_savedFull && _savedFull.length > 50) {
@@ -1434,7 +1503,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
         setResult(finalText2);
         if (isTistory) setHtmlResult(mdToHtml(_savedFull));
       } else {
-        setError((e.message || "생성 중 오류") + " 다시 시도해주세요.");
+        setError((e.message || t("bg_genError")) + " " + t("bg_retryPlease"));
       }
     }
     } finally {
@@ -1443,7 +1512,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       setGenStep(5); // all completed
       setLoading(false);
       // 백그라운드 작업 표시기 완료
-      window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "blog_gen_" + (initialType || "blog"), type: initialType || "blog_write", message: "글 작성 완료!" } } }));
+      window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "blog_gen_" + (initialType || "blog"), type: initialType || "blog_write", message: t("bg_taskWriteDone") } } }));
       if (user) { // 회원만 finally에서 횟수 증가 (비회원은 generate 시작 시점에 이미 처리)
         const _u2 = getAiUsage();
         const _k2 = "member_" + (user.uid || "u");
@@ -1460,7 +1529,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       if (_savedFull && _savedFull.length > 50) {
         try {
           let _saves = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
-          let _title = fields.keyword || "제목 없음";
+          let _title = fields.keyword || t("bg_noTitle");
           let _newSave = { id: Date.now().toString(), type: subtype, title: _title,
             content: cleanText(_savedFull), date: new Date().toLocaleDateString("ko-KR") };
           _saves.unshift(_newSave);
@@ -1472,12 +1541,12 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
   // ── 이미지 생성 (mode === "image") ──
   const generateImage = async () => {
-    if (!fields.keyword?.trim()) { setError("프롬프트를 입력해주세요."); return; }
+    if (!fields.keyword?.trim()) { setError(t("bg_promptRequired")); return; }
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (showPointConfirm && !(await showPointConfirm(50))) return;
 
     const _aiPoints = user ? (user.points || 0) : 0;
-    if (_aiPoints < 50) { setError("포인트가 부족합니다. 충전 후 이용해주세요."); return; }
+    if (_aiPoints < 50) { setError(t("bg_pointsLowCharge")); return; }
 
     setError(""); setLoading(true); setImageResult(null);
     genStartTimeRef.current = Date.now();
@@ -1509,10 +1578,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
           if (onUserUpdate) onUserUpdate({...user, points: newPts});
         });
       } else {
-        setError("이미지 생성에 실패했습니다. 다시 시도해주세요.");
+        setError(t("bg_imgGenFailed"));
       }
     } catch(e) {
-      setError("이미지 생성 중 오류: " + (e.message || "다시 시도해주세요."));
+      setError(t("bg_imgGenError") + (e.message || t("bg_retryPlease")));
     } finally {
       setLoading(false);
       genStartTimeRef.current = 0;
@@ -1522,9 +1591,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   // ── 쇼츠 시작 → 인라인 렌더링 ──
   const handleShortsStart = () => {
     const url = detectedYoutubeUrl || fields.keyword?.trim();
-    if (!url) { setError("유튜브 링크를 입력해주세요."); return; }
+    if (!url) { setError(t("bg_ytLinkRequired")); return; }
     const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
-    if (!ytMatch) { setError("올바른 유튜브 링크를 입력해주세요."); return; }
+    if (!ytMatch) { setError(t("bg_ytLinkInvalid")); return; }
     try { sessionStorage.setItem('shorts_yt_url', url); } catch {}
     setShortsYtUrl(url);
     setShortsMode(true);
@@ -1921,30 +1990,30 @@ hospital equipment`
   // ── 이미지 결과 패널 ──
   const renderImageResult = () => {
     if (loading) {
-      return <LoadingAnimation featureType="image_gen" title="AI가 이미지를 생성하고 있어요" subtitle={fields.keyword || "이미지 생성"} isDark={isDark} startTime={genStartTimeRef.current || 0} expectedMs={30000} />;
+      return <LoadingAnimation featureType="image_gen" title={t("bg_aiImgGenTitle")} subtitle={fields.keyword || t("bg_imgGen")} isDark={isDark} startTime={genStartTimeRef.current || 0} expectedMs={30000} />;
     }
     if (!imageResult) return null;
     const imgActionBtn = {padding:"10px 20px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",color:text,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontFamily:"inherit",transition:"all 0.15s"};
     return (
       <div style={{maxWidth:900,margin:"0 auto",width:"100%",padding:"20px"}}>
         <div style={{borderRadius:16,overflow:"hidden",border:`1px solid ${border}`,position:"relative"}}>
-          <img src={imageResult} alt="생성된 이미지" style={{width:"100%",display:"block"}} />
+          <img src={imageResult} alt={t("bg_generatedImg")} style={{width:"100%",display:"block"}} />
           <div style={{position:"absolute",top:12,right:12,display:"flex",gap:8}}>
             <button onClick={()=>{const a=document.createElement("a");a.href=imageResult;a.download="ai-generated-image.png";a.click();}}
               style={{padding:"8px 14px",borderRadius:10,border:"none",background:"rgba(0,0,0,0.72)",color:"#fff",fontSize:13,cursor:"pointer",fontWeight:700,display:"flex",alignItems:"center",gap:6,minHeight:38,fontFamily:"inherit"}}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-              다운로드
+              {t("bg_download")}
             </button>
           </div>
         </div>
         <div style={{display:"flex",gap:8,marginTop:16,justifyContent:"center",flexWrap:"wrap"}}>
           <button onClick={()=>{setImageResult(null);}} style={imgActionBtn}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0115-6.7L21 8M21 3v5h-5M21 12a9 9 0 01-15 6.7L3 16M3 21v-5h5"/></svg>
-            새로 만들기
+            {t("bg_createNew")}
           </button>
           <button onClick={()=>{const a=document.createElement("a");a.href=imageResult;a.download="ai-generated-image.png";a.click();}} style={imgActionBtn}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-            다운로드
+            {t("bg_download")}
           </button>
           <button onClick={async()=>{
             try{
@@ -1958,7 +2027,7 @@ hospital equipment`
             {copied
               ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
               : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>}
-            {copied?"복사됨":"복사"}
+            {copied?t("copyDone"):t("copy")}
           </button>
         </div>
       </div>
@@ -1970,17 +2039,17 @@ hospital equipment`
     // 크레딧/횟수 소진 체크
     const _us = _getUsageState();
     if (!loading && !result && _us.exhausted) {
-      return <PointsExhausted isDark={isDark} isGuest={_us.isGuest} title="블로그 글"
+      return <PointsExhausted isDark={isDark} isGuest={_us.isGuest} title={t("bg_blogPost")}
         onLogin={() => { if(onLoginRequest) onLoginRequest(); }} />;
     }
     // 풀스크린 로딩 오버레이
     if (loading) {
       return (
         <div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative"}}>
-          <LoadingAnimation featureType={initialType || "blog_write"} title="AI가 글을 작성하고 있어요" subtitle={`${fields.keyword || "글 생성"} · ${cfg.title}`} isDark={isDark} startTime={genStartTimeRef.current || 0} expectedMs={wordCount==="xlong"?60000:wordCount==="long"?45000:30000} />
+          <LoadingAnimation featureType={initialType || "blog_write"} title={t("bg_aiWritingTitle")} subtitle={`${fields.keyword || t("generate")} · ${cfg.title}`} isDark={isDark} startTime={genStartTimeRef.current || 0} expectedMs={wordCount==="xlong"?60000:wordCount==="long"?45000:30000} />
           <button onClick={handleCancelGenerate}
             style={{position:"fixed",bottom:40,left:"50%",transform:"translateX(-50%)",zIndex:10000,padding:"12px 32px",borderRadius:12,border:`1px solid ${isDark?"rgba(255,255,255,0.15)":"rgba(0,0,0,0.1)"}`,background:isDark?"rgba(255,255,255,0.08)":"rgba(255,255,255,0.9)",color:isDark?"#fff":"#333",fontSize:14,fontWeight:700,cursor:"pointer",backdropFilter:"blur(8px)",boxShadow:"0 4px 16px rgba(0,0,0,0.15)"}}>
-            취소
+            {t("bg_cancelBtn")}
           </button>
         </div>
       );
@@ -2003,7 +2072,7 @@ hospital equipment`
             <div style={{display:"flex",alignItems:"center",gap:8}}>
               {isTistory && result && ["text","html","preview"].map(mode=>(
                 <button key={mode} onClick={()=>setViewMode(mode)} style={{padding:"8px 14px",borderRadius:10,border:`1.5px solid ${viewMode===mode?accent:border}`,background:viewMode===mode?accentBg:"transparent",color:viewMode===mode?accent:text,fontSize:13,fontWeight:viewMode===mode?800:600,cursor:"pointer",minHeight:36}}>
-                  {mode==="text"?"원문":mode==="html"?"HTML":"미리보기"}
+                  {mode==="text"?t("bg_originalText"):mode==="html"?"HTML":t("bg_previewText")}
                 </button>
               ))}
               {!isTistory&&result&&<span style={{fontSize:15,fontWeight:800,color:text,letterSpacing:-0.3}}>{t("genResult")}</span>}
@@ -2012,11 +2081,11 @@ hospital equipment`
               <div style={{display:"flex",alignItems:"center",gap:10,padding:"8px 14px",borderRadius:12,
                 background:isDark?"rgba(255,255,255,0.05)":"rgba(0,0,0,0.04)",
                 border:`1px solid ${border}`}}>
-                <span style={{fontSize:12,color:muted,fontWeight:600}}>총</span>
+                <span style={{fontSize:12,color:muted,fontWeight:600}}>{t("bg_totalChar")}</span>
                 <span style={{fontSize:14,fontWeight:800,color:accent}}>{result.length.toLocaleString()}</span>
-                <span style={{fontSize:12,color:muted}}>자</span>
+                <span style={{fontSize:12,color:muted}}>{t("bg_charUnit")}</span>
                 <span style={{width:1,height:14,background:border,display:"inline-block"}}/>
-                <span style={{fontSize:12,color:muted,fontWeight:600}}>공백 제외</span>
+                <span style={{fontSize:12,color:muted,fontWeight:600}}>{t("bg_noSpaceLabel")}</span>
                 <span style={{fontSize:14,fontWeight:800,color:text}}>{result.replace(/\s/g,"").length.toLocaleString()}</span>
               </div>
             )}
@@ -2025,7 +2094,7 @@ hospital equipment`
           {result && (
             <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <button onClick={()=>{
-                if (!confirm("현재 작성된 글이 사라집니다. 새로 쓰시겠습니까?")) return;
+                if (!confirm(t("bg_confirmRewrite"))) return;
                 setResult_raw("");setHtmlResult("");setGenStep(0);
                 setError("");setSuggestedImages([]);setInlineImages({});setCopied(false);
                 setTitleSugg([]);setSeoKeys([]);setFields({});setUrlInput("");setUrlResult(null);
@@ -2039,14 +2108,14 @@ hospital equipment`
                   background:"transparent",color:text,fontSize:13,fontWeight:700,cursor:"pointer",
                   display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap",minHeight:42,fontFamily:"inherit"}}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0115-6.7L21 8M21 3v5h-5M21 12a9 9 0 01-15 6.7L3 16M3 21v-5h5"/></svg>
-                새로 쓰기
+                {t("bg_newWrite")}
               </button>
               <button onClick={()=>setShowPromptInput(!showPromptInput)}
                 style={{padding:"10px 18px",borderRadius:11,border:`1.5px solid ${showPromptInput?accent:border}`,
                   background:showPromptInput?accentBg:"transparent",color:showPromptInput?accent:text,fontSize:13,fontWeight:700,cursor:"pointer",
                   display:"flex",alignItems:"center",gap:6,whiteSpace:"nowrap",minHeight:42,fontFamily:"inherit"}}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                수정 요청
+                {t("bg_editRequest")}
               </button>
               <button onClick={()=>handleCopy(isTistory&&viewMode==="html"?htmlResult:result, true)}
                 disabled={copyLoading}
@@ -2057,16 +2126,16 @@ hospital equipment`
                 {copied
                   ? <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                   : <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>}
-                {copyLoading?"복사 중":copied?"복사됨":isMobile?"복사":"복사 (이미지 포함)"}
+                {copyLoading?t("bg_copying"):copied?t("copyDone"):isMobile?t("copy"):t("bg_copyWithImg")}
               </button>
-              {result&&<ShareButton title={fields?.topic||"블로그 글"} text={result?.slice(0,300)} isDark={isDark} compact />}
+              {result&&<ShareButton title={fields?.topic||t("bg_blogPost")} text={result?.slice(0,300)} isDark={isDark} compact />}
             </div>
           )}
           {/* 전체 프롬프트 수정 패널 */}
           {showPromptInput && (
             <div style={{marginTop:12,padding:"14px 16px",borderRadius:14,background:isDark?"rgba(124,106,255,0.06)":"#f8f7ff",border:`1.5px solid ${isDark?"rgba(124,106,255,0.2)":"#e8e5ff"}`,display:"flex",gap:8,alignItems:"flex-start"}}>
               <textarea value={promptText} onChange={e=>setPromptText(e.target.value)}
-                placeholder="수정할 내용을 입력하세요 (예: 사례를 더 추가해줘, 초보자 눈높이로 바꿔줘, 의료기기 종류별로 정리해줘)"
+                placeholder={t("bg_editPlaceholder")}
                 rows={2}
                 onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&promptText.trim()){e.preventDefault();
                   (async()=>{
@@ -2089,7 +2158,7 @@ hospital equipment`
                 setPromptLoading(false);setPromptText("");setShowPromptInput(false);
               }}
                 style={{padding:"10px 18px",borderRadius:10,border:"none",background:promptLoading?"#999":"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,cursor:promptLoading?"wait":"pointer",whiteSpace:"nowrap",minHeight:42,opacity:(!promptText.trim()||promptLoading)?0.5:1}}>
-                {promptLoading?<><div style={{width:12,height:12,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite",display:"inline-block",marginRight:6}}/>수정 중...</>:"적용"}
+                {promptLoading?<><div style={{width:12,height:12,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite",display:"inline-block",marginRight:6}}/>{t("bg_editing")}</>:t("bg_apply")}
               </button>
             </div>
           )}
@@ -2231,9 +2300,9 @@ hospital equipment`
                                 <div style={{position:"absolute",top:"100%",right:0,marginTop:4,background:isDark?"#1e1940":"#fff",borderRadius:10,
                                   boxShadow:"0 4px 20px rgba(0,0,0,0.18)",border:`1px solid ${border}`,padding:6,zIndex:20,display:"flex",flexDirection:"column",gap:3,minWidth:120}}>
                                   {[
-                                    {mode:"rewrite",label:"다시쓰기"},
-                                    {mode:"expand",label:"늘리기"},
-                                    {mode:"shorten",label:"줄이기"},
+                                    {mode:"rewrite",label:t("bg_rewriteLabel")},
+                                    {mode:"expand",label:t("bg_expandLabel")},
+                                    {mode:"shorten",label:t("bg_shortenLabel")},
                                   ].map(o=>(
                                     <button key={o.mode} onClick={async()=>{
                                       setShowSectionMenu(null);
@@ -2264,7 +2333,7 @@ hospital equipment`
                                   boxShadow:"0 4px 20px rgba(0,0,0,0.18)",border:`1px solid ${border}`,padding:10,zIndex:20,width:280}}
                                   onClick={e=>e.stopPropagation()}>
                                   <textarea value={sectionPrompt.text||""} onChange={e=>setSectionPrompt({...sectionPrompt,text:e.target.value})}
-                                    placeholder="이 섹션을 어떻게 수정할까요? (예: 구체적인 예시 추가, 더 쉽게 설명)"
+                                    placeholder={t("bg_sectionEditPlaceholder")}
                                     rows={2} autoFocus
                                     onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey&&sectionPrompt.text?.trim()){e.preventDefault();
                                       (async()=>{
@@ -2327,12 +2396,12 @@ hospital equipment`
                 </div>
               ) : <>
                 {[
-                  {mode:"rewrite",label:"다시쓰기"},
-                  {mode:"expand",label:"늘리기"},
-                  {mode:"shorten",label:"줄이기"},
-                  {mode:"formal",label:"합니다체"},
-                  {mode:"casual",label:"해요체"},
-                  {mode:"friendly",label:"거든요체"},
+                  {mode:"rewrite",label:t("bg_rewriteLabel")},
+                  {mode:"expand",label:t("bg_expandLabel")},
+                  {mode:"shorten",label:t("bg_shortenLabel")},
+                  {mode:"formal",label:t("bg_formalLabel")},
+                  {mode:"casual",label:t("bg_casualLabel")},
+                  {mode:"friendly",label:t("bg_friendlyLabel")},
                 ].map(o => (
                   <button key={o.mode} onMouseDown={e => { e.preventDefault(); e.stopPropagation(); handleAiReplace(o.mode); }}
                     style={{padding:"5px 10px",borderRadius:6,border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e5f0"}`,
@@ -2359,7 +2428,7 @@ hospital equipment`
                   : <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>}
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:14,fontWeight:800,color:publishResult.success?"#22c55e":publishResult.clipboard?"#f59e0b":"#ef4444"}}>{publishResult.success?"발행 성공!":publishResult.clipboard?"클립보드에 복사됨":"발행 실패"}</div>
+              <div style={{fontSize:14,fontWeight:800,color:publishResult.success?"#22c55e":publishResult.clipboard?"#f59e0b":"#ef4444"}}>{publishResult.success?t("bg_publishSuccessMsg"):publishResult.clipboard?t("bg_clipboardCopied"):t("bg_publishFailMsg")}</div>
               {publishResult.postUrl&&<a href={publishResult.postUrl} target="_blank" rel="noopener" style={{fontSize:13,color:accent,fontWeight:600}}>게시글 확인 →</a>}
               {publishResult.message&&<div style={{fontSize:13,color:muted,marginTop:2}}>{publishResult.message}</div>}
               {publishResult.error&&<div style={{fontSize:13,color:"#ef4444",marginTop:2}}>{publishResult.error}</div>}
@@ -2382,7 +2451,7 @@ hospital equipment`
                   <div style={{fontSize:13,color:muted,marginBottom:10}}>스레드 계정을 먼저 연동해주세요</div>
                   <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest()}else{try{window.location.href="/mypage"}catch{}}}}
                     style={{padding:"10px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
-                    {user?"계정 연동하러 가기":"로그인 후 연동"}
+                    {user?t("bg_goLinkAccount"):t("bg_loginThenLink")}
                   </button>
                 </div>
               ) : (
@@ -2394,7 +2463,7 @@ hospital equipment`
                     <button onClick={()=>handlePublish("threads",scheduleTime)} disabled={!scheduleTime||publishing}
                       style={{padding:"10px 20px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",opacity:!scheduleTime||publishing?0.5:1,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
                       <img src="/icon-threads.png" alt="" style={{width:14,height:14,objectFit:"contain",borderRadius:2,filter:"brightness(10)"}} />
-                      {publishing?"예약 중...":"예약 발행하기"}
+                      {publishing?t("bg_scheduling"):t("bg_schedulePublish")}
                     </button>
                   </div>
                   <div style={{fontSize:10,color:muted,marginTop:6}}>최소 10분 후 ~ 최대 75일 후 예약 가능</div>
@@ -2559,9 +2628,9 @@ hospital equipment`
         </div>
       )}
 
-      <div style={{flex:1,overflowY: (shortsMode && videoSubMode) ? "hidden" : "auto",position:"relative",display: (shortsMode && videoSubMode) ? "flex" : "block",flexDirection:"column"}}>
+      <div style={{flex:1,overflowY: (shortsMode && videoSubMode) || (mode==="design" && designStep==="editor") ? "hidden" : "auto",position:"relative",display: (shortsMode && videoSubMode) || (mode==="design" && designStep==="editor") ? "flex" : "block",flexDirection:"column"}}>
         {/* ══════ 입력 화면 (검색창 스타일) ══════ */}
-        {!showResult && (
+        {!showResult && !(mode==="design" && designStep==="editor" && designSlides) && (
           <div className="bl-search-wrap" style={{maxWidth:720,margin:"0 auto",padding:"0 24px",display:"flex",flexDirection:"column",justifyContent: (shortsMode && videoSubMode) ? "flex-start" : "center",minHeight: (shortsMode && videoSubMode) ? "auto" : "100%",flexShrink:0}}>
             {/* 타이틀 */}
             <div style={{textAlign:"center",marginBottom:32}}>
@@ -2576,12 +2645,13 @@ hospital equipment`
             {/* 모드 선택 칩 */}
             <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}>
               {[
-                {id:"write", label:"글쓰기", color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
-                {id:"shorts", label:"영상 생성", color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>},
+                {id:"write", label:t("bg_tabWrite"), color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
+                {id:"design", label:t("bg_tabDesign"), color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>},
+                {id:"shorts", label:t("bg_tabVideo"), color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>},
               ].map(m => {
                 const isActive = m.id==="shorts" ? shortsMode : mode===m.id && !shortsMode;
                 return (
-                <button key={m.id} onClick={()=>{if(m.id==="shorts"){setShortsMode(true);setVideoSubMode(null);setShortsYtUrl("");}else{setShortsMode(false);setVideoSubMode(null);setMode(m.id);}}} style={{
+                <button key={m.id} onClick={()=>{if(m.id==="shorts"){setShortsMode(true);setVideoSubMode(null);setShortsYtUrl("");}else{setShortsMode(false);setVideoSubMode(null);setMode(m.id);if(m.id==="design"){setDesignSlides(null);setDesignStep("input");}}}} style={{
                   padding:"10px 20px", borderRadius:20,
                   border: isActive ? `2px solid ${m.color}` : `1.5px solid ${border}`,
                   background: isActive ? (isDark?`${m.color}15`:`${m.color}08`) : "transparent",
@@ -2598,6 +2668,202 @@ hospital equipment`
             {/* 영상 모드: 모드 칩 아래에 인라인으로 에디터 표시 */}
             {shortsMode ? (
               null /* 아래 별도 블록에서 렌더링 — 검색창/설정을 숨기기 위해 여기서 차단 */
+            ) : mode==="design" ? (
+              /* ═══ 디자인(카드뉴스) 모드 ═══ */
+              <div style={{maxWidth:720,margin:"0 auto",width:"100%"}}>
+
+                {/* ── 1단계: 입력 ── */}
+                {designStep==="input" && (<>
+                <div style={{textAlign:"center",marginBottom:16}}>
+                  <div style={{fontSize:13,color:muted,lineHeight:1.6}}>{t("bg_designDesc")}</div>
+                </div>
+
+                <div className="bl-search-box" style={{
+                  background:inputBg,
+                  border:`1.5px solid ${error&&!fields.keyword?.trim()?"#ef4444":inputBdr}`,
+                  borderRadius:24,
+                  padding:"18px 20px 14px",
+                  boxShadow:isDark?"0 4px 24px rgba(0,0,0,0.3)":"0 4px 24px rgba(0,0,0,0.06)",
+                }}>
+                  <textarea
+                    ref={textareaRef}
+                    className="bl-search-textarea"
+                    value={fields.keyword||""}
+                    onChange={e=>{handleMainInput(e.target.value);setTimeout(autoResize,0);}}
+                    onKeyDown={e=>{
+                      if(e.key==="Enter"&&!e.shiftKey){
+                        e.preventDefault();
+                        if(fields.keyword?.trim())handleGenerateClick();
+                      }
+                    }}
+                    placeholder={t("bg_designPlaceholder")}
+                    rows={3}
+                    style={{
+                      width:"100%",border:"none",background:"transparent",color:text,
+                      fontSize:15,fontFamily:"inherit",outline:"none",resize:"none",
+                      lineHeight:1.6,minHeight:72,maxHeight:300,
+                      boxSizing:"border-box",padding:0,
+                    }}
+                  />
+
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:12,paddingTop:10,borderTop:`1px solid ${border}`}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <button onClick={()=>setShowLibraryPicker(!showLibraryPicker)}
+                        style={{padding:"7px 14px",borderRadius:12,border:`1px solid ${showLibraryPicker?accent:border}`,background:showLibraryPicker?(isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.06)"):"transparent",color:showLibraryPicker?accent:muted,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",transition:"all 0.15s"}}
+                        onMouseEnter={e=>{if(!showLibraryPicker){e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}}
+                        onMouseLeave={e=>{if(!showLibraryPicker){e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg>
+                        {t("bg_designFromLibrary")}
+                      </button>
+                    </div>
+                    <button onClick={handleGenerateClick} disabled={designLoading||!fields.keyword?.trim()}
+                      style={{
+                        padding:"8px 22px",borderRadius:14,border:"none",
+                        cursor:designLoading||!fields.keyword?.trim()?"not-allowed":"pointer",
+                        background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),
+                        color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,
+                        display:"flex",alignItems:"center",gap:6,
+                        opacity:designLoading||!fields.keyword?.trim()?0.5:1,
+                        transition:"all 0.15s",minHeight:38,fontFamily:"inherit",
+                        boxShadow:fields.keyword?.trim()?"0 4px 14px rgba(124,106,255,0.3)":"none",
+                      }}>
+                      {designLoading ? (
+                        <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
+                      ) : (
+                        <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>30P</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 보관함 글 목록 */}
+                {showLibraryPicker && (()=>{
+                  let saves = [];
+                  try { saves = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]"); } catch {}
+                  return (
+                    <div style={{marginTop:12,background:cardBg,border:`1px solid ${border}`,borderRadius:16,padding:"16px",maxHeight:280,overflowY:"auto",boxShadow:isDark?"0 4px 20px rgba(0,0,0,0.3)":"0 4px 20px rgba(0,0,0,0.08)"}}>
+                      {saves.length === 0 ? (
+                        <div style={{textAlign:"center",padding:"20px 0",color:muted,fontSize:13}}>저장된 글이 없습니다</div>
+                      ) : saves.slice(0,20).map((s,i) => (
+                        <div key={s.id||i} onClick={()=>{
+                          handleMainInput(s.content || s.title || "");
+                          setShowLibraryPicker(false);
+                          setTimeout(autoResize,0);
+                        }}
+                          style={{padding:"10px 14px",borderRadius:12,cursor:"pointer",marginBottom:4,transition:"background 0.1s",display:"flex",alignItems:"center",gap:10}}
+                          onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.06)":"#f5f5ff"}
+                          onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:13,fontWeight:700,color:text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{s.title}</div>
+                            <div style={{fontSize:11,color:muted,marginTop:2}}>{s.date} {s.type && <span style={{opacity:0.7}}>({s.type})</span>}</div>
+                          </div>
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+
+                {error&&<div style={{marginTop:12,fontSize:13,color:"#ef4444",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",padding:"10px 14px",borderRadius:12,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)"}}>{error}
+                  {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
+                    <button onClick={()=>window.location.hash="#pricing"} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
+                  )}
+                </div>}
+
+                {designLoading && (
+                  <div style={{marginTop:24,textAlign:"center",padding:"40px 0"}}>
+                    <div style={{width:48,height:48,borderRadius:"50%",border:`3px solid ${accent}22`,borderTopColor:accent,animation:"spin 0.8s linear infinite",margin:"0 auto"}}/>
+                    <div style={{marginTop:16,fontSize:15,fontWeight:700,color:text}}>{t("bg_designGenerating")}</div>
+                    <div style={{marginTop:6,fontSize:12,color:muted}}>AI가 내용을 분석하여 카드뉴스를 구성하고 있습니다...</div>
+                  </div>
+                )}
+                </>)}
+
+                {/* ── 2단계: 미리보기/문구 편집 ── */}
+                {designStep==="preview" && designSlides && (<>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+                  <button onClick={()=>{setDesignStep("input");setDesignSlides(null);}}
+                    style={{padding:"6px 14px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:text,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"}}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                    다시 입력
+                  </button>
+                  <div style={{fontSize:14,fontWeight:800,color:text}}>카드뉴스 미리보기 ({designSlides.length}장)</div>
+                  <button onClick={()=>setDesignStep("editor")}
+                    style={{padding:"8px 20px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",boxShadow:"0 4px 14px rgba(124,106,255,0.3)"}}>
+                    디자인 편집
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  </button>
+                </div>
+
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {designSlides.map((slide,idx) => (
+                    <div key={idx} style={{background:cardBg,border:`1px solid ${border}`,borderRadius:16,padding:"18px 20px",transition:"box-shadow 0.15s",boxShadow:isDark?"0 2px 12px rgba(0,0,0,0.2)":"0 2px 12px rgba(0,0,0,0.04)"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                        <span style={{width:28,height:28,borderRadius:"50%",background:`${accent}15`,color:accent,fontSize:13,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{idx+1}</span>
+                        <span style={{fontSize:12,color:muted,fontWeight:600}}>{idx===0?"표지":"슬라이드"} {idx===designSlides.length-1&&idx>0?"(마지막)":""}</span>
+                      </div>
+
+                      {/* 제목 */}
+                      <div style={{marginBottom:8}}>
+                        <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:4}}>제목</div>
+                        <input value={slide.title} onChange={e=>{
+                          const next=[...designSlides]; next[idx]={...next[idx],title:e.target.value}; setDesignSlides(next);
+                        }} style={{width:"100%",padding:"8px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:15,fontWeight:800,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+                      </div>
+
+                      {/* 부제목 */}
+                      <div style={{marginBottom:8}}>
+                        <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:4}}>부제목</div>
+                        <input value={slide.subtitle||""} onChange={e=>{
+                          const next=[...designSlides]; next[idx]={...next[idx],subtitle:e.target.value}; setDesignSlides(next);
+                        }} style={{width:"100%",padding:"7px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+                      </div>
+
+                      {/* 본문 */}
+                      <div style={{marginBottom:8}}>
+                        <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:4}}>본문</div>
+                        <textarea value={slide.body||""} onChange={e=>{
+                          const next=[...designSlides]; next[idx]={...next[idx],body:e.target.value}; setDesignSlides(next);
+                        }} rows={2} style={{width:"100%",padding:"7px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",resize:"vertical",lineHeight:1.6,boxSizing:"border-box"}}/>
+                      </div>
+
+                      {/* 핵심문구 */}
+                      <div>
+                        <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:4}}>핵심문구</div>
+                        <input value={slide.highlight||""} onChange={e=>{
+                          const next=[...designSlides]; next[idx]={...next[idx],highlight:e.target.value}; setDesignSlides(next);
+                        }} style={{width:"100%",padding:"7px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+                      </div>
+
+                      {/* 삭제 버튼 */}
+                      {designSlides.length > 2 && (
+                        <div style={{marginTop:10,textAlign:"right"}}>
+                          <button onClick={()=>{const next=[...designSlides]; next.splice(idx,1); setDesignSlides(next);}}
+                            style={{padding:"4px 12px",borderRadius:8,border:`1px solid rgba(239,68,68,0.3)`,background:"transparent",color:"#ef4444",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                            삭제
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* 하단 고정 버튼 */}
+                <div style={{marginTop:20,display:"flex",justifyContent:"center",gap:10,paddingBottom:20}}>
+                  <button onClick={()=>{
+                    setDesignSlides([...designSlides, {title:"",subtitle:"",body:"",highlight:"",bgColor:"#1c1c1e",textColor:"#ffffff",fontSize:42,fontFamily:"Pretendard"}]);
+                  }} style={{padding:"10px 20px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",color:text,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    슬라이드 추가
+                  </button>
+                  <button onClick={()=>setDesignStep("editor")}
+                    style={{padding:"10px 28px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,boxShadow:"0 4px 14px rgba(124,106,255,0.3)"}}>
+                    디자인 편집으로 이동
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                  </button>
+                </div>
+                </>)}
+              </div>
             ) : (
             <>
             {/* 현재 선택된 플랫폼 표시 (글쓰기 모드에서만) */}
@@ -2652,7 +2918,7 @@ hospital equipment`
                     style={{flex:1,padding:"10px 14px",borderRadius:12,border:`1px solid ${inputBdr}`,background:isDark?"rgba(255,255,255,0.04)":"#f9f9fb",color:text,fontSize:13,fontFamily:"inherit",outline:"none"}}/>
                   <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
                     style={{padding:"10px 18px",borderRadius:12,border:"none",background:accent,color:"#fff",fontSize:13,fontWeight:700,cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer",opacity:urlLoading||!urlInput.trim()?0.5:1,whiteSpace:"nowrap",flexShrink:0}}>
-                    {urlLoading?"불러오는 중...":"불러오기"}
+                    {urlLoading?t("bg_fetchingUrl"):t("bg_fetchBtn")}
                   </button>
                 </div>
               )}
@@ -2661,7 +2927,7 @@ hospital equipment`
               {!showLinkInput && urlInput && !urlResult && !urlLoading && (
                 <div style={{marginTop:10,display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:12,background:isDark?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)",border:`1px solid ${accent}22`,flexWrap:"wrap"}}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-                  <span style={{fontSize:12,color:accent,fontWeight:600,flex:1}}>{detectedYoutubeUrl?"유튜브 링크가 감지되었습니다":"링크가 감지되었습니다"}</span>
+                  <span style={{fontSize:12,color:accent,fontWeight:600,flex:1}}>{detectedYoutubeUrl?t("bg_ytLinkDetected"):t("bg_linkDetected")}</span>
                   <button onClick={fetchFromUrl} style={{padding:"4px 12px",borderRadius:8,border:"none",background:accent,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>글로 작성하기</button>
                   {detectedYoutubeUrl && (
                     <button onClick={handleShortsStart} style={{padding:"4px 12px",borderRadius:8,border:"none",background:"linear-gradient(135deg,#ef4444,#f97316)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4}}>
@@ -2684,7 +2950,7 @@ hospital equipment`
                     <div style={{fontSize:12,fontWeight:800,color:text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{urlResult.title}</div>
                     <div style={{fontSize:11,color:"#22c55e",marginTop:2,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      {urlResult.type==="youtube"?"유튜브":urlResult.type==="news"?"뉴스":"웹페이지"} 분석 완료
+                      {urlResult.type==="youtube"?t("bg_ytAnalyzed"):urlResult.type==="news"?t("bg_newsAnalyzed"):t("bg_webAnalyzed")} {t("bg_analyzeComplete")}
                     </div>
                   </div>
                   <button onClick={()=>{setUrlResult(null);setUrlInput("");}} style={{background:"none",border:"none",cursor:"pointer",color:muted,padding:4}}>
@@ -2724,7 +2990,7 @@ hospital equipment`
                   <input type="file" accept="image/*,.pdf,.txt,.doc,.docx,.csv,.xlsx,.pptx,.hwp" multiple style={{display:"none"}} id="blog-file-input"
                     onChange={e=>{const files=Array.from(e.target.files||[]);e.target.value="";if(files.length)handleFileInput(files);}}/>
                   <button onClick={()=>document.getElementById("blog-file-input")?.click()}
-                    title="파일 첨부"
+                    title={t("bg_fileAttach")}
                     style={{padding:"7px 14px",borderRadius:12,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",transition:"all 0.15s"}}
                     onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}
                     onMouseLeave={e=>{e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}>
@@ -2735,7 +3001,7 @@ hospital equipment`
                   {/* 링크 버튼 (글쓰기 모드만) */}
                   {mode==="write" && (
                   <button onClick={()=>setShowLinkInput(!showLinkInput)}
-                    title="링크 붙여넣기"
+                    title={t("bg_linkPaste")}
                     style={{padding:"7px 14px",borderRadius:12,border:`1px solid ${showLinkInput?accent:border}`,background:showLinkInput?(isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.06)"):"transparent",color:showLinkInput?accent:muted,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",transition:"all 0.15s"}}
                     onMouseEnter={e=>{if(!showLinkInput){e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}}
                     onMouseLeave={e=>{if(!showLinkInput){e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}}>
@@ -2746,7 +3012,7 @@ hospital equipment`
                   {/* 설정 버튼 (쇼츠 모드에서 숨김) */}
                   {true && (
                   <button onClick={()=>setShowSettings(!showSettings)}
-                    title="글 설정"
+                    title={t("bg_postSettingsBtn")}
                     style={{padding:"7px 14px",borderRadius:12,border:`1px solid ${showSettings?accent:border}`,background:showSettings?(isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.06)"):"transparent",color:showSettings?accent:muted,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",transition:"all 0.15s"}}
                     onMouseEnter={e=>{if(!showSettings){e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}}
                     onMouseLeave={e=>{if(!showSettings){e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}}>
@@ -2943,6 +3209,30 @@ hospital equipment`
           </div>
         )}
 
+        {/* 디자인 모드: 카드뉴스 에디터 (편집 단계에서 표시) */}
+        {!showResult && mode==="design" && designStep==="editor" && designSlides && (
+          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderTop:`1px solid ${border}`}}>
+            <div style={{padding:"6px 16px",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
+              <button onClick={()=>setDesignStep("preview")}
+                style={{padding:"5px 12px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:text,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"}}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+                문구 수정
+              </button>
+              <span style={{fontSize:11,fontWeight:700,color:accent,padding:"3px 10px",borderRadius:20,background:`${accent}12`}}>카드뉴스 {designSlides.length}장</span>
+            </div>
+            <div style={{flex:1,overflow:"hidden"}}>
+              <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>에디터 로딩 중...</div>}>
+                <UnifiedCanvasEditorLazy
+                  slides={designSlides}
+                  width={1080} height={1080} mode="cardnews"
+                  onSave={()=>{}} onClose={()=>setDesignStep("preview")}
+                  inline
+                />
+              </Suspense>
+            </div>
+          </div>
+        )}
+
         {/* 영상 에디터 (숏폼/롱폼 선택 후 — 입력 화면 아래 flex로 표시) */}
         {!showResult && shortsMode && videoSubMode && (
           <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderTop:`1px solid ${border}`}}>
@@ -2952,7 +3242,7 @@ hospital equipment`
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
                 유형 선택
               </button>
-              <span style={{fontSize:11,fontWeight:700,color:accent,padding:"3px 10px",borderRadius:20,background:`${accent}12`}}>{videoSubMode==="shortform"?"숏폼 편집":"롱폼 편집"}</span>
+              <span style={{fontSize:11,fontWeight:700,color:accent,padding:"3px 10px",borderRadius:20,background:`${accent}12`}}>{videoSubMode==="shortform"?t("bg_shortformEdit"):t("bg_longformEdit")}</span>
             </div>
             {videoSubMode === "shortform" ? (
               <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>로딩 중...</div>}>

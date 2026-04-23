@@ -39,21 +39,21 @@ const SnsConsulting = React.lazy(() => import("./SnsConsulting"));
 ════════════════════════════════════════════════════════════ */
 function VideoEditHub({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, showPointConfirm, initialMode }) {
   const [mode, setMode] = React.useState(initialMode); // null | "shortform" | "longform"
+  const { t: _t } = useI18n();
   const acc = "#7c6aff";
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0";
 
-  // 숏폼/롱폼 에디터 + 선택 화면을 인라인으로 표시 (화면 전환 없이)
   return (
     <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
       {/* 상단 탭 바 */}
       <div style={{ padding:"10px 24px 0", display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
         <div style={{ display:"flex", gap:4, padding:3, borderRadius:12, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(99,102,241,0.06)" }}>
           {[
-            { id: null, label: "유형 선택" },
-            { id: "shortform", label: "숏폼 편집" },
-            { id: "longform", label: "롱폼 편집" },
+            { id: null, label: _t("typeSelect") },
+            { id: "shortform", label: _t("shortformEdit") },
+            { id: "longform", label: _t("longformEdit") },
           ].map(tab => (
             <button key={tab.id||"select"} onClick={() => setMode(tab.id)}
               style={{
@@ -66,26 +66,26 @@ function VideoEditHub({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, s
         </div>
         {mode && (
           <div style={{ display:"inline-block", padding:"3px 10px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:10, fontWeight:700, color:acc, marginLeft:4 }}>
-            {mode === "shortform" ? "숏폼" : "롱폼"} 모드
+            {mode === "shortform" ? _t("shortformMode") : _t("longformMode")}
           </div>
         )}
       </div>
 
       {/* 콘텐츠 영역 */}
       {mode === "shortform" ? (
-        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>불러오는 중...</div>}>
+        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>{_t("loadingText")}</div>}>
           <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={() => {}} />
         </React.Suspense>
       ) : mode === "longform" ? (
-        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>불러오는 중...</div>}>
+        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>{_t("loadingText")}</div>}>
           <LongFormEditor isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={() => {}} />
         </React.Suspense>
       ) : (
         /* 유형 선택 화면 */
         <div style={{ flex:1, overflowY:"auto" }}>
           <div style={{ maxWidth:640, margin:"0 auto", padding:"36px 20px 60px", textAlign:"center" }}>
-            <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:6 }}>영상 편집</div>
-            <div style={{ fontSize:13, color:muted, marginBottom:32 }}>어떤 영상을 편집하시겠어요?</div>
+            <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:6 }}>{_t("videoEditing")}</div>
+            <div style={{ fontSize:13, color:muted, marginBottom:32 }}>{_t("whatVideoEdit")}</div>
             <div className="ai-home-2col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
               {/* 숏폼 */}
               <div onClick={() => setMode("shortform")} className="hover-lift"
@@ -96,13 +96,13 @@ function VideoEditHub({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, s
                     <path d="M10 14V10l4 2-4 2z" fill={acc}/>
                   </svg>
                 </div>
-                <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:6 }}>숏폼 편집</div>
-                <div style={{ fontSize:13, color:muted, lineHeight:1.6, marginBottom:12 }}>
-                  긴 영상에서 AI가<br/>핵심 쇼츠를 자동 추출
+                <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:6 }}>{_t("shortformEdit")}</div>
+                <div style={{ fontSize:13, color:muted, lineHeight:1.6, marginBottom:12, whiteSpace:"pre-line" }}>
+                  {_t("shortformDesc")}
                 </div>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:4, justifyContent:"center" }}>
-                  {["AI 하이라이트 추출","9:16 세로","자동 자막"].map(t => (
-                    <span key={t} style={{ padding:"4px 10px", borderRadius:20, background:`${acc}10`, fontSize:11, color:acc, fontWeight:600 }}>{t}</span>
+                  {[_t("aiHighlight"),_t("vertical916"),_t("autoCaption")].map(tag => (
+                    <span key={tag} style={{ padding:"4px 10px", borderRadius:20, background:`${acc}10`, fontSize:11, color:acc, fontWeight:600 }}>{tag}</span>
                   ))}
                 </div>
               </div>
@@ -116,13 +116,13 @@ function VideoEditHub({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, s
                     <path d="M2 12h20" stroke={acc} strokeWidth="1" opacity="0.4"/>
                   </svg>
                 </div>
-                <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:6 }}>롱폼 편집</div>
-                <div style={{ fontSize:13, color:muted, lineHeight:1.6, marginBottom:12 }}>
-                  무음 제거 + 반복 삭제<br/>자동 자막 + 애니메이션
+                <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:6 }}>{_t("longformEdit")}</div>
+                <div style={{ fontSize:13, color:muted, lineHeight:1.6, marginBottom:12, whiteSpace:"pre-line" }}>
+                  {_t("longformDesc")}
                 </div>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:4, justifyContent:"center" }}>
-                  {["무음 자동 제거","반복 삭제","자막 애니메이션"].map(t => (
-                    <span key={t} style={{ padding:"4px 10px", borderRadius:20, background:`${acc}10`, fontSize:11, color:acc, fontWeight:600 }}>{t}</span>
+                  {[_t("silenceRemove"),_t("repeatRemove"),_t("captionAnimation")].map(tag => (
+                    <span key={tag} style={{ padding:"4px 10px", borderRadius:20, background:`${acc}10`, fontSize:11, color:acc, fontWeight:600 }}>{tag}</span>
                   ))}
                 </div>
               </div>
@@ -149,6 +149,7 @@ function VideoEditHub({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, s
 
 // ── 콘텐츠 제작 선택 화면 ──────────────────────────────
 function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
+  const { t: _t } = useI18n();
   const bdr = isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb";
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const accent = "#7c6aff";
@@ -179,8 +180,8 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
       <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f8f9fb" }}>
         <div style={{ maxWidth:800, margin:"0 auto", padding:"32px 24px 60px" }}>
           <div style={{ textAlign:"center", marginBottom:36 }}>
-            <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>콘텐츠 제작</div>
-            <div style={{ fontSize:13, color:homeMuted }}>편집 가능한 AI 콘텐츠 또는 이미지를 바로 생성하세요</div>
+            <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>{_t("contentCreate")}</div>
+            <div style={{ fontSize:13, color:homeMuted }}>{_t("contentCreateDesc")}</div>
           </div>
 
           {/* 편집 AI */}
@@ -188,8 +189,8 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
               <div style={{ width:28, height:28, borderRadius:8, background:"rgba(124,106,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14 }}>✏️</div>
               <div>
-                <div style={{ fontSize:16, fontWeight:800, color:homeText }}>편집 AI로 시작하기</div>
-                <div style={{ fontSize:11, color:homeMuted }}>텍스트를 직접 수정할 수 있는 콘텐츠</div>
+                <div style={{ fontSize:16, fontWeight:800, color:homeText }}>{_t("startWithEditAi")}</div>
+                <div style={{ fontSize:11, color:homeMuted }}>{_t("editableContent")}</div>
               </div>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:10 }}>
@@ -204,7 +205,8 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
 }
 
 // ── 미니 통계 대시보드 (홈 화면용) ──────────────────────────────────────
-function MiniStats({ isDark, homeText, homeMuted, cardBdr, _s }) {
+function MiniStats({ isDark, homeText, homeMuted, cardBdr, _s: _sProp }) {
+  const { t: _s } = useI18n();
   const saves = React.useMemo(() => {
     try { return JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]"); } catch { return []; }
   }, []);
@@ -220,9 +222,9 @@ function MiniStats({ isDark, homeText, homeMuted, cardBdr, _s }) {
   }, [saves]);
   const accent = "#7c6aff";
   const stats = [
-    { label: _s("총 콘텐츠", "Total"), value: totalCount, icon: "📝", color: accent },
-    { label: _s("사용 포인트", "Points"), value: usedPoints + "P", icon: "💎", color: "#f59e0b" },
-    { label: _s("이번 주", "This Week"), value: weekCount, icon: "📅", color: "#10b981" },
+    { label: _s("totalContent"), value: totalCount, icon: "📝", color: accent },
+    { label: _s("usedPoints"), value: usedPoints + "P", icon: "💎", color: "#f59e0b" },
+    { label: _s("thisWeek"), value: weekCount, icon: "📅", color: "#10b981" },
   ];
   return (
     <div style={{ display:"flex", gap:10, marginBottom:24, justifyContent:"center", flexWrap:"wrap" }}>
@@ -238,27 +240,28 @@ function MiniStats({ isDark, homeText, homeMuted, cardBdr, _s }) {
 }
 
 // ── 최근 작업 빠른 접근 (홈 화면용) ──────────────────────────────────────
-function RecentWork({ isDark, homeText, homeMuted, cardBdr, setAiMenu, _s }) {
+function RecentWork({ isDark, homeText, homeMuted, cardBdr, setAiMenu, _s: _sProp }) {
+  const { t: _s } = useI18n();
   const saves = React.useMemo(() => {
     try { return JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]").slice(0, 3); } catch { return []; }
   }, []);
   const accent = "#7c6aff";
-  const typeLabel = (t) => {
-    const map = { blog_naver:"네이버", blog_tistory:"티스토리", blog_insta:"인스타", blog_youtube:"유튜브", blog_thread:"스레드", blog_link:"링크", blog_cafe:"카페", blog_yt_blog:"링크" };
-    return map[t] || t || "기타";
+  const typeLabel = (tp) => {
+    const map = { blog_naver:_s("platNaver"), blog_tistory:_s("platTistory"), blog_insta:_s("platInsta"), blog_youtube:_s("platYoutube"), blog_thread:_s("platThread"), blog_link:_s("platLink"), blog_cafe:_s("platCafe"), blog_yt_blog:_s("platLink") };
+    return map[tp] || tp || _s("platOther");
   };
   return (
     <div style={{ marginBottom:24, textAlign:"left" }}>
       <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:10, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span>{_s("최근 작업","Recent Work")}</span>
+        <span>{_s("recentWork")}</span>
         {saves.length > 0 && (
-          <span onClick={() => setAiMenu("library")} style={{ fontSize:12, fontWeight:600, color:accent, cursor:"pointer" }}>{_s("전체보기","View All")} →</span>
+          <span onClick={() => setAiMenu("library")} style={{ fontSize:12, fontWeight:600, color:accent, cursor:"pointer" }}>{_s("viewAll")} →</span>
         )}
       </div>
       {saves.length === 0 ? (
         <div style={{ padding:"24px 16px", borderRadius:14, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", textAlign:"center", boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}>
           <div style={{ fontSize:28, marginBottom:8 }}>✨</div>
-          <div style={{ fontSize:13, color:homeMuted, lineHeight:1.6 }}>{_s("아직 생성한 콘텐츠가 없어요","No content created yet")}</div>
+          <div style={{ fontSize:13, color:homeMuted, lineHeight:1.6 }}>{_s("noContentYet")}</div>
         </div>
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -267,7 +270,7 @@ function RecentWork({ isDark, homeText, homeMuted, cardBdr, setAiMenu, _s }) {
               style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:12, border:`1px solid ${cardBdr}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", transition:"all 0.15s", boxShadow:"0 2px 8px rgba(0,0,0,0.04)" }}
               onMouseEnter={e=>e.currentTarget.style.transform="translateY(-1px)"} onMouseLeave={e=>e.currentTarget.style.transform="none"}>
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.title || "제목 없음"}</div>
+                <div style={{ fontSize:13, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{s.title || _s("untitled")}</div>
                 <div style={{ fontSize:11, color:homeMuted, marginTop:3 }}>{s.date}</div>
               </div>
               <span style={{ fontSize:11, fontWeight:700, color:accent, background:`${accent}15`, padding:"3px 10px", borderRadius:20, flexShrink:0 }}>{typeLabel(s.type)}</span>
@@ -280,17 +283,18 @@ function RecentWork({ isDark, homeText, homeMuted, cardBdr, setAiMenu, _s }) {
 }
 
 // ── 온보딩 튜토리얼 모달 ──────────────────────────────────────
-function OnboardingModal({ isDark, onClose, _s }) {
+function OnboardingModal({ isDark, onClose, _s: _sProp }) {
+  const { t: _s } = useI18n();
   const [step, setStep] = React.useState(0);
   const accent = "#7c6aff";
   const bg = isDark ? "#1a1a2e" : "#fff";
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const steps = [
-    { icon:"✍️", title:_s("AI 도구로 콘텐츠를 만들어보세요","Create content with AI tools"), desc:_s("블로그 글쓰기, AI 이미지, 쇼츠 영상 등\nAI가 전문가 수준의 콘텐츠를 만들어줘요.","Blog writing, AI images, shorts videos\nAI creates professional-level content.") },
-    { icon:"🔥", title:_s("트렌드 키워드로 빠르게 시작","Start fast with trend keywords"), desc:_s("실시간 인기 키워드를 클릭하면\n바로 콘텐츠 작성이 시작돼요.","Click trending keywords to\ninstantly start creating content.") },
-    { icon:"📅", title:_s("소셜 플래너로 일정 관리","Manage schedules with Social Planner"), desc:_s("콘텐츠 발행 일정을 캘린더에 등록하고\n체계적으로 SNS를 관리하세요.","Register publishing schedules\nand manage your SNS systematically.") },
-    { icon:"🎉", title:_s("무료 5회 체험 가능!","5 free trials available!"), desc:_s("지금 바로 무료로 시작해보세요.\n회원가입 없이도 체험할 수 있어요!","Start for free right now.\nNo sign-up required to try!") },
+    { icon:"✍️", title:_s("onboardStep1Title"), desc:_s("onboardStep1Desc") },
+    { icon:"🔥", title:_s("onboardStep2Title"), desc:_s("onboardStep2Desc") },
+    { icon:"📅", title:_s("onboardStep3Title"), desc:_s("onboardStep3Desc") },
+    { icon:"🎉", title:_s("onboardStep4Title"), desc:_s("onboardStep4Desc") },
   ];
   const cur = steps[step];
   const isLast = step === steps.length - 1;
@@ -299,7 +303,7 @@ function OnboardingModal({ isDark, onClose, _s }) {
     <div style={{ position:"fixed", top:0, left:0, right:0, bottom:0, zIndex:99999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.55)", backdropFilter:"blur(6px)", padding:20 }} onClick={handleFinish}>
       <div onClick={e=>e.stopPropagation()} style={{ width:"100%", maxWidth:400, borderRadius:24, background:bg, padding:"40px 32px 32px", boxShadow:"0 24px 80px rgba(0,0,0,0.25)", textAlign:"center", position:"relative", overflow:"hidden" }}>
         {/* skip */}
-        <button onClick={handleFinish} style={{ position:"absolute", top:14, right:16, background:"none", border:"none", fontSize:12, fontWeight:600, color:muted, cursor:"pointer" }}>{_s("건너뛰기","Skip")}</button>
+        <button onClick={handleFinish} style={{ position:"absolute", top:14, right:16, background:"none", border:"none", fontSize:12, fontWeight:600, color:muted, cursor:"pointer" }}>{_s("skipBtn")}</button>
         {/* icon */}
         <div style={{ fontSize:52, marginBottom:16, lineHeight:1 }}>{cur.icon}</div>
         {/* title */}
@@ -315,11 +319,11 @@ function OnboardingModal({ isDark, onClose, _s }) {
         {/* buttons */}
         <div style={{ display:"flex", gap:10 }}>
           {step > 0 && (
-            <button onClick={()=>setStep(step-1)} style={{ flex:1, padding:"14px 0", borderRadius:14, border:`1.5px solid ${accent}40`, background:"transparent", color:accent, fontSize:15, fontWeight:800, cursor:"pointer" }}>{_s("이전","Back")}</button>
+            <button onClick={()=>setStep(step-1)} style={{ flex:1, padding:"14px 0", borderRadius:14, border:`1.5px solid ${accent}40`, background:"transparent", color:accent, fontSize:15, fontWeight:800, cursor:"pointer" }}>{_s("prevBtn")}</button>
           )}
           <button onClick={()=>{ if(isLast) handleFinish(); else setStep(step+1); }}
             style={{ flex:1, padding:"14px 0", borderRadius:14, border:"none", background:accent, color:"#fff", fontSize:15, fontWeight:800, cursor:"pointer", boxShadow:`0 8px 24px ${accent}40` }}>
-            {isLast ? _s("시작하기","Get Started") : _s("다음","Next")}
+            {isLast ? _s("getStarted") : _s("nextBtn")}
           </button>
         </div>
       </div>
@@ -329,6 +333,7 @@ function OnboardingModal({ isDark, onClose, _s }) {
 
 // ── 미니 소셜 플래너 (홈 화면용) ──────────────────────────────────────
 function MiniPlanner({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
+  const { t: _t } = useI18n();
   const PLANNER_KEY = "sns_planner_v1";
   const STICKER_KEY = "sns_planner_stickers_v1";
   const plans = (() => { try { return JSON.parse(localStorage.getItem(PLANNER_KEY)) || []; } catch { return []; } })();
@@ -351,20 +356,20 @@ function MiniPlanner({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           <span style={{ fontSize:20 }}>📅</span>
           <div>
-            <div style={{ fontSize:14, fontWeight:800, color:homeText }}>오늘의 플랜 {todayStickers.map((s,i)=><span key={i}>{s}</span>)}</div>
-            <div style={{ fontSize:11, color:homeMuted }}>예정된 일정 {upcomingCount}개</div>
+            <div style={{ fontSize:14, fontWeight:800, color:homeText }}>{_t("todayPlan")} {todayStickers.map((s,i)=><span key={i}>{s}</span>)}</div>
+            <div style={{ fontSize:11, color:homeMuted }}>{_t("scheduledCount")} {upcomingCount}{_t("scheduledUnit")}</div>
           </div>
         </div>
         <button onClick={() => setAiMenu("social_planner")}
           style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${isDark?"rgba(124,106,255,0.3)":"rgba(124,106,255,0.2)"}`, background:"transparent", color:"#7c6aff", fontSize:12, fontWeight:700, cursor:"pointer" }}>
-          전체 보기 →
+          {_t("viewFullPlan")}
         </button>
       </div>
       <div style={{ padding:"12px 20px" }}>
         {todayPlans.length === 0 ? (
           <div style={{ textAlign:"center", padding:"16px 0", color:homeMuted, fontSize:13 }}>
-            오늘 등록된 플랜이 없어요 ·{" "}
-            <span onClick={() => setAiMenu("social_planner")} style={{ color:"#7c6aff", cursor:"pointer", fontWeight:700 }}>플랜 만들기</span>
+            {_t("noPlanToday")} ·{" "}
+            <span onClick={() => setAiMenu("social_planner")} style={{ color:"#7c6aff", cursor:"pointer", fontWeight:700 }}>{_t("createPlan")}</span>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -375,7 +380,7 @@ function MiniPlanner({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
                 <span style={{ fontSize:13, fontWeight:600, color:homeText, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{plan.title}</span>
               </div>
             ))}
-            {todayPlans.length > 3 && <div style={{ fontSize:11, color:homeMuted, textAlign:"center" }}>+{todayPlans.length - 3}개 더</div>}
+            {todayPlans.length > 3 && <div style={{ fontSize:11, color:homeMuted, textAlign:"center" }}>+{todayPlans.length - 3}{_t("moreItems")}</div>}
           </div>
         )}
       </div>
@@ -385,6 +390,7 @@ function MiniPlanner({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
 
 // ── 네이버 쇼핑인사이트 실시간 컴포넌트 ──────────────────────
 function NaverShoppingInsight({ isDark, homeText, homeMuted, border, setAiMenu }) {
+  const { t: _t } = useI18n();
   const [data, setData] = useState(null);
   const [activeCatN, setActiveCatN] = useState("전체");
   const nGreen = "#03c75a";
@@ -406,6 +412,11 @@ function NaverShoppingInsight({ isDark, homeText, homeMuted, border, setAiMenu }
     "전체":"#03c75a", "패션의류":"#e1306c", "화장품/미용":"#d946ef", "디지털/가전":"#2563eb",
     "식품":"#ea580c", "가구/인테리어":"#0d9488", "출산/유아동":"#ec4899", "스포츠/레저":"#16a34a", "생활/건강":"#0891b2",
   };
+  const catLabelMap = {
+    "전체": _t("ai_shopCatAll"), "패션의류": _t("ai_shopCatFashion"), "화장품/미용": _t("ai_shopCatBeauty"),
+    "디지털/가전": _t("ai_shopCatDigital"), "식품": _t("ai_shopCatFood"), "가구/인테리어": _t("ai_shopCatFurniture"),
+    "출산/유아동": _t("ai_shopCatBaby"), "스포츠/레저": _t("ai_shopCatSports"), "생활/건강": _t("ai_shopCatHealth"),
+  };
   const currentItems = data[activeCatN] || [];
   const c = catColorMap[activeCatN] || nGreen;
 
@@ -413,10 +424,10 @@ function NaverShoppingInsight({ isDark, homeText, homeMuted, border, setAiMenu }
     <div style={{ marginBottom:24, padding:"18px 20px", borderRadius:12, background:isDark?"rgba(3,199,90,0.05)":"#f8fdf9", border:`1px solid ${isDark?"rgba(3,199,90,0.1)":"rgba(3,199,90,0.15)"}` }}>
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={nGreen} strokeWidth="2.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 7h3l2 5 2-5h3v10h-2.5V11l-2 4h-1l-2-4v6H8V7z"/></svg>
-        <span style={{ fontSize:14, fontWeight:800, color:homeText }}>네이버 쇼핑 인기검색어</span>
+        <span style={{ fontSize:14, fontWeight:800, color:homeText }}>{_t("naverShoppingKeywords")}</span>
         <a href="https://datalab.naver.com/shoppingInsight/sCategory.naver" target="_blank" rel="noopener noreferrer"
           style={{ marginLeft:"auto", fontSize:11, color:homeMuted, textDecoration:"none", display:"flex", alignItems:"center", gap:3 }}>
-          데이터랩
+          {_t("datalab")}
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
         </a>
       </div>
@@ -431,7 +442,7 @@ function NaverShoppingInsight({ isDark, homeText, homeMuted, border, setAiMenu }
               style={{ padding:"5px 12px", borderRadius:6, border: isA ? `1.5px solid ${cc}` : `1px solid ${cc}25`,
                 background: isA ? cc+"15" : "transparent", color: isA ? cc : cc+"88",
                 fontSize:11, fontWeight: isA ? 700 : 500, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0, transition:"all 0.12s" }}>
-              {cat}
+              {catLabelMap[cat] || cat}
             </button>
           );
         })}
@@ -457,6 +468,7 @@ function NaverShoppingInsight({ isDark, homeText, homeMuted, border, setAiMenu }
 
 // ── SNS 자동화 페이지 ──────────────────────────────────────
 function SnsAutomationPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, user, onLoginRequest }) {
+  const { t: _t } = useI18n();
   const [step, setStep] = useState(0); // 0: 안내, 1: 설정, 2: 글생성, 3: 발행
   const [keyword, setKeyword] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -485,7 +497,7 @@ function SnsAutomationPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, us
       title: "자동화 도구 설치하기",
       desc: "위에서 열었던 검은 창(명령 프롬프트)에 아래 명령어를 복사해서 붙여넣기하세요.",
       details: [
-        "'복사' 버튼을 클릭하세요.",
+        _t("clickCopyBtn"),
         "검은 창(명령 프롬프트)에서 마우스 우클릭 → 붙여넣기 하세요.",
         "Enter를 누르면 자동으로 설치됩니다.",
         "설치 완료까지 약 1~2분 소요됩니다. 'Successfully installed' 메시지가 나오면 완료입니다.",
@@ -496,7 +508,7 @@ function SnsAutomationPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, us
       title: "자동화 브라우저 설치하기",
       desc: "같은 검은 창에서 아래 명령어를 실행하세요. 자동 발행에 사용할 브라우저가 설치됩니다.",
       details: [
-        "'복사' 버튼을 클릭하세요.",
+        _t("clickCopyBtn"),
         "검은 창에 붙여넣기 → Enter를 누르세요.",
         "약 170MB 다운로드가 진행됩니다. 인터넷 속도에 따라 1~3분 소요됩니다.",
         "'Chromium ... downloaded' 메시지가 나오면 설치 완료입니다.",
@@ -655,16 +667,16 @@ if __name__ == "__main__":
             Beta
           </div>
           <div style={{ fontSize:"clamp(22px,4vw,28px)", fontWeight:900, color:homeText, lineHeight:1.3, marginBottom:8 }}>
-            SNS 자동화
+            {_t("snsAutomation")}
           </div>
           <div style={{ fontSize:13, color:homeMuted, lineHeight:1.6 }}>
-            AI로 블로그 글을 생성하고, 네이버 블로그에 자동으로 발행할 수 있습니다.
+            {_t("snsAutoDesc")}
           </div>
         </div>
 
         {/* 탭 */}
         <div style={{ display:"flex", gap:0, marginBottom:24, borderBottom:`2px solid ${border}` }}>
-          {["설치 안내", "글 생성 & 발행"].map((label, i) => (
+          {[_t("installGuide"), _t("genAndPublish")].map((label, i) => (
             <button key={i} onClick={() => setStep(i)}
               style={{ padding:"10px 20px", border:"none", borderBottom: step===i ? `3px solid ${accent}` : "3px solid transparent",
                 background:"transparent", color: step===i ? accent : homeMuted, fontSize:14, fontWeight: step===i ? 800 : 500,
@@ -742,7 +754,7 @@ if __name__ == "__main__":
                     <button onClick={() => { navigator.clipboard.writeText(s.cmd); }}
                       style={{ position:"absolute", bottom:10, right:10, padding:"6px 14px", borderRadius:7, border:"none",
                         background:"#7c6aff", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer" }}>
-                      복사
+                      {_t("copyBtn2")}
                     </button>
                   </div>
                 )}
@@ -797,15 +809,15 @@ if __name__ == "__main__":
           <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
             {/* 키워드 입력 */}
             <div style={{ padding:"18px 20px", borderRadius:12, background:bg, border:`1px solid ${border}` }}>
-              <div style={{ fontSize:14, fontWeight:700, color:homeText, marginBottom:12 }}>1. 주제 입력</div>
+              <div style={{ fontSize:14, fontWeight:700, color:homeText, marginBottom:12 }}>{_t("topicInput")}</div>
               <div style={{ display:"flex", gap:8 }}>
                 <input value={keyword} onChange={e => setKeyword(e.target.value)}
-                  placeholder="블로그 글 주제를 입력하세요 (예: 인스타그램 팔로워 늘리는 법)"
+                  placeholder={_t("blogTopicPlaceholder")}
                   onKeyDown={e => e.key === "Enter" && generatePost()}
                   style={{ flex:1, padding:"12px 16px", borderRadius:10, border:`1.5px solid ${border}`, background:"transparent", color:homeText, fontSize:13, outline:"none" }} />
                 <button onClick={generatePost} disabled={generating || !keyword.trim()}
                   style={{ padding:"12px 24px", borderRadius:10, border:"none", background:generating ? homeMuted : accent, color:"#fff", fontSize:13, fontWeight:700, cursor: generating ? "not-allowed" : "pointer", whiteSpace:"nowrap" }}>
-                  {generating ? "생성 중..." : "AI 글 생성"}
+                  {generating ? _t("aiGenerating") : _t("aiGenBtn")}
                 </button>
               </div>
             </div>
@@ -814,7 +826,7 @@ if __name__ == "__main__":
             {generating && (
               <div style={{ textAlign:"center", padding:40, color:homeMuted }}>
                 <div style={{ width:36, height:36, border:`3px solid ${border}`, borderTopColor:accent, borderRadius:"50%", animation:"spin 1s linear infinite", margin:"0 auto 16px" }} />
-                AI가 블로그 글을 작성하고 있습니다... (1~2분)
+                {_t("aiWritingBlog")}
               </div>
             )}
 
@@ -823,23 +835,23 @@ if __name__ == "__main__":
               <>
                 <div style={{ padding:"18px 20px", borderRadius:12, background:bg, border:`1px solid ${border}` }}>
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-                    <span style={{ fontSize:14, fontWeight:700, color:homeText }}>2. 생성된 글</span>
-                    <span style={{ fontSize:11, color:green, fontWeight:600 }}>생성 완료</span>
+                    <span style={{ fontSize:14, fontWeight:700, color:homeText }}>{_t("generatedPost")}</span>
+                    <span style={{ fontSize:11, color:green, fontWeight:600 }}>{_t("genComplete")}</span>
                   </div>
                   <div style={{ maxHeight:300, overflow:"auto", padding:"12px 14px", borderRadius:8, background:isDark?"#1a1a2e":"#f8fafc", fontSize:12, color:homeMuted, lineHeight:1.7, whiteSpace:"pre-wrap" }}>
-                    {generatedContent.slice(0, 2000)}{generatedContent.length > 2000 ? "\n\n... (이하 생략)" : ""}
+                    {generatedContent.slice(0, 2000)}{generatedContent.length > 2000 ? "\n\n" + _t("omitted") : ""}
                   </div>
                 </div>
 
                 <div style={{ padding:"18px 20px", borderRadius:12, background:bg, border:`1px solid ${border}` }}>
-                  <div style={{ fontSize:14, fontWeight:700, color:homeText, marginBottom:12 }}>3. 네이버 블로그에 발행하기</div>
+                  <div style={{ fontSize:14, fontWeight:700, color:homeText, marginBottom:12 }}>{_t("publishToNaver")}</div>
                   <div style={{ fontSize:13, color:homeMuted, lineHeight:1.7, marginBottom:14 }}>
                     아래 발행 스크립트를 복사하여 <code style={{ background:isDark?"rgba(255,255,255,0.06)":"#f1f5f9", padding:"2px 6px", borderRadius:4 }}>publish.py</code>로 저장한 후 실행하세요.
                   </div>
                   <div style={{ display:"flex", gap:8 }}>
                     <button onClick={copyScript}
                       style={{ flex:1, padding:"12px", borderRadius:10, border:"none", background:`linear-gradient(135deg,${green},#059669)`, color:"#fff", fontSize:14, fontWeight:800, cursor:"pointer" }}>
-                      {copied ? "복사됨!" : "발행 스크립트 복사"}
+                      {copied ? _t("copiedBang") : _t("publishScriptCopy")}
                     </button>
                     <button onClick={() => {
                       const blob = new Blob([publishScript], { type: "text/plain;charset=utf-8" });
@@ -872,6 +884,7 @@ if __name__ == "__main__":
 
 // ── 오늘의 키워드 페이지 ──────────────────────────────────────
 function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
+  const { t: _t } = useI18n();
   const [keywords, setKeywords] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dateStr, setDateStr] = useState("");
@@ -915,6 +928,14 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
     "AI/테크": "#6366f1", "SNS": "#e1306c", "비즈니스": "#2563eb", "라이프": "#16a34a",
     "기타": "#6b7280",
   };
+  const catLabelMapKw = {
+    "AI 도구": tt("ai_kwAiTool"), "AI 트렌드": tt("ai_kwAiTrend"), "블로그": tt("ai_kwBlog"), "유튜브": tt("ai_kwYoutube"),
+    "인스타": tt("ai_kwInsta"), "틱톡": tt("ai_kwTiktok"), "마케팅": tt("ai_kwMarketing"), "광고": tt("ai_kwAd"),
+    "이커머스": tt("ai_kwEcommerce"), "부업/수익화": tt("ai_kwSideJob"), "트렌드": tt("ai_kwTrend"), "뷰티": tt("ai_kwBeauty"),
+    "건강/운동": tt("ai_kwHealth"), "여행/맛집": tt("ai_kwTravel"), "재테크": tt("ai_kwFinance"), "자기계발": tt("ai_kwSelfDev"),
+    "AI/테크": tt("ai_kwAiTech"), "SNS": tt("ai_kwSns"), "비즈니스": tt("ai_kwBiz"), "라이프": tt("ai_kwLife"),
+    "기타": tt("ai_kwOther"),
+  };
 
   // 카테고리별 그룹핑
   const grouped = React.useMemo(() => {
@@ -937,13 +958,13 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
         {/* 헤더 */}
         <div style={{ marginBottom:24 }}>
           <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(124,106,255,0.1)", fontSize:12, fontWeight:700, color:accent, marginBottom:14 }}>
-            {dateStr} 업데이트
+            {dateStr} {_t("updatedLabel")}
           </div>
           <div style={{ fontSize:"clamp(22px,4vw,30px)", fontWeight:900, color:homeText, lineHeight:1.3, marginBottom:8 }}>
-            오늘의 추천 키워드
+            {_t("todayKeywords")}
           </div>
           <div style={{ fontSize:13, color:homeMuted, lineHeight:1.6 }}>
-            네이버, 구글, 다음 등 실시간 검색 관심도 기반. 키워드를 클릭하면 바로 글쓰기를 시작할 수 있습니다.
+            {_t("keywordsDesc")}
           </div>
         </div>
 
@@ -953,7 +974,7 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
         {loading && (
           <div style={{ textAlign:"center", padding:60, color:homeMuted, fontSize:14 }}>
             <div style={{ width:36, height:36, border:`3px solid ${border}`, borderTopColor:accent, borderRadius:"50%", animation:"spin 1s linear infinite", margin:"0 auto 16px" }} />
-            키워드를 불러오는 중...
+            {_t("loadingKeywords")}
           </div>
         )}
 
@@ -962,8 +983,8 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
             <div style={{ fontSize:48, marginBottom:16, opacity:0.3 }}>
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
             </div>
-            <div style={{ fontSize:15, fontWeight:700, color:homeText, marginBottom:6 }}>오늘의 키워드가 아직 준비되지 않았습니다</div>
-            <div style={{ fontSize:13 }}>매일 오전 7시에 자동으로 업데이트됩니다.</div>
+            <div style={{ fontSize:15, fontWeight:700, color:homeText, marginBottom:6 }}>{_t("noKeywordsYet")}</div>
+            <div style={{ fontSize:13 }}>{_t("keywordsUpdateTime")}</div>
           </div>
         )}
 
@@ -975,7 +996,7 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
                 background: activeCat==="all" ? accent+"18" : "transparent",
                 color: activeCat==="all" ? accent : accent+"88", fontSize:12, fontWeight: activeCat==="all" ? 700 : 500,
                 cursor:"pointer", transition:"all 0.15s", whiteSpace:"nowrap", flexShrink:0 }}>
-              전체 ({keywords.length})
+              {_t("catAll")} ({keywords.length})
             </button>
             {categories.map(cat => {
               const c = catColors[cat] || "#6b7280";
@@ -986,7 +1007,7 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
                     background: isA ? c+"18" : "transparent",
                     color: isA ? c : c+"88", fontSize:12, fontWeight: isA ? 700 : 500,
                     cursor:"pointer", transition:"all 0.15s", whiteSpace:"nowrap", flexShrink:0 }}>
-                  {cat} ({(grouped[cat]||[]).length})
+                  {catLabelMapKw[cat] || cat} ({(grouped[cat]||[]).length})
                 </button>
               );
             })}
@@ -1003,9 +1024,9 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
                   <div key={cat}>
                     <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
                       <div style={{ width:4, height:20, borderRadius:2, background:c }} />
-                      <span style={{ fontSize:15, fontWeight:800, color:homeText }}>{cat}</span>
-                      <span style={{ fontSize:11, color:c, fontWeight:600 }}>{items.length}개</span>
-                      <span onClick={() => setActiveCat(cat)} style={{ fontSize:11, color:accent, cursor:"pointer", fontWeight:600, marginLeft:"auto" }}>전체보기 &rarr;</span>
+                      <span style={{ fontSize:15, fontWeight:800, color:homeText }}>{catLabelMapKw[cat] || cat}</span>
+                      <span style={{ fontSize:11, color:c, fontWeight:600 }}>{items.length}{_t("itemCount")}</span>
+                      <span onClick={() => setActiveCat(cat)} style={{ fontSize:11, color:accent, cursor:"pointer", fontWeight:600, marginLeft:"auto" }}>{_t("viewAllArrow")} &rarr;</span>
                     </div>
                     <div style={{ display:"flex", flexDirection:"column", gap:0, border:`1px solid ${border}`, borderRadius:10, overflow:"hidden" }}>
                       {items.slice(0, 5).map((kw, i) => (
@@ -1079,26 +1100,42 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
 }
 
 // ── 트렌드 키워드 섹션 ──────────────────────────────────────
-function TrendKeywords({ isDark, homeText, homeMuted, cardBdr, setAiMenu, _s }) {
+function TrendKeywords({ isDark, homeText, homeMuted, cardBdr, setAiMenu, _s: _sProp }) {
+  const { t: _s, lang } = useI18n();
   const [trendPlatform, setTrendPlatform] = useState(0);
   const accent_ = "#7c6aff";
-  const trendPlatforms = [
-    { name:"인스타그램", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
-      keywords:["릴스 알고리즘 2026","인스타 팔로워 늘리기","인스타 해시태그 전략","숏폼 콘텐츠 제작","인스타 쇼핑 태그"] },
-    { name:"유튜브", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="4"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>,
-      keywords:["유튜브 쇼츠 수익화","썸네일 디자인 팁","유튜브 SEO 최적화","구독자 1000명 전략","유튜브 스튜디오 분석"] },
-    { name:"네이버블로그", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 7h3l2 5 2-5h3v10h-2.5V11l-2 4h-1l-2-4v6H8V7z"/></svg>,
-      keywords:["블로그 상위노출 2026","체험단 마케팅 전략","키워드 분석 도구","블로그 수익화 방법","네이버 플레이스 최적화"] },
-    { name:"틱톡", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v14a4 4 0 1 1-3-3.87"/><path d="M19 2v4c-3 0-5-2-5-4"/></svg>,
-      keywords:["틱톡 알고리즘 공략","틱톡 쇼핑 라이브","틱톡 광고 세팅법","바이럴 챌린지 기획","틱톡 크리에이터 펀드"] },
-    { name:"스레드", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8c2.5 0 4 1.5 4 4s-1.5 4-4 4-4-1.5-4-4"/></svg>,
-      keywords:["스레드 팔로워 전략","스레드 vs X 비교","스레드 마케팅 활용법","텍스트 콘텐츠 기획","스레드 알고리즘 이해"] },
-  ];
+  const trendPlatformsData = {
+    ko: [
+      { name:_s("ai_trendInsta"), icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
+        keywords:["릴스 알고리즘 2026","인스타 팔로워 늘리기","인스타 해시태그 전략","숏폼 콘텐츠 제작","인스타 쇼핑 태그"] },
+      { name:_s("ai_trendYoutube"), icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="4"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>,
+        keywords:["유튜브 쇼츠 수익화","썸네일 디자인 팁","유튜브 SEO 최적화","구독자 1000명 전략","유튜브 스튜디오 분석"] },
+      { name:_s("ai_trendNaver"), icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 7h3l2 5 2-5h3v10h-2.5V11l-2 4h-1l-2-4v6H8V7z"/></svg>,
+        keywords:["블로그 상위노출 2026","체험단 마케팅 전략","키워드 분석 도구","블로그 수익화 방법","네이버 플레이스 최적화"] },
+      { name:_s("ai_trendTiktok"), icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v14a4 4 0 1 1-3-3.87"/><path d="M19 2v4c-3 0-5-2-5-4"/></svg>,
+        keywords:["틱톡 알고리즘 공략","틱톡 쇼핑 라이브","틱톡 광고 세팅법","바이럴 챌린지 기획","틱톡 크리에이터 펀드"] },
+      { name:_s("ai_trendThreads"), icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8c2.5 0 4 1.5 4 4s-1.5 4-4 4-4-1.5-4-4"/></svg>,
+        keywords:["스레드 팔로워 전략","스레드 vs X 비교","스레드 마케팅 활용법","텍스트 콘텐츠 기획","스레드 알고리즘 이해"] },
+    ],
+    en: [
+      { name:"Instagram", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
+        keywords:["Reels algorithm 2026","Grow Instagram followers","Hashtag strategy","Short-form content tips","Instagram shopping tags"] },
+      { name:"YouTube", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="4" width="20" height="16" rx="4"/><polygon points="10,8 16,12 10,16" fill="currentColor" stroke="none"/></svg>,
+        keywords:["YouTube Shorts monetization","Thumbnail design tips","YouTube SEO optimization","1K subscriber strategy","YouTube Studio analytics"] },
+      { name:"Blog", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 7h3l2 5 2-5h3v10h-2.5V11l-2 4h-1l-2-4v6H8V7z"/></svg>,
+        keywords:["Blog SEO ranking 2026","Review marketing strategy","Keyword analysis tools","Blog monetization","Local SEO optimization"] },
+      { name:"TikTok", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2v14a4 4 0 1 1-3-3.87"/><path d="M19 2v4c-3 0-5-2-5-4"/></svg>,
+        keywords:["TikTok algorithm guide","TikTok Shop Live","TikTok ads setup","Viral challenge ideas","TikTok Creator Fund"] },
+      { name:"Threads", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8c2.5 0 4 1.5 4 4s-1.5 4-4 4-4-1.5-4-4"/></svg>,
+        keywords:["Threads follower strategy","Threads vs X comparison","Threads marketing tips","Text content planning","Threads algorithm guide"] },
+    ],
+  };
+  const trendPlatforms = trendPlatformsData[lang] || trendPlatformsData[lang === "ja" || lang === "zh" ? "en" : "ko"] || trendPlatformsData.en;
   const tp = trendPlatforms[trendPlatform];
   return (
     <div style={{ maxWidth:540, margin:"0 auto 32px", textAlign:"left" }}>
       <div style={{ fontSize:15, fontWeight:800, color:homeText, marginBottom:14, textAlign:"center" }}>
-        {_s("트렌드 키워드","Trending Keywords")}
+        {_s("trendKeywords")}
       </div>
       <div style={{ display:"flex", gap:6, marginBottom:14, flexWrap:"wrap", justifyContent:"center" }}>
         {trendPlatforms.map((p, pi) => (
@@ -1185,31 +1222,29 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // ── 공통 도구 헤더 (아이콘 + 제목 + 뒤로가기) ──
   const TOOL_INFO = {
     // 글쓰기
-    blog_naver:   { icon:"/icon-naver-blog.png", label:"네이버 블로그", parent:"blog_write" },
-    blog_cafe:    { icon:"/icon-naver-cafe.webp", label:"네이버 카페", parent:"blog_write" },
-    blog_tistory: { icon:"/icon-tistory.png", label:"티스토리", parent:"blog_write" },
-    blog_insta:   { icon:"/icon-instagram.webp", label:"인스타그램", parent:"blog_write" },
-    blog_thread:  { icon:"/icon-threads.png", label:"스레드", parent:"blog_write" },
-    blog_link:    { icon:"/icon-youtube.png", label:"유튜브 → 블로그", parent:"blog_write" },
-    blog_news:    { icon:"/icons3d/news.png", label:"뉴스 → 블로그", parent:"blog_write" },
-    blog_yt_blog: { icon:"/icon-youtube.png", label:"유튜브 → 블로그", parent:"blog_write" },
+    blog_naver:   { icon:"/icon-naver-blog.png", label:tt("labelNaverBlog") || tt("naverBlog"), parent:"blog_write" },
+    blog_cafe:    { icon:"/icon-naver-cafe.webp", label:tt("naverCafe"), parent:"blog_write" },
+    blog_tistory: { icon:"/icon-tistory.png", label:tt("tistory"), parent:"blog_write" },
+    blog_insta:   { icon:"/icon-instagram.webp", label:tt("instaCap"), parent:"blog_write" },
+    blog_thread:  { icon:"/icon-threads.png", label:tt("thread"), parent:"blog_write" },
+    blog_link:    { icon:"/icon-youtube.png", label:tt("ytBlog"), parent:"blog_write" },
+    blog_news:    { icon:"/icons3d/news.png", label:tt("newsBlog"), parent:"blog_write" },
+    blog_yt_blog: { icon:"/icon-youtube.png", label:tt("ytBlog"), parent:"blog_write" },
     // 콘텐츠 제작
-    // cardnews_simple 제거됨
-    detail_simple:   { icon:"/icons3d/memo.png", label:"상세페이지", parent:"content_create" },
-    // thumbnail_gen, ppt_gen 제거됨
+    detail_simple:   { icon:"/icons3d/memo.png", label:tt("toolDetailPage"), parent:"content_create" },
     // 이미지
-    product_shot:  { icon:"/icons3d/camera.png", label:"제품컷", parent:"image_tools" },
-    logo_gen:      { icon:"/icons3d/palette.png", label:"로고", parent:"image_tools" },
-    mockup_gen:    { icon:"/icons3d/sns-app.png", label:"목업", parent:"image_tools" },
-    model_gen:     { icon:"/icons3d/char-standing.png", label:"모델", parent:"image_tools" },
-    skin_retouch:  { icon:"/icons3d/thumbsup.png", label:"피부 보정", parent:"image_tools" },
-    face_swap:     { icon:"/icons3d/char-headphone.png", label:"얼굴 교체", parent:"image_tools" },
-    outfit_swap:   { icon:"/icons3d/char-scarf.png", label:"의상 교체", parent:"image_tools" },
-    outpaint:      { icon:"/icons3d/cloud-upload.png", label:"여백 늘리기", parent:"image_tools" },
+    product_shot:  { icon:"/icons3d/camera.png", label:tt("toolProductShot"), parent:"image_tools" },
+    logo_gen:      { icon:"/icons3d/palette.png", label:tt("toolLogo"), parent:"image_tools" },
+    mockup_gen:    { icon:"/icons3d/sns-app.png", label:tt("toolMockup"), parent:"image_tools" },
+    model_gen:     { icon:"/icons3d/char-standing.png", label:tt("toolModel"), parent:"image_tools" },
+    skin_retouch:  { icon:"/icons3d/thumbsup.png", label:tt("toolSkinRetouch"), parent:"image_tools" },
+    face_swap:     { icon:"/icons3d/char-headphone.png", label:tt("toolFaceSwap2"), parent:"image_tools" },
+    outfit_swap:   { icon:"/icons3d/char-scarf.png", label:tt("toolOutfitSwap2"), parent:"image_tools" },
+    outpaint:      { icon:"/icons3d/cloud-upload.png", label:tt("toolOutpaint2"), parent:"image_tools" },
     // 비즈니스 문서
-    prompt_studio_make: { icon:"/icons3d/report.png", label:"비즈니스 문서", parent:"prompt_studio" },
+    prompt_studio_make: { icon:"/icons3d/report.png", label:tt("bizDoc"), parent:"prompt_studio" },
     // 직접 디자인
-    canvas_direct_: { icon:"/icons3d/palette.png", label:"직접 디자인", parent:"content_create" },
+    canvas_direct_: { icon:"/icons3d/palette.png", label:tt("directDesign"), parent:"content_create" },
   };
 
   // 도구별 헤더 정보 (i18n 적용)
@@ -1283,23 +1318,23 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // 비즈니스 문서: 선택 화면
   if (aiMenu === "prompt_studio") {
     const docItems = [
-      { category: "비즈니스", items: [
-        { id:"prompt_studio_make", docType:"proposal",    icon:"📋", label:"사업 제안서", desc:"투자·파트너 제안" },
-        { id:"prompt_studio_make", docType:"bizplan",     icon:"📊", label:"사업계획서", desc:"창업·투자유치용" },
-        { id:"prompt_studio_make", docType:"ppt_outline", icon:"📑", label:"PPT 구성안", desc:"발표 슬라이드 기획" },
-        { id:"prompt_studio_make", docType:"report",      icon:"📝", label:"보고서", desc:"업무·분석 보고서" },
+      { category: tt("docBiz"), items: [
+        { id:"prompt_studio_make", docType:"proposal",    icon:"📋", label:tt("docProposal"), desc:tt("docProposalDesc") },
+        { id:"prompt_studio_make", docType:"bizplan",     icon:"📊", label:tt("docBizPlan"), desc:tt("docBizPlanDesc") },
+        { id:"prompt_studio_make", docType:"ppt_outline", icon:"📑", label:tt("docPpt"), desc:tt("docPptDesc") },
+        { id:"prompt_studio_make", docType:"report",      icon:"📝", label:tt("docReport"), desc:tt("docReportDesc") },
       ]},
-      { category: "업무", items: [
-        { id:"prompt_studio_make", docType:"planner",  icon:"📅", label:"플래너·일정표", desc:"프로젝트·업무 계획" },
-        { id:"prompt_studio_make", docType:"meeting",  icon:"📃", label:"회의록", desc:"회의 안건·결과 정리" },
-        { id:"prompt_studio_make", docType:"email",    icon:"✉️", label:"비즈니스 메일", desc:"공식 이메일·레터" },
-        { id:"prompt_studio_make", docType:"contract", icon:"📜", label:"계약서 초안", desc:"계약·합의서 템플릿" },
+      { category: tt("docWork"), items: [
+        { id:"prompt_studio_make", docType:"planner",  icon:"📅", label:tt("docPlanner"), desc:tt("docPlannerDesc") },
+        { id:"prompt_studio_make", docType:"meeting",  icon:"📃", label:tt("docMeeting"), desc:tt("docMeetingDesc") },
+        { id:"prompt_studio_make", docType:"email",    icon:"✉️", label:tt("docEmail"), desc:tt("docEmailDesc") },
+        { id:"prompt_studio_make", docType:"contract", icon:"📜", label:tt("docContract"), desc:tt("docContractDesc") },
       ]},
-      { category: "메시지·인사", items: [
-        { id:"prompt_studio_make", docType:"congrats",   icon:"🎉", label:"축하 메시지", desc:"결혼·승진·생일·개업" },
-        { id:"prompt_studio_make", docType:"condolence", icon:"💐", label:"위로·감사", desc:"조의·병문안·감사" },
-        { id:"prompt_studio_make", docType:"speech",     icon:"🎤", label:"인사말·축사", desc:"행사·연설·건배사" },
-        { id:"prompt_studio_make", docType:"invite",     icon:"💌", label:"초대장·안내문", desc:"행사·모임·공지" },
+      { category: tt("docMessage"), items: [
+        { id:"prompt_studio_make", docType:"congrats",   icon:"🎉", label:tt("docCongrats"), desc:tt("docCongratsDesc") },
+        { id:"prompt_studio_make", docType:"condolence", icon:"💐", label:tt("docCondolence"), desc:tt("docCondolenceDesc") },
+        { id:"prompt_studio_make", docType:"speech",     icon:"🎤", label:tt("docSpeech"), desc:tt("docSpeechDesc") },
+        { id:"prompt_studio_make", docType:"invite",     icon:"💌", label:tt("docInvite"), desc:tt("docInviteDesc") },
       ]},
     ];
     return (
@@ -1307,8 +1342,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f8f9fb" }}>
           <div style={{ maxWidth:800, margin:"0 auto", padding:"40px 24px 60px" }}>
             <div style={{ textAlign:"center", marginBottom:36 }}>
-              <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>어떤 문서를 작성할까요?</div>
-              <div style={{ fontSize:13, color:homeMuted }}>문서 유형을 선택하면 AI가 작성해드려요</div>
+              <div style={{ fontSize:24, fontWeight:900, color:homeText, marginBottom:6 }}>{tt("whatDocCreate")}</div>
+              <div style={{ fontSize:13, color:homeMuted }}>{tt("docSelectDesc")}</div>
             </div>
             {/* 최근 문서 */}
             {(() => {
@@ -1317,15 +1352,15 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                 if (plans.length === 0) return null;
                 return (
                   <div style={{ marginBottom:28 }}>
-                    <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>최근 작성한 문서</div>
+                    <div style={{ fontSize:14, fontWeight:800, color:homeText, marginBottom:12, paddingLeft:4 }}>{tt("recentDocs")}</div>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:8 }}>
                       {plans.map((p, i) => (
                         <button key={i} onClick={() => setAiMenu("prompt_studio_make")}
                           style={{ padding:"12px 14px", borderRadius:12, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}
                           onMouseEnter={e => e.currentTarget.style.borderColor="#7c6aff"}
                           onMouseLeave={e => e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}>
-                          <div style={{ fontSize:12, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title || p.topic || "제목 없음"}</div>
-                          <div style={{ fontSize:10, color:homeMuted, marginTop:3 }}>{p.docType || "문서"} · {p.date || ""}</div>
+                          <div style={{ fontSize:12, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title || p.topic || tt("untitled")}</div>
+                          <div style={{ fontSize:10, color:homeMuted, marginTop:3 }}>{p.docType || tt("ai_doc")} · {p.date || ""}</div>
                         </button>
                       ))}
                     </div>
@@ -1374,7 +1409,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // SNS 뉴스 + 뉴스레터 구독
   if (aiMenu === "hot_keyword") {
     const handleNewsletterSub = async () => {
-      if (!nlEmail || !nlEmail.includes("@")) { alert("올바른 이메일을 입력해주세요."); return; }
+      if (!nlEmail || !nlEmail.includes("@")) { alert(tt("validEmailPlease")); return; }
       try {
         const sb = (await import("@supabase/supabase-js")).createClient(
           import.meta.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co",
@@ -1382,7 +1417,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         );
         await sb.from("newsletter_subscribers").upsert({ email: nlEmail, subscribed_at: new Date().toISOString(), source: "sns_news" }, { onConflict: "email" });
         setNlSent(true);
-      } catch (e) { console.error("Newsletter sub error:", e); alert("구독 처리 중 오류가 발생했습니다."); }
+      } catch (e) { console.error("Newsletter sub error:", e); alert(tt("subError")); }
     };
     return (
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
@@ -1390,21 +1425,21 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         <div style={{ flexShrink:0, padding:"36px 24px 28px" }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
             <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(239,68,68,0.1)", fontSize:12, fontWeight:700, color:"#ef4444", marginBottom:14 }}>SNS 뉴스</div>
-            <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:6 }}>SNS 마케팅 최신 뉴스를<br/>한눈에 확인하세요</div>
-            <div style={{ fontSize:13, color: isDark?"rgba(255,255,255,0.5)":"#999", marginBottom:20 }}>매일 업데이트되는 SNS 마케팅 트렌드와 팁을 받아보세요.</div>
+            <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:6, whiteSpace:"pre-line" }}>{tt("snsNewsHeader")}</div>
+            <div style={{ fontSize:13, color: isDark?"rgba(255,255,255,0.5)":"#999", marginBottom:20 }}>{tt("snsNewsSubtitle")}</div>
             {/* 뉴스레터 구독 */}
             {nlSent ? (
               <div style={{ padding:"14px 20px", borderRadius:12, background:"rgba(16,185,129,0.08)", border:"1px solid rgba(16,185,129,0.2)", fontSize:13, fontWeight:600, color:"#10b981" }}>
-                구독이 완료되었습니다! 매일 최신 뉴스를 이메일로 보내드립니다.
+                {tt("subscribed")}
               </div>
             ) : (
               <div style={{ display:"flex", gap:8 }}>
-                <input value={nlEmail} onChange={e => setNlEmail(e.target.value)} placeholder="이메일 주소를 입력하세요"
+                <input value={nlEmail} onChange={e => setNlEmail(e.target.value)} placeholder={tt("emailPlaceholder")}
                   style={{ flex:1, padding:"12px 16px", borderRadius:10, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.06)":"#fff", color:isDark?"#fff":"#1a1a1a", fontSize:13, outline:"none" }}
                   onKeyDown={e => e.key === "Enter" && handleNewsletterSub()} />
                 <button onClick={handleNewsletterSub}
                   style={{ padding:"12px 24px", borderRadius:10, border:"none", background:"#7c6aff", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap" }}>
-                  구독하기
+                  {tt("subscribeBtn")}
                 </button>
               </div>
             )}
@@ -1517,7 +1552,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                               style={{ padding:"12px 14px", borderRadius:12, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}
                               onMouseEnter={e => e.currentTarget.style.borderColor="#7c6aff"}
                               onMouseLeave={e => e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}>
-                              <div style={{ fontSize:12, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.title || b.topic || "제목 없음"}</div>
+                              <div style={{ fontSize:12, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.title || b.topic || tt("untitled")}</div>
                               <div style={{ fontSize:10, color:homeMuted, marginTop:3 }}>{b.platform_label || b.type || ""} · {b.date || ""}</div>
                             </button>
                           ))}
@@ -1584,7 +1619,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     const UnifiedCanvasEditorLazy = React.lazy(() => import("./UnifiedCanvasEditor"));
     return (
       <ToolWrap menuId="cardnews_simple">
-        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>에디터 로딩 중...</div>}>
+        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>Loading...</div>}>
           <UnifiedCanvasEditorLazy
             slides={openData?.slides || [{ title:"", body:"", bgColor:"#ffffff", textColor:"#111827", fontSize:42, fontFamily:"Pretendard", image:null }]}
             width={1080} height={1080} mode="cardnews"
@@ -1604,7 +1639,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     const UnifiedCanvasEditorLazy = React.lazy(() => import("./UnifiedCanvasEditor"));
     return (
       <ToolWrap menuId="cardnews_simple">
-        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>에디터 로딩 중...</div>}>
+        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>Loading...</div>}>
           <UnifiedCanvasEditorLazy
             slides={[{ title:"", body:"", bgColor:"#ffffff", textColor:"#111827", fontSize:42, fontFamily:"Pretendard", image:null }]}
             width={cw} height={ch} mode="cardnews"
@@ -1707,10 +1742,11 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   // 회원정보
   if (aiMenu === "profile") {
     if (!user) return null;
-    const nick = user.nick || user.email?.split("@")[0] || "사용자";
+    const nick = user.nick || user.email?.split("@")[0] || "User";
     const initial = nick[0]?.toUpperCase() || "U";
-    const joinDate = user.joinDate ? new Date(user.joinDate).toLocaleDateString("ko-KR") : "-";
-    const lastLogin = user.lastLogin ? new Date(user.lastLogin).toLocaleDateString("ko-KR") : "-";
+    const dateLoc = _lang === "ja" ? "ja-JP" : _lang === "zh" ? "zh-CN" : _lang === "en" ? "en-US" : "ko-KR";
+    const joinDate = user.joinDate ? new Date(user.joinDate).toLocaleDateString(dateLoc) : "-";
+    const lastLogin = user.lastLogin ? new Date(user.lastLogin).toLocaleDateString(dateLoc) : "-";
     const pts = user.points || 0;
     const bdr2 = isDark ? "rgba(255,255,255,0.08)" : "#e9ecef";
     const card2 = isDark ? "rgba(255,255,255,0.04)" : "#fff";
@@ -1727,28 +1763,28 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
             <div style={{ display:"inline-block", padding:"4px 14px", borderRadius:10, fontSize:12, fontWeight:700,
               background: user.role==="admin" ? "rgba(251,191,36,0.15)" : "rgba(99,102,241,0.12)",
               color: user.role==="admin" ? "#fbbf24" : "#a5b4fc" }}>
-              {user.role==="admin" ? "관리자" : "일반회원"}
+              {user.role==="admin" ? tt("roleAdmin") : tt("roleNormal")}
             </div>
           </div>
           {/* 포인트 */}
           <div style={{ borderRadius:14, border:`1px solid #7c6aff20`, background:"rgba(99,102,241,0.06)", padding:"18px 20px", marginBottom:12 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
               <div>
-                <div style={{ fontSize:12, color:isDark?"rgba(255,255,255,0.5)":"#888", marginBottom:2 }}>보유 크레딧</div>
+                <div style={{ fontSize:12, color:isDark?"rgba(255,255,255,0.5)":"#888", marginBottom:2 }}>{tt("heldCredits")}</div>
                 <div style={{ fontSize:28, fontWeight:900, color:"#a5b4fc" }}>{pts.toLocaleString()} <span style={{ fontSize:14 }}>P</span></div>
               </div>
               <button onClick={() => navigate("pricing")}
                 style={{ padding:"10px 20px", borderRadius:10, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:800 }}>
-                충전하기
+                {tt("chargeBtn")}
               </button>
             </div>
           </div>
           {/* 계정 정보 */}
           <div style={{ borderRadius:14, border:`1px solid ${bdr2}`, background:card2, overflow:"hidden", marginBottom:12 }}>
             {[
-              { label:"가입일", value: joinDate },
-              { label:"마지막 로그인", value: lastLogin },
-              { label:"이메일", value: user.email },
+              { label:tt("joinDateLabel"), value: joinDate },
+              { label:tt("lastLoginLabel"), value: lastLogin },
+              { label:tt("emailLabel"), value: user.email },
             ].map((item, i) => (
               <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"14px 18px",
                 borderBottom: i < 2 ? `1px solid ${bdr2}` : "none" }}>
@@ -1761,7 +1797,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
           {/* 로그아웃 */}
           <button onClick={() => { if (onLogout) onLogout(); navigate("home"); }}
             style={{ width:"100%", padding:"13px", borderRadius:12, border:"1px solid rgba(248,113,113,0.3)", background:"rgba(248,113,113,0.06)", color:"#f87171", fontSize:14, fontWeight:700, cursor:"pointer" }}>
-            로그아웃
+            {tt("logoutBtn")}
           </button>
         </div>
         <AiFooter />
@@ -1780,9 +1816,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
       <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
         <div style={{ padding:"36px 24px 28px" }}>
           <div style={{ maxWidth:700, margin:"0 auto" }}>
-            <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(16,185,129,0.1)", fontSize:12, fontWeight:700, color:"#10b981", marginBottom:14 }}>자동 글쓰기</div>
-            <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:8 }}>설정한 시간에 자동으로<br/>블로그 글이 발행됩니다</div>
-            <div style={{ fontSize:14, color: isDark?"rgba(255,255,255,0.5)":"#888", lineHeight:1.6 }}>키워드와 플랫폼을 설정하면 AI가 자동으로 글을 작성하고 발행합니다.</div>
+            <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(16,185,129,0.1)", fontSize:12, fontWeight:700, color:"#10b981", marginBottom:14 }}>{tt("autoWriteBadge")}</div>
+            <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:8, whiteSpace:"pre-line" }}>{tt("autoWriteTitle")}</div>
+            <div style={{ fontSize:14, color: isDark?"rgba(255,255,255,0.5)":"#888", lineHeight:1.6 }}>{tt("autoWriteDesc")}</div>
           </div>
         </div>
         <AutoPublisher theme={theme} user={user} onLoginRequest={onLoginRequest} />
@@ -1966,23 +2002,22 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         borderRadius:20, padding:"32px 28px", maxWidth:360, width:"90%",
         boxShadow:"0 24px 64px rgba(0,0,0,0.18)", textAlign:"center" }}>
         <div style={{ width:44, height:44, borderRadius:12, background:"rgba(239,68,68,0.1)", margin:"0 auto 14px", display:"flex", alignItems:"center", justifyContent:"center" }}><span style={{color:"#ef4444",fontSize:20,fontWeight:900}}>!</span></div>
-        <div style={{ fontSize:18, fontWeight:900, color:C.text, marginBottom:10 }}>생성 중입니다!</div>
+        <div style={{ fontSize:18, fontWeight:900, color:C.text, marginBottom:10 }}>{tt("generatingAlert")}</div>
         <div style={{ fontSize:14, color:C.muted, lineHeight:1.8, marginBottom:24 }}>
-          페이지를 나가면<br/>
-          <span style={{ color:"#f87171", fontWeight:700 }}>결과물이 저장되지 않으며</span><br/>
-          <span style={{ color:"#f59e0b", fontWeight:700 }}>{guardModal.cost}P 포인트가 소진</span>됩니다.<br/>
-          정말 나가시겠습니까?
+          {tt("leaveWarning")}<br/>
+          <span style={{ color:"#f87171", fontWeight:700 }}>{tt("resultNotSaved")}</span><br/>
+          <span style={{ color:"#f59e0b", fontWeight:700 }}>{guardModal.cost}P {tt("pointsConsumed")}</span>{tt("reallyLeave")}
         </div>
         <div style={{ display:"flex", gap:10 }}>
           <button onClick={guardModal.onCancel}
             style={{ flex:1, padding:"12px", borderRadius:11, border:"1px solid "+C.border,
               background:"transparent", color:C.muted, fontSize:14, fontWeight:700, cursor:"pointer" }}>
-            계속 생성하기
+            {tt("continueGen")}
           </button>
           <button onClick={guardModal.onConfirm}
             style={{ flex:1, padding:"12px", borderRadius:11, border:"none",
               background:"linear-gradient(135deg,#ef4444,#dc2626)", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>
-            나가기
+            {tt("leaveBtn")}
           </button>
         </div>
       </div>
@@ -2051,8 +2086,8 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         }}>
           <div style={{ width:32, height:32, borderRadius:"50%", border:"3px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", animation:"spin 1s linear infinite" }} />
           <div>
-            <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>영상 생성 중...</div>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>{shortsJob.completed}/{shortsJob.total}개 완료 · 클릭하여 확인</div>
+            <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>{tt("videoGenProgress")}</div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>{shortsJob.completed}/{shortsJob.total}{tt("completedOf")}</div>
           </div>
         </div>
       )}
@@ -2066,8 +2101,8 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         }}>
           <div style={{ width:24, height:24, borderRadius:"50%", background:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"#22c55e", fontWeight:900 }}>V</div>
           <div>
-            <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>영상 생성 완료!</div>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>클릭하여 결과 확인</div>
+            <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>{tt("videoGenDone")}</div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>{tt("clickToCheck")}</div>
           </div>
         </div>
       )}
@@ -2147,7 +2182,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
       {/* 데스크톱 사이드바 */}
       {sideCollapsed ? (
         <div className="ai-sidebar-desktop" style={{ width: 48, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 12, background: isDark ? "rgba(0,0,0,0.35)" : "#fff", borderRight: `1px solid ${isDark ? "rgba(255,255,255,0.07)" : "#e5e3f5"}` }}>
-          <button onClick={() => setSideCollapsed(false)} title="메뉴 열기"
+          <button onClick={() => setSideCollapsed(false)} title={_t("ai_openMenu")}
             style={{ width: 36, height: 36, borderRadius: 8, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: isDark ? "#a5b4fc" : "#6366f1" }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
           </button>
@@ -2193,7 +2228,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         {/* 콘텐츠 */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex", position: "relative" }}>
           <div className="ai-content-fade" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-            <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>로딩 중...</div>}>
+            <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>Loading...</div>}>
               <AiContentMemo aiMenu={aiMenu} user={user} setAiMenu={setAiMenu} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} C={C} theme={theme} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} setSideOpen={setSideOpen} />
             </React.Suspense>
           </div>

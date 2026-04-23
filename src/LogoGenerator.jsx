@@ -3,6 +3,7 @@ import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken } f
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import { THEMES } from "./theme";
 import StepBar from "./StepBar.jsx";
+import { useI18n } from "./i18n.jsx";
 
 const LOGO_STYLES = [
   { id:"free",       label:"자유로운 로고",      desc:"창의적·독창적",       color:"#ec4899", bg:"rgba(236,72,153,0.15)" },
@@ -53,6 +54,7 @@ async function callAPI(prompt, refB64, refMime) {
 }
 
 export default function LogoGenerator({ isDark, user , onUserUpdate, showPointConfirm}) {
+  const { t } = useI18n();
   const D = isDark;
   const C = THEMES[D ? "dark" : "light"];
   const text    = C.text;
@@ -90,8 +92,8 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
 
   const handleRef = (e) => {
     const f = e.target.files[0]; if (!f) return;
-    if (!f.type.startsWith("image/")) { setError("이미지 파일만 업로드 가능합니다"); e.target.value = ""; return; }
-    if (f.size > 10 * 1024 * 1024) { setError("파일 크기는 10MB 이하만 가능합니다"); e.target.value = ""; return; }
+    if (!f.type.startsWith("image/")) { setError(t("lg_image_only")); e.target.value = ""; return; }
+    if (f.size > 10 * 1024 * 1024) { setError(t("lg_file_limit")); e.target.value = ""; return; }
     const r = new FileReader();
     r.onload = ev => { setRefImage(ev.target.result.split(",")[1]); setRefMime(f.type); };
     r.readAsDataURL(f);
@@ -182,7 +184,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
 
         {/* 스타일 */}
         <div style={{ marginBottom:22 }}>
-          <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:10 }}>① 로고 스타일 선택 *</div>
+          <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:10 }}>{t("lg_style_select")}</div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(120px,1fr))", gap:7 }}>
             {LOGO_STYLES.map(s => {
               const isSel = selStyle === s.id;
@@ -195,32 +197,32 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
               );
             })}
           </div>
-          {selStyle && <div style={{ marginTop:6, fontSize:11, color:"#06b6d4", fontWeight:600 }}>✓ {LOGO_STYLES.find(s=>s.id===selStyle)?.label} 선택됨</div>}
+          {selStyle && <div style={{ marginTop:6, fontSize:11, color:"#06b6d4", fontWeight:600 }}>✓ {LOGO_STYLES.find(s=>s.id===selStyle)?.label} {t("lg_selected")}</div>}
         </div>
 
         {/* 정보 */}
         <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:18 }}>
-          <div style={{ fontSize:13, fontWeight:800, color:text }}>② 정보 입력</div>
-          <div><div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:4 }}>브랜드/로고 이름 *</div>
-            <input value={name} onChange={e=>setName(e.target.value)} placeholder="예: 미리카페, SNS메이킷" style={inp}/></div>
+          <div style={{ fontSize:13, fontWeight:800, color:text }}>{t("lg_info_input")}</div>
+          <div><div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:4 }}>{t("lg_brand_name")}</div>
+            <input value={name} onChange={e=>setName(e.target.value)} placeholder={t("lg_brand_placeholder")} style={inp}/></div>
           <div>
-            <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:4 }}>업종/분야 *</div>
+            <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:4 }}>{t("lg_industry")}</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:5 }}>
               {INDUSTRIES.map(ind => (
                 <button key={ind} onClick={() => setIndustry(ind)}
                   style={{ padding:"6px 12px", borderRadius:12, border:`1px solid ${industry===ind?"#06b6d4":bdr}`, background:industry===ind?"rgba(6,182,212,0.15)":"transparent", color:industry===ind?"#06b6d4":muted, fontSize:11, cursor:"pointer", fontWeight:industry===ind?700:400 }}>{ind}</button>
               ))}
             </div>
-            <input value={industry} onChange={e=>setIndustry(e.target.value)} placeholder="직접 입력" style={inp}/>
+            <input value={industry} onChange={e=>setIndustry(e.target.value)} placeholder={t("lg_industry_direct")} style={inp}/>
           </div>
-          <div><div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:4 }}>브랜드 설명 (선택)</div>
-            <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={2} placeholder="예: 20대 여성 타겟, 감성적 카페 브랜드" style={{ ...inp, resize:"vertical", lineHeight:1.6 }}/></div>
+          <div><div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:4 }}>{t("lg_brand_desc")}</div>
+            <textarea value={desc} onChange={e=>setDesc(e.target.value)} rows={2} placeholder={t("lg_brand_desc_placeholder")} style={{ ...inp, resize:"vertical", lineHeight:1.6 }}/></div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-            <div><div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:4 }}>선호 색상 (선택)</div>
-              <input value={colorPref} onChange={e=>setColorPref(e.target.value)} placeholder="예: 파란색, 골드와 블랙" style={inp}/></div>
-            <div><div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:4 }}>배경</div>
+            <div><div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:4 }}>{t("lg_color_pref")}</div>
+              <input value={colorPref} onChange={e=>setColorPref(e.target.value)} placeholder={t("lg_color_placeholder")} style={inp}/></div>
+            <div><div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:4 }}>{t("lg_bg")}</div>
               <div style={{ display:"flex", gap:4 }}>
-                {[["white","밝은"],["dark","어두운"],["transparent","투명"]].map(([v,l]) => (
+                {[["white",t("lg_bg_light")],["dark",t("lg_bg_dark")],["transparent",t("lg_bg_transparent")]].map(([v,l]) => (
                   <button key={v} onClick={() => setBgColor(v)} style={{ flex:1, padding:"8px 4px", borderRadius:8, border:`1px solid ${bgColor===v?"#06b6d4":bdr}`, background:bgColor===v?"rgba(6,182,212,0.15)":"transparent", color:bgColor===v?"#06b6d4":muted, fontSize:10, cursor:"pointer", fontWeight:bgColor===v?700:400 }}>{l}</button>
                 ))}
               </div></div>
@@ -229,16 +231,16 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
 
         {/* 참고 이미지 */}
         <div style={{ marginBottom:20 }}>
-          <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:7 }}>③ 참고 이미지 (선택)</div>
+          <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:7 }}>{t("lg_ref_image")}</div>
           <input ref={refFileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={handleRef}/>
           {refImage ? (
             <div style={{ display:"flex", gap:10, alignItems:"center", padding:"10px 14px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg }}>
               <img src={`data:${refMime};base64,${refImage}`} alt="" style={{ width:56, height:56, objectFit:"cover", borderRadius:7, flexShrink:0 }}/>
               <div style={{ flex:1 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:text }}>참고 이미지 업로드됨</div>
-                <div style={{ fontSize:10, color:muted }}>색감·분위기만 참고 (그대로 복사 ❌)</div>
+                <div style={{ fontSize:12, fontWeight:700, color:text }}>{t("lg_ref_uploaded")}</div>
+                <div style={{ fontSize:10, color:muted }}>{t("lg_ref_note")}</div>
               </div>
-              <button onClick={() => { setRefImage(null); setRefMime(null); }} style={{ padding:"3px 9px", borderRadius:6, border:"1px solid rgba(239,68,68,0.3)", background:"transparent", color:"#f87171", fontSize:11, cursor:"pointer" }}>제거</button>
+              <button onClick={() => { setRefImage(null); setRefMime(null); }} style={{ padding:"3px 9px", borderRadius:6, border:"1px solid rgba(239,68,68,0.3)", background:"transparent", color:"#f87171", fontSize:11, cursor:"pointer" }}>{t("lg_ref_remove")}</button>
             </div>
           ) : (
             <button onClick={() => refFileRef.current?.click()} style={{ width:"100%", padding:"12px", borderRadius:12, border:`2px dashed ${bdr}`, background:"transparent", color:muted, fontSize:12, cursor:"pointer" }}>
@@ -252,7 +254,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           {/* 생성 개수 */}
           <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <div style={{ fontSize:12, color:muted }}>생성 개수</div>
+            <div style={{ fontSize:12, color:muted }}>{t("lg_gen_count")}</div>
             <div style={{ display:"flex", gap:5 }}>
               {[1,2,3,4].map(n => (
                 <button key={n} onClick={() => setGenCount(n)}
@@ -265,7 +267,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
           </div>
           <button onClick={generate} disabled={!canGenerate}
             style={{ padding:"13px 40px", borderRadius:12, border:"none", cursor:canGenerate?"pointer":"not-allowed", background:canGenerate?"linear-gradient(135deg,#06b6d4,#0891b2)":"rgba(6,182,212,0.3)", color:"#fff", fontSize:14, fontWeight:900, opacity:canGenerate?1:0.6 }}>
-            {user ? `🏷 로고 생성하기 → ${genCount * 10}P` : "✦ 1회 생성하기"}
+            {user ? `${t("lg_gen_btn")} → ${genCount * 10}P` : `${t("lg_gen_once")}`}
           </button>
         </div>
       </div>
@@ -285,7 +287,7 @@ export default function LogoGenerator({ isDark, user , onUserUpdate, showPointCo
             <div style={{ position:"absolute", inset:10, borderRadius:"50%", border:"2px solid transparent", borderTopColor:"rgba(6,182,212,0.5)", animation:"spin 1.6s linear infinite reverse" }}/>
             <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:30 }}>🏷</div>
           </div>
-          <div style={{ fontSize:17, fontWeight:900, color:text, marginBottom:6 }}>로고를 생성하고 있어요</div>
+          <div style={{ fontSize:17, fontWeight:900, color:text, marginBottom:6 }}>{t("lg_generating")}</div>
           <div style={{ fontSize:13, color:"#06b6d4", fontWeight:700, marginBottom:4 }}>
             {genIdx >= 0 ? `버전 ${genIdx+1} / ${genCount} 생성 중...` : "완료!"}
           </div>

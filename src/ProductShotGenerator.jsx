@@ -3,6 +3,7 @@ import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken } f
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import StepBar from "./StepBar.jsx";
 import { THEMES, isDarkTheme } from "./theme";
+import { useI18n } from "./i18n.jsx";
 
 /* ═══════════════════════════════════════════════════════════
    ProductShotGenerator.jsx  ·  AI 제품컷 생성기
@@ -134,6 +135,7 @@ function buildPrompt({ mode, productName, atmosphere, colorTone, gender, age, co
 }
 
 export default function ProductShotGenerator({ isDark, user, onUserUpdate, showPointConfirm, onMenuChange }) {
+  const { t } = useI18n();
   const C      = THEMES[isDark ? "dark" : "light"];
   const D      = isDark;
   const text   = C.text;
@@ -180,12 +182,12 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate, showP
   };
 
   const handleGenerate = async () => {
-    if (!productImg) { setError("제품 이미지를 먼저 업로드해주세요."); return; }
-    if (!mode)       { setError("생성 모드를 선택해주세요."); return; }
+    if (!productImg) { setError(t("ps_upload_first")); return; }
+    if (!mode)       { setError(t("ps_select_mode")); return; }
 
     const cost = 50 * imgCount;
     if (!user) {
-      if (guestLimitExceeded()) { setError("비회원 무료 횟수를 모두 사용했어요. 회원가입 후 계속 이용하세요."); return; }
+      if (guestLimitExceeded()) { setError(t("ps_guest_limit")); return; }
       incrementGuestUsage();
     } else {
       if (showPointConfirm && !(await showPointConfirm(cost))) return;
@@ -216,7 +218,7 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate, showP
     }
     if (imgs.length === 0) {
       // 전부 실패: step 2 유지 + 에러 + 재시도 버튼
-      setError(firstError || "생성 실패. 잠시 후 다시 시도해주세요.");
+      setError(firstError || t("ps_gen_fail"));
       return;
     }
     if (user) {

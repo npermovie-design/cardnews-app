@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { isDarkTheme } from "./theme";
 import { callAI } from "./aiClient";
+import { useI18n } from "./i18n.jsx";
 
 /* ════════════════════════════════════════════════════════════
    AutoPublisher — 네이버 블로그/카페 자동발행 (관리자 전용)
@@ -39,6 +40,7 @@ function saveConfigs(configs) {
 }
 
 export default function AutoPublisher({ theme, user, onLoginRequest, embedded }) {
+  const { t } = useI18n();
   const isDark = isDarkTheme(theme);
   const isAdmin = user?.role === "admin";
 
@@ -74,8 +76,8 @@ export default function AutoPublisher({ theme, user, onLoginRequest, embedded })
     return (
       <div style={{ textAlign: "center", padding: "80px 20px" }}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
-        <div style={{ fontSize: 18, fontWeight: 800, color: isDark ? "#fff" : "#1a1a2e", marginBottom: 8 }}>관리자 전용 기능</div>
-        <div style={{ fontSize: 14, color: isDark ? "rgba(255,255,255,0.5)" : "#888" }}>자동발행 기능은 현재 관리자만 사용할 수 있습니다.</div>
+        <div style={{ fontSize: 18, fontWeight: 800, color: isDark ? "#fff" : "#1a1a2e", marginBottom: 8 }}>{t("ap_admin_only")}</div>
+        <div style={{ fontSize: 14, color: isDark ? "rgba(255,255,255,0.5)" : "#888" }}>{t("ap_admin_only_desc")}</div>
       </div>
     );
   }

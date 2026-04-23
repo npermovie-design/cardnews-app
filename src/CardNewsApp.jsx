@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { changePoints, getAiUsage, setAiUsage } from "./storage";
 import { callAI } from "./aiClient";
+import { useI18n } from "./i18n";
 
 function loadJSZip() {
   return new Promise(function(resolve, reject) {
@@ -31,52 +32,52 @@ let BG_COLORS = [
 let TEXT_COLORS = ["#ffffff","#000000","#fef3c7","#dcfce7","#dbeafe","#fce7f3","#a5b4fc","#f0abfc"];
 
 let DESIGN_PRESETS = [
-  {key:"bold_dark",  label:"볼드 다크",  bgColor:"#1c1c1e", textColor:"#ffffff", titleSize:30, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"900", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
-  {key:"minimal",    label:"미니멀",     bgColor:"#f8fafc", textColor:"#1e1b4b", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"left",   textValign:"bottom", hlMode:"underline", lineHeightTitle:1.35,lineHeightBody:1.7},
-  {key:"neon",       label:"네온",       bgColor:"#0f172a", textColor:"#a5b4fc", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
-  {key:"warm_cream", label:"크림 웜",    bgColor:"#fefce8", textColor:"#7c2d12", titleSize:26, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"none",      lineHeightTitle:1.4, lineHeightBody:1.8},
-  {key:"forest",     label:"포레스트",   bgColor:"#052e16", textColor:"#dcfce7", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
-  {key:"ocean",      label:"오션",       bgColor:"#0c1445", textColor:"#bae6fd", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"bold_dark",  labelKey:"cn_boldDark",  bgColor:"#1c1c1e", textColor:"#ffffff", titleSize:30, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"900", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"minimal",    labelKey:"cn_minimal",    bgColor:"#f8fafc", textColor:"#1e1b4b", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"left",   textValign:"bottom", hlMode:"underline", lineHeightTitle:1.35,lineHeightBody:1.7},
+  {key:"neon",       labelKey:"cn_neon",       bgColor:"#0f172a", textColor:"#a5b4fc", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"warm_cream", labelKey:"cn_warmCream",  bgColor:"#fefce8", textColor:"#7c2d12", titleSize:26, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"none",      lineHeightTitle:1.4, lineHeightBody:1.8},
+  {key:"forest",     labelKey:"cn_forest",     bgColor:"#052e16", textColor:"#dcfce7", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"800", textAlign:"left",   textValign:"middle", hlMode:"pill",      lineHeightTitle:1.3, lineHeightBody:1.7},
+  {key:"ocean",      labelKey:"cn_ocean",      bgColor:"#0c1445", textColor:"#bae6fd", titleSize:28, bodySize:13, subtitleSize:11, highlightSize:13, titleWeight:"700", textAlign:"center", textValign:"middle", hlMode:"box",       lineHeightTitle:1.3, lineHeightBody:1.7},
 ];
 
 let EXAMPLES = [
-  {label:"직장인 번아웃", text:"직장인 번아웃 극복법"},
-  {label:"주식 입문",     text:"주식 투자 완전 초보 가이드"},
-  {label:"다이어트",      text:"다이어트 식단 추천"},
-  {label:"마음 챙김",     text:"하루 10분 마음 챙김 루틴"},
-  {label:"재테크",        text:"2030 재테크 필수 습관"},
-  {label:"홈트",          text:"집에서 할 수 있는 홈트 루틴"},
-  {label:"SNS 성장",      text:"인스타그램 팔로워 늘리는 방법"},
-  {label:"독서법",        text:"성인 자기계발 독서법"},
+  {labelKey:"cn_exBurnout",   text:"직장인 번아웃 극복법"},
+  {labelKey:"cn_exStock",     text:"주식 투자 완전 초보 가이드"},
+  {labelKey:"cn_exDiet",      text:"다이어트 식단 추천"},
+  {labelKey:"cn_exMindful",   text:"하루 10분 마음 챙김 루틴"},
+  {labelKey:"cn_exFinance",   text:"2030 재테크 필수 습관"},
+  {labelKey:"cn_exHomeTrain", text:"집에서 할 수 있는 홈트 루틴"},
+  {labelKey:"cn_exSnsGrowth", text:"인스타그램 팔로워 늘리는 방법"},
+  {labelKey:"cn_exReading",   text:"성인 자기계발 독서법"},
 ];
 
 let PROMPT_EXAMPLES = [
   {
-    label: "기본형",
+    labelKey: "cn_promptBasic",
     topic: "직장인 번아웃 극복법",
     prompt: "주제: 직장인 번아웃 극복법\n대상: 20-40대 직장인\n톤: 공감하되 실용적으로\n슬라이드 수: 6장"
   },
   {
-    label: "상세 지시형",
+    labelKey: "cn_promptDetailed",
     topic: "다이어트 식단",
     prompt: "주제: 다이어트 식단 추천\n대상: 운동 초보 여성\n톤: 친근하고 따뜻하게\n특이사항: 실천 가능한 쉬운 팁 위주, 숫자/통계 포함\n슬라이드 수: 8장"
   },
   {
-    label: "마케팅형",
+    labelKey: "cn_promptMarketing",
     topic: "인스타 팔로워 늘리기",
     prompt: "주제: 인스타그램 팔로워 1000명 만들기\n대상: SNS 초보자\n톤: 자신감 있고 임팩트 있게\n특이사항: 후킹 제목, 행동 유도 문구 포함\n슬라이드 수: 6장"
   },
   {
-    label: "정보형",
+    labelKey: "cn_promptInfo",
     topic: "재테크 습관",
     prompt: "주제: 2030 재테크 필수 습관 5가지\n대상: 사회초년생\n톤: 전문적이지만 이해하기 쉽게\n특이사항: 각 슬라이드마다 핵심 수치 포함\n슬라이드 수: 7장"
   },
 ];
 
 let SNS_LINKS = [
-  {label:"카카오톡", url:"https://open.kakao.com/o/gIw9vTFg",           bg:"#FEE500", tc:"#3A1D1D"},
-  {label:"인스타",   url:"https://www.instagram.com/nperinsight/",      bg:"#E1306C", tc:"#fff"},
-  {label:"유튜브",   url:"https://www.youtube.com/@nperinsight/videos", bg:"#FF0000", tc:"#fff"},
+  {labelKey:"cn_kakao", url:"https://open.kakao.com/o/gIw9vTFg",           bg:"#FEE500", tc:"#3A1D1D"},
+  {labelKey:"cn_insta", url:"https://www.instagram.com/nperinsight/",      bg:"#E1306C", tc:"#fff"},
+  {labelKey:"cn_youtube", url:"https://www.youtube.com/@nperinsight/videos", bg:"#FF0000", tc:"#fff"},
 ];
 
 let USAGE_KEY = "nper_ai_usage";
@@ -358,9 +359,11 @@ function SlideCanvas(props) {
 function PresetCanvas(props) {
   let dp = props.dp; let size = props.size || 110; let isC = props.isC;
   let cRef = useRef(null);
+  let { t } = useI18n();
+  let dpLabel = t(dp.labelKey);
   useEffect(function() {
     if (!cRef.current) { return; }
-    let sl = { title: dp.label, subtitle: "미리보기", body: "카드뉴스 스타일", highlight: "포인트" };
+    let sl = { title: dpLabel, subtitle: t("cn_preview"), body: t("cn_cardStyle"), highlight: t("cn_point") };
     drawSlide(cRef.current, sl, Object.assign({}, dp, {ratio:"1:1"}), null);
   }, [dp.key]);
   return (
@@ -368,7 +371,7 @@ function PresetCanvas(props) {
       style={{cursor:"pointer", borderRadius:9, overflow:"hidden", border: isC ? "2.5px solid #7c6aff" : "2px solid rgba(255,255,255,0.1)", boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.3)" : "none", position:"relative", flexShrink:0}}>
       <canvas ref={cRef} width={size} height={size} style={{display:"block", width:size, height:size}}/>
       <div style={{position:"absolute", bottom:0, left:0, right:0, background:"linear-gradient(transparent,rgba(0,0,0,0.75))", padding:"12px 6px 5px", fontSize:9, fontWeight:700, color:"#fff", textAlign:"center"}}>
-        {dp.label}
+        {dpLabel}
         {isC && <span style={{marginLeft:4, color:"#a5b4fc"}}>✓</span>}
       </div>
     </div>
@@ -405,10 +408,11 @@ function StyleTab(props) {
   let gs = props.gs; let updGs = props.updGs;
   let curBg = props.curBg; let bgRef = props.bgRef;
   let handleBg = props.handleBg; let onRemoveBg = props.onRemoveBg;
+  let { t } = useI18n();
   let overlayVal = Math.round((gs.bgOverlayOpacity !== undefined ? gs.bgOverlayOpacity : 0.5) * 100);
   return (
     <div>
-      <FieldLabel>배경 색상</FieldLabel>
+      <FieldLabel>{t("cn_bgColor")}</FieldLabel>
       <div style={{display:"flex", flexWrap:"wrap", gap:5, marginBottom:10}}>
         {BG_COLORS.map(function(bc) {
           let isC = gs.bgColor === bc.color;
@@ -417,7 +421,7 @@ function StyleTab(props) {
         <input type="color" value={gs.bgColor || "#1c1c1e"} onChange={function(e) { updGs("bgColor", e.target.value); }} style={{width:24, height:24, border:"none", background:"none", cursor:"pointer", padding:0}}/>
       </div>
 
-      <FieldLabel>텍스트 색상</FieldLabel>
+      <FieldLabel>{t("cn_textColor")}</FieldLabel>
       <div style={{display:"flex", gap:5, marginBottom:10, flexWrap:"wrap"}}>
         {TEXT_COLORS.map(function(c) {
           let isC = gs.textColor === c;
@@ -426,21 +430,21 @@ function StyleTab(props) {
         <input type="color" value={gs.textColor || "#ffffff"} onChange={function(e) { updGs("textColor", e.target.value); }} style={{width:22, height:22, border:"none", background:"none", cursor:"pointer", padding:0}}/>
       </div>
 
-      <FieldLabel>배경 사진</FieldLabel>
+      <FieldLabel>{t("cn_bgPhoto")}</FieldLabel>
       <input ref={bgRef} type="file" accept="image/*" onChange={handleBg} style={{display:"none"}}/>
       <div style={{display:"flex", gap:6, marginBottom:8}}>
         <button onClick={function() { if (bgRef.current) { bgRef.current.click(); } }}
           style={{flex:1, padding:"7px 0", borderRadius:7, border:"1px dashed rgba(255,255,255,0.2)", background:"transparent", color:"rgba(255,255,255,0.45)", fontSize:11, cursor:"pointer"}}>
-          {curBg ? "변경" : "업로드"}
+          {curBg ? t("cn_change") : t("cn_upload")}
         </button>
         {curBg && (
-          <button onClick={onRemoveBg} style={{padding:"7px 12px", borderRadius:7, border:"1px solid rgba(255,80,80,0.3)", background:"rgba(255,60,60,0.08)", color:"#ff9090", fontSize:11, cursor:"pointer"}}>제거</button>
+          <button onClick={onRemoveBg} style={{padding:"7px 12px", borderRadius:7, border:"1px solid rgba(255,80,80,0.3)", background:"rgba(255,60,60,0.08)", color:"#ff9090", fontSize:11, cursor:"pointer"}}>{t("cn_remove")}</button>
         )}
       </div>
-      {curBg && <SliderRow label="어둡기" value={overlayVal} minV={0} maxV={90} unit="%" onChange={function(v) { updGs("bgOverlayOpacity", v / 100); }}/>}
+      {curBg && <SliderRow label={t("cn_darkness")} value={overlayVal} minV={0} maxV={90} unit="%" onChange={function(v) { updGs("bgOverlayOpacity", v / 100); }}/>}
 
       <Sep/>
-      <FieldLabel>슬라이드 비율</FieldLabel>
+      <FieldLabel>{t("cn_slideRatio")}</FieldLabel>
       <div style={{display:"flex", gap:4, marginBottom:10}}>
         {RATIOS.map(function(r) {
           let isC = (gs.ratio || "1:1") === r.key;
@@ -453,9 +457,9 @@ function StyleTab(props) {
         })}
       </div>
 
-      <FieldLabel>하이라이트</FieldLabel>
+      <FieldLabel>{t("cn_highlight")}</FieldLabel>
       <div style={{display:"flex", gap:4, marginBottom:8}}>
-        {[["뱃지","pill"],["박스","box"],["밑줄","underline"],["없음","none"]].map(function(pr) {
+        {[[t("cn_hlBadge"),"pill"],[t("cn_hlBox"),"box"],[t("cn_hlUnderline"),"underline"],[t("cn_hlNone"),"none"]].map(function(pr) {
           let isC = (gs.hlMode || "pill") === pr[1];
           return (
             <button key={pr[1]} onClick={function() { updGs("hlMode", pr[1]); }}
@@ -473,11 +477,12 @@ function StyleTab(props) {
 function LayoutTab(props) {
   let gs = props.gs; let updGs = props.updGs;
   let curSlide = props.curSlide; let curEd = props.curEd; let updEd = props.updEd;
+  let { t } = useI18n();
   return (
     <div>
-      <FieldLabel>텍스트 정렬</FieldLabel>
+      <FieldLabel>{t("cn_textAlign")}</FieldLabel>
       <div style={{display:"flex", gap:4, marginBottom:10}}>
-        {[["왼쪽","left"],["가운데","center"],["오른쪽","right"]].map(function(pr) {
+        {[[t("cn_alignLeft"),"left"],[t("cn_alignCenter"),"center"],[t("cn_alignRight"),"right"]].map(function(pr) {
           let isC = (gs.textAlign || "left") === pr[1];
           return (
             <button key={pr[1]} onClick={function() { updGs("textAlign", pr[1]); }}
@@ -487,9 +492,9 @@ function LayoutTab(props) {
           );
         })}
       </div>
-      <FieldLabel>세로 위치</FieldLabel>
+      <FieldLabel>{t("cn_verticalPos")}</FieldLabel>
       <div style={{display:"flex", gap:4, marginBottom:10}}>
-        {[["상단","top"],["중앙","middle"],["하단","bottom"]].map(function(pr) {
+        {[[t("cn_posTop"),"top"],[t("cn_posMiddle"),"middle"],[t("cn_posBottom"),"bottom"]].map(function(pr) {
           let isC = (gs.textValign || "middle") === pr[1];
           return (
             <button key={pr[1]} onClick={function() { updGs("textValign", pr[1]); }}
@@ -499,10 +504,10 @@ function LayoutTab(props) {
           );
         })}
       </div>
-      <SliderRow label="좌우 여백" value={gs.paddingX || 0} minV={0} maxV={40} onChange={function(v) { updGs("paddingX", v); }}/>
+      <SliderRow label={t("cn_paddingX")} value={gs.paddingX || 0} minV={0} maxV={40} onChange={function(v) { updGs("paddingX", v); }}/>
       <Sep/>
-      <FieldLabel>현재 슬라이드 내용</FieldLabel>
-      {[{k:"title",l:"제목"},{k:"subtitle",l:"부제목"},{k:"body",l:"본문"},{k:"highlight",l:"하이라이트"}].map(function(f) {
+      <FieldLabel>{t("cn_currentSlide")}</FieldLabel>
+      {[{k:"title",l:t("cn_title")},{k:"subtitle",l:t("cn_subtitle")},{k:"body",l:t("cn_body")},{k:"highlight",l:t("cn_highlight")}].map(function(f) {
         let curV = (curEd[f.k] !== undefined) ? curEd[f.k] : ((curSlide && curSlide[f.k]) ? curSlide[f.k] : "");
         return (
           <div key={f.k} style={{marginBottom:8}}>
@@ -520,10 +525,11 @@ function LayoutTab(props) {
 // ─── 텍스트 탭 ────────────────────────────────────────────────────────────────
 function TextTab(props) {
   let gs = props.gs; let updGs = props.updGs;
+  let { t } = useI18n();
   let fonts = ["sans-serif","Malgun Gothic","Nanum Gothic","Georgia","Arial"];
   return (
     <div>
-      <FieldLabel>폰트</FieldLabel>
+      <FieldLabel>{t("cn_font")}</FieldLabel>
       <div style={{display:"flex", flexWrap:"wrap", gap:4, marginBottom:10}}>
         {fonts.map(function(f) {
           let isC = (gs.fontFamily || "sans-serif") === f;
@@ -535,9 +541,9 @@ function TextTab(props) {
           );
         })}
       </div>
-      <FieldLabel>제목 굵기</FieldLabel>
+      <FieldLabel>{t("cn_titleWeight")}</FieldLabel>
       <div style={{display:"flex", gap:3, marginBottom:10}}>
-        {[["가늘","300"],["보통","400"],["굵게","700"],["진하게","800"],["블랙","900"]].map(function(pr) {
+        {[[t("cn_weightThin"),"300"],[t("cn_weightNormal"),"400"],[t("cn_weightBold"),"700"],[t("cn_weightHeavy"),"800"],[t("cn_weightBlack"),"900"]].map(function(pr) {
           let isC = (gs.titleWeight || "800") === pr[1];
           return (
             <button key={pr[1]} onClick={function() { updGs("titleWeight", pr[1]); }}
@@ -547,14 +553,14 @@ function TextTab(props) {
           );
         })}
       </div>
-      <SliderRow label="제목 크기"       value={gs.titleSize || 28}     minV={14} maxV={52} onChange={function(v) { updGs("titleSize", v); }}/>
-      <SliderRow label="부제목 크기"     value={gs.subtitleSize || 11}  minV={8}  maxV={24} onChange={function(v) { updGs("subtitleSize", v); }}/>
-      <SliderRow label="본문 크기"       value={gs.bodySize || 13}      minV={8}  maxV={24} onChange={function(v) { updGs("bodySize", v); }}/>
-      <SliderRow label="하이라이트 크기" value={gs.highlightSize || 13} minV={8}  maxV={28} onChange={function(v) { updGs("highlightSize", v); }}/>
+      <SliderRow label={t("cn_titleSize")}       value={gs.titleSize || 28}     minV={14} maxV={52} onChange={function(v) { updGs("titleSize", v); }}/>
+      <SliderRow label={t("cn_subtitleSize")}   value={gs.subtitleSize || 11}  minV={8}  maxV={24} onChange={function(v) { updGs("subtitleSize", v); }}/>
+      <SliderRow label={t("cn_bodySize")}       value={gs.bodySize || 13}      minV={8}  maxV={24} onChange={function(v) { updGs("bodySize", v); }}/>
+      <SliderRow label={t("cn_highlightSize")} value={gs.highlightSize || 13} minV={8}  maxV={28} onChange={function(v) { updGs("highlightSize", v); }}/>
       <Sep/>
-      <FieldLabel>행간</FieldLabel>
-      <SliderRow label="제목 행간" value={Math.round((gs.lineHeightTitle || 1.35) * 10)} minV={10} maxV={22} unit="×0.1" onChange={function(v) { updGs("lineHeightTitle", v / 10); }}/>
-      <SliderRow label="본문 행간" value={Math.round((gs.lineHeightBody  || 1.7)  * 10)} minV={12} maxV={26} unit="×0.1" onChange={function(v) { updGs("lineHeightBody", v / 10); }}/>
+      <FieldLabel>{t("cn_lineHeight")}</FieldLabel>
+      <SliderRow label={t("cn_titleLineHeight")} value={Math.round((gs.lineHeightTitle || 1.35) * 10)} minV={10} maxV={22} unit="×0.1" onChange={function(v) { updGs("lineHeightTitle", v / 10); }}/>
+      <SliderRow label={t("cn_bodyLineHeight")} value={Math.round((gs.lineHeightBody  || 1.7)  * 10)} minV={12} maxV={26} unit="×0.1" onChange={function(v) { updGs("lineHeightBody", v / 10); }}/>
     </div>
   );
 }
@@ -567,10 +573,11 @@ function EditPanel(props) {
   let handleBg = props.handleBg; let onRemoveBg = props.onRemoveBg;
   let curSlide = props.curSlide; let curEd = props.curEd; let updEd = props.updEd;
   let selPreset = props.selPreset; let applyPreset = props.applyPreset;
+  let { t } = useI18n();
   return (
     <div style={{width:270, flexShrink:0, background:"rgba(0,0,0,0.4)", borderRight:"1px solid rgba(255,255,255,0.07)", display:"flex", flexDirection:"column", height:"100%", overflowY:"auto"}}>
       <div style={{padding:"12px 12px 0"}}>
-        <div style={{fontSize:10, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:0.6, marginBottom:8}}>디자인 프리셋</div>
+        <div style={{fontSize:10, color:"rgba(255,255,255,0.3)", fontWeight:700, letterSpacing:0.6, marginBottom:8}}>{t("cn_designPreset")}</div>
         <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, marginBottom:10}}>
           {DESIGN_PRESETS.map(function(dp) {
             let isC = selPreset && selPreset.key === dp.key;
@@ -580,9 +587,9 @@ function EditPanel(props) {
         <Sep/>
       </div>
       <div style={{display:"flex", gap:3, padding:"0 10px 8px"}}>
-        <SegBtn label="스타일"   active={etab === "style"}  onClick={function() { setEtab("style"); }}/>
-        <SegBtn label="레이아웃" active={etab === "layout"} onClick={function() { setEtab("layout"); }}/>
-        <SegBtn label="텍스트"   active={etab === "text"}   onClick={function() { setEtab("text"); }}/>
+        <SegBtn label={t("cn_style")}   active={etab === "style"}  onClick={function() { setEtab("style"); }}/>
+        <SegBtn label={t("cn_layout")} active={etab === "layout"} onClick={function() { setEtab("layout"); }}/>
+        <SegBtn label={t("cn_text")}   active={etab === "text"}   onClick={function() { setEtab("text"); }}/>
       </div>
       <div style={{flex:1, overflowY:"auto", padding:"0 10px 16px"}}>
         {etab === "style"  && <StyleTab gs={gs} updGs={updGs} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={onRemoveBg}/>}
@@ -600,8 +607,9 @@ function PreviewPanel(props) {
   let bgIs = props.bgIs; let sted = props.sted; let tname = props.tname;
   let dlSt = props.dlSt; let dlOne = props.dlOne; let dlZip = props.dlZip;
   let onNew = props.onNew; let onSave = props.onSave; let previewW = props.previewW;
+  let { t } = useI18n();
   let prevDis = idx === 0; let nextDis = idx === slides.length - 1;
-  let msgCol = dlSt.msg && dlSt.msg.indexOf("실패") >= 0 ? "#ff9090" : "#86efac";
+  let msgCol = dlSt.msg && dlSt.msg.indexOf("fail") >= 0 ? "#ff9090" : "#86efac";
   return (
     <div style={{flex:1, overflowY:"auto", padding:"14px 18px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12}}>
       <div style={{width:"100%", maxWidth:previewW + 40, display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
@@ -625,26 +633,26 @@ function PreviewPanel(props) {
         <div style={{display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center"}}>
           <button onClick={dlOne} disabled={dlSt.busy}
             style={{padding:"8px 20px", borderRadius:8, border:"none", cursor: dlSt.busy ? "not-allowed" : "pointer", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
-            현재 저장
+            {t("cn_saveCurrent")}
           </button>
           <button onClick={dlZip} disabled={dlSt.busy}
             style={{padding:"8px 20px", borderRadius:8, cursor: dlSt.busy ? "not-allowed" : "pointer", border:"1px solid rgba(99,102,241,0.4)", background:"rgba(99,102,241,0.1)", color:"#a5b4fc", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
-            ZIP 전체
+            {t("cn_zipAll")}
           </button>
           <button onClick={onSave}
             style={{padding:"8px 14px", borderRadius:8, border:"1px solid rgba(251,191,36,0.35)", background:"rgba(251,191,36,0.08)", color:"#fbbf24", fontSize:12, fontWeight:700, cursor:"pointer"}}>
-            보관함 저장
+            {t("cn_saveToLib")}
           </button>
           <button onClick={onNew}
             style={{padding:"8px 12px", borderRadius:8, border:"1px solid rgba(255,255,255,0.1)", background:"transparent", color:"rgba(255,255,255,0.35)", fontSize:12, cursor:"pointer"}}>
-            새로 만들기
+            {t("cn_createNew")}
           </button>
         </div>
         {dlSt.msg && <div style={{fontSize:11, color:msgCol, textAlign:"center"}}>{dlSt.msg}</div>}
       </div>
 
       <div style={{width:"100%", maxWidth:previewW + 40}}>
-        <div style={{fontSize:11, color:"rgba(255,255,255,0.3)", marginBottom:7, fontWeight:700}}>전체 ({slides.length}장)</div>
+        <div style={{fontSize:11, color:"rgba(255,255,255,0.3)", marginBottom:7, fontWeight:700}}>{t("cn_allSlides")} ({slides.length}{t("cn_slideUnit")})</div>
         <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(70px,1fr))", gap:6}}>
           {slides.map(function(s, i) {
             let sm = Object.assign({}, s, (sted[i] || {}));
@@ -670,6 +678,7 @@ export function PlannerPanel(props) {
   let onClose = props.onClose;
   let onApplySlides = props.onApplySlides;
   let isDark = props.theme !== "light";
+  let { t } = useI18n();
   // ── 테마 색상 변수 ──────────────────────────────────────────────────────
   let panelBg   = isDark ? "#12103a"                  : "#ffffff";
   let innerBg   = isDark ? "#0f0c29"                  : "#f4f4f8";
@@ -725,22 +734,22 @@ export function PlannerPanel(props) {
         body:JSON.stringify({url: urlInput.trim()})
       });
       let crawlData = await crawlRes.json();
-      if (!crawlRes.ok || crawlData.error) { setUrlErr("페이지 읽기 실패: " + (crawlData.error || "접근 불가")); setUrlLoading(false); return; }
+      if (!crawlRes.ok || crawlData.error) { setUrlErr(t("cn_readFailed") + ": " + (crawlData.error || "")); setUrlLoading(false); return; }
       let pageText = crawlData.text || "";
-      if (!pageText || pageText.length < 50) { setUrlErr("페이지 내용을 읽을 수 없어요. 다른 URL을 시도해보세요."); setUrlLoading(false); return; }
+      if (!pageText || pageText.length < 50) { setUrlErr(t("cn_readEmpty")); setUrlLoading(false); return; }
 
       // Step 2: Plan with AI
       let sysMsg = "You are a Korean card news planning expert. Respond ONLY with a JSON object. No explanation, no markdown, no text before or after. Just the raw JSON.\nFormat: {\"topic\":\"주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문 2-3문장\",\"highlight\":\"핵심 강조 문구\"}]}";
       let userMsg = "다음 웹페이지 내용으로 카드뉴스 " + planCnt + "장을 기획해주세요.\n\n[페이지 내용]\n" + pageText;
       if (planNote.trim()) { userMsg = userMsg + "\n\n[추가 요청]\n" + planNote; }
-      let text = await callAI("claude-haiku-4-5", [{role:"user", content:userMsg}], 4000, sysMsg).catch(function(e2) { setUrlErr("오류: " + e2.message); setUrlLoading(false); return null; });
+      let text = await callAI("claude-haiku-4-5", [{role:"user", content:userMsg}], 4000, sysMsg).catch(function(e2) { setUrlErr(t("cn_error") + ": " + e2.message); setUrlLoading(false); return null; });
       if (text === null) return;
       let clean = text.split("```json").join("").split("```").join("").trim();
       let jsonMatch = clean.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) { setUrlErr("오류: JSON을 찾을 수 없어요. 다시 시도해주세요."); setUrlLoading(false); return; }
+      if (!jsonMatch) { setUrlErr(t("cn_error") + ": " + t("cn_jsonNotFound")); setUrlLoading(false); return; }
       let parsed = JSON.parse(jsonMatch[0]);
       setParsedPlan(parsed);
-    } catch(e3) { setUrlErr("오류: " + e3.message); }
+    } catch(e3) { setUrlErr(t("cn_error") + e3.message); }
     finally { setUrlLoading(false); }
   }
 
@@ -751,15 +760,15 @@ export function PlannerPanel(props) {
       let sysMsg = "당신은 인스타그램 카드뉴스 기획 전문가입니다.\n사용자가 주제와 요구사항을 주면, 각 슬라이드의 제목/부제목/본문/하이라이트 문구를 기획해주세요.\n반드시 아래 JSON 형식만 반환하세요:\n{\"topic\":\"최종 주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문 2-3문장\",\"highlight\":\"핵심 강조 문구\"}]}";
       let userMsg = "주제: " + planTopic + "\n슬라이드 수: " + planCnt + "장";
       if (planNote.trim()) { userMsg = userMsg + "\n추가 요청: " + planNote; }
-      let text = await callAI("claude-haiku-4-5", [{role:"user", content:userMsg}], 4000, sysMsg).catch(function(e2) { setPlanErr("오류: " + e2.message); setPlanLoading(false); return null; });
+      let text = await callAI("claude-haiku-4-5", [{role:"user", content:userMsg}], 4000, sysMsg).catch(function(e2) { setPlanErr(t("cn_error") + ": " + e2.message); setPlanLoading(false); return null; });
       if (text === null) return;
       let clean = text.split("```json").join("").split("```").join("").trim();
       let jsonMatch2 = clean.match(/\{[\s\S]*\}/);
-      if (!jsonMatch2) { setPlanErr("오류: JSON을 찾을 수 없어요. 다시 시도해주세요."); setPlanLoading(false); return; }
+      if (!jsonMatch2) { setPlanErr(t("cn_error") + ": " + t("cn_jsonNotFound")); setPlanLoading(false); return; }
       let parsed = JSON.parse(jsonMatch2[0]);
       setParsedPlan(parsed);
       setPlanResult(JSON.stringify(parsed, null, 2));
-    } catch(e3) { setPlanErr("오류: " + e3.message); }
+    } catch(e3) { setPlanErr(t("cn_error") + e3.message); }
     finally { setPlanLoading(false); }
   }
 
@@ -774,10 +783,10 @@ export function PlannerPanel(props) {
         : {position:"fixed", top:"50%", left:"50%", transform:"translate(-50%,-50%)", width:"min(780px,96vw)", maxHeight:"90vh", background:panelBg, borderRadius:16, border:"1px solid rgba(255,255,255,0.1)", display:"flex", flexDirection:"column", overflow:"hidden", zIndex:1000}}>
         <div style={{padding:"16px 20px", borderBottom:"1px solid "+headerBdr, display:"flex", justifyContent:"space-between", alignItems:"center"}}>
           <div>
-            <div style={{fontSize:15, fontWeight:800}}>✨ 카드뉴스 기획 AI</div>
-            <div style={{fontSize:11, color:textMuted, marginTop:2}}>주제와 방향을 입력하면 슬라이드 문구를 자동으로 기획해드려요</div>
+            <div style={{fontSize:15, fontWeight:800}}>{"✨ " + t("cn_plannerTitle")}</div>
+            <div style={{fontSize:11, color:textMuted, marginTop:2}}>{t("cn_plannerDesc")}</div>
           <div style={{display:"flex",gap:4,marginTop:10}}>
-            {[{id:"topic",label:"✏️ 글로 기획"},{id:"url",label:"🔗 링크로 기획"}].map(function(m){
+            {[{id:"topic",label:"✏️ " + t("cn_planByTopic")},{id:"url",label:"🔗 " + t("cn_planByLink")}].map(function(m){
               let isA = planMode === m.id;
               return(<button key={m.id} onClick={function(){setPlanMode(m.id);}} style={{padding:"5px 14px",borderRadius:8,border:"none",cursor:"pointer",fontSize:11,fontWeight:isA?800:500,background:isA?tabActive:tabBg,color:isA?"#fff":tabText}}>{m.label}</button>);
             })}
@@ -790,20 +799,20 @@ export function PlannerPanel(props) {
           <div style={{width:340, flexShrink:0, padding:"16px", borderRight:"1px solid "+divider}}>
             {planMode === "url" && (
               <div>
-                <div style={{fontSize:10,color:textSub,fontWeight:700,letterSpacing:0.6,marginBottom:6}}>블로그/뉴스 URL 입력</div>
+                <div style={{fontSize:10,color:textSub,fontWeight:700,letterSpacing:0.6,marginBottom:6}}>{t("cn_urlInput")}</div>
                 <div style={{fontSize:11,color:exText,background:exBg,border:"1px solid rgba(255,200,80,0.2)",borderRadius:8,padding:"8px 12px",marginBottom:8,lineHeight:1.6}}>
-                  ⚠️ 텍스트 기반 페이지만 지원돼요<br/>
-                  뉴스기사, 공식 홈페이지 등 글 위주 페이지에 적합해요.<br/>
-                  유튜브, 인스타그램, 네이버블로그 등은 지원되지 않아요.
+                  {"⚠️ " + t("cn_urlWarning")}<br/>
+                  {t("cn_urlWarningDetail1")}<br/>
+                  {t("cn_urlWarningDetail2")}
                 </div>
                 <input value={urlInput} onChange={function(e){setUrlInput(e.target.value);}} placeholder="https://blog.naver.com/..."
                   style={{width:"100%",background:inputBg,border:"1px solid "+inputBdr,borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:12,outline:"none",fontFamily:"inherit",boxSizing:"border-box",marginBottom:10}}/>
-                <div style={{fontSize:10,color:textSub,fontWeight:700,letterSpacing:0.6,marginBottom:5}}>추가 요청사항 (선택)</div>
+                <div style={{fontSize:10,color:textSub,fontWeight:700,letterSpacing:0.6,marginBottom:5}}>{t("cn_additionalReq")}</div>
                 <textarea value={planNote} onChange={function(e){setPlanNote(e.target.value);}} rows={3}
                   placeholder={"톤: 친근하게\n대상: 20대 여성\n특이사항: 핵심만 요약"}
                   style={{width:"100%",background:inputBg,border:"1px solid "+inputBdr,borderRadius:8,padding:"9px 12px",color:"#fff",fontSize:11,outline:"none",resize:"none",fontFamily:"inherit",boxSizing:"border-box",lineHeight:1.6,marginBottom:10}}/>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:14}}>
-                  <span style={{fontSize:11,color:textMuted}}>슬라이드 수</span>
+                  <span style={{fontSize:11,color:textMuted}}>{t("cn_slideCount")}</span>
                   <div style={{display:"flex",gap:4}}>
                     {[4,5,6,7,8,10].map(function(n){
                       let isC = planCnt === n;
@@ -813,7 +822,7 @@ export function PlannerPanel(props) {
                 </div>
                 <button onClick={runUrlPlan} disabled={urlLoading || !urlInput.trim()}
                   style={{width:"100%",padding:"11px",borderRadius:9,border:"none",cursor:(urlLoading||!urlInput.trim())?"not-allowed":"pointer",background:urlInput.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":"rgba(99,102,241,0.2)",color:urlInput.trim()?"#fff":"rgba(255,255,255,0.3)",fontSize:13,fontWeight:800,opacity:urlLoading?0.7:1}}>
-                  {urlLoading ? "분석 중..." : "🔗 URL 분석 시작"}
+                  {urlLoading ? t("cn_analyzingUrl") : "🔗 " + t("cn_urlAnalyze")}
                 </button>
                 {urlErr && <div style={{fontSize:11,color:errColor,marginTop:8,textAlign:"center"}}>{urlErr}</div>}
               </div>
@@ -821,40 +830,40 @@ export function PlannerPanel(props) {
             {planMode === "topic" && (
               <div>
                 <div style={{marginBottom:12}}>
-                  <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:6}}>명령어 예시</div>
+                  <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:6}}>{t("cn_promptExample")}</div>
                   <div style={{display:"flex", gap:4, marginBottom:8}}>
                     {PROMPT_EXAMPLES.map(function(ex, i) {
                       let isC = showExIdx === i;
                       return (
                         <button key={i} onClick={function() { setShowExIdx(i); }}
                           style={{flex:1, padding:"5px 2px", borderRadius:6, border:"none", cursor:"pointer", fontSize:10, fontWeight: isC ? 700 : 400, background: isC ? tabActive : tabBg, color: isC ? "#fff" : tabText}}>
-                          {ex.label}
+                          {t(ex.labelKey)}
                         </button>
                       );
                     })}
                   </div>
                   <div style={{background:slideBg, border:"1px solid "+slideBdr, borderRadius:8, padding:"10px 12px"}}>
-                    <div style={{fontSize:10, color:textSub, marginBottom:4}}>예시 — {selEx.label}</div>
+                    <div style={{fontSize:10, color:textSub, marginBottom:4}}>{t("cn_exampleDash")} — {t(selEx.labelKey)}</div>
                     <pre style={{fontSize:11, color:textMain, lineHeight:1.7, margin:0, whiteSpace:"pre-wrap", fontFamily:"inherit"}}>{selEx.prompt}</pre>
                     <button onClick={function() { setPlanTopic(selEx.topic); setPlanNote(selEx.prompt.split("\n").slice(1).join("\n")); }}
                       style={{marginTop:8, padding:"5px 12px", borderRadius:6, border:"none", cursor:"pointer", background:accentBg, color:"#fff", fontSize:10, fontWeight:700}}>
-                      이 예시 사용하기
+                      {t("cn_useThisExample")}
                     </button>
                   </div>
                 </div>
                 <div style={{marginBottom:10}}>
-                  <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:5}}>주제 *</div>
-                  <input value={planTopic} onChange={function(e) { setPlanTopic(e.target.value); }} placeholder="예) 직장인 번아웃 극복법"
+                  <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:5}}>{t("cn_topicRequired")}</div>
+                  <input value={planTopic} onChange={function(e) { setPlanTopic(e.target.value); }} placeholder={t("cn_topicExPlaceholder")}
                     style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"9px 12px", color:"#fff", fontSize:12, outline:"none", fontFamily:"inherit", boxSizing:"border-box"}}/>
                 </div>
                 <div style={{marginBottom:10}}>
-                  <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:5}}>추가 요청사항 (선택)</div>
+                  <div style={{fontSize:10, color:textSub, fontWeight:700, letterSpacing:0.6, marginBottom:5}}>{t("cn_additionalReq")}</div>
                   <textarea value={planNote} onChange={function(e) { setPlanNote(e.target.value); }} rows={4}
                     placeholder={"대상: 20-40대 직장인\n톤: 공감하되 실용적으로\n특이사항: 숫자/통계 포함"}
                     style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr, borderRadius:8, padding:"9px 12px", color:"#fff", fontSize:11, outline:"none", resize:"none", fontFamily:"inherit", boxSizing:"border-box", lineHeight:1.6}}/>
                 </div>
                 <div style={{display:"flex", alignItems:"center", gap:8, marginBottom:14}}>
-                  <span style={{fontSize:11, color:textMuted}}>슬라이드 수</span>
+                  <span style={{fontSize:11, color:textMuted}}>{t("cn_slideCount")}</span>
                   <div style={{display:"flex", gap:4}}>
                     {[4,5,6,7,8,10].map(function(n) {
                       let isC = planCnt === n;
@@ -869,7 +878,7 @@ export function PlannerPanel(props) {
                 </div>
                 <button onClick={runPlan} disabled={planLoading || !planTopic.trim()}
                   style={{width:"100%", padding:"11px", borderRadius:9, border:"none", cursor: (planLoading || !planTopic.trim()) ? "not-allowed" : "pointer", background: planTopic.trim() ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : "rgba(99,102,241,0.2)", color: planTopic.trim() ? "#fff" : "rgba(255,255,255,0.3)", fontSize:13, fontWeight:800, opacity: planLoading ? 0.7 : 1}}>
-                  {planLoading ? "기획 중..." : "✨ 기획 시작"}
+                  {planLoading ? t("cn_planning") : "✨ " + t("cn_startPlanning")}
                 </button>
                 {planErr && <div style={{fontSize:11, color:errColor, marginTop:8, textAlign:"center"}}>{planErr}</div>}
               </div>
@@ -880,16 +889,16 @@ export function PlannerPanel(props) {
             {!parsedPlan && !planLoading && (
               <div style={{height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:10, color:textMuted, textAlign:"center", padding:"40px 20px"}}>
                 <div style={{fontSize:36}}>📋</div>
-                <div style={{fontSize:13, fontWeight:600}}>왼쪽에서 주제를 입력하고</div>
-                <div style={{fontSize:13, fontWeight:600}}>기획 시작 버튼을 눌러주세요</div>
-                <div style={{fontSize:11, color:textMuted, marginTop:4, lineHeight:1.7}}>AI가 각 슬라이드의 제목, 부제목,<br/>본문, 하이라이트 문구를 자동으로 기획해요</div>
+                <div style={{fontSize:13, fontWeight:600}}>{t("cn_planGuide1")}</div>
+                <div style={{fontSize:13, fontWeight:600}}>{t("cn_planGuide2")}</div>
+                <div style={{fontSize:11, color:textMuted, marginTop:4, lineHeight:1.7, whiteSpace:"pre-line"}}>{t("cn_planGuideDetail")}</div>
               </div>
             )}
             {planLoading && (
               <div style={{height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:12}}>
                 <div style={{fontSize:32}}>⚙️</div>
-                <div style={{fontSize:14, fontWeight:700}}>기획 중...</div>
-                <div style={{fontSize:11, color:textMuted}}>슬라이드 {planCnt}장 기획 중</div>
+                <div style={{fontSize:14, fontWeight:700}}>{t("cn_planning")}</div>
+                <div style={{fontSize:11, color:textMuted}}>{planCnt + t("cn_planSlideCount")}</div>
               </div>
             )}
             {parsedPlan && !planLoading && (
@@ -898,7 +907,7 @@ export function PlannerPanel(props) {
                   <div style={{fontSize:13, fontWeight:800, color:accentClr}}>"{parsedPlan.topic}" · {(parsedPlan.slides || []).length}장</div>
                   <button onClick={function() { if (parsedPlan) { onApplySlides(parsedPlan); onClose(); } }}
                     style={{padding:"8px 18px", borderRadius:8, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:12, fontWeight:800}}>
-                    이 기획으로 편집 시작 →
+                    {t("cn_startEditing")}
                   </button>
                 </div>
                 {(parsedPlan.slides || []).map(function(sl) {
@@ -911,7 +920,7 @@ export function PlannerPanel(props) {
                         <div style={{fontSize:14, fontWeight:800, color:"#fff"}}>{sl.title}</div>
                       </div>
                       {sl.subtitle && (
-                        <div style={{fontSize:11, color:textSub, marginBottom:4, paddingLeft:30}}>부제목: {sl.subtitle}</div>
+                        <div style={{fontSize:11, color:textSub, marginBottom:4, paddingLeft:30}}>{t("cn_subtitleLabel")}: {sl.subtitle}</div>
                       )}
                       {sl.body && (
                         <div style={{fontSize:12, color:textMain, lineHeight:1.65, marginBottom:4, paddingLeft:30}}>{sl.body}</div>
@@ -936,17 +945,18 @@ export function PlannerPanel(props) {
 // ─── 보관함 팝업 ──────────────────────────────────────────────────────────────
 function SavedWorksPanel(props) {
   let works = props.works; let onLoad = props.onLoad; let onDelete = props.onDelete; let onClose = props.onClose;
+  let { t } = useI18n();
   return (
     <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", zIndex:999, display:"flex", alignItems:"center", justifyContent:"center"}}
       onClick={function(e) { if (e.target === e.currentTarget) { onClose(); } }}>
       <div style={{width:500, maxHeight:"80vh", background:"#1a1740", borderRadius:16, border:"1px solid rgba(255,255,255,0.1)", display:"flex", flexDirection:"column", overflow:"hidden"}}>
         <div style={{padding:"16px 20px", borderBottom:"1px solid rgba(255,255,255,0.08)", display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-          <div style={{fontSize:15, fontWeight:800}}>📁 내 보관함</div>
+          <div style={{fontSize:15, fontWeight:800}}>{"📁 " + t("cn_myLibrary")}</div>
           {!inline && <button onClick={onClose} style={{background:"transparent", border:"none", color:"rgba(255,255,255,0.4)", fontSize:18, cursor:"pointer"}}>✕</button>}
         </div>
         <div style={{flex:1, overflowY:"auto", padding:"14px 18px"}}>
           {works.length === 0 && (
-            <div style={{textAlign:"center", padding:"36px 0", color:"rgba(255,255,255,0.3)", fontSize:13}}>저장된 작품이 없어요</div>
+            <div style={{textAlign:"center", padding:"36px 0", color:"rgba(255,255,255,0.3)", fontSize:13}}>{t("cn_noSavedWorks")}</div>
           )}
           {works.map(function(w) {
             return (
@@ -961,11 +971,11 @@ function SavedWorksPanel(props) {
                 <div style={{display:"flex", gap:6}}>
                   <button onClick={function() { onLoad(w); }}
                     style={{padding:"6px 12px", borderRadius:7, border:"none", cursor:"pointer", background:"rgba(99,102,241,0.5)", color:"#fff", fontSize:11, fontWeight:700}}>
-                    불러오기
+                    {t("cn_load")}
                   </button>
                   <button onClick={function() { onDelete(w.id); }}
                     style={{padding:"6px 9px", borderRadius:7, border:"1px solid rgba(255,80,80,0.3)", background:"transparent", color:"#ff9090", fontSize:11, cursor:"pointer"}}>
-                    삭제
+                    {t("delete")}
                   </button>
                 </div>
               </div>
@@ -985,6 +995,7 @@ function Sidebar(props) {
   let onShowSaved = props.onShowSaved;
   let onShowPlanner = props.onShowPlanner;
   let isDark = props.theme !== "light";
+  let { t } = useI18n();
   let info = getLeft(user);
   let pct = Math.round(info.used * 100 / info.limit) + "%";
   let sideBg      = isDark ? "rgba(0,0,0,0.45)"        : "#f0f0f8";
@@ -1003,14 +1014,14 @@ function Sidebar(props) {
   return (
     <div style={{width:185, flexShrink:0, background:sideBg, borderRight:"1px solid "+sideBdr, display:"flex", flexDirection:"column", height:"100vh", position:"sticky", top:0}}>
       <div style={{padding:"18px 14px 10px", borderBottom:"1px solid "+sideBdr}}>
-        <div style={{fontSize:14, fontWeight:900, letterSpacing:-0.3, color:brandText}}>엔퍼</div>
-        <div style={{fontSize:9, color:brandSub, marginTop:1}}>카드뉴스 AI v2.2</div>
+        <div style={{fontSize:14, fontWeight:900, letterSpacing:-0.3, color:brandText}}>{t("cn_brand")}</div>
+        <div style={{fontSize:9, color:brandSub, marginTop:1}}>{t("cn_brandSub")}</div>
       </div>
       <div style={{padding:"8px 8px", flex:1, display:"flex", flexDirection:"column"}}>
         <div style={{fontSize:9, color:menuLabel, fontWeight:700, letterSpacing:1, padding:"3px 8px", marginBottom:2}}>MENU</div>
         {[
-          {id:"home", label:"홈"},
-          {id:"edit", label:"편집 및 저장", hide:!hasSlides},
+          {id:"home", label:t("cn_menuHome")},
+          {id:"edit", label:t("cn_menuEditSave"), hide:!hasSlides},
         ].map(function(item) {
           if (item.hide) { return null; }
           let isA = page === item.id;
@@ -1023,28 +1034,28 @@ function Sidebar(props) {
         })}
         <div style={{marginBottom:2}}>
           <div style={{padding:"6px 10px", fontSize:10, fontWeight:900, color:planLabel, letterSpacing:0.5, display:"flex", alignItems:"center", gap:5}}>
-            ✨ 카드뉴스 기획 AI
+            {"✨ " + t("cn_plannerTitle")}
           </div>
           <button onClick={function(){onShowPlanner("topic");}}
             style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background:"transparent", color:itemText, fontSize:11, fontWeight:400, textAlign:"left", marginBottom:1, borderLeft:"3px solid transparent"}}
             onMouseEnter={function(e){e.currentTarget.style.background=itemHover; e.currentTarget.style.color=itemActive;}}
             onMouseLeave={function(e){e.currentTarget.style.background="transparent"; e.currentTarget.style.color=itemText;}}>
-            ✏️ 글로 기획 AI
+            {"✏️ " + t("cn_planByTopicMenu")}
           </button>
           <button onClick={function(){onShowPlanner("link");}}
             style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background:"transparent", color:itemText, fontSize:11, fontWeight:400, textAlign:"left", marginBottom:1, borderLeft:"3px solid transparent"}}
             onMouseEnter={function(e){e.currentTarget.style.background=itemHover; e.currentTarget.style.color=itemActive;}}
             onMouseLeave={function(e){e.currentTarget.style.background="transparent"; e.currentTarget.style.color=itemText;}}>
-            🔗 링크로 기획 AI
+            {"🔗 " + t("cn_planByLinkMenu")}
           </button>
           <button onClick={function() { setPage("make"); }}
             style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background: page === "make" ? itemActiveBg : "transparent", color: page === "make" ? itemActive : itemText, fontSize:11, fontWeight: page === "make" ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: page === "make" ? "3px solid #7c6aff" : "3px solid transparent"}}>
-            🃏 카드뉴스 바로 만들기
+            {"🃏 " + t("cn_makeDirectMenu")}
           </button>
         </div>
         <button onClick={onShowSaved}
           style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background:"transparent", color:itemText, fontSize:12, fontWeight:400, textAlign:"left", marginBottom:1, borderLeft:"3px solid transparent"}}>
-          📁 내 보관함
+          {"📁 " + t("cn_myLibrary")}
         </button>
 
         <div style={{borderTop:"1px solid "+sideBdr, marginTop:6, paddingTop:6}}>
@@ -1054,24 +1065,24 @@ function Sidebar(props) {
               <button key={s.label} onClick={function() { window.open(s.url, "_blank"); }}
                 style={{width:"100%", display:"flex", alignItems:"center", gap:7, padding:"6px 10px", borderRadius:7, border:"none", cursor:"pointer", background:"transparent", color:comText, fontSize:11, textAlign:"left", marginBottom:1}}>
                 <div style={{width:11, height:11, borderRadius:3, background:s.bg, flexShrink:0}}/>
-                {s.label}
+                {t(s.labelKey)}
               </button>
             );
           })}
           <button onClick={function() { window.open("https://open.kakao.com/o/gIw9vTFg", "_blank"); }}
             style={{width:"100%", display:"flex", alignItems:"center", gap:7, padding:"6px 10px", borderRadius:7, border:"none", cursor:"pointer", background:"rgba(251,191,36,0.06)", color:"#fbbf24", fontSize:11, textAlign:"left"}}>
             <div style={{width:11, height:11, borderRadius:3, background:"#FEE500", flexShrink:0}}/>
-            질문 및 건의방
+            {t("cn_qaRoom")}
           </button>
         </div>
       </div>
 
       <div style={{padding:"10px 12px", borderTop:"1px solid "+sideBdr}}>
         <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4}}>
-          <div style={{fontSize:10, color:usageText}}>{(user ? "회원" : "비회원") + " " + info.used + " / " + info.limit + "회"}</div>
+          <div style={{fontSize:10, color:usageText}}>{(user ? t("cn_member") : t("cn_guest")) + " " + info.used + " / " + info.limit + t("cn_countUnit")}</div>
           <div style={{display:"flex", alignItems:"center", gap:3}}>
             <div style={{width:5, height:5, borderRadius:"50%", background:"#4ade80"}}/>
-            <span style={{fontSize:9, color:usageText}}>{onlineCount}명</span>
+            <span style={{fontSize:9, color:usageText}}>{onlineCount}{t("cn_personUnit")}</span>
           </div>
         </div>
         <div style={{height:3, background:usageBar, borderRadius:2, overflow:"hidden"}}>
@@ -1088,6 +1099,7 @@ function PageHome(props) {
   let hasSlides = props.hasSlides; let tname = props.tname; let slideCnt = props.slideCnt;
   let savedWorks = props.savedWorks; let onShowSaved = props.onShowSaved; let onShowPlanner = props.onShowPlanner;
   let D = props.theme !== "light";
+  let { t } = useI18n();
   let bg    = D ? "transparent"              : "transparent";
   let text  = D ? "#fff"                     : "#1a1a2e";
   let muted = D ? "rgba(255,255,255,0.4)"    : "#888";
@@ -1100,54 +1112,54 @@ function PageHome(props) {
   return (
     <div style={{flex:1, overflowY:"auto", padding:"26px 26px 60px", color:text}}>
       <div style={{marginBottom:22}}>
-        <div style={{fontSize:19, fontWeight:900, letterSpacing:-0.5, marginBottom:5, color:text}}>오늘은 어떤 카드뉴스를 만들어볼까요?</div>
-        <div style={{fontSize:12, color:muted}}>주제만 입력하면 AI가 카드뉴스를 자동으로 만들어드려요</div>
+        <div style={{fontSize:19, fontWeight:900, letterSpacing:-0.5, marginBottom:5, color:text}}>{t("cn_homeTitle")}</div>
+        <div style={{fontSize:12, color:muted}}>{t("cn_homeDesc")}</div>
       </div>
       <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))", gap:10, marginBottom:26}}>
         <div onClick={function() { setPage("make"); setMakeStep(1); }}
           style={{background: D ? "linear-gradient(135deg,rgba(99,102,241,0.28),rgba(139,92,246,0.18))" : "linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.06))", border:"1px solid "+cardABdr, borderRadius:12, padding:"18px 16px", cursor:"pointer"}}>
           <div style={{fontSize:24, marginBottom:7}}>✨</div>
-          <div style={{fontSize:13, fontWeight:800, marginBottom:3, color:text}}>카드뉴스 만들기</div>
-          <div style={{fontSize:11, color:muted, lineHeight:1.5}}>주제 입력 → AI 생성 → 편집</div>
-          <div style={{marginTop:9, fontSize:11, color:accentTxt, fontWeight:700}}>시작하기 →</div>
+          <div style={{fontSize:13, fontWeight:800, marginBottom:3, color:text}}>{t("cn_makeCard")}</div>
+          <div style={{fontSize:11, color:muted, lineHeight:1.5}}>{t("cn_makeCardFlow")}</div>
+          <div style={{marginTop:9, fontSize:11, color:accentTxt, fontWeight:700}}>{t("cn_start")}</div>
         </div>
         <div onClick={onShowPlanner}
           style={{background: D ? "linear-gradient(135deg,rgba(139,92,246,0.25),rgba(168,85,247,0.15))" : "linear-gradient(135deg,rgba(139,92,246,0.08),rgba(168,85,247,0.05))", border:"1px solid "+cardABdr, borderRadius:12, padding:"18px 16px", cursor:"pointer"}}>
           <div style={{fontSize:24, marginBottom:7}}>📋</div>
-          <div style={{fontSize:13, fontWeight:800, marginBottom:3, color:text}}>기획 AI</div>
-          <div style={{fontSize:11, color:muted, lineHeight:1.5}}>제목·본문·하이라이트 자동 기획</div>
-          <div style={{marginTop:9, fontSize:11, color:accentTxt, fontWeight:700}}>기획하기 →</div>
+          <div style={{fontSize:13, fontWeight:800, marginBottom:3, color:text}}>{t("cn_planAI")}</div>
+          <div style={{fontSize:11, color:muted, lineHeight:1.5}}>{t("cn_planAIDesc")}</div>
+          <div style={{marginTop:9, fontSize:11, color:accentTxt, fontWeight:700}}>{t("cn_goPlan")}</div>
         </div>
         {hasSlides && (
           <div onClick={function() { setPage("edit"); }}
             style={{background: D ? "rgba(255,255,255,0.04)" : "#fff", border:"1px solid "+bdr, borderRadius:12, padding:"18px 16px", cursor:"pointer"}}>
             <div style={{fontSize:24, marginBottom:7}}>🎨</div>
-            <div style={{fontSize:13, fontWeight:800, marginBottom:3, color:text}}>이어서 편집</div>
-            <div style={{fontSize:11, color:muted}}>{tname} · {slideCnt}장</div>
-            <div style={{marginTop:9, fontSize:11, color:accentTxt, fontWeight:700}}>편집하러 가기 →</div>
+            <div style={{fontSize:13, fontWeight:800, marginBottom:3, color:text}}>{t("cn_continueEdit")}</div>
+            <div style={{fontSize:11, color:muted}}>{tname} · {slideCnt}{t("cn_slideUnit")}</div>
+            <div style={{marginTop:9, fontSize:11, color:accentTxt, fontWeight:700}}>{t("cn_goEdit")}</div>
           </div>
         )}
         <div onClick={onShowSaved}
           style={{background: D ? "rgba(251,191,36,0.05)" : "rgba(251,191,36,0.08)", border:"1px solid rgba(251,191,36,0.2)", borderRadius:12, padding:"18px 16px", cursor:"pointer"}}>
           <div style={{fontSize:24, marginBottom:7}}>📁</div>
-          <div style={{fontSize:13, fontWeight:800, marginBottom:3, color:text}}>내 보관함</div>
-          <div style={{fontSize:11, color:muted}}>{savedWorks.length}개 저장됨</div>
-          <div style={{marginTop:9, fontSize:11, color:"#f59e0b", fontWeight:700}}>보러 가기 →</div>
+          <div style={{fontSize:13, fontWeight:800, marginBottom:3, color:text}}>{t("cn_myLibrary")}</div>
+          <div style={{fontSize:11, color:muted}}>{savedWorks.length}{t("cn_savedCount")}</div>
+          <div style={{marginTop:9, fontSize:11, color:"#f59e0b", fontWeight:700}}>{t("cn_goSee")}</div>
         </div>
       </div>
 
-      <div style={{marginBottom:12, fontSize:12, fontWeight:700, color:sub}}>사용 방법</div>
+      <div style={{marginBottom:12, fontSize:12, fontWeight:700, color:sub}}>{t("cn_howToUse")}</div>
       <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))", gap:8, marginBottom:24}}>
         {[
-          {n:"01", t:"주제 입력",   d:"만들 카드뉴스 주제를 입력"},
-          {n:"02", t:"기획 AI",     d:"문구를 AI로 먼저 기획 가능"},
-          {n:"03", t:"디자인 선택", d:"6가지 미리보기 프리셋 선택"},
-          {n:"04", t:"편집 저장",   d:"색상·레이아웃 수정 후 PNG"},
+          {n:"01", tt:t("cn_step1Title"), d:t("cn_step1Desc")},
+          {n:"02", tt:t("cn_step2Title"), d:t("cn_step2Desc")},
+          {n:"03", tt:t("cn_step3Title"), d:t("cn_step3Desc")},
+          {n:"04", tt:t("cn_step4Title"), d:t("cn_step4Desc")},
         ].map(function(g) {
           return (
             <div key={g.n} style={{background: D ? "rgba(255,255,255,0.02)" : "#fff", border:"1px solid "+bdr, borderRadius:10, padding:"12px"}}>
               <div style={{width:22, height:22, borderRadius:6, background:"rgba(99,102,241,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:900, color:accentTxt, marginBottom:7}}>{g.n}</div>
-              <div style={{fontSize:12, fontWeight:700, marginBottom:3, color:text}}>{g.t}</div>
+              <div style={{fontSize:12, fontWeight:700, marginBottom:3, color:text}}>{g.tt}</div>
               <div style={{fontSize:10, color:muted, lineHeight:1.5}}>{g.d}</div>
             </div>
           );
@@ -1155,10 +1167,10 @@ function PageHome(props) {
       </div>
 
       <div style={{background: D ? "rgba(251,191,36,0.05)" : "rgba(251,191,36,0.07)", border:"1px solid rgba(251,191,36,0.2)", borderRadius:10, padding:"12px 16px"}}>
-        <div style={{fontSize:12, color:"#f59e0b", fontWeight:700, marginBottom:3}}>기능 개선 건의 · 질문방</div>
+        <div style={{fontSize:12, color:"#f59e0b", fontWeight:700, marginBottom:3}}>{t("cn_suggestion")}</div>
         <div style={{fontSize:11, color:muted, lineHeight:1.7}}>
-          불편한 점이나 추가 기능은{" "}
-          <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer" style={{color:"#f59e0b", fontWeight:700}}>카카오톡 질문방</a>에 올려주세요!
+          {t("cn_suggestionDesc")}{" "}
+          <a href="https://open.kakao.com/o/gIw9vTFg" target="_blank" rel="noopener noreferrer" style={{color:"#f59e0b", fontWeight:700}}>{t("cn_suggestionLink")}</a>{t("cn_suggestionSuffix")}
         </div>
       </div>
     </div>
@@ -1169,6 +1181,7 @@ function PageHome(props) {
 function PageMake(props) {
   let winW = useWinW();
   let narrow = winW < 880;
+  let { t } = useI18n();
   let topic = props.topic; let setTopic = props.setTopic;
   let cnt = props.cnt; let setCnt = props.setCnt;
   let makeStep = props.makeStep; let setMakeStep = props.setMakeStep;
@@ -1220,7 +1233,7 @@ function PageMake(props) {
         <div style={{maxWidth:380, width:"100%"}}>
           <div style={{fontSize:56, marginBottom:14}}>💎</div>
           <div style={{fontSize:19, fontWeight:900, color:text, marginBottom:8}}>
-            {!props.user ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
+            {!props.user ? t("cn_freeUsedUp") : t("cn_pointsUsedUp")}
           </div>
           <div style={{fontSize:13, color:muted, lineHeight:1.9, marginBottom:24}}>
             {!props.user
@@ -1253,7 +1266,7 @@ function PageMake(props) {
     <div style={{flex:1, overflowY:"auto", padding:"22px 26px 60px", maxWidth:720, margin:"0 auto", color:text}}>
       {/* 위저드 헤더 - ImageCardNewsApp 스타일 */}
       <div style={{display:"flex", alignItems:"center", gap:0, marginBottom:28}}>
-        {[{n:1,l:"주제 입력"},{n:2,l:"디자인 선택"},{n:3,l:"AI 생성"}].map(function(st, si) {
+        {[{n:1,l:t("cn_wizStep1")},{n:2,l:t("cn_wizStep2")},{n:3,l:t("cn_wizStep3")}].map(function(st, si) {
           let done = makeStep > st.n; let active = makeStep === st.n;
           return (
             <div key={st.n} style={{display:"flex", alignItems:"center", flex: si < 2 ? 1 : "auto"}}>
@@ -1278,29 +1291,29 @@ function PageMake(props) {
       {makeStep === 1 && (
         <div>
           <div style={{marginBottom:20}}>
-            <div style={{fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4}}>주제를 입력하세요</div>
-            <div style={{fontSize:13, color:muted}}>주제를 입력하면 AI가 카드뉴스 슬라이드를 자동 구성해줘요</div>
+            <div style={{fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4}}>{t("cn_enterTopic")}</div>
+            <div style={{fontSize:13, color:muted}}>{t("cn_enterTopicDesc")}</div>
           </div>
 
           {/* 예시 주제 */}
           <div style={{padding:"14px 18px", borderRadius:12, border:"1px solid "+bdr, background:sectionBg, marginBottom:16}}>
-            <div style={{fontSize:12, fontWeight:700, color:muted, marginBottom:8, letterSpacing:0.5}}>💡 예시 주제</div>
+            <div style={{fontSize:12, fontWeight:700, color:muted, marginBottom:8, letterSpacing:0.5}}>{"💡 " + t("cn_exampleTopics")}</div>
             <div style={{display:"flex", flexWrap:"wrap", gap:5, marginBottom:12}}>
               {EXAMPLES.map(function(ex) {
                 let isC = topic === ex.text;
                 return (
-                  <button key={ex.label} onClick={function() { setTopic(ex.text); }}
+                  <button key={ex.labelKey} onClick={function() { setTopic(ex.text); }}
                     style={{padding:"5px 12px", borderRadius:16, border:"1px solid "+(isC?"#7c6aff":bdr),
                       background: isC ? "rgba(99,102,241,0.15)" : tagBg,
                       color: isC ? "#a5b4fc" : tagClr,
                       fontSize:12, cursor:"pointer", fontWeight: isC ? 700 : 400, transition:"all 0.12s"}}>
-                    {ex.label}
+                    {t(ex.labelKey)}
                   </button>
                 );
               })}
             </div>
             <textarea value={topic} onChange={function(e) { setTopic(e.target.value); }}
-              placeholder="주제를 직접 입력하세요..."  rows={3}
+              placeholder={t("cn_topicPlaceholder")}  rows={3}
               style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr,
                 borderRadius:9, padding:"10px 14px", color:text, fontSize:13,
                 fontFamily:"inherit", resize:"none", outline:"none", boxSizing:"border-box", lineHeight:1.7}}/>
@@ -1309,8 +1322,8 @@ function PageMake(props) {
           {/* 슬라이드 수 */}
           <div style={{padding:"14px 18px", borderRadius:12, border:"1px solid "+bdr, background:sectionBg, marginBottom:16}}>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10}}>
-              <div style={{fontSize:13, fontWeight:700, color:text}}>슬라이드 수</div>
-              <div style={{fontSize:20, fontWeight:900, color:"#7c6aff"}}>{cnt}장</div>
+              <div style={{fontSize:13, fontWeight:700, color:text}}>{t("cn_slideCountLabel")}</div>
+              <div style={{fontSize:20, fontWeight:900, color:"#7c6aff"}}>{cnt}{t("cn_slideUnit")}</div>
             </div>
             <div style={{display:"flex", gap:5, flexWrap:"wrap"}}>
               {[3,4,5,6,7,8,10,12].map(function(n) {
@@ -1336,7 +1349,7 @@ function PageMake(props) {
                 background: canGo ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : (D ? "rgba(99,102,241,0.2)" : "#e5e3f5"),
                 color: canGo ? "#fff" : (D ? "rgba(255,255,255,0.3)" : "#bbb"),
                 fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8}}>
-              다음 → <span style={{fontSize:12, opacity:0.8}}>디자인 선택</span>
+              {t("cn_nextDesign")} <span style={{fontSize:12, opacity:0.8}}>{t("cn_designSelect")}</span>
             </button>
           </div>
         </div>
@@ -1345,8 +1358,8 @@ function PageMake(props) {
       {makeStep === 2 && (
         <div>
           <div style={{marginBottom:20}}>
-            <div style={{fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4}}>디자인 스타일을 선택하세요</div>
-            <div style={{fontSize:13, color:muted}}>선택 안 해도 기본 스타일로 생성돼요 (건너뛰기 가능)</div>
+            <div style={{fontSize:22, fontWeight:900, color:text, letterSpacing:-0.5, marginBottom:4}}>{t("cn_selectDesignStyle")}</div>
+            <div style={{fontSize:13, color:muted}}>{t("cn_selectDesignDesc")}</div>
           </div>
           <div style={{display:"flex", gap:20, minHeight:360, flexDirection: narrow ? "column" : "row"}}>
             <div style={{width: narrow ? "100%" : 300, flexShrink:0, display:"flex", flexDirection:"column"}}>
@@ -1366,8 +1379,8 @@ function PageMake(props) {
               </div>
               {selPreset && (
                 <div style={{padding:"9px 14px", borderRadius:9, background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.3)", marginBottom:14}}>
-                  <div style={{fontSize:12, fontWeight:700, color:"#a5b4fc", marginBottom:2}}>✓ {selPreset.label} 선택됨</div>
-                  <button onClick={function(){setSelPreset(null);}} style={{fontSize:11,color:muted,background:"transparent",border:"none",cursor:"pointer",padding:0}}>선택 해제</button>
+                  <div style={{fontSize:12, fontWeight:700, color:"#a5b4fc", marginBottom:2}}>{"✓ " + t(selPreset.labelKey) + " " + t("cn_selected")}</div>
+                  <button onClick={function(){setSelPreset(null);}} style={{fontSize:11,color:muted,background:"transparent",border:"none",cursor:"pointer",padding:0}}>{t("cn_deselect")}</button>
                 </div>
               )}
               <div style={{marginTop:"auto"}}>
@@ -1376,15 +1389,15 @@ function PageMake(props) {
                   <button onClick={function() { setMakeStep(1); }}
                     style={{padding:"12px 28px", borderRadius:12, border:"1px solid "+bdr,
                       background:"transparent", color:muted, fontSize:14, fontWeight:700, cursor:"pointer"}}>
-                    ← 이전
+                    {t("cn_previous")}
                   </button>
                   <div style={{textAlign:"right"}}>
-                    {user && <div style={{fontSize:12, color:muted, marginBottom:6}}>예상 차감: <b style={{color:"#7c6aff"}}>10P</b></div>}
+                    {user && <div style={{fontSize:12, color:muted, marginBottom:6}}>{t("cn_expectedCost")}: <b style={{color:"#7c6aff"}}>10P</b></div>}
                     <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
                       style={{padding:"14px 40px", borderRadius:12, border:"none", cursor:"pointer",
                         background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:900,
                         display:"flex", alignItems:"center", gap:8}}>
-                      {loading ? "생성 중..." : user ? <>카드뉴스 생성하기 → 💎 10P</> : "✦ 1회 생성하기"}
+                      {loading ? t("cn_generating") : user ? <>{t("cn_generateCard")} 💎 10P</> : "✦ " + t("cn_generateOnce")}
                     </button>
                   </div>
                 </div>
@@ -1394,13 +1407,13 @@ function PageMake(props) {
               background:D?"rgba(255,255,255,0.02)":"#f8f8fb", borderRadius:16, border:"1px solid "+bdr, padding:"16px"}}>
               {selPreset ? (
                 <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
-                  <div style={{fontSize:13, fontWeight:700, color:muted}}>{"✔ " + selPreset.label}</div>
+                  <div style={{fontSize:13, fontWeight:700, color:muted}}>{"✔ " + t(selPreset.labelKey)}</div>
                   <PresetCanvas dp={selPreset} size={220} isC={true} onClick={function() {}}/>
                 </div>
               ) : (
                 <div style={{textAlign:"center", opacity:0.4}}>
                   <div style={{fontSize:36, marginBottom:8}}>🖼</div>
-                  <div style={{fontSize:13, color:muted}}>왼쪽에서 디자인을 선택하면<br/>여기 크게 보여요</div>
+                  <div style={{fontSize:13, color:muted, whiteSpace:"pre-line"}}>{t("cn_selectLeftDesign")}</div>
                 </div>
               )}
             </div>}
@@ -1424,8 +1437,8 @@ function PageMake(props) {
                   <div style={{position:"absolute", inset:0, display:"flex", alignItems:"center",
                     justifyContent:"center", fontSize:24}}>🎨</div>
                 </div>
-                <div style={{fontSize:16, fontWeight:800, color:text, marginBottom:6}}>카드뉴스 생성 중</div>
-                <div style={{fontSize:12, color:muted}}>{topic} · {cnt}장 구성 중</div>
+                <div style={{fontSize:16, fontWeight:800, color:text, marginBottom:6}}>{t("cn_generatingCard")}</div>
+                <div style={{fontSize:12, color:muted}}>{topic} · {cnt}{t("cn_slideUnit")} {t("cn_composing")}</div>
               </div>
               <div style={{padding:"16px 24px"}}>
                 <div style={{height:8, borderRadius:4, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden"}}>
@@ -1434,7 +1447,7 @@ function PageMake(props) {
                     animation:"cn-progress 8s ease-out forwards"}}/>
                 </div>
                 <div style={{fontSize:11, color:D?"rgba(255,255,255,0.35)":"#bbb", marginTop:10, textAlign:"center"}}>
-                  보통 7~11초 소요 · 페이지를 벗어나지 마세요
+                  {t("cn_genTimeNotice")}
                 </div>
               </div>
             </div>
@@ -1442,24 +1455,24 @@ function PageMake(props) {
           {!loading && err && (
             <div>
               <div style={{fontSize:52, marginBottom:14}}>😢</div>
-              <div style={{fontSize:16, fontWeight:800, color:text, marginBottom:8}}>생성에 실패했어요</div>
+              <div style={{fontSize:16, fontWeight:800, color:text, marginBottom:8}}>{t("cn_genFailed")}</div>
               <div style={{fontSize:13, color:errClr, marginBottom:20}}>{err}</div>
               <button onClick={function() { setMakeStep(2); }}
                 style={{padding:"12px 28px", borderRadius:10, border:"1px solid "+bdr,
-                  background:"transparent", color:muted, fontSize:13, cursor:"pointer"}}>← 다시 시도</button>
+                  background:"transparent", color:muted, fontSize:13, cursor:"pointer"}}>{t("cn_retryGen")}</button>
             </div>
           )}
           {!loading && !err && (
             <div style={{textAlign:"center"}}>
               <div style={{fontSize:60, marginBottom:14, display:"inline-block",
                 animation:"cn-popin 0.5s cubic-bezier(0.34,1.56,0.64,1) both"}}>🎉</div>
-              <div style={{fontSize:22, fontWeight:900, marginBottom:6, color:text}}>생성 완료!</div>
-              <div style={{fontSize:14, color:muted, marginBottom:24}}>{tname} · {slides.length}장</div>
+              <div style={{fontSize:22, fontWeight:900, marginBottom:6, color:text}}>{t("cn_genComplete")}</div>
+              <div style={{fontSize:14, color:muted, marginBottom:24}}>{tname} · {slides.length}{t("cn_slideUnit")}</div>
               <button onClick={function() { setPage("edit"); }}
                 style={{padding:"14px 40px", borderRadius:14, border:"none", cursor:"pointer",
                   background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff",
                   fontSize:16, fontWeight:900, boxShadow:"0 10px 32px rgba(99,102,241,0.45)"}}>
-                ✏️ 편집하러 가기 →
+                {"✏️ " + t("cn_goEdit")}
               </button>
             </div>
           )}
@@ -1570,7 +1583,7 @@ export function CardNewsApp(props) {
     try { let c = document.createElement("canvas"); drawSlide(c, Object.assign({}, slides[0], (sted[0] || {})), gs, null); thumb = c.toDataURL("image/jpeg", 0.5); } catch(e) {}
     let updated = saveWork({ id:id, topic:tname || topic, count:slides.length, date:ds, thumb:thumb, slides:slides, gs:gs, sted:sted });
     setSavedWorks(updated);
-    setDlSt({busy:false, msg:"보관함에 저장됐어요!"});
+    setDlSt({busy:false, msg:t("cn_savedToLib")});
     setTimeout(function() { setDlSt(function(prev) { return Object.assign({}, prev, {msg:""}); }); }, 2500);
   }
   function handleLoadWork(work) {
@@ -1583,7 +1596,7 @@ export function CardNewsApp(props) {
   async function generate() {
     if (!topic.trim()) { return; }
     let left = getLeft(user);
-    if (!left.canUse) { setErr(user ? "포인트 부족" : "비회원 " + FREE_GUEST + "회 초과"); return; }
+    if (!left.canUse) { setErr(user ? t("cn_pointsLow") : t("cn_guestOver").replace("{n}", FREE_GUEST)); return; }
     setLoading(true); setErr("");
     try {
       let sysMsg = "인스타그램 카드뉴스 전문 카피라이터.\n반드시 JSON만 반환하세요.\n형식:{\"topic\":\"주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문\",\"highlight\":\"핵심문구\"}]}";
@@ -1610,13 +1623,13 @@ export function CardNewsApp(props) {
           date: new Date().toLocaleDateString("ko-KR"), thumb: _thumb,
           slides: _slides, gs: gs, sted: {} });
       } catch(se) {}
-    } catch(e3) { setErr("오류: " + e3.message); }
+    } catch(e3) { setErr(t("cn_error") + e3.message); }
     finally { setLoading(false); }
   }
 
   async function dlOne() {
     if (!merged || dlSt.busy) { return; }
-    setDlSt({busy:true, msg:"저장 중..."});
+    setDlSt({busy:true, msg:t("cn_saving")});
     try {
       let c = document.createElement("canvas"); let el = await getEl(curBg);
       drawSlide(c, merged, gs, el);
@@ -1626,13 +1639,13 @@ export function CardNewsApp(props) {
       let url = URL.createObjectURL(new Blob([arr], {type:"image/png"}));
       let a = document.createElement("a"); a.href = url; a.download = "slide_" + String(idx + 1).padStart(2, "0") + ".png"; a.style.display = "none"; document.body.appendChild(a); a.click();
       setTimeout(function() { URL.revokeObjectURL(url); document.body.removeChild(a); }, 2000);
-      setDlSt({busy:false, msg:"저장 완료!"});
-    } catch(e) { setDlSt({busy:false, msg:"실패: " + e.message}); }
+      setDlSt({busy:false, msg:t("cn_saved")});
+    } catch(e) { setDlSt({busy:false, msg:t("cn_fail") + e.message}); }
   }
 
   async function dlZip() {
     if (!slides.length || dlSt.busy) { return; }
-    setDlSt({busy:true, msg:"준비 중..."});
+    setDlSt({busy:true, msg:t("cn_preparing")});
     try {
       let JSZip = await loadJSZip(); let zip = new JSZip();
       for (let i = 0; i < slides.length; i++) {
@@ -1700,7 +1713,7 @@ export function CardNewsApp(props) {
                 style={{padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", background:"rgba(99,102,241,0.25)", color:"#a5b4fc", fontSize:10, fontWeight:700}}>
                 ✨기획AI
               </button>
-              {[{id:"home",l:"홈"},{id:"make",l:"만들기"},{id:"edit",l:"편집"}].map(function(it) {
+              {[{id:"home",l:t("cn_home")},{id:"make",l:t("cn_make")},{id:"edit",l:t("cn_edit")}].map(function(it) {
                 if (it.id === "edit" && slides.length === 0) { return null; }
                 let isA = page === it.id;
                 return (
@@ -1727,7 +1740,7 @@ export function CardNewsApp(props) {
                 <>
                   {/* 모바일: 미리보기 상단, 편집패널 하단 스크롤 */}
                   <div style={{flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", padding:"12px 16px 8px", background:"rgba(0,0,0,0.2)", borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-                    <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { if (window.confirm("다시 생성하시겠습니까?\n현재 카드뉴스가 초기화됩니다.")) { try{localStorage.removeItem("sns_cn_cache");}catch(e){} setSlides([]); setTname(""); setPage("make"); setMakeStep(1); } }} onSave={handleSaveWork} previewW={Math.min(winW - 32, 340)}/>
+                    <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { if (window.confirm(t("cn_regenConfirm"))) { try{localStorage.removeItem("sns_cn_cache");}catch(e){} setSlides([]); setTname(""); setPage("make"); setMakeStep(1); } }} onSave={handleSaveWork} previewW={Math.min(winW - 32, 340)}/>
                   </div>
                   <div style={{flex:1, overflowY:"auto"}}>
                     <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>
@@ -1736,7 +1749,7 @@ export function CardNewsApp(props) {
               ) : (
                 <>
                   <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>
-                  <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { if (window.confirm("다시 생성하시겠습니까?\n현재 카드뉴스가 초기화됩니다.")) { try{localStorage.removeItem("sns_cn_cache");}catch(e){} setSlides([]); setTname(""); setPage("make"); setMakeStep(1); } }} onSave={handleSaveWork} previewW={previewW}/>
+                  <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { if (window.confirm(t("cn_regenConfirm"))) { try{localStorage.removeItem("sns_cn_cache");}catch(e){} setSlides([]); setTname(""); setPage("make"); setMakeStep(1); } }} onSave={handleSaveWork} previewW={previewW}/>
                 </>
               )}
             </div>

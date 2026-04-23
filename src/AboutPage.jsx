@@ -12,32 +12,32 @@ export function AboutPage({ navigate, C }) {
   const bg2 = C.bg2 || (C.border?.includes("255") ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)");
 
   const ALL_TOOLS = [
-    { cat: "SNS 글쓰기", items: [
-      { icon: "NB", title: "네이버 블로그", desc: "SEO 최적화 블로그 글 자동 생성" },
-      { icon: "C", title: "네이버 카페", desc: "카페 커뮤니티 최적화 글 작성" },
-      { icon: "T", title: "티스토리", desc: "HTML 형식 블로그 포스트 자동 작성" },
-      { icon: "IG", title: "인스타그램 캡션", desc: "해시태그 포함 캡션 자동 생성" },
-      { icon: "YT", title: "유튜브 대본", desc: "영상 스크립트·설명란·SEO 태그" },
-      { icon: "Th", title: "스레드", desc: "임팩트 있는 스레드 게시물 작성" },
+    { cat: p("aboutToolCatWrite"), items: [
+      { icon: "NB", title: p("aboutToolNaver"), desc: p("aboutToolNaverD") },
+      { icon: "C", title: p("aboutToolCafe"), desc: p("aboutToolCafeD") },
+      { icon: "T", title: p("aboutToolTistory"), desc: p("aboutToolTistoryD") },
+      { icon: "IG", title: p("aboutToolInsta"), desc: p("aboutToolInstaD") },
+      { icon: "YT", title: p("aboutToolYoutube"), desc: p("aboutToolYoutubeD") },
+      { icon: "Th", title: p("aboutToolThread"), desc: p("aboutToolThreadD") },
     ]},
-    { cat: "콘텐츠 제작", items: [
-      { icon: "DP", title: "상세페이지", desc: "제품 상세페이지 자동 생성" },
-      { icon: "SD", title: "심플 상세페이지", desc: "기본형 상세페이지 빠르게 완성" },
+    { cat: p("aboutToolCatContent"), items: [
+      { icon: "DP", title: p("aboutToolDetail"), desc: p("aboutToolDetailD") },
+      { icon: "SD", title: p("aboutToolSimpleDetail"), desc: p("aboutToolSimpleDetailD") },
     ]},
-    { cat: "이미지 생성 AI", items: [
-      { icon: "PS", title: "AI 제품 컷", desc: "상품 사진 AI 배경으로 프로급 연출" },
-      { icon: "LG", title: "AI 로고 생성", desc: "브랜드 콘셉트로 로고 자동 생성" },
-      { icon: "MK", title: "AI 목업 생성", desc: "디자인을 목업 이미지에 합성" },
-      { icon: "MD", title: "AI 모델 생성", desc: "상품 착용 AI 모델 이미지 생성" },
-      { icon: "FS", title: "얼굴 교체", desc: "원하는 얼굴로 자연스럽게 교체" },
-      { icon: "OS", title: "의상 교체", desc: "AI로 의상을 다른 스타일로 교체" },
-      { icon: "OP", title: "여백 채우기", desc: "이미지 여백을 AI가 자연스럽게 확장" },
+    { cat: p("aboutToolCatImage"), items: [
+      { icon: "PS", title: p("aboutToolProduct"), desc: p("aboutToolProductD") },
+      { icon: "LG", title: p("aboutToolLogo"), desc: p("aboutToolLogoD") },
+      { icon: "MK", title: p("aboutToolMockup"), desc: p("aboutToolMockupD") },
+      { icon: "MD", title: p("aboutToolModel"), desc: p("aboutToolModelD") },
+      { icon: "FS", title: p("aboutToolFace"), desc: p("aboutToolFaceD") },
+      { icon: "OS", title: p("aboutToolOutfit"), desc: p("aboutToolOutfitD") },
+      { icon: "OP", title: p("aboutToolOutpaint"), desc: p("aboutToolOutpaintD") },
     ]},
-    { cat: "AI 영상 제작", items: [
-      { icon: "SF", title: "숏폼 편집기", desc: "영상 파일로 숏폼 자동 편집·자막 추가" },
-      { icon: "SV", title: "AI 쇼츠 영상 제작", desc: "AI로 숏폼 영상 자동 생성" },
-      { icon: "ST", title: "AI 자막 생성", desc: "영상에 자막을 자동으로 생성·삽입" },
-      { icon: "TL", title: "타임라인 편집기", desc: "직관적인 타임라인 기반 영상 편집" },
+    { cat: p("aboutToolCatVideo"), items: [
+      { icon: "SF", title: p("aboutToolShorts"), desc: p("aboutToolShortsD") },
+      { icon: "SV", title: p("aboutToolShortsAi"), desc: p("aboutToolShortsAiD") },
+      { icon: "ST", title: p("aboutToolSubtitle"), desc: p("aboutToolSubtitleD") },
+      { icon: "TL", title: p("aboutToolTimeline"), desc: p("aboutToolTimelineD") },
     ]},
   ];
 
@@ -58,9 +58,7 @@ export function AboutPage({ navigate, C }) {
         {/* 미션 스테이트먼트 */}
         <div style={{ display: "inline-block", padding: "8px 20px", borderRadius: 24, background: "rgba(124,106,255,0.08)", marginBottom: 48 }}>
           <span style={{ fontSize: 15, fontWeight: 600, color: "#7c6aff" }}>
-            {lang === "ko"
-              ? "우리의 미션: 모든 콘텐츠 크리에이터의 시간을 되돌려주는 것"
-              : "Our mission: Giving every content creator their time back"}
+            {p("aboutMission")}
           </span>
         </div>
 
@@ -92,8 +90,8 @@ export function AboutPage({ navigate, C }) {
           <p style={{ fontSize: 14, color: C.muted, marginBottom: 24, lineHeight: 1.8 }}>{p("aboutBrandSub")}</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 16, marginBottom: 24 }}>
             {[
-              { word: "SNS", sub: "Social Network Service", desc: "인스타그램, 유튜브, 블로그 등 소셜 콘텐츠 플랫폼 전체", color: "#7c6aff" },
-              { word: "Make it", sub: "만들다 · 해내다 · 실행하다", desc: "Make it happen — 현실로 만들어내다. SNS 콘텐츠를 실제로 완성시킨다는 의미", color: "#ec4899" },
+              { word: "SNS", sub: "Social Network Service", desc: p("aboutBrandSns"), color: "#7c6aff" },
+              { word: "Make it", sub: p("aboutBrandMakeSub"), desc: p("aboutBrandMakeDesc"), color: "#ec4899" },
             ].map((item, i) => (
               <div key={i} style={{ background: C.card, borderRadius: 16, padding: "24px 22px", border: "1px solid " + C.border }}>
                 <div style={{ fontSize: 28, fontWeight: 900, marginBottom: 6, background: `linear-gradient(135deg,${item.color},#8b5cf6)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{item.word}</div>
@@ -104,10 +102,10 @@ export function AboutPage({ navigate, C }) {
           </div>
           <div style={{ background: C.card, borderRadius: 14, padding: "20px 24px", border: "1px solid " + C.border, textAlign: "center" }}>
             <p style={{ fontSize: 16, fontWeight: 900, color: C.text, margin: "0 0 8px", letterSpacing: -0.5 }}>
-              "SNS 콘텐츠를 쉽게 만들어 실행하게 도와주는 플랫폼"
+              {p("aboutBrandSlogan")}
             </p>
             <p style={{ fontSize: 13, color: C.muted, margin: 0, lineHeight: 1.8 }}>
-              SNS 콘텐츠 제작 키트 · SNS 콘텐츠 자동 생성 플랫폼 · SNS 콘텐츠 올인원 툴
+              {p("aboutBrandTags")}
             </p>
           </div>
         </div>
@@ -115,10 +113,10 @@ export function AboutPage({ navigate, C }) {
         {/* 회사 개요 */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(180px,100%),1fr))", gap: 14, marginBottom: 28 }}>
           {[
-            { value: lang === "ko" ? "2024.10" : "Oct 2024", label: lang === "ko" ? "서비스 런칭" : "Launched", icon3d: "/icons3d/sns-heart.png" },
-            { value: "20+", label: lang === "ko" ? "AI 도구" : "AI Tools", icon3d: "/icons3d/keyboard.png" },
-            { value: lang === "ko" ? "4개국어" : "4 Languages", label: lang === "ko" ? "다국어 지원" : "Multilingual", icon3d: "/icons3d/sns-content.png" },
-            { value: "2,000+", label: lang === "ko" ? "월 사용자" : "Monthly Users", icon3d: "/icons3d/char-headphone.png" },
+            { value: p("aboutStatLaunchVal"), label: p("aboutStatLaunch"), icon3d: "/icons3d/sns-heart.png" },
+            { value: "20+", label: p("aboutStatTools"), icon3d: "/icons3d/keyboard.png" },
+            { value: p("aboutStatLangVal"), label: p("aboutStatLang"), icon3d: "/icons3d/sns-content.png" },
+            { value: "2,000+", label: p("aboutStatUsers"), icon3d: "/icons3d/char-headphone.png" },
           ].map((stat, i) => (
             <div key={i} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "24px 20px", textAlign: "center", boxShadow: C.shadow }}>
               <img src={stat.icon3d} alt="" style={{ width: 36, height: 36, objectFit: "contain", marginBottom: 8 }} />
@@ -211,56 +209,56 @@ export function HowToPage({ navigate, C }) {
       step: "01", icon: "", color: "#7c6aff",
       title: p("howtoS1"),
       desc: p("howtoS1d"),
-      tips: ["구글·카카오 소셜 로그인 지원", "비회원 5회 무료 체험", "가입 즉시 50P 지급"],
+      tips: [p("howtoTip1a"), p("howtoTip1b"), p("howtoTip1c")],
     },
     {
       step: "02", icon: "", color: "#8b5cf6",
       title: p("howtoS2"),
       desc: p("howtoS2d"),
-      tips: ["SNS 글쓰기: 블로그·인스타·유튜브·스레드 등", "이미지 생성: 제품컷·로고·목업·모델", "영상 제작: 쇼츠 영상 자동 생성"],
+      tips: [p("howtoTip2a"), p("howtoTip2b"), p("howtoTip2c")],
     },
     {
       step: "03", icon: "", color: "#ec4899",
       title: p("howtoS3"),
       desc: p("howtoS3d"),
-      tips: ["URL 입력 시 뉴스·유튜브 내용 자동 요약", "SEO 키워드 자동 추천 기능 활용", "글 톤(정보성·감성·전문적 등) 선택 가능"],
+      tips: [p("howtoTip3a"), p("howtoTip3b"), p("howtoTip3c")],
     },
     {
       step: "04", icon: "", color: "#f59e0b",
       title: p("howtoS4"),
       desc: p("howtoS4d"),
-      tips: ["생성 중 페이지를 떠나면 결과가 사라질 수 있어요", "이미지 생성은 평균 15~30초 소요", "글 생성은 분량에 따라 30초~3분"],
+      tips: [p("howtoTip4a"), p("howtoTip4b"), p("howtoTip4c")],
     },
     {
       step: "05", icon: "SD", color: "#10b981",
       title: p("howtoS5"),
       desc: p("howtoS5d"),
-      tips: ["블로그 글은 HTML 형식으로도 복사 가능", "이미지는 PNG 형식으로 다운로드", "마음에 안 들면 재생성 버튼으로 다시 생성"],
+      tips: [p("howtoTip5a"), p("howtoTip5b"), p("howtoTip5c")],
     },
     {
       step: "06", icon: "", color: "#7c6aff",
       title: p("howtoS6"),
       desc: p("howtoS6d"),
-      tips: ["매일 로그인: +3P", "게시글 작성: +1P (하루 10회)", "AI 글쓰기 1회: -30P"],
+      tips: [p("howtoTip6a"), p("howtoTip6b"), p("howtoTip6c")],
     },
   ];
 
   const POINT_INFO = [
-    { label: "비회원", val: "5회 무료", color: "#888", bg: "rgba(0,0,0,0.04)" },
-    { label: "회원가입", val: "150P 즉시 지급", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
-    { label: "매일 로그인", val: "+3P", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
-    { label: "게시글 작성", val: "+1P (하루 10회)", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
-    { label: "댓글 작성", val: "없음", color: "#888", bg: "rgba(0,0,0,0.04)" },
-    { label: "AI 글쓰기", val: "-30P", color: "#ef4444", bg: "rgba(239,68,68,0.05)" },
+    { label: p("howtoPtGuest"), val: p("howtoPtGuestVal"), color: "#888", bg: "rgba(0,0,0,0.04)" },
+    { label: p("howtoPtSignup"), val: p("howtoPtSignupVal"), color: "#10b981", bg: "rgba(16,185,129,0.06)" },
+    { label: p("howtoPtLogin"), val: "+3P", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
+    { label: p("howtoPtPost"), val: p("howtoPtPostVal"), color: "#10b981", bg: "rgba(16,185,129,0.06)" },
+    { label: p("howtoPtComment"), val: p("howtoPtCommentVal"), color: "#888", bg: "rgba(0,0,0,0.04)" },
+    { label: p("howtoPtAiWrite"), val: "-30P", color: "#ef4444", bg: "rgba(239,68,68,0.05)" },
   ];
 
   const FAQ = [
-    { q: "비회원도 사용할 수 있나요?", a: "네! 로그인 없이 AI 기능을 5회 무료로 체험할 수 있어요. 회원가입 시 150P를 즉시 드려요." },
-    { q: "포인트는 어떻게 쌓이나요?", a: "가입 즉시 150P, 매일 로그인 +3P, 게시글 작성 +1P (하루 10회)이 적립돼요. 충전도 가능해요." },
-    { q: "생성된 콘텐츠를 상업적으로 사용해도 되나요?", a: "네, 생성된 콘텐츠는 자유롭게 사용하실 수 있어요. 단 법적 책임은 사용자에게 있습니다." },
-    { q: "포인트 유효기간이 있나요?", a: "충전 포인트는 유효기간이 없어요. 마음껏 사용하세요." },
-    { q: "생성 결과가 마음에 안 들면 어떻게 하나요?", a: "재생성 버튼을 누르면 다시 생성할 수 있어요. 단, 재생성 시에도 동일한 포인트가 차감됩니다." },
-    { q: "모바일에서도 사용 가능한가요?", a: "네! 모바일 브라우저에서도 모든 기능을 사용할 수 있어요." },
+    { q: p("howtoFaqQ1"), a: p("howtoFaqA1") },
+    { q: p("howtoFaqQ2"), a: p("howtoFaqA2") },
+    { q: p("howtoFaqQ3"), a: p("howtoFaqA3") },
+    { q: p("howtoFaqQ4"), a: p("howtoFaqA4") },
+    { q: p("howtoFaqQ5"), a: p("howtoFaqA5") },
+    { q: p("howtoFaqQ6"), a: p("howtoFaqA6") },
   ];
 
   return (
@@ -317,7 +315,7 @@ export function HowToPage({ navigate, C }) {
           </div>
           <div style={{ marginTop: 16, padding: "14px 18px", borderRadius: 12, background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.15)" }}>
             <p style={{ fontSize: 13, color: C.muted, margin: 0, lineHeight: 1.8 }}>
-              포인트 충전 플랜: <b style={{ color: C.text }}>Standard 3,500P — 19,900원</b> · <b style={{ color: C.text }}>Pro 9,500P — 49,900원</b> · 유효기간 없음
+              {p("howtoPtPlanInfo")}
             </p>
           </div>
         </div>
@@ -356,65 +354,54 @@ export function HowToPage({ navigate, C }) {
 /* ══════════════════════════════════════════════════════════
    FAQ 페이지 — 자주 묻는 질문
 ══════════════════════════════════════════════════════════ */
-const FAQ_DATA = [
-  {
-    cat: "서비스 소개",
-    items: [
-      { q: "SNS메이킷은 어떤 서비스인가요?", a: "SNS메이킷은 AI를 활용하여 블로그 글, 제품 이미지, 쇼츠 영상 등 SNS 콘텐츠를 자동으로 생성해주는 올인원 플랫폼입니다. 실시간 검색어 분석과 인플루언서·브랜드 TOP10 랭킹 기능도 제공합니다." },
-      { q: "어떤 AI 도구를 사용할 수 있나요?", a: "네이버 블로그, 티스토리, 인스타그램 캡션, 유튜브 대본, 스레드 등 20개 이상 플랫폼 글쓰기와 제품컷, 로고, 목업, AI 모델, 얼굴/의상 교체, 여백 확장, 쇼츠 자동 편집 등 총 20가지 이상의 AI 도구를 제공합니다." },
-      { q: "AI 분석기는 무엇인가요?", a: "AI가 네이버·구글 실시간 인기 검색어를 분석하여 검색량, 급상승 이유, 연관 키워드를 제공합니다. 인플루언서·브랜드 TOP10 랭킹도 카테고리별로 확인할 수 있습니다." },
-    ],
-  },
-  {
-    cat: "포인트 & 요금",
-    items: [
-      { q: "무료로 사용할 수 있나요?", a: "네! 비회원도 AI 생성기 5회 무료 체험이 가능하고, 회원 가입 시 150P가 즉시 지급됩니다. AI 분석기는 비회원 하루 5회, 회원 하루 5회 무료로 이용 가능합니다." },
-      { q: "포인트는 어떻게 충전하나요?", a: "가격정책 페이지에서 원하는 포인트 패키지를 선택하여 결제하시면 즉시 충전됩니다. 또한 매일 로그인 시 +3P, 게시글 작성 시 +1P (하루 10회)가 자동 적립됩니다." },
-      { q: "AI 생성 1회에 포인트가 얼마나 소모되나요?", a: "기능별로 다릅니다. AI 글쓰기 = 30P, AI 이미지 생성 = 250P, 쇼츠 영상 = 100P 등이며, 자세한 단가는 가격정책 페이지에서 확인할 수 있습니다." },
-      { q: "포인트 환불이 가능한가요?", a: "미사용 포인트에 대해서는 결제일로부터 7일 이내 환불 요청이 가능합니다. 문의하기 페이지에서 환불 요청을 보내주세요." },
-    ],
-  },
-  {
-    cat: "AI 생성기",
-    items: [
-      { q: "생성된 글/이미지의 저작권은 누구에게 있나요?", a: "AI로 생성된 모든 콘텐츠의 저작권은 사용자에게 귀속됩니다. 상업적 용도로 자유롭게 사용하실 수 있습니다." },
-      { q: "생성 결과가 마음에 들지 않으면 다시 생성할 수 있나요?", a: "네, 같은 주제로 다시 생성하면 매번 새로운 결과물이 나옵니다. 다만 재생성 시에도 포인트가 차감됩니다." },
-      { q: "상세페이지에서 텍스트를 직접 수정할 수 있나요?", a: "네, AI가 생성한 후 편집 화면에서 제목, 본문, 색상, 배경 등을 자유롭게 수정할 수 있습니다. 수정 후 PNG 또는 ZIP으로 다운로드하세요." },
-      { q: "생성된 블로그 글을 바로 네이버에 올릴 수 있나요?", a: "생성된 글은 복사 버튼으로 한 번에 복사한 뒤 네이버 블로그 에디터에 붙여넣기하면 됩니다. HTML 형식도 지원합니다." },
-    ],
-  },
-  {
-    cat: "AI 분석기",
-    items: [
-      { q: "AI 분석기는 어떤 기능이 있나요?", a: "실시간 인기 검색어 분석 (검색량, 급상승 이유, 연관 키워드), 인플루언서 랭킹 (유튜버/인스타/블로거/틱톡 TOP10), 브랜드 TOP10 랭킹을 제공합니다." },
-      { q: "하루 무료 사용 횟수는 얼마나 되나요?", a: "비회원은 하루 5회, 회원은 하루 5회 무료로 이용할 수 있습니다. 무료 횟수 초과 시 1회당 10P로 추가 분석이 가능합니다." },
-      { q: "실시간 검색어 데이터는 얼마나 정확한가요?", a: "AI가 네이버, 구글 등 주요 검색엔진의 트렌드 데이터를 종합 분석하여 제공합니다. 검색량은 예상치이며 참고 자료로 활용해주세요." },
-    ],
-  },
-  {
-    cat: "계정 & 기타",
-    items: [
-      { q: "회원가입은 어떻게 하나요?", a: "이메일과 비밀번호로 간단하게 가입할 수 있습니다. 가입 즉시 50P가 지급되며 바로 AI 도구를 사용하실 수 있습니다." },
-      { q: "비밀번호를 잊었어요.", a: "로그인 화면에서 '비밀번호 찾기'를 클릭하면 가입한 이메일로 인증 코드가 발송됩니다. 인증 후 새 비밀번호를 설정하세요." },
-      { q: "커뮤니티 게시판은 무엇인가요?", a: "정보 공유, 질문과 답변, 자유 게시판, 사용 후기 등의 커뮤니티 공간입니다. 게시글 작성 시 2P가 적립됩니다." },
-      { q: "서비스 관련 문의는 어디로 하나요?", a: "상단 메뉴의 고객센터 > 문의하기 페이지에서 문의를 보내주시면 빠르게 답변드리겠습니다. 이메일: npermovie@naver.com" },
-    ],
-  },
-];
+// FAQ_DATA is now generated inside FaqPage to support i18n
 
 export function FaqPage({ C, navigate }) {
+  const { lang } = useI18n();
+  const p = (key) => getPageText(lang, key);
   const [openIdx, setOpenIdx] = useState(null);
   const text = C.text;
   const muted = C.muted;
   const bdr = C.border;
   const cardBg = C.card;
 
+  const FAQ_DATA = [
+    { cat: p("faqCatService"), items: [
+      { q: p("faqServiceQ1"), a: p("faqServiceA1") },
+      { q: p("faqServiceQ2"), a: p("faqServiceA2") },
+      { q: p("faqServiceQ3"), a: p("faqServiceA3") },
+    ]},
+    { cat: p("faqCatPoints"), items: [
+      { q: p("faqPointsQ1"), a: p("faqPointsA1") },
+      { q: p("faqPointsQ2"), a: p("faqPointsA2") },
+      { q: p("faqPointsQ3"), a: p("faqPointsA3") },
+      { q: p("faqPointsQ4"), a: p("faqPointsA4") },
+    ]},
+    { cat: p("faqCatGen"), items: [
+      { q: p("faqGenQ1"), a: p("faqGenA1") },
+      { q: p("faqGenQ2"), a: p("faqGenA2") },
+      { q: p("faqGenQ3"), a: p("faqGenA3") },
+      { q: p("faqGenQ4"), a: p("faqGenA4") },
+    ]},
+    { cat: p("faqCatAnalyzer"), items: [
+      { q: p("faqAnalyzerQ1"), a: p("faqAnalyzerA1") },
+      { q: p("faqAnalyzerQ2"), a: p("faqAnalyzerA2") },
+      { q: p("faqAnalyzerQ3"), a: p("faqAnalyzerA3") },
+    ]},
+    { cat: p("faqCatAccount"), items: [
+      { q: p("faqAccountQ1"), a: p("faqAccountA1") },
+      { q: p("faqAccountQ2"), a: p("faqAccountA2") },
+      { q: p("faqAccountQ3"), a: p("faqAccountA3") },
+      { q: p("faqAccountQ4"), a: p("faqAccountA4") },
+    ]},
+  ];
+
   return (
     <div style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px 80px" }}>
       <div style={{ textAlign: "center", marginBottom: 40 }}>
         <div style={{ display: "inline-block", background: C.purpleBg, border: `1px solid ${C.purple}30`, borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>FAQ</div>
-        <h2 style={{ fontSize: "clamp(24px,4vw,36px)", fontWeight: 900, color: text, margin: "0 0 8px" }}>자주 묻는 질문</h2>
-        <p style={{ fontSize: 14, color: muted }}>궁금한 점을 빠르게 확인하세요</p>
+        <h2 style={{ fontSize: "clamp(24px,4vw,36px)", fontWeight: 900, color: text, margin: "0 0 8px" }}>{p("faqPageTitle")}</h2>
+        <p style={{ fontSize: 14, color: muted }}>{p("faqPageSub")}</p>
       </div>
 
       {FAQ_DATA.map((section, si) => (
@@ -444,10 +431,10 @@ export function FaqPage({ C, navigate }) {
       ))}
 
       <div style={{ textAlign: "center", marginTop: 40 }}>
-        <p style={{ fontSize: 13, color: muted, marginBottom: 16 }}>원하는 답변을 찾지 못하셨나요?</p>
+        <p style={{ fontSize: 13, color: muted, marginBottom: 16 }}>{p("faqNotFound")}</p>
         <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-          <Btn C={C} onClick={() => navigate("contact")}>문의하기</Btn>
-          <Btn C={C} onClick={() => navigate("howto")} ghost>이용방법</Btn>
+          <Btn C={C} onClick={() => navigate("contact")}>{p("faqContact")}</Btn>
+          <Btn C={C} onClick={() => navigate("howto")} ghost>{p("faqHowto")}</Btn>
         </div>
       </div>
     </div>

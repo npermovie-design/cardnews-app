@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useGeneratingGuard } from "./useGeneratingGuard";
+import { useI18n } from "./i18n";
 
 const API = import.meta.env.VITE_SHORTS_FACTORY_URL || "https://shorts-factory-r33o.onrender.com";
 
@@ -24,11 +25,12 @@ function parseYoutubeUrl(url) {
 
 // ── 통합 자료실 (내 자료 + 무료사진 + 무료영상 + GIF 통합 검색) ──
 function ArchiveGallery({ onSelect }) {
+  const { t } = useI18n();
   const [items, setItems] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [cat, setCat] = useState("photo"); // archive | photo | video | gif
-  const CATS = [["archive","내 자료"],["photo","무료사진"],["video","무료영상"],["gif","GIF"]];
+  const CATS = [["archive",t("sc_archive_my")],["photo",t("sc_archive_photo")],["video",t("sc_archive_video")],["gif","GIF"]];
 
   // 내 자료실 로드
   useEffect(() => {
@@ -41,7 +43,7 @@ function ArchiveGallery({ onSelect }) {
         const imgs = [];
         (data || []).forEach(p => {
           const parsed = typeof p.images === "string" ? JSON.parse(p.images || "[]") : (p.images || []);
-          parsed.forEach(url => { if (typeof url === "string" && url.startsWith("http")) imgs.push({ url, title: p.title, src: "내 자료" }); });
+          parsed.forEach(url => { if (typeof url === "string" && url.startsWith("http")) imgs.push({ url, title: p.title, src: t("sc_archive_my") }); });
         });
         setItems(imgs);
       } catch (e) { console.error(e); }
@@ -119,7 +121,7 @@ function ArchiveGallery({ onSelect }) {
 
   return (
     <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>자료실</div>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>{t("sc_archive")}</div>
       {/* 카테고리 탭 */}
       <div style={{ display: "flex", gap: 0, marginBottom: 8, borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a" }}>
         {CATS.map(([k,l]) => (
@@ -131,15 +133,15 @@ function ArchiveGallery({ onSelect }) {
       <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
         <input value={search} onChange={e => setSearch(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); doSearch(); } }}
-          placeholder={cat === "archive" ? "자료실 필터..." : cat === "gif" ? "GIF 검색 (영어 추천)" : cat === "video" ? "영상 검색 (영어 추천)" : "사진 검색 (영어 추천)"}
+          placeholder={cat === "archive" ? t("sc_archive_filter") : cat === "gif" ? t("sc_gif_search") : cat === "video" ? t("sc_video_search") : t("sc_photo_search")}
           style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none" }} />
-        {cat !== "archive" && <button onClick={() => doSearch()} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>검색</button>}
+        {cat !== "archive" && <button onClick={() => doSearch()} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>{t("sc_search_btn")}</button>}
       </div>
       {loading ? (
-        <div style={{ textAlign: "center", padding: 16, color: "#666", fontSize: 11 }}>로딩 중...</div>
+        <div style={{ textAlign: "center", padding: 16, color: "#666", fontSize: 11 }}>{t("sc_archive_loading")}</div>
       ) : filteredItems.length === 0 ? (
         <div style={{ textAlign: "center", padding: 16, color: "#555", fontSize: 11 }}>
-          {cat === "archive" ? "자료실에 이미지가 없습니다" : "검색어를 입력하고 Enter"}
+          {cat === "archive" ? t("sc_archive_no_images") : t("sc_archive_enter_search")}
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, maxHeight: 260, overflowY: "auto", padding: 2 }}>
@@ -162,26 +164,27 @@ function ArchiveGallery({ onSelect }) {
 }
 
 const TEMPLATES = [
-  { id: "minimal", name: "미니멀", titleColor: "#FFFFFF", captionColor: "#FFFFFF", bg: "#000" },
-  { id: "bold", name: "볼드", titleColor: "#FFD700", captionColor: "#FFD700", bg: "#0A0A0A" },
-  { id: "neon", name: "네온", titleColor: "#00FF88", captionColor: "#00FF88", bg: "#0D0D1A" },
-  { id: "pastel", name: "파스텔", titleColor: "#FFB6C1", captionColor: "#FFB6C1", bg: "#1A1A2E" },
-  { id: "news", name: "뉴스", titleColor: "#FFFFFF", captionColor: "#FFFFFF", bg: "#0F1923" },
-  { id: "cinematic", name: "시네마틱", titleColor: "#E8D5B7", captionColor: "#E8D5B7", bg: "#1a0a0a" },
-  { id: "tech", name: "테크", titleColor: "#00D4FF", captionColor: "#00D4FF", bg: "#0a1628" },
-  { id: "luxury", name: "럭셔리", titleColor: "#D4AF37", captionColor: "#D4AF37", bg: "#121212" },
-  { id: "vlog", name: "브이로그", titleColor: "#FF6B6B", captionColor: "#FF6B6B", bg: "#2D1B2E" },
-  { id: "edu", name: "교육", titleColor: "#4ECDC4", captionColor: "#4ECDC4", bg: "#1A2332" },
+  { id: "minimal", nameKey: "sc_tpl_minimal", titleColor: "#FFFFFF", captionColor: "#FFFFFF", bg: "#000" },
+  { id: "bold", nameKey: "sc_tpl_bold", titleColor: "#FFD700", captionColor: "#FFD700", bg: "#0A0A0A" },
+  { id: "neon", nameKey: "sc_tpl_neon", titleColor: "#00FF88", captionColor: "#00FF88", bg: "#0D0D1A" },
+  { id: "pastel", nameKey: "sc_tpl_pastel", titleColor: "#FFB6C1", captionColor: "#FFB6C1", bg: "#1A1A2E" },
+  { id: "news", nameKey: "sc_tpl_news", titleColor: "#FFFFFF", captionColor: "#FFFFFF", bg: "#0F1923" },
+  { id: "cinematic", nameKey: "sc_tpl_cinematic", titleColor: "#E8D5B7", captionColor: "#E8D5B7", bg: "#1a0a0a" },
+  { id: "tech", nameKey: "sc_tpl_tech", titleColor: "#00D4FF", captionColor: "#00D4FF", bg: "#0a1628" },
+  { id: "luxury", nameKey: "sc_tpl_luxury", titleColor: "#D4AF37", captionColor: "#D4AF37", bg: "#121212" },
+  { id: "vlog", nameKey: "sc_tpl_vlog", titleColor: "#FF6B6B", captionColor: "#FF6B6B", bg: "#2D1B2E" },
+  { id: "edu", nameKey: "sc_tpl_edu", titleColor: "#4ECDC4", captionColor: "#4ECDC4", bg: "#1A2332" },
 ];
 
 const LENGTHS = [
-  { id: "s15", label: "15~30초", desc: "짧고 임팩트 있게" },
-  { id: "s30", label: "30~60초", desc: "적당한 길이로" },
-  { id: "s60", label: "60~90초", desc: "충분한 내용으로" },
-  { id: "s90", label: "90~120초", desc: "아주 길게" },
+  { id: "s15", labelKey: "sc_len_15", descKey: "sc_len_15_desc" },
+  { id: "s30", labelKey: "sc_len_30", descKey: "sc_len_30_desc" },
+  { id: "s60", labelKey: "sc_len_60", descKey: "sc_len_60_desc" },
+  { id: "s90", labelKey: "sc_len_90", descKey: "sc_len_90_desc" },
 ];
 
 export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, onStatusChange, showPointConfirm }) {
+  const { t, lang } = useI18n();
   const D = isDark;
   const text = D ? "#fff" : "#1a1a2e";
   const muted = D ? "rgba(255,255,255,0.45)" : "#888";
@@ -561,7 +564,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const addOverlay = (type, data = {}) => {
     const id = "ol_" + Date.now();
     const base = { id, type, x: 50, y: 50, w: 20, h: 20, start: 0, end: clipDuration, ...data };
-    if (type === "text") { base.text = "텍스트"; base.fontSize = 16; base.color = "#fff"; }
+    if (type === "text") { base.text = t("sc_text_label"); base.fontSize = 16; base.color = "#fff"; }
     if (type === "logo") { base.w = 15; base.h = 15; base.x = 85; base.y = 10; }
     setOverlays(prev => [...prev, base]);
     setSelectedOverlay(id);
@@ -678,7 +681,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     const projects = JSON.parse(localStorage.getItem(PROJECTS_KEY) || "[]");
     const proj = {
       id: projectId || ("sp_" + Date.now()),
-      title: curClip.title || editClips[0]?.title || "제목 없음",
+      title: curClip.title || editClips[0]?.title || t("sc_no_title"),
       fileId, editClips, videoSegs, overlays, template,
       titleStyle, captionStyle, titlePos, captionPos,
       layoutMode, videoScale, volume, subtitlesEnabled,
@@ -734,14 +737,14 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         const r = await fetch(`${API}${path}`, { ...opts, signal: controller.signal, headers: { "Content-Type": "application/json", ...(opts.headers || {}) } });
         if (!r.ok) {
           const e = await r.json().catch(() => ({}));
-          const msg = e.detail || `요청 실패 (${r.status})`;
+          const msg = e.detail || `${t("sc_request_fail")} (${r.status})`;
           // 500 에러: 서버 API 키 문제일 가능성
           if (r.status === 500 && attempt < maxRetries) {
             clearTimeout(timer);
             await new Promise(resolve => setTimeout(resolve, 2000));
             continue;
           }
-          throw new Error(r.status === 500 ? "서버 내부 오류 — 잠시 후 다시 시도해주세요 (AI API 키 확인 필요)" : msg);
+          throw new Error(r.status === 500 ? t("sc_server_error") : msg);
         }
         clearTimeout(timer);
         return r.json();
@@ -760,13 +763,13 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // 유튜브 링크 분석
   const handleYoutube = async () => {
     const parsed = parseYoutubeUrl(ytUrl);
-    if (!parsed) { setError("올바른 유튜브 링크를 입력해주세요"); return; }
-    setStep("loading"); setLoadingMsg("영상 다운로드 중..."); setError("");
+    if (!parsed) { setError(t("sc_error_invalid_yt")); return; }
+    setStep("loading"); setLoadingMsg(t("sc_downloading")); setError("");
 
     // 분석 실행 함수
     const doAnalyzeAfterDownload = async (fileId) => {
       setFileId(fileId);
-      setLoadingMsg("음성 인식 + AI 분석 중...");
+      setLoadingMsg(t("sc_stt_analyzing"));
       const analyzeBody = { max_chars: maxChars, max_segments: maxSegments };
       if (userPrompt.trim()) analyzeBody.user_prompt = userPrompt.trim();
       const ad = await apiCall(`/analyze/${fileId}`, { method: "POST", body: JSON.stringify(analyzeBody), timeout: 180000 });
@@ -778,7 +781,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
     try {
       // 1차 시도: Render 서버 직접 다운로드 (60초 제한)
-      setLoadingMsg("영상 다운로드 중...");
+      setLoadingMsg(t("sc_downloading"));
       const downloadBody = { url: parsed.url };
       const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify(downloadBody), timeout: 65000 });
       await doAnalyzeAfterDownload(d.file_id);
@@ -793,7 +796,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       // 바로 도우미 화면 전환 (사용자가 기다리지 않게)
       setDownloadHelper({
         id: parsed.id, url: parsed.url,
-        title: ytTitle || `YouTube 영상 (${parsed.id})`,
+        title: ytTitle || `${t("sc_yt_video")} (${parsed.id})`,
         thumbnail: `https://img.youtube.com/vi/${parsed.id}/hqdefault.jpg`,
       });
       setInputMode("file");
@@ -805,7 +808,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // 파일 업로드
   const handleUpload = async () => {
     if (!videoFile) return;
-    setStep("loading"); setLoadingMsg("업로드 중..."); setError("");
+    setStep("loading"); setLoadingMsg(t("sc_uploading")); setError("");
     try {
       const form = new FormData();
       form.append("video", videoFile);
@@ -813,21 +816,21 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       if (logoFile) form.append("logo", logoFile);
       if (fontFile) form.append("custom_font", fontFile);
       const r = await fetch(`${API}/upload`, { method: "POST", body: form }).catch(() => null);
-      if (!r) throw new Error("숏츠 서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.");
+      if (!r) throw new Error(t("sc_connect_fail"));
       if (!r.ok) {
         const errBody = await r.json().catch(() => ({}));
-        throw new Error(errBody.detail || `업로드 실패 (${r.status})`);
+        throw new Error(errBody.detail || `${t("sc_upload_fail")} (${r.status})`);
       }
       const d = await r.json();
       setFileId(d.file_id);
-      setLoadingMsg("음성 인식 + AI 분석 중...");
+      setLoadingMsg(t("sc_stt_analyzing"));
       await doAnalyze(d.file_id);
     } catch (e) { setError(e.message); setStep("upload"); }
   };
 
   // 분석
   const doAnalyze = async (fid) => {
-    setLoadingMsg("AI가 영상을 분석하고 있어요...");
+    setLoadingMsg(t("sc_ai_analyzing"));
     try {
       const analyzeBody = { max_chars: maxChars, max_segments: maxSegments };
       if (userPrompt.trim()) analyzeBody.user_prompt = userPrompt.trim();
@@ -836,7 +839,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       setSegments(segs2);
       setSelectedSegs(segs2.map((_, i) => i));
       setStep("analysis");
-    } catch (e) { setError("분석 실패: " + e.message); setStep("upload"); }
+    } catch (e) { setError(t("sc_analysis_fail") + e.message); setStep("upload"); }
   };
 
   // 편집으로 이동
@@ -865,7 +868,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
     // 백그라운드 인디케이터 등록
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
-      detail: { action: "register", task: { id: "shorts_gen", type: "shorts_make", message: "영상 생성 중... (0/" + editClips.length + ")" } }
+      detail: { action: "register", task: { id: "shorts_gen", type: "shorts_make", message: t("sc_generating") + " (0/" + editClips.length + ")" } }
     }));
 
     try {
@@ -885,14 +888,14 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
           // 백그라운드 인디케이터 업데이트
           window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
-            detail: { action: "update", task: { id: "shorts_gen", message: `영상 생성 중... (${done}/${total})`, progress: Math.round(done / total * 100) } }
+            detail: { action: "update", task: { id: "shorts_gen", message: `${t("sc_generating")} (${done}/${total})`, progress: Math.round(done / total * 100) } }
           }));
 
           if (j.status === "complete") {
             clearInterval(pollRef.current); pollRef.current = null;
             // 완료 알림
             window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
-              detail: { action: "complete", task: { id: "shorts_gen", message: `쇼츠 ${done}개 생성 완료!` } }
+              detail: { action: "complete", task: { id: "shorts_gen", message: `${done}${t("sc_n_completed")}!` } }
             }));
             // 보관함에 저장
             try {
@@ -902,7 +905,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   id: Date.now().toString() + idx,
                   type: "shorts",
                   title: editClips[r.index]?.title || `Short ${r.index + 1}`,
-                  content: `[쇼츠 영상] ${editClips[r.index]?.subtitle_text || ""}\n${(editClips[r.index]?.subtitles || []).map(s => s.text).join("\n")}`,
+                  content: `[${t("sc_shorts_video")}] ${editClips[r.index]?.subtitle_text || ""}\n${(editClips[r.index]?.subtitles || []).map(s => s.text).join("\n")}`,
                   date: new Date().toLocaleDateString("ko-KR"),
                   videoUrl: `${API}/outputs/${fileId}/${r.filename}`,
                 });
@@ -913,9 +916,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         } catch {}
       }, 3000);
     } catch (e) {
-      setError("생성 실패: " + e.message);
+      setError(t("sc_gen_fail") + e.message);
       window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
-        detail: { action: "complete", task: { id: "shorts_gen", message: "생성 실패" } }
+        detail: { action: "complete", task: { id: "shorts_gen", message: t("sc_failed") } }
       }));
     }
   };
@@ -983,36 +986,36 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 14px", borderRadius: 20, background: `${acc}15`, marginBottom: 10 }}>
             <span style={{ fontSize: 12, fontWeight: 700, color: acc }}>SHORTS EDITOR</span>
           </div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: text }}>숏폼 자동 편집기</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: text }}>{t("sc_title")}</div>
           <div style={{ fontSize: 13, color: muted, marginTop: 6, lineHeight: 1.6 }}>
-            긴 영상에서 AI가 핵심 구간을 추출해 쇼츠를 자동으로 만들어줍니다
+            {t("sc_desc")}
           </div>
         </div>
 
         {/* 탭 */}
         <div style={{ display: "flex", borderRadius: 14, overflow: "hidden", marginBottom: 24, border: `1px solid ${bdr}` }}>
-          <button onClick={() => { setInputMode("youtube"); setDownloadHelper(null); }} style={tabBtn(inputMode === "youtube")}>유튜브 링크</button>
-          <button onClick={() => setInputMode("file")} style={tabBtn(inputMode === "file")}>파일 업로드</button>
+          <button onClick={() => { setInputMode("youtube"); setDownloadHelper(null); }} style={tabBtn(inputMode === "youtube")}>{t("sc_youtube_tab")}</button>
+          <button onClick={() => setInputMode("file")} style={tabBtn(inputMode === "file")}>{t("sc_file_tab")}</button>
         </div>
 
         {inputMode === "youtube" ? (
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 8 }}>유튜브 영상 URL *</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: text, marginBottom: 8 }}>{t("sc_youtube_url")}</div>
             <input value={ytUrl}
               onChange={e => setYtUrl(e.target.value)}
               onPaste={e => { const pasted = e.clipboardData.getData("text"); if (pasted && parseYoutubeUrl(pasted)) { e.preventDefault(); setYtUrl(pasted.trim()); } }}
-              placeholder="https://www.youtube.com/watch?v=... 또는 youtu.be/..."
+              placeholder={t("sc_youtube_placeholder")}
               style={{ ...inputStyle, marginBottom: 12 }} />
             {ytUrl.trim() && !ytParsed && (
-              <div style={{ fontSize: 11, color: "#f87171", marginBottom: 8, paddingLeft: 4 }}>올바른 유튜브 링크 형식이 아닙니다</div>
+              <div style={{ fontSize: 11, color: "#f87171", marginBottom: 8, paddingLeft: 4 }}>{t("sc_invalid_url")}</div>
             )}
             {ytParsed && (
               <div style={{ ...cardStyle, display: "flex", alignItems: "center", gap: 10, padding: 12, marginBottom: 12 }}>
                 <img src={`https://img.youtube.com/vi/${ytParsed.id}/mqdefault.jpg`} alt="" style={{ width: 80, height: 45, objectFit: "cover", borderRadius: 8 }} onError={e => e.target.style.display = "none"} />
-                <div><div style={{ fontSize: 12, fontWeight: 700, color: acc }}>영상 감지됨</div><div style={{ fontSize: 11, color: muted }}>ID: {ytParsed.id}</div></div>
+                <div><div style={{ fontSize: 12, fontWeight: 700, color: acc }}>{t("sc_video_detected")}</div><div style={{ fontSize: 11, color: muted }}>ID: {ytParsed.id}</div></div>
               </div>
             )}
-            <button onClick={handleYoutube} style={{ ...btnStyle, opacity: !ytParsed ? 0.4 : 1 }} disabled={!ytParsed}>쇼츠로 변환하기 <span style={{ opacity: 0.7, fontSize: 12 }}>(35P)</span></button>
+            <button onClick={handleYoutube} style={{ ...btnStyle, opacity: !ytParsed ? 0.4 : 1 }} disabled={!ytParsed}>{t("sc_convert_btn")} <span style={{ opacity: 0.7, fontSize: 12 }}>(35P)</span></button>
           </div>
         ) : (
           <div>
@@ -1022,7 +1025,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   <img src={downloadHelper.thumbnail} alt="" style={{ width: 80, height: 45, objectFit: "cover", borderRadius: 8 }} onError={e => e.target.style.display = "none"} />
                   <div style={{ fontSize: 13, fontWeight: 700, color: text }}>{downloadHelper.title}</div>
                 </div>
-                <div style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8 }}>서버 다운로드 실패 - 직접 다운로드 후 업로드해주세요</div>
+                <div style={{ fontSize: 12, color: "#f59e0b", marginBottom: 8 }}>{t("sc_download_fail")}</div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <a href={`https://ssyoutube.com/watch?v=${downloadHelper.id}`} target="_blank" rel="noopener noreferrer"
                     style={{ flex: 1, padding: "8px", borderRadius: 8, background: "#ef4444", color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>ssyoutube.com</a>
@@ -1036,8 +1039,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               <div style={{ width: 56, height: 56, borderRadius: 16, background: `${acc}15`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: text }}>영상 파일을 선택하세요</div>
-              <div style={{ fontSize: 12, color: muted }}>MP4, MOV, AVI (+ SRT 자막 선택)</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: text }}>{t("sc_select_file")}</div>
+              <div style={{ fontSize: 12, color: muted }}>{t("sc_file_formats")}</div>
               <input ref={fileRef} type="file" accept=".mp4,.mkv,.avi,.mov,.srt,.txt" multiple style={{ display: "none" }}
                 onChange={e => { for (const f of e.target.files) { const ext = f.name.split(".").pop().toLowerCase(); if (["mp4", "mkv", "avi", "mov"].includes(ext)) setVideoFile(f); else if (["srt", "txt"].includes(ext)) setSubFile(f); } }} />
             </div>
@@ -1045,58 +1048,58 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               <div style={{ ...cardStyle, display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ fontSize: 12, color: acc, fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: `${acc}15` }}>{videoFile.name}</span>
                 {subFile && <span style={{ fontSize: 12, color: "#10b981", fontWeight: 700, padding: "3px 10px", borderRadius: 20, background: "rgba(16,185,129,0.1)" }}>{subFile.name}</span>}
-                {!subFile && <span style={{ fontSize: 11, color: muted }}>자막 없음 · AI 음성인식</span>}
+                {!subFile && <span style={{ fontSize: 11, color: muted }}>{t("sc_no_subtitle")}</span>}
               </div>
             )}
-            <button onClick={handleUpload} style={{ ...btnStyle, opacity: !videoFile ? 0.4 : 1 }} disabled={!videoFile}>쇼츠 생성해보기 <span style={{ opacity: 0.7, fontSize: 12 }}>(35P)</span></button>
+            <button onClick={handleUpload} style={{ ...btnStyle, opacity: !videoFile ? 0.4 : 1 }} disabled={!videoFile}>{t("sc_create_btn")} <span style={{ opacity: 0.7, fontSize: 12 }}>(35P)</span></button>
           </div>
         )}
 
         {/* 분석 요청 프롬프트 */}
         <div style={{ ...cardStyle, marginTop: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 6 }}>분석 요청 (선택)</div>
-          <div style={{ fontSize: 11, color: muted, marginBottom: 8, lineHeight: 1.5 }}>원하는 부분만 추출하고 싶을 때 AI에게 요청해보세요</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 6 }}>{t("sc_analysis_request")}</div>
+          <div style={{ fontSize: 11, color: muted, marginBottom: 8, lineHeight: 1.5 }}>{t("sc_analysis_desc")}</div>
           <textarea value={userPrompt} onChange={e => setUserPrompt(e.target.value)}
-            placeholder="원하는 부분을 설명해주세요 (예: 가장 재미있는 부분만, 핵심 요약만)"
+            placeholder={t("sc_analysis_placeholder")}
             rows={3} style={{ ...inputStyle, resize: "none", lineHeight: 1.6, fontFamily: "inherit" }} />
         </div>
 
         {/* 설정 */}
         <div style={{ ...cardStyle, marginTop: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 12 }}>세부 설정</div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>쇼츠 길이</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 12 }}>{t("sc_settings")}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>{t("sc_shorts_length")}</div>
           <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 480 ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: 6, marginBottom: 14 }}>
             {LENGTHS.map(l => (
               <button key={l.id} onClick={() => setShortsLength(l.id)}
                 style={{ padding: "10px 6px", borderRadius: 10, border: `1.5px solid ${shortsLength === l.id ? acc : bdr}`, background: shortsLength === l.id ? `${acc}15` : "transparent", color: shortsLength === l.id ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer", textAlign: "center" }}>
-                <div>{l.label}</div><div style={{ fontSize: 10, fontWeight: 400, marginTop: 2 }}>{l.desc}</div>
+                <div>{t(l.labelKey)}</div><div style={{ fontSize: 10, fontWeight: 400, marginTop: 2 }}>{t(l.descKey)}</div>
               </button>
             ))}
           </div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>자막 글자수</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>{t("sc_subtitle_chars")}</div>
           <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 480 ? "repeat(2,1fr)" : "repeat(4,1fr)", gap: 6, marginBottom: 14 }}>
-            {[[0,"자동"],[8,"8자"],[15,"15자"],[25,"25자"]].map(([v,l]) => (
+            {[[0,t("sc_auto")],[8,"8"+t("sc_chars_suffix")],[15,"15"+t("sc_chars_suffix")],[25,"25"+t("sc_chars_suffix")]].map(([v,l]) => (
               <button key={v} onClick={() => setMaxChars(v)}
                 style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${maxChars === v ? acc : bdr}`, background: maxChars === v ? `${acc}15` : "transparent", color: maxChars === v ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{l}</button>
             ))}
           </div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>쇼츠 생성 개수</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>{t("sc_shorts_count")}</div>
           <div style={{ display: "grid", gridTemplateColumns: window.innerWidth < 480 ? "repeat(3,1fr)" : "repeat(5,1fr)", gap: 6 }}>
             {[1,2,3,4,5].map(n => (
               <button key={n} onClick={() => setMaxSegments(n)}
-                style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${maxSegments === n ? acc : bdr}`, background: maxSegments === n ? `${acc}15` : "transparent", color: maxSegments === n ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{n}개</button>
+                style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${maxSegments === n ? acc : bdr}`, background: maxSegments === n ? `${acc}15` : "transparent", color: maxSegments === n ? acc : muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{n}{t("sc_count_suffix")}</button>
             ))}
           </div>
         </div>
 
         {/* 주요 기능 안내 */}
         <div style={{ ...cardStyle, marginTop: 20 }}>
-          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 12 }}>주요 기능</div>
+          <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 12 }}>{t("sc_features_title")}</div>
           {[
-            ["AI 하이라이트 추출", "긴 영상에서 가장 흥미로운 구간을 AI가 자동으로 찾아줍니다."],
-            ["9:16 세로 포맷", "유튜브 쇼츠, 인스타 릴스, 틱톡에 최적화된 세로 영상으로 변환합니다."],
-            ["자동 자막 생성", "Whisper AI가 음성을 인식해 자막을 자동으로 삽입합니다."],
-            ["프로 편집 도구", "타임라인, 오버레이, 템플릿 등 전문 편집 도구를 제공합니다."],
+            [t("sc_feature_highlight"), t("sc_feature_highlight_desc")],
+            [t("sc_feature_vertical"), t("sc_feature_vertical_desc")],
+            [t("sc_feature_subtitle"), t("sc_feature_subtitle_desc")],
+            [t("sc_feature_pro"), t("sc_feature_pro_desc")],
           ].map(([title, desc], i) => (
             <div key={i} style={{ display: "flex", gap: 12, marginBottom: 10, padding: "10px 12px", borderRadius: 10, background: ibg }}>
               <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${acc}15`, color: acc, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, flexShrink: 0 }}>{i + 1}</div>
@@ -1117,7 +1120,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           return (
             <div style={{ marginTop: 28, padding: "20px 0" }}>
               <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                <span>이어서 편집하기</span>
+                <span>{t("sc_continue_edit")}</span>
                 <span style={{ fontSize: 11, color: muted, fontWeight: 400 }}>({projs.length})</span>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(180px,1fr))", gap: 10 }}>
@@ -1128,9 +1131,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                     onMouseLeave={e => e.currentTarget.style.borderColor = bdr}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 4 }}>{p.title}</div>
                     <div style={{ fontSize: 11, color: muted }}>{p.date}</div>
-                    <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>{p.editClips?.length || 0}개 클립 · {p.videoSegs?.length || 0}개 세그먼트</div>
+                    <div style={{ fontSize: 10, color: muted, marginTop: 4 }}>{p.editClips?.length || 0}{t("sc_clips_info")} · {p.videoSegs?.length || 0}{t("sc_segs_info")}</div>
                     <button onClick={e => { e.stopPropagation(); const projs2 = getSavedProjects().filter(x => x.id !== p.id); localStorage.setItem(PROJECTS_KEY, JSON.stringify(projs2)); }}
-                      style={{ marginTop: 6, fontSize: 10, color: "#f87171", background: "none", border: "none", cursor: "pointer", padding: 0 }}>삭제</button>
+                      style={{ marginTop: 6, fontSize: 10, color: "#f87171", background: "none", border: "none", cursor: "pointer", padding: 0 }}>{t("delete")}</button>
                   </div>
                 ))}
               </div>
@@ -1162,11 +1165,11 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             </svg>
           </div>
         </div>
-        <div style={{ fontSize: 20, fontWeight: 900, color: text, marginBottom: 8 }}>AI가 영상을 분석하고 있어요</div>
+        <div style={{ fontSize: 20, fontWeight: 900, color: text, marginBottom: 8 }}>{t("sc_loading_title")}</div>
         <div style={{ fontSize: 14, color: muted, marginBottom: 20, animation: "shorts-pulse 2s ease-in-out infinite" }}>{loadingMsg}</div>
         <div style={{ ...cardStyle, textAlign: "center" }}>
-          <div style={{ fontSize: 12, color: muted }}>⏱ 경과 시간: {Math.floor(elapsed / 60)}분 {elapsed % 60}초</div>
-          <div style={{ fontSize: 11, color: acc, fontWeight: 600, marginTop: 6 }}>다른 메뉴로 이동해도 분석이 계속됩니다</div>
+          <div style={{ fontSize: 12, color: muted }}>⏱ {t("sc_elapsed_time")}: {Math.floor(elapsed / 60)}{t("sc_min_unit")} {elapsed % 60}{t("sc_sec_unit")}</div>
+          <div style={{ fontSize: 11, color: acc, fontWeight: 600, marginTop: 6 }}>{t("sc_bg_continue")}</div>
         </div>
       </div>
     </div>
@@ -1181,10 +1184,10 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 14px", borderRadius: 20, background: `${acc}15`, marginBottom: 10 }}>
             <span style={{ fontSize: 14 }}>✨</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: acc }}>AI가 {segments.length}개 쇼츠 구간을 찾았어요</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: acc }}>{t("sc_ai_found_prefix")} {segments.length}{t("sc_ai_found_segments")}</span>
           </div>
-          <div style={{ fontSize: 22, fontWeight: 900, color: text }}>추천 쇼츠 클립</div>
-          <div style={{ fontSize: 13, color: muted, marginTop: 6 }}>프롬프트 기반으로 분석된 최적의 구간입니다</div>
+          <div style={{ fontSize: 22, fontWeight: 900, color: text }}>{t("sc_recommended_clips")}</div>
+          <div style={{ fontSize: 13, color: muted, marginTop: 6 }}>{t("sc_prompt_based")}</div>
         </div>
         {segments.map((s, i) => {
           const selected = selectedSegs.includes(i);
@@ -1207,7 +1210,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   </div>
                 </div>
                 {s.score && <div style={{ padding: "4px 10px", borderRadius: 8, background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)" }}>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: "#4ade80" }}>{s.score}점</span>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: "#4ade80" }}>{s.score}{t("sc_score_suffix")}</span>
                 </div>}
               </div>
               {hook && <div style={{ fontSize: 13, fontWeight: 600, color: acc, marginBottom: 6, padding: "6px 10px", borderRadius: 8, background: `${acc}08`, borderLeft: `3px solid ${acc}` }}>🎬 {hook}</div>}
@@ -1217,9 +1220,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           );
         })}
         <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-          <button onClick={() => { setStep("upload"); setSegments([]); }} style={{ flex: "0 0 auto", padding: "14px 20px", borderRadius: 12, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>← 다시 분석</button>
+          <button onClick={() => { setStep("upload"); setSegments([]); }} style={{ flex: "0 0 auto", padding: "14px 20px", borderRadius: 12, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>{t("sc_reanalyze")}</button>
           <button onClick={goToEdit} disabled={selectedSegs.length === 0} style={{ ...btnStyle, flex: 1, opacity: selectedSegs.length === 0 ? 0.4 : 1 }}>
-            {selectedSegs.length}개 구간 편집하기 →
+            {selectedSegs.length}{t("sc_edit_segments_btn")}
           </button>
         </div>
       </div>
@@ -1258,15 +1261,15 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         <div style={{ position: "fixed", inset: 0, zIndex: 99999, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }} onClick={() => setShowShortcuts(false)}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#16162a", border: "1px solid #2a2a4a", borderRadius: 16, padding: "24px 28px", maxWidth: 420, width: "90%", maxHeight: "80vh", overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <div style={{ fontSize: 16, fontWeight: 900, color: "#e0e0e0" }}>단축키 가이드</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: "#e0e0e0" }}>{t("sc_shortcut_guide")}</div>
               <button onClick={() => setShowShortcuts(false)} style={{ background: "none", border: "none", color: "#666", fontSize: 18, cursor: "pointer" }}>✕</button>
             </div>
             {[
-              ["재생", [["Space","재생 / 정지"],["Home","처음으로"],["End","끝으로"]]],
-              ["이동", [["← →","1초 이동"],["Shift + ← →","5초 이동"]]],
-              ["편집", [["S","현재 위치에서 분할"],["Delete","선택 요소 삭제"],["M","세그먼트 음소거"],["Ctrl+D","오버레이 복제"],["Ctrl+Z","되돌리기 (Undo)"],["Ctrl+Y","다시실행 (Redo)"]]],
-              ["선택", [["드래그","범위 선택 (전 트랙)"],["클릭","해당 요소 선택"],["Escape","선택 해제"],["Ctrl+A","전체 선택"]]],
-              ["줌", [["[  ]","타임라인 줌 축소/확대"],["줌 슬라이더","우측 하단"]]],
+              [t("sc_shortcut_play"), [["Space",t("sc_shortcut_play_pause")],["Home",t("sc_shortcut_to_start")],["End",t("sc_shortcut_to_end")]]],
+              [t("sc_shortcut_move"), [["← →",t("sc_shortcut_1sec")],["Shift + ← →",t("sc_shortcut_5sec")]]],
+              [t("sc_shortcut_edit"), [["S",t("sc_shortcut_split")],["Delete",t("sc_shortcut_delete")],["M",t("sc_shortcut_mute")],["Ctrl+D",t("sc_shortcut_duplicate")],["Ctrl+Z",t("sc_shortcut_undo")],["Ctrl+Y",t("sc_shortcut_redo")]]],
+              [t("sc_shortcut_select"), [["Drag",t("sc_shortcut_drag")],["Click",t("sc_shortcut_click")],["Escape",t("sc_shortcut_deselect")],["Ctrl+A",t("sc_shortcut_select_all")]]],
+              [t("sc_shortcut_zoom"), [["[  ]",t("sc_shortcut_zoom_inout")],["Slider",t("sc_shortcut_zoom_slider")]]],
             ].map(([group, items]) => (
               <div key={group} style={{ marginBottom: 14 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#7c6aff", marginBottom: 6, textTransform: "uppercase" }}>{group}</div>
@@ -1289,8 +1292,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#7c6aff" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
             </div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 8 }}>PC에서 편집해주세요</div>
-            <div style={{ fontSize: 13, color: "#888", lineHeight: 1.7 }}>쇼츠 편집기는 타임라인, 미리보기, 속성 패널이 필요하여 데스크탑 환경에서 최적으로 작동합니다.</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 8 }}>{t("sc_pc_only")}</div>
+            <div style={{ fontSize: 13, color: "#888", lineHeight: 1.7 }}>{t("sc_pc_only_desc")}</div>
           </div>
         </div>
       ) : (<>
@@ -1307,7 +1310,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
               window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
             }} />
-          <div style={{ padding: "14px 12px 8px", fontSize: 11, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 1 }}>클립 목록</div>
+          <div style={{ padding: "14px 12px 8px", fontSize: 11, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: 1 }}>{t("sc_clip_list")}</div>
           <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 8px" }}>
             {editClips.map((c, i) => (
               <div key={i} onClick={() => { setEditIdx(i); setSelectedSubIdx(-1); setPlayhead(0); setIsPlaying(false); }}
@@ -1318,7 +1321,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 </div>
                 {editClips.length > 1 && (
                   <button onClick={e => { e.stopPropagation(); pushUndo(); setEditClips(prev => prev.filter((_, idx) => idx !== i)); if (editIdx >= i && editIdx > 0) setEditIdx(editIdx - 1); }}
-                    title="클립 삭제"
+                    title={t("sc_clip_delete")}
                     style={{ flexShrink: 0, width: 20, height: 20, borderRadius: 4, border: "none", background: "rgba(248,113,113,0.1)", color: "#f87171", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", opacity: 0.6, transition: "opacity 0.15s" }}
                     onMouseEnter={e => e.currentTarget.style.opacity = "1"}
                     onMouseLeave={e => e.currentTarget.style.opacity = "0.6"}>X</button>
@@ -1327,7 +1330,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             ))}
           </div>
           <div style={{ padding: "8px", borderTop: "1px solid #2a2a4a" }}>
-            <button onClick={() => setStep("analysis")} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #2a2a4a", background: "transparent", color: "#888", fontSize: 11, cursor: "pointer" }}>← 구간 선택</button>
+            <button onClick={() => setStep("analysis")} style={{ width: "100%", padding: 8, borderRadius: 6, border: "1px solid #2a2a4a", background: "transparent", color: "#888", fontSize: 11, cursor: "pointer" }}>{t("sc_back_segments")}</button>
           </div>
         </div>
 
@@ -1335,7 +1338,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "#0c0c1a", padding: 12, minWidth: 0, overflow: "hidden" }}>
           {/* 레이아웃 전환 */}
           <div style={{ display: "flex", gap: 4, marginBottom: 8, flexShrink: 0 }}>
-            {[["bars","검은바"],["full","전체화면"]].map(([k,l]) => (
+            {[["bars",t("sc_bars")],["full",t("sc_fullscreen")]].map(([k,l]) => (
               <button key={k} onClick={() => setLayoutMode(k)}
                 style={{ padding: "4px 12px", borderRadius: 6, border: layoutMode===k ? "1px solid #7c6aff" : "1px solid #2a2a4a", background: layoutMode===k ? "rgba(124,106,255,0.15)" : "#1a1a30", color: layoutMode===k ? "#a5b4fc" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
             ))}
@@ -1357,7 +1360,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                     WebkitTextStroke: titleStyle.border ? `1px ${titleStyle.borderColor}` : "none",
                     background: titleStyle.bgBox ? titleStyle.bgColor : "transparent",
                     padding: titleStyle.bgBox ? "3px 10px" : 0, borderRadius: titleStyle.bgBox ? 4 : 0,
-                  }}>{curClip.title || "제목을 입력하세요"}</span>
+                  }}>{curClip.title || t("sc_enter_title")}</span>
                 </div>
                 {curClip.subtitle_text && (
                   <div style={{ maxWidth: "90%", textAlign: "center" }}>
@@ -1394,7 +1397,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   </div>
                 )}
                 {subtitlesEnabled && !currentSub && !(curClip.subtitles || []).length && (
-                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>자막 없음</span>
+                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>{t("sc_no_caption")}</span>
                 )}
               </div>
             </>) : (<>
@@ -1410,7 +1413,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               {/* 제목 (드래그 가능) */}
               <div onMouseDown={e => handlePreviewMouseDown("title", e)}
                 style={{ position: "absolute", left: `${titlePos.x}%`, top: `${titlePos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, padding: "8px 18px", borderRadius: 8, background: "rgba(0,0,0,0.75)", border: dragging === "title" ? "2px solid #7c6aff" : "2px solid transparent", maxWidth: "85%", textAlign: "center" }}>
-                <span style={{ fontSize: Math.min(fontSize + 2, 20), fontWeight: 900, color: titleColor, lineHeight: 1.3 }}>{curClip.title || "제목"}</span>
+                <span style={{ fontSize: Math.min(fontSize + 2, 20), fontWeight: 900, color: titleColor, lineHeight: 1.3 }}>{curClip.title || t("sc_title_text")}</span>
               </div>
               {/* 부제 (고정) */}
               {curClip.subtitle_text && (
@@ -1471,7 +1474,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             }} />
           {/* 탭 */}
           <div style={{ display: "flex", borderBottom: "1px solid #2a2a4a" }}>
-            {[["style","스타일"],["overlay","오버레이"]].map(([k,l]) => (
+            {[["style",t("sc_style_tab")],["overlay",t("sc_overlay_tab")]].map(([k,l]) => (
               <button key={k} onClick={() => setPropTab(k)}
                 style={{ flex: 1, padding: "10px 0", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: propTab === k ? "#1e1e3a" : "transparent", color: propTab === k ? "#7c6aff" : "#666", borderBottom: propTab === k ? "2px solid #7c6aff" : "2px solid transparent" }}>{l}</button>
             ))}
@@ -1482,54 +1485,54 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               {/* 영상 속성 (V1 선택 시) */}
               {selectedTrack === "V1" && (
                 <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: "1px solid #4a9eff30" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#4a9eff", marginBottom: 10 }}>영상 속성</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#4a9eff", marginBottom: 10 }}>{t("sc_video_props")}</div>
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                      <span style={{ fontSize: 11, color: "#888" }}>영상 확대/축소</span>
+                      <span style={{ fontSize: 11, color: "#888" }}>{t("sc_zoom_scale")}</span>
                       <span style={{ fontSize: 11, color: "#4a9eff", fontWeight: 700 }}>{videoScale}%</span>
                     </div>
                     <input type="range" min="50" max="200" value={videoScale} onChange={e => setVideoScale(Number(e.target.value))} style={{ width: "100%", accentColor: "#4a9eff" }} />
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                     <div>
-                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>시작 (초)</div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_start_sec")}</div>
                       <input type="number" step="0.1" value={curClip.start_seconds || 0} onChange={e => updateClip("start_seconds", Math.max(0, parseFloat(e.target.value) || 0))}
                         style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>종료 (초)</div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_end_sec")}</div>
                       <input type="number" step="0.1" value={curClip.end_seconds || 0} onChange={e => updateClip("end_seconds", parseFloat(e.target.value) || 0)}
                         style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
                     </div>
                   </div>
-                  <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>* 타임라인에서 좌우 핸들 드래그로도 조절 가능</div>
+                  <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>{t("sc_timeline_drag_note")}</div>
                 </div>
               )}
 
               {/* 제목 편집 */}
               <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>제목 / 부제</div>
-                <input value={curClip.title || ""} onChange={e => updateClip("title", e.target.value)} placeholder="쇼츠 제목" style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", marginBottom: 6, boxSizing: "border-box" }} />
-                <input value={curClip.subtitle_text || ""} onChange={e => updateClip("subtitle_text", e.target.value)} placeholder="부제목 (선택)" style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", boxSizing: "border-box" }} />
-                <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>* 프리뷰에서 드래그하여 위치 변경</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>{t("sc_title_subtitle")}</div>
+                <input value={curClip.title || ""} onChange={e => updateClip("title", e.target.value)} placeholder={t("sc_title_placeholder")} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", marginBottom: 6, boxSizing: "border-box" }} />
+                <input value={curClip.subtitle_text || ""} onChange={e => updateClip("subtitle_text", e.target.value)} placeholder={t("sc_subtitle_placeholder")} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", boxSizing: "border-box" }} />
+                <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>{t("sc_preview_drag_note")}</div>
               </div>
 
               {/* 선택된 자막 편집 */}
               {selectedSubIdx >= 0 && (curClip.subtitles || [])[selectedSubIdx] && (
                 <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: "1px solid #7c6aff40" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#7c6aff", marginBottom: 8 }}>자막 #{selectedSubIdx + 1}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#7c6aff", marginBottom: 8 }}>{t("sc_subtitle_on")} #{selectedSubIdx + 1}</div>
                   <textarea value={(curClip.subtitles || [])[selectedSubIdx]?.text || ""} onChange={e => {
                     const subs = [...(curClip.subtitles || [])]; subs[selectedSubIdx] = { ...subs[selectedSubIdx], text: e.target.value }; updateClip("subtitles", subs);
                   }} rows={2} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", resize: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 8 }}>
                     <div>
-                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>시작 (초)</div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_start_sec")}</div>
                       <input type="number" step="0.1" value={(curClip.subtitles || [])[selectedSubIdx]?.start || 0} onChange={e => {
                         const subs = [...(curClip.subtitles || [])]; subs[selectedSubIdx] = { ...subs[selectedSubIdx], start: parseFloat(e.target.value) || 0 }; updateClip("subtitles", subs);
                       }} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>종료 (초)</div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_end_sec")}</div>
                       <input type="number" step="0.1" value={(curClip.subtitles || [])[selectedSubIdx]?.end || 0} onChange={e => {
                         const subs = [...(curClip.subtitles || [])]; subs[selectedSubIdx] = { ...subs[selectedSubIdx], end: parseFloat(e.target.value) || 0 }; updateClip("subtitles", subs);
                       }} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
@@ -1540,21 +1543,21 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
               {/* 템플릿 + 색상 */}
               {/* 텍스트 스타일 편집기 (공용) */}
-              {[["title","상단 제목",titleStyle,setTitleStyle,"#7c6aff"],["caption","하단 자막",captionStyle,setCaptionStyle,"#f59e0b"]].map(([key,label,st,setSt,ac]) => (
+              {[["title",t("sc_upper_title"),titleStyle,setTitleStyle,"#7c6aff"],["caption",t("sc_lower_caption"),captionStyle,setCaptionStyle,"#f59e0b"]].map(([key,label,st,setSt,ac]) => (
                 <div key={key} style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: `1px solid ${ac}25` }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: ac, marginBottom: 8 }}>{label}</div>
                   {/* 폰트 선택 */}
                   <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>폰트</div>
+                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_font")}</div>
                     <select value={st.font || "default"} onChange={e => setSt(p=>({...p,font:e.target.value}))}
                       style={{ width: "100%", padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", fontFamily: st.font === "default" ? "inherit" : st.font }}>
-                      <option value="default">기본</option>
+                      <option value="default">{t("sc_font_default")}</option>
                       <option value="'Noto Sans KR', sans-serif" style={{ fontFamily: "'Noto Sans KR'" }}>Noto Sans KR</option>
-                      <option value="'Nanum Gothic', sans-serif" style={{ fontFamily: "'Nanum Gothic'" }}>나눔고딕</option>
-                      <option value="'Nanum Myeongjo', serif" style={{ fontFamily: "'Nanum Myeongjo'" }}>나눔명조</option>
-                      <option value="'Black Han Sans', sans-serif" style={{ fontFamily: "'Black Han Sans'" }}>블랙한산스</option>
-                      <option value="'Jua', sans-serif" style={{ fontFamily: "'Jua'" }}>주아</option>
-                      <option value="'Do Hyeon', sans-serif" style={{ fontFamily: "'Do Hyeon'" }}>도현</option>
+                      <option value="'Nanum Gothic', sans-serif" style={{ fontFamily: "'Nanum Gothic'" }}>{t("sc_font_nanumgothic")}</option>
+                      <option value="'Nanum Myeongjo', serif" style={{ fontFamily: "'Nanum Myeongjo'" }}>{t("sc_font_nanummyeongjo")}</option>
+                      <option value="'Black Han Sans', sans-serif" style={{ fontFamily: "'Black Han Sans'" }}>{t("sc_font_blackhansans")}</option>
+                      <option value="'Jua', sans-serif" style={{ fontFamily: "'Jua'" }}>{t("sc_font_jua")}</option>
+                      <option value="'Do Hyeon', sans-serif" style={{ fontFamily: "'Do Hyeon'" }}>{t("sc_font_dohyeon")}</option>
                       <option value="'Gothic A1', sans-serif" style={{ fontFamily: "'Gothic A1'" }}>Gothic A1</option>
                       <option value="Impact, sans-serif">Impact</option>
                       <option value="Georgia, serif">Georgia</option>
@@ -1562,9 +1565,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   </div>
                   {/* 글씨 위치 */}
                   <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>위치</div>
+                    <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_position")}</div>
                     <div style={{ display: "flex", gap: 3 }}>
-                      {[["left","좌"],["center","중앙"],["right","우"]].map(([v,l]) => (
+                      {[["left",t("sc_align_left")],["center",t("sc_align_center")],["right",t("sc_align_right")]].map(([v,l]) => (
                         <button key={v} onClick={() => setSt(p=>({...p,align:v}))}
                           style={{ flex: 1, padding: "4px", borderRadius: 4, border: `1px solid ${(st.align||"center")===v ? ac : "#2a2a4a"}`, background: (st.align||"center")===v ? `${ac}20` : "#12122a", color: (st.align||"center")===v ? ac : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
                       ))}
@@ -1572,40 +1575,40 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
                     <div>
-                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>글자색</div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_text_color")}</div>
                       <input type="color" value={st.color} onChange={e => setSt(p=>({...p,color:e.target.value}))} style={{ width: "100%", height: 22, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a" }} />
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>크기 <span style={{ color: ac }}>{st.fontSize}px</span></div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_size")} <span style={{ color: ac }}>{st.fontSize}px</span></div>
                       <input type="range" min="10" max="32" value={st.fontSize} onChange={e => setSt(p=>({...p,fontSize:Number(e.target.value)}))} style={{ width: "100%", accentColor: ac }} />
                     </div>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#aaa", cursor: "pointer" }}>
-                      <input type="checkbox" checked={st.shadow} onChange={e => setSt(p=>({...p,shadow:e.target.checked}))} style={{ accentColor: ac }} /> 그림자
+                      <input type="checkbox" checked={st.shadow} onChange={e => setSt(p=>({...p,shadow:e.target.checked}))} style={{ accentColor: ac }} /> {t("sc_shadow_label")}
                     </label>
                     <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#aaa", cursor: "pointer" }}>
-                      <input type="checkbox" checked={st.border} onChange={e => setSt(p=>({...p,border:e.target.checked}))} style={{ accentColor: ac }} /> 테두리
+                      <input type="checkbox" checked={st.border} onChange={e => setSt(p=>({...p,border:e.target.checked}))} style={{ accentColor: ac }} /> {t("sc_border_label")}
                     </label>
                   </div>
                   {st.border && (
                     <div style={{ marginBottom: 8 }}>
-                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>테두리색</div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_border_color")}</div>
                       <input type="color" value={st.borderColor} onChange={e => setSt(p=>({...p,borderColor:e.target.value}))} style={{ width: "100%", height: 22, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a" }} />
                     </div>
                   )}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#aaa", cursor: "pointer" }}>
-                      <input type="checkbox" checked={st.bgBox} onChange={e => setSt(p=>({...p,bgBox:e.target.checked}))} style={{ accentColor: ac }} /> 배경 박스
+                      <input type="checkbox" checked={st.bgBox} onChange={e => setSt(p=>({...p,bgBox:e.target.checked}))} style={{ accentColor: ac }} /> {t("sc_bgbox_label")}
                     </label>
                     <div>
-                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>투명도 {st.opacity}%</div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_opacity_label")} {st.opacity}%</div>
                       <input type="range" min="0" max="100" value={st.opacity} onChange={e => setSt(p=>({...p,opacity:Number(e.target.value)}))} style={{ width: "100%", accentColor: ac }} />
                     </div>
                   </div>
                   {st.bgBox && (
                     <div>
-                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>박스 배경색</div>
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_box_bg_color")}</div>
                       <input type="color" value={st.bgColor?.startsWith("rgba") ? "#000000" : (st.bgColor || "#000000")} onChange={e => setSt(p=>({...p,bgColor:e.target.value}))} style={{ width: "100%", height: 22, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a" }} />
                     </div>
                   )}
@@ -1614,35 +1617,35 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
               {/* 템플릿 프리셋 */}
               <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#888", marginBottom: 8 }}>템플릿 프리셋</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#888", marginBottom: 8 }}>{t("sc_template_preset")}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 4 }}>
-                  {TEMPLATES.map(t => (
-                    <div key={t.id} onClick={() => { setTemplate(t.id); setTitleStyle(p=>({...p,color:t.titleColor})); setCaptionStyle(p=>({...p,color:t.captionColor})); }}
-                      style={{ border: `2px solid ${template === t.id ? "#7c6aff" : "#2a2a4a"}`, borderRadius: 6, padding: 2, cursor: "pointer", textAlign: "center" }}>
-                      <div style={{ height: 24, borderRadius: 4, background: t.bg }} />
-                      <div style={{ fontSize: 7, fontWeight: 700, color: template === t.id ? "#7c6aff" : "#555", marginTop: 2 }}>{t.name}</div>
+                  {TEMPLATES.map(tpl => (
+                    <div key={tpl.id} onClick={() => { setTemplate(tpl.id); setTitleStyle(p=>({...p,color:tpl.titleColor})); setCaptionStyle(p=>({...p,color:tpl.captionColor})); }}
+                      style={{ border: `2px solid ${template === tpl.id ? "#7c6aff" : "#2a2a4a"}`, borderRadius: 6, padding: 2, cursor: "pointer", textAlign: "center" }}>
+                      <div style={{ height: 24, borderRadius: 4, background: tpl.bg }} />
+                      <div style={{ fontSize: 7, fontWeight: 700, color: template === tpl.id ? "#7c6aff" : "#555", marginTop: 2 }}>{t(tpl.nameKey)}</div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <button onClick={handleGenerate} style={{ ...btnStyle, marginTop: 4 }}>영상 생성하기 <span style={{ opacity: 0.7, fontSize: 12 }}>(100P)</span></button>
+              <button onClick={handleGenerate} style={{ ...btnStyle, marginTop: 4 }}>{t("sc_generate_video")} <span style={{ opacity: 0.7, fontSize: 12 }}>(100P)</span></button>
             </>) : (<>
               {/* 오버레이 탭 */}
               <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 10 }}>요소 추가</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 10 }}>{t("sc_add_element")}</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 5 }}>
                   <button onClick={() => { overlayFileRef.current.onchange = handleOverlayFile("image"); overlayFileRef.current.click(); }}
                     style={{ padding: "10px 6px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 10, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                    <span style={{ fontSize: 16 }}>🖼</span>이미지
+                    <span style={{ fontSize: 16 }}>🖼</span>{t("sc_image")}
                   </button>
                   <button onClick={() => { overlayFileRef.current.onchange = handleOverlayFile("logo"); overlayFileRef.current.click(); }}
                     style={{ padding: "10px 6px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 10, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                    <span style={{ fontSize: 16 }}>💎</span>로고
+                    <span style={{ fontSize: 16 }}>💎</span>{t("sc_logo")}
                   </button>
                   <button onClick={() => addOverlay("text")}
                     style={{ padding: "10px 6px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 10, fontWeight: 700, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
-                    <span style={{ fontSize: 16 }}>Aa</span>텍스트
+                    <span style={{ fontSize: 16 }}>Aa</span>{t("sc_text_label")}
                   </button>
                 </div>
               </div>
@@ -1653,12 +1656,12 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               {/* 오버레이 리스트 */}
               {overlays.length > 0 && (
                 <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>오버레이 ({overlays.length})</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>{t("sc_overlay_count")} ({overlays.length})</div>
                   {overlays.map(o => (
                     <div key={o.id} onClick={() => setSelectedOverlay(o.id)}
                       style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 6, cursor: "pointer", marginBottom: 3, background: selectedOverlay === o.id ? "rgba(236,72,153,0.15)" : "transparent", border: selectedOverlay === o.id ? "1px solid rgba(236,72,153,0.3)" : "1px solid transparent" }}>
                       <span style={{ fontSize: 14 }}>{o.type === "text" ? "Aa" : o.type === "logo" ? "💎" : "🖼"}</span>
-                      <span style={{ fontSize: 11, color: "#ccc", flex: 1 }}>{o.type === "text" ? o.text : o.type === "logo" ? "로고" : "이미지"}</span>
+                      <span style={{ fontSize: 11, color: "#ccc", flex: 1 }}>{o.type === "text" ? o.text : o.type === "logo" ? t("sc_logo") : t("sc_image")}</span>
                       <button onClick={e => { e.stopPropagation(); setOverlays(prev => prev.filter(x => x.id !== o.id)); if (selectedOverlay === o.id) setSelectedOverlay(null); }}
                         style={{ fontSize: 10, color: "#f87171", background: "none", border: "none", cursor: "pointer" }}>✕</button>
                     </div>
@@ -1672,31 +1675,31 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 const upd = (k, v) => setOverlays(prev => prev.map(x => x.id === o.id ? { ...x, [k]: v } : x));
                 return (
                   <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: "1px solid rgba(236,72,153,0.2)" }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: "#ec4899", marginBottom: 8 }}>속성</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: "#ec4899", marginBottom: 8 }}>{t("sc_props")}</div>
                     {o.type === "text" && <>
                       <input value={o.text || ""} onChange={e => upd("text", e.target.value)} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", marginBottom: 6, boxSizing: "border-box" }} />
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                         <div>
-                          <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>글자 크기</div>
+                          <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_font_size")}</div>
                           <input type="number" value={o.fontSize || 16} onChange={e => upd("fontSize", Number(e.target.value))} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
                         </div>
                         <div>
-                          <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>색상</div>
+                          <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_color")}</div>
                           <input type="color" value={o.color || "#ffffff"} onChange={e => upd("color", e.target.value)} style={{ width: "100%", height: 28, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a" }} />
                         </div>
                       </div>
                     </>}
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginTop: 6 }}>
                       <div>
-                        <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>시작 (초)</div>
+                        <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_start_sec")}</div>
                         <input type="number" step="0.1" value={o.start} onChange={e => upd("start", parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>종료 (초)</div>
+                        <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_end_sec")}</div>
                         <input type="number" step="0.1" value={o.end} onChange={e => upd("end", parseFloat(e.target.value) || 0)} style={{ width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} />
                       </div>
                     </div>
-                    <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>* 프리뷰에서 드래그하여 위치 이동</div>
+                    <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>{t("sc_overlay_drag_note")}</div>
                   </div>
                 );
               })()}
@@ -1719,51 +1722,51 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         {/* 툴바 (AlphaCut 스타일) */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 14px", borderBottom: "1px solid #1a1a30", flexShrink: 0, background: "#12122a" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <button onClick={splitAtPlayhead} title="현재 위치에서 영상 분할 (S)" style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#f59e0b", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
-              ✂ 분할
+            <button onClick={splitAtPlayhead} title={t("sc_shortcut_split")} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#f59e0b", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
+              ✂ {t("sc_split")}
             </button>
             <button onClick={() => {
               const subs = [...(curClip.subtitles || [])];
               const newStart = clipStart + playhead;
-              subs.push({ start: newStart, end: newStart + 3, text: "새 자막" });
+              subs.push({ start: newStart, end: newStart + 3, text: t("sc_new_sub_text") });
               subs.sort((a, b) => a.start - b.start);
               updateClip("subtitles", subs);
               setSelectedSubIdx(subs.findIndex(s => s.start === newStart));
-            }} title="현재 위치에 자막 추가" style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#a5b4fc", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
-              + 자막
+            }} title={t("sc_add_sub")} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#a5b4fc", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
+              + {t("sc_subtitle_on")}
             </button>
             {selectedSegIdx >= 0 && videoSegs.length > 1 && (
-              <button onClick={() => deleteSegment(selectedSegIdx)} title="선택 구간 삭제" style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #f8717140", background: "rgba(248,113,113,0.08)", color: "#f87171", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-                🗑 구간삭제
+              <button onClick={() => deleteSegment(selectedSegIdx)} title={t("sc_del_segment")} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #f8717140", background: "rgba(248,113,113,0.08)", color: "#f87171", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+                🗑 {t("sc_del_segment")}
               </button>
             )}
             {selectedSubIdx >= 0 && (
-              <button onClick={() => deleteSubtitle(selectedSubIdx)} title="선택 자막 삭제" style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #f8717140", background: "rgba(248,113,113,0.08)", color: "#f87171", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-                🗑 자막삭제
+              <button onClick={() => deleteSubtitle(selectedSubIdx)} title={t("sc_del_subtitle")} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #f8717140", background: "rgba(248,113,113,0.08)", color: "#f87171", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+                🗑 {t("sc_del_subtitle")}
               </button>
             )}
             <div style={{ width: 1, height: 20, background: "#2a2a4a", margin: "0 2px" }} />
             <div style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 2 }}>
               <button onClick={() => { setRemoveSilence(!removeSilence); }} style={{ padding: "5px 10px", borderRadius: "6px 0 0 6px", border: removeSilence ? "1px solid #4ade80" : "1px solid #2a2a4a", borderRight: "none", background: removeSilence ? "rgba(74,222,128,0.12)" : "#1a1a30", color: removeSilence ? "#4ade80" : "#888", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-                무음삭제 {removeSilence ? "ON" : ""}
+                {t("sc_silence_remove")} {removeSilence ? "ON" : ""}
               </button>
-              <button onClick={() => setShowSilenceSettings(!showSilenceSettings)} style={{ padding: "5px 6px", borderRadius: "0 6px 6px 0", border: removeSilence ? "1px solid #4ade80" : "1px solid #2a2a4a", background: showSilenceSettings ? "rgba(74,222,128,0.2)" : (removeSilence ? "rgba(74,222,128,0.12)" : "#1a1a30"), color: removeSilence ? "#4ade80" : "#888", cursor: "pointer", fontSize: 10, fontWeight: 700 }} title="무음삭제 설정">
+              <button onClick={() => setShowSilenceSettings(!showSilenceSettings)} style={{ padding: "5px 6px", borderRadius: "0 6px 6px 0", border: removeSilence ? "1px solid #4ade80" : "1px solid #2a2a4a", background: showSilenceSettings ? "rgba(74,222,128,0.2)" : (removeSilence ? "rgba(74,222,128,0.12)" : "#1a1a30"), color: removeSilence ? "#4ade80" : "#888", cursor: "pointer", fontSize: 10, fontWeight: 700 }} title={t("sc_silence_settings")}>
                 {showSilenceSettings ? "▲" : "▼"}
               </button>
               {showSilenceSettings && (
                 <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, width: 220, background: "#16162a", border: "1px solid #2a2a4a", borderRadius: 10, padding: 12, zIndex: 100, boxShadow: "0 -4px 20px rgba(0,0,0,0.5)" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", marginBottom: 10 }}>무음삭제 설정</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", marginBottom: 10 }}>{t("sc_silence_settings")}</div>
                   <div style={{ marginBottom: 10 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, color: "#888" }}>임계값 (dB)</span>
+                      <span style={{ fontSize: 10, color: "#888" }}>{t("sc_threshold_db")}</span>
                       <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 700 }}>{silenceThreshold} dB</span>
                     </div>
                     <input type="range" min="-60" max="-10" value={silenceThreshold} onChange={e => setSilenceThreshold(Number(e.target.value))} style={{ width: "100%", accentColor: "#4ade80" }} />
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: "#555" }}><span>민감</span><span>둔감</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: "#555" }}><span>{t("sc_sensitive")}</span><span>{t("sc_insensitive")}</span></div>
                   </div>
                   <div>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, color: "#888" }}>최소 무음 길이 (초)</span>
+                      <span style={{ fontSize: 10, color: "#888" }}>{t("sc_min_silence_len")}</span>
                       <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 700 }}>{silenceMinGap}s</span>
                     </div>
                     <input type="range" min="0.1" max="3" step="0.1" value={silenceMinGap} onChange={e => setSilenceMinGap(Number(e.target.value))} style={{ width: "100%", accentColor: "#4ade80" }} />
@@ -1775,37 +1778,37 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             <div style={{ width: 1, height: 20, background: "#2a2a4a", margin: "0 2px" }} />
             {/* 볼륨 */}
             <span style={{ fontSize: 10, color: "#888" }}>🔊</span>
-            <input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} style={{ width: 50, accentColor: "#4ade80" }} title={`볼륨 ${volume}%`} />
+            <input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} style={{ width: 50, accentColor: "#4ade80" }} title={`${t("sc_volume_title")} ${volume}%`} />
             {/* BGM */}
             <button onClick={() => bgmFileRef.current?.click()} style={{ padding: "5px 10px", borderRadius: 6, border: bgmFile ? "1px solid #ec4899" : "1px solid #2a2a4a", background: bgmFile ? "rgba(236,72,153,0.1)" : "#1a1a30", color: bgmFile ? "#ec4899" : "#888", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-              🎵 {bgmFile ? bgmFile.name.slice(0,8) : "배경음"}
+              🎵 {bgmFile ? bgmFile.name.slice(0,8) : t("sc_bgm")}
             </button>
-            {bgmFile && <input type="range" min="0" max="100" value={bgmVolume} onChange={e => setBgmVolume(Number(e.target.value))} style={{ width: 40, accentColor: "#ec4899" }} title={`배경음 ${bgmVolume}%`} />}
+            {bgmFile && <input type="range" min="0" max="100" value={bgmVolume} onChange={e => setBgmVolume(Number(e.target.value))} style={{ width: 40, accentColor: "#ec4899" }} title={`${t("sc_bgm_volume_title")} ${bgmVolume}%`} />}
             <input ref={bgmFileRef} type="file" accept="audio/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) setBgmFile({ name: f.name, url: URL.createObjectURL(f) }); e.target.value = ""; }} />
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             {/* 자막 토글 */}
             <button onClick={() => setSubtitlesEnabled(!subtitlesEnabled)}
               style={{ padding: "5px 10px", borderRadius: 6, border: subtitlesEnabled ? "1px solid #f59e0b" : "1px solid #2a2a4a", background: subtitlesEnabled ? "rgba(245,158,11,0.1)" : "#1a1a30", color: subtitlesEnabled ? "#f59e0b" : "#555", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-              자막 {subtitlesEnabled ? "ON" : "OFF"}
+              {t("sc_subtitle_toggle")} {subtitlesEnabled ? "ON" : "OFF"}
             </button>
             {/* 저장 */}
-            <button onClick={() => { saveProject(); alert("프로젝트가 저장되었습니다!"); }}
+            <button onClick={() => { saveProject(); alert(t("sc_project_saved")); }}
               style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #4ade8040", background: "rgba(74,222,128,0.08)", color: "#4ade80", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-              💾 저장
+              💾 {t("sc_save_label")}
             </button>
             {/* Undo/Redo */}
-            <button onClick={doUndo} style={{ padding:"5px 8px", borderRadius:6, border:"1px solid #2a2a4a", background:"#1a1a30", color:undoStack.current.length?"#7c6aff":"#444", cursor:"pointer", fontSize:13 }} title="되돌리기 (Ctrl+Z)">↩</button>
-            <button onClick={doRedo} style={{ padding:"5px 8px", borderRadius:6, border:"1px solid #2a2a4a", background:"#1a1a30", color:redoStack.current.length?"#7c6aff":"#444", cursor:"pointer", fontSize:13 }} title="다시실행 (Ctrl+Y)">↪</button>
+            <button onClick={doUndo} style={{ padding:"5px 8px", borderRadius:6, border:"1px solid #2a2a4a", background:"#1a1a30", color:undoStack.current.length?"#7c6aff":"#444", cursor:"pointer", fontSize:13 }} title={t("sc_shortcut_undo")}>↩</button>
+            <button onClick={doRedo} style={{ padding:"5px 8px", borderRadius:6, border:"1px solid #2a2a4a", background:"#1a1a30", color:redoStack.current.length?"#7c6aff":"#444", cursor:"pointer", fontSize:13 }} title={t("sc_shortcut_redo")}>↪</button>
             {/* 단축키 가이드 */}
             <button onClick={() => setShowShortcuts(true)}
               style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#888", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
-              title="단축키 가이드">
+              title={t("sc_shortcut_guide")}>
               ⌨
             </button>
             <div style={{ width: 1, height: 16, background: "#2a2a4a" }} />
             <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-              ⏮ 처음
+              ⏮ {t("sc_to_start")}
             </button>
             <span style={{ fontSize: 11, color: "#7c6aff", fontFamily: "monospace", fontWeight: 600 }}>{fmt(playhead)} | {fmt(clipDuration)}</span>
             <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
@@ -2051,7 +2054,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         {/* 좌측: 생성된 쇼츠 리스트 */}
         <div style={{ width: 240, flexShrink: 0, padding: "18px", overflowY: "auto", borderRight: `1px solid ${bdr}` }}>
           <div style={{ fontSize: 14, fontWeight: 800, color: text, marginBottom: 12 }}>
-            {isComplete ? `생성된 쇼츠 (${doneResults.length})` : `생성 중... (${completed}/${total})`}
+            {isComplete ? `${t("sc_generated_shorts_title")} (${doneResults.length})` : `${t("sc_generating_progress")} (${completed}/${total})`}
           </div>
           {editClips.map((c, i) => {
             const r = results.find(x => x.index === i);
@@ -2062,7 +2065,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   {r?.type === "done" ? <span style={{ color: "#4ade80", fontSize: 14 }}>✓</span> : r?.type === "error" ? <span style={{ color: "#f87171", fontSize: 14 }}>✗</span> : <div style={{ width: 14, height: 14, borderRadius: "50%", border: `2px solid ${bdr}`, borderTopColor: acc, animation: "spin 1s linear infinite" }} />}
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}>{c.title || c.hook || c.subtitle_text || `Short ${i + 1}`}</div>
-                    <div style={{ fontSize: 10, color: muted }}>{r?.type === "done" ? "완료" : r?.type === "error" ? "실패" : "생성 중..."}</div>
+                    <div style={{ fontSize: 10, color: muted }}>{r?.type === "done" ? t("sc_done") : r?.type === "error" ? t("sc_failed") : t("sc_generating")}</div>
                   </div>
                 </div>
               </div>
@@ -2103,7 +2106,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                     }
                   }}
                   style={{ display: "block", width: "100%", padding: "14px 24px", borderRadius: 14, background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 15, fontWeight: 800, textDecoration: "none", textAlign: "center", boxShadow: `0 4px 20px ${acc}40`, border: "none", cursor: "pointer" }}>
-                  다운로드
+                  {t("sc_download_btn")}
                 </button>
                 {doneResults.length > 1 && (
                   <div style={{ display: "flex", gap: 8, marginTop: 10, justifyContent: "center", flexWrap: "wrap" }}>
@@ -2121,7 +2124,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               {isComplete && (
                 <button onClick={() => { setStep("upload"); setFileId(null); setSegments([]); setResults([]); setError(""); }}
                   style={{ marginTop: 16, padding: "10px 24px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 12, cursor: "pointer" }}>
-                  새로운 영상 만들기
+                  {t("sc_new_video_btn")}
                 </button>
               )}
             </>
@@ -2138,10 +2141,10 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 </div>
               </div>
 
-              <div style={{ fontSize: 22, fontWeight: 900, color: text, marginBottom: 8 }}>영상을 만들고 있어요</div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: text, marginBottom: 8 }}>{t("sc_creating_video")}</div>
               <div style={{ fontSize: 14, color: muted, marginBottom: 20, lineHeight: 1.6 }}>
-                AI가 영상을 분석하고 편집 중입니다<br/>
-                페이지를 이동해도 백그라운드에서 계속 생성됩니다
+                {t("sc_creating_desc_line1")}<br/>
+                {t("sc_creating_desc_line2")}
               </div>
 
               {/* 진행률 바 */}
@@ -2150,8 +2153,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               </div>
 
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: acc }}>{completed} / {total}개 완료</span>
-                <span style={{ fontSize: 12, color: muted }}>예상 {Math.max(1, (total - completed) * 2)}~{Math.max(2, (total - completed) * 4)}분 남음</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: acc }}>{completed} / {total}{t("sc_n_completed")}</span>
+                <span style={{ fontSize: 12, color: muted }}>{t("sc_estimated")} {Math.max(1, (total - completed) * 2)}~{Math.max(2, (total - completed) * 4)}{t("sc_min_remaining")}</span>
               </div>
 
               {/* 단계별 상태 */}
@@ -2169,7 +2172,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                         : <div style={{ width: 16, height: 16, borderRadius: "50%", border: `2px solid ${bdr}` }} />}
                       <div style={{ flex: 1 }}>
                         <span style={{ fontSize: 13, fontWeight: 700, color: isDone ? "#4ade80" : isErr ? "#f87171" : text }}>{c.title || `Short ${i+1}`}</span>
-                        <span style={{ fontSize: 11, color: muted, marginLeft: 8 }}>{isDone ? "완료" : isErr ? "실패" : isCurrent ? "생성 중..." : "대기"}</span>
+                        <span style={{ fontSize: 11, color: muted, marginLeft: 8 }}>{isDone ? t("sc_done") : isErr ? t("sc_failed") : isCurrent ? t("sc_generating") : t("sc_waiting")}</span>
                       </div>
                       <span style={{ fontSize: 11, color: muted }}>{fmt(c.start_seconds||0)}~{fmt(c.end_seconds||0)}</span>
                     </div>

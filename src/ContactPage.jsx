@@ -3,19 +3,22 @@ import { useI18n } from "./i18n.jsx";
 import { getPageText } from "./i18n-pages.js";
 import { supabase } from "./storage";
 
-const FAQ_LIST = [
-  { q: "SNS메이킷은 어떤 서비스인가요?", a: "SNS메이킷은 AI 기반 콘텐츠 자동 생성 플랫폼입니다. 블로그 글쓰기, 이미지 생성, 숏폼 영상 편집까지 20가지 이상의 AI 도구를 하나의 플랫폼에서 제공합니다." },
-  { q: "어떤 콘텐츠를 만들 수 있나요?", a: "네이버 블로그, 인스타그램 캡션, 유튜브 대본, 티스토리 글, AI 이미지, 쇼츠 영상 등 SNS 마케팅에 필요한 거의 모든 콘텐츠를 AI로 자동 생성할 수 있습니다." },
-  { q: "무료로 사용할 수 있나요?", a: "네. 비회원도 로그인 없이 무료로 체험할 수 있습니다. 회원가입 시 150포인트가 즉시 지급되며, 매일 로그인(+3P), 게시글 작성(+1P, 하루 10회) 등으로 포인트를 적립해 무료로 계속 사용할 수 있어요." },
-  { q: "포인트는 어떻게 적립하나요?", a: "회원가입 시 150P가 즉시 지급됩니다. 이후 매일 로그인(+3P), 커뮤니티 게시글 작성(+1P, 하루 최대 10회)으로 포인트를 적립할 수 있어요. 추가 포인트가 필요하면 합리적인 가격으로 충전할 수도 있습니다." },
-  { q: "어떤 플랫폼을 지원하나요?", a: "네이버 블로그, 티스토리, 인스타그램, 유튜브, 스레드, 네이버 카페, X(트위터), 페이스북, LinkedIn, Medium 등 20개 이상의 플랫폼을 지원합니다." },
-  { q: "생성된 콘텐츠를 상업적으로 사용할 수 있나요?", a: "네, SNS메이킷으로 생성한 모든 콘텐츠(글, 이미지 등)는 상업적 용도로 자유롭게 사용할 수 있습니다." },
-  { q: "환불이 가능한가요?", a: "사용하지 않은 포인트에 한해 환불이 가능합니다. 문의하기 폼 또는 채널톡으로 결제 이메일과 결제일을 알려주시면 처리해드립니다." },
-];
+// FAQ_LIST is generated inside ContactPage for i18n support
 
 export function ContactPage({ C }) {
   const { lang } = useI18n();
   const p = (key) => getPageText(lang, key);
+
+  const FAQ_LIST = [
+    { q: p("contactFaqQ1"), a: p("contactFaqA1") },
+    { q: p("contactFaqQ2"), a: p("contactFaqA2") },
+    { q: p("contactFaqQ3"), a: p("contactFaqA3") },
+    { q: p("contactFaqQ4"), a: p("contactFaqA4") },
+    { q: p("contactFaqQ5"), a: p("contactFaqA5") },
+    { q: p("contactFaqQ6"), a: p("contactFaqA6") },
+    { q: p("contactFaqQ7"), a: p("contactFaqA7") },
+  ];
+
   const [form, setForm] = useState({ name: "", email: "", subject: "", msg: "" });
   const [sent, setSent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -61,15 +64,15 @@ export function ContactPage({ C }) {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </div>
         <div style={{ flex: 1, textAlign: "left" }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>실시간 채팅 상담</div>
-          <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>채널톡으로 빠르게 답변받으세요</div>
+          <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{p("contactChat")}</div>
+          <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{p("contactChatSub")}</div>
         </div>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "#7c6aff", flexShrink: 0 }}>상담하기 →</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#7c6aff", flexShrink: 0 }}>{p("contactChatBtn")}</span>
       </button>
 
       {/* 자주 묻는 질문 */}
       <div style={{ marginBottom: 40 }}>
-        <h3 style={{ fontSize: 18, fontWeight: 900, color: C.text, marginBottom: 16 }}>자주 묻는 질문</h3>
+        <h3 style={{ fontSize: 18, fontWeight: 900, color: C.text, marginBottom: 16 }}>{p("contactFaqTitle")}</h3>
         {FAQ_LIST.map((faq, i) => (
           <div key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
             <button onClick={() => setOpenFaq(openFaq === i ? null : i)}
@@ -118,7 +121,7 @@ export function ContactPage({ C }) {
             {err && <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", color: "#ef4444", fontSize: 13 }}>{err}</div>}
             <button onClick={submit} disabled={submitting}
               style={{ padding: "14px", borderRadius: 12, border: "none", cursor: submitting?"not-allowed":"pointer", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 16px rgba(124,106,255,0.3)", opacity: submitting?0.7:1, minHeight: 44 }}>
-              {submitting ? "전송 중..." : p("contactSubmit")}
+              {submitting ? p("contactSubmitting") : p("contactSubmit")}
             </button>
           </div>
         </div>
