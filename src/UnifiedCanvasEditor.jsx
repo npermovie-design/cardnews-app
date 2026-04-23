@@ -280,20 +280,21 @@ export default function UnifiedCanvasEditor({
 
     // 부제목
     if (s.subtitle) {
-      fc.add(new Textbox((s.subtitle||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,""), {
+      const subTb = new Textbox((s.subtitle||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,""), {
         left:mx, top:curY, width:tw,
         originX:"left", originY:"top",
         fontSize:Math.round(width*0.022), fontWeight:"600", fill:s.textColor||"#ffffff",
         fontFamily:s.fontFamily||"Pretendard", opacity:0.5,
         textAlign:"left", name:"subtitle",
-      }));
-      curY += Math.round(width*0.035);
+      });
+      fc.add(subTb);
+      curY += subTb.calcTextHeight() + 10;
     }
 
     // 제목 — 매우 큰 글씨 + 포인트 색
     if (s.title) {
       const titleFontSize = Math.round(width * 0.05);
-      addColoredText(s.title, {
+      const titleTb = addColoredText(s.title, {
         left:mx, top:curY, width:tw,
         originX:"left", originY:"top",
         fontSize:titleFontSize, fontWeight:"900",
@@ -301,7 +302,7 @@ export default function UnifiedCanvasEditor({
         fontFamily:s.fontFamily||"Pretendard",
         lineHeight:1.2, textAlign:"left", name:"title",
       });
-      curY += titleFontSize * 1.8;
+      curY += titleTb.calcTextHeight() + 16;
     }
 
     // 본문 — 포인트 색 포함
