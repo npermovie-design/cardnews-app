@@ -929,12 +929,12 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
     "기타": "#6b7280",
   };
   const catLabelMapKw = {
-    "AI 도구": tt("ai_kwAiTool"), "AI 트렌드": tt("ai_kwAiTrend"), "블로그": tt("ai_kwBlog"), "유튜브": tt("ai_kwYoutube"),
-    "인스타": tt("ai_kwInsta"), "틱톡": tt("ai_kwTiktok"), "마케팅": tt("ai_kwMarketing"), "광고": tt("ai_kwAd"),
-    "이커머스": tt("ai_kwEcommerce"), "부업/수익화": tt("ai_kwSideJob"), "트렌드": tt("ai_kwTrend"), "뷰티": tt("ai_kwBeauty"),
-    "건강/운동": tt("ai_kwHealth"), "여행/맛집": tt("ai_kwTravel"), "재테크": tt("ai_kwFinance"), "자기계발": tt("ai_kwSelfDev"),
-    "AI/테크": tt("ai_kwAiTech"), "SNS": tt("ai_kwSns"), "비즈니스": tt("ai_kwBiz"), "라이프": tt("ai_kwLife"),
-    "기타": tt("ai_kwOther"),
+    "AI 도구": _t("ai_kwAiTool"), "AI 트렌드": _t("ai_kwAiTrend"), "블로그": _t("ai_kwBlog"), "유튜브": _t("ai_kwYoutube"),
+    "인스타": _t("ai_kwInsta"), "틱톡": _t("ai_kwTiktok"), "마케팅": _t("ai_kwMarketing"), "광고": _t("ai_kwAd"),
+    "이커머스": _t("ai_kwEcommerce"), "부업/수익화": _t("ai_kwSideJob"), "트렌드": _t("ai_kwTrend"), "뷰티": _t("ai_kwBeauty"),
+    "건강/운동": _t("ai_kwHealth"), "여행/맛집": _t("ai_kwTravel"), "재테크": _t("ai_kwFinance"), "자기계발": _t("ai_kwSelfDev"),
+    "AI/테크": _t("ai_kwAiTech"), "SNS": _t("ai_kwSns"), "비즈니스": _t("ai_kwBiz"), "라이프": _t("ai_kwLife"),
+    "기타": _t("ai_kwOther"),
   };
 
   // 카테고리별 그룹핑
