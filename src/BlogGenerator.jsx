@@ -1046,11 +1046,29 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [shortsYtUrl, setShortsYtUrl] = useState("");
 
   // ── 디자인(카드뉴스) 모드 상태 ──
-  const [designSlides, setDesignSlides] = useState(null); // AI 생성된 슬라이드 배열
+  const _ssDesignSlidesKey = "_bg_designSlides";
+  const _ssDesignStepKey = "_bg_designStep";
+  const [designSlides, setDesignSlides_raw] = useState(() => {
+    try { const v = sessionStorage.getItem(_ssDesignSlidesKey); return v ? JSON.parse(v) : null; } catch { return null; }
+  });
+  const setDesignSlides = (v) => {
+    setDesignSlides_raw(v);
+    try { if (v) sessionStorage.setItem(_ssDesignSlidesKey, JSON.stringify(v)); else sessionStorage.removeItem(_ssDesignSlidesKey); } catch {}
+  };
   const [designLoading, setDesignLoading] = useState(false);
   const [showLibraryPicker, setShowLibraryPicker] = useState(false);
-  const [designStep, setDesignStep] = useState("input"); // "input" | "preview" | "editor"
+  const [hoverPreview, setHoverPreview] = useState(-1);
+  const [hoverPos, setHoverPos] = useState({x:0,y:0});
+  const [designStep, setDesignStep_raw] = useState(() => {
+    try { const v = sessionStorage.getItem(_ssDesignStepKey); return v === "preview" ? "editor" : (v || "input"); } catch { return "input"; }
+  });
+  const setDesignStep = (v) => {
+    setDesignStep_raw(v);
+    try { if (v && v !== "input") sessionStorage.setItem(_ssDesignStepKey, v); else sessionStorage.removeItem(_ssDesignStepKey); } catch {}
+  };
   const UnifiedCanvasEditorLazy = React.lazy(() => import("./UnifiedCanvasEditor"));
+  const [designRef, setDesignRef] = useState(""); // 참고 글감
+  const [designRefImage, setDesignRefImage] = useState(null); // 참고 이미지 base64
 
   const [showAdvanced, setShowAdvanced] = useState(true);
   const [advTone,      setAdvTone]      = useState(""); // 글 분위기
@@ -1236,6 +1254,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const generateCardNews = async () => {
     const content = (fields.keyword || "").trim();
     if (!content) return;
+    if (content.length < 10) {
+      setError("최소 10자 이상 입력해주세요. 더 구체적인 내용을 넣으면 좋은 카드뉴스가 만들어집니다.");
+      return;
+    }
     // 포인트/횟수 체크
     const usage = _getUsageState();
     if (usage.exhausted) {
@@ -1248,31 +1270,98 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
     setDesignLoading(true); setDesignSlides(null); setDesignStep("input"); setError("");
     try {
-      const sysMsg = `인스타그램 카드뉴스 전문 카피라이터.
-주어진 글 내용을 분석하여 핵심 메시지를 추출하고 카드뉴스 슬라이드로 재구성하세요.
-내용 길이와 핵심 포인트 수에 따라 적절한 슬라이드 수(4~10장)를 자동으로 결정하세요.
-첫 번째 슬라이드는 눈길을 끄는 표지(커버)로 만드세요.
-마지막 슬라이드는 핵심 요약 또는 CTA(행동 유도)로 마무리하세요.
-각 슬라이드의 title은 짧고 임팩트 있게 (15자 이내), body는 핵심만 2-3줄로 작성하세요.
-반드시 JSON만 반환하세요.
-형식:{"slides":[{"title":"제목","subtitle":"부제목","body":"본문 (2-3줄)","highlight":"핵심문구"}]}`;
-      const userMsg = `다음 내용을 카드뉴스로 만들어줘 (슬라이드 수는 내용에 맞게 자동 결정):\n\n${content.slice(0, 6000)}`;
-      const text = await callAI("claude-haiku-4-5", [{role:"user",content:userMsg}], 4000, sysMsg);
-      if (!text) throw new Error("AI 응답 없음");
-      const clean = text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();
-      const parsed = JSON.parse(clean);
-      const slides = (parsed.slides || []).map(s => ({
-        title: s.title || "",
-        subtitle: s.subtitle || "",
-        body: s.body || "",
-        highlight: s.highlight || "",
-        bgColor: "#1c1c1e",
+      const sysMsg = `인스타그램 카드뉴스 전문 카피라이터. 세련되고 시원한 디자인 감각.
+주어진 글을 분석하여 핵심 메시지를 추출하고 카드뉴스 슬라이드로 재구성.
+
+구성 규칙:
+- 슬라이드 수: 내용에 따라 5~10장 자동 결정
+- 1번(표지): 호기심 유발 큰 제목
+- 2~N-1번: 각 핵심 포인트별 1장
+- 마지막: 팔로우/저장 유도
+
+포인트 색상 규칙 (중요!):
+- title과 body 안에서 핵심 키워드를 [P]단어[/P]로 감싸주세요
+- 예: "근데 이 [P]VEO 3.1[/P]이 최근에 [P]무료로[/P] 풀림."
+- 예: "[P]구글 계정[/P]만 있음 누구나 가능."
+- 숫자, 핵심 명사, 강조할 단어에 사용
+- 슬라이드당 1~3개 정도
+
+각 슬라이드:
+- title: 짧고 임팩트 (20자 이내). 핵심 단어에 [P][/P]
+- subtitle: 보조 설명 (없어도 됨)
+- body: 2-3줄. 핵심 단어에 [P][/P]
+
+반드시 JSON만 반환.
+형식:{"slides":[{"title":"","subtitle":"","body":""}]}`;
+      let userMsg = `다음 내용을 카드뉴스로 만들어줘 (슬라이드 수는 내용에 맞게 자동 결정):\n\n${content.slice(0, 6000)}`;
+      if (designRef.trim()) userMsg += `\n\n참고 글감 (이 스타일과 말투를 참고해서 만들어줘):\n${designRef.slice(0, 3000)}`;
+      let text;
+      let retries = 0;
+      while (retries < 2) {
+        try {
+          const msgs = designRefImage ? [{role:"user",content:[
+            {type:"text",text:userMsg},
+            {type:"image",source:{type:"base64",media_type:"image/jpeg",data:designRefImage.replace(/^data:image\/\w+;base64,/,"")}}
+          ]}] : [{role:"user",content:userMsg}];
+          text = await callAI("claude-haiku-4-5", msgs, 4000, sysMsg);
+          if (text && text.trim().length > 10) break;
+          retries++;
+        } catch (retryErr) {
+          retries++;
+          if (retries >= 2) throw retryErr;
+        }
+      }
+      if (!text || text.trim().length < 10) throw new Error("AI 응답이 비어있습니다. 다시 시도해주세요.");
+      // JSON 파싱 (여러 패턴 시도)
+      let parsed = null;
+      const cleanPatterns = [
+        () => text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim(),
+        () => { const m = text.match(/\{[\s\S]*"slides"[\s\S]*\}/); return m ? m[0] : null; },
+        () => { const m = text.match(/\[[\s\S]*\{[\s\S]*"title"[\s\S]*\]/); return m ? `{"slides":${m[0]}}` : null; },
+      ];
+      for (const pat of cleanPatterns) {
+        try {
+          const clean = pat();
+          if (!clean) continue;
+          parsed = JSON.parse(clean);
+          if (parsed.slides || Array.isArray(parsed)) break;
+        } catch {}
+      }
+      if (!parsed) throw new Error("카드뉴스 구조를 생성하지 못했습니다. 내용을 조금 바꿔서 다시 시도해주세요.");
+      const rawSlides = parsed.slides || (Array.isArray(parsed) ? parsed : []);
+      if (rawSlides.length < 2) throw new Error("슬라이드가 너무 적습니다. 더 많은 내용을 입력해주세요.");
+      const slides = rawSlides.map(s => ({
+        title: (s.title || "").slice(0, 60),
+        subtitle: (s.subtitle || "").slice(0, 80),
+        body: (s.body || "").slice(0, 400),
+        bgColor: "#0a0a0a",
         textColor: "#ffffff",
-        fontSize: 42,
+        pointColor: "#e4ff1a",
+        fontSize: 52,
         fontFamily: "Pretendard",
+        image: null,
       }));
       setDesignSlides(slides);
-      setDesignStep("preview");
+      setDesignStep("editor");
+      // 배경 이미지 자동 검색 (비동기, UI 차단 없이)
+      (async () => {
+        try {
+          const kwText = slides.map(s => s.title).join(", ");
+          const kwResult = await callAI("claude-haiku-4-5", [{role:"user",content:`다음 카드뉴스 제목들에 어울리는 이미지 검색 키워드를 영어로 1개만 추천 (단어만 출력):\n${kwText}`}], 50);
+          const keyword = (kwResult||"").trim().split(/[\n,]/)[0]?.trim() || "business";
+          const res = await fetch(`/api/proxy?action=pexels&path=v1/search&query=${encodeURIComponent(keyword)}&per_page=${slides.length}&orientation=square`).then(r=>r.json());
+          const photos = res.photos || [];
+          if (photos.length > 0) {
+            setDesignSlides(prev => {
+              if (!prev) return prev;
+              return prev.map((s, i) => ({
+                ...s,
+                image: photos[i % photos.length]?.src?.large || photos[0]?.src?.large || null,
+              }));
+            });
+          }
+        } catch (imgErr) { console.warn("Auto image fetch:", imgErr); }
+      })();
       // 포인트 차감
       if (user && user.uid) {
         const { changePoints: cp, setLocalUser } = await import("./storage.js");
@@ -2764,19 +2853,100 @@ hospital equipment`
                   );
                 })()}
 
+                {/* 참고 글감 */}
+                <div style={{marginTop:12}}>
+                  <button onClick={()=>setDesignRef(designRef===null?"":null)}
+                    style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",width:"100%",justifyContent:"space-between"}}>
+                    <span style={{display:"flex",alignItems:"center",gap:5}}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      참고 글감 / 스타일 참고
+                    </span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points={designRef!==null?"18 15 12 9 6 15":"6 9 12 15 18 9"}/></svg>
+                  </button>
+                  {designRef!==null && (
+                    <div style={{marginTop:8,padding:"12px",background:cardBg,border:`1px solid ${border}`,borderRadius:12}}>
+                      <div style={{fontSize:11,color:muted,marginBottom:6}}>다른 사람의 글이나 스타일을 붙여넣으면 참고하여 카드뉴스를 만듭니다</div>
+                      <textarea value={designRef} onChange={e=>setDesignRef(e.target.value)}
+                        placeholder="참고할 글감이나 스타일을 붙여넣기..."
+                        rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:12,fontFamily:"inherit",outline:"none",resize:"vertical",lineHeight:1.6,boxSizing:"border-box"}}/>
+                      <div style={{display:"flex",gap:6,marginTop:8}}>
+                        <button onClick={()=>{
+                          const inp=document.createElement("input");inp.type="file";inp.accept="image/*";
+                          inp.onchange=ev=>{const f=ev.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=e2=>{setDesignRefImage(e2.target.result);};r.readAsDataURL(f);};
+                          inp.click();
+                        }} style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                          사진 첨부
+                        </button>
+                        {designRefImage && (
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <img src={designRefImage} alt="" style={{width:32,height:32,borderRadius:6,objectFit:"cover"}}/>
+                            <button onClick={()=>setDesignRefImage(null)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${border}`,background:"transparent",color:"#ef4444",fontSize:10,cursor:"pointer"}}>제거</button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {error&&<div style={{marginTop:12,fontSize:13,color:"#ef4444",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",padding:"10px 14px",borderRadius:12,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)"}}>{error}
                   {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
                     <button onClick={()=>window.location.hash="#pricing"} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
                   )}
+                  {(error.includes("다시 시도") || error.includes("오류") || error.includes("응답")) && fields.keyword?.trim()?.length >= 10 && (
+                    <button onClick={()=>{setError("");generateCardNews();}} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>다시 시도</button>
+                  )}
                 </div>}
 
-                {designLoading && (
-                  <div style={{marginTop:24,textAlign:"center",padding:"40px 0"}}>
-                    <div style={{width:48,height:48,borderRadius:"50%",border:`3px solid ${accent}22`,borderTopColor:accent,animation:"spin 0.8s linear infinite",margin:"0 auto"}}/>
-                    <div style={{marginTop:16,fontSize:15,fontWeight:700,color:text}}>{t("bg_designGenerating")}</div>
-                    <div style={{marginTop:6,fontSize:12,color:muted}}>AI가 내용을 분석하여 카드뉴스를 구성하고 있습니다...</div>
-                  </div>
-                )}
+                {designLoading && (()=>{
+                  // 글쓰기 로딩 화면과 동일한 전체 화면 스타일
+                  const steps = [
+                    {label:"주제 분석 중...", sub:true},
+                    {label:"구조 기획 중...", sub:false},
+                    {label:"슬라이드 작성 중...", sub:false},
+                    {label:"마무리 다듬는 중...", sub:false},
+                  ];
+                  return (
+                    <div style={{position:"absolute",inset:0,zIndex:50,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:isDark?"#0f0c29":"#f8f9fa"}}>
+                      {/* 아이콘 */}
+                      <div style={{width:80,height:80,borderRadius:"50%",border:`2px solid ${accent}33`,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:24,position:"relative"}}>
+                        <div style={{position:"absolute",width:80,height:80,borderRadius:"50%",border:`2px solid transparent`,borderTopColor:accent,animation:"spin 1.2s linear infinite"}}/>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                      </div>
+                      {/* 제목 */}
+                      <div style={{fontSize:18,fontWeight:900,color:text,marginBottom:6}}>AI가 카드뉴스를 만들고 있어요</div>
+                      <div style={{fontSize:13,color:muted,marginBottom:28}}>디자인 · 카드뉴스 생성기</div>
+                      {/* 단계 */}
+                      <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:20}}>
+                        {steps.map((s,i)=>(
+                          <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
+                            {s.sub ? (
+                              <div style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${accent}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,animation:"spin 1.5s linear infinite"}}>
+                                <div style={{width:4,height:4,borderRadius:"50%",background:accent}}/>
+                              </div>
+                            ) : (
+                              <div style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${border}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                                <div style={{width:4,height:4,borderRadius:"50%",background:muted,opacity:0.4}}/>
+                              </div>
+                            )}
+                            <span style={{fontSize:13,color:s.sub?text:muted,fontWeight:s.sub?600:400}}>{s.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* 프로그레스 바 */}
+                      <div style={{width:200,height:3,background:border,borderRadius:2,overflow:"hidden",marginBottom:12}}>
+                        <div style={{width:"40%",height:"100%",background:accent,borderRadius:2,animation:"progress 2s ease-in-out infinite"}}/>
+                      </div>
+                      <div style={{fontSize:11,color:muted}}>보통 20~60초 소요</div>
+                      {/* 취소 버튼 */}
+                      <button onClick={()=>{setDesignLoading(false);setError("");}}
+                        style={{marginTop:40,padding:"10px 32px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",color:text,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                        취소
+                      </button>
+                      <style>{`@keyframes progress{0%{transform:translateX(-100%)}50%{transform:translateX(150%)}100%{transform:translateX(-100%)}}`}</style>
+                    </div>
+                  );
+                })()}
                 </>)}
 
                 {/* ── 2단계: 미리보기/문구 편집 ── */}
@@ -2798,55 +2968,117 @@ hospital equipment`
                 <div style={{display:"flex",flexDirection:"column",gap:12}}>
                   {designSlides.map((slide,idx) => (
                     <div key={idx} style={{background:cardBg,border:`1px solid ${border}`,borderRadius:16,padding:"18px 20px",transition:"box-shadow 0.15s",boxShadow:isDark?"0 2px 12px rgba(0,0,0,0.2)":"0 2px 12px rgba(0,0,0,0.04)"}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-                        <span style={{width:28,height:28,borderRadius:"50%",background:`${accent}15`,color:accent,fontSize:13,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{idx+1}</span>
-                        <span style={{fontSize:12,color:muted,fontWeight:600}}>{idx===0?"표지":"슬라이드"} {idx===designSlides.length-1&&idx>0?"(마지막)":""}</span>
+                      <div style={{display:"flex",gap:16}}>
+                        {/* 미니 프리뷰 카드 (hover 시 확대) */}
+                        <div
+                          onMouseEnter={()=>setHoverPreview(idx)}
+                          onMouseMove={e=>setHoverPos({x:e.clientX,y:e.clientY})}
+                          onMouseLeave={()=>setHoverPreview(-1)}
+                          style={{width:110,minWidth:110,aspectRatio:"3/4",borderRadius:12,background:slide.image?`url(${slide.image}) center/cover`:(slide.bgColor||"#0a0a0a"),color:slide.textColor||"#fff",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:10,boxSizing:"border-box",flexShrink:0,position:"relative",overflow:"hidden",cursor:"zoom-in",transition:"transform 0.15s",transform:hoverPreview===idx?"scale(1.05)":"scale(1)"}}>
+                          {slide.image && <div style={{position:"absolute",inset:0,background:"linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.6) 100%)",zIndex:0}}/>}
+                          <div style={{position:"relative",zIndex:1,display:"flex",flexDirection:"column",alignItems:"flex-start",justifyContent:"center",width:"100%",padding:"0 4px"}}>
+                            <div style={{position:"absolute",top:-6,right:-2,fontSize:7,opacity:0.3,fontWeight:700}}>{idx+1}/{designSlides.length}</div>
+                            {slide.subtitle && <div style={{fontSize:6,opacity:0.45,textAlign:"left",marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"100%"}}>{slide.subtitle}</div>}
+                            {slide.title && <div style={{fontSize:11,fontWeight:900,textAlign:"left",lineHeight:1.2,marginBottom:4,wordBreak:"break-word",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}} dangerouslySetInnerHTML={{__html:(slide.title||"").replace(/\[P\](.*?)\[\/P\]/g,'<span style="color:'+(slide.pointColor||'#e4ff1a')+'">$1</span>')}}/>}
+                            {slide.body && <div style={{fontSize:5.5,opacity:0.5,textAlign:"left",lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical"}}>{(slide.body||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,"")}</div>}
+                          </div>
+                        </div>
+
+                        {/* 편집 필드 */}
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                            <span style={{width:24,height:24,borderRadius:"50%",background:`${accent}15`,color:accent,fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{idx+1}</span>
+                            <span style={{fontSize:12,color:muted,fontWeight:600}}>{idx===0?"표지":"슬라이드"} {idx===designSlides.length-1&&idx>0?"(마지막)":""}</span>
+                          </div>
+
+                          {/* 제목 */}
+                          <div style={{marginBottom:6}}>
+                            <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:3}}>제목</div>
+                            <input value={slide.title} onChange={e=>{
+                              const next=[...designSlides]; next[idx]={...next[idx],title:e.target.value}; setDesignSlides(next);
+                            }} maxLength={50} style={{width:"100%",padding:"7px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:14,fontWeight:800,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+                          </div>
+
+                          {/* 부제목 */}
+                          <div style={{marginBottom:6}}>
+                            <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:3}}>부제목</div>
+                            <input value={slide.subtitle||""} onChange={e=>{
+                              const next=[...designSlides]; next[idx]={...next[idx],subtitle:e.target.value}; setDesignSlides(next);
+                            }} maxLength={80} style={{width:"100%",padding:"6px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+                          </div>
+
+                          {/* 본문 */}
+                          <div style={{marginBottom:6}}>
+                            <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:3}}>본문</div>
+                            <textarea value={slide.body||""} onChange={e=>{
+                              const next=[...designSlides]; next[idx]={...next[idx],body:e.target.value}; setDesignSlides(next);
+                            }} rows={2} maxLength={300} style={{width:"100%",padding:"6px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",resize:"vertical",lineHeight:1.6,boxSizing:"border-box"}}/>
+                          </div>
+
+                          {/* 핵심문구 */}
+                          <div>
+                            <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:3}}>핵심문구</div>
+                            <input value={slide.highlight||""} onChange={e=>{
+                              const next=[...designSlides]; next[idx]={...next[idx],highlight:e.target.value}; setDesignSlides(next);
+                            }} maxLength={60} style={{width:"100%",padding:"6px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* 제목 */}
-                      <div style={{marginBottom:8}}>
-                        <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:4}}>제목</div>
-                        <input value={slide.title} onChange={e=>{
-                          const next=[...designSlides]; next[idx]={...next[idx],title:e.target.value}; setDesignSlides(next);
-                        }} style={{width:"100%",padding:"8px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:15,fontWeight:800,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-                      </div>
-
-                      {/* 부제목 */}
-                      <div style={{marginBottom:8}}>
-                        <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:4}}>부제목</div>
-                        <input value={slide.subtitle||""} onChange={e=>{
-                          const next=[...designSlides]; next[idx]={...next[idx],subtitle:e.target.value}; setDesignSlides(next);
-                        }} style={{width:"100%",padding:"7px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-                      </div>
-
-                      {/* 본문 */}
-                      <div style={{marginBottom:8}}>
-                        <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:4}}>본문</div>
-                        <textarea value={slide.body||""} onChange={e=>{
-                          const next=[...designSlides]; next[idx]={...next[idx],body:e.target.value}; setDesignSlides(next);
-                        }} rows={2} style={{width:"100%",padding:"7px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",resize:"vertical",lineHeight:1.6,boxSizing:"border-box"}}/>
-                      </div>
-
-                      {/* 핵심문구 */}
-                      <div>
-                        <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:4}}>핵심문구</div>
-                        <input value={slide.highlight||""} onChange={e=>{
-                          const next=[...designSlides]; next[idx]={...next[idx],highlight:e.target.value}; setDesignSlides(next);
-                        }} style={{width:"100%",padding:"7px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-                      </div>
-
-                      {/* 삭제 버튼 */}
-                      {designSlides.length > 2 && (
-                        <div style={{marginTop:10,textAlign:"right"}}>
+                      {/* 슬라이드 조작 버튼 */}
+                      <div style={{marginTop:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <div style={{display:"flex",gap:4}}>
+                          {idx > 0 && (
+                            <button onClick={()=>{const next=[...designSlides];[next[idx-1],next[idx]]=[next[idx],next[idx-1]];setDesignSlides(next);}}
+                              title="위로 이동"
+                              style={{padding:"4px 8px",borderRadius:8,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+                            </button>
+                          )}
+                          {idx < designSlides.length - 1 && (
+                            <button onClick={()=>{const next=[...designSlides];[next[idx],next[idx+1]]=[next[idx+1],next[idx]];setDesignSlides(next);}}
+                              title="아래로 이동"
+                              style={{padding:"4px 8px",borderRadius:8,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                          )}
+                          <button onClick={()=>{const next=[...designSlides];next.splice(idx+1,0,{...designSlides[idx]});setDesignSlides(next);}}
+                            title="복제"
+                            style={{padding:"4px 8px",borderRadius:8,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3}}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                            복제
+                          </button>
+                        </div>
+                        {designSlides.length > 2 && (
                           <button onClick={()=>{const next=[...designSlides]; next.splice(idx,1); setDesignSlides(next);}}
                             style={{padding:"4px 12px",borderRadius:8,border:`1px solid rgba(239,68,68,0.3)`,background:"transparent",color:"#ef4444",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                             삭제
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
+
+                {/* hover 확대 프리뷰 (fixed) */}
+                {hoverPreview >= 0 && hoverPreview < designSlides.length && (()=>{
+                  const s = designSlides[hoverPreview];
+                  return (
+                    <div style={{position:"fixed",left:Math.min(hoverPos.x+20,window.innerWidth-340),top:Math.max(Math.min(hoverPos.y-200,window.innerHeight-440),10),width:320,aspectRatio:"3/4",borderRadius:20,
+                      background:s.image?`url(${s.image}) center/cover`:(s.bgColor||"#1c1c1e"),color:s.textColor||"#fff",
+                      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,boxSizing:"border-box",
+                      zIndex:9999,boxShadow:"0 16px 60px rgba(0,0,0,0.4)",pointerEvents:"none",overflow:"hidden"}}>
+                      {s.image && <div style={{position:"absolute",inset:0,background:"linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.65) 100%)"}}/>}
+                      <div style={{position:"relative",zIndex:1,textAlign:"left",width:"100%",padding:"0 8px"}}>
+                        <div style={{fontSize:8,opacity:0.35,marginBottom:12,textAlign:"right"}}>{hoverPreview+1}/{designSlides.length}</div>
+                        {s.subtitle && <div style={{fontSize:11,opacity:0.45,marginBottom:6}}>{s.subtitle}</div>}
+                        {s.title && <div style={{fontSize:28,fontWeight:900,lineHeight:1.2,marginBottom:14,wordBreak:"break-word"}}>{s.title}</div>}
+                        {s.body && <div style={{fontSize:12,opacity:0.7,lineHeight:1.7,marginBottom:12}}>{s.body}</div>}
+                        {s.highlight && <div style={{fontSize:13,fontWeight:900,marginTop:8,padding:"6px 14px",borderRadius:6,background:s.highlightColor||"#e4ff1a",color:"#000",display:"inline-block"}}>{s.highlight}</div>}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* 하단 고정 버튼 */}
                 <div style={{marginTop:20,display:"flex",justifyContent:"center",gap:10,paddingBottom:20}}>
@@ -3211,21 +3443,13 @@ hospital equipment`
 
         {/* 디자인 모드: 카드뉴스 에디터 (편집 단계에서 표시) */}
         {!showResult && mode==="design" && designStep==="editor" && designSlides && (
-          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderTop:`1px solid ${border}`}}>
-            <div style={{padding:"6px 16px",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-              <button onClick={()=>setDesignStep("preview")}
-                style={{padding:"5px 12px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:text,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"}}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-                문구 수정
-              </button>
-              <span style={{fontSize:11,fontWeight:700,color:accent,padding:"3px 10px",borderRadius:20,background:`${accent}12`}}>카드뉴스 {designSlides.length}장</span>
-            </div>
+          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",overflow:"hidden",zIndex:100,background:"#fff"}}>
             <div style={{flex:1,overflow:"hidden"}}>
               <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>에디터 로딩 중...</div>}>
                 <UnifiedCanvasEditorLazy
                   slides={designSlides}
-                  width={1080} height={1080} mode="cardnews"
-                  onSave={()=>{}} onClose={()=>setDesignStep("preview")}
+                  width={1440} height={1920} mode="cardnews"
+                  onSave={()=>{}} onClose={()=>setDesignStep("input")}
                   inline
                 />
               </Suspense>
