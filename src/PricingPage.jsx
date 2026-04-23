@@ -5,7 +5,13 @@ import { supabase } from "./storage";
 
 const PAYMENT_ENABLED = true;
 
-// COMMON_FEATURES moved inside component for i18n
+const COMMON_FEATURES = [
+  "20개+ SNS 플랫폼 지원",
+  "AI 이미지 생성",
+  "숏폼 영상 편집",
+  "SNS 다중 발행",
+  "콘텐츠 라이브러리",
+];
 
 const SUB_PLANS = [
   {

@@ -33,6 +33,7 @@ const AutoPublisher = React.lazy(() => import("./AutoPublisher"));
 const AnalyzerPage = React.lazy(() => import("./AnalyzerPage"));
 const SnsConnectionManager = React.lazy(() => import("./SnsConnectionManager"));
 const SnsConsulting = React.lazy(() => import("./SnsConsulting"));
+const SnsPublisher = React.lazy(() => import("./SnsPublisher"));
 
 /* ════════════════════════════════════════════════════════════
    VideoEditHub — 숏폼/롱폼 선택 → 해당 에디터 표시
@@ -1837,6 +1838,14 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return (
       <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
         <RealtimeAnalyzer isDark={isDark} />
+      </div>
+    );
+  }
+
+  if (aiMenu === "sns_publish") {
+    return (
+      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
+        <SnsPublisher isDark={isDark} user={user} onLoginRequest={onLoginRequest} />
       </div>
     );
   }

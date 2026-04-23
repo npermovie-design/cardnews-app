@@ -178,7 +178,7 @@ function BeforeAfterCard({ before, after, C, lang }) {
   );
 }
 
-export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
+export default function HomePage({ navigate, C, theme, user, onLoginRequest, setAiMenu }) {
   const { lang } = useI18n();
   const p = (key) => getPageText(lang, key);
 
@@ -315,34 +315,84 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest }) {
           </p>
         </div>
 
-        {/* AI 자동 영상 제작 - NEW 강조 배너 (최상단) */}
-        <FadeIn>
-          <div onClick={() => navigate("ai")} className="hover-lift" style={{ background: "linear-gradient(135deg, #1a1030 0%, #2d1b69 50%, #1a1030 100%)", border: "1px solid rgba(124,106,255,0.3)", borderRadius: 16, overflow: "hidden", cursor: "pointer", display: "flex", flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}>
-            <div style={{ flex: "1 1 300px", padding: "32px 28px" }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg,#7c6aff,#ec4899)", padding: "3px 10px", borderRadius: 6 }}>NEW</span>
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#a5b4fc" }}>{lang === "ko" ? "AI 자동 영상 제작" : "AI Auto Video"}</span>
+        {/* AI 자동 영상 제작 + SNS 발행 - 2열 배너 */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 16, marginBottom: 16 }}>
+          {/* 영상 제작 */}
+          <FadeIn>
+            <div onClick={() => navigate("ai")} className="hover-lift" style={{ background: "linear-gradient(135deg, #1a1030 0%, #2d1b69 50%, #1a1030 100%)", border: "1px solid rgba(124,106,255,0.3)", borderRadius: 16, overflow: "hidden", cursor: "pointer", display: "flex", flexWrap: "wrap", alignItems: "center", height: "100%" }}>
+              <div style={{ flex: "1 1 240px", padding: "28px 24px" }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg,#7c6aff,#ec4899)", padding: "3px 10px", borderRadius: 6 }}>NEW</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#a5b4fc" }}>{lang === "ko" ? "AI 자동 영상 제작" : "AI Auto Video"}</span>
+                </div>
+                <h3 style={{ fontSize: 22, fontWeight: 900, color: "#fff", margin: "0 0 10px", lineHeight: 1.3 }}>
+                  {lang === "ko" ? "유튜브 링크 하나로\n쇼츠 영상을 자동 제작" : "Auto-create shorts\nfrom a YouTube link"}
+                </h3>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, margin: "0 0 14px" }}>
+                  {lang === "ko" ? "AI가 영상을 분석하고 자막과 함께 쇼츠를 자동으로 만들어줍니다." : "AI analyzes videos and auto-creates shorts with subtitles."}
+                </p>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {(lang === "ko" ? ["자동 구간 분석","자막 자동 생성","타임라인 편집"] : ["Auto analysis","Auto subtitles","Timeline editor"]).map(t => (
+                    <span key={t} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, background: "rgba(124,106,255,0.15)", color: "#a5b4fc", fontWeight: 600 }}>{t}</span>
+                  ))}
+                </div>
               </div>
-              <h3 style={{ fontSize: 24, fontWeight: 900, color: "#fff", margin: "0 0 10px", lineHeight: 1.3 }}>
-                {lang === "ko" ? "유튜브 링크 하나로\n쇼츠 영상을 자동 제작" : "Auto-create shorts\nfrom a YouTube link"}
-              </h3>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, margin: "0 0 16px" }}>
-                {lang === "ko" ? "AI가 영상을 분석하고, 최적의 구간을 찾아 자막과 함께 쇼츠를 자동으로 만들어줍니다. 타임라인 편집, 폰트/스타일 커스텀, 오버레이까지." : "AI analyzes videos, finds optimal segments, and auto-creates shorts with subtitles."}
-              </p>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {(lang === "ko" ? ["자동 구간 분석","자막 자동 생성","타임라인 편집","무료 소스 검색"] : ["Auto segment analysis","Auto subtitles","Timeline editor","Free stock search"]).map(t => (
-                  <span key={t} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, background: "rgba(124,106,255,0.15)", color: "#a5b4fc", fontWeight: 600 }}>{t}</span>
-                ))}
+              <div style={{ flex: "0 0 140px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 100, height: 160, borderRadius: 12, background: "#000", border: "2px solid rgba(124,106,255,0.4)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 32px rgba(124,106,255,0.3)" }}>
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" style={{ marginBottom: 6 }}><rect x="2" y="4" width="20" height="16" rx="3" stroke="#7c6aff" strokeWidth="1.5"/><polygon points="10,8 17,12 10,16" fill="#7c6aff"/></svg>
+                  <div style={{ fontSize: 9, color: "#a5b4fc", fontWeight: 700 }}>9:16 Shorts</div>
+                </div>
               </div>
             </div>
-            <div style={{ flex: "0 0 200px", padding: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <div style={{ width: 120, height: 200, borderRadius: 12, background: "#000", border: "2px solid rgba(124,106,255,0.4)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 32px rgba(124,106,255,0.3)" }}>
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" style={{ marginBottom: 8 }}><rect x="2" y="4" width="20" height="16" rx="3" stroke="#7c6aff" strokeWidth="1.5"/><polygon points="10,8 17,12 10,16" fill="#7c6aff"/></svg>
-                <div style={{ fontSize: 10, color: "#a5b4fc", fontWeight: 700 }}>9:16 Shorts</div>
+          </FadeIn>
+
+          {/* SNS 다중 발행 */}
+          <FadeIn delay={0.1}>
+            <div onClick={() => { navigate("ai"); setAiMenu && setAiMenu("sns_publish"); }} className="hover-lift" style={{ background: "linear-gradient(135deg, #0c1a2e 0%, #1a3a5c 50%, #0c1a2e 100%)", border: "1px solid rgba(56,189,248,0.3)", borderRadius: 16, overflow: "hidden", cursor: "pointer", display: "flex", flexWrap: "wrap", alignItems: "center", height: "100%" }}>
+              <div style={{ flex: "1 1 240px", padding: "28px 24px" }}>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg,#38bdf8,#06b6d4)", padding: "3px 10px", borderRadius: 6 }}>NEW</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#7dd3fc" }}>{lang === "ko" ? "SNS 다중 발행" : "SNS Multi-Publish"}</span>
+                </div>
+                <h3 style={{ fontSize: 22, fontWeight: 900, color: "#fff", margin: "0 0 10px", lineHeight: 1.3 }}>
+                  {lang === "ko" ? "한 번에 여러 플랫폼에\n콘텐츠를 발행하세요" : "Publish content to\nmultiple platforms at once"}
+                </h3>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, margin: "0 0 14px" }}>
+                  {lang === "ko" ? "YouTube, Instagram, Threads, TikTok에 동시 업로드" : "Upload simultaneously to YouTube, Instagram, Threads, TikTok"}
+                </p>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {(lang === "ko" ? ["다중 플랫폼","미리보기","발행 히스토리"] : ["Multi-platform","Preview","Publish history"]).map(t => (
+                    <span key={t} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, background: "rgba(56,189,248,0.15)", color: "#7dd3fc", fontWeight: 600 }}>{t}</span>
+                  ))}
+                </div>
+              </div>
+              <div style={{ flex: "0 0 140px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                  {/* SNS 플랫폼 아이콘 그리드 */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                    {[
+                      { src: "/icon-youtube.png", alt: "YouTube" },
+                      { src: "/icon-instagram.webp", alt: "Instagram" },
+                      { src: "/icon-threads.png", alt: "Threads" },
+                      { src: null, alt: "TikTok", svg: true },
+                    ].map(p => (
+                      <div key={p.alt} style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(56,189,248,0.2)" }}>
+                        {p.svg ? (
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="#7dd3fc"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.51a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.54a8.27 8.27 0 0 0 4.76 1.5V6.69h-1z"/></svg>
+                        ) : (
+                          <img src={p.src} alt={p.alt} style={{ width: 22, height: 22, objectFit: "contain" }} />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" strokeWidth="2" strokeLinecap="round" style={{ marginTop: 2 }}>
+                    <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  </svg>
+                </div>
               </div>
             </div>
-          </div>
-        </FadeIn>
+          </FadeIn>
+        </div>
 
         {/* 벤토 그리드 - Cutback 스타일 */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 16 }}>

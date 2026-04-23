@@ -1,7 +1,7 @@
 // api/sns.js — SNS 통합 API (publish, connections, auth-meta, auth-tistory, threads-media, feed)
 import { createClient } from "@supabase/supabase-js";
 
-export const config = { maxDuration: 20 };
+export const config = { maxDuration: 60 };
 
 const supabase = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
@@ -205,6 +205,402 @@ async function handlePublish(req, res) {
 
   } catch (e) {
     return res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ACTION: multi-publish — 다중 플랫폼 동시 발행
+// ══════════════════════════════════════════════════════════════════
+async function handleMultiPublish(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  const origin = req.headers.origin || req.headers.referer || "";
+  const isTrusted = origin.includes("snsmakeit.com") || origin.includes("vercel.app") || origin.includes("localhost");
+  if (!isTrusted) return res.status(403).json({ error: "Forbidden" });
+
+  try {
+    const { uid, title, description, firstComment, contentType, platforms: platformsJson, fileUrl } = req.body;
+    if (!uid) return res.status(400).json({ error: "uid 필수" });
+
+    let platforms;
+    try { platforms = typeof platformsJson === "string" ? JSON.parse(platformsJson) : platformsJson; }
+    catch { return res.status(400).json({ error: "platforms 파싱 실패" }); }
+
+    if (!platforms || !platforms.length) return res.status(400).json({ error: "발행할 플랫폼을 선택하세요" });
+    if (!title?.trim()) return res.status(400).json({ error: "제목을 입력하세요" });
+
+    const results = [];
+
+    for (const pf of platforms) {
+      const platformId = pf.id;
+      const pfDesc = pf.description || description || "";
+      const pfTags = pf.tags || "";
+      const pfVisibility = pf.visibility || "public";
+      let postUrl = null;
+      let error = null;
+      let status = "success";
+
+      try {
+        // 연결 정보 조회
+        const { data: conn, error: connErr } = await supabase
+          .from("sns_connections")
+          .select("*")
+          .eq("uid", uid)
+          .eq("platform", platformId)
+          .single();
+
+        if (connErr || !conn) {
+          error = `${platformId} 계정이 연결되지 않았습니다`;
+          status = "failed";
+        }
+
+        // ── YouTube ──
+        else if (platformId === "youtube") {
+          // YouTube Data API v3 — 영상 업로드는 resumable upload 필요
+          // fileUrl이 있으면 URL에서 가져와서 업로드, 없으면 metadata만 설정
+          if (contentType === "video" && fileUrl) {
+            // 1) resumable upload 시작
+            const metadata = {
+              snippet: {
+                title: title,
+                description: pfDesc + (pfTags ? "\n\n" + pfTags : ""),
+                tags: pfTags ? pfTags.replace(/#/g, "").split(/\s+/).filter(Boolean) : [],
+                categoryId: "22", // People & Blogs
+              },
+              status: {
+                privacyStatus: pfVisibility, // public, unlisted, private
+                selfDeclaredMadeForKids: false,
+              },
+            };
+
+            const initRes = await fetch(
+              "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${conn.access_token}`,
+                  "Content-Type": "application/json; charset=UTF-8",
+                  "X-Upload-Content-Type": "video/*",
+                },
+                body: JSON.stringify(metadata),
+              }
+            );
+
+            if (initRes.status === 200) {
+              const uploadUrl = initRes.headers.get("location");
+              if (uploadUrl && fileUrl) {
+                // fileUrl에서 파일 다운로드 후 업로드
+                const fileRes = await fetch(fileUrl);
+                if (fileRes.ok) {
+                  const fileBuffer = await fileRes.arrayBuffer();
+                  const uploadRes = await fetch(uploadUrl, {
+                    method: "PUT",
+                    headers: { "Content-Type": "video/*" },
+                    body: fileBuffer,
+                  });
+                  const uploadData = await uploadRes.json();
+                  if (uploadData.id) {
+                    postUrl = `https://youtu.be/${uploadData.id}`;
+
+                    // 첫댓글 달기
+                    if (firstComment?.trim()) {
+                      await fetch("https://www.googleapis.com/youtube/v3/commentThreads?part=snippet", {
+                        method: "POST",
+                        headers: {
+                          Authorization: `Bearer ${conn.access_token}`,
+                          "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                          snippet: {
+                            videoId: uploadData.id,
+                            topLevelComment: { snippet: { textOriginal: firstComment } },
+                          },
+                        }),
+                      });
+                    }
+                  } else {
+                    error = uploadData.error?.message || "YouTube 업로드 실패";
+                    status = "failed";
+                  }
+                } else {
+                  error = "파일 다운로드 실패";
+                  status = "failed";
+                }
+              } else {
+                error = "YouTube 업로드 URL 획득 실패";
+                status = "failed";
+              }
+            } else {
+              const errData = await initRes.json().catch(() => ({}));
+              error = errData.error?.message || `YouTube API 오류 (${initRes.status})`;
+              status = "failed";
+            }
+          } else {
+            error = "YouTube는 영상 파일이 필요합니다";
+            status = "failed";
+          }
+        }
+
+        // ── Instagram ──
+        else if (platformId === "instagram") {
+          if (contentType === "video" && fileUrl) {
+            // 릴스(Reels) 업로드
+            const createParams = new URLSearchParams({
+              media_type: "REELS",
+              video_url: fileUrl,
+              caption: (pfDesc || title) + (pfTags ? "\n\n" + pfTags : ""),
+              access_token: conn.access_token,
+            });
+            const createRes = await fetch(`https://graph.instagram.com/v21.0/${conn.platform_user_id}/media`, {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: createParams.toString(),
+            });
+            const createData = await createRes.json();
+
+            if (createData.id) {
+              // 릴스는 처리 시간이 필요 — 최대 30초 폴링
+              let mediaReady = false;
+              for (let i = 0; i < 10; i++) {
+                await new Promise(r => setTimeout(r, 3000));
+                const statusRes = await fetch(`https://graph.instagram.com/v21.0/${createData.id}?fields=status_code&access_token=${conn.access_token}`);
+                const statusData = await statusRes.json();
+                if (statusData.status_code === "FINISHED") { mediaReady = true; break; }
+                if (statusData.status_code === "ERROR") { error = "인스타 릴스 처리 실패"; status = "failed"; break; }
+              }
+
+              if (mediaReady) {
+                const pubParams = new URLSearchParams({ creation_id: createData.id, access_token: conn.access_token });
+                const pubRes = await fetch(`https://graph.instagram.com/v21.0/${conn.platform_user_id}/media_publish`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                  body: pubParams.toString(),
+                });
+                const pubData = await pubRes.json();
+                if (pubData.id) {
+                  postUrl = `https://www.instagram.com/reel/${pubData.id}`;
+                  // 첫댓글
+                  if (firstComment?.trim()) {
+                    await fetch(`https://graph.instagram.com/v21.0/${pubData.id}/comments`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                      body: new URLSearchParams({ message: firstComment, access_token: conn.access_token }).toString(),
+                    });
+                  }
+                } else {
+                  error = pubData.error?.message || "인스타 발행 실패";
+                  status = "failed";
+                }
+              } else if (!error) {
+                error = "인스타 릴스 처리 타임아웃";
+                status = "failed";
+              }
+            } else {
+              error = createData.error?.message || "인스타 컨테이너 생성 실패";
+              status = "failed";
+            }
+          } else if (contentType === "image" && fileUrl) {
+            // 이미지 게시물
+            const createParams = new URLSearchParams({
+              image_url: fileUrl,
+              caption: (pfDesc || title) + (pfTags ? "\n\n" + pfTags : ""),
+              access_token: conn.access_token,
+            });
+            const createRes = await fetch(`https://graph.instagram.com/v21.0/${conn.platform_user_id}/media`, {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              body: createParams.toString(),
+            });
+            const createData = await createRes.json();
+            if (createData.id) {
+              const pubParams = new URLSearchParams({ creation_id: createData.id, access_token: conn.access_token });
+              const pubRes = await fetch(`https://graph.instagram.com/v21.0/${conn.platform_user_id}/media_publish`, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: pubParams.toString(),
+              });
+              const pubData = await pubRes.json();
+              postUrl = pubData.id ? `https://www.instagram.com/p/${pubData.id}` : null;
+              if (!pubData.id) { error = pubData.error?.message || "인스타 발행 실패"; status = "failed"; }
+            } else {
+              error = createData.error?.message || "인스타 컨테이너 생성 실패";
+              status = "failed";
+            }
+          } else {
+            error = "인스타그램은 이미지 또는 영상이 필요합니다";
+            status = "failed";
+          }
+        }
+
+        // ── Threads ──
+        else if (platformId === "threads") {
+          const textContent = (pfDesc || description || title).slice(0, 500);
+          const containerBody = {
+            media_type: fileUrl ? (contentType === "video" ? "VIDEO" : "IMAGE") : "TEXT",
+            text: textContent,
+            access_token: conn.access_token,
+          };
+          if (fileUrl && contentType === "image") containerBody.image_url = fileUrl;
+          if (fileUrl && contentType === "video") containerBody.video_url = fileUrl;
+
+          const createRes = await fetch(`https://graph.threads.net/v1.0/${conn.platform_user_id}/threads`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(containerBody),
+          });
+          const createData = await createRes.json();
+
+          if (createData.id) {
+            // 비디오인 경우 처리 대기
+            if (contentType === "video") {
+              for (let i = 0; i < 10; i++) {
+                await new Promise(r => setTimeout(r, 2000));
+                const statusRes = await fetch(`https://graph.threads.net/v1.0/${createData.id}?fields=status&access_token=${conn.access_token}`);
+                const statusData = await statusRes.json();
+                if (statusData.status === "FINISHED") break;
+                if (statusData.status === "ERROR") { error = "스레드 미디어 처리 실패"; status = "failed"; break; }
+              }
+            }
+
+            if (!error) {
+              const pubRes = await fetch(`https://graph.threads.net/v1.0/${conn.platform_user_id}/threads_publish`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ creation_id: createData.id, access_token: conn.access_token }),
+              });
+              const pubData = await pubRes.json();
+              if (pubData.id) {
+                postUrl = `https://www.threads.net/@${conn.platform_username}/post/${pubData.id}`;
+              } else {
+                error = pubData.error?.message || "스레드 발행 실패";
+                status = "failed";
+              }
+            }
+          } else {
+            error = createData.error?.message || "스레드 컨테이너 생성 실패";
+            status = "failed";
+          }
+        }
+
+        // ── TikTok ──
+        else if (platformId === "tiktok") {
+          if (contentType !== "video" || !fileUrl) {
+            error = "TikTok은 영상 파일이 필요합니다";
+            status = "failed";
+          } else {
+            // TikTok Content Posting API
+            // 1) 업로드 초기화
+            const initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${conn.access_token}`,
+                "Content-Type": "application/json; charset=UTF-8",
+              },
+              body: JSON.stringify({
+                post_info: {
+                  title: title.slice(0, 150),
+                  privacy_level: pfVisibility === "private" ? "SELF_ONLY" : pfVisibility === "unlisted" ? "MUTUAL_FOLLOW_FRIENDS" : "PUBLIC_TO_EVERYONE",
+                  disable_duet: false,
+                  disable_comment: false,
+                  disable_stitch: false,
+                },
+                source_info: {
+                  source: "PULL_FROM_URL",
+                  video_url: fileUrl,
+                },
+              }),
+            });
+            const initData = await initRes.json();
+            if (initData.data?.publish_id) {
+              postUrl = "발행 요청됨 (TikTok 처리 중)";
+            } else {
+              error = initData.error?.message || "TikTok 업로드 실패";
+              status = "failed";
+            }
+          }
+        }
+
+        // ── 네이버 블로그 ──
+        else if (platformId === "naver_blog") {
+          error = null;
+          status = "manual";
+          postUrl = "clipboard";
+        }
+
+        // ── 지원하지 않는 플랫폼 ──
+        else {
+          error = `${platformId}는 아직 자동 발행을 지원하지 않습니다`;
+          status = "failed";
+        }
+      } catch (e) {
+        error = e.message;
+        status = "failed";
+      }
+
+      // 발행 이력 저장
+      await supabase.from("publish_history").insert({
+        uid,
+        platform: platformId,
+        title: title || "",
+        content_preview: (pfDesc || description || "").slice(0, 200),
+        post_url: postUrl,
+        status: status === "failed" ? "failed" : "success",
+        error_message: error,
+      });
+
+      results.push({ platform: platformId, status, postUrl, error });
+    }
+
+    const successCount = results.filter(r => r.status === "success").length;
+    const failCount = results.filter(r => r.status === "failed").length;
+
+    return res.status(200).json({
+      success: failCount < results.length, // 하나라도 성공하면 true
+      results,
+      summary: { total: results.length, success: successCount, failed: failCount },
+    });
+
+  } catch (e) {
+    return res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ACTION: publish-history — 발행 히스토리 조회
+// ══════════════════════════════════════════════════════════════════
+async function handlePublishHistory(req, res) {
+  if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
+
+  const uid = req.query.uid;
+  if (!uid) return res.status(400).json({ error: "uid 필수" });
+
+  const limit = parseInt(req.query.limit) || 50;
+  const offset = parseInt(req.query.offset) || 0;
+
+  try {
+    const { data, error, count } = await supabase
+      .from("publish_history")
+      .select("*", { count: "exact" })
+      .eq("uid", uid)
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    // 프론트 형식에 맞게 변환
+    const history = (data || []).map(row => ({
+      title: row.title || "제목 없음",
+      description: row.content_preview || "",
+      date: row.created_at ? new Date(row.created_at).toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }) : "",
+      status: row.status === "success" ? "완료" : row.status === "failed" ? "실패" : "발행 중",
+      platforms: [row.platform],
+      postUrl: row.post_url,
+      error: row.error_message,
+    }));
+
+    return res.status(200).json({ history, total: count || 0 });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
   }
 }
 
@@ -900,6 +1296,8 @@ async function handleTrackStats(req, res) {
 
 const ACTION_MAP = {
   publish: handlePublish,
+  "multi-publish": handleMultiPublish,
+  "publish-history": handlePublishHistory,
   connections: handleConnections,
   "auth-meta": handleAuthMeta,
   "auth-tistory": handleAuthTistory,

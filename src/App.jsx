@@ -650,7 +650,7 @@ export default function App() {
 
   /* ── 페이지 렌더 ── */
   const renderPage = () => {
-    if (page === "home")     return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} />;
+    if (page === "home")     return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} setAiMenu={setAiMenu} />;
     if (page === "login")    { if (user) { navigate("home"); return null; } return <AuthPage C={C} onAuth={handleAuth} navigate={navigate} />; }
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "howto" || page === "guide")  return <HowToPage C={C} navigate={navigate} />;
@@ -672,7 +672,7 @@ export default function App() {
     if (page === "mypage" || page === "profile")   return <MyPage C={C} theme={theme} user={user} setUser={u => { setLocalUser(u); setUserState(u); }} navigate={navigate} />;
     if (page === "xk9m2p4q7") {
       if (!user) return <div style={{ minHeight: "80vh" }} />;
-      if (user.role !== "admin") return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} />;
+      if (user.role !== "admin") return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} setAiMenu={setAiMenu} />;
       return <AdminPage C={C} user={user} />;
     }
     // 404 - 알 수 없는 페이지
@@ -687,7 +687,7 @@ export default function App() {
         </button>
       </div>
     );
-    return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} />;
+    return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} setAiMenu={setAiMenu} />;
   };
 
   return (

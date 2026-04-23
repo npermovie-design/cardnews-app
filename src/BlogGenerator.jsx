@@ -2756,10 +2756,11 @@ hospital equipment`
                 {id:"write", label:t("bg_tabWrite"), color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
                 {id:"design", label:t("bg_tabDesign"), color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>},
                 {id:"shorts", label:t("bg_tabVideo"), color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>},
+                {id:"sns_publish", label:"SNS 발행", color:"#38bdf8", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>, navigate:true},
               ].map(m => {
                 const isActive = m.id==="shorts" ? shortsMode : mode===m.id && !shortsMode;
                 return (
-                <button key={m.id} onClick={()=>{if(m.id==="shorts"){setShortsMode(true);setVideoSubMode(null);setShortsYtUrl("");}else{setShortsMode(false);setVideoSubMode(null);setMode(m.id);if(m.id==="design"){setDesignSlides(null);setDesignStep("input");}}}} style={{
+                <button key={m.id} onClick={()=>{if(m.navigate&&setAiMenu){setAiMenu(m.id);return;}if(m.id==="shorts"){setShortsMode(true);setVideoSubMode(null);setShortsYtUrl("");}else{setShortsMode(false);setVideoSubMode(null);setMode(m.id);if(m.id==="design"){setDesignSlides(null);setDesignStep("input");}}}} style={{
                   padding:"10px 20px", borderRadius:20,
                   border: isActive ? `2px solid ${m.color}` : `1.5px solid ${border}`,
                   background: isActive ? (isDark?`${m.color}15`:`${m.color}08`) : "transparent",
@@ -3393,24 +3394,27 @@ hospital equipment`
               </div>
             )}
 
-            {/* 플랫폼 칩 (검색창 아래, 글쓰기 모드만) */}
-            {mode==="write" && <div className="bl-platform-chips" style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginTop:20,padding:"0 24px"}}>
-              {SNS_OPTIONS.slice(0,8).map(p=>{
-                const isA=platformId===p.id;
-                return <button key={p.id} className="bl-platform-chip" onClick={()=>setPlatformId(p.id)}
-                  style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${isA?(p.color||accent):border}`,background:isA?(`${p.color||"#7c6aff"}0d`):"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontSize:13,fontWeight:isA?800:600,color:isA?(p.color||accent):muted,transition:"all 0.15s",fontFamily:"inherit"}}>
-                  <div style={{width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",color:p.color||muted,flexShrink:0}}>
-                    {p.svg ? <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">{p.svg.props.children}</svg> : <img src={p.icon} alt="" style={{width:14,height:14,borderRadius:2,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>}
-                  </div>
-                  {p.label}
-                </button>;
-              })}
-              <button onClick={()=>setShowSettings(true)}
-                style={{padding:"8px 16px",borderRadius:20,border:`1px dashed ${border}`,background:"transparent",cursor:"pointer",fontSize:13,fontWeight:600,color:muted,fontFamily:"inherit",transition:"all 0.15s"}}
-                onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}
-                onMouseLeave={e=>{e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}>
-                + 더보기
-              </button>
+            {/* 프롬프트 가이드 (검색창 아래, 글쓰기 모드만) */}
+            {mode==="write" && <div style={{marginTop:20,padding:"0 24px",textAlign:"center"}}>
+              <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+                {[
+                  {label:"블로그로 써줘",platform:"blog_naver"},
+                  {label:"카페로 써줘",platform:"blog_cafe"},
+                  {label:"인스타로 써줘",platform:"blog_insta"},
+                  {label:"유튜브 대본 써줘",platform:"blog_youtube"},
+                  {label:"스레드로 써줘",platform:"blog_thread"},
+                ].map(g=>(
+                  <button key={g.label} onClick={()=>setPlatformId(g.platform)}
+                    style={{padding:"7px 14px",borderRadius:10,border:`1px solid ${platformId===g.platform?accent:border}`,background:platformId===g.platform?`${accent}0d`:"transparent",cursor:"pointer",fontSize:12,fontWeight:platformId===g.platform?700:500,color:platformId===g.platform?accent:muted,fontFamily:"inherit",transition:"all 0.15s"}}
+                    onMouseEnter={e=>{if(platformId!==g.platform){e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}}
+                    onMouseLeave={e=>{if(platformId!==g.platform){e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}}>
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{fontSize:11,color:muted,marginTop:10,lineHeight:1.6}}>
+                프롬프트에 <span style={{color:accent,fontWeight:600}}>"블로그로 써줘"</span>, <span style={{color:accent,fontWeight:600}}>"카페로 써줘"</span> 등을 입력하면 자동으로 플랫폼이 전환됩니다
+              </div>
             </div>}
             {/* 이미지 모드 도구 칩 — 제거됨 */}
             </>

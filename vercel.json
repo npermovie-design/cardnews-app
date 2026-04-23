@@ -76,6 +76,8 @@
     { "source": "/api/youtube-stream-url", "destination": "/api/youtube?action=stream-url" },
 
     { "source": "/api/sns-publish", "destination": "/api/sns?action=publish" },
+    { "source": "/api/sns-multi-publish", "destination": "/api/sns?action=multi-publish" },
+    { "source": "/api/sns-publish-history", "destination": "/api/sns?action=publish-history" },
     { "source": "/api/sns-connections", "destination": "/api/sns?action=connections" },
     { "source": "/api/sns-auth-meta", "destination": "/api/sns?action=auth-meta" },
     { "source": "/api/sns-auth-tistory", "destination": "/api/sns?action=auth-tistory" },
