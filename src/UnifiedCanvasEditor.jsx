@@ -979,10 +979,14 @@ export default function UnifiedCanvasEditor({
                 {imgLoading&&<div style={{textAlign:"center",padding:20,color:"#888",fontSize:12}}>검색 중...</div>}
                 <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6}}>
                   {imgResults.map((img,i)=>(
-                    <div key={i} style={{borderRadius:8,overflow:"hidden",cursor:"pointer",border:"1px solid #eee",position:"relative"}}
-                      onClick={()=>addImageUrl(img.full)}>
+                    <div key={i} style={{borderRadius:8,overflow:"hidden",border:"1px solid #eee",position:"relative"}}>
                       <img src={img.thumb} alt="" style={{width:"100%",height:80,objectFit:"cover",display:"block"}}/>
-                      <div style={{position:"absolute",bottom:0,left:0,right:0,background:"rgba(0,0,0,0.5)",color:"#fff",fontSize:9,padding:"2px 4px"}}>{img.source}</div>
+                      <div style={{position:"absolute",bottom:0,left:0,right:0,display:"flex",gap:0}}>
+                        <button onClick={()=>setBgImage(img.full)}
+                          style={{flex:1,padding:"4px",background:"rgba(124,106,255,0.85)",color:"#fff",border:"none",fontSize:9,fontWeight:700,cursor:"pointer"}}>배경</button>
+                        <button onClick={()=>addImageUrl(img.full)}
+                          style={{flex:1,padding:"4px",background:"rgba(0,0,0,0.6)",color:"#fff",border:"none",fontSize:9,fontWeight:700,cursor:"pointer"}}>삽입</button>
+                      </div>
                     </div>
                   ))}
                 </div>

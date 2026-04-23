@@ -1343,6 +1343,25 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       }));
       setDesignSlides(slides);
       setDesignStep("editor");
+      // 보관함에 자동 저장
+      try {
+        const cleanTitle = (slides[0]?.title||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,"");
+        const cleanContent = slides.map(s => {
+          const t = (s.title||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,"");
+          const b = (s.body||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,"");
+          return `${t}\n${b}`;
+        }).join("\n\n");
+        const saves = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
+        saves.unshift({
+          id: Date.now().toString(),
+          type: "카드뉴스",
+          title: cleanTitle || content.slice(0, 30),
+          content: cleanContent,
+          date: new Date().toLocaleDateString("ko-KR"),
+          slideCount: slides.length,
+        });
+        localStorage.setItem("sns_blog_saves_v1", JSON.stringify(saves.slice(0, 100)));
+      } catch {}
       // 배경 이미지 자동 검색 (비동기, UI 차단 없이)
       (async () => {
         try {
