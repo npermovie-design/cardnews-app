@@ -284,7 +284,7 @@ export default function UnifiedCanvasEditor({
         left:mx, top:curY, width:tw,
         originX:"left", originY:"top",
         fontSize:Math.round(width*0.022), fontWeight:"600", fill:s.textColor||"#ffffff",
-        fontFamily:s.fontFamily||"Pretendard", opacity:0.5,
+        fontFamily:s.fontFamily||"Pretendard", opacity:0.7,
         textAlign:"left", name:"subtitle",
       });
       fc.add(subTb);
@@ -312,7 +312,7 @@ export default function UnifiedCanvasEditor({
         left:mx, top:curY, width:tw,
         originX:"left", originY:"top",
         fontSize:bodyFontSize,
-        fill:s.textColor||"#ffffff", opacity:0.8,
+        fill:s.textColor||"#ffffff",
         fontFamily:s.fontFamily||"Pretendard",
         lineHeight:1.65, textAlign:"left", name:"body",
       });
@@ -1112,6 +1112,20 @@ export default function UnifiedCanvasEditor({
                         {a==="left"?"◧":a==="center"?"◫":"◨"}
                       </button>
                     ))}
+                  </div>
+                  <div style={{fontSize:10,color:"#888",marginTop:6,marginBottom:2}}>그림자</div>
+                  <div style={{display:"flex",gap:3,marginBottom:6}}>
+                    <button onClick={()=>{
+                      if(!sel)return;
+                      sel.set("shadow", sel.shadow ? null : "2px 3px 6px rgba(0,0,0,0.5)");
+                      fcRef.current?.renderAll();
+                    }} style={{...B,fontSize:10,flex:1,background:sel?.shadow?"#7c6aff15":"transparent",borderColor:sel?.shadow?"#7c6aff":"#ddd"}}>
+                      {sel?.shadow?"그림자 ON":"그림자 OFF"}
+                    </button>
+                    <button onClick={()=>{if(!sel)return;sel.set("shadow","0 4px 12px rgba(0,0,0,0.8)");fcRef.current?.renderAll();}}
+                      style={{...B,fontSize:10}}>강하게</button>
+                    <button onClick={()=>{if(!sel)return;sel.set("shadow","1px 1px 3px rgba(0,0,0,0.3)");fcRef.current?.renderAll();}}
+                      style={{...B,fontSize:10}}>약하게</button>
                   </div>
                   <div style={{borderBottom:"1px solid #eee",marginBottom:10}}/>
                 </>)}
