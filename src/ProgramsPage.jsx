@@ -38,13 +38,13 @@ const CATEGORIES = [
 
 const DEMO_PRODUCTS = [
   {
-    id: 1, title: "SNS 자동화 봇 v0.1.2",
-    desc: "네이버 블로그/카페에 AI 글을 자동 생성하고 발행하는 데스크톱 프로그램입니다. 키워드만 입력하면 글 작성부터 발행까지 원클릭 자동화. Python, Playwright 등 별도 설치 불필요.",
+    id: 1, title: "SNS 자동화 봇 v0.1.4",
+    desc: "네이버 블로그/카페에 AI 글을 자동 생성하고 발행하는 데스크톱 프로그램입니다. 키워드만 입력하면 글 작성부터 발행까지 원클릭 자동화. 소제목 색상, 인용구 스타일, 짤/스티커 지원.",
     category: "automation", price: 0, priceLabel: "무료",
-    version: "v0.1.2", platform: "Windows 10/11",
-    fileSize: "314MB", downloadCount: 124, viewCount: 312,
-    tags: ["자동화", "블로그", "네이버"],
-    downloadUrl: "https://github.com/npermovie-design/naverbot-saas/releases/download/v0.1.2/%EB%A9%94%EC%9D%B4%ED%82%B7+SNS%EC%9E%90%EB%8F%99%ED%99%94+Setup+0.1.2.exe",
+    version: "v0.1.4", platform: "Windows 10/11",
+    fileSize: "329MB", downloadCount: 124, viewCount: 312,
+    tags: ["자동화", "블로그", "네이버", "SEO"],
+    downloadUrl: "https://github.com/npermovie-design/naverbot-saas/releases/download/v0.1.4/%EB%A9%94%EC%9D%B4%ED%82%B7+SNS%EC%9E%90%EB%8F%99%ED%99%94+Setup+0.1.4.exe",
     thumbnail: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/uploads/automation-thumb.png",
     detailContent: [
       { type: "heading", value: "SNS 자동화 봇이란?" },
