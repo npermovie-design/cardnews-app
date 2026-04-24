@@ -54,32 +54,9 @@ export default function UnifiedCanvasEditor({
   const [layerTick, setLayerTick] = useState(0);
   const [aiPrompt, setAiPrompt] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
-  // AI 캡션 상태
-  const [captionOpen, setCaptionOpen] = useState(true);
-  const [captionText, setCaptionText] = useState("");
-  const [captionLoading, setCaptionLoading] = useState(false);
-  const [captionTone, setCaptionTone] = useState("professional");
-  const [captionEmoji, setCaptionEmoji] = useState(true);
-  const captionGenerated = useRef(false);
-
-  // 에디터 진입 시 캡션 자동 생성
-  useEffect(() => {
-    if (captionGenerated.current || !initSlides?.length) return;
-    captionGenerated.current = true;
-    (async () => {
-      setCaptionLoading(true);
-      try {
-        const slideTexts = initSlides.map((s,i) =>
-          `[${i+1}] ${s.title||""} ${s.subtitle||""} ${s.body||""} ${s.highlight||""}`
-        ).join("\n");
-        const prompt = `인스타그램 카드뉴스 캡션을 작성해주세요.\n\n카드뉴스 내용:\n${slideTexts}\n\n조건:\n- 전문적이고 신뢰감 있는 말투\n- 이모티콘을 적절히 활용해주세요.\n- 해시태그 5~8개 포함\n- 캡션 길이: 3~5문장\n- 줄바꿈으로 가독성 높게\n- 마지막에 행동 유도(CTA) 한 줄 포함\n\n캡션만 출력하세요.`;
-        const result = await callAI("claude-haiku-4-5",[{role:"user",content:prompt}],800);
-        setCaptionText(result?.trim()||"");
-      } catch(e) { setCaptionText("캡션 자동 생성 실패: "+(e.message||e)); }
-      setCaptionLoading(false);
-    })();
-  }, []);
-  const [panelOpen, setPanelOpen] = useState(false);
+  const [bgOpacity, setBgOpacity] = useState(100);
+  const [gradOpacity, setGradOpacity] = useState(40);
+  const [panelOpen, setPanelOpen] = useState(true);
   const [showExitWarn, setShowExitWarn] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   // Undo/Redo
@@ -180,10 +157,7 @@ export default function UnifiedCanvasEditor({
 
       slidesRef.current = new Array(total).fill(null);
       if (initSlides[0]) buildSlide(fc, initSlides[0], 0);
-      // 여러 타이밍에 fit 호출 (레이아웃 안정화)
-      requestAnimationFrame(() => { fit(fc, box); pushHistory(); });
-      setTimeout(() => fit(fc, box), 300);
-      setTimeout(() => fit(fc, box), 1000);
+      requestAnimationFrame(() => { fit(fc, box); pushHistory(); syncOpacityState(fc); });
     } catch(e) { console.error("Canvas init:", e); }
     return () => { try { fcRef.current?.dispose(); } catch{} fcRef.current=null; if(box) box.innerHTML=""; };
   }, []);
@@ -194,129 +168,82 @@ export default function UnifiedCanvasEditor({
     fc.clear();
     fc.backgroundColor = s.bgColor || "#ffffff";
 
-    // 배경 이미지
+    // 배경 이미지 (imgLayout 지원)
     if (s.image) {
       FabricImage.fromURL(s.image, {crossOrigin:"anonymous"}).then(img => {
         if(!img||!fcRef.current) return;
-        // 이미지 실제 크기 확인 (fabric v6 호환)
-        const imgW = img.width || img.getScaledWidth?.() || img._element?.naturalWidth || 800;
-        const imgH = img.height || img.getScaledHeight?.() || img._element?.naturalHeight || 800;
-        // 전체 커버 (1장으로 꽉 채우기)
-        const sc = Math.max(width/imgW, height/imgH);
-        img.set({
-          scaleX:sc, scaleY:sc,
-          left:width/2, top:height/2,
-          originX:"center", originY:"center",
-          selectable:false, evented:false, name:"bg",
-          opacity:s.bgOpacity??1,
-        });
-        // 기존 bg 제거 후 삽입
-        fc.getObjects().filter(o=>o.name==="bg").forEach(o=>fc.remove(o));
+        const layout = s.imgLayout || "full";
+        const ratio = (s.imgLayoutRatio ?? 50) / 100;
+        let ix=0,iy=0,iw=width,ih=height;
+        if(layout==="top"){ih=Math.round(height*ratio);}
+        else if(layout==="bottom"){iy=Math.round(height*(1-ratio));ih=Math.round(height*ratio);}
+        else if(layout==="left"){iw=Math.round(width*ratio);}
+        else if(layout==="right"){ix=Math.round(width*(1-ratio));iw=Math.round(width*ratio);}
+        const sc = Math.max(iw/img.width, ih/img.height) * ((s.bgScale??100)/100);
+        img.set({scaleX:sc,scaleY:sc,left:ix+iw/2,top:iy+ih/2,originX:"center",originY:"center",selectable:false,evented:false,name:"bg",opacity:s.bgOpacity??1});
         fc.insertAt(0,img);
-        // 기본 그라데이션 오버레이 (기존 없으면 추가)
-        if(!fc.getObjects().some(o=>o.name==="gradient")){
-          const gradOv=new Rect({
-            left:0, top:0, width, height,
-            originX:"left", originY:"top",
-            selectable:true, evented:true, name:"gradient",
-          });
-          gradOv.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:0,y2:height},colorStops:[{offset:0,color:"rgba(0,0,0,0)"},{offset:0.3,color:"rgba(0,0,0,0.15)"},{offset:0.55,color:"rgba(0,0,0,0.6)"},{offset:1,color:"rgba(0,0,0,0.85)"}]}));
-          fc.insertAt(1,gradOv);
-        }
         fc.renderAll();
       }).catch(()=>{});
     }
 
-    // ── 포인트 색 텍스트 헬퍼 ──
-    const pointColor = s.pointColor || "#e4ff1a";
-    const addColoredText = (raw, opts) => {
-      const clean = (raw||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,"");
-      const tb = new Textbox(clean, opts);
+
+    // 이미지 슬라이드에 자동 하단 그라데이션 오버레이 추가
+    const hasImage = !!s.image;
+    if (hasImage) {
+      const gH = Math.round(height * 0.6);
+      const grad = new Rect({left:0,top:height-gH,width:width,height:gH,selectable:false,evented:false,name:"gradient",opacity:0.9});
+      grad.set("fill", new Gradient({type:"linear",coords:{x1:0,y1:0,x2:0,y2:gH},colorStops:[{offset:0,color:"rgba(0,0,0,0)"},{offset:1,color:"rgba(0,0,0,0.85)"}]}));
+      fc.add(grad);
+    }
+
+    // 텍스트 요소 수 계산 (위치 동적 배분)
+    const hasHighlight = !!(s.highlight || s.subtitle);
+    const hasTitle = !!s.title;
+    const hasBody = !!s.body;
+
+    // 텍스트 공통
+    const _tw = width * 0.8;
+    const _tl = width * 0.1;
+    const _shadow = hasImage ? "rgba(0,0,0,0.75) 0px 3px 20px" : null;
+
+    // 텍스트 추가 헬퍼
+    const _addTxt = (text, opts) => {
+      const tb = new Textbox(text, { left:_tl, width:_tw, textAlign:"center", fill:s.textColor||"#ffffff", fontFamily:s.fontFamily||"Pretendard", ...opts });
+      if(_shadow) tb.set("shadow", _shadow);
       fc.add(tb);
-      // [P]...[/P] 위치 계산 → styles 객체 직접 구성
-      const ranges = [];
-      let searchStr = raw || "";
-      let cleanOffset = 0;
-      const tagOpen = "[P]", tagClose = "[/P]";
-      while(true) {
-        const openIdx = searchStr.indexOf(tagOpen);
-        if(openIdx === -1) break;
-        const closeIdx = searchStr.indexOf(tagClose, openIdx);
-        if(closeIdx === -1) break;
-        const beforeOpen = searchStr.slice(0, openIdx).replace(/\[P\]/g,"").replace(/\[\/P\]/g,"");
-        const word = searchStr.slice(openIdx + tagOpen.length, closeIdx);
-        const startInClean = cleanOffset + beforeOpen.length;
-        ranges.push({ start: startInClean, len: word.length });
-        cleanOffset = startInClean + word.length;
-        searchStr = searchStr.slice(closeIdx + tagClose.length);
-      }
-      // styles 객체 구성 (Fabric v6: styles[lineIndex][charIndex])
-      if(ranges.length > 0) {
-        const lines = clean.split("\n");
-        const styles = {};
-        let globalIdx = 0;
-        lines.forEach((line, li) => {
-          styles[li] = styles[li] || {};
-          for(let ci = 0; ci < line.length; ci++) {
-            for(const r of ranges) {
-              if(globalIdx >= r.start && globalIdx < r.start + r.len) {
-                styles[li][ci] = { fill: pointColor, fontWeight: "900" };
-              }
-            }
-            globalIdx++;
-          }
-          globalIdx++; // \n
-        });
-        tb.styles = styles;
-      }
-      fc.renderAll();
+      // 수평 중앙 강제
+      fc.centerObjectH(tb);
       return tb;
     };
 
-    // ── 레이아웃: 사진 상단 + 텍스트 하단 ──
-    const mx = width * 0.07;
-    const tw = width * 0.86;
-    let curY = height * 0.48;
+    const hasAccent = !!s.accent_text;
 
-    // 부제목
-    if (s.subtitle) {
-      const subTb = new Textbox((s.subtitle||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,""), {
-        left:mx, top:curY, width:tw,
-        originX:"left", originY:"top",
-        fontSize:Math.round(width*0.022), fontWeight:"600", fill:s.textColor||"#ffffff",
-        fontFamily:s.fontFamily||"Pretendard", opacity:0.7,
-        textAlign:"left", name:"subtitle",
-      });
-      fc.add(subTb);
-      curY += subTb.calcTextHeight() + 10;
+    // 텍스트 간격
+    const _gap = hasImage ? height * 0.10 : height * 0.14;
+
+    // 표시할 텍스트 목록 순서대로 수집
+    const _items = [];
+    if (hasHighlight) _items.push({type:"highlight", text:s.highlight||s.subtitle||"", opts:{fontSize:32,fontWeight:"700",opacity:0.7,name:"highlight"}});
+    if (hasTitle) _items.push({type:"title", text:s.title, opts:{fontSize:s.fontSize||52,fontWeight:"bold",lineHeight:1.2,name:"title"}});
+    if (hasAccent) _items.push({type:"accent", text:s.accent_text, opts:{fontSize:Math.round((s.fontSize||52)*0.85),fontWeight:"900",fill:s.accentColor||"#ccff00",lineHeight:1.2,name:"accent"}});
+    if (hasBody) _items.push({type:"body", text:s.body, opts:{fontSize:Math.max(26,Math.round((s.fontSize||52)*0.50)),opacity:0.9,lineHeight:1.5,name:"body"}});
+
+    // 전체 텍스트 블록 높이 계산 후 하단 정렬
+    const totalItems = _items.length;
+    const blockH = totalItems * _gap;
+    let startY;
+    if (hasImage) {
+      // 이미지 있으면 하단에 배치 (아래에서 12% 여백)
+      startY = height - blockH - height * 0.10;
+      startY = Math.max(startY, height * 0.40); // 최소 40% 아래부터
+    } else {
+      // 이미지 없으면 중앙
+      startY = (height - blockH) / 2;
     }
 
-    // 제목 — 매우 큰 글씨 + 포인트 색
-    if (s.title) {
-      const titleFontSize = Math.round(width * 0.05);
-      const titleTb = addColoredText(s.title, {
-        left:mx, top:curY, width:tw,
-        originX:"left", originY:"top",
-        fontSize:titleFontSize, fontWeight:"900",
-        fill:s.textColor||"#ffffff",
-        fontFamily:s.fontFamily||"Pretendard",
-        lineHeight:1.2, textAlign:"left", name:"title",
-      });
-      curY += titleTb.calcTextHeight() + 16;
-    }
-
-    // 본문 — 포인트 색 포함
-    if (s.body) {
-      const bodyFontSize = Math.round(width * 0.026);
-      addColoredText(s.body, {
-        left:mx, top:curY, width:tw,
-        originX:"left", originY:"top",
-        fontSize:bodyFontSize,
-        fill:s.textColor||"#ffffff",
-        fontFamily:s.fontFamily||"Pretendard",
-        lineHeight:1.65, textAlign:"left", name:"body",
-      });
-    }
+    _items.forEach((item, i) => {
+      _addTxt(item.text, { top: startY + i * _gap, ...item.opts });
+    });
 
     fc.renderAll();
   };
@@ -324,25 +251,11 @@ export default function UnifiedCanvasEditor({
   /* ── 컨테이너 맞추기 ── */
   const fit = (fc, box) => {
     if(!fc||!box) return;
-    const rect = box.getBoundingClientRect();
-    const cw = box.clientWidth;
-    const ch = window.innerHeight - rect.top - 5;
+    const cw=box.clientWidth-20, ch=box.clientHeight-20;
     if(cw<=0||ch<=0) return;
-    const s = Math.min(cw/width, ch/height);
-    const scaledW = Math.round(width*s);
-    const scaledH = Math.round(height*s);
-    const w = box.querySelector(".canvas-container") || box.firstChild;
-    if(w){
-      w.style.transform = `scale(${s})`;
-      w.style.transformOrigin = "top left";
-      w.style.position = "absolute";
-      w.style.left = `${Math.round((cw - scaledW)/2)}px`;
-      w.style.top = "0";
-    }
-    // 부모 높이를 실제 표시 크기로 고정
-    box.style.height = `${scaledH}px`;
-    box.style.position = "relative";
-    box.style.overflow = "hidden";
+    const s=Math.min(cw/width,ch/height,1);
+    const w=box.querySelector(".canvas-container")||box.firstChild;
+    if(w){w.style.transform=`scale(${s})`;w.style.transformOrigin="center center";}
   };
 
   useEffect(()=>{
@@ -368,12 +281,18 @@ export default function UnifiedCanvasEditor({
 
   /* ── 슬라이드 전환 ── */
   const save = () => { const fc=fcRef.current; if(fc) slidesRef.current[idx]=fc.toJSON(); };
+  const syncOpacityState = (fc) => {
+    const bg = fc.getObjects().find(o=>o.name==="bg");
+    const grad = fc.getObjects().find(o=>o.name==="gradient");
+    setBgOpacity(Math.round((bg?.opacity??1)*100));
+    setGradOpacity(Math.round((grad?.opacity??0.4)*100));
+  };
   const go = (i) => {
     if(i<0||i>=total) return; save(); setIdx(i);
     const fc=fcRef.current; if(!fc) return;
     const s=slidesRef.current[i];
-    if(s) fc.loadFromJSON(s).then(()=>fc.renderAll());
-    else if(initSlides[i]) buildSlide(fc,initSlides[i],i);
+    if(s) fc.loadFromJSON(s).then(()=>{fc.renderAll();syncOpacityState(fc);});
+    else if(initSlides[i]) { buildSlide(fc,initSlides[i],i); setTimeout(()=>syncOpacityState(fc),300); }
   };
 
   /* ── 오브젝트 추가 ── */
@@ -394,34 +313,23 @@ export default function UnifiedCanvasEditor({
     else if(type==="circle") obj=new Circle({radius:80,fill:"#ec489933",left:width/2-80,top:height/2-80});
     else if(type==="triangle") obj=new Triangle({width:160,height:140,fill:"#f59e0b33",left:width/2-80,top:height/2-70});
     else if(type==="line") obj=new Line([width*0.2,height/2,width*0.8,height/2],{stroke:"#ffffff",strokeWidth:3});
-    else if(type==="filled-rect") obj=new Rect({width:width,height:height*0.3,fill:"#7c6aff",left:0,top:height*0.7,rx:0,ry:0});
+    else if(type==="filled-rect") obj=new Rect({width:width,height:Math.round(height*0.3),fill:"#7c6aff",left:0,top:Math.round(height*0.7),rx:0,ry:0});
     else if(type==="rounded-rect") obj=new Rect({width:280,height:60,fill:"#ffffff",left:width/2-140,top:height/2-30,rx:30,ry:30,stroke:"#333",strokeWidth:2});
     else if(type==="badge") obj=new Rect({width:180,height:44,fill:"#ffffff",left:width/2-90,top:height*0.15,rx:22,ry:22,stroke:"#e5e7eb",strokeWidth:1.5});
-    // 그라데이션 오버레이 — 기존 그라데이션 제거 후 추가, originX/Y 명시
+    // 그라데이션 오버레이 (실제 크기 사용 — scale 방식은 gradient 렌더링 깨짐)
     else if(type==="grad-bottom") {
-      fc.getObjects().filter(o=>o.name==="gradient").forEach(o=>fc.remove(o));
-      obj=new Rect({width,height,left:0,top:0,originX:"left",originY:"top",selectable:true,evented:true,name:"gradient"});
-      obj.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:0,y2:height},colorStops:[{offset:0,color:"rgba(0,0,0,0)"},{offset:0.5,color:"rgba(0,0,0,0)"},{offset:1,color:"rgba(0,0,0,0.85)"}]}));
+      const gH=Math.round(height*0.55);
+      obj=new Rect({left:0,top:height-gH,width:width,height:gH,selectable:true,evented:true,name:"gradient"});
+      obj.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:0,y2:gH},colorStops:[{offset:0,color:"rgba(0,0,0,0)"},{offset:1,color:"rgba(0,0,0,0.85)"}]}));
     }
     else if(type==="grad-top") {
-      fc.getObjects().filter(o=>o.name==="gradient").forEach(o=>fc.remove(o));
-      obj=new Rect({width,height,left:0,top:0,originX:"left",originY:"top",selectable:true,evented:true,name:"gradient"});
-      obj.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:0,y2:height},colorStops:[{offset:0,color:"rgba(0,0,0,0.85)"},{offset:0.5,color:"rgba(0,0,0,0)"},{offset:1,color:"rgba(0,0,0,0)"}]}));
-    }
-    else if(type==="grad-left") {
-      fc.getObjects().filter(o=>o.name==="gradient").forEach(o=>fc.remove(o));
-      obj=new Rect({width,height,left:0,top:0,originX:"left",originY:"top",selectable:true,evented:true,name:"gradient"});
-      obj.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:width,y2:0},colorStops:[{offset:0,color:"rgba(0,0,0,0.85)"},{offset:0.5,color:"rgba(0,0,0,0)"},{offset:1,color:"rgba(0,0,0,0)"}]}));
-    }
-    else if(type==="grad-right") {
-      fc.getObjects().filter(o=>o.name==="gradient").forEach(o=>fc.remove(o));
-      obj=new Rect({width,height,left:0,top:0,originX:"left",originY:"top",selectable:true,evented:true,name:"gradient"});
-      obj.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:width,y2:0},colorStops:[{offset:0,color:"rgba(0,0,0,0)"},{offset:0.5,color:"rgba(0,0,0,0)"},{offset:1,color:"rgba(0,0,0,0.85)"}]}));
+      const gH=Math.round(height*0.55);
+      obj=new Rect({left:0,top:0,width:width,height:gH,selectable:true,evented:true,name:"gradient"});
+      obj.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:0,y2:gH},colorStops:[{offset:0,color:"rgba(0,0,0,0.85)"},{offset:1,color:"rgba(0,0,0,0)"}]}));
     }
     else if(type==="grad-full") {
-      fc.getObjects().filter(o=>o.name==="gradient").forEach(o=>fc.remove(o));
-      obj=new Rect({width,height,left:0,top:0,originX:"left",originY:"top",selectable:true,evented:true,name:"gradient"});
-      obj.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:0,y2:height},colorStops:[{offset:0,color:"rgba(0,0,0,0)"},{offset:0.4,color:"rgba(0,0,0,0.1)"},{offset:1,color:"rgba(0,0,0,0.7)"}]}));
+      obj=new Rect({left:0,top:0,width:width,height:height,selectable:true,evented:true,name:"gradient"});
+      obj.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:0,y2:height},colorStops:[{offset:0,color:"rgba(0,0,0,0)"},{offset:0.4,color:"rgba(0,0,0,0)"},{offset:1,color:"rgba(0,0,0,0.7)"}]}));
     }
     if(obj){fc.add(obj);fc.setActiveObject(obj);fc.renderAll();}
   };
@@ -449,19 +357,13 @@ export default function UnifiedCanvasEditor({
 
   const setBgImage = (url) => {
     const fc=fcRef.current; if(!fc) return;
+    // 기존 배경 제거
     fc.getObjects().filter(o=>o.name==="bg").forEach(o=>fc.remove(o));
     FabricImage.fromURL(url,{crossOrigin:"anonymous"}).then(img=>{
       if(!img) return;
       const s=Math.max(width/img.width,height/img.height);
       img.set({scaleX:s,scaleY:s,left:width/2,top:height/2,originX:"center",originY:"center",selectable:false,evented:false,name:"bg"});
-      fc.insertAt(0,img);
-      // 그라데이션 없으면 자동 추가
-      if(!fc.getObjects().some(o=>o.name==="gradient")){
-        const ov=new Rect({width,height,left:0,top:0,originX:"left",originY:"top",selectable:true,evented:true,name:"gradient"});
-        ov.set("fill",new Gradient({type:"linear",coords:{x1:0,y1:0,x2:0,y2:height},colorStops:[{offset:0,color:"rgba(0,0,0,0.3)"},{offset:0.35,color:"rgba(0,0,0,0.05)"},{offset:1,color:"rgba(0,0,0,0.65)"}]}));
-        fc.insertAt(1,ov);
-      }
-      fc.renderAll();
+      fc.insertAt(0,img); fc.renderAll();
     }).catch(()=>{});
   };
 
@@ -595,21 +497,41 @@ export default function UnifiedCanvasEditor({
     {id:"layers",  icon:<SvgIcon d="M3 12h18M3 6h18M3 18h18"/>, label:"레이어"},
   ];
 
+  // 캡션 state
+  const [captionText, setCaptionText] = useState("");
+  const [captionLoading, setCaptionLoading] = useState(false);
+  const [captionTone, setCaptionTone] = useState("friendly"); // friendly, professional, casual, witty
+  const [captionEmoji, setCaptionEmoji] = useState(false);
+  const captionGenerated = useRef(false);
+
+  // 슬라이드 데이터 기반 캡션 1차 자동 생성
+  useEffect(()=>{
+    if(captionGenerated.current || !initSlides || initSlides.length===0) return;
+    const slideTexts = initSlides.map((s,i)=>`[${i+1}] ${s.title||""} ${s.body||""}`).filter(s=>s.trim().length>4).join("\n");
+    if(!slideTexts.trim()) return;
+    captionGenerated.current = true;
+    setCaptionLoading(true);
+    callAI("claude-haiku-4-5",[{role:"user",content:`다음 카드뉴스 슬라이드 내용을 기반으로 인스타그램 캡션을 작성해줘.\n말투: 친근하게\n이모티콘: 사용하지 않기\n줄바꿈 적절히, 해시태그 5-8개.\n\n${slideTexts}\n\n캡션만 출력`}],500)
+      .then(txt=>{if(txt)setCaptionText(txt.trim());})
+      .catch(()=>{})
+      .finally(()=>setCaptionLoading(false));
+  },[initSlides]);
+
   /* ═══ RENDER ═══ */
   return (
-    <div style={{width:"100%",height:"100vh",display:"flex",flexDirection:"row",overflow:"hidden",background:"#fff"}}>
-      <div style={{width:"100%",height:"100%",display:"flex",flexDirection:"row",background:"#fff",position:"relative"}}>
+    <div style={inline?(isFullscreen?{position:"fixed",inset:0,zIndex:200,display:"flex",flexDirection:"row",overflow:"hidden",background:"#fff"}:{width:"100%",flex:1,display:"flex",overflow:"hidden"}):{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",padding:12}}>
+      <div style={inline?{width:"100%",height:"100%",display:"flex",flexDirection:"row",background:"#fff",position:"relative"}:{width:"100%",maxWidth:1600,height:"95vh",background:"#fff",borderRadius:16,display:"flex",flexDirection:"row",overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,0.25)",position:"relative"}}>
 
         {/* ── 왼쪽 아이콘 바 ── */}
-        <div style={{width:56,background:"#f8f8fc",borderRight:"1px solid #e5e5ea",display:"flex",flexDirection:"column",alignItems:"center",paddingTop:6,paddingBottom:6,flexShrink:0,overflowY:"auto",overflowX:"hidden"}}>
+        <div style={{width:60,background:"#fff",borderRight:"1px solid #eee",display:"flex",flexDirection:"column",alignItems:"center",paddingTop:4,paddingBottom:4,flexShrink:0,overflowY:"auto",overflowX:"hidden"}}>
           {leftTools.map(t=>(
             <button key={t.id} onClick={()=>setPanel(panel===t.id&&panelOpen?null:t.id)||setPanelOpen(true)}
-              style={{width:48,height:48,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,border:"none",borderRadius:8,cursor:"pointer",marginBottom:2,flexShrink:0,
-                background:panel===t.id&&panelOpen?"rgba(124,106,255,0.15)":"transparent",
+              style={{width:52,height:52,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,border:"none",borderRadius:6,cursor:"pointer",marginBottom:1,flexShrink:0,
+                background:panel===t.id&&panelOpen?"rgba(124,106,255,0.12)":"transparent",
                 borderLeft:panel===t.id&&panelOpen?"3px solid #7c6aff":"3px solid transparent",
-                color:panel===t.id&&panelOpen?"#7c6aff":"#666",transition:"all 0.12s"}}>
-              <span style={{fontSize:17,lineHeight:1}}>{t.icon}</span>
-              <span style={{fontSize:9,fontWeight:700}}>{t.label}</span>
+                color:panel===t.id&&panelOpen?"#7c6aff":"#888",transition:"all 0.12s"}}>
+              <span style={{fontSize:18,lineHeight:1}}>{t.icon}</span>
+              <span style={{fontSize:9,fontWeight:600}}>{t.label}</span>
             </button>
           ))}
           <div style={{flex:1,minHeight:4}}/>
@@ -643,228 +565,87 @@ export default function UnifiedCanvasEditor({
                 </div>
               </div>
 
-              {/* 배경 이미지 설정 */}
-              {(()=>{
-                const fc=fcRef.current;
-                const bgObj=fc?.getObjects().find(o=>o.name==="bg");
-                if(!bgObj) return null;
-                return (
-                  <div style={{padding:"12px 16px",borderBottom:"1px solid #f0f0f0"}}>
-                    <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>배경 이미지</div>
-                    <div style={{fontSize:11,color:"#888",marginBottom:4}}>투명도: {Math.round((bgObj.opacity??1)*100)}%</div>
-                    <input type="range" min={10} max={100} value={Math.round((bgObj.opacity??1)*100)}
-                      onChange={e=>{bgObj.set("opacity",+e.target.value/100);fc.renderAll();setLayerTick(t=>t+1);}}
-                      style={{width:"100%",accentColor:"#7c6aff",marginBottom:8}}/>
-                    <div style={{display:"flex",gap:6}}>
-                      <button onClick={()=>{
-                        const inp=document.createElement("input");inp.type="file";inp.accept="image/*";
-                        inp.onchange=ev=>{const f=ev.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=e2=>setBgImage(e2.target.result);r.readAsDataURL(f);};
-                        inp.click();
-                      }} style={{flex:1,padding:"7px",borderRadius:8,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600,color:"#555"}}>
-                        사진 교체
-                      </button>
-                      <button onClick={()=>{
-                        fc.getObjects().filter(o=>o.name==="bg").forEach(o=>fc.remove(o));
-                        fc.renderAll();setLayerTick(t=>t+1);
-                      }} style={{padding:"7px 10px",borderRadius:8,border:"1px solid #fca5a5",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600,color:"#ef4444"}}>
-                        제거
-                      </button>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* 텍스트 선택 시 → 글씨 탭 안내 */}
-              {sel&&(sel.type==="textbox"||sel.type==="text")&&(
-                <div style={{padding:"8px 16px",borderBottom:"1px solid #f0f0f0"}}>
-                  <button onClick={()=>{setPanel("text");setPanelOpen(true);}}
-                    style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid #7c6aff",background:"rgba(124,106,255,0.06)",color:"#7c6aff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
-                    글씨 탭에서 편집 →
-                  </button>
-                </div>
-              )}
-
-              {/* 디자인 스타일 (폰트+배치만 변경, 색감 유지) */}
-              <div style={{padding:"10px 16px",borderBottom:"1px solid #f0f0f0"}}>
-                <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>디자인 스타일</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:5}}>
-                  {[
-                    {label:"모던 좌측",font:"Pretendard",size:0.05,align:"left",desc:"기본 · 좌측 정렬"},
-                    {label:"모던 중앙",font:"Pretendard",size:0.05,align:"center",desc:"기본 · 중앙 정렬"},
-                    {label:"고딕 임팩트",font:"Black Han Sans",size:0.06,align:"left",desc:"굵은 고딕 · 좌측"},
-                    {label:"명조 감성",font:"Nanum Myeongjo",size:0.045,align:"center",desc:"명조체 · 중앙 정렬"},
-                    {label:"둥근 캐주얼",font:"Jua",size:0.055,align:"left",desc:"Jua 폰트 · 좌측"},
-                    {label:"깔끔 산스",font:"Noto Sans KR",size:0.046,align:"left",desc:"Noto Sans · 좌측"},
-                    {label:"IBM 비즈니스",font:"IBM Plex Sans KR",size:0.044,align:"left",desc:"전문적 · 좌측"},
-                    {label:"마켓 볼드",font:"Gmarket Sans",size:0.052,align:"center",desc:"Gmarket · 중앙"},
-                  ].map(preset=>(
-                    <button key={preset.label} onClick={()=>{
-                      const fc=fcRef.current;if(!fc)return;
-                      loadFont(preset.font);
-                      const mx=preset.align==="left"?width*0.07:preset.align==="right"?width*0.93:width/2;
-                      const ox=preset.align==="left"?"left":preset.align==="right"?"right":"center";
-                      const texts=fc.getObjects().filter(o=>o.type==="textbox"&&o.name!=="bg");
-                      let totalH=0;texts.forEach(o=>totalH+=o.calcTextHeight()+16);
-                      let y=height*0.9-totalH;
-                      texts.forEach(o=>{
-                        o.set({fontFamily:preset.font,textAlign:preset.align,left:mx,originX:ox,top:y,originY:"top"});
-                        if(o.name==="title") o.set({fontSize:Math.round(width*preset.size)});
-                        y+=o.calcTextHeight()+16;
-                        o.setCoords();
-                      });
-                      fc.renderAll();setLayerTick(t=>t+1);
-                    }}
-                      style={{padding:"8px 6px",borderRadius:8,border:"1px solid #eee",cursor:"pointer",textAlign:"left",background:"#fff"}}>
-                      <div style={{fontSize:12,fontWeight:800,fontFamily:preset.font,marginBottom:2}}>{preset.label}</div>
-                      <div style={{fontSize:9,color:"#999"}}>{preset.desc}</div>
-                    </button>
-                  ))}
+              {/* 배경 이미지 투명도 */}
+              <div style={{padding:"12px 16px",borderBottom:"1px solid #f0f0f0"}}>
+                <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>배경 이미지 투명도 ({bgOpacity}%)</div>
+                <input type="range" min={10} max={100} value={bgOpacity} onChange={e=>{
+                  const v=+e.target.value; setBgOpacity(v);
+                  const fc=fcRef.current; if(!fc) return;
+                  const bg=fc.getObjects().find(o=>o.name==="bg");
+                  if(bg){bg.set("opacity",v/100);fc.renderAll();}
+                }} style={{width:"100%",accentColor:"#7c6aff"}}/>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#888",marginTop:2}}>
+                  <span>어둡게</span><span>밝게</span>
                 </div>
               </div>
 
-              {/* 전체 글씨색 일괄 변경 */}
-              <div style={{padding:"10px 16px",borderBottom:"1px solid #f0f0f0"}}>
-                <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>글씨색 일괄 변경</div>
-                <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:6}}>
-                  {["#ffffff","#000000","#e4ff1a","#ff6b6b","#4ecdc4","#ffd93d","#6c5ce7","#00b894","#fd79a8"].map(c=>(
-                    <button key={c} onClick={()=>{
-                      const fc=fcRef.current;if(!fc)return;
-                      fc.getObjects().filter(o=>o.type==="textbox"&&o.name!=="bg").forEach(o=>{o.set("fill",c);});
-                      fc.renderAll();
-                    }} style={{width:22,height:22,borderRadius:4,background:c,border:"2px solid rgba(0,0,0,0.15)",cursor:"pointer",padding:0}}/>
-                  ))}
-                  <input type="color" onChange={e=>{
-                    const fc=fcRef.current;if(!fc)return;
-                    fc.getObjects().filter(o=>o.type==="textbox"&&o.name!=="bg").forEach(o=>{o.set("fill",e.target.value);});
-                    fc.renderAll();
-                  }} style={{width:22,height:22,padding:0,border:"2px solid rgba(0,0,0,0.15)",borderRadius:4,cursor:"pointer"}}/>
-                </div>
-                <div style={{fontSize:11,color:"#888",marginBottom:4}}>포인트색 (강조 단어)</div>
-                <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>
-                  {["#e4ff1a","#ff6b6b","#4ecdc4","#ffd93d","#ff9ff3","#48dbfb","#1dd1a1","#ff9f43"].map(c=>(
-                    <button key={c} onClick={()=>{
-                      const fc=fcRef.current;if(!fc)return;
-                      fc.getObjects().filter(o=>o.type==="textbox").forEach(o=>{
-                        const styles=o.styles||{};
-                        Object.values(styles).forEach(line=>{
-                          Object.values(line).forEach(ch=>{
-                            if(ch.fill && ch.fill!==o.fill) ch.fill=c;
-                          });
-                        });
-                      });
-                      fc.renderAll();setLayerTick(t=>t+1);
-                    }} style={{width:22,height:22,borderRadius:4,background:c,border:"2px solid rgba(0,0,0,0.15)",cursor:"pointer",padding:0}}/>
-                  ))}
-                  <input type="color" onChange={e=>{
-                    const fc=fcRef.current;if(!fc)return;
-                    fc.getObjects().filter(o=>o.type==="textbox").forEach(o=>{
-                      const styles=o.styles||{};
-                      Object.values(styles).forEach(line=>{
-                        Object.values(line).forEach(ch=>{
-                          if(ch.fill && ch.fill!==o.fill) ch.fill=e.target.value;
-                        });
-                      });
-                    });
-                    fc.renderAll();setLayerTick(t=>t+1);
-                  }} style={{width:22,height:22,padding:0,border:"2px solid rgba(0,0,0,0.15)",borderRadius:4,cursor:"pointer"}}/>
+              {/* 오버레이 투명도 */}
+              <div style={{padding:"12px 16px",borderBottom:"1px solid #f0f0f0"}}>
+                <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>오버레이 (가독성) ({gradOpacity}%)</div>
+                <input type="range" min={0} max={100} value={gradOpacity} onChange={e=>{
+                  const v=+e.target.value; setGradOpacity(v);
+                  const fc=fcRef.current; if(!fc) return;
+                  const grad=fc.getObjects().find(o=>o.name==="gradient");
+                  if(grad){grad.set("opacity",v/100);fc.renderAll();}
+                }} style={{width:"100%",accentColor:"#7c6aff"}}/>
+                <div style={{display:"flex",justifyContent:"space-between",fontSize:10,color:"#888",marginTop:2}}>
+                  <span>없음</span><span>진하게</span>
                 </div>
               </div>
 
-              {/* 텍스트 배치 (현재 슬라이드 + 전체 슬라이드) */}
-              <div style={{padding:"10px 16px",borderBottom:"1px solid #f0f0f0"}}>
-                <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>텍스트 배치 (현재 슬라이드)</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4,marginBottom:10}}>
-                  {[
-                    {label:"좌상",align:"left",vAlign:"top"},
-                    {label:"중앙상",align:"center",vAlign:"top"},
-                    {label:"우상",align:"right",vAlign:"top"},
-                    {label:"좌하",align:"left",vAlign:"bottom"},
-                    {label:"중앙",align:"center",vAlign:"center"},
-                    {label:"중하",align:"center",vAlign:"bottom"},
-                  ].map(a=>(
-                    <button key={a.label} onClick={()=>{
-                      const fc=fcRef.current;if(!fc)return;
-                      const mx=a.align==="left"?width*0.07:a.align==="right"?width*0.93:width/2;
-                      const ox=a.align==="left"?"left":a.align==="right"?"right":"center";
-                      const texts=fc.getObjects().filter(o=>o.type==="textbox"&&o.name!=="bg");
-                      let totalH=0;texts.forEach(o=>totalH+=o.calcTextHeight()+16);
-                      let startY=a.vAlign==="top"?height*0.1:a.vAlign==="bottom"?height*0.9-totalH:(height-totalH)/2;
-                      texts.forEach(o=>{o.set({left:mx,originX:ox,top:startY,originY:"top",textAlign:a.align});startY+=o.calcTextHeight()+16;o.setCoords();});
-                      fc.renderAll();
-                    }} style={{padding:"6px",borderRadius:6,border:"1px solid #e5e7eb",background:"#fff",cursor:"pointer",fontSize:10,fontWeight:600,color:"#555"}}>{a.label}</button>
-                  ))}
-                </div>
-                <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>전체 슬라이드 일괄 배치</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:4}}>
-                  {[
-                    {label:"좌측 정렬",align:"left"},
-                    {label:"중앙 정렬",align:"center"},
-                    {label:"우측 정렬",align:"right"},
-                  ].map(a=>(
-                    <button key={a.label} onClick={async()=>{
-                      save();
-                      const fc=fcRef.current;if(!fc)return;
-                      const mx=a.align==="left"?width*0.07:a.align==="right"?width*0.93:width/2;
-                      const ox=a.align==="left"?"left":a.align==="right"?"right":"center";
-                      // 순차적으로 모든 슬라이드 처리
-                      for(let si=0;si<total;si++){
-                        const sData=slidesRef.current[si];
-                        if(!sData) {
-                          // 아직 빌드 안 된 슬라이드 → 빌드 후 저장
-                          if(initSlides[si]) { buildSlide(fc,initSlides[si],si); slidesRef.current[si]=fc.toJSON(); }
-                          else continue;
-                        }
-                        await fc.loadFromJSON(slidesRef.current[si]);
-                        fc.renderAll();
-                        const texts=fc.getObjects().filter(o=>o.type==="textbox"&&o.name!=="bg");
-                        let totalH=0;texts.forEach(o=>totalH+=o.calcTextHeight()+16);
-                        let startY=height*0.9-totalH;
-                        texts.forEach(o=>{o.set({left:mx,originX:ox,textAlign:a.align,top:startY,originY:"top"});startY+=o.calcTextHeight()+16;o.setCoords();});
-                        fc.renderAll();
-                        slidesRef.current[si]=fc.toJSON();
-                      }
-                      // 현재 슬라이드 복원
-                      if(slidesRef.current[idx]) await fc.loadFromJSON(slidesRef.current[idx]);
-                      fc.renderAll();
-                    }} style={{padding:"7px 4px",borderRadius:6,border:"1px solid #7c6aff",background:"rgba(124,106,255,0.06)",cursor:"pointer",fontSize:10,fontWeight:700,color:"#7c6aff"}}>{a.label}</button>
-                  ))}
-                </div>
-              </div>
-
-              {/* 개별 정렬 */}
-              {sel&&sel.name!=="bg"&&(
-                <div style={{padding:"10px 16px",borderBottom:"1px solid #f0f0f0"}}>
-                  <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>선택 요소 정렬</div>
-                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:3}}>
-                    {[
-                      {label:"좌",fn:()=>{const b=sel.getBoundingRect();sel.set("left",sel.left+(width*0.07-b.left));}},
-                      {label:"중앙",fn:()=>{const b=sel.getBoundingRect();sel.set("left",sel.left+(width/2-b.left-b.width/2));}},
-                      {label:"우",fn:()=>{const b=sel.getBoundingRect();sel.set("left",sel.left+(width*0.93-b.left-b.width));}},
-                      {label:"상",fn:()=>{const b=sel.getBoundingRect();sel.set("top",sel.top+(height*0.05-b.top));}},
-                      {label:"정중앙",fn:()=>{const b=sel.getBoundingRect();sel.set("left",sel.left+(width/2-b.left-b.width/2));sel.set("top",sel.top+(height/2-b.top-b.height/2));}},
-                      {label:"하",fn:()=>{const b=sel.getBoundingRect();sel.set("top",sel.top+(height*0.95-b.top-b.height));}},
-                    ].map(a=>(
-                      <button key={a.label} onClick={()=>{const fc=fcRef.current;if(!fc||!sel)return;a.fn();sel.setCoords();fc.renderAll();}}
-                        style={{padding:"6px",borderRadius:6,border:"1px solid #e5e7eb",background:"#fff",cursor:"pointer",fontSize:10,fontWeight:600,color:"#555"}}>{a.label}</button>
+              {/* 텍스트 속성 */}
+              {sel&&(sel.type==="textbox"||sel.type==="text"||sel.isType?.("textbox"))&&(
+                <div style={{padding:"12px 16px",borderBottom:"1px solid #f0f0f0"}}>
+                  <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>텍스트</div>
+                  <select value={props.fontFamily} onChange={e=>{loadFont(e.target.value);set("fontFamily",e.target.value);}}
+                    style={{width:"100%",padding:"6px 8px",borderRadius:6,border:"1px solid #ddd",fontSize:12,marginBottom:8}}>
+                    {FONTS.map(f=><option key={f} value={f}>{f}</option>)}
+                  </select>
+                  <div style={{fontSize:11,color:"#888",marginBottom:2}}>크기: {props.fontSize}px</div>
+                  <input type="range" min={10} max={120} value={props.fontSize} onChange={e=>set("fontSize",+e.target.value)}
+                    style={{width:"100%",accentColor:"#7c6aff",marginBottom:8}}/>
+                  <div style={{fontSize:11,color:"#888",marginBottom:2}}>색상</div>
+                  <div style={{display:"flex",gap:4,alignItems:"center",flexWrap:"wrap",marginBottom:8}}>
+                    <input type="color" value={props.fill} onChange={e=>set("fill",e.target.value)}
+                      style={{width:28,height:28,padding:0,border:"2px solid rgba(0,0,0,0.1)",borderRadius:6,cursor:"pointer"}}/>
+                    {["#ffffff","#000000","#7c6aff","#ef4444","#f59e0b","#10b981","#ec4899","#6366f1"].map(c=>(
+                      <button key={c} onClick={()=>set("fill",c)} style={{width:20,height:20,borderRadius:4,background:c,border:"1.5px solid rgba(0,0,0,0.15)",cursor:"pointer",padding:0}}/>
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* 선택 요소 투명도 (이미지/도형) */}
-              {sel&&sel.name!=="bg"&&sel.type!=="textbox"&&(
-                <div style={{padding:"8px 16px",borderBottom:"1px solid #f0f0f0"}}>
-                  <div style={{fontSize:11,color:"#888",marginBottom:4}}>투명도: {Math.round((sel.opacity??1)*100)}%</div>
-                  <input type="range" min={5} max={100} value={Math.round((sel.opacity??1)*100)}
-                    onChange={e=>{sel.set("opacity",+e.target.value/100);fcRef.current?.renderAll();setLayerTick(t=>t+1);}}
-                    style={{width:"100%",accentColor:"#7c6aff"}}/>
+                  <div style={{display:"flex",gap:3,marginBottom:8}}>
+                    <button onClick={()=>set("fontWeight",props.fontWeight==="bold"?"normal":"bold")}
+                      style={{...B,fontWeight:900,background:props.fontWeight==="bold"?"#7c6aff15":"transparent",borderColor:props.fontWeight==="bold"?"#7c6aff":"#ddd"}}>B</button>
+                    <button onClick={()=>set("fontStyle",props.fontStyle==="italic"?"normal":"italic")}
+                      style={{...B,fontStyle:"italic",background:props.fontStyle==="italic"?"#7c6aff15":"transparent",borderColor:props.fontStyle==="italic"?"#7c6aff":"#ddd"}}>I</button>
+                    {["left","center","right"].map(a=>(
+                      <button key={a} onClick={()=>set("textAlign",a)}
+                        style={{...B,background:props.textAlign===a?"#7c6aff15":"transparent",borderColor:props.textAlign===a?"#7c6aff":"#ddd"}}>
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          {a==="left"&&<><line x1="1" y1="3" x2="13" y2="3"/><line x1="1" y1="7" x2="9" y2="7"/><line x1="1" y1="11" x2="11" y2="11"/></>}
+                          {a==="center"&&<><line x1="1" y1="3" x2="13" y2="3"/><line x1="3" y1="7" x2="11" y2="7"/><line x1="2" y1="11" x2="12" y2="11"/></>}
+                          {a==="right"&&<><line x1="1" y1="3" x2="13" y2="3"/><line x1="5" y1="7" x2="13" y2="7"/><line x1="3" y1="11" x2="13" y2="11"/></>}
+                        </svg>
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{fontSize:11,color:"#888",marginBottom:2}}>투명도: {Math.round(props.opacity)}%</div>
+                  <input type="range" min={0} max={100} value={props.opacity} onChange={e=>set("opacity",+e.target.value/100)}
+                    style={{width:"100%",accentColor:"#7c6aff",marginBottom:8}}/>
+                  <div style={{fontSize:11,color:"#888",marginBottom:2}}>외곽선</div>
+                  <div style={{display:"flex",gap:6,alignItems:"center"}}>
+                    <input type="color" value={props.stroke} onChange={e=>set("stroke",e.target.value)}
+                      style={{width:24,height:24,padding:0,border:"1px solid #ddd",borderRadius:4,cursor:"pointer"}}/>
+                    <input type="range" min={0} max={10} value={props.strokeWidth} onChange={e=>set("strokeWidth",+e.target.value)}
+                      style={{flex:1,accentColor:"#7c6aff"}}/>
+                    <span style={{fontSize:11,color:"#888"}}>{props.strokeWidth}px</span>
+                  </div>
                 </div>
               )}
 
               {/* 선택 삭제 */}
               {sel&&sel.name!=="bg"&&(
-                <div style={{padding:"8px 16px"}}>
-                  <button onClick={del} style={{width:"100%",padding:"8px",border:"none",borderRadius:8,background:"#ef4444",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>선택 삭제</button>
+                <div style={{padding:"12px 16px"}}>
+                  <button onClick={del} style={{width:"100%",padding:"10px",border:"none",borderRadius:8,background:"#ef4444",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>선택 삭제</button>
                 </div>
               )}
             </>}
@@ -908,33 +689,8 @@ export default function UnifiedCanvasEditor({
                         <span style={{fontSize:10,color:"#bbb",cursor:"grab"}}>☰</span>
                         <span style={{fontSize:14,width:18,textAlign:"center"}}>{getIcon(obj)}</span>
                         <span style={{flex:1,fontSize:12,fontWeight:isActive?700:400,color:isActive?"#7c6aff":"#333",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{getLabel(obj)}</span>
-                        {isBg&&(
-                          <button onClick={e=>{
-                            e.stopPropagation();
-                            const inp=document.createElement("input");inp.type="file";inp.accept="image/*";
-                            inp.onchange=ev=>{const f=ev.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=e2=>setBgImage(e2.target.result);r.readAsDataURL(f);};
-                            inp.click();
-                          }} style={{padding:"3px 8px",borderRadius:4,border:"1px solid #7c6aff",background:"rgba(124,106,255,0.08)",cursor:"pointer",fontSize:9,fontWeight:700,color:"#7c6aff"}}>교체</button>
-                        )}
                         {!isBg&&(
                           <div style={{display:"flex",gap:2}}>
-                            {obj.type==="image"&&(
-                              <button onClick={e=>{
-                                e.stopPropagation();
-                                const inp=document.createElement("input");inp.type="file";inp.accept="image/*";
-                                inp.onchange=ev=>{const f=ev.target.files?.[0];if(!f)return;const rd=new FileReader();
-                                  rd.onload=e2=>{
-                                    FabricImage.fromURL(e2.target.result,{crossOrigin:"anonymous"}).then(newImg=>{
-                                      if(!newImg)return;
-                                      newImg.set({scaleX:obj.scaleX,scaleY:obj.scaleY,left:obj.left,top:obj.top,originX:obj.originX,originY:obj.originY,selectable:obj.selectable,evented:obj.evented,name:obj.name,opacity:obj.opacity});
-                                      const fc2=fcRef.current;if(!fc2)return;
-                                      const idx2=fc2.getObjects().indexOf(obj);
-                                      fc2.remove(obj);fc2.insertAt(idx2,newImg);fc2.renderAll();setLayerTick(t=>t+1);
-                                    });
-                                  };rd.readAsDataURL(f);};
-                                inp.click();
-                              }} style={{width:20,height:20,borderRadius:3,border:"1px solid #7c6aff",background:"rgba(124,106,255,0.08)",cursor:"pointer",fontSize:8,display:"flex",alignItems:"center",justifyContent:"center",color:"#7c6aff"}}>↻</button>
-                            )}
                             <button onClick={e=>{e.stopPropagation();fc.bringObjectForward(obj);fc.renderAll();setLayerTick(t=>t+1);}}
                               style={{width:20,height:20,borderRadius:3,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:9,display:"flex",alignItems:"center",justifyContent:"center"}}>▲</button>
                             <button onClick={e=>{e.stopPropagation();fc.sendObjectBackwards(obj);fc.renderAll();setLayerTick(t=>t+1);}}
@@ -965,6 +721,94 @@ export default function UnifiedCanvasEditor({
                     ))}
                   </div>
                 </>)}
+              </div>
+            )}
+
+            {/* ─── 글씨(레이아웃) 패널 ─── */}
+            {panel==="text"&&(
+              <div style={{padding:"12px 16px"}}>
+                <div style={{fontSize:12,fontWeight:700,marginBottom:10}}>레이아웃 템플릿</div>
+                <div style={{fontSize:11,color:"#888",marginBottom:10}}>클릭하면 현재 슬라이드에 적용됩니다</div>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+                  {[
+                    {label:"중앙 정렬", desc:"제목+본문 중앙", fn:(fc,texts)=>{
+                      const w=width*0.78, lx=(width-w)/2;
+                      const totalH = texts.length * height*0.12;
+                      let y = (height-totalH)/2;
+                      texts.forEach(t=>{t.set({left:lx,top:y+height*0.06,originX:"left",textAlign:"center",width:w});y+=height*0.12;});
+                    }},
+                    {label:"하단 집중", desc:"텍스트 아래 배치", fn:(fc,texts)=>{
+                      const w=width*0.78, lx=(width-w)/2;
+                      let y = height - texts.length*height*0.12 - height*0.12;
+                      texts.forEach(t=>{t.set({left:lx,top:y+height*0.06,originX:"left",textAlign:"center",width:w});y+=height*0.12;});
+                    }},
+                    {label:"상단 집중", desc:"텍스트 위 배치", fn:(fc,texts)=>{
+                      const w=width*0.78, lx=(width-w)/2;
+                      let y = height*0.06;
+                      texts.forEach(t=>{t.set({left:lx,top:y+height*0.06,originX:"left",textAlign:"center",width:w});y+=height*0.12;});
+                    }},
+                    {label:"좌측 정렬", desc:"왼쪽 정렬", fn:(fc,texts)=>{
+                      const totalH = texts.length * height*0.12;
+                      let y = (height-totalH)/2;
+                      texts.forEach(t=>{t.set({left:width*0.08,top:y+height*0.06,originX:"left",textAlign:"left",width:width*0.6});y+=height*0.12;});
+                    }},
+                    {label:"좌하단", desc:"왼쪽 아래 배치", fn:(fc,texts)=>{
+                      let y = height - texts.length*height*0.12 - height*0.12;
+                      texts.forEach(t=>{t.set({left:width*0.08,top:y+height*0.06,originX:"left",textAlign:"left",width:width*0.6});y+=height*0.12;});
+                    }},
+                    {label:"우측 정렬", desc:"오른쪽 정렬", fn:(fc,texts)=>{
+                      const w=width*0.6;
+                      const totalH = texts.length * height*0.12;
+                      let y = (height-totalH)/2;
+                      texts.forEach(t=>{t.set({left:width-w-width*0.08,top:y+height*0.06,originX:"left",textAlign:"right",width:w});y+=height*0.12;});
+                    }},
+                    {label:"제목 크게", desc:"제목 강조형", fn:(fc,texts)=>{
+                      const titleObj = texts.find(t=>t.name==="title");
+                      const others = texts.filter(t=>t.name!=="title");
+                      const w1=width*0.85, w2=width*0.78;
+                      if(titleObj){
+                        titleObj.set({left:(width-w1)/2,top:height*0.38,originX:"left",textAlign:"center",width:w1,fontSize:56,fontWeight:"bold"});
+                      }
+                      let y = height*0.58;
+                      others.forEach(t=>{t.set({left:(width-w2)/2,top:y,originX:"left",textAlign:"center",width:w2,fontSize:18});y+=height*0.10;});
+                    }},
+                    {label:"카드 스타일", desc:"여백 넉넉, 깔끔", fn:(fc,texts)=>{
+                      const w=width*0.70, lx=(width-w)/2;
+                      const totalH = texts.length * height*0.14;
+                      let y = (height-totalH)/2;
+                      texts.forEach(t=>{t.set({left:lx,top:y+height*0.07,originX:"left",textAlign:"center",width:w});y+=height*0.14;});
+                    }},
+                  ].map(tmpl=>(
+                    <button key={tmpl.label} onClick={()=>{
+                      const fc=fcRef.current; if(!fc) return;
+                      const texts=fc.getObjects().filter(o=>o.type==="textbox"&&o.name!=="bg");
+                      if(texts.length===0) return;
+                      tmpl.fn(fc,texts);
+                      fc.renderAll();
+                    }} style={{padding:"14px 8px",borderRadius:10,border:"1px solid #eee",background:"#fff",cursor:"pointer",textAlign:"center"}}>
+                      <div style={{fontSize:12,fontWeight:700,color:"#333",marginBottom:2}}>{tmpl.label}</div>
+                      <div style={{fontSize:10,color:"#999"}}>{tmpl.desc}</div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* 텍스트 추가 */}
+                <div style={{borderTop:"1px solid #eee",paddingTop:14,marginTop:14}}>
+                  <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>텍스트 추가</div>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6}}>
+                    {[
+                      {label:"제목",opts:{fontSize:48,fontWeight:"bold"}},
+                      {label:"소제목",opts:{fontSize:28,fontWeight:"700"}},
+                      {label:"본문",opts:{fontSize:18}},
+                      {label:"캡션",opts:{fontSize:14,opacity:0.7}},
+                    ].map(t=>(
+                      <button key={t.label} onClick={()=>addText(t.label,t.opts)}
+                        style={{padding:"10px 8px",borderRadius:8,border:"1px solid #eee",background:"#fff",cursor:"pointer",fontSize:11,fontWeight:600}}>
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -1005,22 +849,56 @@ export default function UnifiedCanvasEditor({
                 {imgLoading&&<div style={{textAlign:"center",padding:20,color:"#888",fontSize:12}}>검색 중...</div>}
                 <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6}}>
                   {imgResults.map((img,i)=>(
-                    <div key={i} style={{borderRadius:8,overflow:"hidden",border:"1px solid #eee",position:"relative"}}>
+                    <div key={i} style={{borderRadius:8,overflow:"hidden",cursor:"pointer",border:"1px solid #eee",position:"relative"}}
+                      onClick={()=>addImageUrl(img.full)}>
                       <img src={img.thumb} alt="" style={{width:"100%",height:80,objectFit:"cover",display:"block"}}/>
-                      <div style={{position:"absolute",bottom:0,left:0,right:0,display:"flex",gap:0}}>
-                        <button onClick={()=>setBgImage(img.full)}
-                          style={{flex:1,padding:"4px",background:"rgba(124,106,255,0.85)",color:"#fff",border:"none",fontSize:9,fontWeight:700,cursor:"pointer"}}>배경</button>
-                        <button onClick={()=>addImageUrl(img.full)}
-                          style={{flex:1,padding:"4px",background:"rgba(0,0,0,0.6)",color:"#fff",border:"none",fontSize:9,fontWeight:700,cursor:"pointer"}}>삽입</button>
-                      </div>
+                      <div style={{position:"absolute",bottom:0,left:0,right:0,background:"rgba(0,0,0,0.5)",color:"#fff",fontSize:9,padding:"2px 4px"}}>{img.source}</div>
                     </div>
                   ))}
                 </div>
                 {imgResults.length===0&&!imgLoading&&<div style={{textAlign:"center",padding:20,color:"#ccc",fontSize:12}}>키워드로 검색하세요</div>}
+
+                {/* 자료실 이미지 + 검색 */}
+                <div style={{borderTop:"1px solid #eee",marginTop:12,paddingTop:12}}>
+                  <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>커뮤니티 자료실</div>
+                  <div style={{display:"flex",gap:6,marginBottom:8}}>
+                    <input placeholder="자료실 검색..." style={{flex:1,padding:"7px 10px",borderRadius:8,border:"1px solid #ddd",fontSize:12,outline:"none"}}
+                      onKeyDown={async e=>{
+                        if(e.key!=="Enter") return;
+                        const kw=e.target.value.trim();
+                        setImgLoading(true);
+                        try{
+                          let q=supabase.from("posts").select("id,title,images").eq("subCat","archive").order("created_at",{ascending:false}).limit(20);
+                          if(kw) q=q.ilike("title",`%${kw}%`);
+                          const {data}=await q;
+                          const imgs=[];
+                          (data||[]).forEach(p=>{try{const arr=typeof p.images==="string"?JSON.parse(p.images):p.images;if(Array.isArray(arr)) arr.forEach(u=>{if(typeof u==="string"&&u.startsWith("http")) imgs.push({thumb:u,full:u,source:"자료실: "+(p.title||"").slice(0,15)});});}catch{}});
+                          setImgResults(prev=>[...imgs,...prev.filter(x=>!x.source?.startsWith("자료실"))]);
+                        }catch{}
+                        setImgLoading(false);
+                      }}/>
+                  </div>
+                  <button onClick={async()=>{
+                    setImgLoading(true);
+                    try{
+                      const {data}=await supabase.from("posts").select("id,title,images").eq("subCat","archive").order("created_at",{ascending:false}).limit(12);
+                      const imgs=[];
+                      (data||[]).forEach(p=>{
+                        try{const arr=typeof p.images==="string"?JSON.parse(p.images):p.images;
+                          if(Array.isArray(arr)) arr.forEach(u=>{if(typeof u==="string"&&u.startsWith("http")) imgs.push({thumb:u,full:u,source:"자료실: "+(p.title||"").slice(0,15)});});
+                        }catch{}
+                      });
+                      setImgResults(prev=>[...prev,...imgs]);
+                    }catch{}
+                    setImgLoading(false);
+                  }} style={{width:"100%",padding:"8px",borderRadius:8,border:"1px dashed #ccc",background:"transparent",cursor:"pointer",fontSize:12,color:"#666"}}>
+                    자료실 이미지 불러오기
+                  </button>
+                </div>
               </div>
             )}
 
-            {/* ─── 도형/폰트 패널 ─── */}
+            {/* ─── 요소 패널 ─── */}
             {panel==="shapes"&&(
               <div style={{padding:"12px 16px"}}>
                 <div style={{fontSize:12,fontWeight:700,marginBottom:10}}>도형 추가</div>
@@ -1032,7 +910,6 @@ export default function UnifiedCanvasEditor({
                     {type:"line",label:"선",icon:"—"},
                     {type:"rounded-rect",label:"둥근태그",icon:"⬭"},
                     {type:"badge",label:"뱃지",icon:"⬬"},
-                    {type:"filled-rect",label:"배경바",icon:"▬"},
                   ].map(s=>(
                     <button key={s.type} onClick={()=>addShape(s.type)}
                       style={{padding:"12px 6px",borderRadius:10,border:"1px solid #eee",background:"#fff",cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
@@ -1042,136 +919,39 @@ export default function UnifiedCanvasEditor({
                   ))}
                 </div>
 
+                {/* 그라데이션 오버레이 */}
                 <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>그라데이션 오버레이</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:6,marginBottom:16}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:6,marginBottom:14}}>
                   {[
-                    {type:"grad-bottom",label:"하단",grad:"linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.8))"},
-                    {type:"grad-top",label:"상단",grad:"linear-gradient(to top, transparent 30%, rgba(0,0,0,0.8))"},
-                    {type:"grad-left",label:"좌측",grad:"linear-gradient(to left, transparent 30%, rgba(0,0,0,0.8))"},
-                    {type:"grad-right",label:"우측",grad:"linear-gradient(to right, transparent 30%, rgba(0,0,0,0.8))"},
-                    {type:"grad-full",label:"전체",grad:"linear-gradient(to bottom, transparent 10%, rgba(0,0,0,0.15) 40%, rgba(0,0,0,0.7))"},
+                    {type:"grad-bottom",label:"하단 어둡게"},
+                    {type:"grad-top",label:"상단 어둡게"},
+                    {type:"grad-full",label:"전체 어둡게"},
                   ].map(g=>(
                     <button key={g.type} onClick={()=>addShape(g.type)}
-                      style={{padding:0,borderRadius:8,border:"1px solid #ddd",cursor:"pointer",overflow:"hidden",height:48,position:"relative"}}>
-                      <div style={{width:"100%",height:"100%",background:g.grad,display:"flex",alignItems:"flex-end",justifyContent:"center",paddingBottom:4}}>
-                        <span style={{fontSize:10,fontWeight:700,color:"#fff",textShadow:"0 1px 3px rgba(0,0,0,0.5)"}}>{g.label}</span>
-                      </div>
+                      style={{padding:"10px 8px",borderRadius:8,border:"1px solid #eee",background:"linear-gradient(180deg,transparent 30%,rgba(0,0,0,0.7))",cursor:"pointer",fontSize:11,fontWeight:600,color:"#fff"}}>
+                      {g.label}
                     </button>
                   ))}
                 </div>
 
-              </div>
-            )}
-
-            {/* ─── 글씨 패널 ─── */}
-            {panel==="text"&&(
-              <div style={{padding:"12px 16px"}}>
-                {/* 선택된 텍스트 편집 */}
-                {sel&&(sel.type==="textbox"||sel.type==="text")&&(<>
-                  <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>텍스트 편집</div>
-                  <select value={props.fontFamily} onChange={e=>{loadFont(e.target.value);set("fontFamily",e.target.value);}}
-                    style={{width:"100%",padding:"5px 8px",borderRadius:6,border:"1px solid #ddd",fontSize:11,marginBottom:6}}>
-                    {FONTS.map(f=><option key={f} value={f}>{f}</option>)}
-                  </select>
-                  <div style={{fontSize:10,color:"#888"}}>크기: {props.fontSize}px</div>
-                  <input type="range" min={10} max={120} value={props.fontSize} onChange={e=>set("fontSize",+e.target.value)}
-                    style={{width:"100%",accentColor:"#7c6aff",marginBottom:4}}/>
-                  <div style={{fontSize:10,color:"#888"}}>전체 색상</div>
-                  <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>
-                    {["#ffffff","#000000","#7c6aff","#ef4444","#f59e0b","#10b981"].map(c=>(
-                      <button key={c} onClick={()=>set("fill",c)} style={{width:18,height:18,borderRadius:3,background:c,border:"1.5px solid rgba(0,0,0,0.15)",cursor:"pointer",padding:0}}/>
-                    ))}
-                    <input type="color" value={props.fill} onChange={e=>set("fill",e.target.value)}
-                      style={{width:18,height:18,padding:0,border:"1px solid #ddd",borderRadius:3,cursor:"pointer"}}/>
+                {/* 선택된 요소 색상/투명도 */}
+                {sel&&sel.name!=="bg"&&sel.type!=="textbox"&&(
+                  <div style={{borderTop:"1px solid #eee",paddingTop:12}}>
+                    <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>선택된 요소</div>
+                    <div style={{fontSize:11,color:"#888",marginBottom:4}}>색상</div>
+                    <div style={{display:"flex",gap:4,alignItems:"center",marginBottom:10}}>
+                      <input type="color" value={typeof sel.fill==="string"?sel.fill:"#000000"} onChange={e=>{sel.set("fill",e.target.value);fcRef.current?.renderAll();syncSel(sel);}}
+                        style={{width:28,height:28,padding:0,border:"2px solid rgba(0,0,0,0.1)",borderRadius:6,cursor:"pointer"}}/>
+                      {["#000000","#ffffff","#7c6aff","#ef4444","#f59e0b","#10b981"].map(c=>(
+                        <button key={c} onClick={()=>{sel.set("fill",c);fcRef.current?.renderAll();syncSel(sel);}}
+                          style={{width:20,height:20,borderRadius:4,background:c,border:"1.5px solid rgba(0,0,0,0.15)",cursor:"pointer",padding:0}}/>
+                      ))}
+                    </div>
+                    <div style={{fontSize:11,color:"#888",marginBottom:4}}>투명도: {Math.round((sel.opacity??1)*100)}%</div>
+                    <input type="range" min={0} max={100} value={Math.round((sel.opacity??1)*100)} onChange={e=>{sel.set("opacity",+e.target.value/100);fcRef.current?.renderAll();syncSel(sel);}}
+                      style={{width:"100%",accentColor:"#7c6aff"}}/>
                   </div>
-                  <div style={{fontSize:10,color:"#888"}}>선택 글자 색 (드래그 후)</div>
-                  <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>
-                    {["#e4ff1a","#ff6b6b","#4ecdc4","#ffd93d","#ffffff","#7c6aff","#ff9f43"].map(c=>(
-                      <button key={"s"+c} onClick={()=>{
-                        const tb=sel;if(!tb)return;
-                        const start=tb.selectionStart,end=tb.selectionEnd;
-                        if(start===end)return;
-                        for(let i=start;i<end;i++) tb.setSelectionStyles({fill:c,fontWeight:"900"},i,i+1);
-                        fcRef.current?.renderAll();
-                      }} style={{width:18,height:18,borderRadius:3,background:c,border:"1.5px solid rgba(0,0,0,0.2)",cursor:"pointer",padding:0}}/>
-                    ))}
-                    <input type="color" onChange={e=>{
-                      const tb=sel;if(!tb)return;const s=tb.selectionStart,en=tb.selectionEnd;if(s===en)return;
-                      for(let i=s;i<en;i++) tb.setSelectionStyles({fill:e.target.value,fontWeight:"900"},i,i+1);
-                      fcRef.current?.renderAll();
-                    }} style={{width:18,height:18,padding:0,border:"1px solid #ddd",borderRadius:3,cursor:"pointer"}}/>
-                  </div>
-                  <div style={{display:"flex",gap:3,marginBottom:8}}>
-                    <button onClick={()=>set("fontWeight",props.fontWeight==="bold"?"normal":"bold")}
-                      style={{...B,fontWeight:900,fontSize:11,background:props.fontWeight==="bold"?"#7c6aff15":"transparent"}}>B</button>
-                    <button onClick={()=>set("fontStyle",props.fontStyle==="italic"?"normal":"italic")}
-                      style={{...B,fontStyle:"italic",fontSize:11,background:props.fontStyle==="italic"?"#7c6aff15":"transparent"}}>I</button>
-                    {["left","center","right"].map(a=>(
-                      <button key={a} onClick={()=>set("textAlign",a)}
-                        style={{...B,fontSize:11,background:props.textAlign===a?"#7c6aff15":"transparent"}}>
-                        {a==="left"?"◧":a==="center"?"◫":"◨"}
-                      </button>
-                    ))}
-                  </div>
-                  <div style={{fontSize:10,color:"#888",marginTop:6,marginBottom:2}}>그림자</div>
-                  <div style={{display:"flex",gap:3,marginBottom:6}}>
-                    <button onClick={()=>{
-                      if(!sel)return;
-                      sel.set("shadow", sel.shadow ? null : "2px 3px 6px rgba(0,0,0,0.5)");
-                      fcRef.current?.renderAll();
-                    }} style={{...B,fontSize:10,flex:1,background:sel?.shadow?"#7c6aff15":"transparent",borderColor:sel?.shadow?"#7c6aff":"#ddd"}}>
-                      {sel?.shadow?"그림자 ON":"그림자 OFF"}
-                    </button>
-                    <button onClick={()=>{if(!sel)return;sel.set("shadow","0 4px 12px rgba(0,0,0,0.8)");fcRef.current?.renderAll();}}
-                      style={{...B,fontSize:10}}>강하게</button>
-                    <button onClick={()=>{if(!sel)return;sel.set("shadow","1px 1px 3px rgba(0,0,0,0.3)");fcRef.current?.renderAll();}}
-                      style={{...B,fontSize:10}}>약하게</button>
-                  </div>
-                  <div style={{borderBottom:"1px solid #eee",marginBottom:10}}/>
-                </>)}
-
-                <div style={{fontSize:12,fontWeight:700,marginBottom:10}}>텍스트 추가</div>
-                <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8,marginBottom:16}}>
-                  {[
-                    {label:"제목",opts:{fontSize:48,fontWeight:"bold"}},
-                    {label:"소제목",opts:{fontSize:28,fontWeight:"700"}},
-                    {label:"본문",opts:{fontSize:18}},
-                    {label:"캡션",opts:{fontSize:14,opacity:0.7}},
-                  ].map(t=>(
-                    <button key={t.label} onClick={()=>addText(t.label,t.opts)}
-                      style={{padding:"12px 8px",borderRadius:10,border:"1px solid #eee",background:"#fff",cursor:"pointer",fontSize:12,fontWeight:600}}>
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-
-                <div style={{fontSize:12,fontWeight:700,marginBottom:6}}>폰트 {sel&&sel.type==="textbox"?"(클릭 시 적용)":"미리보기"}</div>
-                <div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:16}}>
-                  {FONTS.slice(0,12).map(f=>(
-                    <button key={f} onClick={()=>{loadFont(f);if(sel&&sel.type==="textbox"){set("fontFamily",f);}else{addText("가나다 ABC",{fontFamily:f,fontSize:28});}}}
-                      style={{padding:"8px 12px",borderRadius:8,border:sel?.fontFamily===f?"2px solid #7c6aff":"1px solid #eee",background:sel?.fontFamily===f?"rgba(124,106,255,0.06)":"#fff",cursor:"pointer",fontFamily:f,fontSize:14,textAlign:"left"}}>
-                      {f}
-                    </button>
-                  ))}
-                </div>
-
-                {/* AI 텍스트 생성 */}
-                <div style={{borderTop:"1px solid #eee",paddingTop:14}}>
-                  <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>AI 글쓰기</div>
-                  <textarea value={aiPrompt} onChange={e=>setAiPrompt(e.target.value)}
-                    placeholder="예: 직장인 번아웃 극복법 카드뉴스 제목 써줘&#10;예: 이 슬라이드에 맞는 본문 3줄 작성해줘"
-                    rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid #ddd",fontSize:12,resize:"vertical",outline:"none",boxSizing:"border-box",fontFamily:"inherit"}}/>
-                  <button disabled={aiLoading||!aiPrompt.trim()} onClick={async()=>{
-                    setAiLoading(true);
-                    try {
-                      const txt = await callAI("claude-haiku-4-5",[{role:"user",content:`카드뉴스/콘텐츠 디자인용 텍스트를 작성해주세요. 짧고 임팩트있게.\n\n요청: ${aiPrompt}\n\n결과만 출력 (설명 없이 텍스트만)`}],300);
-                      if(txt) addText(txt.trim(),{fontSize:24});
-                    } catch(e) { alert("AI 오류: "+e.message); }
-                    setAiLoading(false);
-                  }} style={{width:"100%",marginTop:6,padding:"10px",borderRadius:8,border:"none",cursor:aiLoading||!aiPrompt.trim()?"not-allowed":"pointer",background:aiLoading?"#ccc":"linear-gradient(135deg,#7c6aff,#ec4899)",color:"#fff",fontSize:13,fontWeight:700,opacity:aiLoading||!aiPrompt.trim()?0.6:1}}>
-                    {aiLoading?"생성 중...":"AI 텍스트 생성"}
-                  </button>
-                </div>
+                )}
               </div>
             )}
           </div>
@@ -1181,12 +961,12 @@ export default function UnifiedCanvasEditor({
         {/* ── 캔버스 영역 (중앙, flex:1) ── */}
         <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",minWidth:0}}>
           {/* 상단 바 */}
-          <div style={{display:"flex",alignItems:"center",gap:6,padding:"4px 12px",background:"#fff",borderBottom:"1px solid #eee",flexShrink:0,minHeight:36}}>
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 14px",background:"#fff",borderBottom:"1px solid #eee",flexShrink:0}}>
             {total>1&&<>
-              <button onClick={()=>go(idx-1)} disabled={idx===0} style={{...B,padding:"4px 10px",fontSize:14}}>◀</button>
-              <span style={{fontSize:14,fontWeight:800,minWidth:40,textAlign:"center"}}>{idx+1}/{total}</span>
-              <button onClick={()=>go(idx+1)} disabled={idx>=total-1} style={{...B,padding:"4px 10px",fontSize:14}}>▶</button>
-              <div style={{width:1,height:18,background:"#ddd"}}/>
+              <button onClick={()=>go(idx-1)} disabled={idx===0} style={B}>◀</button>
+              <span style={{fontSize:13,fontWeight:700}}>{idx+1}/{total}</span>
+              <button onClick={()=>go(idx+1)} disabled={idx>=total-1} style={B}>▶</button>
+              <div style={{width:1,height:16,background:"#eee"}}/>
             </>}
             <select value={`${width}x${height}`} onChange={e=>{
               // 사이즈 전환은 현재 세션에서는 표시만 (실제 리사이즈는 새 에디터 필요)
@@ -1195,126 +975,83 @@ export default function UnifiedCanvasEditor({
             </select>
             <div style={{flex:1}}/>
             {sel&&sel.name!=="bg"&&<button onClick={del} style={{...B,color:"#ef4444",borderColor:"#fca5a5",fontSize:11}}>삭제</button>}
-            <button onClick={exportPng} style={{background:"#7c6aff",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700}}>PNG</button>
-            {total>1&&<button onClick={exportAll} style={{background:"#333",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700}}>ZIP</button>}
-            <button onClick={exportPdf} style={{background:"#e74c3c",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700}}>PDF</button>
-            <button onClick={exportTxt} style={{background:"#27ae60",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700}}>TXT</button>
+            <button onClick={exportPng} style={{background:"#7c6aff",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>PNG 저장</button>
+            {total>1&&<button onClick={exportAll} style={{background:"#333",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>ZIP</button>}
+            <button onClick={exportPdf} style={{background:"#e74c3c",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>PDF</button>
+            <button onClick={exportTxt} style={{background:"#27ae60",color:"#fff",border:"none",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>TXT</button>
             {onShareTemplate&&<button onClick={()=>{
               const fc=fcRef.current; if(!fc) return;
               if(!window.confirm("이 디자인을 커뮤니티에 공유할까요?")) return;
               const preview=fc.toDataURL({format:"png",multiplier:0.3});
               onShareTemplate(preview);
             }} style={{...B,color:"#10b981",borderColor:"#86efac",fontSize:11}}>공유</button>}
-            <button onClick={()=>setCaptionOpen(!captionOpen)}
-              style={{background:captionOpen?"#7c6aff":"#fff",color:captionOpen?"#fff":"#7c6aff",border:captionOpen?"none":"1.5px solid #7c6aff",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-              AI 캡션
-            </button>
-            {onClose&&<button onClick={()=>setShowExitWarn(true)} style={{...B,fontSize:11}}>← 돌아가기</button>}
+            {inline&&<button onClick={()=>setIsFullscreen(!isFullscreen)} title={isFullscreen?"축소":"전체화면"} style={{...B,fontSize:13,padding:"4px 8px"}}>{isFullscreen?"⊡":"⊞"}</button>}
+            {isFullscreen&&<button onClick={()=>setIsFullscreen(false)} style={{background:"#7c6aff",color:"#fff",border:"none",borderRadius:8,padding:"6px 16px",cursor:"pointer",fontSize:12,fontWeight:700}}>← 돌아가기</button>}
+            {!isFullscreen&&onClose&&<button onClick={()=>setShowExitWarn(true)} style={{...B,fontSize:11}}>← 돌아가기</button>}
           </div>
           {/* 캔버스 */}
-          <div ref={boxRef} style={{flex:1,display:"flex",alignItems:"flex-start",justifyContent:"center",background:"#e8e8ee",overflow:"hidden",padding:10,minHeight:0}}/>
+          <div ref={boxRef} style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",background:"#e8e8ee",overflow:"hidden",padding:10}}/>
         </div>
 
-        {/* ── 오른쪽 AI 캡션 패널 ── */}
-        {captionOpen&&(
-        <div style={{width:300,background:"#fafafa",borderLeft:"1px solid #eee",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",borderBottom:"1px solid #eee",flexShrink:0}}>
-            <span style={{fontSize:13,fontWeight:700,color:"#333"}}>AI 캡션</span>
-            <button onClick={()=>setCaptionOpen(false)} style={{background:"none",border:"none",cursor:"pointer",fontSize:14,color:"#aaa"}}>✕</button>
+        {/* ── 오른쪽 캡션 패널 ── */}
+        <div style={{width:280,background:"#fafafa",borderLeft:"1px solid #eee",display:"flex",flexDirection:"column",flexShrink:0,overflow:"hidden"}}>
+          <div style={{padding:"12px 16px",borderBottom:"1px solid #eee",flexShrink:0}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#333"}}>캡션</div>
           </div>
-          <div style={{flex:1,overflowY:"auto",padding:"12px 14px"}}>
+          <div style={{flex:1,overflowY:"auto",padding:"12px 16px",display:"flex",flexDirection:"column",gap:10}}>
             {/* 말투 선택 */}
-            <div style={{fontSize:12,fontWeight:700,marginBottom:8}}>글타입</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:5,marginBottom:14}}>
-              {[
-                {id:"professional",label:"전문적"},
-                {id:"casual",label:"친근한"},
-                {id:"witty",label:"위트있는"},
-                {id:"emotional",label:"감성적"},
-                {id:"informative",label:"정보전달"},
-                {id:"marketing",label:"마케팅"},
-              ].map(t=>(
-                <button key={t.id} onClick={()=>setCaptionTone(t.id)}
-                  style={{padding:"8px 6px",borderRadius:8,border:captionTone===t.id?"2px solid #7c6aff":"1px solid #eee",
-                    background:captionTone===t.id?"rgba(124,106,255,0.08)":"#fff",
-                    color:captionTone===t.id?"#7c6aff":"#555",fontSize:12,fontWeight:captionTone===t.id?700:500,cursor:"pointer"}}>
-                  {t.label}
-                </button>
-              ))}
+            <div>
+              <div style={{fontSize:11,fontWeight:700,color:"#666",marginBottom:4}}>말투</div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:4}}>
+                {[{id:"friendly",label:"친근하게"},{id:"professional",label:"전문적"},{id:"casual",label:"캐주얼"},{id:"witty",label:"위트있게"}].map(t=>(
+                  <button key={t.id} onClick={()=>setCaptionTone(t.id)}
+                    style={{padding:"6px",borderRadius:6,border:captionTone===t.id?"1.5px solid #7c6aff":"1px solid #e5e7eb",background:captionTone===t.id?"rgba(124,106,255,0.08)":"#fff",color:captionTone===t.id?"#7c6aff":"#666",fontSize:11,fontWeight:captionTone===t.id?700:500,cursor:"pointer"}}>{t.label}</button>
+                ))}
+              </div>
             </div>
-
             {/* 이모티콘 토글 */}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14,padding:"8px 10px",background:"#fff",borderRadius:8,border:"1px solid #eee"}}>
-              <span style={{fontSize:12,fontWeight:600,color:"#555"}}>이모티콘 사용</span>
-              <button onClick={()=>setCaptionEmoji(!captionEmoji)}
-                style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",
-                  background:captionEmoji?"#7c6aff":"#ddd",transition:"background 0.2s"}}>
-                <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,
-                  left:captionEmoji?23:3,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
-              </button>
-            </div>
-
-            {/* 생성 버튼 */}
+            <label style={{display:"flex",alignItems:"center",gap:8,fontSize:12,color:"#555",cursor:"pointer"}}>
+              <input type="checkbox" checked={captionEmoji} onChange={e=>setCaptionEmoji(e.target.checked)} style={{accentColor:"#7c6aff"}}/>
+              이모티콘 사용
+            </label>
+            {/* AI 캡션 생성 */}
             <button disabled={captionLoading} onClick={async()=>{
+              const fc=fcRef.current; if(!fc) return;
+              const texts=fc.getObjects().filter(o=>o.type==="textbox").map(o=>o.text).filter(Boolean).join("\n");
+              const allSlideTexts = (initSlides||[]).map((s,i)=>`[${i+1}] ${s?.title||""} ${s?.body||""}`).filter(s=>s.trim().length>4).join("\n");
+              const content = allSlideTexts || texts;
+              if(!content.trim()){alert("캔버스에 텍스트가 없습니다");return;}
+              const toneMap = {friendly:"친근하고 따뜻하게",professional:"전문적이고 신뢰감 있게",casual:"캐주얼하고 편하게",witty:"위트있고 재미있게"};
               setCaptionLoading(true);
               try {
-                // 슬라이드 텍스트 수집
-                const slideTexts = (initSlides||[]).map((s,i)=>
-                  `[${i+1}] ${s.title||""} ${s.subtitle||""} ${s.body||""} ${s.highlight||""}`
-                ).join("\n");
-                const toneMap = {professional:"전문적이고 신뢰감 있는",casual:"친근하고 대화하는 듯한",witty:"위트있고 재미있는",emotional:"감성적이고 공감을 이끄는",informative:"정보 전달 중심의 명확한",marketing:"행동을 유도하는 마케팅"};
-                const toneDesc = toneMap[captionTone] || "전문적인";
-                const emojiInst = captionEmoji ? "이모티콘을 적절히 활용해주세요." : "이모티콘은 사용하지 마세요.";
-                const prompt = `인스타그램 카드뉴스 캡션을 작성해주세요.
-
-카드뉴스 내용:
-${slideTexts}
-
-조건:
-- ${toneDesc} 말투로 작성
-- ${emojiInst}
-- 해시태그 5~8개 포함
-- 캡션 길이: 3~5문장
-- 줄바꿈으로 가독성 높게
-- 마지막에 행동 유도(CTA) 한 줄 포함
-
-캡션만 출력하세요.`;
-                const result = await callAI("claude-haiku-4-5",[{role:"user",content:prompt}],800);
-                setCaptionText(result?.trim()||"");
-              } catch(e) { setCaptionText("캡션 생성 오류: "+(e.message||e)); }
+                const txt = await callAI("claude-haiku-4-5",[{role:"user",content:`다음 카드뉴스 내용을 기반으로 인스타그램 캡션을 작성해줘.\n말투: ${toneMap[captionTone]||"친근하게"}\n이모티콘: ${captionEmoji?"적절히 사용":"사용하지 않기"}\n줄바꿈 적절히, 해시태그 5-8개.\n\n${content}\n\n캡션만 출력`}],500);
+                if(txt) setCaptionText(txt.trim());
+              } catch(e) { alert("캡션 생성 오류: "+e.message); }
               setCaptionLoading(false);
-            }} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",cursor:captionLoading?"not-allowed":"pointer",
-              background:captionLoading?"#ccc":"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,
-              marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
-              {captionLoading?(
-                <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>
-              ):(
-                <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>캡션 생성</>
-              )}
+            }} style={{width:"100%",padding:"10px",borderRadius:10,border:"none",cursor:captionLoading?"not-allowed":"pointer",background:captionLoading?"#ccc":"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700}}>
+              {captionLoading?"생성 중...":"AI 캡션 재생성"}
             </button>
 
-            {/* 결과 */}
-            {captionText&&(
-              <div style={{position:"relative"}}>
-                <textarea value={captionText} onChange={e=>setCaptionText(e.target.value)}
-                  rows={16} style={{width:"100%",padding:"12px",borderRadius:10,border:"1px solid #ddd",fontSize:13,lineHeight:1.7,
-                    resize:"vertical",outline:"none",boxSizing:"border-box",fontFamily:"inherit",background:"#fff",minHeight:280}}/>
-                <div style={{display:"flex",gap:6,marginTop:8}}>
-                  <button onClick={()=>{navigator.clipboard.writeText(captionText);}}
-                    style={{flex:1,padding:"8px",borderRadius:8,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:12,fontWeight:600,color:"#555"}}>
-                    복사
-                  </button>
-                  <button onClick={()=>setCaptionText("")}
-                    style={{padding:"8px 12px",borderRadius:8,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:12,color:"#888"}}>
-                    지우기
-                  </button>
-                </div>
-              </div>
+            {/* 캡션 텍스트 영역 */}
+            <textarea value={captionText} onChange={e=>setCaptionText(e.target.value)}
+              placeholder="캡션이 여기에 표시됩니다.&#10;&#10;AI 캡션 생성 버튼을 누르거나&#10;직접 작성하세요."
+              style={{flex:1,minHeight:200,padding:"12px",borderRadius:10,border:"1px solid #e5e7eb",background:"#fff",color:"#333",fontSize:13,fontFamily:"inherit",outline:"none",resize:"none",lineHeight:1.7,boxSizing:"border-box"}}/>
+
+            {/* 복사 버튼 */}
+            {captionText && (
+              <button onClick={()=>{
+                navigator.clipboard.writeText(captionText).then(()=>{
+                  const btn=document.getElementById("_caption_copy_btn");
+                  if(btn){btn.textContent="복사 완료!";setTimeout(()=>{btn.textContent="캡션 복사";},1500);}
+                }).catch(()=>alert("복사 실패"));
+              }} id="_caption_copy_btn"
+                style={{width:"100%",padding:"10px",borderRadius:10,border:"1.5px solid #7c6aff",background:"rgba(124,106,255,0.06)",color:"#7c6aff",fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                캡션 복사
+              </button>
             )}
           </div>
         </div>
-        )}
 
         {/* 나가기 경고 팝업 */}
         {showExitWarn&&(
