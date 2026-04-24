@@ -968,7 +968,11 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
           downloadUrl: d.download_url,
           detailContent: d.detail_content || [],
         }));
-        setProducts(mapped);
+        // SNS 자동화 프로그램을 맨 위로 고정 (추천)
+        const PINNED_ID = "6ebdab70-6936-465b-8fd7-4a8558eec02f";
+        const pinned = mapped.filter(p => p.id === PINNED_ID);
+        const rest = mapped.filter(p => p.id !== PINNED_ID);
+        setProducts([...pinned, ...rest]);
       }
     } catch (err) {
       console.log("DB 로드 실패:", err.message);
@@ -1276,7 +1280,10 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
                       }}>{t}</span>
                     ))}
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, lineHeight: 1.3 }}>{p.title}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, lineHeight: 1.3 }}>
+                    {p.id === "6ebdab70-6936-465b-8fd7-4a8558eec02f" && <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, background: "linear-gradient(135deg,#ff6b6b,#ff4757)", color: "#fff", padding: "2px 8px", borderRadius: 4, marginRight: 6, verticalAlign: "middle" }}>추천</span>}
+                    {p.title}
+                  </div>
                   <div style={{
                     fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 14,
                     display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
