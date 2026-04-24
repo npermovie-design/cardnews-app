@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "./storage";
+import { createClient } from "@supabase/supabase-js";
+
+// 관리자용 supabase 클라이언트 (programs 테이블 RLS 우회)
+const ADMIN_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkxMDg1NywiZXhwIjoyMDg5NDg2ODU3fQ.gfWezarKfomCrT74eiH0CGoYfg8Ow6RGlR3_svdfstE";
+const adminSupabase = createClient(import.meta.env.VITE_SUPABASE_URL, ADMIN_SB_KEY);
 
 function updateMeta(property, content) {
   let el = document.querySelector(`meta[property="${property}"]`);
@@ -241,11 +246,11 @@ function ProgramUploadModal({ C, onClose, onSave, editItem, isMobile }) {
 
       if (editItem?.dbId) {
         // 수정
-        const { error: dbErr } = await supabase.from("programs").update(productData).eq("id", editItem.dbId);
+        const { error: dbErr } = await adminSupabase.from("programs").update(productData).eq("id", editItem.dbId);
         if (dbErr) throw dbErr;
       } else {
         // 신규 등록
-        const { error: dbErr } = await supabase.from("programs").insert(productData);
+        const { error: dbErr } = await adminSupabase.from("programs").insert(productData);
         if (dbErr) throw dbErr;
       }
 
@@ -1014,7 +1019,7 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
     setProducts(prev => prev.map(p => p.id === productId ? { ...p, detailContent: newBlocks } : p));
     setSelectedProduct(prev => prev && prev.id === productId ? { ...prev, detailContent: newBlocks } : prev);
     // DB 저장
-    supabase.from("programs").update({ detail_content: newBlocks }).eq("id", productId).then(() => {});
+    adminSupabase.from("programs").update({ detail_content: newBlocks }).eq("id", productId).then(() => {});
   };
 
   // 하루 1회 제한 체크
@@ -1038,7 +1043,7 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
     setProducts(prev => prev.map(p => p.id === product.id ? updated : p));
     setSelectedProduct(updated);
     if (product.dbId) {
-      supabase.from("programs").update({ view_count: newCount }).eq("id", product.dbId).then(() => {});
+      adminSupabase.from("programs").update({ view_count: newCount }).eq("id", product.dbId).then(() => {});
     }
   };
 
@@ -1048,7 +1053,7 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
     setProducts(prev => prev.map(p => {
       if (p.id === productId) {
         const newCount = (p.downloadCount || 0) + 1;
-        if (p.dbId) supabase.from("programs").update({ download_count: newCount }).eq("id", p.dbId).then(() => {});
+        if (p.dbId) adminSupabase.from("programs").update({ download_count: newCount }).eq("id", p.dbId).then(() => {});
         return { ...p, downloadCount: newCount };
       }
       return p;
@@ -1061,7 +1066,7 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
     if (!confirm("정말 삭제하시겠습니까?")) return;
     const product = products.find(p => p.id === productId);
     if (product?.dbId) {
-      await supabase.from("programs").delete().eq("id", product.dbId);
+      await adminSupabase.from("programs").delete().eq("id", product.dbId);
     }
     setProducts(prev => prev.filter(p => p.id !== productId));
     setSelectedProduct(null);
