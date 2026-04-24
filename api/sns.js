@@ -1202,9 +1202,11 @@ const ONE_OFF_POINTS = {
 
 // 구독 tier: product_name → { monthly, yearly } (가격 페이지 기준)
 const SUB_TIERS = {
-  "Basic":   { monthly: 1200, yearly: 14400 },
-  "Pro":     { monthly: 2800, yearly: 33600 },
-  "Premium": { monthly: 5500, yearly: 66000 },
+  "Basic":    { monthly: 1200,  yearly: 14400 },
+  "Pro":      { monthly: 2800,  yearly: 33600 },
+  "Premium":  { monthly: 5500,  yearly: 66000 },
+  "Business": { monthly: 0,     yearly: 0 },     // 무제한 — 포인트 지급 없음
+  "Agency":   { monthly: 0,     yearly: 0 },     // 무제한 — 포인트 지급 없음
 };
 
 function detectInterval(attrs) {

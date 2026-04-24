@@ -57,6 +57,28 @@ const SUB_PLANS = [
     lsId: "ff405644-34fc-415e-b003-e657030484b9",
     lsIdYearly: "fbe69e26-a806-4c86-b36f-5b4e61a4f43d",
   },
+  {
+    id: "business", name: "Business", icon: "B",
+    monthlyPrice: 69.9, yearlyPrice: 699,
+    points: 0, color: "#ef4444",
+    gradient: "linear-gradient(135deg,#7f1d1d,#ef4444)",
+    highlight: false, badge: "무제한",
+    features: ["모든 AI 기능 무제한", "포인트 차감 없음", "네이버봇 월 30회 발행", "네이버 계정 1개", "SNS 다중 발행", "우선 고객 지원"],
+    btnLabel: "시작하기",
+    lsId: "",
+    lsIdYearly: "",
+  },
+  {
+    id: "agency", name: "Agency", icon: "A",
+    monthlyPrice: 149.9, yearlyPrice: 1499,
+    points: 0, color: "#a855f7",
+    gradient: "linear-gradient(135deg,#581c87,#a855f7)",
+    highlight: false, badge: "에이전시",
+    features: ["모든 AI 기능 무제한", "포인트 차감 없음", "네이버봇 무제한 발행", "네이버 계정 5개", "SNS 다중 발행", "전용 고객 지원", "팀 관리 기능"],
+    btnLabel: "문의하기",
+    lsId: "",
+    lsIdYearly: "",
+  },
 ];
 
 const ONE_OFF_PLANS = [
@@ -395,7 +417,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                     </>
                   )}
 
-                  <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, marginBottom: 16 }}>{plan.points.toLocaleString()} {p("pricingPerMonthPts")}</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: plan.color, marginBottom: 16 }}>{plan.points > 0 ? `${plan.points.toLocaleString()} ${p("pricingPerMonthPts")}` : "무제한"}</div>
 
                   <div style={{ flex: 1, marginBottom: 20 }}>
                     {plan.features.map((f, i) => (
@@ -488,8 +510,9 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 14 }}>
               {[
                 { label: p("recPersonal"), plans: "Free / Basic", desc: p("recPersonalDesc"), icon3d: "/icons3d/char-standing.png", badge: null, color: "#888" },
-                { label: p("recTeam"), plans: "Pro", desc: p("recTeamDesc"), icon3d: "/icons3d/char-headphone.png", badge: p("recTeamBadge"), color: "#7c6aff" },
-                { label: p("recAgency"), plans: "Premium", desc: p("recAgencyDesc"), icon3d: "/icons3d/char-backpack.png", badge: null, color: "#f59e0b" },
+                { label: p("recTeam"), plans: "Pro / Premium", desc: p("recTeamDesc"), icon3d: "/icons3d/char-headphone.png", badge: p("recTeamBadge"), color: "#7c6aff" },
+                { label: "1인 마케터 · 소상공인", plans: "Business", desc: "무제한 AI + 네이버봇 자동 발행", icon3d: "/icons3d/char-backpack.png", badge: "무제한", color: "#ef4444" },
+                { label: "마케팅 에이전시", plans: "Agency", desc: "다계정 관리 + 무제한 발행", icon3d: "/icons3d/char-backpack.png", badge: null, color: "#a855f7" },
               ].map((seg, i) => (
                 <div key={i} style={{ position: "relative", background: C.card, border: seg.badge ? "2px solid #7c6aff" : "1px solid " + C.border, borderRadius: 16, padding: "24px 20px", textAlign: "center", boxShadow: seg.badge ? "0 0 20px rgba(124,106,255,0.15)" : C.shadow }}>
                   {seg.badge && (
