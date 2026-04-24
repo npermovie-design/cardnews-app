@@ -1,5 +1,19 @@
 /* Pretendard 폰트는 index.html에서 preload로 로드 */
 
+/* Fabric.js 텍스트 편집 시 hidden textarea가 보이는 문제 수정 */
+textarea[data-fabric-hiddentextarea],
+div[class*="canvas"] textarea:not([class]),
+textarea:not([id]):not([class]):not([name]):not([placeholder]) {
+  position: fixed !important;
+  top: -9999px !important;
+  left: -9999px !important;
+  opacity: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

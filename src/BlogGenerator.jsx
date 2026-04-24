@@ -1046,11 +1046,33 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [shortsYtUrl, setShortsYtUrl] = useState("");
 
   // ── 디자인(카드뉴스) 모드 상태 ──
-  const [designSlides, setDesignSlides] = useState(null); // AI 생성된 슬라이드 배열
+  const _ssDesignSlidesKey = "_bg_designSlides";
+  const _ssDesignStepKey = "_bg_designStep";
+  const [designSlides, setDesignSlides_raw] = useState(() => {
+    try { const v = sessionStorage.getItem(_ssDesignSlidesKey); return v ? JSON.parse(v) : null; } catch { return null; }
+  });
+  const setDesignSlides = (v) => {
+    setDesignSlides_raw(v);
+    try { if (v) sessionStorage.setItem(_ssDesignSlidesKey, JSON.stringify(v)); else sessionStorage.removeItem(_ssDesignSlidesKey); } catch {}
+  };
   const [designLoading, setDesignLoading] = useState(false);
   const [showLibraryPicker, setShowLibraryPicker] = useState(false);
-  const [designStep, setDesignStep] = useState("input"); // "input" | "preview" | "editor"
+  const [hoverPreview, setHoverPreview] = useState(-1);
+  const [hoverPos, setHoverPos] = useState({x:0,y:0});
+  const [designStep, setDesignStep_raw] = useState(() => {
+    try { const v = sessionStorage.getItem(_ssDesignStepKey); return v === "preview" ? "editor" : (v || "input"); } catch { return "input"; }
+  });
+  const setDesignStep = (v) => {
+    setDesignStep_raw(v);
+    try { if (v && v !== "input") sessionStorage.setItem(_ssDesignStepKey, v); else sessionStorage.removeItem(_ssDesignStepKey); } catch {}
+  };
   const UnifiedCanvasEditorLazy = React.lazy(() => import("./UnifiedCanvasEditor"));
+  const [designRef, setDesignRef] = useState(""); // 참고 글감
+  const [designRefImage, setDesignRefImage] = useState(null); // 참고 이미지 base64
+  const [designPointColor, setDesignPointColor] = useState("#e4ff1a"); // 포인트 색상
+  const [designUseEmoji, setDesignUseEmoji] = useState(false); // 이모티콘 사용 여부
+  const [showBrandHelp, setShowBrandHelp] = useState(false);
+  const [showPointHelp, setShowPointHelp] = useState(false);
 
   const [showAdvanced, setShowAdvanced] = useState(true);
   const [advTone,      setAdvTone]      = useState(""); // 글 분위기
@@ -1236,6 +1258,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const generateCardNews = async () => {
     const content = (fields.keyword || "").trim();
     if (!content) return;
+    if (content.length < 10) {
+      setError("최소 10자 이상 입력해주세요. 더 구체적인 내용을 넣으면 좋은 카드뉴스가 만들어집니다.");
+      return;
+    }
     // 포인트/횟수 체크
     const usage = _getUsageState();
     if (usage.exhausted) {
@@ -1248,57 +1274,126 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     }
     setDesignLoading(true); setDesignSlides(null); setDesignStep("input"); setError("");
     try {
-      const sysMsg = `인스타그램 카드뉴스 전문 카피라이터. 반드시 JSON만 반환하세요.
+      const emojiRule = designUseEmoji
+        ? `\n이모티콘 규칙:\n- title과 body에 적절한 이모티콘을 넣어주세요\n- 예: "✅ 경쟁 브랜드 상위 콘텐츠 파악"\n- 예: "🔥 이게 바로 핵심입니다"\n- 체크(✅), 불(🔥), 포인트(👉), 경고(⚠️), 하트(❤️), 별(⭐), 돈(💰) 등 활용\n- 슬라이드당 1~3개 이모티콘 사용`
+        : `\n이모티콘은 절대 사용하지 마세요. 텍스트만 사용.`;
+      const sysMsg = `인스타그램 카드뉴스 전문 카피라이터. 세련되고 시원한 디자인 감각.
+주어진 글을 분석하여 핵심 메시지를 추출하고 카드뉴스 슬라이드로 재구성.
 
-규칙:
-1. 내용 길이에 따라 슬라이드 수(5~10장)를 자동 결정
-2. 첫 번째 슬라이드 = 표지(커버): 전체 내용을 요약하는 강렬한 한 줄 제목 + 호기심 유발 부제목. body는 비워두세요.
-3. 마지막 슬라이드 = 팔로우 유도 CTA: title에 "더 많은 정보가 궁금하다면?" 같은 문구, body에 "팔로우하고 매일 유용한 정보를 받아보세요", highlight에 "@계정명 팔로우" 형태
-4. 중간 슬라이드: 핵심 포인트별로 1장씩. title은 임팩트 있게 15자 이내, body는 2-3줄로 핵심만.
-5. accent_text: 각 슬라이드에서 가장 강조할 핵심 숫자/키워드 (예: "150크레딧", "+38%", "3가지 방법"). 형광색으로 표시됨. 짧게 5-10자.
-6. image_keyword: 각 슬라이드에 어울리는 배경 이미지 검색어(영어, 1-2단어).
+구성 규칙:
+- 슬라이드 수: 내용에 따라 5~10장 자동 결정
+- 1번(표지): 호기심 유발 큰 제목
+- 2~N-1번: 각 핵심 포인트별 1장
+- 마지막: 팔로우/저장 유도
 
-형식:{"slides":[{"title":"","subtitle":"","body":"","highlight":"","accent_text":"강조 키워드","image_keyword":"english keyword"}]}`;
-      const userMsg = `다음 내용을 카드뉴스로 만들어줘:\n\n${content.slice(0, 6000)}`;
-      const text = await callAI("claude-haiku-4-5", [{role:"user",content:userMsg}], 4000, sysMsg);
-      if (!text) throw new Error("AI 응답 없음");
-      const clean = text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim();
-      const parsed = JSON.parse(clean);
+포인트 색상 규칙 (중요!):
+- title과 body 안에서 핵심 키워드를 [P]단어[/P]로 감싸주세요
+- 예: "근데 이 [P]VEO 3.1[/P]이 최근에 [P]무료로[/P] 풀림."
+- 예: "[P]구글 계정[/P]만 있음 누구나 가능."
+- 숫자, 핵심 명사, 강조할 단어에 사용
+- 슬라이드당 1~3개 정도
+${emojiRule}
 
-      // Pexels에서 배경 이미지 일괄 검색
-      const keywords = [...new Set((parsed.slides||[]).map(s=>s.image_keyword).filter(Boolean))];
-      const imageMap = {};
-      if (keywords.length > 0) {
+각 슬라이드:
+- title: 짧고 임팩트 (20자 이내). 핵심 단어에 [P][/P]
+- subtitle: 보조 설명 (없어도 됨)
+- body: 2-3줄. 핵심 단어에 [P][/P]
+
+반드시 JSON만 반환.
+형식:{"slides":[{"title":"","subtitle":"","body":""}]}`;
+      let userMsg = `다음 내용을 카드뉴스로 만들어줘 (슬라이드 수는 내용에 맞게 자동 결정):\n\n${content.slice(0, 6000)}`;
+      if (designRef.trim()) userMsg += `\n\n참고 글감 (이 스타일과 말투를 참고해서 만들어줘):\n${designRef.slice(0, 3000)}`;
+      let text;
+      let retries = 0;
+      while (retries < 2) {
         try {
-          const imgResults = await Promise.allSettled(
-            keywords.slice(0,6).map(kw =>
-              fetch(`/api/proxy?action=pexels&path=v1/search&query=${encodeURIComponent(kw)}&per_page=3&orientation=square`)
-                .then(r=>r.json())
-                .then(d => ({ kw, url: d.photos?.[0]?.src?.large2x || d.photos?.[0]?.src?.large || "" }))
-            )
-          );
-          imgResults.forEach(r => {
-            if (r.status==="fulfilled" && r.value.url) imageMap[r.value.kw] = r.value.url;
-          });
-        } catch(imgErr) { console.warn("Image fetch failed:", imgErr); }
+          const msgs = designRefImage ? [{role:"user",content:[
+            {type:"text",text:userMsg},
+            {type:"image",source:{type:"base64",media_type:"image/jpeg",data:designRefImage.replace(/^data:image\/\w+;base64,/,"")}}
+          ]}] : [{role:"user",content:userMsg}];
+          text = await callAI("claude-haiku-4-5", msgs, 4000, sysMsg);
+          if (text && text.trim().length > 10) break;
+          retries++;
+        } catch (retryErr) {
+          retries++;
+          if (retries >= 2) throw retryErr;
+        }
       }
+      if (!text || text.trim().length < 10) throw new Error("AI 응답이 비어있습니다. 다시 시도해주세요.");
+      // JSON 파싱 (여러 패턴 시도)
+      let parsed = null;
+      const cleanPatterns = [
+        () => text.replace(/```json\s*/g,"").replace(/```\s*/g,"").trim(),
+        () => { const m = text.match(/\{[\s\S]*"slides"[\s\S]*\}/); return m ? m[0] : null; },
+        () => { const m = text.match(/\[[\s\S]*\{[\s\S]*"title"[\s\S]*\]/); return m ? `{"slides":${m[0]}}` : null; },
+      ];
+      for (const pat of cleanPatterns) {
+        try {
+          const clean = pat();
+          if (!clean) continue;
+          parsed = JSON.parse(clean);
+          if (parsed.slides || Array.isArray(parsed)) break;
+        } catch {}
+      }
+      if (!parsed) throw new Error("카드뉴스 구조를 생성하지 못했습니다. 내용을 조금 바꿔서 다시 시도해주세요.");
+      const rawSlides = parsed.slides || (Array.isArray(parsed) ? parsed : []);
+      if (rawSlides.length < 2) throw new Error("슬라이드가 너무 적습니다. 더 많은 내용을 입력해주세요.");
+      const brandName = document.getElementById("_designBrandInput")?.value?.trim() || "";
+      if (brandName) localStorage.setItem("_makeit_brand", brandName);
 
-      const slides = (parsed.slides || []).map((s,i) => ({
-        title: s.title || "",
-        subtitle: s.subtitle || "",
-        body: s.body || "",
-        highlight: s.highlight || "",
-        accent_text: s.accent_text || "",
-        image_keyword: s.image_keyword || "",
-        image: imageMap[s.image_keyword] || "",
-        bgColor: "#1a1a2e",
+      const slides = rawSlides.map((s, i) => ({
+        title: (s.title || "").slice(0, 60),
+        subtitle: (s.subtitle || "").slice(0, 80),
+        body: (s.body || "").slice(0, 400),
+        bgColor: "#0a0a0a",
         textColor: "#ffffff",
-        accentColor: "#ccff00",
-        fontSize: i===0 ? 52 : 46,
+        pointColor: designPointColor,
+        fontSize: 150,
         fontFamily: "Pretendard",
+        image: null,
+        brandName: brandName,
+        isLastSlide: i === rawSlides.length - 1,
       }));
       setDesignSlides(slides);
-      setDesignStep("preview");
+      setDesignStep("editor");
+      // 보관함에 자동 저장
+      try {
+        const cleanTitle = (slides[0]?.title||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,"");
+        const cleanContent = slides.map(s => {
+          const t = (s.title||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,"");
+          const b = (s.body||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,"");
+          return `${t}\n${b}`;
+        }).join("\n\n");
+        const saves = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
+        saves.unshift({
+          id: Date.now().toString(),
+          type: "카드뉴스",
+          title: cleanTitle || content.slice(0, 30),
+          content: cleanContent,
+          date: new Date().toLocaleDateString("ko-KR"),
+          slideCount: slides.length,
+        });
+        localStorage.setItem("sns_blog_saves_v1", JSON.stringify(saves.slice(0, 100)));
+      } catch {}
+      // 배경 이미지 자동 검색 (비동기, UI 차단 없이)
+      (async () => {
+        try {
+          const kwText = slides.map(s => s.title).join(", ");
+          const kwResult = await callAI("claude-haiku-4-5", [{role:"user",content:`다음 카드뉴스 제목들에 어울리는 이미지 검색 키워드를 영어로 1개만 추천 (단어만 출력):\n${kwText}`}], 50);
+          const keyword = (kwResult||"").trim().split(/[\n,]/)[0]?.trim() || "business";
+          const res = await fetch(`/api/proxy?action=pexels&path=v1/search&query=${encodeURIComponent(keyword)}&per_page=${slides.length}&orientation=square`).then(r=>r.json());
+          const photos = res.photos || [];
+          if (photos.length > 0) {
+            setDesignSlides(prev => {
+              if (!prev) return prev;
+              return prev.map((s, i) => ({
+                ...s,
+                image: photos[i % photos.length]?.src?.large || photos[0]?.src?.large || null,
+              }));
+            });
+          }
+        } catch (imgErr) { console.warn("Auto image fetch:", imgErr); }
+      })();
       // 포인트 차감
       if (user && user.uid) {
         const { changePoints: cp, setLocalUser } = await import("./storage.js");
@@ -2674,10 +2769,11 @@ hospital equipment`
                 {id:"write", label:t("bg_tabWrite"), color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
                 {id:"design", label:t("bg_tabDesign"), color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>},
                 {id:"shorts", label:t("bg_tabVideo"), color:"#7c6aff", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>},
+                {id:"sns_publish", label:"SNS 발행", color:"#38bdf8", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>, navigate:true},
               ].map(m => {
                 const isActive = m.id==="shorts" ? shortsMode : mode===m.id && !shortsMode;
                 return (
-                <button key={m.id} onClick={()=>{if(m.id==="shorts"){setShortsMode(true);setVideoSubMode(null);setShortsYtUrl("");}else{setShortsMode(false);setVideoSubMode(null);setMode(m.id);if(m.id==="design"){setDesignSlides(null);setDesignStep("input");}}}} style={{
+                <button key={m.id} onClick={()=>{if(m.navigate&&setAiMenu){setAiMenu(m.id);return;}if(m.id==="shorts"){setShortsMode(true);setVideoSubMode(null);setShortsYtUrl("");}else{setShortsMode(false);setVideoSubMode(null);setMode(m.id);if(m.id==="design"){setDesignSlides(null);setDesignStep("input");}}}} style={{
                   padding:"10px 20px", borderRadius:20,
                   border: isActive ? `2px solid ${m.color}` : `1.5px solid ${border}`,
                   background: isActive ? (isDark?`${m.color}15`:`${m.color}08`) : "transparent",
@@ -2731,6 +2827,83 @@ hospital equipment`
                       boxSizing:"border-box",padding:0,
                     }}
                   />
+
+                  {/* 브랜드명/로고 */}
+                  <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${border}`}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                      <span style={{fontSize:12,fontWeight:700,color:text}}>브랜드명 (선택)</span>
+                      <span
+                        onMouseEnter={e=>{const r=e.currentTarget.getBoundingClientRect();setShowBrandHelp({x:r.right+8,y:r.top});setShowPointHelp(false);}}
+                        onMouseLeave={()=>setShowBrandHelp(false)}
+                        style={{width:18,height:18,borderRadius:"50%",background:isDark?"rgba(255,255,255,0.1)":"#eee",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:muted,cursor:"help"}}>?</span>
+                    </div>
+                    {showBrandHelp&&(
+                      <div style={{position:"fixed",left:showBrandHelp.x,top:showBrandHelp.y,zIndex:9999,width:260,padding:"14px",borderRadius:14,background:isDark?"#1a1a2e":"#fff",border:`1px solid ${border}`,boxShadow:"0 8px 30px rgba(0,0,0,0.2)",pointerEvents:"none"}}>
+                        <div style={{fontSize:11,fontWeight:700,color:text,marginBottom:8}}>브랜드명이란?</div>
+                        <div style={{background:"#0a0a0a",borderRadius:8,padding:"16px 14px",marginBottom:8,textAlign:"center"}}>
+                          <div style={{fontSize:13,fontWeight:900,color:"#fff",marginBottom:4}}>ETF는 주식 묶음 세트</div>
+                          <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginBottom:10}}>삼성, SK하이닉스를 한 번에</div>
+                          <div style={{borderTop:"1px solid rgba(255,255,255,0.1)",paddingTop:6}}>
+                            <span style={{fontSize:11,fontWeight:700,color:"#e4ff1a"}}>메이킷</span>
+                            <span style={{fontSize:8,color:"rgba(255,255,255,0.3)",marginLeft:6}}>← 여기에 표시</span>
+                          </div>
+                        </div>
+                        <div style={{fontSize:10,color:muted,lineHeight:1.5}}>각 슬라이드 <b style={{color:text}}>중앙 하단</b>에 브랜드명이 표시됩니다.</div>
+                      </div>
+                    )}
+                    <input id="_designBrandInput" type="text" placeholder="예: FOUNDERS LAB" defaultValue={localStorage.getItem("_makeit_brand")||""}
+                      style={{width:"100%",padding:"10px 14px",borderRadius:12,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:14,outline:"none",fontFamily:"inherit",boxSizing:"border-box"}}/>
+                  </div>
+
+                  {/* 포인트 색상 선택 */}
+                  <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${border}`}}>
+                    <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+                      <span style={{fontSize:12,fontWeight:700,color:text}}>포인트 색상</span>
+                      <span
+                        onMouseEnter={e=>{const r=e.currentTarget.getBoundingClientRect();setShowPointHelp({x:r.right+8,y:r.top});setShowBrandHelp(false);}}
+                        onMouseLeave={()=>setShowPointHelp(false)}
+                        style={{width:18,height:18,borderRadius:"50%",background:isDark?"rgba(255,255,255,0.1)":"#eee",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:muted,cursor:"help"}}>?</span>
+                    </div>
+                    {showPointHelp&&(
+                      <div style={{position:"fixed",left:showPointHelp.x,top:showPointHelp.y,zIndex:9999,width:260,padding:"14px",borderRadius:14,background:isDark?"#1a1a2e":"#fff",border:`1px solid ${border}`,boxShadow:"0 8px 30px rgba(0,0,0,0.2)",pointerEvents:"none"}}>
+                        <div style={{fontSize:11,fontWeight:700,color:text,marginBottom:8}}>포인트 색상이란?</div>
+                        <div style={{background:"#0a0a0a",borderRadius:8,padding:"14px",marginBottom:8}}>
+                          <div style={{fontSize:13,fontWeight:900,color:"#fff",lineHeight:1.5}}>
+                            <span style={{color:"#e4ff1a"}}>ETF</span>는 주식 묶음 세트
+                          </div>
+                          <div style={{fontSize:10,color:"rgba(255,255,255,0.6)",marginTop:4,lineHeight:1.5}}>
+                            <span style={{color:"#e4ff1a",fontWeight:900}}>코스피200 ETF</span> 하나 사면<br/>상위 200개 기업이 포함
+                          </div>
+                        </div>
+                        <div style={{fontSize:10,color:muted,lineHeight:1.5}}>핵심 키워드가 선택한 색상으로 <b style={{color:text}}>자동 강조</b>됩니다.</div>
+                      </div>
+                    )}
+                    <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
+                      {["#e4ff1a","#ff6b6b","#4ecdc4","#ffd93d","#ff9ff3","#48dbfb","#1dd1a1","#ff9f43","#ffffff","#6c5ce7"].map(c=>(
+                        <button key={c} onClick={()=>setDesignPointColor(c)}
+                          style={{width:26,height:26,borderRadius:6,background:c,border:designPointColor===c?"3px solid #7c6aff":"2px solid rgba(0,0,0,0.12)",cursor:"pointer",padding:0,transition:"all 0.15s"}}/>
+                      ))}
+                      <input type="color" value={designPointColor} onChange={e=>setDesignPointColor(e.target.value)}
+                        style={{width:26,height:26,padding:0,border:"2px solid rgba(0,0,0,0.12)",borderRadius:6,cursor:"pointer"}}/>
+                    </div>
+                  </div>
+
+                  {/* 이모티콘 사용 여부 */}
+                  <div style={{marginTop:12,paddingTop:10,borderTop:`1px solid ${border}`}}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6}}>
+                        <span style={{fontSize:12,fontWeight:700,color:text}}>이모티콘 사용</span>
+                        <span style={{fontSize:11,color:muted}}>✅🔥👉</span>
+                      </div>
+                      <button onClick={()=>setDesignUseEmoji(!designUseEmoji)}
+                        style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",
+                          background:designUseEmoji?"#7c6aff":"rgba(0,0,0,0.12)",transition:"background 0.2s"}}>
+                        <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,
+                          left:designUseEmoji?23:3,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
+                      </button>
+                    </div>
+                    <div style={{fontSize:10,color:muted,marginTop:4}}>{designUseEmoji?"슬라이드에 이모티콘이 포함됩니다":"이모티콘 없이 텍스트만 생성됩니다"}</div>
+                  </div>
 
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:12,paddingTop:10,borderTop:`1px solid ${border}`}}>
                     <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -2790,19 +2963,100 @@ hospital equipment`
                   );
                 })()}
 
+                {/* 참고 글감 */}
+                <div style={{marginTop:12}}>
+                  <button onClick={()=>setDesignRef(designRef===null?"":null)}
+                    style={{display:"flex",alignItems:"center",gap:6,padding:"8px 14px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",width:"100%",justifyContent:"space-between"}}>
+                    <span style={{display:"flex",alignItems:"center",gap:5}}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      참고 글감 / 스타일 참고
+                    </span>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points={designRef!==null?"18 15 12 9 6 15":"6 9 12 15 18 9"}/></svg>
+                  </button>
+                  {designRef!==null && (
+                    <div style={{marginTop:8,padding:"12px",background:cardBg,border:`1px solid ${border}`,borderRadius:12}}>
+                      <div style={{fontSize:11,color:muted,marginBottom:6}}>다른 사람의 글이나 스타일을 붙여넣으면 참고하여 카드뉴스를 만듭니다</div>
+                      <textarea value={designRef} onChange={e=>setDesignRef(e.target.value)}
+                        placeholder="참고할 글감이나 스타일을 붙여넣기..."
+                        rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:12,fontFamily:"inherit",outline:"none",resize:"vertical",lineHeight:1.6,boxSizing:"border-box"}}/>
+                      <div style={{display:"flex",gap:6,marginTop:8}}>
+                        <button onClick={()=>{
+                          const inp=document.createElement("input");inp.type="file";inp.accept="image/*";
+                          inp.onchange=ev=>{const f=ev.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=e2=>{setDesignRefImage(e2.target.result);};r.readAsDataURL(f);};
+                          inp.click();
+                        }} style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                          사진 첨부
+                        </button>
+                        {designRefImage && (
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <img src={designRefImage} alt="" style={{width:32,height:32,borderRadius:6,objectFit:"cover"}}/>
+                            <button onClick={()=>setDesignRefImage(null)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${border}`,background:"transparent",color:"#ef4444",fontSize:10,cursor:"pointer"}}>제거</button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {error&&<div style={{marginTop:12,fontSize:13,color:"#ef4444",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",padding:"10px 14px",borderRadius:12,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)"}}>{error}
                   {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
                     <button onClick={()=>window.location.hash="#pricing"} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
                   )}
+                  {(error.includes("다시 시도") || error.includes("오류") || error.includes("응답")) && fields.keyword?.trim()?.length >= 10 && (
+                    <button onClick={()=>{setError("");generateCardNews();}} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>다시 시도</button>
+                  )}
                 </div>}
 
-                {designLoading && (
-                  <div style={{marginTop:24,textAlign:"center",padding:"40px 0"}}>
-                    <div style={{width:48,height:48,borderRadius:"50%",border:`3px solid ${accent}22`,borderTopColor:accent,animation:"spin 0.8s linear infinite",margin:"0 auto"}}/>
-                    <div style={{marginTop:16,fontSize:15,fontWeight:700,color:text}}>{t("bg_designGenerating")}</div>
-                    <div style={{marginTop:6,fontSize:12,color:muted}}>AI가 내용을 분석하여 카드뉴스를 구성하고 있습니다...</div>
-                  </div>
-                )}
+                {designLoading && (()=>{
+                  // 글쓰기 로딩 화면과 동일한 전체 화면 스타일
+                  const steps = [
+                    {label:"주제 분석 중...", sub:true},
+                    {label:"구조 기획 중...", sub:false},
+                    {label:"슬라이드 작성 중...", sub:false},
+                    {label:"마무리 다듬는 중...", sub:false},
+                  ];
+                  return (
+                    <div style={{position:"absolute",inset:0,zIndex:50,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",background:isDark?"#0f0c29":"#f8f9fa"}}>
+                      {/* 아이콘 */}
+                      <div style={{width:80,height:80,borderRadius:"50%",border:`2px solid ${accent}33`,display:"flex",alignItems:"center",justifyContent:"center",marginBottom:24,position:"relative"}}>
+                        <div style={{position:"absolute",width:80,height:80,borderRadius:"50%",border:`2px solid transparent`,borderTopColor:accent,animation:"spin 1.2s linear infinite"}}/>
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+                      </div>
+                      {/* 제목 */}
+                      <div style={{fontSize:18,fontWeight:900,color:text,marginBottom:6}}>AI가 카드뉴스를 만들고 있어요</div>
+                      <div style={{fontSize:13,color:muted,marginBottom:28}}>디자인 · 카드뉴스 생성기</div>
+                      {/* 단계 */}
+                      <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:20}}>
+                        {steps.map((s,i)=>(
+                          <div key={i} style={{display:"flex",alignItems:"center",gap:8}}>
+                            {s.sub ? (
+                              <div style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${accent}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,animation:"spin 1.5s linear infinite"}}>
+                                <div style={{width:4,height:4,borderRadius:"50%",background:accent}}/>
+                              </div>
+                            ) : (
+                              <div style={{width:18,height:18,borderRadius:"50%",border:`2px solid ${border}`,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                                <div style={{width:4,height:4,borderRadius:"50%",background:muted,opacity:0.4}}/>
+                              </div>
+                            )}
+                            <span style={{fontSize:13,color:s.sub?text:muted,fontWeight:s.sub?600:400}}>{s.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* 프로그레스 바 */}
+                      <div style={{width:200,height:3,background:border,borderRadius:2,overflow:"hidden",marginBottom:12}}>
+                        <div style={{width:"40%",height:"100%",background:accent,borderRadius:2,animation:"progress 2s ease-in-out infinite"}}/>
+                      </div>
+                      <div style={{fontSize:11,color:muted}}>보통 20~60초 소요</div>
+                      {/* 취소 버튼 */}
+                      <button onClick={()=>{setDesignLoading(false);setError("");}}
+                        style={{marginTop:40,padding:"10px 32px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",color:text,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+                        취소
+                      </button>
+                      <style>{`@keyframes progress{0%{transform:translateX(-100%)}50%{transform:translateX(150%)}100%{transform:translateX(-100%)}}`}</style>
+                    </div>
+                  );
+                })()}
                 </>)}
 
                 {/* ── 2단계: 미리보기/문구 편집 ── */}
@@ -2824,63 +3078,117 @@ hospital equipment`
                 <div style={{display:"flex",flexDirection:"column",gap:12}}>
                   {designSlides.map((slide,idx) => (
                     <div key={idx} style={{background:cardBg,border:`1px solid ${border}`,borderRadius:16,padding:"18px 20px",transition:"box-shadow 0.15s",boxShadow:isDark?"0 2px 12px rgba(0,0,0,0.2)":"0 2px 12px rgba(0,0,0,0.04)"}}>
-                      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-                        <span style={{width:28,height:28,borderRadius:"50%",background:`${accent}15`,color:accent,fontSize:13,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{idx+1}</span>
-                        <span style={{fontSize:12,color:muted,fontWeight:600}}>{idx===0?"표지":"슬라이드"} {idx===designSlides.length-1&&idx>0?"(마지막)":""}</span>
+                      <div style={{display:"flex",gap:16}}>
+                        {/* 미니 프리뷰 카드 (hover 시 확대) */}
+                        <div
+                          onMouseEnter={()=>setHoverPreview(idx)}
+                          onMouseMove={e=>setHoverPos({x:e.clientX,y:e.clientY})}
+                          onMouseLeave={()=>setHoverPreview(-1)}
+                          style={{width:110,minWidth:110,aspectRatio:"3/4",borderRadius:12,background:slide.image?`url(${slide.image}) center/cover`:(slide.bgColor||"#0a0a0a"),color:slide.textColor||"#fff",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:10,boxSizing:"border-box",flexShrink:0,position:"relative",overflow:"hidden",cursor:"zoom-in",transition:"transform 0.15s",transform:hoverPreview===idx?"scale(1.05)":"scale(1)"}}>
+                          {slide.image && <div style={{position:"absolute",inset:0,background:"linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.6) 100%)",zIndex:0}}/>}
+                          <div style={{position:"relative",zIndex:1,display:"flex",flexDirection:"column",alignItems:"flex-start",justifyContent:"center",width:"100%",padding:"0 4px"}}>
+                            <div style={{position:"absolute",top:-6,right:-2,fontSize:7,opacity:0.3,fontWeight:700}}>{idx+1}/{designSlides.length}</div>
+                            {slide.subtitle && <div style={{fontSize:6,opacity:0.45,textAlign:"left",marginBottom:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"100%"}}>{slide.subtitle}</div>}
+                            {slide.title && <div style={{fontSize:11,fontWeight:900,textAlign:"left",lineHeight:1.2,marginBottom:4,wordBreak:"break-word",overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}} dangerouslySetInnerHTML={{__html:(slide.title||"").replace(/\[P\](.*?)\[\/P\]/g,'<span style="color:'+(slide.pointColor||'#e4ff1a')+'">$1</span>')}}/>}
+                            {slide.body && <div style={{fontSize:5.5,opacity:0.5,textAlign:"left",lineHeight:1.4,overflow:"hidden",display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical"}}>{(slide.body||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,"")}</div>}
+                          </div>
+                        </div>
+
+                        {/* 편집 필드 */}
+                        <div style={{flex:1,minWidth:0}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                            <span style={{width:24,height:24,borderRadius:"50%",background:`${accent}15`,color:accent,fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{idx+1}</span>
+                            <span style={{fontSize:12,color:muted,fontWeight:600}}>{idx===0?"표지":"슬라이드"} {idx===designSlides.length-1&&idx>0?"(마지막)":""}</span>
+                          </div>
+
+                          {/* 제목 */}
+                          <div style={{marginBottom:6}}>
+                            <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:3}}>제목</div>
+                            <input value={slide.title} onChange={e=>{
+                              const next=[...designSlides]; next[idx]={...next[idx],title:e.target.value}; setDesignSlides(next);
+                            }} maxLength={50} style={{width:"100%",padding:"7px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:14,fontWeight:800,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+                          </div>
+
+                          {/* 부제목 */}
+                          <div style={{marginBottom:6}}>
+                            <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:3}}>부제목</div>
+                            <input value={slide.subtitle||""} onChange={e=>{
+                              const next=[...designSlides]; next[idx]={...next[idx],subtitle:e.target.value}; setDesignSlides(next);
+                            }} maxLength={80} style={{width:"100%",padding:"6px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+                          </div>
+
+                          {/* 본문 */}
+                          <div style={{marginBottom:6}}>
+                            <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:3}}>본문</div>
+                            <textarea value={slide.body||""} onChange={e=>{
+                              const next=[...designSlides]; next[idx]={...next[idx],body:e.target.value}; setDesignSlides(next);
+                            }} rows={2} maxLength={300} style={{width:"100%",padding:"6px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",resize:"vertical",lineHeight:1.6,boxSizing:"border-box"}}/>
+                          </div>
+
+                          {/* 핵심문구 */}
+                          <div>
+                            <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:3}}>핵심문구</div>
+                            <input value={slide.highlight||""} onChange={e=>{
+                              const next=[...designSlides]; next[idx]={...next[idx],highlight:e.target.value}; setDesignSlides(next);
+                            }} maxLength={60} style={{width:"100%",padding:"6px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
+                          </div>
+                        </div>
                       </div>
 
-                      {/* 제목 */}
-                      <div style={{marginBottom:8}}>
-                        <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:4}}>제목</div>
-                        <input value={slide.title} onChange={e=>{
-                          const next=[...designSlides]; next[idx]={...next[idx],title:e.target.value}; setDesignSlides(next);
-                        }} style={{width:"100%",padding:"8px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:15,fontWeight:800,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-                      </div>
-
-                      {/* 부제목 */}
-                      <div style={{marginBottom:8}}>
-                        <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:4}}>부제목</div>
-                        <input value={slide.subtitle||""} onChange={e=>{
-                          const next=[...designSlides]; next[idx]={...next[idx],subtitle:e.target.value}; setDesignSlides(next);
-                        }} style={{width:"100%",padding:"7px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-                      </div>
-
-                      {/* 본문 */}
-                      <div style={{marginBottom:8}}>
-                        <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:4}}>본문</div>
-                        <textarea value={slide.body||""} onChange={e=>{
-                          const next=[...designSlides]; next[idx]={...next[idx],body:e.target.value}; setDesignSlides(next);
-                        }} rows={2} style={{width:"100%",padding:"7px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",resize:"vertical",lineHeight:1.6,boxSizing:"border-box"}}/>
-                      </div>
-
-                      {/* 핵심문구 */}
-                      <div>
-                        <div style={{fontSize:11,color:muted,fontWeight:600,marginBottom:4}}>핵심문구</div>
-                        <input value={slide.highlight||""} onChange={e=>{
-                          const next=[...designSlides]; next[idx]={...next[idx],highlight:e.target.value}; setDesignSlides(next);
-                        }} style={{width:"100%",padding:"7px 12px",borderRadius:10,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-                      </div>
-
-                      {/* 강조 키워드 */}
-                      <div style={{marginTop:8}}>
-                        <div style={{fontSize:11,color:"#ccff00",fontWeight:600,marginBottom:4}}>강조 키워드 (형광색)</div>
-                        <input value={slide.accent_text||""} onChange={e=>{
-                          const next=[...designSlides]; next[idx]={...next[idx],accent_text:e.target.value}; setDesignSlides(next);
-                        }} style={{width:"100%",padding:"7px 12px",borderRadius:10,border:`1px solid #ccff0044`,background:isDark?"rgba(204,255,0,0.06)":"rgba(204,255,0,0.1)",color:text,fontSize:13,fontWeight:700,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}}/>
-                      </div>
-
-                      {/* 삭제 버튼 */}
-                      {designSlides.length > 2 && (
-                        <div style={{marginTop:10,textAlign:"right"}}>
+                      {/* 슬라이드 조작 버튼 */}
+                      <div style={{marginTop:10,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <div style={{display:"flex",gap:4}}>
+                          {idx > 0 && (
+                            <button onClick={()=>{const next=[...designSlides];[next[idx-1],next[idx]]=[next[idx],next[idx-1]];setDesignSlides(next);}}
+                              title="위로 이동"
+                              style={{padding:"4px 8px",borderRadius:8,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="18 15 12 9 6 15"/></svg>
+                            </button>
+                          )}
+                          {idx < designSlides.length - 1 && (
+                            <button onClick={()=>{const next=[...designSlides];[next[idx],next[idx+1]]=[next[idx+1],next[idx]];setDesignSlides(next);}}
+                              title="아래로 이동"
+                              style={{padding:"4px 8px",borderRadius:8,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center"}}>
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+                            </button>
+                          )}
+                          <button onClick={()=>{const next=[...designSlides];next.splice(idx+1,0,{...designSlides[idx]});setDesignSlides(next);}}
+                            title="복제"
+                            style={{padding:"4px 8px",borderRadius:8,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:3}}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                            복제
+                          </button>
+                        </div>
+                        {designSlides.length > 2 && (
                           <button onClick={()=>{const next=[...designSlides]; next.splice(idx,1); setDesignSlides(next);}}
                             style={{padding:"4px 12px",borderRadius:8,border:`1px solid rgba(239,68,68,0.3)`,background:"transparent",color:"#ef4444",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
                             삭제
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
+
+                {/* hover 확대 프리뷰 (fixed) */}
+                {hoverPreview >= 0 && hoverPreview < designSlides.length && (()=>{
+                  const s = designSlides[hoverPreview];
+                  return (
+                    <div style={{position:"fixed",left:Math.min(hoverPos.x+20,window.innerWidth-340),top:Math.max(Math.min(hoverPos.y-200,window.innerHeight-440),10),width:320,aspectRatio:"3/4",borderRadius:20,
+                      background:s.image?`url(${s.image}) center/cover`:(s.bgColor||"#1c1c1e"),color:s.textColor||"#fff",
+                      display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:32,boxSizing:"border-box",
+                      zIndex:9999,boxShadow:"0 16px 60px rgba(0,0,0,0.4)",pointerEvents:"none",overflow:"hidden"}}>
+                      {s.image && <div style={{position:"absolute",inset:0,background:"linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.15) 30%, rgba(0,0,0,0.65) 100%)"}}/>}
+                      <div style={{position:"relative",zIndex:1,textAlign:"left",width:"100%",padding:"0 8px"}}>
+                        <div style={{fontSize:8,opacity:0.35,marginBottom:12,textAlign:"right"}}>{hoverPreview+1}/{designSlides.length}</div>
+                        {s.subtitle && <div style={{fontSize:11,opacity:0.45,marginBottom:6}}>{s.subtitle}</div>}
+                        {s.title && <div style={{fontSize:28,fontWeight:900,lineHeight:1.2,marginBottom:14,wordBreak:"break-word"}}>{s.title}</div>}
+                        {s.body && <div style={{fontSize:12,opacity:0.7,lineHeight:1.7,marginBottom:12}}>{s.body}</div>}
+                        {s.highlight && <div style={{fontSize:13,fontWeight:900,marginTop:8,padding:"6px 14px",borderRadius:6,background:s.highlightColor||"#e4ff1a",color:"#000",display:"inline-block"}}>{s.highlight}</div>}
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* 하단 고정 버튼 */}
                 <div style={{marginTop:20,display:"flex",justifyContent:"center",gap:10,paddingBottom:20}}>
@@ -3176,24 +3484,27 @@ hospital equipment`
               </div>
             )}
 
-            {/* 플랫폼 칩 (검색창 아래, 글쓰기 모드만) */}
-            {mode==="write" && <div className="bl-platform-chips" style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap",marginTop:20,padding:"0 24px"}}>
-              {SNS_OPTIONS.slice(0,8).map(p=>{
-                const isA=platformId===p.id;
-                return <button key={p.id} className="bl-platform-chip" onClick={()=>setPlatformId(p.id)}
-                  style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${isA?(p.color||accent):border}`,background:isA?(`${p.color||"#7c6aff"}0d`):"transparent",cursor:"pointer",display:"flex",alignItems:"center",gap:6,fontSize:13,fontWeight:isA?800:600,color:isA?(p.color||accent):muted,transition:"all 0.15s",fontFamily:"inherit"}}>
-                  <div style={{width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",color:p.color||muted,flexShrink:0}}>
-                    {p.svg ? <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">{p.svg.props.children}</svg> : <img src={p.icon} alt="" style={{width:14,height:14,borderRadius:2,objectFit:"contain"}} onError={e=>{e.target.style.display="none"}}/>}
-                  </div>
-                  {p.label}
-                </button>;
-              })}
-              <button onClick={()=>setShowSettings(true)}
-                style={{padding:"8px 16px",borderRadius:20,border:`1px dashed ${border}`,background:"transparent",cursor:"pointer",fontSize:13,fontWeight:600,color:muted,fontFamily:"inherit",transition:"all 0.15s"}}
-                onMouseEnter={e=>{e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}
-                onMouseLeave={e=>{e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}>
-                + 더보기
-              </button>
+            {/* 프롬프트 가이드 (검색창 아래, 글쓰기 모드만) */}
+            {mode==="write" && <div style={{marginTop:20,padding:"0 24px",textAlign:"center"}}>
+              <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+                {[
+                  {label:"블로그로 써줘",platform:"blog_naver"},
+                  {label:"카페로 써줘",platform:"blog_cafe"},
+                  {label:"인스타로 써줘",platform:"blog_insta"},
+                  {label:"유튜브 대본 써줘",platform:"blog_youtube"},
+                  {label:"스레드로 써줘",platform:"blog_thread"},
+                ].map(g=>(
+                  <button key={g.label} onClick={()=>setPlatformId(g.platform)}
+                    style={{padding:"7px 14px",borderRadius:10,border:`1px solid ${platformId===g.platform?accent:border}`,background:platformId===g.platform?`${accent}0d`:"transparent",cursor:"pointer",fontSize:12,fontWeight:platformId===g.platform?700:500,color:platformId===g.platform?accent:muted,fontFamily:"inherit",transition:"all 0.15s"}}
+                    onMouseEnter={e=>{if(platformId!==g.platform){e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}}
+                    onMouseLeave={e=>{if(platformId!==g.platform){e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}}>
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{fontSize:11,color:muted,marginTop:10,lineHeight:1.6}}>
+                프롬프트에 <span style={{color:accent,fontWeight:600}}>"블로그로 써줘"</span>, <span style={{color:accent,fontWeight:600}}>"카페로 써줘"</span> 등을 입력하면 자동으로 플랫폼이 전환됩니다
+              </div>
             </div>}
             {/* 이미지 모드 도구 칩 — 제거됨 */}
             </>
@@ -3245,21 +3556,13 @@ hospital equipment`
 
         {/* 디자인 모드: 카드뉴스 에디터 (편집 단계에서 표시) */}
         {!showResult && mode==="design" && designStep==="editor" && designSlides && (
-          <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderTop:`1px solid ${border}`}}>
-            <div style={{padding:"6px 16px",display:"flex",alignItems:"center",gap:8,flexShrink:0}}>
-              <button onClick={()=>setDesignStep("preview")}
-                style={{padding:"5px 12px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:text,fontSize:12,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:4,fontFamily:"inherit"}}>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
-                문구 수정
-              </button>
-              <span style={{fontSize:11,fontWeight:700,color:accent,padding:"3px 10px",borderRadius:20,background:`${accent}12`}}>카드뉴스 {designSlides.length}장</span>
-            </div>
+          <div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",overflow:"hidden",zIndex:100,background:"#fff"}}>
             <div style={{flex:1,overflow:"hidden"}}>
               <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>에디터 로딩 중...</div>}>
                 <UnifiedCanvasEditorLazy
                   slides={designSlides}
-                  width={1080} height={1080} mode="cardnews"
-                  onSave={()=>{}} onClose={()=>setDesignStep("preview")}
+                  width={1440} height={1920} mode="cardnews"
+                  onSave={()=>{}} onClose={()=>setDesignStep("input")}
                   inline
                 />
               </Suspense>
