@@ -32,12 +32,19 @@ const PLATFORMS = [
     notice: "비즈니스/크리에이터 계정만 지원",
   },
   {
-    id: "naver_blog", label: "네이버 블로그", color: "#03C75A",
-    icon: "/icon-naver-blog.png",
-    desc: "클립보드 복사 + 에디터 열기",
-    canAutoPublish: false,
-    notice: "API 발행 미지원 → 복사+열기 방식",
-    manualOnly: true,
+    id: "youtube", label: "YouTube", color: "#FF0000",
+    icon: "/icon-youtube.png",
+    desc: "영상 업로드 + 첫댓글 자동 발행",
+    authEndpoint: "/api/sns-auth-google",
+    canAutoPublish: true,
+    notice: "Google 계정으로 연결 (YouTube 채널 필요)",
+  },
+  {
+    id: "tiktok", label: "TikTok", color: "#010101",
+    icon: null,
+    desc: "영상 자동 발행",
+    authEndpoint: "/api/sns-auth-tiktok",
+    canAutoPublish: true,
   },
 ];
 
@@ -155,7 +162,13 @@ export default function SnsConnectionManager({ user, isDark, compact = false }) 
                 background: isDark ? `${p.color}20` : `${p.color}10`,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <img src={p.icon} alt="" style={{ width: 24, height: 24, objectFit: "contain", borderRadius: 4 }} />
+                {p.icon ? (
+                  <img src={p.icon} alt="" style={{ width: 24, height: 24, objectFit: "contain", borderRadius: 4 }} />
+                ) : p.id === "tiktok" ? (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill={isDark ? "#fff" : "#010101"}>
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.51a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.54a8.27 8.27 0 0 0 4.76 1.5V6.69h-1z"/>
+                  </svg>
+                ) : null}
               </div>
 
               {/* 정보 */}

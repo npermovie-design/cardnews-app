@@ -704,21 +704,94 @@ export default function CardNewsEditor({
     pushHistory();
   }
 
-  /* ── custom font upload ─────────────────────────────────────────────── */
+  /* ── custom font: IndexedDB persistence ──────────────────────────────── */
+  const FONT_DB = "makeit_fonts";
+  const FONT_STORE = "fonts";
+
+  function openFontDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(FONT_DB, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore(FONT_STORE, { keyPath: "name" });
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function saveFontToDB(name, buffer) {
+    const db = await openFontDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(FONT_STORE, "readwrite");
+      tx.objectStore(FONT_STORE).put({ name, data: buffer });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  async function loadFontsFromDB() {
+    try {
+      const db = await openFontDB();
+      return new Promise((resolve) => {
+        const tx = db.transaction(FONT_STORE, "readonly");
+        const req = tx.objectStore(FONT_STORE).getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => resolve([]);
+      });
+    } catch { return []; }
+  }
+
+  async function deleteFontFromDB(name) {
+    const db = await openFontDB();
+    return new Promise((resolve) => {
+      const tx = db.transaction(FONT_STORE, "readwrite");
+      tx.objectStore(FONT_STORE).delete(name);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    });
+  }
+
+  // 페이지 로드 시 저장된 폰트 복원
+  useEffect(() => {
+    loadFontsFromDB().then(fonts => {
+      fonts.forEach(({ name, data }) => {
+        const face = new FontFace(name, data);
+        face.load().then(loaded => {
+          document.fonts.add(loaded);
+        }).catch(() => {});
+      });
+      if (fonts.length > 0) {
+        setCustomFonts(fonts.map(f => ({ label: f.name + " (내 폰트)", value: f.name })));
+      }
+    });
+  }, []);
+
   function handleCustomFont(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     const name = file.name.replace(/\.[^.]+$/, "");
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      const font = new FontFace(name, ev.target.result);
-      font.load().then((loaded) => {
+    reader.onload = async (ev) => {
+      const buffer = ev.target.result;
+      try {
+        const face = new FontFace(name, buffer);
+        const loaded = await face.load();
         document.fonts.add(loaded);
-        setCustomFonts(prev => [...prev, { label: name + " (내 폰트)", value: name }]);
-      }).catch(err => console.error("Font load error:", err));
+        await saveFontToDB(name, buffer);
+        setCustomFonts(prev => {
+          if (prev.some(f => f.value === name)) return prev;
+          return [...prev, { label: name + " (내 폰트)", value: name }];
+        });
+      } catch (err) {
+        console.error("Font load error:", err);
+        alert(ko ? "폰트를 불러올 수 없습니다." : "Failed to load font.");
+      }
     };
     reader.readAsArrayBuffer(file);
     e.target.value = "";
+  }
+
+  function handleDeleteCustomFont(fontName) {
+    deleteFontFromDB(fontName);
+    setCustomFonts(prev => prev.filter(f => f.value !== fontName));
   }
 
   /* ── layer operations ───────────────────────────────────────────────── */
@@ -1375,6 +1448,17 @@ export default function CardNewsEditor({
                       <Btn small onClick={() => fontFileInputRef.current?.click()} style={{ width: "100%", justifyContent: "center", marginTop: 4 }}>
                         {ko ? "내 폰트 업로드" : "Upload Font"}
                       </Btn>
+                      {customFonts.length > 0 && (
+                        <div style={{ marginTop: 4 }}>
+                          <div style={{ fontSize: 10, color: "#aaa", marginBottom: 3 }}>{ko ? "내 폰트" : "My Fonts"}</div>
+                          {customFonts.map(f => (
+                            <div key={f.value} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "3px 6px", borderRadius: 6, background: "rgba(0,0,0,0.03)", marginBottom: 2 }}>
+                              <span style={{ fontSize: 11, color: "#333", fontFamily: f.value, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{f.value}</span>
+                              <button onClick={() => handleDeleteCustomFont(f.value)} style={{ background: "none", border: "none", cursor: "pointer", color: "#e53e3e", fontSize: 12, padding: "0 4px", lineHeight: 1 }} title={ko ? "삭제" : "Delete"}>×</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       <label style={S.label}>{ko ? "크기" : "Size"}: {selProps.fontSize}px</label>
                       <input type="range" min={10} max={200} step={1} value={selProps.fontSize} style={S.range} onChange={e => setProp("fontSize", +e.target.value)} />
                       <label style={S.label}>{ko ? "색상" : "Color"}</label>

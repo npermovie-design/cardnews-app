@@ -8,6 +8,70 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY
 );
 
+// ── Google 토큰 갱신 ────────────────────────────────────────────
+async function refreshGoogleToken(conn) {
+  if (!conn.refresh_token) return conn.access_token;
+  // 만료 10분 전에 갱신
+  if (conn.token_expires_at && new Date(conn.token_expires_at) > new Date(Date.now() + 10 * 60 * 1000)) {
+    return conn.access_token;
+  }
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      refresh_token: conn.refresh_token,
+      grant_type: "refresh_token",
+    }),
+  });
+  const data = await res.json();
+  if (data.access_token) {
+    const expiresAt = data.expires_in
+      ? new Date(Date.now() + data.expires_in * 1000).toISOString()
+      : null;
+    await supabase.from("sns_connections").update({
+      access_token: data.access_token,
+      token_expires_at: expiresAt,
+      updated_at: new Date().toISOString(),
+    }).eq("uid", conn.uid).eq("platform", "youtube");
+    return data.access_token;
+  }
+  return conn.access_token;
+}
+
+// ── TikTok 토큰 갱신 ────────────────────────────────────────────
+async function refreshTiktokToken(conn) {
+  if (!conn.refresh_token) return conn.access_token;
+  if (conn.token_expires_at && new Date(conn.token_expires_at) > new Date(Date.now() + 10 * 60 * 1000)) {
+    return conn.access_token;
+  }
+  const res = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_key: process.env.TIKTOK_CLIENT_KEY,
+      client_secret: process.env.TIKTOK_CLIENT_SECRET,
+      grant_type: "refresh_token",
+      refresh_token: conn.refresh_token,
+    }),
+  });
+  const data = await res.json();
+  if (data.access_token) {
+    const expiresAt = data.expires_in
+      ? new Date(Date.now() + data.expires_in * 1000).toISOString()
+      : null;
+    await supabase.from("sns_connections").update({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token || conn.refresh_token,
+      token_expires_at: expiresAt,
+      updated_at: new Date().toISOString(),
+    }).eq("uid", conn.uid).eq("platform", "tiktok");
+    return data.access_token;
+  }
+  return conn.access_token;
+}
+
 // ── 공통 CORS 처리 ──────────────────────────────────────────────
 const ALLOWED_ORIGINS = "*";
 
@@ -256,8 +320,9 @@ async function handleMultiPublish(req, res) {
 
         // ── YouTube ──
         else if (platformId === "youtube") {
-          // YouTube Data API v3 — 영상 업로드는 resumable upload 필요
-          // fileUrl이 있으면 URL에서 가져와서 업로드, 없으면 metadata만 설정
+          // 토큰 갱신
+          const ytToken = await refreshGoogleToken(conn);
+
           if (contentType === "video" && fileUrl) {
             // 1) resumable upload 시작
             const metadata = {
@@ -278,7 +343,7 @@ async function handleMultiPublish(req, res) {
               {
                 method: "POST",
                 headers: {
-                  Authorization: `Bearer ${conn.access_token}`,
+                  Authorization: `Bearer ${ytToken}`,
                   "Content-Type": "application/json; charset=UTF-8",
                   "X-Upload-Content-Type": "video/*",
                 },
@@ -307,7 +372,7 @@ async function handleMultiPublish(req, res) {
                       await fetch("https://www.googleapis.com/youtube/v3/commentThreads?part=snippet", {
                         method: "POST",
                         headers: {
-                          Authorization: `Bearer ${conn.access_token}`,
+                          Authorization: `Bearer ${ytToken}`,
                           "Content-Type": "application/json",
                         },
                         body: JSON.stringify({
@@ -488,12 +553,14 @@ async function handleMultiPublish(req, res) {
             error = "TikTok은 영상 파일이 필요합니다";
             status = "failed";
           } else {
+            // 토큰 갱신
+            const tkToken = await refreshTiktokToken(conn);
             // TikTok Content Posting API
             // 1) 업로드 초기화
             const initRes = await fetch("https://open.tiktokapis.com/v2/post/publish/video/init/", {
               method: "POST",
               headers: {
-                Authorization: `Bearer ${conn.access_token}`,
+                Authorization: `Bearer ${tkToken}`,
                 "Content-Type": "application/json; charset=UTF-8",
               },
               body: JSON.stringify({
@@ -755,6 +822,172 @@ async function handleAuthMeta(req, res) {
     const authUrl = platform === "threads"
       ? `https://threads.net/oauth/authorize?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${uid}:${platform}`
       : `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${IG_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${uid}:${platform}`;
+    return res.status(200).json({ authUrl });
+  }
+
+  return res.status(405).json({ error: "Method not allowed" });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ACTION: auth-google — Google(YouTube) OAuth 연동
+// ══════════════════════════════════════════════════════════════════
+async function handleAuthGoogle(req, res) {
+  const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+  const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+  const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || "https://snsmakeit.com/api/sns-auth-google";
+
+  if (req.method === "GET") {
+    const { code, state } = req.query;
+
+    // 콜백 처리 (code가 있으면 토큰 교환)
+    if (code) {
+      const uid = state;
+      if (!uid) return res.redirect(302, "/ai/blog_write?sns_error=" + encodeURIComponent("사용자 정보 없음"));
+
+      try {
+        // 1) Authorization code → Access Token 교환
+        const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            code,
+            client_id: CLIENT_ID,
+            client_secret: CLIENT_SECRET,
+            redirect_uri: REDIRECT_URI,
+            grant_type: "authorization_code",
+          }),
+        });
+        const tokenData = await tokenRes.json();
+        if (!tokenData.access_token) throw new Error("토큰 발급 실패: " + JSON.stringify(tokenData));
+
+        const accessToken = tokenData.access_token;
+        const refreshToken = tokenData.refresh_token || null;
+        const expiresAt = tokenData.expires_in
+          ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+          : null;
+
+        // 2) YouTube 채널 정보 가져오기
+        const channelRes = await fetch(
+          "https://www.googleapis.com/youtube/v3/channels?part=snippet&mine=true",
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        const channelData = await channelRes.json();
+        const channel = channelData.items?.[0];
+        const channelId = channel?.id || "";
+        const channelTitle = channel?.snippet?.title || "";
+
+        // 3) Supabase에 저장
+        const { error: dbError } = await supabase.from("sns_connections").upsert({
+          uid,
+          platform: "youtube",
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          platform_user_id: channelId,
+          platform_username: channelTitle,
+          token_expires_at: expiresAt,
+          connected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "uid,platform" });
+
+        if (dbError) throw new Error("DB 저장 실패: " + dbError.message);
+
+        return res.redirect(302, "/ai/blog_write?sns_connected=youtube");
+      } catch (e) {
+        return res.redirect(302, "/ai/blog_write?sns_error=" + encodeURIComponent(e.message));
+      }
+    }
+
+    // 인증 URL 생성
+    if (!CLIENT_ID) return res.status(500).json({ error: "GOOGLE_CLIENT_ID 환경변수 미설정" });
+    const uid = req.query.uid;
+    const scopes = [
+      "https://www.googleapis.com/auth/youtube.upload",
+      "https://www.googleapis.com/auth/youtube",
+      "https://www.googleapis.com/auth/youtube.readonly",
+    ].join(" ");
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&access_type=offline&prompt=consent&state=${uid}`;
+    return res.status(200).json({ authUrl });
+  }
+
+  return res.status(405).json({ error: "Method not allowed" });
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ACTION: auth-tiktok — TikTok OAuth 연동
+// ══════════════════════════════════════════════════════════════════
+async function handleAuthTiktok(req, res) {
+  const CLIENT_KEY = process.env.TIKTOK_CLIENT_KEY;
+  const CLIENT_SECRET = process.env.TIKTOK_CLIENT_SECRET;
+  const REDIRECT_URI = process.env.TIKTOK_REDIRECT_URI || "https://snsmakeit.com/api/sns-auth-tiktok";
+
+  if (req.method === "GET") {
+    const { code, state } = req.query;
+
+    // 콜백 처리
+    if (code) {
+      const uid = state;
+      if (!uid) return res.redirect(302, "/ai/blog_write?sns_error=" + encodeURIComponent("사용자 정보 없음"));
+
+      try {
+        // 1) Authorization code → Access Token 교환
+        const tokenRes = await fetch("https://open.tiktokapis.com/v2/oauth/token/", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            client_key: CLIENT_KEY,
+            client_secret: CLIENT_SECRET,
+            code,
+            grant_type: "authorization_code",
+            redirect_uri: REDIRECT_URI,
+          }),
+        });
+        const tokenData = await tokenRes.json();
+        if (!tokenData.access_token) throw new Error("토큰 발급 실패: " + JSON.stringify(tokenData));
+
+        const accessToken = tokenData.access_token;
+        const refreshToken = tokenData.refresh_token || null;
+        const openId = tokenData.open_id || "";
+        const expiresAt = tokenData.expires_in
+          ? new Date(Date.now() + tokenData.expires_in * 1000).toISOString()
+          : null;
+
+        // 2) 사용자 정보 가져오기
+        let displayName = "";
+        try {
+          const userRes = await fetch("https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name,avatar_url", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          const userData = await userRes.json();
+          displayName = userData.data?.user?.display_name || "";
+        } catch {}
+
+        // 3) Supabase에 저장
+        const { error: dbError } = await supabase.from("sns_connections").upsert({
+          uid,
+          platform: "tiktok",
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          platform_user_id: openId,
+          platform_username: displayName,
+          token_expires_at: expiresAt,
+          connected_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "uid,platform" });
+
+        if (dbError) throw new Error("DB 저장 실패: " + dbError.message);
+
+        return res.redirect(302, "/ai/blog_write?sns_connected=tiktok");
+      } catch (e) {
+        return res.redirect(302, "/ai/blog_write?sns_error=" + encodeURIComponent(e.message));
+      }
+    }
+
+    // 인증 URL 생성
+    if (!CLIENT_KEY) return res.status(500).json({ error: "TIKTOK_CLIENT_KEY 환경변수 미설정" });
+    const uid = req.query.uid;
+    const scopes = "user.info.basic,video.publish,video.upload";
+    const csrfState = uid;
+    const authUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${CLIENT_KEY}&scope=${scopes}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${csrfState}`;
     return res.status(200).json({ authUrl });
   }
 
@@ -1300,6 +1533,8 @@ const ACTION_MAP = {
   "publish-history": handlePublishHistory,
   connections: handleConnections,
   "auth-meta": handleAuthMeta,
+  "auth-google": handleAuthGoogle,
+  "auth-tiktok": handleAuthTiktok,
   "auth-tistory": handleAuthTistory,
   "threads-media": handleThreadsMedia,
   feed: handleFeed,

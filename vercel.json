@@ -80,6 +80,8 @@
     { "source": "/api/sns-publish-history", "destination": "/api/sns?action=publish-history" },
     { "source": "/api/sns-connections", "destination": "/api/sns?action=connections" },
     { "source": "/api/sns-auth-meta", "destination": "/api/sns?action=auth-meta" },
+    { "source": "/api/sns-auth-google", "destination": "/api/sns?action=auth-google" },
+    { "source": "/api/sns-auth-tiktok", "destination": "/api/sns?action=auth-tiktok" },
     { "source": "/api/sns-auth-tistory", "destination": "/api/sns?action=auth-tistory" },
     { "source": "/api/threads-media", "destination": "/api/sns?action=threads-media" },
     { "source": "/api/fetch-sns-feed", "destination": "/api/sns?action=feed" },

@@ -23,7 +23,6 @@ const PLATFORMS = [
   { id: "instagram", label: "Instagram", color: "#E1306C", icon: "/icon-instagram.webp", accepts: ["video", "image"], fields: ["description", "tags"] },
   { id: "threads", label: "Threads", color: "#000", icon: "/icon-threads.png", accepts: ["video", "image", "text"], fields: ["description"] },
   { id: "tiktok", label: "TikTok", color: "#010101", icon: null, svgIcon: true, accepts: ["video"], fields: ["description", "tags", "visibility"] },
-  { id: "naver_blog", label: "네이버 블로그", color: "#03C75A", icon: "/icon-naver-blog.png", accepts: ["image", "text"], fields: ["description", "tags"] },
 ];
 
 function TikTokIcon({ size = 24 }) {
@@ -313,47 +312,149 @@ function PreviewPanel({ contentType, file, title, description, enabledPlatforms,
 }
 
 // ── 발행 히스토리 ──
+const STATUS_FILTERS = [
+  { value: "all", label: "전체" },
+  { value: "완료", label: "성공" },
+  { value: "실패", label: "실패" },
+  { value: "발행 중", label: "발행 중" },
+];
+
 function PublishHistory({ history, isDark, onRefresh }) {
+  const [filterPlatform, setFilterPlatform] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterDays, setFilterDays] = useState("all");
+
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
+  const acc = "#7c6aff";
+  const chipBg = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5";
+  const chipActiveBg = isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.08)";
 
-  if (history.length === 0) {
-    return (
-      <div style={{ textAlign: "center", padding: "60px 20px", color: muted }}>
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.3, marginBottom: 12 }}>
-          <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-        </svg>
-        <div style={{ fontSize: 13 }}>발행 히스토리가 없습니다</div>
-      </div>
-    );
-  }
+  // 필터 적용
+  const filtered = history.filter(item => {
+    if (filterPlatform !== "all" && !item.platforms?.includes(filterPlatform)) return false;
+    if (filterStatus !== "all" && item.status !== filterStatus) return false;
+    if (filterDays !== "all") {
+      const days = parseInt(filterDays);
+      const itemDate = new Date(item.date);
+      if (isNaN(itemDate)) return true;
+      if (Date.now() - itemDate.getTime() > days * 86400000) return false;
+    }
+    return true;
+  });
+
+  // 칩 스타일
+  const chipStyle = (active) => ({
+    padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer",
+    background: active ? chipActiveBg : chipBg,
+    color: active ? acc : muted,
+    fontSize: 12, fontWeight: 600, transition: "all 0.15s", whiteSpace: "nowrap",
+  });
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {history.map((item, i) => (
-        <div key={i} style={{
-          padding: "14px 18px", borderRadius: 12,
-          border: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.03)" : "#fff",
-          display: "flex", alignItems: "center", gap: 12,
-        }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: text, marginBottom: 4 }}>{item.title}</div>
-            <div style={{ fontSize: 11, color: muted }}>{item.date}</div>
-          </div>
-          <div style={{
-            fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 8,
-            background: item.status === "완료" ? "rgba(16,185,129,0.1)" : item.status === "발행 중" ? "rgba(59,130,246,0.1)" : "rgba(239,68,68,0.1)",
-            color: item.status === "완료" ? "#10b981" : item.status === "발행 중" ? "#3b82f6" : "#ef4444",
-          }}>{item.status}</div>
-          <div style={{ display: "flex", gap: 4 }}>
-            {item.platforms?.map(p => {
-              const plat = PLATFORMS.find(x => x.id === p);
-              return plat ? <span key={p} title={plat.label}><PlatformIcon platform={plat} size={18} /></span> : null;
-            })}
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* 필터 바 */}
+      <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "center" }}>
+        {/* 플랫폼 필터 */}
+        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          <span style={{ fontSize: 11, color: muted, marginRight: 4, fontWeight: 600 }}>플랫폼</span>
+          <button onClick={() => setFilterPlatform("all")} style={chipStyle(filterPlatform === "all")}>전체</button>
+          {PLATFORMS.map(p => (
+            <button key={p.id} onClick={() => setFilterPlatform(p.id)} style={{
+              ...chipStyle(filterPlatform === p.id),
+              display: "flex", alignItems: "center", gap: 4,
+            }}>
+              <PlatformIcon platform={p} size={14} />
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* 상태 필터 */}
+        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          <span style={{ fontSize: 11, color: muted, marginRight: 4, fontWeight: 600 }}>상태</span>
+          {STATUS_FILTERS.map(s => (
+            <button key={s.value} onClick={() => setFilterStatus(s.value)} style={chipStyle(filterStatus === s.value)}>{s.label}</button>
+          ))}
+        </div>
+
+        {/* 기간 필터 */}
+        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          <span style={{ fontSize: 11, color: muted, marginRight: 4, fontWeight: 600 }}>기간</span>
+          {[
+            { value: "all", label: "전체" },
+            { value: "1", label: "오늘" },
+            { value: "7", label: "7일" },
+            { value: "30", label: "30일" },
+          ].map(d => (
+            <button key={d.value} onClick={() => setFilterDays(d.value)} style={chipStyle(filterDays === d.value)}>{d.label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* 결과 카운트 */}
+      <div style={{ fontSize: 12, color: muted }}>
+        {filtered.length === history.length
+          ? `총 ${history.length}건`
+          : `${history.length}건 중 ${filtered.length}건`}
+      </div>
+
+      {/* 히스토리 목록 */}
+      {filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: muted }}>
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.3, marginBottom: 12 }}>
+            <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+          </svg>
+          <div style={{ fontSize: 13 }}>
+            {history.length === 0 ? "발행 히스토리가 없습니다" : "필터 조건에 맞는 항목이 없습니다"}
           </div>
         </div>
-      ))}
+      ) : (
+        filtered.map((item, i) => (
+          <div key={i} style={{
+            padding: "14px 18px", borderRadius: 12,
+            border: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.03)" : "#fff",
+            display: "flex", alignItems: "center", gap: 12,
+          }}>
+            {/* 플랫폼 아이콘 */}
+            <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+              {item.platforms?.map(p => {
+                const plat = PLATFORMS.find(x => x.id === p);
+                return plat ? <span key={p} title={plat.label}><PlatformIcon platform={plat} size={22} /></span> : null;
+              })}
+            </div>
+
+            {/* 콘텐츠 정보 */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: text, marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.title}</div>
+              <div style={{ fontSize: 11, color: muted }}>{item.date}</div>
+              {item.error && (
+                <div style={{ fontSize: 10, color: "#ef4444", marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {item.error}
+                </div>
+              )}
+            </div>
+
+            {/* 상태 뱃지 */}
+            <div style={{
+              fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 8, flexShrink: 0,
+              background: item.status === "완료" ? "rgba(16,185,129,0.1)" : item.status === "발행 중" ? "rgba(59,130,246,0.1)" : "rgba(239,68,68,0.1)",
+              color: item.status === "완료" ? "#10b981" : item.status === "발행 중" ? "#3b82f6" : "#ef4444",
+            }}>{item.status}</div>
+
+            {/* 링크 버튼 */}
+            {item.postUrl && item.status === "완료" && !item.postUrl.startsWith("clipboard") && (
+              <a href={item.postUrl} target="_blank" rel="noopener noreferrer" style={{
+                padding: "4px 8px", borderRadius: 6, border: `1px solid ${bdr}`,
+                color: acc, fontSize: 11, fontWeight: 600, textDecoration: "none", flexShrink: 0,
+              }}>
+                보기
+              </a>
+            )}
+          </div>
+        ))
+      )}
     </div>
   );
 }
