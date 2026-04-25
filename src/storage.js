@@ -338,31 +338,64 @@ export async function fetchUser(uid) {
   return await _fetchUserRow(uid);
 }
 
-// ── DB: 포인트 변경 (Supabase RPC 함수 사용 - 단 1회 호출로 차감+내역 동시 처리) ─
+// ── 무제한 플랜 체크 ────────────────────────────────────────────
+const UNLIMITED_PLANS = ["Business", "Agency"];
+let _cachedPlan = null;
+let _cachedPlanUid = null;
+let _cachedPlanTime = 0;
+
+export async function getUserPlan(uid) {
+  if (!uid) return null;
+  // 5분 캐시
+  if (_cachedPlanUid === uid && Date.now() - _cachedPlanTime < 5 * 60 * 1000) return _cachedPlan;
+  try {
+    const { data } = await supabase
+      .from("subscriptions")
+      .select("product_name, status, ends_at")
+      .eq("uid", uid)
+      .in("status", ["active", "on_trial"])
+      .order("updated_at", { ascending: false })
+      .limit(1);
+    const sub = data?.[0];
+    _cachedPlan = sub?.product_name || null;
+    _cachedPlanUid = uid;
+    _cachedPlanTime = Date.now();
+    return _cachedPlan;
+  } catch { return null; }
+}
+
+export function isUnlimitedPlan(planName) {
+  return UNLIMITED_PLANS.includes(planName);
+}
+
+// ── DB: 포인트 변경 (무제한 플랜은 차감 스킵, 원자적 RPC 사용) ───
 export async function changePoints(uid, delta, reason) {
   if (!uid) { return 0; }
   try {
-    // 읽기 + 쓰기
-    const { data: row } = await supabase.from("users").select("points").eq("uid", uid).single();
-    const currentPoints = row?.points || 0;
-
-    // 차감 시 잔액 부족하면 거부
-    if (delta < 0 && currentPoints < Math.abs(delta)) {
-      /* insufficient points */
-      return currentPoints;
+    // 무제한 플랜 체크 — 차감(delta < 0)인 경우만 스킵
+    if (delta < 0) {
+      const plan = await getUserPlan(uid);
+      if (isUnlimitedPlan(plan)) {
+        const { data: row } = await supabase.from("users").select("points").eq("uid", uid).single();
+        const currentPoints = row?.points || 0;
+        supabase.from("point_history").insert({
+          uid, delta: 0, reason: `[무제한] ${reason || ""}`, balance: currentPoints, created_at: new Date().toISOString(),
+        }).then(() => {}).catch(() => {});
+        return currentPoints;
+      }
     }
 
-    const newPoints = Math.max(0, currentPoints + delta);
-    const { error } = await supabase.from("users").update({ points: newPoints }).eq("uid", uid);
+    // 원자적 포인트 변경 (FOR UPDATE 행 잠금으로 레이스컨디션 방지)
+    const { data: newPoints, error } = await supabase.rpc("change_points_atomic", {
+      p_uid: uid, p_delta: delta, p_reason: reason || "",
+    });
+
     if (error) {
-      /* points update failed */
-      return currentPoints;
+      console.error("changePoints RPC 오류:", error.message);
+      // RPC 실패 시 현재 포인트 조회하여 반환
+      const { data: row } = await supabase.from("users").select("points").eq("uid", uid).single();
+      return row?.points || 0;
     }
-
-    // point_history 기록
-    supabase.from("point_history").insert({
-      uid, delta, reason: reason || "", balance: newPoints, created_at: new Date().toISOString(),
-    }).then(() => {}).catch(() => {});
 
     return newPoints;
   } catch(e) {

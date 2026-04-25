@@ -1202,9 +1202,11 @@ const ONE_OFF_POINTS = {
 
 // 구독 tier: product_name → { monthly, yearly } (가격 페이지 기준)
 const SUB_TIERS = {
-  "Basic":   { monthly: 1200, yearly: 14400 },
-  "Pro":     { monthly: 2800, yearly: 33600 },
-  "Premium": { monthly: 5500, yearly: 66000 },
+  "Basic":    { monthly: 1200,  yearly: 14400 },
+  "Pro":      { monthly: 2800,  yearly: 33600 },
+  "Premium":  { monthly: 5500,  yearly: 66000 },
+  "Business": { monthly: 0,     yearly: 0 },     // 무제한 — 포인트 지급 없음
+  "Agency":   { monthly: 0,     yearly: 0 },     // 무제한 — 포인트 지급 없음
 };
 
 function detectInterval(attrs) {
@@ -1216,16 +1218,11 @@ function detectInterval(attrs) {
 }
 
 async function addPoints(uid, points, reason) {
-  const { data: user, error: err1 } = await supabase
-    .from("users").select("points").eq("uid", uid).single();
-  if (err1 || !user) { console.error("[LS] User not found:", uid); return null; }
-
-  const newPoints = (user.points || 0) + points;
-  const { error: err2 } = await supabase
-    .from("users").update({ points: newPoints }).eq("uid", uid);
-  if (err2) { console.error("[LS] Update fail:", err2.message); return null; }
-
-  await supabase.from("point_history").insert({ uid, delta: points, reason, balance: newPoints });
+  // 원자적 포인트 적립 (FOR UPDATE 행 잠금으로 레이스컨디션 방지)
+  const { data: newPoints, error } = await supabase.rpc("change_points_atomic", {
+    p_uid: uid, p_delta: points, p_reason: reason || "",
+  });
+  if (error) { console.error("[LS] RPC error:", error.message); return null; }
   return newPoints;
 }
 
