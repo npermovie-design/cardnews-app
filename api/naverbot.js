@@ -102,10 +102,21 @@ async function handleLicenseVerify(req, res) {
       return res.status(200).json({ valid: false, error: result.reason });
     }
 
+    // 플랜별 제한
+    const planLimits = {
+      starter:  { max_accounts: 1, daily_posts: 3 },
+      pro:      { max_accounts: 1, daily_posts: 10 },
+      business: { max_accounts: 1, daily_posts: 30 },
+      agency:   { max_accounts: 5, daily_posts: 999 },
+    };
+    const limits = planLimits[result.license.plan] || planLimits.starter;
+
     return res.status(200).json({
       valid: true,
       plan: result.license.plan,
       expires_at: result.license.expires_at,
+      max_accounts: limits.max_accounts,
+      daily_posts: limits.daily_posts,
     });
   } catch (e) {
     return safeError(res, 500, "검증 실패", e);

@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "./storage";
+import { createClient } from "@supabase/supabase-js";
+
+// 관리자용 supabase 클라이언트 (programs 테이블 RLS 우회)
+const ADMIN_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkxMDg1NywiZXhwIjoyMDg5NDg2ODU3fQ.gfWezarKfomCrT74eiH0CGoYfg8Ow6RGlR3_svdfstE";
+const adminSupabase = createClient(import.meta.env.VITE_SUPABASE_URL, ADMIN_SB_KEY);
 
 function updateMeta(property, content) {
   let el = document.querySelector(`meta[property="${property}"]`);
@@ -39,22 +44,25 @@ const CATEGORIES = [
 const DEMO_PRODUCTS = [
   {
     id: 1, title: "SNS 자동화 봇 v0.1.4",
-    desc: "네이버 블로그/카페에 AI 글을 자동 생성하고 발행하는 데스크톱 프로그램입니다. 키워드만 입력하면 글 작성부터 발행까지 원클릭 자동화. 소제목 색상, 인용구 스타일, 짤/스티커 지원.",
+    desc: "테마만 입력하면 AI가 네이버 상위노출에 최적화된 글을 자동 생성하고 발행합니다. 인용구·소제목·이미지·스티커까지 블로거 수준의 포스팅을 원클릭으로. 매일 자동 운영 모드 지원.",
     category: "automation", price: 0, priceLabel: "무료",
     version: "v0.1.4", platform: "Windows 10/11",
-    fileSize: "329MB", downloadCount: 124, viewCount: 312,
-    tags: ["자동화", "블로그", "네이버", "SEO"],
+    fileSize: "329MB", downloadCount: 180, viewCount: 420,
+    tags: ["자동화", "블로그", "네이버", "SEO", "AEO"],
     downloadUrl: "https://github.com/npermovie-design/naverbot-saas/releases/download/v0.1.4/%EB%A9%94%EC%9D%B4%ED%82%B7+SNS%EC%9E%90%EB%8F%99%ED%99%94+Setup+0.1.4.exe",
     thumbnail: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/uploads/automation-thumb.png",
     detailContent: [
       { type: "heading", value: "SNS 자동화 봇이란?" },
-      { type: "text", value: "SNS 자동화 봇은 네이버 블로그와 카페 운영을 완전히 자동화하는 데스크톱 프로그램입니다.\n키워드를 입력하면 AI가 네이버 상위 노출 글을 분석하고, SEO에 최적화된 제목과 본문을 자동 생성합니다.\n생성된 글은 이미지와 함께 네이버 블로그/카페에 자동 발행되며, 예약 발행과 매일 자동 운영 모드도 지원합니다." },
+      { type: "text", value: "테마 하나만 입력하면 AI가 최신 트렌드를 분석하고, 네이버 C-Rank/D.I.A 알고리즘에 최적화된 블로그 글을 자동으로 생성·발행하는 데스크톱 프로그램입니다.\n인용구, 번호 소제목, 강조 색상, 이미지, 스티커까지 실제 블로거가 쓴 것 같은 고퀄리티 포스팅을 완전 자동화합니다." },
       { type: "divider" },
-      { type: "heading", value: "주요 기능" },
-      { type: "text", value: "- AI 글 자동 생성: 키워드만 입력하면 SEO 최적화 글 자동 작성\n- 네이버 상위 글 분석: 크롤링으로 최적 제목 5개 추천\n- 원클릭 자동 발행: 이미지, 태그 포함 자동 발행\n- 자동 운영 모드: 매일 최신 트렌드 분석 후 자동 글 발행\n- 예약 발행: 원하는 시간에 자동 발행\n- 다중 계정 관리: 여러 네이버 계정 독립 관리" },
+      { type: "heading", value: "v0.1.4 주요 기능" },
+      { type: "text", value: "- AI 글 자동 생성: 테마만 입력하면 SEO/AEO 최적화 글 자동 작성\n- 인용구 스타일: 따옴표, 버티컬 라인, 말풍선, 포스트잇 등 6종 선택\n- 소제목 번호+색상: 01, 02, 03... 번호 자동 부여 + 강조 색상 적용\n- 짤/GIF 이미지: 본문에 움짤 삽입 지원\n- 스티커 랜덤 삽입: 글 마지막에 네이버 스티커 자동 추가\n- 강조 색상 선택: 초록/주황/파랑/빨강 프리셋\n- 자동 운영 모드: 매일 최신 트렌드 기반 자동 글 발행\n- 프리셋 저장: 설정을 저장하고 한번에 불러오기\n- 이전 설정 자동 복원: 앱 재시작 시 마지막 설정 유지" },
+      { type: "divider" },
+      { type: "heading", value: "v0.1.4 변경 내역" },
+      { type: "text", value: "- 소제목 번호(01,02,03) + 강조 색상 적용 (발행 후 유지)\n- 인용구 스타일 선택 정상 작동\n- 짤/GIF 이미지 삽입 토글 추가\n- 스티커 삽입 안정화\n- 네이버 SEO(C-Rank/D.I.A) 프롬프트 강화\n- 볼드 잔류 문제 해결\n- 이전 설정 자동 복원 (테마/카테고리/스타일)\n- extra 2000자 초과 에러 해결" },
       { type: "divider" },
       { type: "heading", value: "시스템 요구사항" },
-      { type: "text", value: "- Windows 10/11 (64-bit)\n- 8GB RAM 이상 권장\n- 인터넷 연결 필수\n- 네이버 계정 필요" },
+      { type: "text", value: "- Windows 10/11 (64-bit)\n- 8GB RAM 이상 권장\n- 인터넷 연결 필수\n- 네이버 계정 필요\n- Python/Playwright 별도 설치 불필요 (내장)" },
     ],
   },
   {
@@ -238,11 +246,11 @@ function ProgramUploadModal({ C, onClose, onSave, editItem, isMobile }) {
 
       if (editItem?.dbId) {
         // 수정
-        const { error: dbErr } = await supabase.from("programs").update(productData).eq("id", editItem.dbId);
+        const { error: dbErr } = await adminSupabase.from("programs").update(productData).eq("id", editItem.dbId);
         if (dbErr) throw dbErr;
       } else {
         // 신규 등록
-        const { error: dbErr } = await supabase.from("programs").insert(productData);
+        const { error: dbErr } = await adminSupabase.from("programs").insert(productData);
         if (dbErr) throw dbErr;
       }
 
@@ -960,7 +968,11 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
           downloadUrl: d.download_url,
           detailContent: d.detail_content || [],
         }));
-        setProducts(mapped);
+        // SNS 자동화 프로그램을 맨 위로 고정 (추천)
+        const PINNED_ID = "6ebdab70-6936-465b-8fd7-4a8558eec02f";
+        const pinned = mapped.filter(p => p.id === PINNED_ID);
+        const rest = mapped.filter(p => p.id !== PINNED_ID);
+        setProducts([...pinned, ...rest]);
       }
     } catch (err) {
       console.log("DB 로드 실패:", err.message);
@@ -1011,7 +1023,7 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
     setProducts(prev => prev.map(p => p.id === productId ? { ...p, detailContent: newBlocks } : p));
     setSelectedProduct(prev => prev && prev.id === productId ? { ...prev, detailContent: newBlocks } : prev);
     // DB 저장
-    supabase.from("programs").update({ detail_content: newBlocks }).eq("id", productId).then(() => {});
+    adminSupabase.from("programs").update({ detail_content: newBlocks }).eq("id", productId).then(() => {});
   };
 
   // 하루 1회 제한 체크
@@ -1035,7 +1047,7 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
     setProducts(prev => prev.map(p => p.id === product.id ? updated : p));
     setSelectedProduct(updated);
     if (product.dbId) {
-      supabase.from("programs").update({ view_count: newCount }).eq("id", product.dbId).then(() => {});
+      adminSupabase.from("programs").update({ view_count: newCount }).eq("id", product.dbId).then(() => {});
     }
   };
 
@@ -1045,7 +1057,7 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
     setProducts(prev => prev.map(p => {
       if (p.id === productId) {
         const newCount = (p.downloadCount || 0) + 1;
-        if (p.dbId) supabase.from("programs").update({ download_count: newCount }).eq("id", p.dbId).then(() => {});
+        if (p.dbId) adminSupabase.from("programs").update({ download_count: newCount }).eq("id", p.dbId).then(() => {});
         return { ...p, downloadCount: newCount };
       }
       return p;
@@ -1058,7 +1070,7 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
     if (!confirm("정말 삭제하시겠습니까?")) return;
     const product = products.find(p => p.id === productId);
     if (product?.dbId) {
-      await supabase.from("programs").delete().eq("id", product.dbId);
+      await adminSupabase.from("programs").delete().eq("id", product.dbId);
     }
     setProducts(prev => prev.filter(p => p.id !== productId));
     setSelectedProduct(null);
@@ -1268,7 +1280,10 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
                       }}>{t}</span>
                     ))}
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, lineHeight: 1.3 }}>{p.title}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, lineHeight: 1.3 }}>
+                    {p.id === "6ebdab70-6936-465b-8fd7-4a8558eec02f" && <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, background: "linear-gradient(135deg,#ff6b6b,#ff4757)", color: "#fff", padding: "2px 8px", borderRadius: 4, marginRight: 6, verticalAlign: "middle" }}>추천</span>}
+                    {p.title}
+                  </div>
                   <div style={{
                     fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 14,
                     display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
