@@ -230,7 +230,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       try {
         const mediaType = detectMediaType(file);
         const meta = await generateAiMeta(file.name, mediaType, file);
-        const path = `archive/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+        const ext = file.name.split(".").pop() || "bin";
+        const path = `archive/${crypto.randomUUID()}.${ext}`;
         const url = await uploadFileToStorage(file, path);
         const tagLabel = { video: "영상", gif: "GIF", photo: "사진", music: "음악" }[mediaType] || "";
         await submitPost({

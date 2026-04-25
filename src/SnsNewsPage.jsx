@@ -198,7 +198,7 @@ function NewsEditorModal({ article, onSave, onClose, t }) {
                 {t("news_file")}
                 <input type="file" accept="image/*" style={{ display: "none" }} onChange={async (e) => {
                   const file = e.target.files?.[0]; if (!file) return;
-                  try { const ext = file.name.split(".").pop(); const path = `news-thumbnails/${Date.now()}.${ext}`; const { error } = await supabase.storage.from("images").upload(path, file, { upsert: true }); if (error) throw error; const { data: u } = supabase.storage.from("images").getPublicUrl(path); setThumbnail(u.publicUrl); } catch { alert(t("news_upload_fail")); }
+                  try { const ext = file.name.split(".").pop(); const path = `news-thumbnails/${crypto.randomUUID()}.${ext}`; const { error } = await supabase.storage.from("images").upload(path, file, { upsert: true }); if (error) throw error; const { data: u } = supabase.storage.from("images").getPublicUrl(path); setThumbnail(u.publicUrl); } catch { alert(t("news_upload_fail")); }
                 }} />
               </label>
               <input value={thumbnail} onChange={e => setThumbnail(e.target.value)} placeholder={t("news_or_url")} style={{ ...inp, flex: 1, padding: "8px 12px", fontSize: 12 }} />

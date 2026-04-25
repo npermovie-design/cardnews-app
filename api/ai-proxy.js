@@ -62,10 +62,45 @@ function toAnthropicMessages(messages) {
   });
 }
 
+// ── IP 기반 rate limit (비회원 AI 호출 남용 방지) ──
+const ipCalls = new Map(); // ip → { count, resetAt }
+const IP_LIMIT = 20;       // IP당 10분에 20회
+const IP_WINDOW = 10 * 60 * 1000;
+
+function checkIpRateLimit(req) {
+  const ip = req.headers["x-forwarded-for"]?.split(",")[0]?.trim()
+    || req.headers["x-real-ip"]
+    || req.socket?.remoteAddress
+    || "unknown";
+  const now = Date.now();
+  const entry = ipCalls.get(ip);
+  if (!entry || now > entry.resetAt) {
+    ipCalls.set(ip, { count: 1, resetAt: now + IP_WINDOW });
+    return null;
+  }
+  entry.count++;
+  if (entry.count > IP_LIMIT) {
+    return `요청 한도 초과 (${IP_LIMIT}회/10분). 잠시 후 다시 시도해주세요.`;
+  }
+  return null;
+}
+
+// 메모리 누수 방지: 5분마다 만료된 엔트리 정리
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of ipCalls) {
+    if (now > entry.resetAt) ipCalls.delete(ip);
+  }
+}, 5 * 60 * 1000);
+
 async function handleDefault(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
 
   try {
+    // IP rate limit 체크
+    const rateLimitErr = checkIpRateLimit(req);
+    if (rateLimitErr) return res.status(429).json({ error: rateLimitErr });
+
     const { model, messages, max_tokens, system, stream } = req.body;
     if (!model || !messages) return res.status(400).json({ error: "model, messages 필수" });
 

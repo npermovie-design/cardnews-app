@@ -375,7 +375,8 @@ function RichEditor({ value, onChange, isDark }) {
             img.src = objUrl;
           });
         }
-        const path = `posts/${Date.now()}_${safeName(uploadFile.name)}`;
+        const ext = uploadFile.name.split(".").pop();
+        const path = `posts/${crypto.randomUUID()}.${ext}`;
         const url = await uploadFileToStorage(uploadFile, path);
         editorRef.current.focus();
         document.execCommand("insertHTML", false, `<img src="${url}" style="max-width:100%;border-radius:8px;margin:8px 0" alt=""/>`);

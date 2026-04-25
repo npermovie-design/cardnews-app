@@ -176,9 +176,47 @@ function _handleDailyLogin(userData) {
   return userData;
 }
 
+// ── 일회용 이메일 차단 목록 ───────────────────────────────────────────────
+const DISPOSABLE_DOMAINS = [
+  "mailinator.com","temp-mail.org","guerrillamail.com","tempmail.email",
+  "10minutemail.com","yopmail.com","throwawaymail.com","fakemail.net",
+  "maildrop.cc","guerrillamail.info","grr.la","dispostable.com",
+  "sharklasers.com","guerrillamailblock.com","pokemail.net","spam4.me",
+  "trashmail.com","trashmail.me","mohmal.com","getnada.com",
+];
+
+function normalizeEmail(email) {
+  const [raw, domain] = email.toLowerCase().split("@");
+  let local = raw.split("+")[0]; // +trick 제거
+  if (domain === "gmail.com" || domain === "googlemail.com") {
+    local = local.replace(/\./g, ""); // gmail 점 무시
+  }
+  return `${local}@${domain}`;
+}
+
+function isDisposableEmail(email) {
+  const domain = email.toLowerCase().split("@")[1];
+  return DISPOSABLE_DOMAINS.includes(domain);
+}
+
 // ── Auth: 이메일 회원가입 ─────────────────────────────────────────────────
 export async function fbRegister(email, pw, nick, captchaToken) {
-  // 10초 타임아웃
+  // 일회용 이메일 차단
+  if (isDisposableEmail(email)) {
+    throw new Error("일회용 이메일은 가입할 수 없습니다. 실제 이메일을 사용해주세요.");
+  }
+
+  // 이메일 정규화 후 중복 체크 (Gmail +trick 방지)
+  const normalized = normalizeEmail(email);
+  const { data: existing } = await supabase
+    .from("users")
+    .select("uid")
+    .or(`email.eq.${normalized},email.eq.${email}`)
+    .limit(1);
+  if (existing && existing.length > 0) {
+    throw new Error("이미 가입된 이메일입니다.");
+  }
+
   const signUpOptions = { email, password: pw };
   if (captchaToken) signUpOptions.options = { captchaToken };
   const signUpPromise = supabase.auth.signUp(signUpOptions);
@@ -404,8 +442,25 @@ export async function changePoints(uid, delta, reason) {
   }
 }
 
+// ── Storage 업로드 제한 ──────────────────────────────────────────────────
+const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_MIME_TYPES = [
+  "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml",
+  "video/mp4", "video/webm", "audio/mpeg", "audio/wav",
+  "application/pdf",
+];
+
 // ── Supabase Storage 파일 업로드 ─────────────────────────────────────────
 export async function uploadFileToStorage(file, path, onProgress) {
+  // 사이즈 제한
+  if (file.size > MAX_UPLOAD_SIZE) {
+    throw new Error(`파일 크기가 ${MAX_UPLOAD_SIZE / 1024 / 1024}MB를 초과합니다.`);
+  }
+  // MIME 타입 검증
+  if (file.type && !ALLOWED_MIME_TYPES.includes(file.type)) {
+    throw new Error("허용되지 않는 파일 형식입니다.");
+  }
+
   if (onProgress) onProgress(10);
   const { error } = await supabase.storage
     .from("uploads")
