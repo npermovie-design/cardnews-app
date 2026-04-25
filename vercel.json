@@ -7,7 +7,7 @@
       "maxDuration": 120
     },
     "api/seo.js": {
-      "maxDuration": 120
+      "maxDuration": 300
     },
     "api/**/*.js": {
       "maxDuration": 30
@@ -137,32 +137,8 @@
   ],
   "crons": [
     {
-      "path": "/api/seo?action=cron-briefing",
+      "path": "/api/seo?action=cron-all",
       "schedule": "0 22 * * *"
-    },
-    {
-      "path": "/api/seo?action=cron-social",
-      "schedule": "0 23 * * *"
-    },
-    {
-      "path": "/api/seo?action=cron-ai",
-      "schedule": "10 23 * * *"
-    },
-    {
-      "path": "/api/seo?action=cron-keyword",
-      "schedule": "0 21 * * *"
-    },
-    {
-      "path": "/api/seo?action=cron-info",
-      "schedule": "30 21 * * *"
-    },
-    {
-      "path": "/api/seo?action=cron-daily-keywords",
-      "schedule": "0 22 * * *"
-    },
-    {
-      "path": "/api/seo?action=cron-threads",
-      "schedule": "0 3 * * *"
     },
     {
       "path": "/api/seo?action=cron-threads",

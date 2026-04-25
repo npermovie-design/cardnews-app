@@ -904,7 +904,8 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
           import.meta.env.VITE_SUPABASE_URL || "https://ckzjnpzadeovrasucjmu.supabase.co",
           import.meta.env.VITE_SUPABASE_KEY || ""
         );
-        const today = new Date().toISOString().slice(0, 10);
+        const kst = new Date(Date.now() + 9 * 60 * 60 * 1000);
+        const today = kst.toISOString().slice(0, 10);
         setDateStr(today);
         const { data } = await sb.from("daily_keywords").select("*").eq("date", today).single();
         if (data && data.keywords) {

@@ -43,22 +43,22 @@ const CATEGORIES = [
 
 const DEMO_PRODUCTS = [
   {
-    id: 1, title: "SNS 자동화 봇 v0.1.4",
+    id: 1, title: "SNS 자동화 봇 v0.1.5",
     desc: "테마만 입력하면 AI가 네이버 상위노출에 최적화된 글을 자동 생성하고 발행합니다. 인용구·소제목·이미지·스티커까지 블로거 수준의 포스팅을 원클릭으로. 매일 자동 운영 모드 지원.",
     category: "automation", price: 0, priceLabel: "무료",
-    version: "v0.1.4", platform: "Windows 10/11",
-    fileSize: "329MB", downloadCount: 180, viewCount: 420,
+    version: "v0.1.5", platform: "Windows 10/11",
+    fileSize: "190MB", downloadCount: 180, viewCount: 420,
     tags: ["자동화", "블로그", "네이버", "SEO", "AEO"],
-    downloadUrl: "https://github.com/npermovie-design/naverbot-saas/releases/download/v0.1.4/%EB%A9%94%EC%9D%B4%ED%82%B7+SNS%EC%9E%90%EB%8F%99%ED%99%94+Setup+0.1.4.exe",
+    downloadUrl: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.5.zip",
     thumbnail: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/uploads/automation-thumb.png",
     detailContent: [
       { type: "heading", value: "SNS 자동화 봇이란?" },
       { type: "text", value: "테마 하나만 입력하면 AI가 최신 트렌드를 분석하고, 네이버 C-Rank/D.I.A 알고리즘에 최적화된 블로그 글을 자동으로 생성·발행하는 데스크톱 프로그램입니다.\n인용구, 번호 소제목, 강조 색상, 이미지, 스티커까지 실제 블로거가 쓴 것 같은 고퀄리티 포스팅을 완전 자동화합니다." },
       { type: "divider" },
-      { type: "heading", value: "v0.1.4 주요 기능" },
+      { type: "heading", value: "v0.1.5 주요 기능" },
       { type: "text", value: "- AI 글 자동 생성: 테마만 입력하면 SEO/AEO 최적화 글 자동 작성\n- 인용구 스타일: 따옴표, 버티컬 라인, 말풍선, 포스트잇 등 6종 선택\n- 소제목 번호+색상: 01, 02, 03... 번호 자동 부여 + 강조 색상 적용\n- 짤/GIF 이미지: 본문에 움짤 삽입 지원\n- 스티커 랜덤 삽입: 글 마지막에 네이버 스티커 자동 추가\n- 강조 색상 선택: 초록/주황/파랑/빨강 프리셋\n- 자동 운영 모드: 매일 최신 트렌드 기반 자동 글 발행\n- 프리셋 저장: 설정을 저장하고 한번에 불러오기\n- 이전 설정 자동 복원: 앱 재시작 시 마지막 설정 유지" },
       { type: "divider" },
-      { type: "heading", value: "v0.1.4 변경 내역" },
+      { type: "heading", value: "v0.1.5 변경 내역" },
       { type: "text", value: "- 소제목 번호(01,02,03) + 강조 색상 적용 (발행 후 유지)\n- 인용구 스타일 선택 정상 작동\n- 짤/GIF 이미지 삽입 토글 추가\n- 스티커 삽입 안정화\n- 네이버 SEO(C-Rank/D.I.A) 프롬프트 강화\n- 볼드 잔류 문제 해결\n- 이전 설정 자동 복원 (테마/카테고리/스타일)\n- extra 2000자 초과 에러 해결" },
       { type: "divider" },
       { type: "heading", value: "시스템 요구사항" },
@@ -488,8 +488,8 @@ function DetailContentRenderer({ blocks, C }) {
         if (block.type === "heading") {
           return (
             <h2 key={i} style={{
-              fontSize: 20, fontWeight: 700, marginBottom: 12, marginTop: i === 0 ? 0 : 32,
-              paddingBottom: 10, borderBottom: `2px solid ${BRAND}20`, color: C.text,
+              fontSize: 22, fontWeight: 700, marginBottom: 14, marginTop: i === 0 ? 0 : 36,
+              paddingBottom: 12, borderBottom: `2px solid ${BRAND}20`, color: C.text,
             }}>
               {block.value}
             </h2>
@@ -497,7 +497,7 @@ function DetailContentRenderer({ blocks, C }) {
         }
         if (block.type === "text") {
           return (
-            <div key={i} style={{ fontSize: 14, color: C.text, lineHeight: 2, marginBottom: 16, whiteSpace: "pre-wrap" }}>
+            <div key={i} style={{ fontSize: 15, color: C.text, lineHeight: 2, marginBottom: 16, whiteSpace: "pre-wrap" }}>
               {block.value}
             </div>
           );
@@ -666,7 +666,7 @@ function ProductDetail({ p, C, user, onLogin, onBack, isMobile, isAdmin, onUpdat
             <h1 style={{ fontSize: isMobile ? 24 : 32, fontWeight: 800, marginBottom: 12, lineHeight: 1.25, letterSpacing: -0.5 }}>
               {p.title}
             </h1>
-            <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, marginBottom: 24 }}>{p.desc}</div>
+            <div style={{ fontSize: 15, color: C.muted, lineHeight: 1.8, marginBottom: 24 }}>{p.desc}</div>
 
             {/* 메타 정보 */}
             <div style={{
@@ -1109,15 +1109,15 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text }}>
       <section style={{ textAlign: "center", padding: "80px 20px 48px", maxWidth: 700, margin: "0 auto" }}>
         <div style={{
-          display: "inline-block", padding: "5px 14px", borderRadius: 20,
-          background: `${BRAND}12`, color: BRAND, fontSize: 12, fontWeight: 600, marginBottom: 16,
+          display: "inline-block", padding: "6px 18px", borderRadius: 20,
+          background: `${BRAND}10`, border: `1px solid ${BRAND}25`, color: BRAND, fontSize: 13, fontWeight: 600, marginBottom: 18,
         }}>Resource Library</div>
         <h1 style={{
-          fontSize: "clamp(28px, 5vw, 42px)", fontWeight: 800, lineHeight: 1.25, marginBottom: 14, letterSpacing: -0.5,
+          fontSize: "clamp(30px, 5vw, 46px)", fontWeight: 800, lineHeight: 1.25, marginBottom: 16, letterSpacing: -0.5,
         }}>
           <span style={{ background: GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>필요한 자료를 한 곳에서.</span>
         </h1>
-        <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7 }}>
+        <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.8 }}>
           프로그램, 템플릿, 무료 사진, 무료 영상까지.<br />
           SNS 운영에 필요한 모든 자료를 다운로드하세요.
         </p>
@@ -1132,12 +1132,12 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
           }}>
             <span style={{ color: C.muted, fontSize: 16 }}>&#128269;</span>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="자료실 검색..."
-              style={{ flex: 1, border: "none", outline: "none", background: "transparent", color: C.text, fontSize: 14 }} />
+              style={{ flex: 1, border: "none", outline: "none", background: "transparent", color: C.text, fontSize: 15 }} />
           </div>
           <select value={sort} onChange={e => setSort(e.target.value)} style={{
             padding: "10px 16px", borderRadius: 12, border: `1px solid ${C.border}`,
             background: C.bg === "#fff" ? "#f5f5f8" : "rgba(255,255,255,0.06)",
-            color: C.text, fontSize: 13, fontWeight: 500, cursor: "pointer", outline: "none",
+            color: C.text, fontSize: 14, fontWeight: 500, cursor: "pointer", outline: "none",
           }}>
             <option value="latest">최신순</option>
             <option value="popular">인기순</option>
@@ -1157,8 +1157,8 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
           {CATEGORIES.map(c => (
             <button key={c.id} onClick={() => setCategory(c.id)} style={{
-              padding: "7px 18px", borderRadius: 20, border: c.special ? `1.5px solid ${category === c.id ? "#10b981" : (C.bg === "#fff" ? "#d1fae5" : "rgba(16,185,129,0.3)")}` : "none", cursor: "pointer",
-              fontSize: 13, fontWeight: 600, transition: "all 0.15s",
+              padding: "8px 20px", borderRadius: 20, border: c.special ? `1.5px solid ${category === c.id ? "#10b981" : (C.bg === "#fff" ? "#d1fae5" : "rgba(16,185,129,0.3)")}` : `1.5px solid ${category === c.id ? BRAND : "transparent"}`, cursor: "pointer",
+              fontSize: 14, fontWeight: 600, transition: "all 0.15s",
               background: category === c.id ? (c.special ? "#10b981" : BRAND) : (c.special ? (C.bg === "#fff" ? "#ecfdf5" : "rgba(16,185,129,0.1)") : (C.bg === "#fff" ? "#f0f0f4" : "rgba(255,255,255,0.08)")),
               color: category === c.id ? "#fff" : (c.special ? "#10b981" : C.muted),
             }}>{c.label}</button>
@@ -1266,30 +1266,30 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
                 <div style={{ padding: "20px 20px 16px" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                     <div style={{
-                      padding: "4px 12px", borderRadius: 16,
+                      padding: "5px 14px", borderRadius: 16,
                       background: p.price === 0 ? "#10b98115" : `${BRAND}12`,
                       color: p.price === 0 ? "#10b981" : BRAND,
-                      fontSize: 12, fontWeight: 700,
+                      fontSize: 13, fontWeight: 700,
                     }}>{p.priceLabel}</div>
                   </div>
                   <div style={{ display: "flex", gap: 5, marginBottom: 10, flexWrap: "wrap" }}>
                     {p.tags.slice(0, 3).map(t => (
                       <span key={t} style={{
-                        padding: "2px 8px", borderRadius: 12, fontSize: 10, fontWeight: 600,
+                        padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600,
                         background: `${BRAND}10`, color: BRAND,
                       }}>{t}</span>
                     ))}
                   </div>
-                  <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6, lineHeight: 1.3 }}>
+                  <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8, lineHeight: 1.35 }}>
                     {p.id === "6ebdab70-6936-465b-8fd7-4a8558eec02f" && <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, background: "linear-gradient(135deg,#ff6b6b,#ff4757)", color: "#fff", padding: "2px 8px", borderRadius: 4, marginRight: 6, verticalAlign: "middle" }}>추천</span>}
                     {p.title}
                   </div>
                   <div style={{
-                    fontSize: 12, color: C.muted, lineHeight: 1.6, marginBottom: 14,
+                    fontSize: 13, color: C.muted, lineHeight: 1.7, marginBottom: 16,
                     display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
                   }}>{p.desc}</div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11, color: C.muted }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: C.muted }}>
                       <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2.5C3 2.5 1 6 1 6s2 3.5 5 3.5S11 6 11 6s-2-3.5-5-3.5z" stroke="currentColor" strokeWidth="1.2"/><circle cx="6" cy="6" r="1.5" stroke="currentColor" strokeWidth="1.2"/></svg>
                         {(p.viewCount || 0).toLocaleString()}
@@ -1299,7 +1299,7 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
                         {(p.downloadCount || 0).toLocaleString()}
                       </span>
                     </div>
-                    <div style={{ display: "flex", gap: 12, fontSize: 11, color: C.muted }}>
+                    <div style={{ display: "flex", gap: 12, fontSize: 12, color: C.muted }}>
                       <span>{p.platform}</span>
                       <span>{p.fileSize}</span>
                     </div>

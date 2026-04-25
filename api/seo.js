@@ -298,6 +298,8 @@ export default async function handler(req, res) {
       return handleCronInfo(req, res);
     case "cron-threads":
       return handleCronThreads(req, res);
+    case "cron-all":
+      return handleCronAll(req, res);
     case "index-now":
       return handleIndexNow(req, res);
     case "bulk-index":
@@ -305,8 +307,44 @@ export default async function handler(req, res) {
     case "naver-verify":
       return handleNaverVerify(req, res);
     default:
-      return res.status(400).json({ error: "action 파라미터 필요: sitemap|rss|archive-auto-tag|cron-briefing|cron-social|cron-ai|cron-keyword|cron-daily-keywords|cron-info|index-now|bulk-index|naver-verify" });
+      return res.status(400).json({ error: "action 파라미터 필요: sitemap|rss|archive-auto-tag|cron-briefing|cron-social|cron-ai|cron-keyword|cron-daily-keywords|cron-info|cron-all|cron-threads|index-now|bulk-index|naver-verify" });
   }
+}
+
+// ── 통합 cron: 모든 자동발행을 한 번에 실행 (Vercel Hobby cron 2개 제한 대응) ──
+async function runCronTask(handler, req) {
+  return new Promise(resolve => {
+    const mockRes = {
+      _status: 200,
+      status(code) { this._status = code; return this; },
+      json(data) { resolve({ status: this._status, ...data }); },
+      end() { resolve({ status: this._status }); },
+      setHeader() { return this; },
+      send(d) { resolve({ status: this._status, body: typeof d === "string" ? d.slice(0, 100) : d }); },
+    };
+    handler(req, mockRes).catch(e => resolve({ status: 500, error: e.message }));
+  });
+}
+
+async function handleCronAll(req, res) {
+  const results = {};
+  const start = Date.now();
+
+  // Phase 1: 경량 작업 병렬 실행 (각 1회 Haiku API 호출)
+  const phase1 = await Promise.allSettled([
+    runCronTask(handleCronBriefing, req).then(r => { results.briefing = r; }),
+    runCronTask(handleCronSocial, req).then(r => { results.social = r; }),
+    runCronTask(handleCronAI, req).then(r => { results.ai = r; }),
+    runCronTask(handleCronKeyword, req).then(r => { results.keyword = r; }),
+    runCronTask(handleCronInfo, req).then(r => { results.info = r; }),
+    runCronTask(handleCronThreads, req).then(r => { results.threads = r; }),
+  ]);
+
+  // Phase 2: daily-keywords (Sonnet 병렬 배치, 무거움)
+  results.dailyKeywords = await runCronTask(handleCronDailyKeywords, req);
+
+  const elapsed = Math.round((Date.now() - start) / 1000);
+  return res.status(200).json({ success: true, elapsed: `${elapsed}s`, results });
 }
 
 // ── 매일 오전 7시 자동 SNS 브리핑 ──
@@ -516,7 +554,8 @@ async function handleCronDailyKeywords(req, res) {
 
   const allKeywords = [];
 
-  for (const batch of batches) {
+  // 4개 배치를 병렬로 실행 (순차 → 병렬, 타임아웃 방지)
+  const batchResults = await Promise.allSettled(batches.map(async (batch) => {
     const catList = batch.map(c => `- "${c.id}": ${c.desc}`).join("\n");
     const prompt = `당신은 SNS 콘텐츠 전략 전문가입니다. 오늘(${todayLabel}) 기준으로 다음 ${batch.length}개 분야 각각에 대해 블로그/유튜브/SNS 콘텐츠 소재로 활용할 수 있는 추천 키워드 20개씩을 선정해주세요.
 
@@ -542,25 +581,29 @@ JSON 형식으로 출력:
 - platforms는 네이버블로그, 유튜브, 인스타, 틱톡, 스레드 중 선택
 - reason은 80자 이상`;
 
-    try {
-      const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-api-key": API_KEY, "anthropic-version": "2023-06-01" },
-        body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 16000, messages: [{ role: "user", content: prompt }] }),
-      });
-      const aiData = await aiRes.json();
-      const raw = aiData.content?.[0]?.text || "";
-      const cleaned = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-      const parsed = JSON.parse(cleaned);
+    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": API_KEY, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 16000, messages: [{ role: "user", content: prompt }] }),
+    });
+    const aiData = await aiRes.json();
+    const raw = aiData.content?.[0]?.text || "";
+    const cleaned = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    return { batch, parsed };
+  }));
 
+  for (const result of batchResults) {
+    if (result.status === "fulfilled") {
+      const { batch, parsed } = result.value;
       for (const cat of batch) {
         const items = parsed[cat.id];
         if (Array.isArray(items)) {
           allKeywords.push(...items.map(kw => ({ ...kw, category: cat.id })));
         }
       }
-    } catch (e) {
-      console.error(`[cron-daily-keywords] 배치 실패:`, e.message);
+    } else {
+      console.error(`[cron-daily-keywords] 배치 실패:`, result.reason?.message);
     }
   }
 
