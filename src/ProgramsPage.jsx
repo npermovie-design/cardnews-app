@@ -43,22 +43,22 @@ const CATEGORIES = [
 
 const DEMO_PRODUCTS = [
   {
-    id: 1, title: "SNS 자동화 봇 v0.1.5",
+    id: 1, title: "SNS 자동화 봇 v0.1.6",
     desc: "테마만 입력하면 AI가 네이버 상위노출에 최적화된 글을 자동 생성하고 발행합니다. 인용구·소제목·이미지·스티커까지 블로거 수준의 포스팅을 원클릭으로. 매일 자동 운영 모드 지원.",
     category: "automation", price: 0, priceLabel: "무료",
-    version: "v0.1.5", platform: "Windows 10/11",
+    version: "v0.1.6", platform: "Windows 10/11",
     fileSize: "190MB", downloadCount: 180, viewCount: 420,
     tags: ["자동화", "블로그", "네이버", "SEO", "AEO"],
-    downloadUrl: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.5.zip",
+    downloadUrl: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.6.zip",
     thumbnail: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/uploads/automation-thumb.png",
     detailContent: [
       { type: "heading", value: "SNS 자동화 봇이란?" },
       { type: "text", value: "테마 하나만 입력하면 AI가 최신 트렌드를 분석하고, 네이버 C-Rank/D.I.A 알고리즘에 최적화된 블로그 글을 자동으로 생성·발행하는 데스크톱 프로그램입니다.\n인용구, 번호 소제목, 강조 색상, 이미지, 스티커까지 실제 블로거가 쓴 것 같은 고퀄리티 포스팅을 완전 자동화합니다." },
       { type: "divider" },
-      { type: "heading", value: "v0.1.5 주요 기능" },
+      { type: "heading", value: "v0.1.6 주요 기능" },
       { type: "text", value: "- AI 글 자동 생성: 테마만 입력하면 SEO/AEO 최적화 글 자동 작성\n- 인용구 스타일: 따옴표, 버티컬 라인, 말풍선, 포스트잇 등 6종 선택\n- 소제목 번호+색상: 01, 02, 03... 번호 자동 부여 + 강조 색상 적용\n- 짤/GIF 이미지: 본문에 움짤 삽입 지원\n- 스티커 랜덤 삽입: 글 마지막에 네이버 스티커 자동 추가\n- 강조 색상 선택: 초록/주황/파랑/빨강 프리셋\n- 자동 운영 모드: 매일 최신 트렌드 기반 자동 글 발행\n- 프리셋 저장: 설정을 저장하고 한번에 불러오기\n- 이전 설정 자동 복원: 앱 재시작 시 마지막 설정 유지" },
       { type: "divider" },
-      { type: "heading", value: "v0.1.5 변경 내역" },
+      { type: "heading", value: "v0.1.6 변경 내역" },
       { type: "text", value: "- 소제목 번호(01,02,03) + 강조 색상 적용 (발행 후 유지)\n- 인용구 스타일 선택 정상 작동\n- 짤/GIF 이미지 삽입 토글 추가\n- 스티커 삽입 안정화\n- 네이버 SEO(C-Rank/D.I.A) 프롬프트 강화\n- 볼드 잔류 문제 해결\n- 이전 설정 자동 복원 (테마/카테고리/스타일)\n- extra 2000자 초과 에러 해결" },
       { type: "divider" },
       { type: "heading", value: "시스템 요구사항" },
