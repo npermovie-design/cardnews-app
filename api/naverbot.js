@@ -67,7 +67,7 @@ async function handleAccountVerify(req, res) {
       plan: result.plan,
       trial: result.trial || false,
       trial_used: trialUsed,
-      trial_limit: trialLimit,
+      trial_limit: result.plan === "admin" ? 999999 : trialLimit,
       expires_at: result.expires_at,
     });
   } catch (e) {
@@ -407,8 +407,13 @@ async function handleContentGenerate(req, res) {
 
   const userKey = authResult.uid;
 
+  // 관리자 이메일은 한도 무제한
+  const ADMIN_EMAILS = ["npermovie@naver.com"];
+  const resolvedEmail = (authResult.email || email || "").toLowerCase();
+  const isAdmin = authResult.plan === "admin" || authResult.role === "admin" || ADMIN_EMAILS.includes(resolvedEmail);
+
   const quota = await checkDailyQuota(userKey, authResult.plan);
-  if (quota.exceeded) {
+  if (quota.exceeded && !isAdmin) {
     return res.status(429).json({
       ok: false,
       error: `일일 한도 초과 (${quota.used}/${quota.limit})`,
