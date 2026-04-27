@@ -6,11 +6,6 @@ import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
 import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken, syncLocalLibrary } from "./storage";
 
 // ── Lazy-loaded: 메뉴별 도구 (code-split) ──
-const ModelGenerator = React.lazy(() => import("./AiImageGenerators.jsx").then(m => ({ default: m.ModelGenerator })));
-const SkinRetouchGenerator = React.lazy(() => import("./AiImageGenerators.jsx").then(m => ({ default: m.SkinRetouchGenerator })));
-const FaceSwapGenerator = React.lazy(() => import("./AiImageGenerators.jsx").then(m => ({ default: m.FaceSwapGenerator })));
-const OutfitSwapGenerator = React.lazy(() => import("./AiImageGenerators.jsx").then(m => ({ default: m.OutfitSwapGenerator })));
-const OutpaintGenerator = React.lazy(() => import("./AiImageGenerators.jsx").then(m => ({ default: m.OutpaintGenerator })));
 const LibraryPage = React.lazy(() => import("./AiLibrary.jsx").then(m => ({ default: m.LibraryPage })));
 const PromptStudioPage = React.lazy(() => import("./AiPromptStudio.jsx").then(m => ({ default: m.PromptStudioPage })));
 const SnsNewsFeed = React.lazy(() => import("./AiPromptStudio.jsx").then(m => ({ default: m.SnsNewsFeed })));
@@ -22,9 +17,6 @@ const PlannerPanel = React.lazy(() => import("./CardNewsApp").then(m => ({ defau
 const CardNewsApp = React.lazy(() => import("./CardNewsApp").then(m => ({ default: m.CardNewsApp })));
 const SimpleDetailPageGenerator = React.lazy(() => import("./SimpleDetailPageGenerator"));
 const DetailPageStudio = React.lazy(() => import("./v2/DetailPageStudioV2"));
-const LogoGenerator = React.lazy(() => import("./LogoGenerator"));
-const MockupGenerator = React.lazy(() => import("./MockupGenerator"));
-const ProductShotGenerator = React.lazy(() => import("./ProductShotGenerator"));
 const ShortsCreator = React.lazy(() => import("./ShortsCreator"));
 const LongFormEditor = React.lazy(() => import("./LongFormEditor"));
 const BlogGenerator = React.lazy(() => import("./BlogGenerator"));
@@ -1235,15 +1227,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     blog_yt_blog: { icon:"/icon-youtube.png", label:tt("ytBlog"), parent:"blog_write" },
     // 콘텐츠 제작
     detail_simple:   { icon:"/icons3d/memo.png", label:tt("toolDetailPage"), parent:"content_create" },
-    // 이미지
-    product_shot:  { icon:"/icons3d/camera.png", label:tt("toolProductShot"), parent:"image_tools" },
-    logo_gen:      { icon:"/icons3d/palette.png", label:tt("toolLogo"), parent:"image_tools" },
-    mockup_gen:    { icon:"/icons3d/sns-app.png", label:tt("toolMockup"), parent:"image_tools" },
-    model_gen:     { icon:"/icons3d/char-standing.png", label:tt("toolModel"), parent:"image_tools" },
-    skin_retouch:  { icon:"/icons3d/thumbsup.png", label:tt("toolSkinRetouch"), parent:"image_tools" },
-    face_swap:     { icon:"/icons3d/char-headphone.png", label:tt("toolFaceSwap2"), parent:"image_tools" },
-    outfit_swap:   { icon:"/icons3d/char-scarf.png", label:tt("toolOutfitSwap2"), parent:"image_tools" },
-    outpaint:      { icon:"/icons3d/cloud-upload.png", label:tt("toolOutpaint2"), parent:"image_tools" },
     // 비즈니스 문서
     prompt_studio_make: { icon:"/icons3d/report.png", label:tt("bizDoc"), parent:"prompt_studio" },
     // 직접 디자인
@@ -1257,20 +1240,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     blog_naver:    { badge: tt2("toolBlogBadge"), title: tt2("toolBlogTitle"), desc: tt2("toolBlogDesc") },
     shorts_create: { badge: tt2("sideVideo"), title: tt2("toolBlogTitle").replace(tt2("toolBlogBadge"), tt2("sideVideo")), desc: tt2("toolBlogDesc") },
   };
-  const imgSiblings = [
-    {id:"product_shot",label:tt2("productShot")},{id:"logo_gen",label:tt2("logoGen")},{id:"mockup_gen",label:tt2("mockupGen")},
-    {id:"model_gen",label:tt2("modelGen")},{id:"skin_retouch",label:tt2("toolSkinBadge")},{id:"face_swap",label:tt2("faceSwap")},
-    {id:"outfit_swap",label:tt2("outfitSwap")},{id:"outpaint",label:tt2("outpaint")}
-  ];
   Object.assign(TOOL_HEADERS, {
-    product_shot:  { badge: tt2("toolProductBadge"), title: tt2("toolProductTitle"), desc: tt2("toolProductDesc"), siblings: imgSiblings },
-    logo_gen:      { badge: tt2("toolLogoBadge"), title: tt2("toolLogoTitle"), desc: tt2("toolLogoDesc"), siblings: imgSiblings },
-    mockup_gen:    { badge: tt2("toolMockupBadge"), title: tt2("toolMockupTitle"), desc: tt2("toolMockupDesc"), siblings: imgSiblings },
-    model_gen:     { badge: tt2("toolModelBadge"), title: tt2("toolModelTitle"), desc: tt2("toolModelDesc"), siblings: imgSiblings },
-    skin_retouch:  { badge: tt2("toolSkinBadge"), title: tt2("toolSkinTitle"), desc: tt2("toolSkinDesc"), siblings: imgSiblings },
-    face_swap:     { badge: tt2("toolFaceBadge"), title: tt2("toolFaceTitle"), desc: tt2("toolFaceDesc"), siblings: imgSiblings },
-    outfit_swap:   { badge: tt2("toolOutfitBadge"), title: tt2("toolOutfitTitle"), desc: tt2("toolOutfitDesc"), siblings: imgSiblings },
-    outpaint:      { badge: tt2("toolOutpaintBadge"), title: tt2("toolOutpaintTitle"), desc: tt2("toolOutpaintDesc"), siblings: imgSiblings },
     yt_analyzer:   { badge: tt2("toolYtBadge"), title: tt2("toolYtTitle"), desc: tt2("toolYtDesc") },
   });
   // 자체 헤더가 있는 도구는 ToolHeader 건너뜀
@@ -1462,13 +1432,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     // cardnews_simple 아이콘 제거됨
     detail_simple: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
     // thumbnail_gen 아이콘 제거됨
-    product_shot: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
-    logo_gen: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
-    mockup_gen: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>,
-    model_gen: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-    face_swap: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>,
-    outfit_swap: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20.38 3.46L16 2 12 5 8 2 3.62 3.46a1 1 0 0 0-.62.94V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V4.4a1 1 0 0 0-.62-.94z"/></svg>,
-    outpaint: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>,
     shorts_make: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
     repurpose: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
   };
@@ -1666,20 +1629,10 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     setAiMenu("home"); return null;
   }
 
-  // ── 이미지: 하위 도구 직접 진입 ──
-  if (aiMenu === "product_shot") return <ToolWrap menuId="product_shot"><ProductShotGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
-  if (aiMenu === "logo_gen") return <ToolWrap menuId="logo_gen"><LogoGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
-  if (aiMenu === "mockup_gen") return <ToolWrap menuId="mockup_gen"><MockupGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
-  if (aiMenu === "model_gen" || aiMenu === "model_gen_make") return <ToolWrap menuId="model_gen"><ModelGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
-  if (aiMenu === "skin_retouch") return <ToolWrap menuId="skin_retouch"><SkinRetouchGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
-  if (aiMenu === "face_swap" || aiMenu === "face_swap_make") return <ToolWrap menuId="face_swap"><FaceSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
-  if (aiMenu === "outfit_swap" || aiMenu === "outfit_swap_make") return <ToolWrap menuId="outfit_swap"><OutfitSwapGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
-  if (aiMenu === "outpaint" || aiMenu === "outpaint_make") return <ToolWrap menuId="outpaint"><OutpaintGenerator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} showPointConfirm={showPointConfirm} onMenuChange={setAiMenu} /></ToolWrap>;
-
-  // ── 이미지: 선택 화면 (이미지 생성 + 수정 통합) ──
-  if (aiMenu === "image_tools" || aiMenu === "image_create" || aiMenu === "image_edit") {
-    // 바로 제품컷으로 진입
-    setAiMenu("product_shot"); return null;
+  // ── 이미지 계열은 현재 서비스 메뉴에서 제외 ──
+  if (["product_shot", "logo_gen", "mockup_gen", "model_gen", "model_gen_make", "skin_retouch", "face_swap", "face_swap_make", "outfit_swap", "outfit_swap_make", "outpaint", "outpaint_make", "image_tools", "image_create", "image_edit"].includes(aiMenu)) {
+    setAiMenu("home");
+    return null;
   }
   if (aiMenu === "_image_tools_old_unused") {
     const imgItems = [];

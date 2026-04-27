@@ -1912,6 +1912,8 @@ hospital equipment`
   const cleanText = (text) => {
     if (!text) return "";
     return text
+      .replace(/\[(?:quote|인용)\]\s*(.+?)\s*\[\/(?:quote|인용)\]/gi, '"$1"')
+      .replace(/^\[(?:QUOTE|인용구)\]\s*/gm, "")
       .replace(/\*\*([^*]+)\*\*/g, "$1")
       .replace(/\*([^*]+)\*/g, "$1")
       .replace(/#{1,6}\s*/g, "")
@@ -1925,6 +1927,8 @@ hospital equipment`
   };
   const cleanForCopy = (text) => {
     return text
+      .replace(/\[(?:quote|인용)\]\s*(.+?)\s*\[\/(?:quote|인용)\]/gi, '"$1"')
+      .replace(/^\[(?:QUOTE|인용구)\]\s*/gm, "")
       .replace(/\*\*([^*]+)\*\*/g, "$1")
       .replace(/\*([^*]+)\*/g, "$1")
       .replace(/#{1,6}\s*/g, "")

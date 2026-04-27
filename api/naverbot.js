@@ -130,6 +130,49 @@ async function handleLicenseVerify(req, res) {
 const NAVERBOT_ANTHROPIC_KEY = process.env.NAVERBOT_ANTHROPIC_KEY || process.env.ANTHROPIC_API_KEY;
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const MODEL = "claude-sonnet-4-20250514";
+const FALLBACK_MODEL = "claude-haiku-4-5-20251001";
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableAnthropicStatus(status) {
+  return status === 408 || status === 409 || status === 429 || status === 529 || status >= 500;
+}
+
+async function callAnthropicMessages(payload, { maxRetries = 2 } = {}) {
+  const models = [MODEL, FALLBACK_MODEL].filter((v, i, a) => v && a.indexOf(v) === i);
+  let lastError = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt += 1) {
+    const model = attempt === 0 ? models[0] : (models[attempt] || models[models.length - 1]);
+    try {
+      const apiRes = await fetch(ANTHROPIC_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": NAVERBOT_ANTHROPIC_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({ ...payload, model }),
+        signal: AbortSignal.timeout(95000),
+      });
+
+      if (apiRes.ok) return await apiRes.json();
+
+      const errText = await apiRes.text().catch(() => "");
+      console.error(`[naverbot] Anthropic ${model} [${apiRes.status}]:`, errText.slice(0, 300));
+      lastError = new Error(`[${apiRes.status}] ${errText.slice(0, 500)}`);
+      lastError.status = apiRes.status;
+      if (!isRetryableAnthropicStatus(apiRes.status)) break;
+    } catch (e) {
+      lastError = e;
+    }
+    if (attempt < maxRetries - 1) await sleep(1200 * (attempt + 1));
+  }
+
+  throw lastError || new Error("Anthropic request failed");
+}
 
 async function handleAnalyzeKeyword(req, res) {
   if (req.method !== "POST") return safeError(res, 405, "POST only");
@@ -172,23 +215,10 @@ ${topContents.map((c, i) => `--- 글 ${i + 1}: ${c.title || ""} ---\n${(c.body |
 반드시 JSON만 출력하세요. \`\`\`json 같은 코드블록 없이.`;
 
   try {
-    const apiRes = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": NAVERBOT_ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 2000,
-        messages: [{ role: "user", content: prompt }],
-      }),
+    const data = await callAnthropicMessages({
+      max_tokens: 2000,
+      messages: [{ role: "user", content: prompt }],
     });
-
-    if (!apiRes.ok) return safeError(res, 502, "분석 실패");
-
-    const data = await apiRes.json();
     const aiText = data?.content?.[0]?.text || "";
 
     let analysis;
@@ -252,6 +282,8 @@ function validateInput(b) {
 
 function stripMarkdown(text) {
   return text
+    .replace(/\[\[(?:\/|bold|underline|italic|strike|font-size:[^\]]+|font:[^\]]+|color:[^\]]+|bg:[^\]]+|background:[^\]]+|highlight:[^\]]+)\]\]/gi, "")
+    .replace(/\[(?:\/|underline|font-size|color|bg|background|highlight)(?::[^\]]*)?\]/gi, "")
     .replace(/^#{1,6}\s+/gm, "")
     .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/__([^_]+)__/g, "$1")
@@ -439,32 +471,21 @@ async function handleContentGenerate(req, res) {
   let aiText = "";
   let tokensUsed = 0;
   try {
-    const apiRes = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": NAVERBOT_ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: WORDCOUNT_TO_TOKENS[word_count] || 5500,
-        system,
-        messages: [{ role: "user", content: user }],
-      }),
+    const data = await callAnthropicMessages({
+      max_tokens: WORDCOUNT_TO_TOKENS[word_count] || 5500,
+      system,
+      messages: [{ role: "user", content: user }],
     });
-
-    if (!apiRes.ok) {
-      const errText = await apiRes.text().catch(() => "");
-      return safeError(res, 502, "글 생성 실패", new Error(errText.slice(0, 300)));
-    }
-
-    const data = await apiRes.json();
     aiText = data?.content?.[0]?.text || "";
     tokensUsed = (data?.usage?.input_tokens || 0) + (data?.usage?.output_tokens || 0);
     if (!aiText) return safeError(res, 502, "빈 응답");
   } catch (e) {
-    return safeError(res, 502, "글 생성 실패", e);
+    const detail = e?.message || String(e);
+    const msg = e?.status === 429 || e?.status === 529 || e?.name === "TimeoutError"
+      ? `글 생성 실패 (AI 서버 혼잡/응답 지연): ${detail.slice(0, 200)}`
+      : `글 생성 실패: ${detail.slice(0, 200)}`;
+    console.error("[naverbot] content-generate error:", detail);
+    return res.status(502).json({ ok: false, error: msg });
   }
 
   const parsed = parseResponse(aiText, fields.keyword || "글");
@@ -499,8 +520,8 @@ async function handleContentGenerate(req, res) {
     .from("naverbot_posts_log")
     .insert({
       license_key: userKey,
-      topic: (fields.keyword || "").slice(0, 200),
-      title: parsed.title.slice(0, 200),
+      topic: "",
+      title: "",
       tokens_used: tokensUsed,
     });
   if (logError) console.error("[naverbot] 로그 실패:", logError.message);

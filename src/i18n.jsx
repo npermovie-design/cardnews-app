@@ -24,7 +24,7 @@ const T = {
     attendance: "출석체크", pointCharge: "포인트 충전",
     // AI 생성기
     snsWrite: "SNS 글쓰기", snsImage: "SNS 이미지", imageGen: "이미지 생성",
-    snsWriteDesc: "블로그·인스타·유튜브", snsImageDesc: "카드뉴스·상세페이지", imageGenDesc: "제품컷·로고·모델·목업",
+    snsWriteDesc: "블로그·인스타·유튜브", snsImageDesc: "카드뉴스·상세페이지", imageGenDesc: "현재 미사용",
     // SNS 글쓰기 메뉴
     naverBlog: "네이버 블로그", tistory: "티스토리", instaCap: "인스타그램 캡션",
     youtubeScript: "유튜브 대본", thread: "스레드", ytBlog: "유튜브로 글쓰기",
@@ -34,8 +34,8 @@ const T = {
     simpleDetail: "심플 상세페이지", imageDetail: "이미지 상세페이지",
     shortsGen: "쇼츠영상 생성기", videoCreate: "영상 제작", shortsMake: "쇼츠 영상 만들기",
     // 이미지 생성 메뉴
-    productShot: "제품컷 생성", logoGen: "로고 생성", mockupGen: "목업 생성",
-    modelGen: "모델 생성", faceSwap: "얼굴 교체", outfitSwap: "의상 교체", outpaint: "여백 늘리기",
+    productShot: "이미지 기능", logoGen: "이미지 기능", mockupGen: "이미지 기능",
+    modelGen: "이미지 기능", faceSwap: "이미지 기능", outfitSwap: "이미지 기능", outpaint: "이미지 기능",
     // 커뮤니티
     info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", archive: "자료실",
     // 푸터
@@ -110,14 +110,14 @@ const T = {
     selectTone: "글 톤", selectLength: "분량",
     // 도구 헤더
     toolBlogBadge: "AI 글쓰기", toolBlogTitle: "주제를 입력하면\nAI가 글을 작성해드려요", toolBlogDesc: "원하는 SNS 플랫폼을 선택하고, 주제와 스타일을 정해주세요.",
-    toolProductBadge: "AI 제품컷", toolProductTitle: "제품 사진을 올리면\nAI가 프로 촬영컷을 만들어요", toolProductDesc: "배경, 조명, 각도를 자동으로 변환하여 상업용 제품 이미지를 생성합니다.",
-    toolLogoBadge: "AI 로고", toolLogoTitle: "브랜드명만 입력하면\nAI가 로고를 디자인해요", toolLogoDesc: "다양한 스타일의 로고를 AI가 자동으로 생성합니다.",
-    toolMockupBadge: "AI 목업", toolMockupTitle: "디자인을 올리면\nAI가 목업을 만들어줘요", toolMockupDesc: "디바이스, 패키지 등 다양한 목업에 디자인을 자동 합성합니다.",
-    toolModelBadge: "AI 모델", toolModelTitle: "제품 사진을 올리면\nAI 모델이 착용해요", toolModelDesc: "실제 모델 촬영 없이 AI가 제품 착용 이미지를 생성합니다.",
-    toolSkinBadge: "피부 보정", toolSkinTitle: "사진을 올리면\nAI가 피부를 보정해요", toolSkinDesc: "자연스러운 피부 보정으로 프로필, 상세페이지 이미지를 개선합니다.",
-    toolFaceBadge: "얼굴 교체", toolFaceTitle: "두 장의 사진으로\nAI가 얼굴을 교체해요", toolFaceDesc: "소스 얼굴을 타깃 이미지에 자연스럽게 합성합니다.",
-    toolOutfitBadge: "의상 교체", toolOutfitTitle: "의상 사진을 올리면\nAI가 교체해줘요", toolOutfitDesc: "모델 사진과 의상 사진을 합성하여 가상 피팅 이미지를 생성합니다.",
-    toolOutpaintBadge: "여백 늘리기", toolOutpaintTitle: "이미지를 올리면\nAI가 여백을 확장해요", toolOutpaintDesc: "이미지 바깥 영역을 AI가 자연스럽게 채워줍니다.",
+    toolProductBadge: "이미지 기능", toolProductTitle: "현재 제공하지 않는 기능입니다", toolProductDesc: "AI 홈으로 이동해 사용 가능한 도구를 선택해주세요.",
+    toolLogoBadge: "이미지 기능", toolLogoTitle: "현재 제공하지 않는 기능입니다", toolLogoDesc: "AI 홈으로 이동해 사용 가능한 도구를 선택해주세요.",
+    toolMockupBadge: "이미지 기능", toolMockupTitle: "현재 제공하지 않는 기능입니다", toolMockupDesc: "AI 홈으로 이동해 사용 가능한 도구를 선택해주세요.",
+    toolModelBadge: "이미지 기능", toolModelTitle: "현재 제공하지 않는 기능입니다", toolModelDesc: "AI 홈으로 이동해 사용 가능한 도구를 선택해주세요.",
+    toolSkinBadge: "이미지 기능", toolSkinTitle: "현재 제공하지 않는 기능입니다", toolSkinDesc: "AI 홈으로 이동해 사용 가능한 도구를 선택해주세요.",
+    toolFaceBadge: "이미지 기능", toolFaceTitle: "현재 제공하지 않는 기능입니다", toolFaceDesc: "AI 홈으로 이동해 사용 가능한 도구를 선택해주세요.",
+    toolOutfitBadge: "이미지 기능", toolOutfitTitle: "현재 제공하지 않는 기능입니다", toolOutfitDesc: "AI 홈으로 이동해 사용 가능한 도구를 선택해주세요.",
+    toolOutpaintBadge: "이미지 기능", toolOutpaintTitle: "현재 제공하지 않는 기능입니다", toolOutpaintDesc: "AI 홈으로 이동해 사용 가능한 도구를 선택해주세요.",
     toolYtBadge: "유튜브 분석기", toolYtTitle: "유튜브 채널을 분석하면\nAI가 인사이트를 알려줘요", toolYtDesc: "구독자, 조회수, 콘텐츠 트렌드를 AI가 분석합니다.",
     // 네비게이션 추가
     archiveMenu: "자료실",

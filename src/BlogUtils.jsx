@@ -212,6 +212,24 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
 
   // AI가 [image:] 태그를 만들었는지 체크 — 만들었으면 태그 위치 기반, 아니면 소제목 뒤
   const hasInlineTags = /\[(?:image|이미지):\s*[^\]]+\]/i.test(text);
+  const quoteBg = isDark ? "rgba(124,106,255,0.12)" : "rgba(124,106,255,0.06)";
+  const quoteBorder = accentColor || "#7c6aff";
+  const renderQuote = (quote, key) => (
+    <div key={key} style={{
+      margin: "16px 0",
+      padding: "14px 18px",
+      borderLeft: `4px solid ${quoteBorder}`,
+      borderRadius: 10,
+      background: quoteBg,
+      color: textColor,
+      fontSize: 17,
+      fontWeight: 800,
+      lineHeight: 1.65,
+      letterSpacing: 0
+    }}>
+      {quote}
+    </div>
+  );
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -225,6 +243,22 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
     // 구분선 --- 렌더링
     if (/^-{3,}$/.test(trimmed)) {
       elements.push(<hr key={`hr${i}`} style={{ border: "none", borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.1)" : "#e5e5f0"}`, margin: "20px 0" }} />);
+      continue;
+    }
+
+    // 저장하고 싶은 한 줄 인용구. AI는 [quote]...[/quote] 형식을 우선 사용한다.
+    const quoteMatch = trimmed.match(/^\[(?:quote|인용)\]\s*(.+?)\s*\[\/(?:quote|인용)\]$/i);
+    if (quoteMatch) {
+      elements.push(renderQuote(quoteMatch[1].trim(), `quote${i}`));
+      continue;
+    }
+    const legacyQuoteMatch = trimmed.match(/^\[(?:QUOTE|인용구)\]\s*(.+)$/);
+    if (legacyQuoteMatch) {
+      elements.push(renderQuote(legacyQuoteMatch[1].trim(), `quote${i}`));
+      continue;
+    }
+    if (/^>\s+/.test(line)) {
+      elements.push(renderQuote(line.replace(/^>\s+/, "").trim(), `quote${i}`));
       continue;
     }
 
@@ -333,9 +367,11 @@ const PLATFORMS = {
       const imgRule = `\n\n[글 구조 필수 규칙]\n1. 큰 소제목 → [image: 영문 키워드] → 본문 설명 순서로 반복\n2. [image: keyword] 형태로 각 소제목마다 1개씩 이미지 삽입\n3. 키워드는 반드시 영문 2~3단어로, 사진 검색 시 정확히 해당 사물/장면이 나올 만큼 구체적으로 작성\n   좋은 예시: [image: glucose meter finger], [image: vegetable salad plate], [image: morning jogging park], [image: cafe latte art], [image: laptop home desk]\n   나쁜 예시: [image: health], [image: food], [image: nature], [image: technology]\n4. 해당 문단에서 설명하는 구체적 사물, 음식, 장소, 행동을 영어로 묘사할 것\n5. 소제목은 3~5개 정도`;
       const speechRule = speech ? `\n\n[말투/문체] ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
       const noEnding = `\n\n[마무리 금지] "마치며", "끝으로", "마무리하며", "글을 마치며", "정리하면" 같은 진부한 마무리 표현 절대 사용 금지. 마지막 문단도 자연스럽게 본문처럼 이어서 끝낼 것`;
-      const noSpecial = `\n\n[절대 금지] ##, **, ~~, *, -, 이모티콘, 이모지, 특수기호(★●■▶♥☆→), 마크다운 문법 일체 사용 금지. 순수 한글 문장만 작성. 소제목은 그냥 굵은 텍스트처럼 별도 줄에 작성.\n\n[필수 규칙]\n1. 이미지 삽입용 [image: english keyword] 태그 사용: 각 소제목 바로 아래에 [image: 구체적 영어 키워드 2~3단어] 형식으로 1줄씩 삽입. 예) [image: puppy playing park]\n2. 글 마지막에는 반드시 # 기호로 시작하는 해시태그 10개를 작성. 예) #강아지키우기 #반려견관리 #강아지건강 (띄어쓰기로 구분, 한 줄 또는 두 줄로)\n3. 본문 중간에는 # 기호를 사용하지 마세요. 해시태그는 오직 글 맨 마지막에만.`;
+      const quoteRule = `\n\n[인용구 필수]\n1. 본문 안에 저장하고 싶은 한 줄 인용구를 3~5개 넣으세요.\n2. 인용구는 반드시 독립된 한 줄로 [quote]문장[/quote] 형식만 사용하세요.\n3. 인용구는 18~42자 정도로 짧고 단정하게, 독자가 캡처하거나 기억하기 쉬운 문장으로 작성하세요.\n4. 첫 번째 인용구는 도입 문단 직후에 배치하고, 이후에는 핵심 소제목 사이에 자연스럽게 배치하세요.\n5. 따옴표, >, ##, 굵게 표시는 쓰지 말고 [quote] 태그만 사용하세요.`;
+      const flowRule = `\n\n[원하는 글감 흐름]\n- 첫 문단은 문제 제기나 독자의 상황 공감으로 짧게 시작\n- 정보만 나열하지 말고 관찰, 이유, 예시, 실천 팁 순서로 이어가기\n- 문단은 2~4문장 단위로 짧게 끊기\n- 소제목은 딱딱한 명사형보다 궁금증이나 결론이 보이는 문장형으로 작성`;
+      const noSpecial = `\n\n[절대 금지]\n##, **, ~~, *, -, 이모티콘, 이모지, 특수기호(★●■▶♥☆→), 마크다운 문법 일체 사용 금지. 단, [image: english keyword]와 [quote]문장[/quote] 태그는 예외로 반드시 사용. 소제목은 그냥 별도 줄에 작성.\n\n[필수 규칙]\n1. 이미지 삽입용 [image: english keyword] 태그 사용: 각 소제목 바로 아래에 [image: 구체적 영어 키워드 2~3단어] 형식으로 1줄씩 삽입. 예) [image: puppy playing park]\n2. 글 마지막에는 반드시 # 기호로 시작하는 해시태그 10개를 작성. 예) #강아지키우기 #반려견관리 #강아지건강 (띄어쓰기로 구분, 한 줄 또는 두 줄로)\n3. 본문 중간에는 # 기호를 사용하지 마세요. 해시태그는 오직 글 맨 마지막에만.`;
       const custom = f.extra ? `\n\n[사용자 맞춤 요청] ${f.extra}` : "";
-      const tail = speechRule + noEnding + noSpecial;
+      const tail = speechRule + quoteRule + flowRule + noEnding + noSpecial;
       if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}${custom}${imgRule}\n- 검색 최적화 제목\n- 실용적 팁/정보 위주${tail}`;
       if(sub==="visit")   return `네이버 블로그 체험·방문후기 (${w}, ${t})\n장소: ${f.keyword} / 위치: ${f.location||""} / 날짜: ${f.visitDate||"최근"} / 평점: ${f.rating||"4.5"}/5${custom}${imgRule}\n- 방문 전 기대→방문 과정→솔직 총평\n- 장단점 명확히, 재방문 의사 포함${tail}`;
       if(sub==="travel")  return `네이버 블로그 여행후기 (${w}, ${t})\n여행지: ${f.keyword} / 장소: ${f.location||""} / 기간: ${f.duration||"당일"} / 예산: ${f.budget||""}\n${custom}${imgRule}\n- 일정별 구조화, 맛집/명소/교통 포함\n- 실제 여행자 감성, 예산 팁 포함${tail}`;

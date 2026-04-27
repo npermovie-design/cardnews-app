@@ -839,8 +839,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             </div>
           </FadeIn>
           {(lang === "ko" ? [
-            { q: "SNS메이킷은 어떤 서비스인가요?", a: "SNS메이킷은 AI 기반 콘텐츠 자동 생성 플랫폼입니다. 블로그 글쓰기, 상세페이지 제작, AI 이미지 생성, 숏폼 영상 편집까지 20가지 이상의 AI 도구를 하나의 플랫폼에서 제공합니다." },
-            { q: "어떤 콘텐츠를 만들 수 있나요?", a: "네이버 블로그, 인스타그램 캡션, 유튜브 대본, 티스토리 글, 상세페이지, AI 제품컷, 로고, 목업, 숏폼 영상 등 SNS 마케팅에 필요한 거의 모든 콘텐츠를 AI로 자동 생성할 수 있습니다." },
+            { q: "SNS메이킷은 어떤 서비스인가요?", a: "SNS메이킷은 AI 기반 콘텐츠 자동 생성 플랫폼입니다. 블로그 글쓰기, 상세페이지 제작, 카드뉴스 제작, 숏폼 영상 편집까지 SNS 운영에 필요한 AI 도구를 하나의 플랫폼에서 제공합니다." },
+            { q: "어떤 콘텐츠를 만들 수 있나요?", a: "네이버 블로그, 인스타그램 캡션, 유튜브 대본, 티스토리 글, 상세페이지, 카드뉴스, 숏폼 영상 등 SNS 마케팅에 필요한 콘텐츠를 AI로 자동 생성할 수 있습니다." },
             { q: "무료로 사용할 수 있나요?", a: "네. 비회원도 로그인 없이 5회까지 무료로 체험할 수 있습니다. 회원가입 시 150포인트가 즉시 지급되며, 매일 로그인(+3P), 게시글 작성(+1P, 하루 10회) 등으로 포인트를 적립해 무료로 계속 사용할 수 있어요." },
             { q: "생성된 콘텐츠의 품질은 어떤가요?", a: "최신 AI 모델(Claude 계열)을 사용하여 사람이 작성한 것과 구분하기 어려운 높은 품질의 콘텐츠를 생성합니다. SEO 최적화까지 자동으로 적용되어 검색 노출에도 유리합니다." },
             { q: "어떤 플랫폼을 지원하나요?", a: "네이버 블로그, 티스토리, 인스타그램, 유튜브, 스레드, 네이버 카페 등 주요 SNS 플랫폼을 지원합니다. 스레드, 네이버 블로그, 티스토리는 원클릭 자동 발행 기능도 제공합니다." },
@@ -848,8 +848,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             { q: "생성된 콘텐츠를 상업적으로 사용할 수 있나요?", a: "네, SNS메이킷으로 생성한 모든 콘텐츠(글, 이미지 등)는 상업적 용도로 자유롭게 사용할 수 있습니다. 별도의 라이선스 비용 없이 블로그, SNS, 쇼핑몰 등에 바로 활용하세요." },
             { q: "개인정보는 안전하게 보호되나요?", a: "SNS메이킷은 Supabase 인프라를 사용하여 데이터를 안전하게 관리합니다. 소셜 로그인(Google, Kakao)은 각 플랫폼의 공식 OAuth 인증을 통해 처리되며, 비밀번호는 암호화되어 저장됩니다." },
           ] : [
-            { q: "What is SNS Makeit?", a: "SNS Makeit is an AI-powered content auto-generation platform. It provides 20+ AI tools in one place, including blog writing, detail page creation, AI image generation, and short-form video editing." },
-            { q: "What content can I create?", a: "You can create Naver blog posts, Instagram captions, YouTube scripts, detail pages, AI product shots, logos, mockups, short-form videos, and more." },
+            { q: "What is SNS Makeit?", a: "SNS Makeit is an AI-powered content auto-generation platform. It provides AI tools for blog writing, detail pages, card news, and short-form video editing in one place." },
+            { q: "What content can I create?", a: "You can create Naver blog posts, Instagram captions, YouTube scripts, detail pages, card news, short-form videos, and more." },
             { q: "Can I use it for free?", a: "Yes. Guests can try 5 times without login. Sign up to get 150P instantly, plus earn more through daily login (+3P) and community posts (+1P, up to 10/day)." },
             { q: "What is the quality of generated content?", a: "We use the latest AI models (Claude family) to produce high-quality content that is virtually indistinguishable from human-written text, with automatic SEO optimization." },
             { q: "Which platforms are supported?", a: "We support Naver Blog, Tistory, Instagram, YouTube, Threads, and Naver Cafe. Auto-publishing is available for Threads, Naver Blog, and Tistory." },

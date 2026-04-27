@@ -19,6 +19,16 @@ function convertMessages(messages) {
   });
 }
 
+function isAdminUser() {
+  try {
+    const raw = localStorage.getItem("nper_user");
+    if (!raw) return false;
+    return JSON.parse(raw || "{}")?.role === "admin";
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Non-streaming AI call. Returns the text response.
  */
@@ -43,8 +53,7 @@ export async function callAI(model, messages, maxTokens = 2000, system = null) {
     });
     if (!res.ok) {
       const err = await res.text().catch(() => res.statusText);
-      const isAdmin = !!localStorage.getItem("nper_user") && JSON.parse(localStorage.getItem("nper_user") || "{}").role === "admin";
-      if (isAdmin) {
+      if (isAdminUser()) {
         throw new Error(`[관리자] API ${res.status}: ${err.slice(0, 200)}`);
       }
       if (res.status === 429) throw new Error("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
@@ -88,8 +97,7 @@ export async function callAIStream(model, messages, maxTokens = 4000, onChunk, s
     });
     if (!res.ok) {
       const err = await res.text().catch(() => res.statusText);
-      const isAdmin = !!localStorage.getItem("nper_user") && JSON.parse(localStorage.getItem("nper_user") || "{}").role === "admin";
-      if (isAdmin) {
+      if (isAdminUser()) {
         throw new Error(`[관리자] API ${res.status}: ${err.slice(0, 200)}`);
       }
       if (res.status === 429) throw new Error("요청이 너무 많습니다. 잠시 후 다시 시도해주세요.");
@@ -124,6 +132,11 @@ export async function callAIStream(model, messages, maxTokens = 4000, onChunk, s
       }
     }
     return full;
+  } catch (e) {
+    if (e?.name === "AbortError") {
+      throw new Error("AI 응답 시간이 길어졌습니다. 분량을 줄이거나 잠시 후 다시 시도해주세요.");
+    }
+    throw e;
   } finally {
     clearTimeout(timeout);
     if (lockRelease) lockRelease();
