@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { changePoints, getAiUsage, setAiUsage } from "./storage";
+import { changePoints, deleteLibraryItem, getAiUsage, setAiUsage, upsertLibraryItem } from "./storage";
 import { callAI } from "./aiClient";
 import { useI18n } from "./i18n";
 
@@ -82,7 +82,7 @@ let SNS_LINKS = [
 
 let USAGE_KEY = "nper_ai_usage";
 let SAVES_KEY = "nper_saved_works_v2";
-let FREE_GUEST = 10;
+let FREE_GUEST = 5;
 let FREE_MEMBER = 20;
 
 // ─── 사용량 ──────────────────────────────────────────────────────────────────
@@ -110,11 +110,19 @@ function saveWork(work) {
   if (idx >= 0) { list[idx] = work; } else { list.unshift(work); }
   if (list.length > 20) { list = list.slice(0, 20); }
   try { localStorage.setItem(SAVES_KEY, JSON.stringify(list)); } catch(e) {}
+  try {
+    const uid = JSON.parse(localStorage.getItem("nper_user") || "null")?.uid;
+    if (uid) upsertLibraryItem(uid, "card", work);
+  } catch(e) {}
   return list;
 }
 function deleteWork(id) {
   let list = getSavedWorks().filter(function(w) { return w.id !== id; });
   try { localStorage.setItem(SAVES_KEY, JSON.stringify(list)); } catch(e) {}
+  try {
+    const uid = JSON.parse(localStorage.getItem("nper_user") || "null")?.uid;
+    if (uid) deleteLibraryItem(uid, "card", id);
+  } catch(e) {}
   return list;
 }
 
@@ -1237,7 +1245,7 @@ function PageMake(props) {
           </div>
           <div style={{fontSize:13, color:muted, lineHeight:1.9, marginBottom:24}}>
             {!props.user
-              ? <>비회원 무료 5회를 모두 사용하셨어요.<br/>회원가입 후 10회 추가 무료를 받으세요!</>
+              ? <>비회원 무료 5회를 모두 사용하셨어요.<br/>회원가입 후 150P 보너스를 받으세요!</>
               : <>카드뉴스 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>}
           </div>
           <div style={{display:"flex", flexDirection:"column", gap:10}}>
@@ -1485,6 +1493,7 @@ function PageMake(props) {
 
 // ─── 메인 앱 ──────────────────────────────────────────────────────────────────
 export function CardNewsApp(props) {
+  let { t } = useI18n();
   let user = props.user; let p;
   p = useState(function(){ try{let cc=JSON.parse(localStorage.getItem("sns_cn_cache")||"null");if(cc&&cc.slides&&cc.slides.length)return"edit";}catch(e){}return props.initialSubPage||"home";}); let page=p[0];let setPage=p[1];
   p = useState(1);       let makeStep  = p[0]; let setMakeStep  = p[1];

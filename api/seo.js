@@ -3,6 +3,39 @@
 
 import { createClient } from "@supabase/supabase-js";
 
+function stripMdHtml(s) {
+  if (!s) return "";
+  return String(s)
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, "")
+    .replace(/```[\s\S]*?```/g, " ")
+    .replace(/`([^`]*)`/g, "$1")
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/^\s{0,3}#{1,6}\s+/gm, "")
+    .replace(/^\s{0,3}>\s?/gm, "")
+    .replace(/^\s{0,3}[-*+]\s+/gm, "")
+    .replace(/^\s{0,3}\d+\.\s+/gm, "")
+    .replace(/(\*\*|__)(.*?)\1/g, "$2")
+    .replace(/(\*|_)(.*?)\1/g, "$2")
+    .replace(/~~(.*?)~~/g, "$1")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function slugifyKo(input, fallback = "content") {
+  const slug = stripMdHtml(input || "")
+    .toLowerCase()
+    .replace(/&[a-z0-9#]+;/gi, " ")
+    .replace(/[^0-9a-z가-힣]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80)
+    .replace(/-$/g, "");
+  return slug || fallback;
+}
+
 // ── Sitemap ──
 async function handleSitemap(req, res) {
   const SITE = "https://snsmakeit.com";
@@ -39,7 +72,7 @@ async function handleSitemap(req, res) {
       console.log("Sitemap: Supabase env vars missing");
       return;
     }
-    const { data: posts, error } = await sb.from("posts").select("id,subCat,created_at").order("id", { ascending: false }).limit(5000);
+    const { data: posts, error } = await sb.from("posts").select("id,title,subCat,created_at").order("id", { ascending: false }).limit(5000);
     if (error) console.log("Sitemap Supabase error:", error.message);
     if (posts && posts.length) {
       const now = Date.now();
@@ -52,7 +85,7 @@ async function handleSitemap(req, res) {
         if (age < D30) { priority = "0.8"; freq = "weekly"; }
         else if (age < D180) { priority = "0.6"; freq = "monthly"; }
         return {
-          url: `/community/${p.subCat || "info"}/post-${p.id}`,
+          url: `/community/${p.subCat || "info"}/post-${p.id}/${slugifyKo(p.title, "post")}`,
           priority,
           freq,
           lastmod: p.created_at ? p.created_at.slice(0, 10) : today,
@@ -65,10 +98,10 @@ async function handleSitemap(req, res) {
   let programUrls = [];
   try {
     const sb2 = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_KEY);
-    const { data: progs } = await sb2.from("programs").select("id,created_at").order("created_at", { ascending: false });
+    const { data: progs } = await sb2.from("programs").select("id,title,created_at").order("created_at", { ascending: false });
     if (progs) {
       programUrls = progs.map(p => ({
-        url: `/programs/${p.id}`,
+        url: `/programs/${p.id}/${slugifyKo(p.title, "program")}`,
         priority: "0.7",
         freq: "monthly",
         lastmod: p.created_at ? p.created_at.slice(0, 10) : today,
@@ -122,7 +155,7 @@ async function handleRss(req, res) {
       items = posts.map(p => {
         const plainBody = (p.content || p.body || "").replace(/<[^>]*>/g, "").slice(0, 300);
         const cat = p.subCat || "info";
-        const link = `${SITE}/community/${cat}/post-${p.id}`;
+        const link = `${SITE}/community/${cat}/post-${p.id}/${slugifyKo(p.title, "post")}`;
         const pubDate = p.created_at ? new Date(p.created_at).toUTCString() : new Date().toUTCString();
         const image = p.images?.[0] ? `<enclosure url="${p.images[0]}" type="image/jpeg"/>` : "";
         return `    <item>
@@ -243,9 +276,9 @@ async function handleBulkIndex(req, res) {
   const KEY = "b7ec85037f97a6e5870a755bc0c1d9b90d224ed9";
   try {
     const sb = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_KEY);
-    const { data: posts } = await sb.from("posts").select("id,subCat").order("id", { ascending: false }).limit(2000);
+    const { data: posts } = await sb.from("posts").select("id,title,subCat").order("id", { ascending: false }).limit(2000);
     if (!posts?.length) return res.status(200).json({ message: "게시글 없음" });
-    const urlList = posts.map(p => `${SITE}/community/${p.subCat || "info"}/post-${p.id}`);
+    const urlList = posts.map(p => `${SITE}/community/${p.subCat || "info"}/post-${p.id}/${slugifyKo(p.title, "post")}`);
     // IndexNow는 최대 10,000개씩 전송 가능
     const batchSize = 500;
     const results = [];
@@ -884,7 +917,7 @@ async function handleCronPost(req, res, opts) {
     }, { onConflict: "id" });
 
     // 검색엔진에 새 글 색인 요청 (비동기, 실패 무시)
-    const postUrl = `https://snsmakeit.com/community/info/post-${postId}`;
+    const postUrl = `https://snsmakeit.com/community/info/post-${postId}/${slugifyKo(title, "post")}`;
     pingSearchEngines(postUrl).catch(() => {});
 
     return res.status(200).json({ success: true, date: todayKey, tag: opts.tag, title, length: body.length });

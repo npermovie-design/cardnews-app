@@ -361,6 +361,69 @@ CREATE TABLE IF NOT EXISTS sns_news (
   created_at  TIMESTAMPTZ DEFAULT now()
 );
 
+-- ── 계정 공통 출석체크: PC/브라우저가 달라도 하루 1회만 지급 ──
+CREATE TABLE IF NOT EXISTS attendance_checks (
+  id BIGSERIAL PRIMARY KEY,
+  uid TEXT NOT NULL,
+  check_date DATE NOT NULL,
+  points INTEGER NOT NULL DEFAULT 3,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(uid, check_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_attendance_checks_uid_date
+  ON attendance_checks(uid, check_date DESC);
+
+ALTER TABLE attendance_checks ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "attendance_select_own" ON attendance_checks;
+CREATE POLICY "attendance_select_own"
+  ON attendance_checks FOR SELECT
+  USING (auth.uid()::text = uid);
+
+DROP POLICY IF EXISTS "attendance_insert_own" ON attendance_checks;
+CREATE POLICY "attendance_insert_own"
+  ON attendance_checks FOR INSERT
+  WITH CHECK (auth.uid()::text = uid);
+
+-- ── 계정 공통 AI 보관함: 블로그/카드뉴스/상세페이지/PPT/영상 결과 동기화 ──
+CREATE TABLE IF NOT EXISTS user_library_items (
+  id BIGSERIAL PRIMARY KEY,
+  uid TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  item_id TEXT NOT NULL,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(uid, kind, item_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_library_items_uid_kind_updated
+  ON user_library_items(uid, kind, updated_at DESC);
+
+ALTER TABLE user_library_items ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "library_select_own" ON user_library_items;
+CREATE POLICY "library_select_own"
+  ON user_library_items FOR SELECT
+  USING (auth.uid()::text = uid);
+
+DROP POLICY IF EXISTS "library_insert_own" ON user_library_items;
+CREATE POLICY "library_insert_own"
+  ON user_library_items FOR INSERT
+  WITH CHECK (auth.uid()::text = uid);
+
+DROP POLICY IF EXISTS "library_update_own" ON user_library_items;
+CREATE POLICY "library_update_own"
+  ON user_library_items FOR UPDATE
+  USING (auth.uid()::text = uid)
+  WITH CHECK (auth.uid()::text = uid);
+
+DROP POLICY IF EXISTS "library_delete_own" ON user_library_items;
+CREATE POLICY "library_delete_own"
+  ON user_library_items FOR DELETE
+  USING (auth.uid()::text = uid);
+
 ALTER TABLE sns_news ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "sns_news_select_all" ON sns_news;
 CREATE POLICY "sns_news_select_all"

@@ -111,6 +111,30 @@ const CAT_FALLBACK_IMG = {
   sns_briefing: `${SITE}/og-image.png`,
 };
 
+const SB_URL = "https://ckzjnpzadeovrasucjmu.supabase.co";
+const SB_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
+
+async function sbRows(path) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    headers: { apikey: SB_ANON_KEY, Authorization: `Bearer ${SB_ANON_KEY}` },
+  });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+function slugifyKo(input, fallback = "content") {
+  const slug = stripMdHtml(input || "")
+    .toLowerCase()
+    .replace(/&[a-z0-9#]+;/gi, " ")
+    .replace(/[^0-9a-z가-힣]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80)
+    .replace(/-$/g, "");
+  return slug || fallback;
+}
+
 // HTML 태그 + 마크다운 문법 제거 → 검색엔진/SNS 스크래퍼가 읽기 좋은 평문
 function stripMdHtml(s) {
   if (!s) return "";
@@ -214,19 +238,14 @@ export default async function middleware(request) {
     });
   }
 
-  let title, desc, image, keywords, bodyContent = "";
+  let title, desc, image, keywords, bodyContent = "", canonicalPath = path;
 
   // ── 프로그램 상세 페이지: /programs/:id ──
   const programMatch = path.match(/\/programs\/([a-f0-9-]+)/i);
   if (programMatch) {
     const productId = programMatch[1];
     try {
-      const sbUrl = "https://ckzjnpzadeovrasucjmu.supabase.co";
-      const sbKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
-      const res = await fetch(`${sbUrl}/rest/v1/programs?id=eq.${productId}&select=title,desc,thumbnail,category,price_label,tags`, {
-        headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}` },
-      });
-      const data = await res.json();
+      const data = await sbRows(`programs?id=eq.${productId}&select=title,desc,thumbnail,category,price_label,tags`);
       const product = data?.[0];
       if (product) {
         title = `${product.title} - SNS메이킷 프로그램`;
@@ -234,7 +253,20 @@ export default async function middleware(request) {
         if (product.thumbnail) image = product.thumbnail;
         const tagStr = Array.isArray(product.tags) ? product.tags.join(", ") : "";
         keywords = `SNS메이킷, 프로그램, ${tagStr}`;
-        bodyContent = `<article><h2>${esc(product.title || "")}</h2><p>${esc(desc)}</p></article>`;
+        canonicalPath = `/programs/${productId}/${slugifyKo(product.title, "program")}`;
+        bodyContent = `<article><h2>${esc(product.title || "")}</h2><p>${esc(desc)}</p><p><a href="${SITE}/programs">자료실 전체보기</a></p></article>`;
+      }
+    } catch {}
+  }
+
+  if (!title && path === "/programs") {
+    try {
+      const programs = await sbRows("programs?select=id,title,desc,created_at&order=created_at.desc&limit=50");
+      if (programs.length) {
+        bodyContent = `<section><h2>자료실 프로그램</h2><ul>${programs.map(p => {
+          const href = `${SITE}/programs/${p.id}/${slugifyKo(p.title, "program")}`;
+          return `<li><a href="${href}">${esc(p.title || "프로그램")}</a>${p.desc ? `<p>${esc(String(p.desc).slice(0, 120))}</p>` : ""}</li>`;
+        }).join("")}</ul></section>`;
       }
     } catch {}
   }
@@ -260,22 +292,18 @@ export default async function middleware(request) {
   }
 
   // 게시글 URL 처리: /community/:cat/post-:id
-  const postMatch = !title && path.match(/\/community\/(\w+)\/post-(.+)/);
+  const postMatch = !title && path.match(/\/community\/(\w+)\/post-([^/]+)/);
   if (postMatch) {
     const [, catId, postId] = postMatch;
     const catName = COMMUNITY_CATS[catId] || catId;
     try {
-      const sbUrl = "https://ckzjnpzadeovrasucjmu.supabase.co";
-      const sbKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
-      const res = await fetch(`${sbUrl}/rest/v1/posts?id=eq.${postId}&select=title,content,images,author,created_at`, {
-        headers: { apikey: sbKey, Authorization: `Bearer ${sbKey}` },
-      });
-      const data = await res.json();
+      const data = await sbRows(`posts?id=eq.${postId}&select=title,content,images,author,created_at`);
       const post = data?.[0];
       if (post) {
         const plainBody = stripMdHtml(post.content || "");
         const titleClean = stripMdHtml(post.title || "").slice(0, 70);
         title = `${titleClean} | ${catName} - SNS메이킷`;
+        canonicalPath = `/community/${catId}/post-${postId}/${slugifyKo(titleClean, "post")}`;
         // 첫 의미 있는 문장(들) 우선, 없으면 앞부분 컷
         const firstChunk = plainBody.replace(/\n/g, " ").slice(0, 155);
         desc = firstChunk + (plainBody.length > 155 ? "..." : "");
@@ -287,7 +315,7 @@ export default async function middleware(request) {
           || CAT_FALLBACK_IMG[catId]
           || DEFAULT_OG.image;
         keywords = extractKeywords(titleClean, plainBody, catName);
-        bodyContent = `<article><h2>${esc(titleClean)}</h2>${post.author ? `<p><strong>작성자:</strong> ${esc(post.author)}</p>` : ""}<p>${esc(plainBody.slice(0, 2000))}</p></article>`;
+        bodyContent = `<article><h2>${esc(titleClean)}</h2>${post.author ? `<p><strong>작성자:</strong> ${esc(post.author)}</p>` : ""}<p>${esc(plainBody.slice(0, 2000))}</p><p><a href="${SITE}/community/${catId}">${esc(catName)} 목록보기</a></p></article>`;
       }
     } catch {}
   }
@@ -300,6 +328,15 @@ export default async function middleware(request) {
       title = `SNS메이킷 커뮤니티 - ${catName}`;
       desc = `SNS메이킷 ${catName} 게시판입니다. 다양한 정보와 팁을 확인하세요.`;
       keywords = `SNS메이킷, 커뮤니티, ${catName}`;
+      try {
+        const posts = await sbRows(`posts?select=id,title,subCat,created_at&subCat=eq.${catMatch[1]}&order=created_at.desc&limit=50`);
+        if (posts.length) {
+          bodyContent = `<section><h2>${esc(catName)} 최근 글</h2><ul>${posts.map(p => {
+            const href = `${SITE}/community/${p.subCat || catMatch[1]}/post-${p.id}/${slugifyKo(p.title, "post")}`;
+            return `<li><a href="${href}">${esc(stripMdHtml(p.title || "").slice(0, 90) || "게시글")}</a></li>`;
+          }).join("")}</ul></section>`;
+        }
+      } catch {}
     }
   }
 
@@ -312,7 +349,11 @@ export default async function middleware(request) {
   }
 
   image = image || DEFAULT_OG.image;
-  const canonical = `${SITE}${path === "/" ? "" : path}`;
+  const canonical = `${SITE}${canonicalPath === "/" ? "" : canonicalPath}`;
+
+  if (canonicalPath !== path) {
+    return Response.redirect(canonical, 301);
+  }
 
   // 구조화된 HTML 반환 (검색엔진 + 소셜 크롤러 모두 대응)
   const html = `<!DOCTYPE html>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useI18n } from "./i18n.jsx";
-import { supabase } from "./storage";
+import { deleteLibraryItem, syncLocalLibrary, supabase, upsertLibraryItem } from "./storage";
 import { getConsultingSaves, CONSULTING_SAVES_KEY } from "./SnsConsulting";
 
 // 기획 저장 헬퍼 (LibraryPage에서 사용)
@@ -13,48 +13,70 @@ function deletePlan(id) { try { localStorage.setItem(PLAN_SAVES_KEY, JSON.string
 ════════════════════════════════════════════════════════════ */
 
 const BLOG_SAVES_KEY = "sns_blog_saves_v1";
+function getCurrentUid() {
+  try { return JSON.parse(localStorage.getItem("nper_user") || "null")?.uid || null; } catch { return null; }
+}
+function setLocalList(key, list, limit = 100) {
+  try { localStorage.setItem(key, JSON.stringify((list || []).slice(0, limit))); } catch(e) {}
+}
 function getBlogSaves() { try { return JSON.parse(localStorage.getItem(BLOG_SAVES_KEY) || "[]"); } catch(e) { return []; } }
 function saveBlogWork(item) {
   const list = getBlogSaves().filter(x => x.id !== item.id);
   list.unshift(item);
-  try { localStorage.setItem(BLOG_SAVES_KEY, JSON.stringify(list.slice(0, 100))); } catch(e) {}
+  setLocalList(BLOG_SAVES_KEY, list, 100);
+  const uid = getCurrentUid();
+  if (uid) upsertLibraryItem(uid, "blog", item);
 }
 function deleteBlogWork(id) {
-  try { localStorage.setItem(BLOG_SAVES_KEY, JSON.stringify(getBlogSaves().filter(x => x.id !== id))); } catch(e) {}
+  setLocalList(BLOG_SAVES_KEY, getBlogSaves().filter(x => x.id !== id), 100);
+  const uid = getCurrentUid();
+  if (uid) deleteLibraryItem(uid, "blog", id);
 }
 const CARD_SAVES_KEY = "nper_saved_works_v2";
 function getCardSaves() { try { return JSON.parse(localStorage.getItem(CARD_SAVES_KEY) || "[]"); } catch(e) { return []; } }
 function deleteCardWork(id) {
-  try { localStorage.setItem(CARD_SAVES_KEY, JSON.stringify(getCardSaves().filter(x => x.id !== id))); } catch(e) {}
+  setLocalList(CARD_SAVES_KEY, getCardSaves().filter(x => x.id !== id), 100);
+  const uid = getCurrentUid();
+  if (uid) deleteLibraryItem(uid, "card", id);
 }
 const DETAIL_SAVES_KEY = "nper_detail_saves_v1";
 function getDetailSaves() { try { return JSON.parse(localStorage.getItem(DETAIL_SAVES_KEY) || "[]"); } catch(e) { return []; } }
 function deleteDetailSave(id) {
-  try { localStorage.setItem(DETAIL_SAVES_KEY, JSON.stringify(getDetailSaves().filter(x => x.id !== id))); } catch(e) {}
+  setLocalList(DETAIL_SAVES_KEY, getDetailSaves().filter(x => x.id !== id), 50);
+  const uid = getCurrentUid();
+  if (uid) deleteLibraryItem(uid, "detail", id);
 }
 const IMGCARD_SAVES_KEY = "nper_imgcard_saves_v1";
 function getImgCardSaves() { try { return JSON.parse(localStorage.getItem(IMGCARD_SAVES_KEY) || "[]"); } catch(e) { return []; } }
 function deleteImgCardSave(id) {
-  try { localStorage.setItem(IMGCARD_SAVES_KEY, JSON.stringify(getImgCardSaves().filter(x => x.id !== id))); } catch(e) {}
+  setLocalList(IMGCARD_SAVES_KEY, getImgCardSaves().filter(x => x.id !== id), 50);
+  const uid = getCurrentUid();
+  if (uid) deleteLibraryItem(uid, "imgcard", id);
 }
 const SIMPLEDETAIL_SAVES_KEY = "nper_simpledetail_saves_v1";
 function getSimpleDetailSaves() { try { return JSON.parse(localStorage.getItem(SIMPLEDETAIL_SAVES_KEY) || "[]"); } catch(e) { return []; } }
 function deleteSimpleDetailSave(id) {
-  try { localStorage.setItem(SIMPLEDETAIL_SAVES_KEY, JSON.stringify(getSimpleDetailSaves().filter(x => x.id !== id))); } catch(e) {}
+  setLocalList(SIMPLEDETAIL_SAVES_KEY, getSimpleDetailSaves().filter(x => x.id !== id), 50);
+  const uid = getCurrentUid();
+  if (uid) deleteLibraryItem(uid, "simpledetail", id);
 }
 const PPT_SAVES_KEY = "nper_ppt_saves_v1";
 function getPptSaves() { try { return JSON.parse(localStorage.getItem(PPT_SAVES_KEY) || "[]"); } catch(e) { return []; } }
 function savePptWork(item) {
   const list = getPptSaves().filter(x => x.id !== item.id);
   list.unshift(item);
-  try { localStorage.setItem(PPT_SAVES_KEY, JSON.stringify(list.slice(0, 50))); } catch(e) {}
+  setLocalList(PPT_SAVES_KEY, list, 50);
+  const uid = getCurrentUid();
+  if (uid) upsertLibraryItem(uid, "ppt", item);
 }
 function deletePptWork(id) {
-  try { localStorage.setItem(PPT_SAVES_KEY, JSON.stringify(getPptSaves().filter(x => x.id !== id))); } catch(e) {}
+  setLocalList(PPT_SAVES_KEY, getPptSaves().filter(x => x.id !== id), 50);
+  const uid = getCurrentUid();
+  if (uid) deleteLibraryItem(uid, "ppt", id);
 }
 
 // ── LibraryPage 컴포넌트 ──────────────────────────────────────────────────────
-function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFooter }) {
+function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFooter, user }) {
   const { t } = useI18n();
   const [tab, setTab] = useState("blog");
   const [blogList, setBlogList] = useState(getBlogSaves);
@@ -69,6 +91,39 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
   const [selectedBlog, setSelectedBlog] = useState(null);
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [selectedConsult, setSelectedConsult] = useState(null);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    let alive = true;
+    (async () => {
+      const syncs = await Promise.all([
+        syncLocalLibrary(user.uid, "blog", getBlogSaves()),
+        syncLocalLibrary(user.uid, "card", getCardSaves()),
+        syncLocalLibrary(user.uid, "detail", getDetailSaves()),
+        syncLocalLibrary(user.uid, "imgcard", getImgCardSaves()),
+        syncLocalLibrary(user.uid, "simpledetail", getSimpleDetailSaves()),
+        syncLocalLibrary(user.uid, "ppt", getPptSaves()),
+        syncLocalLibrary(user.uid, "consulting", getConsultingSaves()),
+      ]);
+      if (!alive) return;
+      const [blogs, cards, details, imgCards, simpleDetails, ppts, consulting] = syncs;
+      setLocalList(BLOG_SAVES_KEY, blogs, 100);
+      setLocalList(CARD_SAVES_KEY, cards, 100);
+      setLocalList(DETAIL_SAVES_KEY, details, 50);
+      setLocalList(IMGCARD_SAVES_KEY, imgCards, 50);
+      setLocalList(SIMPLEDETAIL_SAVES_KEY, simpleDetails, 50);
+      setLocalList(PPT_SAVES_KEY, ppts, 50);
+      setBlogList(blogs);
+      setCardList(cards);
+      setDetailList(details);
+      setImgCardList(imgCards);
+      setSimpleDetailList(simpleDetails);
+      setPptList(ppts);
+      try { localStorage.setItem(CONSULTING_SAVES_KEY, JSON.stringify((consulting || []).slice(0, 50))); } catch {}
+      setConsultList(consulting || []);
+    })();
+    return () => { alive = false; };
+  }, [user?.uid]);
 
   const text  = homeText;
   const muted = homeMuted;
@@ -653,6 +708,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
                   <button onClick={() => {
                     const list = getConsultingSaves().filter(x => x.id !== selectedConsult.id);
                     try { localStorage.setItem(CONSULTING_SAVES_KEY, JSON.stringify(list)); } catch {}
+                    if (user?.uid) deleteLibraryItem(user.uid, "consulting", selectedConsult.id);
                     setConsultList(list);
                     setSelectedConsult(null);
                   }} style={{ padding:"8px 14px", borderRadius:8, border:"1px solid #ef4444", background:"transparent", color:"#ef4444", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", marginLeft:"auto" }}>

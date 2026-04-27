@@ -127,7 +127,7 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
           {ko ? "SNS 콘텐츠 제작의 모든 것, 지금 바로 시작해보세요" : "All your SNS content creation starts now"}
         </div>
 
-        {/* 50P 카드 */}
+        {/* 150P 카드 */}
         <div style={{
           background: "linear-gradient(135deg, rgba(124,106,255,0.15), rgba(236,72,153,0.1))",
           border: "1px solid rgba(124,106,255,0.35)",
@@ -137,10 +137,10 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
             {ko ? "가입 축하 보너스" : "Signup bonus"}
           </div>
           <div style={{ fontSize: 36, fontWeight: 900, background: "linear-gradient(135deg,#a5b4fc,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6 }}>
-            +50 P
+            +150 P
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
-            {ko ? "AI 글쓰기 약 2~3회 분량" : "~2-3 AI writes"}
+            {ko ? "AI 글쓰기 약 5회 분량" : "~5 AI writes"}
           </div>
         </div>
 
@@ -304,6 +304,75 @@ export default function App() {
 
   const toggleTheme = () => {};
 
+  useEffect(() => {
+    const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
+    const path = page === "home" ? "/" : page === "ai" && aiMenu && aiMenu !== "home" ? `/ai/${aiMenu}` : `/${page}`;
+    const titleMap = {
+      ko: {
+        home: "SNS메이킷 - AI SNS 콘텐츠 자동 생성",
+        about: "소개 - SNS메이킷",
+        howto: "이용방법 - SNS메이킷",
+        faq: "자주 묻는 질문 - SNS메이킷",
+        ai: "AI 생성기 - SNS메이킷",
+        programs: "자료실 - SNS메이킷",
+        pricing: "가격정책 - SNS메이킷",
+        contact: "문의하기 - SNS메이킷",
+        event: "이벤트 - SNS메이킷",
+        cases: "고객사례 - SNS메이킷",
+        community: "커뮤니티 - SNS메이킷",
+        legal: "약관·정책 - SNS메이킷",
+      },
+      en: {
+        home: "SNS Makeit - AI Social Content Generator",
+        about: "About - SNS Makeit",
+        howto: "How to Use - SNS Makeit",
+        faq: "FAQ - SNS Makeit",
+        ai: "AI Generator - SNS Makeit",
+        programs: "Resources - SNS Makeit",
+        pricing: "Pricing - SNS Makeit",
+        contact: "Contact - SNS Makeit",
+        event: "Events - SNS Makeit",
+        cases: "Customer Cases - SNS Makeit",
+        community: "Community - SNS Makeit",
+        legal: "Terms & Policy - SNS Makeit",
+      },
+    };
+    const descMap = {
+      ko: {
+        home: "키워드만 입력하면 AI가 블로그, 인스타그램, 쇼츠 콘텐츠 초안을 자동 생성합니다. 비회원 5회 무료, 가입 시 150P 지급.",
+        about: "SNS메이킷은 블로그, 인스타그램, 쇼츠, 이미지 제작을 AI로 자동화하는 SNS 콘텐츠 올인원 플랫폼입니다.",
+        howto: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 카드뉴스, 상세페이지, 숏폼 편집까지 단계별로 안내합니다.",
+        faq: "SNS메이킷의 AI 콘텐츠 생성, 포인트, 요금제, 저작권, 계정 관련 자주 묻는 질문을 확인하세요.",
+        ai: "AI로 블로그 글, 인스타그램 캡션, 카드뉴스, 상세페이지, 제품컷, 로고, 쇼츠 영상을 자동 생성하세요.",
+        pricing: "SNS메이킷 가격정책. 가입 시 150P 지급, AI 글쓰기 30P, 이미지 생성 250P, 쇼츠 영상 100P. Standard 2,400P, Pro 6,500P 단건 충전.",
+        contact: "SNS메이킷 문의하기. 결제, 기능, 오류, 제휴 문의를 남겨주시면 빠르게 답변드립니다.",
+        community: "SNS메이킷 커뮤니티. SNS 운영, AI 콘텐츠 제작, 마케팅 정보와 질문답변을 공유하세요.",
+        programs: "SNS 운영에 필요한 자동화 도구, 템플릿, 무료 사진, 무료 영상 자료를 확인하세요.",
+        event: "SNS메이킷 이벤트와 혜택을 확인하세요.",
+        cases: "SNS메이킷을 활용한 고객사례와 AI 콘텐츠 제작 성공 사례를 확인하세요.",
+        legal: "SNS메이킷 이용약관, 개인정보처리방침, 환불정책을 확인하세요.",
+      },
+      en: {
+        home: "Enter a keyword and AI creates drafts for blogs, Instagram, and shorts. 5 guest uses and 150P on signup.",
+        about: "SNS Makeit is an all-in-one AI platform for blogs, Instagram, shorts, and image content creation.",
+        howto: "Learn how to use SNS Makeit for AI writing, image generation, card news, detail pages, and shorts editing.",
+        faq: "Find answers about SNS Makeit AI content generation, points, pricing, copyright, and accounts.",
+        ai: "Generate blog posts, Instagram captions, card news, product images, logos, and shorts videos with AI.",
+        pricing: "SNS Makeit pricing. 150P on signup, AI writing 30P, image generation 250P, shorts video 100P, one-off point packs.",
+        contact: "Contact SNS Makeit for billing, features, bugs, or partnership inquiries.",
+        community: "SNS Makeit Community for AI content creation, marketing tips, and Q&A.",
+        programs: "Download automation tools, templates, free photos, and video resources for SNS operations.",
+      },
+    };
+    const title = (titleMap[lang] || titleMap.ko)[page] || `${brand}`;
+    const desc = (descMap[lang] || descMap.ko)[page] || (descMap[lang] || descMap.ko).home;
+    const privatePages = ["login", "mypage", "profile", "xk9m2p4q7", "payment/success", "payment/fail"];
+    document.title = title;
+    updateOgMeta(title, desc, path);
+    const robots = document.querySelector('meta[name="robots"]');
+    if (robots) robots.setAttribute("content", privatePages.includes(page) ? "noindex, nofollow" : "index, follow");
+  }, [page, aiMenu, lang]);
+
   // 방문자 추적 (페이지 로드 시 1회, 프로덕션만)
   useEffect(() => {
     if (window.location.hostname === "localhost") return;
@@ -381,7 +450,7 @@ export default function App() {
     const rawPath = window.location.pathname.replace(/^\//, "") || "home";
     const segments = rawPath.split("/");
     const mainSeg = segments[0];
-    const postId = rawPath.includes("/post-") ? rawPath.split("/post-")[1] : null;
+    const postId = rawPath.includes("/post-") ? rawPath.split("/post-")[1].split("/")[0] : null;
     if (postId) setPendingPostId(postId);
 
     // 404 리다이렉트: 기존 경로 → 신규 경로
@@ -480,15 +549,15 @@ export default function App() {
     // SEO: 다국어 동적 타이틀
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
     const titleMap = {
-      ko: { home:"SNS메이킷 - AI 블로그·이미지·쇼츠 영상 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자료실", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
-      en: { home:"SNS Makeit - AI Blog · Image · Shorts Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", notice:"Notices", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy" },
+      ko: { home:"SNS메이킷 - AI SNS 콘텐츠 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자료실", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
+      en: { home:"SNS Makeit - AI Social Content Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", notice:"Notices", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy" },
       ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", programs:"プログラムストア", notice:"お知らせ", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約" },
     };
     // 페이지별 meta description (SEO 최적화)
     const descMap = {
       ko: {
-        home: "주제만 입력하면 AI가 블로그, 이미지, 쇼츠 영상을 자동으로 만들어드려요. 비회원 5회 무료!",
-        pricing: "SNS메이킷 요금제 안내. Basic $9.90/월, Pro $19.90/월, Premium $34.90/월. 연간 결제 시 2개월 무료. 일회 충전 $5.90부터.",
+        home: "키워드만 입력하면 AI가 블로그, 인스타그램, 쇼츠 콘텐츠 초안을 자동 생성합니다. 비회원 5회 무료, 가입 시 150P 지급.",
+        pricing: "SNS메이킷 가격정책. 가입 시 150P 지급, AI 글쓰기 30P, 이미지 생성 250P, 쇼츠 영상 100P. Standard 2,400P, Pro 6,500P 단건 충전.",
         about: "SNS메이킷은 AI로 SNS 콘텐츠 제작 전 과정을 자동화하는 올인원 플랫폼입니다.",
         howto: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 숏폼 편집까지 단계별로 안내합니다.",
         ai: "AI로 블로그, 이미지, 숏폼 영상을 자동 생성하세요. 비회원 5회 무료.",
@@ -497,8 +566,8 @@ export default function App() {
         programs: "자동화 도구, 템플릿, 유틸리티 프로그램을 다운로드하세요. 무료부터 프리미엄까지.",
       },
       en: {
-        home: "Enter a topic and AI creates card news, detail pages, and blog posts automatically. 5 free uses without signup!",
-        pricing: "SNS Makeit pricing. Basic $9.90/mo, Pro $19.90/mo, Premium $34.90/mo. 2 months free with annual billing. One-off packs from $5.90.",
+        home: "Enter a keyword and AI creates drafts for blogs, Instagram, and shorts. 5 guest uses and 150P on signup.",
+        pricing: "SNS Makeit pricing. 150P on signup, AI writing 30P, image generation 250P, shorts video 100P, one-off point packs.",
         about: "SNS Makeit is an all-in-one platform automating SNS content creation with AI.",
         howto: "SNS Makeit user guide. Step-by-step for AI writing, image generation, and shorts editing.",
         ai: "Generate blogs, card news, detail pages, images, and shorts videos with AI. 5 free uses for guests.",
@@ -528,11 +597,20 @@ export default function App() {
   };
   const navigatePost = (postId, postTitle, postDesc, postThumb) => {
     const cat = boardCat || "info";
-    window.history.pushState(null, "", "/community/" + cat + "/post-" + postId);
+    const slug = String(postTitle || "post")
+      .toLowerCase()
+      .replace(/<[^>]+>/g, " ")
+      .replace(/[^0-9a-z가-힣]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 80)
+      .replace(/-$/g, "") || "post";
+    const path = "/community/" + cat + "/post-" + postId + "/" + slug;
+    window.history.pushState(null, "", path);
     if (postTitle) {
       const title = postTitle + " - SNS메이킷 커뮤니티";
       document.title = title;
-      updateOgMeta(title, postDesc, "/community/" + cat + "/post-" + postId, postThumb);
+      updateOgMeta(title, postDesc, path, postThumb);
     }
   };
 
@@ -865,7 +943,7 @@ export default function App() {
             <div style={{ fontSize: "clamp(16px,4vw,19px)", fontWeight: 900, color: "#1a1730", marginBottom: 10 }}>무료 사용 횟수를 모두 사용했어요</div>
             <div style={{ fontSize: 13, color: "rgba(26,23,48,0.55)", lineHeight: 1.9, marginBottom: 26 }}>
               비회원은 AI 기능을 <b style={{ color: "#7c6aff" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
-              로그인하면 <b style={{ color: "#7c6aff" }}>10회 추가</b> + 포인트로 무제한 이용 가능해요!
+              로그인하면 <b style={{ color: "#7c6aff" }}>150P 보너스</b> + 포인트로 계속 이용 가능해요!
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button onClick={() => { setShowPointsModal(false); navigate("login"); }}
@@ -888,6 +966,7 @@ export default function App() {
       {/* ── 네비게이션 ── */}
       <nav role="navigation" aria-label="메인 네비게이션" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, height: 60,
+        boxSizing: "border-box", maxWidth: "100vw", overflow: "hidden",
         background: scrolled ? C.nav : (theme === "dark" ? "rgba(10,8,18,0.7)" : "rgba(255,255,255,0.92)"),
         borderBottom: "1px solid " + (scrolled ? C.border : (theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)")),
         backdropFilter: "blur(20px)",
@@ -1013,7 +1092,7 @@ export default function App() {
                   {/* 메뉴 */}
                   <div style={{ padding: "8px" }}>
                     {[
-                      { icon: "L", label: "출석체크", sub: "매일 로그인 +2P", action: () => { setShowAttendance(true); setProfileOpen(false); } },
+                      { icon: "L", label: "출석체크", sub: "매일 로그인 +3P", action: () => { setShowAttendance(true); setProfileOpen(false); } },
                       { icon: "P", label: "포인트 충전", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
                       { icon: "F", label: "내 보관함", sub: "생성한 글·이미지", action: () => { navigate("ai"); setAiMenu("library"); setProfileOpen(false); } },
                       { icon: "U", label: "회원정보", sub: "프로필·포인트 내역 확인", action: () => { navigate("mypage"); setProfileOpen(false); } },

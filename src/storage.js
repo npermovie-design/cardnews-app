@@ -442,6 +442,110 @@ export async function changePoints(uid, delta, reason) {
   }
 }
 
+// ── DB: 계정 공통 출석체크 ─────────────────────────────────────────────
+export async function fetchAttendance(uid) {
+  if (!uid) return [];
+  try {
+    const { data, error } = await supabase
+      .from("attendance_checks")
+      .select("check_date")
+      .eq("uid", uid)
+      .order("check_date", { ascending: true });
+    if (error) throw error;
+    return (data || []).map(r => r.check_date).filter(Boolean);
+  } catch {
+    return null;
+  }
+}
+
+export async function addAttendance(uid, checkDate, points, reason) {
+  if (!uid || !checkDate) return { ok: false, duplicate: false };
+  try {
+    const { error } = await supabase
+      .from("attendance_checks")
+      .insert({ uid, check_date: checkDate, points });
+    if (error) {
+      if (String(error.code) === "23505" || /duplicate|unique/i.test(error.message || "")) {
+        return { ok: false, duplicate: true };
+      }
+      throw error;
+    }
+    const newPoints = await changePoints(uid, points, reason);
+    return { ok: true, points: newPoints };
+  } catch {
+    return { ok: false, duplicate: false };
+  }
+}
+
+// ── DB: 계정 공통 AI 보관함 ────────────────────────────────────────────
+export async function fetchLibraryItems(uid, kind) {
+  if (!uid) return null;
+  try {
+    let q = supabase
+      .from("user_library_items")
+      .select("item_id,kind,payload,created_at,updated_at")
+      .eq("uid", uid)
+      .order("updated_at", { ascending: false });
+    if (kind) q = q.eq("kind", kind);
+    const { data, error } = await q;
+    if (error) throw error;
+    return (data || []).map(r => ({ ...(r.payload || {}), id: r.item_id || r.payload?.id, _kind: r.kind }));
+  } catch {
+    return null;
+  }
+}
+
+export async function upsertLibraryItem(uid, kind, item) {
+  if (!uid || !kind || !item?.id) return false;
+  try {
+    const now = new Date().toISOString();
+    const { error } = await supabase.from("user_library_items").upsert({
+      uid,
+      kind,
+      item_id: String(item.id),
+      payload: item,
+      updated_at: now,
+    }, { onConflict: "uid,kind,item_id" });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function deleteLibraryItem(uid, kind, itemId) {
+  if (!uid || !kind || !itemId) return false;
+  try {
+    const { error } = await supabase
+      .from("user_library_items")
+      .delete()
+      .eq("uid", uid)
+      .eq("kind", kind)
+      .eq("item_id", String(itemId));
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+export async function syncLocalLibrary(uid, kind, localItems) {
+  const local = Array.isArray(localItems) ? localItems : [];
+  if (!uid) return local;
+  const remote = await fetchLibraryItems(uid, kind);
+  if (remote === null) return local;
+
+  for (const item of local) {
+    if (item?.id) upsertLibraryItem(uid, kind, item).catch?.(() => {});
+  }
+
+  const map = new Map();
+  [...remote, ...local].forEach(item => {
+    if (!item?.id) return;
+    const key = String(item.id);
+    if (!map.has(key)) map.set(key, item);
+  });
+  return [...map.values()];
+}
+
 // ── Storage 업로드 제한 ──────────────────────────────────────────────────
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME_TYPES = [
@@ -512,7 +616,7 @@ export function setAiUsage(u){
   } catch {}
 }
 
-export const FREE_GUEST  = 3;     // 비회원 무료
+export const FREE_GUEST  = 5;     // 비회원 무료
 export const FREE_MEMBER = 5;     // 회원 무료 5회
 
 export function getAiLeft(user, cost = Math.abs(POINTS.AI_USE)) {
@@ -700,12 +804,23 @@ function pingSitemapAsync(postUrl) {
   } catch {}
 }
 
+function slugifyPostUrl(input) {
+  return String(input || "post")
+    .toLowerCase()
+    .replace(/<[^>]+>/g, " ")
+    .replace(/[^0-9a-z가-힣]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80)
+    .replace(/-$/g, "") || "post";
+}
+
 export async function savePostToDB(post) {
   const row = postToRow(post);
   const { error } = await supabase.from("posts").insert(row);
   if (error) throw error;
   try { sessionStorage.removeItem(POSTS_CACHE_KEY); } catch {} // 캐시 무효화
-  const postUrl = `/community/${row.subCat || row.cat || "info"}/post-${row.id}`;
+  const postUrl = `/community/${row.subCat || row.cat || "info"}/post-${row.id}/${slugifyPostUrl(row.title)}`;
   pingSitemapAsync(postUrl);
 }
 

@@ -19,6 +19,7 @@ const MarketingHub = React.lazy(() => import("./AiTools.jsx").then(m => ({ defau
 const UnifiedBlogWriter = React.lazy(() => import("./AiTools.jsx").then(m => ({ default: m.UnifiedBlogWriter })));
 const LinkBlogCombined = React.lazy(() => import("./AiTools.jsx").then(m => ({ default: m.LinkBlogCombined })));
 const PlannerPanel = React.lazy(() => import("./CardNewsApp").then(m => ({ default: m.PlannerPanel })));
+const CardNewsApp = React.lazy(() => import("./CardNewsApp").then(m => ({ default: m.CardNewsApp })));
 const SimpleDetailPageGenerator = React.lazy(() => import("./SimpleDetailPageGenerator"));
 const DetailPageStudio = React.lazy(() => import("./v2/DetailPageStudioV2"));
 const LogoGenerator = React.lazy(() => import("./LogoGenerator"));
@@ -1202,7 +1203,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
 
   // 보관함
   if (aiMenu === "library") {
-    return <LibraryPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} cardDescC={cardDescC} setAiMenu={setAiMenu} renderFooter={() => <AiFooter />} />;
+    return <LibraryPage isDark={isDark} homeText={homeText} homeMuted={homeMuted} cardBdr={cardBdr} cardDescC={cardDescC} setAiMenu={setAiMenu} renderFooter={() => <AiFooter />} user={user} />;
   }
 
   // 바형 헤더 공용
@@ -1605,7 +1606,13 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
   // ── 콘텐츠 제작: 하위 도구 직접 진입 ──
-  // cardnews 렌더링 제거됨
+  if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_simple_make") {
+    return (
+      <ToolWrap menuId="cardnews_simple">
+        <CardNewsApp embedded theme={theme} user={user} initialSubPage={aiMenu === "cardnews_simple_make" ? "make" : "home"} />
+      </ToolWrap>
+    );
+  }
   if (aiMenu === "detail_simple" || aiMenu === "detail_simple_make") {
     return <ToolWrap menuId="detail_simple"><DetailPageStudio isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} C={C} /></ToolWrap>;
   }
@@ -1860,8 +1867,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
   // 영상 편집 — BlogGenerator 영상 모드로 표시 (화면 전환 없이 아래에 인라인)
-  if (aiMenu === "video_edit" || aiMenu === "video_create" || aiMenu === "shorts_make" || aiMenu === "longform_edit") {
-    const videoInitMode = aiMenu === "longform_edit" ? "longform" : aiMenu === "shorts_make" ? "shortform" : null;
+  if (aiMenu === "video_edit" || aiMenu === "video_create" || aiMenu === "shorts" || aiMenu === "shorts_make" || aiMenu === "longform_edit") {
+    const videoInitMode = aiMenu === "longform_edit" ? "longform" : (aiMenu === "shorts" || aiMenu === "shorts_make") ? "shortform" : null;
     return (
       <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
         <BlogGenerator embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} setAiMenu={setAiMenu} initialVideoMode={videoInitMode} />

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage, upsertLibraryItem } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import StepBar from "./StepBar.jsx";
 import LoadingAnimation from "./LoadingAnimation.jsx";
@@ -62,7 +62,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
         </div>
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
-            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>10회 추가 무료</b>를 받으세요!</>
+            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>150P 보너스</b>를 받으세요!</>
             : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
           }
         </div>
@@ -451,10 +451,12 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
       if (typeof _nfFull !== "undefined" && _nfFull && _nfFull.length > 50) {
         try {
           let _sv = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
-          _sv.unshift({ id: Date.now().toString(), type: "blog_yt_blog",
+          const savedItem = { id: Date.now().toString(), type: "blog_yt_blog",
             title: typeof ytInfo !== "undefined" && ytInfo?.title ? ytInfo.title : "유튜브 블로그",
-            content: _nfFull, date: new Date().toLocaleDateString("ko-KR") });
+            content: _nfFull, date: new Date().toLocaleDateString("ko-KR") };
+          _sv.unshift(savedItem);
           localStorage.setItem("sns_blog_saves_v1", JSON.stringify(_sv.slice(0, 100)));
+          if (user?.uid) upsertLibraryItem(user.uid, "blog", savedItem);
         } catch(e) {}
       }
     }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { changePoints } from "./storage";
+import { addAttendance, changePoints, fetchAttendance } from "./storage";
 
 /* ── 출석체크 포인트 구조 ──────────────────────────────
    매일 출석       : +3P
@@ -53,9 +53,27 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
   const [data, setData] = useState(null);
   const [checking, setChecking] = useState(false);
   const [result, setResult] = useState(null); // { pts, bonuses[] }
+  const [dbReady, setDbReady] = useState(false);
 
   useEffect(() => {
-    if (user?.uid) setData(loadData(user.uid));
+    if (!user?.uid) return;
+    let alive = true;
+    (async () => {
+      const remoteDates = await fetchAttendance(user.uid);
+      if (!alive) return;
+      if (remoteDates) {
+        const local = loadData(user.uid);
+        const mergedDates = [...new Set([...(local.dates || []), ...remoteDates])].sort();
+        const merged = { ...local, dates: mergedDates, streak: calcStreak(mergedDates) };
+        saveData(user.uid, merged);
+        setData(merged);
+        setDbReady(true);
+      } else {
+        setData(loadData(user.uid));
+        setDbReady(false);
+      }
+    })();
+    return () => { alive = false; };
   }, [user?.uid]);
 
   const checkedToday = data?.dates?.includes(today());
@@ -110,13 +128,29 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
       }
     }
 
-    newData.lastBonus = lastBonus;
-    saveData(user.uid, newData);
-    setData(newData);
-
     try {
-      const newPts = await changePoints(user.uid, totalPts,
-        `출석체크 +3P${bonuses.length ? ` + 보너스 ${bonuses.join(", ")}` : ""}`);
+      const reason = `출석체크 +3P${bonuses.length ? ` + 보너스 ${bonuses.join(", ")}` : ""}`;
+      let newPts;
+      if (dbReady) {
+        const r = await addAttendance(user.uid, todayStr, totalPts, reason);
+        if (r.duplicate) {
+          const remoteDates = await fetchAttendance(user.uid);
+          const synced = { ...data, dates: remoteDates || data.dates, streak: calcStreak(remoteDates || data.dates) };
+          saveData(user.uid, synced);
+          setData(synced);
+          setResult({ pts: 0, bonuses: ["이미 오늘 출석 처리됨"] });
+          setChecking(false);
+          checkingRef.current = false;
+          return;
+        }
+        if (!r.ok) throw new Error("attendance db failed");
+        newPts = r.points;
+      } else {
+        newPts = await changePoints(user.uid, totalPts, reason);
+      }
+      newData.lastBonus = lastBonus;
+      saveData(user.uid, newData);
+      setData(newData);
       if (onUserUpdate) onUserUpdate({ ...user, points: newPts });
       setResult({ pts: totalPts, bonuses });
     } catch {}

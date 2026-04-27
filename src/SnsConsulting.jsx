@@ -1,6 +1,7 @@
 // SNS 사주팔자 — 상담형 챗봇 (사용자 성향 분석 → SNS 전략 추천)
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { callAIStream } from "./aiClient";
+import { upsertLibraryItem } from "./storage";
 
 // ── 보관함 저장 ──
 const CONSULTING_SAVES_KEY = "nper_consulting_saves_v1";
@@ -9,6 +10,10 @@ function saveConsultingWork(item) {
   const list = getConsultingSaves().filter(x => x.id !== item.id);
   list.unshift(item);
   try { localStorage.setItem(CONSULTING_SAVES_KEY, JSON.stringify(list.slice(0, 50))); } catch {}
+  try {
+    const uid = JSON.parse(localStorage.getItem("nper_user") || "null")?.uid;
+    if (uid) upsertLibraryItem(uid, "consulting", item);
+  } catch {}
 }
 export { getConsultingSaves, saveConsultingWork, CONSULTING_SAVES_KEY };
 

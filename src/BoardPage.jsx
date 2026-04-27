@@ -59,6 +59,21 @@ function extractKeywordsBoard(title, plainBody, catName) {
 }
 const CAT_LABEL_MAP = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", showcase: "작품 공유", sns_briefing: "SNS 브리핑" };
 
+function slugifyKo(input, fallback = "post") {
+  const slug = stripMdHtml(input || "")
+    .toLowerCase()
+    .replace(/[^0-9a-z가-힣]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80)
+    .replace(/-$/g, "");
+  return slug || fallback;
+}
+
+function postPath(post, catId) {
+  return `/community/${catId}/post-${post.id}/${slugifyKo(post.title || post.body || post.content, "post")}`;
+}
+
 function updatePostSeoMeta(post, catId) {
   if (!post) return;
   const catName = CAT_LABEL_MAP[catId] || "커뮤니티";
@@ -77,14 +92,15 @@ function updatePostSeoMeta(post, catId) {
   setOrCreateMeta("keywords", "name", extractKeywordsBoard(titleClean, plainBody, catName));
   setMeta('meta[property="og:title"]', fullTitle);
   setMeta('meta[property="og:description"]', desc);
-  setMeta('meta[property="og:url"]', `https://snsmakeit.com/community/${catId}/post-${post.id}`);
+  const canonicalPath = postPath(post, catId);
+  setMeta('meta[property="og:url"]', `https://snsmakeit.com${canonicalPath}`);
   setMeta('meta[property="og:type"]', "article");
   setMeta('meta[name="twitter:title"]', fullTitle);
   setMeta('meta[name="twitter:description"]', desc);
   // canonical
   let canon = document.querySelector('link[rel="canonical"]');
   if (!canon) { canon = document.createElement("link"); canon.rel = "canonical"; document.head.appendChild(canon); }
-  canon.href = `https://snsmakeit.com/community/${catId}/post-${post.id}`;
+  canon.href = `https://snsmakeit.com${canonicalPath}`;
   // 이미지: post.images[0] → 본문 첫 이미지 → 기존 og 유지
   const thumb = (Array.isArray(post.images) && post.images[0]) || extractThumb(post.body || post.content || "") || "";
   if (thumb) {
@@ -446,7 +462,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     try {
       await savePostToDB(p);
       // 검색엔진 자동 색인 (IndexNow — 비동기, 실패해도 무시)
-      fetch(`/api/seo?action=index-now&url=/community/${cat}/post-${p.id}`).catch(() => {});
+      fetch(`/api/seo?action=index-now&url=${encodeURIComponent(postPath(p, cat))}`).catch(() => {});
     } catch(e) {
       /* Supabase save failed, localStorage only */
     }
@@ -491,7 +507,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     const next = posts.map(pp=>pp.id===p.id ? updated : pp);
     syncLocal(next); setView(updated);
     const cat = p.subCat||p.cat||subCat;
-    window.history.pushState(null,"","/community/"+cat+"/post-"+p.id);
+    window.history.pushState(null,"",postPath(updated, cat));
     // SEO: 동적 title + meta description + og tags
     updatePostSeoMeta(updated, cat);
     updatePostInDB(p.id, {views: updated.views}).catch(()=>{});
@@ -551,7 +567,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
   /* 공유 */
   const sharePost = post => {
-    const url = window.location.origin + "/community/"+(post.subCat||post.cat||subCat)+"/post-"+post.id;
+    const url = window.location.origin + postPath(post, post.subCat||post.cat||subCat);
     navigator.clipboard.writeText(url).then(() => showToast("링크가 복사됐어요","info")).catch(() => {
       const ta = document.createElement("textarea"); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
       showToast("링크가 복사됐어요","info");
@@ -1018,7 +1034,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           </div>
           <span style={{fontSize:14,color:isDark?"#86efac":"#166534",lineHeight:1.7}}>
             <b>포인트 적립 안내</b> · 게시글 작성 시 <b style={{color:"#22c55e"}}>+1P</b> 적립 (하루 최대 10회).
-            댓글에는 포인트가 지급되지 않으며, 매일 로그인 시 <b style={{color:"#22c55e"}}>+2P</b>가 추가로 적립됩니다.
+            댓글에는 포인트가 지급되지 않으며, 매일 로그인 시 <b style={{color:"#22c55e"}}>+3P</b>가 추가로 적립됩니다.
           </span>
         </div>
 
@@ -1758,7 +1774,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <div style={{padding:"14px 16px",borderBottom:"1px solid "+bdr}}>
                 <span style={{fontSize:13,fontWeight:800,color:C.text}}>포인트 적립</span>
               </div>
-              {[["글 작성","+2P"],["AI 생성","-10P"],["가입 즉시","+100P"],["출석체크","+3P"]].map(([a,p])=>(
+              {[["글 작성","+1P"],["AI 글쓰기","-30P"],["가입 즉시","+150P"],["매일 로그인","+3P"]].map(([a,p])=>(
                 <div key={a} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid "+bdr,fontSize:13}}>
                   <span style={{color:C.muted}}>{a}</span>
                   <span style={{fontWeight:700,color:p.startsWith("+")?"#4ade80":"#f87171"}}>{p}</span>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
 const ShortsCreator = React.lazy(() => import("./ShortsCreator"));
 const LongFormEditor = React.lazy(() => import("./LongFormEditor"));
-import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage, getAuthToken } from "./storage";
+import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage, getAuthToken, upsertLibraryItem } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import { useI18n } from "./i18n.jsx";
 
@@ -1365,15 +1365,17 @@ ${emojiRule}
           return `${t}\n${b}`;
         }).join("\n\n");
         const saves = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
-        saves.unshift({
+        const savedItem = {
           id: Date.now().toString(),
           type: "카드뉴스",
           title: cleanTitle || content.slice(0, 30),
           content: cleanContent,
           date: new Date().toLocaleDateString("ko-KR"),
           slideCount: slides.length,
-        });
+        };
+        saves.unshift(savedItem);
         localStorage.setItem("sns_blog_saves_v1", JSON.stringify(saves.slice(0, 100)));
+        if (user?.uid) upsertLibraryItem(user.uid, "blog", savedItem);
       } catch {}
       // 배경 이미지 자동 검색 (비동기, UI 차단 없이)
       (async () => {
@@ -1655,6 +1657,7 @@ ${emojiRule}
             content: cleanText(_savedFull), date: new Date().toLocaleDateString("ko-KR") };
           _saves.unshift(_newSave);
           localStorage.setItem("sns_blog_saves_v1", JSON.stringify(_saves.slice(0, 100)));
+          if (user?.uid) upsertLibraryItem(user.uid, "blog", _newSave);
         } catch(e) {}
       }
     }

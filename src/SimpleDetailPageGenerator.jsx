@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { changePoints, guestLimitExceeded, incrementGuestUsage } from "./storage";
+import { changePoints, guestLimitExceeded, incrementGuestUsage, upsertLibraryItem } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import { KlipyButton } from "./KlipyPicker";
 import ShareButton from "./ShareButton";
@@ -433,8 +433,10 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
         const list = JSON.parse(localStorage.getItem(KEY) || "[]");
         const now = new Date();
         const ds = now.getFullYear() + "." + String(now.getMonth()+1).padStart(2,"0") + "." + String(now.getDate()).padStart(2,"0");
-        list.unshift({ id:"sd_"+Date.now(), topic:form.productName, title:form.productName, count:slidesData.length, date:ds, slides:slidesData, category:selCat?.key });
+        const savedItem = { id:"sd_"+Date.now(), topic:form.productName, title:form.productName, count:slidesData.length, date:ds, slides:slidesData, category:selCat?.key };
+        list.unshift(savedItem);
         localStorage.setItem(KEY, JSON.stringify(list.slice(0, 30)));
+        if (user?.uid) upsertLibraryItem(user.uid, "simpledetail", savedItem);
       } catch {}
     } catch(e) { setSlides([]); setWizStep(3); alert(ko ? "생성에 실패했습니다: " + (e.message || "다시 시도해주세요.") : "Generation failed: " + (e.message || "Please try again.")); console.error("생성 실패:", e.message); }
     setLoading(false);

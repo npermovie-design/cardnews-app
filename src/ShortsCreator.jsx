@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import { useI18n } from "./i18n";
+import { upsertLibraryItem } from "./storage";
 
 const API = import.meta.env.VITE_SHORTS_FACTORY_URL || "https://shorts-factory-r33o.onrender.com";
 
@@ -221,8 +222,10 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [editClips, setEditClips] = useState([]);
   const [editIdx, setEditIdx] = useState(0);
   const [template, setTemplate] = useState("minimal");
-  // 제목 스타일 (font, align 추가)
-  const [titleStyle, setTitleStyle] = useState({ color: "#FFFFFF", fontSize: 20, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.75)", opacity: 100, font: "default", align: "center" });
+  // 상단 제목 스타일
+  const [titleStyle, setTitleStyle] = useState({ color: "#FFFFFF", fontSize: 28, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.75)", opacity: 100, font: "default", align: "center", bold: true, highlightColor: "#FFD700" });
+  // 하단 제목 스타일
+  const [bottomTitleStyle, setBottomTitleStyle] = useState({ color: "#FFFFFF", fontSize: 22, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.7)", opacity: 100, font: "default", align: "center", bold: false, highlightColor: "#7c6aff" });
   // 자막 스타일
   const [captionStyle, setCaptionStyle] = useState({ color: "#FFFFFF", fontSize: 15, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.7)", opacity: 100, font: "default", align: "center" });
   // 호환성
@@ -266,8 +269,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [selectedOverlay, setSelectedOverlay] = useState(null);
   // 자막/제목 위치 (드래그 가능)
   const [titlePos, setTitlePos] = useState({ x: 50, y: 8 }); // % 기준
-  const [captionPos, setCaptionPos] = useState({ x: 50, y: 88 }); // % 기준
-  const [dragging, setDragging] = useState(null); // 'title' | 'caption' | overlay id | null
+  const [bottomTitlePos, setBottomTitlePos] = useState({ x: 50, y: 88 }); // % 기준
+  const [captionPos, setCaptionPos] = useState({ x: 50, y: 92 }); // % 기준
+  const [dragging, setDragging] = useState(null); // 'title' | 'bottomTitle' | 'caption' | overlay id | null
   // 속성 패널 탭
   const [propTab, setPropTab] = useState("style"); // style | overlay
   // 레이아웃 모드: full(전체화면) | bars(검은바+중앙영상)
@@ -529,6 +533,18 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     return () => { if (raf) cancelAnimationFrame(raf); };
   }, [isPlaying, videoSegs]);
 
+  // {강조텍스트} 문법 파싱 → 부분 색상 렌더링
+  const renderHighlightText = (text, highlightColor) => {
+    if (!text) return null;
+    const parts = text.split(/(\{[^}]+\})/g);
+    if (parts.length === 1) return text;
+    return parts.map((part, i) => {
+      const m = part.match(/^\{(.+)\}$/);
+      if (m) return <span key={i} style={{ color: highlightColor }}>{m[1]}</span>;
+      return <span key={i}>{part}</span>;
+    });
+  };
+
   // 드래그 핸들러 (자막/제목 위치) + 스냅 가이드
   const SNAP_THRESHOLD = 4; // px 기준 스냅 범위
   const SNAP_POINTS = { x: [10, 25, 50, 75, 90], y: [8, 15, 25, 50, 75, 85, 92] }; // %
@@ -552,6 +568,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       }
       setSnapGuide(guide);
       if (target === "title") setTitlePos({ x, y });
+      else if (target === "bottomTitle") setBottomTitlePos({ x, y });
       else if (target === "caption") setCaptionPos({ x, y });
       else setOverlays(prev => prev.map(o => o.id === target ? { ...o, x, y } : o));
     };
@@ -683,7 +700,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       id: projectId || ("sp_" + Date.now()),
       title: curClip.title || editClips[0]?.title || t("sc_no_title"),
       fileId, editClips, videoSegs, overlays, template,
-      titleStyle, captionStyle, titlePos, captionPos,
+      titleStyle, bottomTitleStyle, captionStyle, titlePos, bottomTitlePos, captionPos,
       layoutMode, videoScale, volume, subtitlesEnabled,
       date: new Date().toLocaleDateString("ko-KR"),
       updatedAt: Date.now(),
@@ -703,9 +720,11 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     setOverlays(proj.overlays || []);
     setTemplate(proj.template || "minimal");
     setTitleStyle(proj.titleStyle || titleStyle);
+    setBottomTitleStyle(proj.bottomTitleStyle || bottomTitleStyle);
     setCaptionStyle(proj.captionStyle || captionStyle);
     setTitlePos(proj.titlePos || { x: 50, y: 8 });
-    setCaptionPos(proj.captionPos || { x: 50, y: 88 });
+    setBottomTitlePos(proj.bottomTitlePos || { x: 50, y: 88 });
+    setCaptionPos(proj.captionPos || { x: 50, y: 92 });
     setLayoutMode(proj.layoutMode || "bars");
     setVideoScale(proj.videoScale || 100);
     setVolume(proj.volume || 100);
@@ -851,7 +870,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
       return {
         ...s,
         title: mainTitle,
-        subtitle_text: (sub && sub !== mainTitle && !mainTitle.includes(sub) && !sub.includes(mainTitle) && _similarity(mainTitle, sub) < 0.5) ? sub : "",
+        bottom_title: (sub && sub !== mainTitle && !mainTitle.includes(sub) && !sub.includes(mainTitle) && _similarity(mainTitle, sub) < 0.5) ? sub : "",
         script: s.script || "",
         subtitles: s.subtitles || (s.script ? s.script.match(/.{1,30}/g)?.map((t, j) => ({ start: j * 3, end: (j + 1) * 3, text: t })) || [] : []),
       };
@@ -874,7 +893,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     try {
       const d = await apiCall("/generate-async", {
         method: "POST",
-        body: JSON.stringify({ file_id: fileId, clips: editClips, remove_silence: removeSilence, silence_threshold: silenceThreshold, silence_min_gap: silenceMinGap, template, title_color: titleColor, caption_color: captionColor, subtitles_enabled: subtitlesEnabled, layout_mode: layoutMode, title_pos: titlePos, caption_pos: layoutMode === "bars" ? { x: 50, y: 88 } : captionPos, title_style: titleStyle, caption_style: captionStyle }),
+        body: JSON.stringify({ file_id: fileId, clips: editClips, remove_silence: removeSilence, silence_threshold: silenceThreshold, silence_min_gap: silenceMinGap, template, title_color: titleColor, caption_color: captionColor, subtitles_enabled: subtitlesEnabled, layout_mode: layoutMode, title_pos: titlePos, bottom_title_pos: bottomTitlePos, caption_pos: captionPos, title_style: titleStyle, bottom_title_style: bottomTitleStyle, caption_style: captionStyle }),
       });
       setJobId(d.job_id);
       if (pollRef.current) clearInterval(pollRef.current);
@@ -901,14 +920,16 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             try {
               const saves = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
               (j.results || []).filter(r => r.type === "done").forEach((r, idx) => {
-                saves.unshift({
+                const savedItem = {
                   id: Date.now().toString() + idx,
                   type: "shorts",
                   title: editClips[r.index]?.title || `Short ${r.index + 1}`,
-                  content: `[${t("sc_shorts_video")}] ${editClips[r.index]?.subtitle_text || ""}\n${(editClips[r.index]?.subtitles || []).map(s => s.text).join("\n")}`,
+                  content: `[${t("sc_shorts_video")}] ${editClips[r.index]?.bottom_title || ""}\n${(editClips[r.index]?.subtitles || []).map(s => s.text).join("\n")}`,
                   date: new Date().toLocaleDateString("ko-KR"),
                   videoUrl: `${API}/outputs/${fileId}/${r.filename}`,
-                });
+                };
+                saves.unshift(savedItem);
+                if (user?.uid) upsertLibraryItem(user.uid, "blog", savedItem);
               });
               localStorage.setItem("sns_blog_saves_v1", JSON.stringify(saves.slice(0, 100)));
             } catch {}
@@ -1316,7 +1337,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               <div key={i} onClick={() => { setEditIdx(i); setSelectedSubIdx(-1); setPlayhead(0); setIsPlaying(false); }}
                 style={{ padding: "10px 10px", borderRadius: 8, cursor: "pointer", marginBottom: 4, background: editIdx === i ? "rgba(124,106,255,0.18)" : "transparent", borderLeft: `3px solid ${editIdx === i ? "#7c6aff" : "transparent"}`, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: editIdx === i ? "#7c6aff" : "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title || c.hook || c.subtitle_text || `Short ${i + 1}`}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: editIdx === i ? "#7c6aff" : "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title || c.hook || c.bottom_title || `Short ${i + 1}`}</div>
                   <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{fmt(c.start_seconds)} ~ {fmt(c.end_seconds)}</div>
                 </div>
                 {editClips.length > 1 && (
@@ -1347,30 +1368,9 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           {/* 9:16 프리뷰 (고정 비율, 크기 안정화) */}
           <div ref={previewRef} style={{ width: 360, maxWidth: "100%", aspectRatio: "9/16", maxHeight: "calc(100% - 40px)", borderRadius: 8, background: "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", flexShrink: 0, flexGrow: 0, position: "relative", userSelect: "none" }}>
 
-            {layoutMode === "bars" ? (<>
-              {/* 검은바 레이아웃: 상단바 + 영상 + 하단바 */}
-              {/* 상단 검은바 (제목 + 부제) */}
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 12, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "0 12px", gap: 2 }}>
-                <div style={{ maxWidth: "90%", textAlign: titleStyle.align || "center", opacity: titleStyle.opacity / 100 }}>
-                  <span style={{
-                    fontSize: Math.min(titleStyle.fontSize, 20), fontWeight: 900, color: titleStyle.color,
-                    fontFamily: titleStyle.font === "default" ? "inherit" : titleStyle.font,
-                    lineHeight: 1.2, wordBreak: "keep-all", display: "inline-block",
-                    textShadow: titleStyle.shadow ? "0 1px 4px rgba(0,0,0,0.6)" : "none",
-                    WebkitTextStroke: titleStyle.border ? `1px ${titleStyle.borderColor}` : "none",
-                    background: titleStyle.bgBox ? titleStyle.bgColor : "transparent",
-                    padding: titleStyle.bgBox ? "3px 10px" : 0, borderRadius: titleStyle.bgBox ? 4 : 0,
-                  }}>{curClip.title || t("sc_enter_title")}</span>
-                </div>
-                {curClip.subtitle_text && (
-                  <div style={{ maxWidth: "90%", textAlign: "center" }}>
-                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", fontWeight: 500, lineHeight: 1.2 }}>{curClip.subtitle_text}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* 중앙 영상 (원본 비율 유지) */}
-              <div style={{ position: "absolute", top: "22%", left: 0, right: 0, bottom: "22%", overflow: "hidden", background: "#000" }}>
+            {/* 공통: 영상 배경 */}
+            {layoutMode === "bars" ? (
+              <div style={{ position: "absolute", top: "15%", left: 0, right: 0, bottom: "15%", overflow: "hidden", background: "#000" }}>
                 <video ref={videoRef} src={sourceUrl || undefined}
                   style={{ width: "100%", height: "100%", objectFit: "contain", display: sourceUrl ? "block" : "none", transform: `scale(${videoScale/100})`, transformOrigin: "center center" }}
                   preload="metadata" playsInline />
@@ -1380,28 +1380,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   </div>
                 )}
               </div>
-
-              {/* 하단 검은바 — 자막만 표시 (부제는 상단으로 이동됨) */}
-              <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "22%", background: "#000", zIndex: 11, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "6px 12px" }}>
-                {subtitlesEnabled && currentSub && (
-                  <div style={{ maxWidth: "90%", textAlign: captionStyle.align || "center", opacity: captionStyle.opacity / 100 }}>
-                    <span style={{
-                      fontSize: Math.min(captionStyle.fontSize, 22), color: captionStyle.color, fontWeight: 800,
-                      fontFamily: captionStyle.font === "default" ? "inherit" : captionStyle.font,
-                      lineHeight: 1.4, wordBreak: "keep-all", display: "inline-block",
-                      textShadow: captionStyle.shadow ? "0 2px 8px rgba(0,0,0,0.9)" : "none",
-                      WebkitTextStroke: captionStyle.border ? `1px ${captionStyle.borderColor}` : "none",
-                      background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
-                      padding: captionStyle.bgBox ? "5px 14px" : 0, borderRadius: captionStyle.bgBox ? 6 : 0,
-                    }}>{currentSub.text}</span>
-                  </div>
-                )}
-                {subtitlesEnabled && !currentSub && !(curClip.subtitles || []).length && (
-                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.2)" }}>{t("sc_no_caption")}</span>
-                )}
-              </div>
-            </>) : (<>
-              {/* 전체화면 레이아웃 */}
+            ) : (<>
               <video ref={videoRef} src={sourceUrl || undefined}
                 style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", display: sourceUrl ? "block" : "none", transform: `scale(${videoScale/100})`, transformOrigin: "center center" }}
                 preload="metadata" playsInline />
@@ -1410,25 +1389,53 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" opacity="0.2"><rect x="2" y="4" width="20" height="16" rx="3" stroke="#fff" strokeWidth="1.5"/><polygon points="10,8 17,12 10,16" fill="#fff"/></svg>
                 </div>
               )}
-              {/* 제목 (드래그 가능) */}
-              <div onMouseDown={e => handlePreviewMouseDown("title", e)}
-                style={{ position: "absolute", left: `${titlePos.x}%`, top: `${titlePos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, padding: "8px 18px", borderRadius: 8, background: "rgba(0,0,0,0.75)", border: dragging === "title" ? "2px solid #7c6aff" : "2px solid transparent", maxWidth: "85%", textAlign: "center" }}>
-                <span style={{ fontSize: Math.min(fontSize + 2, 20), fontWeight: 900, color: titleColor, lineHeight: 1.3 }}>{curClip.title || t("sc_title_text")}</span>
-              </div>
-              {/* 부제 (고정) */}
-              {curClip.subtitle_text && (
-                <div style={{ position: "absolute", left: "50%", bottom: "18%", transform: "translateX(-50%)", zIndex: 10, padding: "4px 14px", borderRadius: 6, background: "rgba(0,0,0,0.5)", maxWidth: "90%", textAlign: "center" }}>
-                  <span style={{ fontSize: Math.min(fontSize - 2, 14), color: captionColor, fontWeight: 500, lineHeight: 1.3, opacity: 0.8 }}>{curClip.subtitle_text}</span>
-                </div>
-              )}
-              {/* 자막 (시간별, 드래그 가능) */}
-              {subtitlesEnabled && currentSub && (
-                <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
-                  style={{ position: "absolute", left: `${captionPos.x}%`, top: `${captionPos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, padding: "6px 16px", borderRadius: 6, background: "rgba(0,0,0,0.7)", border: dragging === "caption" ? "2px solid #f59e0b" : "2px solid transparent", maxWidth: "90%", textAlign: "center" }}>
-                  <span style={{ fontSize: Math.min(fontSize, 16), color: captionColor, fontWeight: 600, lineHeight: 1.4 }}>{currentSub.text}</span>
-                </div>
-              )}
             </>)}
+
+            {/* 상단 제목 (드래그 가능) */}
+            <div onMouseDown={e => handlePreviewMouseDown("title", e)}
+              style={{ position: "absolute", left: `${titlePos.x}%`, top: `${titlePos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 12, maxWidth: "90%", textAlign: titleStyle.align || "center", opacity: titleStyle.opacity / 100, border: dragging === "title" ? "2px solid #7c6aff" : "2px solid transparent", borderRadius: 8, padding: "2px" }}>
+              <span style={{
+                fontSize: titleStyle.fontSize, fontWeight: titleStyle.bold ? 900 : 400, color: titleStyle.color,
+                fontFamily: titleStyle.font === "default" ? "inherit" : titleStyle.font,
+                lineHeight: 1.2, wordBreak: "keep-all", display: "inline-block",
+                textShadow: titleStyle.shadow ? "0 2px 6px rgba(0,0,0,0.7)" : "none",
+                WebkitTextStroke: titleStyle.border ? `1px ${titleStyle.borderColor}` : "none",
+                background: titleStyle.bgBox ? titleStyle.bgColor : "transparent",
+                padding: titleStyle.bgBox ? "6px 16px" : 0, borderRadius: titleStyle.bgBox ? 6 : 0,
+              }}>{renderHighlightText(curClip.title || t("sc_enter_title"), titleStyle.highlightColor)}</span>
+            </div>
+
+            {/* 하단 제목 (드래그 가능) */}
+            {curClip.bottom_title && (
+              <div onMouseDown={e => handlePreviewMouseDown("bottomTitle", e)}
+                style={{ position: "absolute", left: `${bottomTitlePos.x}%`, top: `${bottomTitlePos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 12, maxWidth: "90%", textAlign: bottomTitleStyle.align || "center", opacity: bottomTitleStyle.opacity / 100, border: dragging === "bottomTitle" ? "2px solid #f59e0b" : "2px solid transparent", borderRadius: 8, padding: "2px" }}>
+                <span style={{
+                  fontSize: bottomTitleStyle.fontSize, fontWeight: bottomTitleStyle.bold ? 900 : 400, color: bottomTitleStyle.color,
+                  fontFamily: bottomTitleStyle.font === "default" ? "inherit" : bottomTitleStyle.font,
+                  lineHeight: 1.3, wordBreak: "keep-all", display: "inline-block",
+                  textShadow: bottomTitleStyle.shadow ? "0 2px 6px rgba(0,0,0,0.7)" : "none",
+                  WebkitTextStroke: bottomTitleStyle.border ? `1px ${bottomTitleStyle.borderColor}` : "none",
+                  background: bottomTitleStyle.bgBox ? bottomTitleStyle.bgColor : "transparent",
+                  padding: bottomTitleStyle.bgBox ? "5px 14px" : 0, borderRadius: bottomTitleStyle.bgBox ? 6 : 0,
+                }}>{renderHighlightText(curClip.bottom_title, bottomTitleStyle.highlightColor)}</span>
+              </div>
+            )}
+
+            {/* 자막 (시간별, 드래그 가능) */}
+            {subtitlesEnabled && currentSub && (
+              <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
+                style={{ position: "absolute", left: `${captionPos.x}%`, top: `${captionPos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 11, maxWidth: "90%", textAlign: captionStyle.align || "center", opacity: captionStyle.opacity / 100, border: dragging === "caption" ? "2px solid #22d3ee" : "2px solid transparent", borderRadius: 6, padding: "2px" }}>
+                <span style={{
+                  fontSize: captionStyle.fontSize, color: captionStyle.color, fontWeight: 800,
+                  fontFamily: captionStyle.font === "default" ? "inherit" : captionStyle.font,
+                  lineHeight: 1.4, wordBreak: "keep-all", display: "inline-block",
+                  textShadow: captionStyle.shadow ? "0 2px 8px rgba(0,0,0,0.9)" : "none",
+                  WebkitTextStroke: captionStyle.border ? `1px ${captionStyle.borderColor}` : "none",
+                  background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
+                  padding: captionStyle.bgBox ? "5px 14px" : 0, borderRadius: captionStyle.bgBox ? 6 : 0,
+                }}>{currentSub.text}</span>
+              </div>
+            )}
 
             {/* 이미지/로고/텍스트 오버레이 (공통) */}
             {visibleOverlays.map(o => (
@@ -1511,10 +1518,10 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
               {/* 제목 편집 */}
               <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>{t("sc_title_subtitle")}</div>
-                <input value={curClip.title || ""} onChange={e => updateClip("title", e.target.value)} placeholder={t("sc_title_placeholder")} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", marginBottom: 6, boxSizing: "border-box" }} />
-                <input value={curClip.subtitle_text || ""} onChange={e => updateClip("subtitle_text", e.target.value)} placeholder={t("sc_subtitle_placeholder")} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", boxSizing: "border-box" }} />
-                <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>{t("sc_preview_drag_note")}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>상단 제목 / 하단 제목</div>
+                <input value={curClip.title || ""} onChange={e => updateClip("title", e.target.value)} placeholder="상단 제목 입력..." style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", marginBottom: 6, boxSizing: "border-box" }} />
+                <input value={curClip.bottom_title || ""} onChange={e => updateClip("bottom_title", e.target.value)} placeholder="하단 제목 입력..." style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", boxSizing: "border-box" }} />
+                <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>프리뷰에서 제목을 드래그하여 위치를 변경할 수 있습니다. {"{"}강조 텍스트{"}"} 로 부분 색상 적용</div>
               </div>
 
               {/* 선택된 자막 편집 */}
@@ -1541,9 +1548,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 </div>
               )}
 
-              {/* 템플릿 + 색상 */}
-              {/* 텍스트 스타일 편집기 (공용) */}
-              {[["title",t("sc_upper_title"),titleStyle,setTitleStyle,"#7c6aff"],["caption",t("sc_lower_caption"),captionStyle,setCaptionStyle,"#f59e0b"]].map(([key,label,st,setSt,ac]) => (
+              {/* 텍스트 스타일 편집기 (상단제목 / 하단제목 / 자막) */}
+              {[["title","상단 제목 스타일",titleStyle,setTitleStyle,"#7c6aff"],["bottomTitle","하단 제목 스타일",bottomTitleStyle,setBottomTitleStyle,"#f59e0b"],["caption",t("sc_lower_caption"),captionStyle,setCaptionStyle,"#22d3ee"]].map(([key,label,st,setSt,ac]) => (
                 <div key={key} style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: `1px solid ${ac}25` }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: ac, marginBottom: 8 }}>{label}</div>
                   {/* 폰트 선택 */}
@@ -1563,7 +1569,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                       <option value="Georgia, serif">Georgia</option>
                     </select>
                   </div>
-                  {/* 글씨 위치 */}
+                  {/* 정렬 */}
                   <div style={{ marginBottom: 8 }}>
                     <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_position")}</div>
                     <div style={{ display: "flex", gap: 3 }}>
@@ -1573,21 +1579,28 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                       ))}
                     </div>
                   </div>
+                  {/* 색상 + 크기 */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
                     <div>
                       <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_text_color")}</div>
                       <input type="color" value={st.color} onChange={e => setSt(p=>({...p,color:e.target.value}))} style={{ width: "100%", height: 22, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a" }} />
                     </div>
                     <div>
-                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>{t("sc_size")} <span style={{ color: ac }}>{st.fontSize}px</span></div>
-                      <input type="range" min="10" max="32" value={st.fontSize} onChange={e => setSt(p=>({...p,fontSize:Number(e.target.value)}))} style={{ width: "100%", accentColor: ac }} />
+                      <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>크기 <span style={{ color: ac }}>{st.fontSize}px</span></div>
+                      <input type="range" min="10" max="48" value={st.fontSize} onChange={e => setSt(p=>({...p,fontSize:Number(e.target.value)}))} style={{ width: "100%", accentColor: ac }} />
                     </div>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#aaa", cursor: "pointer" }}>
+                  {/* 굵기 + 그림자 + 테두리 */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 8 }}>
+                    {key !== "caption" && (
+                      <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#aaa", cursor: "pointer" }}>
+                        <input type="checkbox" checked={st.bold !== false} onChange={e => setSt(p=>({...p,bold:e.target.checked}))} style={{ accentColor: ac }} /> <b>B</b> 굵기
+                      </label>
+                    )}
+                    <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#aaa", cursor: "pointer" }}>
                       <input type="checkbox" checked={st.shadow} onChange={e => setSt(p=>({...p,shadow:e.target.checked}))} style={{ accentColor: ac }} /> {t("sc_shadow_label")}
                     </label>
-                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#aaa", cursor: "pointer" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 11, color: "#aaa", cursor: "pointer" }}>
                       <input type="checkbox" checked={st.border} onChange={e => setSt(p=>({...p,border:e.target.checked}))} style={{ accentColor: ac }} /> {t("sc_border_label")}
                     </label>
                   </div>
@@ -1597,6 +1610,19 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                       <input type="color" value={st.borderColor} onChange={e => setSt(p=>({...p,borderColor:e.target.value}))} style={{ width: "100%", height: 22, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a" }} />
                     </div>
                   )}
+                  {/* 강조색 (부분 글씨 색상) */}
+                  {key !== "caption" && (
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 10, color: "#666", marginBottom: 3 }}>강조 색상 <span style={{ color: st.highlightColor, fontWeight: 700 }}>{"{"}텍스트{"}"}</span></div>
+                        <input type="color" value={st.highlightColor || "#FFD700"} onChange={e => setSt(p=>({...p,highlightColor:e.target.value}))} style={{ width: "100%", height: 22, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a" }} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "end", paddingBottom: 2 }}>
+                        <span style={{ fontSize: 9, color: "#555", lineHeight: 1.3 }}>제목에 {"{"}강조할 텍스트{"}"} 입력 시 해당 부분만 색상 적용</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* 배경박스 + 투명도 */}
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
                     <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "#aaa", cursor: "pointer" }}>
                       <input type="checkbox" checked={st.bgBox} onChange={e => setSt(p=>({...p,bgBox:e.target.checked}))} style={{ accentColor: ac }} /> {t("sc_bgbox_label")}
@@ -2064,7 +2090,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   {r?.type === "done" ? <span style={{ color: "#4ade80", fontSize: 14 }}>✓</span> : r?.type === "error" ? <span style={{ color: "#f87171", fontSize: 14 }}>✗</span> : <div style={{ width: 14, height: 14, borderRadius: "50%", border: `2px solid ${bdr}`, borderTopColor: acc, animation: "spin 1s linear infinite" }} />}
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}>{c.title || c.hook || c.subtitle_text || `Short ${i + 1}`}</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 160 }}>{c.title || c.hook || c.bottom_title || `Short ${i + 1}`}</div>
                     <div style={{ fontSize: 10, color: muted }}>{r?.type === "done" ? t("sc_done") : r?.type === "error" ? t("sc_failed") : t("sc_generating")}</div>
                   </div>
                 </div>
@@ -2087,7 +2113,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                 {/* 클립 제목 표시 */}
                 <div style={{ padding: "12px 16px", borderTop: `1px solid ${bdr}` }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: text }}>{editClips[previewIdx]?.title || `Short ${previewIdx + 1}`}</div>
-                  {editClips[previewIdx]?.subtitle_text && <div style={{ fontSize: 12, color: muted, marginTop: 4 }}>{editClips[previewIdx].subtitle_text}</div>}
+                  {editClips[previewIdx]?.bottom_title && <div style={{ fontSize: 12, color: muted, marginTop: 4 }}>{editClips[previewIdx].bottom_title}</div>}
                 </div>
               </div>
 

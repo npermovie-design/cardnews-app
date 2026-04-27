@@ -16,6 +16,22 @@ function updateMeta(property, content) {
   el.setAttribute("content", content);
 }
 
+function slugifyKo(input, fallback = "program") {
+  const slug = String(input || "")
+    .toLowerCase()
+    .replace(/<[^>]+>/g, " ")
+    .replace(/[^0-9a-z가-힣]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80)
+    .replace(/-$/g, "");
+  return slug || fallback;
+}
+
+function programPath(product) {
+  return `/programs/${product.id}/${slugifyKo(product.title, "program")}`;
+}
+
 const BRAND = "#7c6aff";
 const BRAND2 = "#ec4899";
 const GRAD = "linear-gradient(135deg, #7c6aff, #ec4899)";
@@ -997,14 +1013,15 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
   useEffect(() => {
     if (selectedProduct) {
       // URL 변경
-      window.history.replaceState(null, "", "/programs/" + selectedProduct.id);
+      const path = programPath(selectedProduct);
+      window.history.replaceState(null, "", path);
       if (onProductIdChange) onProductIdChange(selectedProduct.id);
       // 페이지 타이틀
       document.title = selectedProduct.title + " - SNS메이킷";
       // OG 메타태그 업데이트
       updateMeta("og:title", selectedProduct.title);
       updateMeta("og:description", selectedProduct.desc);
-      updateMeta("og:url", "https://snsmakeit.com/programs/" + selectedProduct.id);
+      updateMeta("og:url", "https://snsmakeit.com" + path);
       if (selectedProduct.thumbnail) updateMeta("og:image", selectedProduct.thumbnail);
       updateMeta("og:type", "product");
     } else {
