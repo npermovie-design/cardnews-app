@@ -32,21 +32,25 @@ const DEFAULT_CASES = [
 
 async function sbFetch(path, options = {}) {
   if (!SUPABASE_URL || !SUPABASE_KEY) return null;
+  const { quietMissing = false, headers: customHeaders, ...fetchOptions } = options;
   const headers = {
     apikey: SUPABASE_KEY,
     Authorization: `Bearer ${SUPABASE_KEY}`,
     "Content-Type": "application/json",
-    ...options.headers,
+    ...customHeaders,
   };
-  if (options.method === "POST") headers["Prefer"] = "return=representation";
-  if (options.method === "DELETE") headers["Prefer"] = "return=minimal";
+  if (fetchOptions.method === "POST") headers["Prefer"] = "return=representation";
+  if (fetchOptions.method === "DELETE") headers["Prefer"] = "return=minimal";
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...options, headers });
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { ...fetchOptions, headers });
     if (!res.ok) {
-      console.error("sbFetch error:", res.status, await res.text().catch(() => ""));
+      const body = await res.text().catch(() => "");
+      if (!(quietMissing && res.status === 404 && body.includes("customer_cases"))) {
+        console.error("sbFetch error:", res.status, body);
+      }
       return null;
     }
-    if (options.method === "DELETE") return { ok: true };
+    if (fetchOptions.method === "DELETE") return { ok: true };
     return res.json();
   } catch (e) {
     console.error("sbFetch exception:", e);
@@ -71,8 +75,9 @@ export default function CasePage({ C, isDark, user }) {
 
   // Supabase에서 사례 로드
   useEffect(() => {
+    if (!isAdmin) return;
     (async () => {
-      const data = await sbFetch("customer_cases?select=*&order=created_at.desc");
+      const data = await sbFetch("customer_cases?select=*&order=created_at.desc", { quietMissing: true });
       if (data && data.length > 0) {
         setCases(data.map(d => ({
           id: d.id, brand: d.brand, field: d.field, feature: d.feature,
@@ -81,7 +86,7 @@ export default function CasePage({ C, isDark, user }) {
         })));
       }
     })();
-  }, []);
+  }, [isAdmin]);
 
   // 썸네일 이미지 업로드 → base64 또는 URL
   const handleThumbUpload = (e) => {

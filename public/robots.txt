@@ -3,7 +3,12 @@ Allow: /
 Allow: /community/
 Allow: /pricing
 Allow: /about
-Allow: /library
+Allow: /howto
+Allow: /faq
+Allow: /ai
+Allow: /programs
+Allow: /contact
+Allow: /cases
 Disallow: /api/
 Disallow: /_vercel/
 Disallow: /xk9m2p4q7
@@ -11,6 +16,8 @@ Disallow: /mypage/
 Disallow: /mypage
 Disallow: /admin
 Disallow: /login
+Disallow: /payment/
+Disallow: /naverbot-callback
 
 # Sitemaps
 Sitemap: https://snsmakeit.com/sitemap.xml

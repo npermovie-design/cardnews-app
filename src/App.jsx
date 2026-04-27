@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
-import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAuthUser, FREE_GUEST } from "./storage";
+import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAuthUser, FREE_GUEST, fetchAttendance, processReferralSignup, ensureReferralCode } from "./storage";
 import { useI18n, LANGUAGES } from "./i18n.jsx";
 
 // 핵심 컴포넌트 (즉시 로드)
@@ -263,6 +263,14 @@ function updateOgMeta(title, description, path, image) {
   }
 }
 
+function localDateKey() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 export default function App() {
   const [page,       setPage]       = useState("home");
   const [aiVisited,  setAiVisited]  = useState(false);
@@ -286,6 +294,7 @@ export default function App() {
   const [guardModal, setGuardModal] = useState(null); // { cost, onConfirm }
   const [showPointsModal, setShowPointsModal] = useState(false);
   const [showAttendance, setShowAttendance] = useState(false);
+  const attendancePromptKey = useRef("");
   const [showWelcome, setShowWelcome] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
@@ -401,6 +410,48 @@ export default function App() {
     window.addEventListener("guestUsageUpdate", handler);
     return () => window.removeEventListener("guestUsageUpdate", handler);
   }, []);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    let alive = true;
+    (async () => {
+      try {
+        const withCode = await ensureReferralCode(user);
+        if (alive && withCode?.referral_code && withCode.referral_code !== user.referral_code) {
+          setLocalUser(withCode);
+          setUserState(withCode);
+        }
+        const code = localStorage.getItem("nper_pending_referral") || "";
+        if (code.trim()) {
+          const rr = await processReferralSignup(withCode || user, code.trim());
+          if (alive && rr?.user) {
+            setLocalUser(rr.user);
+            setUserState(rr.user);
+          }
+        }
+      } catch {}
+    })();
+    return () => { alive = false; };
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid || showWelcome || showAttendance) return;
+    const todayKey = localDateKey();
+    const promptKey = `${user.uid}:${todayKey}`;
+    if (attendancePromptKey.current === promptKey) return;
+    let alive = true;
+    (async () => {
+      try {
+        const dates = await fetchAttendance(user.uid);
+        if (!alive) return;
+        if (Array.isArray(dates) && !dates.includes(todayKey)) {
+          attendancePromptKey.current = promptKey;
+          setShowAttendance(true);
+        }
+      } catch {}
+    })();
+    return () => { alive = false; };
+  }, [user?.uid, showWelcome, showAttendance]);
 
   // Supabase Auth 상태 감지
   useEffect(() => {
@@ -966,7 +1017,7 @@ export default function App() {
       {/* ── 네비게이션 ── */}
       <nav role="navigation" aria-label="메인 네비게이션" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, height: 60,
-        boxSizing: "border-box", maxWidth: "100vw", overflow: "hidden",
+        boxSizing: "border-box", maxWidth: "100vw", overflow: "visible",
         background: scrolled ? C.nav : (theme === "dark" ? "rgba(10,8,18,0.7)" : "rgba(255,255,255,0.92)"),
         borderBottom: "1px solid " + (scrolled ? C.border : (theme === "dark" ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)")),
         backdropFilter: "blur(20px)",
@@ -1056,7 +1107,7 @@ export default function App() {
 
               {/* 프로필 드롭다운 */}
               {profileOpen && (
-                <div style={{ position: "absolute", top: "calc(100% + 10px)", right: 0, width: "min(280px, 85vw)", zIndex: 200,
+                <div style={{ position: "fixed", top: 70, right: 20, width: "min(280px, 85vw)", zIndex: 9999,
                   background: theme==="dark" ? "#1a1730" : "#fff",
                   border: "1px solid " + C.border, borderRadius: 16,
                   boxShadow: "0 16px 48px rgba(0,0,0,0.2)", overflow: "hidden" }}>

@@ -38,6 +38,8 @@ export async function getAuthToken() {
 export const POINTS = {
   SIGNUP:      150,    // 회원가입 보너스 (글쓰기 5회 분량)
   DAILY_LOGIN: 3,      // 일일 로그인
+  REFERRAL_SIGNUP: 100, // 추천코드 가입자 보상
+  REFERRAL_REFERRER: 200, // 추천한 회원 보상
   POST_WRITE:  1,      // 게시글 작성 (하루 10회 제한)
   COMMENT:     0,      // 댓글 작성
   // ── AI 생성 (글쓰기 30P 기준) ──────────────────────────
@@ -134,6 +136,36 @@ export function saveMembers(m)   { try { localStorage.setItem(MEMBERS_KEY, JSON.
 export function getUser()        { return getLocalUser(); }
 export function setUser(u)       { setLocalUser(u); }
 
+function makeReferralCode(seed = "") {
+  const clean = String(seed || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  const base = clean.slice(0, 8).padEnd(8, "0");
+  return `MK${base}`;
+}
+
+export async function ensureReferralCode(userData) {
+  if (!userData?.uid) return userData;
+  if (userData.referral_code) return userData;
+  const referralCode = makeReferralCode(userData.uid);
+  try {
+    const { error } = await supabase
+      .from("users")
+      .update({ referral_code: referralCode })
+      .eq("uid", userData.uid);
+    if (error) throw error;
+    return { ...userData, referral_code: referralCode };
+  } catch {
+    return { ...userData, referral_code: referralCode };
+  }
+}
+
+async function insertUserWithReferralFallback(userData) {
+  const { error } = await supabase.from("users").insert(userData);
+  if (!error) return;
+  const { referral_code, ...fallbackUserData } = userData;
+  const { error: fallbackError } = await supabase.from("users").insert(fallbackUserData);
+  if (fallbackError) throw fallbackError;
+}
+
 // ── 내부 헬퍼: users 테이블에서 유저 가져오기 ────────────────────────────
 async function _fetchUserRow(uid) {
   const { data, error } = await supabase
@@ -200,7 +232,7 @@ function isDisposableEmail(email) {
 }
 
 // ── Auth: 이메일 회원가입 ─────────────────────────────────────────────────
-export async function fbRegister(email, pw, nick, captchaToken) {
+export async function fbRegister(email, pw, nick, captchaToken, referralCode = "") {
   // 일회용 이메일 차단
   if (isDisposableEmail(email)) {
     throw new Error("일회용 이메일은 가입할 수 없습니다. 실제 이메일을 사용해주세요.");
@@ -233,6 +265,7 @@ export async function fbRegister(email, pw, nick, captchaToken) {
     uid, email, nick,
     role:            "member",
     points:          POINTS.SIGNUP,
+    referral_code:   makeReferralCode(uid),
     join_date:       new Date().toISOString(),
     last_login:      new Date().toISOString(),
     last_login_date: new Date().toLocaleDateString("ko-KR"),
@@ -240,9 +273,34 @@ export async function fbRegister(email, pw, nick, captchaToken) {
   };
 
   // users 테이블 insert - fire-and-forget (대기 없이 백그라운드 처리)
-  (async () => { try { await supabase.from("users").insert(userData); } catch(e) {} })();
+  (async () => { try { await insertUserWithReferralFallback(userData); } catch(e) {} })();
+  if (referralCode?.trim()) {
+    try { localStorage.setItem("nper_pending_referral", referralCode.trim()); } catch {}
+  }
 
   return userData;
+}
+
+export async function processReferralSignup(user, referralCode) {
+  const code = (referralCode || "").trim();
+  if (!user?.uid || !code) return { ok: false };
+  try {
+    const token = await getAuthToken();
+    if (!token) return { ok: false };
+    const res = await fetch("/api/sns?action=referral-signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ referral_code: code }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data?.user) {
+      setLocalUser(data.user);
+      try { localStorage.removeItem("nper_pending_referral"); } catch {}
+    }
+    return { ok: res.ok, ...data };
+  } catch {
+    return { ok: false };
+  }
 }
 
 // ── Auth: 이메일 로그인 ──────────────────────────────────────────────────
@@ -270,18 +328,19 @@ export async function fbLogin(email, pw) {
       nick: email.split("@")[0],
       role:            "member",
       points:          0,
+      referral_code:   makeReferralCode(uid),
       join_date:       new Date().toISOString(),
       last_login:      new Date().toISOString(),
       last_login_date: new Date().toLocaleDateString("ko-KR"),
       provider:        "email",
     };
     // fire-and-forget (블로킹 없이 백그라운드 처리)
-    (async () => { try { await supabase.from("users").insert(userData); } catch(e) {} })();
+    (async () => { try { await insertUserWithReferralFallback(userData); } catch(e) {} })();
   }
 
   // 일일 로그인 처리 (동기 반환, DB 업데이트는 백그라운드)
   try { userData = _handleDailyLogin(userData); } catch(e) {}
-  return userData;
+  return await ensureReferralCode(userData);
 }
 
 // ── Auth: 구글 로그인 ────────────────────────────────────────────────────
@@ -344,17 +403,18 @@ export async function syncOAuthUser(supabaseUser) {
       nick,
       role:            "member",
       points:          POINTS.SIGNUP,
+      referral_code:   makeReferralCode(uid),
       join_date:       new Date().toISOString(),
       last_login:      new Date().toISOString(),
       last_login_date: new Date().toLocaleDateString("ko-KR"),
       provider,
     };
-    await supabase.from("users").insert(userData);
+    await insertUserWithReferralFallback(userData);
   } else {
     userData = await _handleDailyLogin(userData);
   }
 
-  return userData;
+  return await ensureReferralCode(userData);
 }
 
 // ── Auth: 로그아웃 ───────────────────────────────────────────────────────

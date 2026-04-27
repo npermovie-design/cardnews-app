@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { fbLogin, fbRegister, fbGoogleLogin, fbKakaoLogin, isValidEmail, supabase } from "./storage";
+import { fbLogin, fbRegister, fbGoogleLogin, fbKakaoLogin, isValidEmail, supabase, processReferralSignup } from "./storage";
 import { useI18n } from "./i18n.jsx";
 
 export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
@@ -7,7 +7,11 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
   const ko = lang === "ko";
 
   const [tab,          setTab]         = useState("login");
-  const [form,         setForm]        = useState({ email: "", pw: "", pw2: "", nick: "" });
+  const [form,         setForm]        = useState(() => {
+    let referral = "";
+    try { referral = new URLSearchParams(window.location.search).get("ref") || ""; } catch {}
+    return { email: "", pw: "", pw2: "", nick: "", referral };
+  });
   const [err,          setErr]         = useState("");
   const [loading,      setLoading]     = useState(false);
   const [regStep,      setRegStep]     = useState(1);   // 1=폼, 2=인증 대기
@@ -87,7 +91,7 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
       if (form.pw.length < 8) { setErr(ko ? "비밀번호는 8자 이상이어야 합니다." : "Password must be at least 8 characters."); setLoading(false); return; }
       if (form.pw !== form.pw2) { setErr(ko ? "비밀번호가 일치하지 않습니다." : "Passwords do not match."); setLoading(false); return; }
 
-      await fbRegister(form.email, form.pw, form.nick.trim());
+      await fbRegister(form.email, form.pw, form.nick.trim(), null, form.referral.trim());
       setRegStep(2);
     } catch(e) {
       const msg = e.message?.includes("already registered") || e.message?.includes("already been registered") || e.message?.includes("User already registered")
@@ -108,7 +112,11 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
     setVerifyLoading(true); setErr("");
     try {
       // Supabase: 이메일 인증 후 로그인 시도
-      const user = await fbLogin(form.email, form.pw);
+      let user = await fbLogin(form.email, form.pw);
+      if (form.referral.trim()) {
+        const rr = await processReferralSignup(user, form.referral.trim());
+        if (rr?.user) user = rr.user;
+      }
       // 신규 가입 플래그 — App.jsx의 WelcomeModal 트리거용
       try { localStorage.setItem("nper_just_registered", "1"); } catch {}
       onAuth(user);
@@ -149,7 +157,7 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ width: 44, height: 44, borderRadius: 13, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>N</div>
           <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>{ko ? "SNS메이킷" : "SNS MakeIt"}</div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{ko ? "가입 즉시 50P 지급 · AI 생성 비회원 5회 무료" : "Get 50P on signup · 5 free AI generations for guests"}</div>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{ko ? "가입 즉시 150P 지급 · AI 생성 비회원 5회 무료" : "Get 150P on signup · 5 free AI generations for guests"}</div>
         </div>
 
         <div style={{ display: "flex", marginBottom: 24, background: C.toggleBg, borderRadius: 10, padding: 4 }}>
@@ -206,6 +214,7 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
             <input placeholder={ko ? "이메일" : "Email"} type="email" value={form.email} className="nper-auth-input" style={fs} onChange={f("email")} />
             <input placeholder={ko ? "비밀번호 (8자 이상)" : "Password (8+ chars)"} type="password" value={form.pw} className="nper-auth-input" style={fs} onChange={f("pw")} />
             <input placeholder={ko ? "비밀번호 확인" : "Confirm password"} type="password" value={form.pw2} className="nper-auth-input" style={fs} onChange={f("pw2")} onKeyDown={e => e.key === "Enter" && register()} />
+            <input placeholder={ko ? "추천코드 (선택)" : "Referral code (optional)"} value={form.referral} className="nper-auth-input" style={fs} onChange={f("referral")} />
             {err && err !== "__inapp__" && <div style={{ fontSize: 12, color: "#e53e3e", textAlign: "center", background: "rgba(229,62,62,0.06)", borderRadius: 8, padding: "8px", border: "1px solid rgba(229,62,62,0.15)" }}>{err}</div>}
             {err === "__inapp__" && (
               <div style={{ borderRadius: 12, border: "1px solid rgba(245,158,11,0.3)", background: "rgba(245,158,11,0.08)", padding: "14px 16px" }}>
@@ -247,14 +256,14 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
               <div style={{ fontSize: 11, color: C.purpleL, fontWeight: 700, marginBottom: 6 }}>{ko ? "가입 혜택" : "Signup Benefits"}</div>
               <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.8 }}>
                 {ko ? <>
-                  · 가입 즉시 <b style={{ color: C.text }}>50P</b> 지급<br/>
+                  · 가입 즉시 <b style={{ color: C.text }}>150P</b> 지급<br/>
                   · 게시글 작성 시 <b style={{ color: C.text }}>+1P</b> (하루 10회)<br/>
-                  · 매일 로그인 시 <b style={{ color: C.text }}>+2P</b><br/>
+                  · 매일 로그인 시 <b style={{ color: C.text }}>+3P</b><br/>
                   · 포인트 충전으로 AI 무제한 이용
                 </> : <>
-                  · <b style={{ color: C.text }}>50P</b> on signup<br/>
+                  · <b style={{ color: C.text }}>150P</b> on signup<br/>
                   · <b style={{ color: C.text }}>+1P</b> per post (up to 10/day)<br/>
-                  · <b style={{ color: C.text }}>+2P</b> daily login<br/>
+                  · <b style={{ color: C.text }}>+3P</b> daily login<br/>
                   · Unlimited AI with point top-up
                 </>}
               </div>

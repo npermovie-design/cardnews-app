@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { fbLogin, fbRegister, fbGoogleLogin, isValidEmail, supabase } from "./storage";
+import { fbLogin, fbRegister, fbGoogleLogin, isValidEmail, supabase, processReferralSignup } from "./storage";
 import { useI18n } from "./i18n.jsx";
 
 const SB_IMG = "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/uploads";
@@ -123,7 +123,11 @@ export default function AuthPage({ C, onAuth, navigate }) {
   const { lang } = useI18n();
   const ko = lang === "ko";
   const [tab, setTab] = useState("login");
-  const [form, setForm] = useState({ email: "", pw: "", pw2: "", nick: "" });
+  const [form, setForm] = useState(() => {
+    let referral = "";
+    try { referral = new URLSearchParams(window.location.search).get("ref") || ""; } catch {}
+    return { email: "", pw: "", pw2: "", nick: "", referral };
+  });
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
@@ -133,10 +137,14 @@ export default function AuthPage({ C, onAuth, navigate }) {
     setErr("");
     if (!form.email || !form.pw) return setErr("이메일과 비밀번호를 입력해주세요.");
     setLoading(true);
-    const r = await fbLogin(form.email, form.pw);
-    setLoading(false);
-    if (r.ok) { onAuth(r.user); navigate("home"); }
-    else setErr(r.error || "로그인 실패");
+    try {
+      const user = await fbLogin(form.email, form.pw);
+      onAuth(user); navigate("home");
+    } catch(e) {
+      setErr(e.message || "로그인 실패");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async () => {
@@ -147,10 +155,18 @@ export default function AuthPage({ C, onAuth, navigate }) {
     if (form.pw !== form.pw2) return setErr("비밀번호가 일치하지 않습니다.");
     if (!agreedToTerms) return setErr("이용약관에 동의해주세요.");
     setLoading(true);
-    const r = await fbRegister(form.email, form.pw, form.nick || form.email.split("@")[0]);
-    setLoading(false);
-    if (r.ok) { onAuth(r.user); navigate("home"); }
-    else setErr(r.error || "가입 실패");
+    try {
+      let user = await fbRegister(form.email, form.pw, form.nick || form.email.split("@")[0], null, form.referral.trim());
+      if (form.referral.trim()) {
+        const rr = await processReferralSignup(user, form.referral.trim());
+        if (rr?.user) user = rr.user;
+      }
+      onAuth(user); navigate("home");
+    } catch(e) {
+      setErr(e.message || "가입 실패");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogle = async () => {
@@ -232,6 +248,13 @@ export default function AuthPage({ C, onAuth, navigate }) {
                   onKeyDown={e => e.key === "Enter" && handleRegister()}
                   style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e5e7eb", fontSize: 14, outline: "none", boxSizing: "border-box" }}
                   onFocus={e => e.target.style.borderColor = accent} onBlur={e => e.target.style.borderColor = "#e5e7eb"} />
+              </div>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#555", marginBottom: 6, display: "block" }}>추천코드</label>
+                <input value={form.referral} onChange={f("referral")} placeholder="추천코드 (선택)"
+                  style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e5e7eb", fontSize: 14, outline: "none", boxSizing: "border-box" }}
+                  onFocus={e => e.target.style.borderColor = accent} onBlur={e => e.target.style.borderColor = "#e5e7eb"} />
+                <div style={{ fontSize: 11, color: "#888", marginTop: 6 }}>추천코드 입력 시 가입자는 100P, 추천한 회원은 200P를 받습니다.</div>
               </div>
               <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, cursor: "pointer" }}>
                 <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} style={{ width: 16, height: 16 }} />

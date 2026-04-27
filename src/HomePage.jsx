@@ -209,6 +209,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
         .hero-shot { transition:transform 0.4s cubic-bezier(.25,.8,.25,1), box-shadow 0.4s; }
         .hero-shot:hover { transform:rotate(0deg) scale(1.06) translateY(-10px) !important; box-shadow:0 28px 70px rgba(124,106,255,0.22), 0 0 0 2px rgba(124,106,255,0.35) !important; z-index:10 !important; }
         .hero-gallery { overflow:visible; }
+        .mobile-only { display:none; }
         @media(max-width:768px){
           .hero-gallery { height:auto !important; position:relative !important; perspective:none !important; display:grid !important; grid-template-columns:1fr 1fr !important; gap:10px !important; padding:0 8px !important; }
           .hero-shot { position:relative !important; left:auto !important; top:auto !important; width:100% !important; transform:rotate(0deg) !important; animation:none !important; }
@@ -220,10 +221,24 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
           .compare-table{font-size:11px!important}
           .compare-table th,.compare-table td{padding:10px 6px!important}
           .point-grid{grid-template-columns:1fr 1fr!important}
+          .home-hero-section{padding:48px 16px 36px!important}
+          .home-hero-inner{gap:22px!important}
+          .home-hero-copy{text-align:left!important;flex-basis:100%!important}
+          .home-hero-copy h1{font-size:30px!important;line-height:1.18!important;letter-spacing:0!important;margin-bottom:12px!important}
+          .home-hero-sub{font-size:14px!important;line-height:1.65!important;margin-bottom:8px!important}
+          .home-hero-note{font-size:12px!important;margin-bottom:18px!important}
+          .home-hero-button{width:100%!important;min-height:52px!important}
+          .home-hero-visual{flex-basis:100%!important;min-width:0!important}
+          .home-hero-visual img:first-child{border-radius:12px!important}
+          .home-hero-visual img:last-child{right:8px!important;bottom:-10px!important;width:48%!important;border-radius:10px!important}
+          .mobile-priority-list > div:nth-child(n+5){display:none!important}
+          .desktop-compare{display:none!important}
+          .mobile-only{display:grid!important}
+          .mobile-sticky-cta{display:flex!important}
         }
         @media(max-width:480px){
           section{padding-left:12px!important;padding-right:12px!important}
-          h1{font-size:24px!important}
+          h1{font-size:26px!important}
           h2{font-size:20px!important}
           .compare-table{font-size:11px!important;min-width:auto!important}
           .compare-table th,.compare-table td{padding:8px 4px!important;font-size:11px!important}
@@ -237,28 +252,28 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
       `}</style>
 
       {/* ══ 히어로 (위노트 스타일 - 좌 텍스트 + 우 스크린샷) ══ */}
-      <section style={{
+      <section className="home-hero-section" style={{
         padding: "clamp(80px,10vw,140px) clamp(16px,4vw,24px) clamp(60px,8vw,80px)",
         background: C.heroBg,
       }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", gap: "clamp(32px,5vw,60px)", flexWrap: "wrap" }}>
+        <div className="home-hero-inner" style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", gap: "clamp(32px,5vw,60px)", flexWrap: "wrap" }}>
           {/* 왼쪽: 텍스트 */}
-          <div style={{ flex: "1 1 400px", minWidth: 280 }}>
+          <div className="home-hero-copy" style={{ flex: "1 1 400px", minWidth: 280 }}>
             <h1 style={{ fontSize: "clamp(28px,4.5vw,44px)", fontWeight: 900, lineHeight: 1.25, letterSpacing: -1.5, color: C.text, margin: "0 0 16px" }}>
-              {lang === "ko" ? <>SNS 콘텐츠 제작,<br/><span style={{ color: "#7c6aff" }}>AI로 3분이면 끝</span></> : <>SNS content creation,<br/><span style={{ color: "#7c6aff" }}>done in 3 min with AI</span></>}
+              {lang === "ko" ? <>블로그·인스타·쇼츠,<br/><span style={{ color: "#7c6aff" }}>AI로 한 번에 제작</span></> : <>Blogs, Instagram, shorts,<br/><span style={{ color: "#7c6aff" }}>created with AI</span></>}
             </h1>
-            <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.8, margin: "0 0 8px" }}>
+            <p className="home-hero-sub" style={{ fontSize: 16, color: C.muted, lineHeight: 1.8, margin: "0 0 8px" }}>
               {lang === "ko"
-                ? "키워드만 입력하면 블로그, 인스타, 쇼츠까지 자동 완성"
-                : "Just enter keywords — auto-generate blogs, Instagram, shorts"}
+                ? "키워드만 입력하면 SNS 콘텐츠 초안부터 발행 준비까지 빠르게 완성하세요."
+                : "Enter a keyword and prepare social content drafts for every channel."}
             </p>
-            <p style={{ fontSize: 13, color: C.muted, marginBottom: 28 }}>
-              {lang === "ko" ? "카드 등록 없이 무료로 시작 · 20개+ 플랫폼 · 4개국어" : "Free, no card · 20+ platforms · 4 languages"}
+            <p className="home-hero-note" style={{ fontSize: 13, color: C.muted, marginBottom: 28 }}>
+              {lang === "ko" ? "비회원 5회 무료 · 가입 시 150P · 카드 등록 불필요" : "5 guest trials · 150P on signup · no card needed"}
             </p>
-            <Btn C={C} onClick={() => navigate("ai")} style={{ fontSize: 16, padding: "14px 40px" }}>{lang === "ko" ? "무료로 시작하기" : "Start free"}</Btn>
+            <Btn className="home-hero-button" C={C} onClick={() => navigate("ai")} style={{ fontSize: 16, padding: "14px 40px" }}>{lang === "ko" ? "무료로 시작하기" : "Start free"}</Btn>
           </div>
           {/* 오른쪽: 서비스 스크린샷 */}
-          <div style={{ flex: "1 1 440px", minWidth: 280, position: "relative" }}>
+          <div className="home-hero-visual" style={{ flex: "1 1 440px", minWidth: 280, position: "relative" }}>
             <img src="/hero-writing.png" alt={lang === "ko" ? "AI 글쓰기" : "AI Writing"} loading="eager"
               style={{ width: "100%", borderRadius: 16, boxShadow: "0 16px 60px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.04)" }} />
             <img src="/hero-generating.png" alt={lang === "ko" ? "AI 생성 중" : "AI Generating"} loading="eager"
@@ -280,7 +295,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
               </p>
             </div>
           </FadeIn>
-          <div className="pain-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div className="pain-grid mobile-priority-list" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             {[
               { title: lang === "ko" ? "키워드 찾는 데만 1시간" : "1 hour just finding keywords", quote: lang === "ko" ? "뭘 써야 할지 몰라 매번 검색만 하다 시간이 다 가요" : "I spend all my time searching without knowing what to write" },
               { title: lang === "ko" ? "블로그 글 하나에 반나절" : "Half a day for one blog post", quote: lang === "ko" ? "SEO 최적화까지 신경 쓰면 하루가 다 갑니다" : "Add SEO optimization and a whole day is gone" },
@@ -494,7 +509,29 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             </div>
           </FadeIn>
           <FadeIn delay={0.1}>
-            <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+            <div className="mobile-only" style={{ gridTemplateColumns: "1fr", gap: 10, display: "none", marginBottom: 18 }}>
+              {(lang === "ko" ? [
+                { title: "콘텐츠 제작 시간", desc: "여러 채널용 초안을 한 번에 만들고 수정 시간을 줄입니다." },
+                { title: "한국 SNS 최적화", desc: "네이버 블로그, 인스타, 스레드, 티스토리 흐름에 맞춰 작성합니다." },
+                { title: "자동 발행 준비", desc: "계정 연동 후 발행까지 이어지는 작업 흐름을 제공합니다." },
+                { title: "카드 없이 무료 체험", desc: "비회원 5회 무료, 가입 시 150P로 바로 테스트할 수 있습니다." },
+              ] : [
+                { title: "Less production time", desc: "Create drafts for multiple channels and reduce editing work." },
+                { title: "Korean SNS optimized", desc: "Built around Naver Blog, Instagram, Threads, and Tistory workflows." },
+                { title: "Publishing workflow", desc: "Prepare content and publish after connecting accounts." },
+                { title: "Free trial, no card", desc: "Try 5 times as a guest and get 150P on signup." },
+              ]).map((item, i) => (
+                <div key={item.title} style={{
+                  background: i === 0 ? "rgba(124,106,255,0.06)" : C.card,
+                  border: "1px solid " + (i === 0 ? "rgba(124,106,255,0.22)" : C.border),
+                  borderRadius: 12, padding: "16px 15px",
+                }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 5 }}>{item.title}</div>
+                  <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.65 }}>{item.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div className="desktop-compare" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
               <table className="compare-table" style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: "clamp(11px, 2.5vw, 13px)", color: C.text }}>
                 <thead>
                   <tr>
@@ -764,8 +801,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
           {[
             { icon: "FREE", title: lang==="ko"?"비회원 무료":"Guest Free", point: lang==="ko"?"5회":"5x", desc: lang==="ko"?"로그인 없이 AI 생성기 5회 무료 체험":"5 free AI uses without login", color: "#888", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
             { icon: "+150P", title: lang==="ko"?"회원 가입":"Sign up", point: "150P", desc: lang==="ko"?"가입 즉시 150P 지급 + 매일 로그인·게시글로 적립":"150P upon signup + earn daily", color: "#22c55e", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
-            { icon: "$19.9", title: lang==="ko"?"Standard 충전":"Standard", point: "3,500P", desc: lang==="ko"?"가장 많이 선택하는 패키지 · 유효기간 없음":"Most popular · No expiry", color: "#7c6aff", btnText: lang==="ko"?"요금 알아보기":"View pricing", onClick: () => navigate("pricing"), highlight: true },
-            { icon: "$49.9", title: lang==="ko"?"Pro 충전":"Pro", point: "9,500P", desc: lang==="ko"?"장기 사용자 · 포인트당 단가 최저":"Best value · Lowest per-point", color: "#8b5cf6", btnText: lang==="ko"?"요금 알아보기":"View pricing", onClick: () => navigate("pricing") },
+            { icon: "$19.9", title: lang==="ko"?"Standard 충전":"Standard", point: "2,400P", desc: lang==="ko"?"가장 많이 선택하는 패키지 · 유효기간 없음":"Most popular · No expiry", color: "#7c6aff", btnText: lang==="ko"?"요금 알아보기":"View pricing", onClick: () => navigate("pricing"), highlight: true },
+            { icon: "$49.9", title: lang==="ko"?"Pro 충전":"Pro", point: "6,500P", desc: lang==="ko"?"장기 사용자 · 포인트당 단가 최저":"Best value · Lowest per-point", color: "#8b5cf6", btnText: lang==="ko"?"요금 알아보기":"View pricing", onClick: () => navigate("pricing") },
           ].map((p, i) => (
             <FadeIn key={p.title} delay={i * 0.1}>
               <div className="stat-card" style={{
@@ -860,6 +897,28 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
           </div>
         </div>
       </section>
+      <div className="mobile-sticky-cta" style={{
+        display: "none", position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 900,
+        alignItems: "center", gap: 10, padding: "10px 10px 10px 14px", borderRadius: 14,
+        background: "rgba(255,255,255,0.96)", border: "1px solid rgba(124,106,255,0.18)",
+        boxShadow: "0 12px 40px rgba(26,23,48,0.16)", backdropFilter: "blur(14px)",
+      }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {lang === "ko" ? "AI 무료 체험 가능" : "Free AI trial available"}
+          </div>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
+            {lang === "ko" ? "비회원 5회 · 가입 시 150P" : "5 guest uses · 150P signup"}
+          </div>
+        </div>
+        <button onClick={() => navigate("ai")} style={{
+          flex: "0 0 auto", minHeight: 44, padding: "0 16px", borderRadius: 11, border: "none",
+          background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff",
+          fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
+        }}>
+          {lang === "ko" ? "시작" : "Start"}
+        </button>
+      </div>
     </div>
   );
 }

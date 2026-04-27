@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getPosts, getMembers, saveMembers, supabase, changePoints, getPostsFromDB, deletePostFromDB } from "./storage";
+import { getPosts, getMembers, saveMembers, supabase, changePoints, getPostsFromDB, deletePostFromDB, getAuthToken } from "./storage";
 import { Btn, Inp } from "./UI";
 
 /* ── 게시판 카테고리/태그 CRUD ── */
@@ -61,7 +61,7 @@ function getDriveThumb(url) {
 }
 
 const ADMIN_PW = import.meta.env.VITE_ADMIN_PW || "";
-const FREE_GUEST  = 10;
+const FREE_GUEST  = 5;
 const FREE_MEMBER = 20;
 
 export default function AdminPage({ C, user: adminUser }) {
@@ -92,29 +92,19 @@ export default function AdminPage({ C, user: adminUser }) {
   const [postSearch, setPostSearch] = useState("");
   const [dailySignups, setDailySignups] = useState([]);
   const [dailyAiUsage, setDailyAiUsage] = useState([]);
-  // 뉴스레터 구독자 관리 state (조건부 렌더링 밖에 선언)
-  const [nlSubs, setNlSubs] = useState([]);
-  const [nlLoading, setNlLoading] = useState(true);
-
   // ── 관리자 API 호출 헬퍼 (service_role 키로 RLS 우회) ──
   const adminApi = async (action, extra = "") => {
     const uid = adminUser?.uid || "";
-    const r = await fetch(`/api/sns?action=admin&sub_action=${action}&admin_uid=${encodeURIComponent(uid)}${extra}`);
+    const token = await getAuthToken();
+    const r = await fetch(`/api/sns?action=admin&sub_action=${action}${extra}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(uid ? { "X-Admin-Uid": uid } : {}),
+      },
+    });
     if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e.error || r.statusText); }
     return r.json();
   };
-
-  // 뉴스레터 구독자 로딩
-  useEffect(() => {
-    if (tab !== "newsletter") return;
-    (async () => {
-      try {
-        const r = await fetch(`/api/sns?action=admin&sub_action=newsletter_subscribers&admin_uid=${encodeURIComponent(adminUser?.uid || "")}&extra=select&order=subscribed_at.desc`);
-        if (r.ok) { const d = await r.json(); setNlSubs(d.data || []); }
-      } catch (e) { console.error(e); }
-      setNlLoading(false);
-    })();
-  }, [tab]);
 
   // 최근 7일간 일별 신규 가입자 수
   const loadDailySignups = async () => {
@@ -401,9 +391,32 @@ export default function AdminPage({ C, user: adminUser }) {
     : members;
 
   const usage = getAllUsage();
+  const shellBg = isDark ? "#0f0d1f" : "#f6f7fb";
+  const panelBg = isDark ? "rgba(255,255,255,0.045)" : "#fff";
+  const panelBorder = isDark ? "rgba(255,255,255,0.08)" : "#e6e8f0";
+  const subtleBg = isDark ? "rgba(255,255,255,0.035)" : "#f8f9fc";
+  const activeBg = isDark ? "rgba(124,106,255,0.18)" : "rgba(124,106,255,0.08)";
+  const adminTitle = {stats:"통계 대시보드", visitors:"접속 분석", members:"회원 관리", pointHistory:"포인트 내역", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백"}[tab] || tab;
+  const adminDesc = {
+    stats: "회원, 게시글, AI 사용량을 한 화면에서 확인합니다.",
+    visitors: "유입 경로와 접속 데이터를 점검합니다.",
+    members: "회원 정보, 포인트, 위험 작업을 관리합니다.",
+    pointHistory: "포인트 지급과 사용 내역을 추적합니다.",
+    guest: "비회원 AI 사용량을 관리합니다.",
+    posts: "커뮤니티 게시글을 검수하고 정리합니다.",
+    board: "게시판 카테고리와 태그를 관리합니다.",
+    inquiries: "고객 문의 상태와 답변을 처리합니다.",
+    appFeedback: "앱 피드백을 확인하고 상태를 변경합니다.",
+  }[tab] || "관리자 작업을 처리합니다.";
+  const refreshAdminData = () => {
+    loadMembers(); loadPosts(); loadAiLogs(); loadDailySignups(); loadDailyAiUsage();
+    adminApi("online_count").then(d=>setOnlineCount(d.count||0)).catch(()=>{});
+    if (tab === "board") loadBoardCats();
+    showToast("관리자 데이터 새로고침 완료");
+  };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif" }}>
+    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif", background: shellBg }}>
       {/* 토스트 */}
       {toast && (
         <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: "#22c55e", color: "#fff", padding: "12px 20px", borderRadius: 12, fontSize: 14, fontWeight: 700, boxShadow: "0 4px 20px rgba(0,0,0,0.2)", animation: "fadein 0.2s" }}>
@@ -428,17 +441,22 @@ export default function AdminPage({ C, user: adminUser }) {
       {/* ── 사이드바 ── */}
       <aside style={{
         width: 220, flexShrink: 0, padding: "20px 12px",
-        background: isDark ? "rgba(0,0,0,0.4)" : "#f8f8fc",
-        borderRight: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "#e5e5f0"}`,
+        background: isDark ? "rgba(12,10,26,0.96)" : "#fff",
+        borderRight: `1px solid ${panelBorder}`,
         overflowY: "auto", position: "sticky", top: 0, height: "100vh",
         ...(typeof window !== "undefined" && window.innerWidth < 768 ? { position: "fixed", left: sideOpen ? 0 : -240, zIndex: 1000, transition: "left 0.2s", boxShadow: sideOpen ? "4px 0 20px rgba(0,0,0,0.2)" : "none" } : {}),
       }}>
         {/* 로고 */}
-        <div style={{ padding: "8px 10px 20px", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "#e5e5f0"}`, marginBottom: 16 }}>
-          <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>SNS메이킷</div>
-          <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>관리자</div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 8, background: isDark ? "rgba(255,255,255,0.06)" : "#eee", padding: "4px 10px", borderRadius: 8, textAlign: "center" }}>
-            회원 {loadingMembers ? "..." : members.length}명 · 글 {posts.length}개
+        <div style={{ padding: "8px 10px 18px", borderBottom: `1px solid ${panelBorder}`, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>SNS메이킷</div>
+              <div style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>Admin Console</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 12, background: subtleBg, padding: "8px 10px", borderRadius: 8, border: `1px solid ${panelBorder}` }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}><span>회원</span><b style={{ color: C.text }}>{loadingMembers ? "..." : members.length.toLocaleString()}명</b></div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}><span>게시글</span><b style={{ color: C.text }}>{posts.length.toLocaleString()}개</b></div>
           </div>
         </div>
 
@@ -447,7 +465,7 @@ export default function AdminPage({ C, user: adminUser }) {
           { group: "대시보드", items: [["stats", "통계"], ["visitors", "접속 분석"]] },
           { group: "회원", items: [["members", "회원 관리"], ["pointHistory", "포인트 내역"], ["guest", "비회원 관리"]] },
           { group: "콘텐츠", items: [["posts", "게시글 관리"], ["board", "게시판 관리"]] },
-          { group: "고객", items: [["inquiries", "문의 관리"], ["appFeedback", "앱 피드백"], ["appChat", "잡담방"]] },
+          { group: "고객", items: [["inquiries", "문의 관리"], ["appFeedback", "앱 피드백"]] },
         ].map(({ group, items }) => (
           <div key={group} style={{ marginBottom: 16 }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", padding: "0 10px", marginBottom: 6, letterSpacing: 1 }}>{group}</div>
@@ -457,7 +475,7 @@ export default function AdminPage({ C, user: adminUser }) {
                 <button key={id} onClick={() => { setTab(id); setSideOpen(false); }} style={{
                   width: "100%", padding: "9px 12px", borderRadius: 8, border: "none", cursor: "pointer",
                   textAlign: "left", fontSize: 13, fontWeight: active ? 700 : 500, fontFamily: "inherit",
-                  background: active ? (isDark ? "rgba(99,102,241,0.25)" : "rgba(99,102,241,0.1)") : "transparent",
+                  background: active ? activeBg : "transparent",
                   color: active ? C.purpleL : (isDark ? "rgba(255,255,255,0.55)" : "#666"),
                   borderLeft: active ? "3px solid #7c6aff" : "3px solid transparent",
                   marginBottom: 2, transition: "all 0.12s", display: "block",
@@ -471,12 +489,19 @@ export default function AdminPage({ C, user: adminUser }) {
       </aside>
 
       {/* ── 메인 콘텐츠 ── */}
-      <main style={{ flex: 1, padding: "32px 28px 80px", overflowY: "auto", background: isDark ? "transparent" : "#fff" }}>
+      <main style={{ flex: 1, padding: "28px 28px 80px", overflowY: "auto", background: shellBg }}>
         {/* 상단 타이틀 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
-          <h2 style={{ color: C.text, fontSize: 20, fontWeight: 900, margin: 0 }}>
-            {{stats:"통계 대시보드", visitors:"접속 분석", members:"회원 관리", pointHistory:"포인트 내역", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백", appChat:"잡담방"}[tab] || tab}
-          </h2>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22, gap: 16, flexWrap: "wrap", background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 14, padding: "18px 20px", boxShadow: isDark ? "none" : "0 10px 30px rgba(15,23,42,0.04)" }}>
+          <div>
+            <h2 style={{ color: C.text, fontSize: 21, fontWeight: 900, margin: 0 }}>{adminTitle}</h2>
+            <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>{adminDesc}</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ padding: "7px 10px", borderRadius: 999, background: "rgba(34,197,94,0.1)", color: "#16a34a", border: "1px solid rgba(34,197,94,0.18)", fontSize: 12, fontWeight: 800 }}>관리자 인증됨</span>
+            <button onClick={refreshAdminData} style={{ padding: "8px 12px", borderRadius: 9, border: `1px solid ${panelBorder}`, background: subtleBg, color: C.text, fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+              새로고침
+            </button>
+          </div>
         </div>
 
       {/* ─────────────── 통계 대시보드 ─────────────── */}
@@ -503,7 +528,7 @@ export default function AdminPage({ C, user: adminUser }) {
         const topList = Object.entries(topPosters).sort((a,b)=>b[1]-a[1]).slice(0,10);
         const popularPosts = [...posts].sort((a,b) => (b.views||0)-(a.views||0)).slice(0,10);
 
-        const cardStyle = { padding:"20px", borderRadius:14, background:isDark?"rgba(255,255,255,0.04)":"#fff", border:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}`, flex:1, minWidth:140 };
+        const cardStyle = { padding:"18px 20px", borderRadius:12, background:panelBg, border:`1px solid ${panelBorder}`, flex:1, minWidth:140, boxShadow:isDark?"none":"0 10px 24px rgba(15,23,42,0.035)" };
         const numStyle = { fontSize:28, fontWeight:900, color:C.purpleL||"#7c6aff", marginBottom:4 };
         const labelStyle = { fontSize:12, color:C.muted, fontWeight:600 };
 
@@ -512,19 +537,18 @@ export default function AdminPage({ C, user: adminUser }) {
           {/* 요약 카드 */}
           <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginBottom:24 }}>
             {[
-              { n: totalMembers, l: "전체 회원", icon: "👥", color: "#7c6aff" },
-              { n: recentMembers, l: "이번주 신규", icon: "🆕", color: "#22c55e" },
-              { n: onlineCount||0, l: "실시간 접속", icon: "🟢", color: "#f59e0b" },
-              { n: totalPosts, l: "전체 게시글", icon: "📋", color: "#8b5cf6" },
-              { n: todayPosts, l: "오늘 게시글", icon: "📝", color: "#ec4899" },
-              { n: totalViews.toLocaleString(), l: "총 조회수", icon: "👁", color: "#06b6d4" },
-              { n: totalLikes, l: "총 좋아요", icon: "👍", color: "#f59e0b" },
-              { n: totalComments, l: "총 댓글", icon: "💬", color: "#10b981" },
+              { n: totalMembers, l: "전체 회원", color: "#7c6aff" },
+              { n: recentMembers, l: "이번주 신규", color: "#22c55e" },
+              { n: onlineCount||0, l: "실시간 접속", color: "#f59e0b" },
+              { n: totalPosts, l: "전체 게시글", color: "#8b5cf6" },
+              { n: todayPosts, l: "오늘 게시글", color: "#ec4899" },
+              { n: totalViews.toLocaleString(), l: "총 조회수", color: "#06b6d4" },
+              { n: totalLikes, l: "총 좋아요", color: "#f59e0b" },
+              { n: totalComments, l: "총 댓글", color: "#10b981" },
             ].map((s,i) => (
               <div key={i} style={cardStyle}>
-                <div style={{ fontSize:20, marginBottom:8 }}>{s.icon}</div>
+                <div style={{ ...labelStyle, marginBottom: 10 }}>{s.l}</div>
                 <div style={{ ...numStyle, color: s.color }}>{s.n}</div>
-                <div style={labelStyle}>{s.l}</div>
               </div>
             ))}
           </div>
@@ -752,10 +776,13 @@ export default function AdminPage({ C, user: adminUser }) {
       {/* ─────────────── 회원 관리 ─────────────── */}
       {tab === "members" && (
         <div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
-            <div style={{ fontSize: 14, color: C.muted }}>총 <b style={{ color: C.text }}>{members.length}명</b>의 회원</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 12, background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 12, padding: "14px 16px" }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 900, color: C.text }}>회원 목록</div>
+              <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>총 {members.length.toLocaleString()}명 · 검색 결과 {filteredMembers.length.toLocaleString()}명</div>
+            </div>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="닉네임 / 이메일 검색..."
-              style={{ padding: "8px 14px", borderRadius: 9, border: "1px solid " + bdr, background: inputBg, color: C.text, fontSize: 13, outline: "none", width: 220 }} />
+              style={{ padding: "10px 14px", borderRadius: 9, border: "1px solid " + panelBorder, background: subtleBg, color: C.text, fontSize: 13, outline: "none", width: 260 }} />
           </div>
 
           {loadingMembers && <div style={{ textAlign:"center", padding:"60px 0", color:C.muted }}>⏳ 회원 목록 불러오는 중...</div>}
@@ -769,11 +796,11 @@ export default function AdminPage({ C, user: adminUser }) {
             const mUsed = usage["member_" + uid] || 0;
             const ptVal = ptInputs[uid] || "";
             return (
-              <div key={m.uid||m.id} style={{ background: C.card, border: "1px solid " + bdr, borderRadius: 14, padding: "18px 20px", marginBottom: 10, boxShadow: C.shadow }}>
+              <div key={m.uid||m.id} style={{ background: panelBg, border: "1px solid " + panelBorder, borderRadius: 12, padding: "18px 20px", marginBottom: 10, boxShadow: isDark ? "none" : "0 10px 24px rgba(15,23,42,0.035)" }}>
                 {/* 회원 기본 정보 */}
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 42, height: 42, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 12, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
                       {(m.nick||"?")[0].toUpperCase()}
                     </div>
                     <div>
@@ -792,15 +819,15 @@ export default function AdminPage({ C, user: adminUser }) {
                     </div>
                   </div>
                   {/* 포인트 뱃지 */}
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: C.purpleL }}>💎 {(m.points||0).toLocaleString()}P</div>
+                  <div style={{ textAlign: "right", padding: "8px 12px", borderRadius: 10, background: subtleBg, border: `1px solid ${panelBorder}` }}>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: C.purpleL }}>{(m.points||0).toLocaleString()}P</div>
                     <div style={{ fontSize: 11, color: C.muted }}>보유 포인트</div>
                   </div>
                 </div>
 
                 {/* 포인트 관리 */}
-                <div style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#f9f9fb", borderRadius: 10, padding: "14px 16px", marginBottom: 10 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 10 }}>💎 포인트 관리</div>
+                <div style={{ background: subtleBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "14px 16px", marginBottom: 10 }}>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: C.muted, marginBottom: 10 }}>포인트 관리</div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                     {/* 빠른 지급 버튼 */}
                     {[50, 100, 200, 500, 1000].map(pts => (
@@ -824,14 +851,14 @@ export default function AdminPage({ C, user: adminUser }) {
                 {/* 액션 버튼 */}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button onClick={() => resetPoints(uid)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", color: "#f59e0b", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                    🔄 포인트 초기화
+                    포인트 초기화
                   </button>
                   <button onClick={() => resetMemberUsage(uid)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.06)", color: C.purpleL, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                    🔄 AI 횟수 초기화
+                    AI 횟수 초기화
                   </button>
                   {m.role !== "admin" && (
                     <button onClick={() => deleteMember(uid, m.nick)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)", color: "#ef4444", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                      🗑 회원 탈퇴
+                      회원 탈퇴
                     </button>
                   )}
                 </div>
@@ -839,52 +866,6 @@ export default function AdminPage({ C, user: adminUser }) {
             );
           })}
         </div>
-      )}
-
-      {/* ─────────────── 뉴스레터 구독자 관리 ─────────────── */}
-      {tab === "newsletter" && (
-          <div style={{ background: isDark ? "rgba(255,255,255,0.03)" : "#fff", borderRadius: 14, border: `1px solid ${C.bdr}`, padding: 24 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: C.text, marginBottom: 4 }}>뉴스레터 구독자</div>
-                <div style={{ fontSize: 12, color: C.muted }}>총 {nlSubs.length}명</div>
-              </div>
-              <button onClick={async () => {
-                try {
-                  const res = await fetch("/api/cron-briefing");
-                  const data = await res.json();
-                  alert(`뉴스레터 생성: ${JSON.stringify(data)}`);
-                } catch (e) { alert("오류: " + e.message); }
-              }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: "#7c6aff", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                수동 발송 테스트
-              </button>
-            </div>
-            {nlLoading ? <div style={{ color: C.muted, fontSize: 13 }}>로딩 중...</div> : (
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                  <thead>
-                    <tr style={{ borderBottom: `2px solid ${C.bdr}` }}>
-                      <th style={{ textAlign: "left", padding: "10px 12px", color: C.muted, fontWeight: 700 }}>#</th>
-                      <th style={{ textAlign: "left", padding: "10px 12px", color: C.muted, fontWeight: 700 }}>이메일</th>
-                      <th style={{ textAlign: "left", padding: "10px 12px", color: C.muted, fontWeight: 700 }}>구독일</th>
-                      <th style={{ textAlign: "left", padding: "10px 12px", color: C.muted, fontWeight: 700 }}>소스</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {nlSubs.map((sub, i) => (
-                      <tr key={sub.email} style={{ borderBottom: `1px solid ${C.bdr}` }}>
-                        <td style={{ padding: "10px 12px", color: C.muted }}>{i + 1}</td>
-                        <td style={{ padding: "10px 12px", color: C.text, fontWeight: 600 }}>{sub.email}</td>
-                        <td style={{ padding: "10px 12px", color: C.muted }}>{sub.subscribed_at ? new Date(sub.subscribed_at).toLocaleDateString("ko") : "-"}</td>
-                        <td style={{ padding: "10px 12px", color: C.muted }}>{sub.source || "-"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {nlSubs.length === 0 && <div style={{ textAlign: "center", padding: 40, color: C.muted }}>구독자가 없습니다</div>}
-              </div>
-            )}
-          </div>
       )}
 
       {/* ─────────────── 비회원 관리 ─────────────── */}
@@ -1227,9 +1208,6 @@ export default function AdminPage({ C, user: adminUser }) {
       {/* ── 앱 피드백 ── */}
       {tab === "appFeedback" && <AppFeedbackTab C={C} isDark={isDark} />}
 
-      {/* ── 잡담방 ── */}
-      {tab === "appChat" && <AppChatTab C={C} isDark={isDark} />}
-
       {/* ── 접속 분석 ── */}
       {tab === "visitors" && <VisitorAnalyticsTab C={C} isDark={isDark} />}
       </main>
@@ -1455,48 +1433,6 @@ function AppFeedbackTab({ C, isDark }) {
           </div>
           <div style={{ fontSize:13, color:C.muted, lineHeight:1.7, whiteSpace:"pre-wrap" }}>{f.body}</div>
           <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>{f.email} · {f.app_version} · {new Date(f.created_at).toLocaleDateString("ko-KR")}</div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function AppChatTab({ C, isDark }) {
-  const [messages, setMessages] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await (await import("./storage")).supabase.from("app_chat").select("*").order("created_at", { ascending: false }).limit(100);
-        setMessages(data || []);
-      } catch {}
-      setLoading(false);
-    })();
-  }, []);
-
-  const deleteMsg = async (id) => {
-    if (!confirm("삭제하시겠습니까?")) return;
-    const { supabase } = await import("./storage");
-    await supabase.from("app_chat").delete().eq("id", id);
-    setMessages(prev => prev.filter(m => m.id !== id));
-  };
-
-  return (
-    <div>
-      <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:16 }}>잡담방 메시지 ({messages.length}건)</div>
-      {loading && <div style={{ color:C.muted }}>로딩 중...</div>}
-      {messages.map(m => (
-        <div key={m.id} style={{ padding:"12px 16px", borderRadius:10, background:C.card, border:`1px solid ${isDark?"rgba(255,255,255,0.06)":"#f0f0f0"}`, marginBottom:8, display:"flex", gap:12, alignItems:"flex-start" }}>
-          <div style={{ flex:1 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-              <span style={{ fontSize:13, fontWeight:700, color:C.text }}>{m.nick || m.email?.split("@")[0] || "익명"}</span>
-              <span style={{ fontSize:10, color:C.muted }}>{m.email}</span>
-              <span style={{ fontSize:10, color:C.muted }}>{new Date(m.created_at).toLocaleString("ko-KR")}</span>
-            </div>
-            <div style={{ fontSize:13, color:C.text, lineHeight:1.6 }}>{m.message}</div>
-          </div>
-          <button onClick={() => deleteMsg(m.id)} style={{ padding:"4px 10px", borderRadius:6, border:"1px solid #ef4444", background:"transparent", color:"#ef4444", fontSize:11, cursor:"pointer", flexShrink:0 }}>삭제</button>
         </div>
       ))}
     </div>

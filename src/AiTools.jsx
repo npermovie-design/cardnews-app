@@ -5,6 +5,7 @@ import NewsBlogGenerator from "./NewsBlogGenerator";
 import YtBlogGenerator from "./YtBlogGenerator";
 import SnsConnectionManager from "./SnsConnectionManager";
 import { InstaAutoReply, InstaAutoDM, TabHeader } from "./AiInstagram.jsx";
+import ViralityAnalyzer from "./ViralityAnalyzer.jsx";
 import { getAiUsage, setAiUsage, getAiLeft, FREE_MEMBER, FREE_GUEST, changePoints } from "./storage";
 
 /* ════════════════════════════════════════════════════════════

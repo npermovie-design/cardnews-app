@@ -1391,7 +1391,7 @@ async function handleAdmin(req, res) {
   const sb = getServiceClient();
   if (!sb) return res.status(500).json({ error: "서버 설정 오류" });
 
-  // 인증: Supabase JWT 또는 admin_uid로 admin 확인
+  // 인증: Supabase JWT 우선. 로컬 개발에서만 x-admin-uid/admin_uid 폴백 허용.
   let authUid = "";
   const authHeader = req.headers.authorization || "";
   if (authHeader.startsWith("Bearer ")) {
@@ -1399,7 +1399,7 @@ async function handleAdmin(req, res) {
     const { data: { user } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
     if (user) authUid = user.id;
   }
-  if (!authUid) {
+  if (!authUid && process.env.NODE_ENV !== "production") {
     const origin = req.headers.origin || req.headers.referer || "";
     const isTrusted = origin.includes("snsmakeit.com") || origin.includes("localhost");
     if (isTrusted) authUid = req.query.admin_uid || req.headers["x-admin-uid"] || "";
@@ -1446,6 +1446,12 @@ async function handleAdmin(req, res) {
       const { data, error } = await sb.from("point_history").select("*").order("created_at", { ascending: false }).limit(200);
       if (error) throw error;
       return res.status(200).json({ logs: data || [] });
+    }
+
+    if (action === "newsletter_subscribers") {
+      const { data, error } = await sb.from("newsletter_subscribers").select("*").order("subscribed_at", { ascending: false }).limit(1000);
+      if (error) throw error;
+      return res.status(200).json({ data: data || [] });
     }
 
     if (action === "daily_signups") {
@@ -1524,6 +1530,87 @@ async function handleTrackStats(req, res) {
   } catch (e) { return res.status(500).json({ error: e.message }); }
 }
 
+function makeReferralCodeFromUid(uid = "") {
+  const clean = String(uid || "").replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
+  return `MK${clean.slice(0, 8).padEnd(8, "0")}`;
+}
+
+async function handleReferralSignup(req, res) {
+  try {
+    if (req.method !== "POST") return res.status(405).json({ error: "POST만 허용됩니다" });
+    const sb = getServiceClient();
+    if (!sb) return res.status(500).json({ error: "서버 설정 오류" });
+
+    const authHeader = req.headers.authorization || "";
+    if (!authHeader.startsWith("Bearer ")) return res.status(401).json({ error: "로그인이 필요합니다" });
+    const anonClient = createClient(process.env.SUPABASE_URL, process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || "");
+    const { data: { user } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (!user?.id) return res.status(401).json({ error: "유효하지 않은 로그인입니다" });
+
+    const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+    const code = String(body.referral_code || "").trim();
+    if (!code || code.length < 2 || code.length > 120) return res.status(400).json({ error: "추천인 정보를 입력해주세요" });
+
+    const { data: existingReward } = await sb
+      .from("point_history")
+      .select("id")
+      .eq("uid", user.id)
+      .ilike("reason", "%추천인%")
+      .limit(1);
+    if (existingReward?.length) {
+      const { data: currentUser } = await sb.from("users").select("*").eq("uid", user.id).single();
+      return res.status(200).json({ ok: true, alreadyRewarded: true, user: currentUser });
+    }
+
+    const safeCode = code.replace(/,/g, "");
+    let referrer = null;
+    const { data: referrers, error: refErr } = await sb
+      .from("users")
+      .select("uid,email,nick,points,referral_code")
+      .eq("referral_code", safeCode.toUpperCase())
+      .limit(1);
+    if (!refErr) {
+      referrer = referrers?.[0] || null;
+    } else {
+      const { data: users, error: usersErr } = await sb
+        .from("users")
+        .select("uid,email,nick,points")
+        .limit(10000);
+      if (usersErr) throw usersErr;
+      referrer = (users || []).find(u => makeReferralCodeFromUid(u.uid) === safeCode.toUpperCase()) || null;
+    }
+    if (!referrer) return res.status(404).json({ error: "추천코드를 찾을 수 없습니다" });
+    if (referrer.uid === user.id) return res.status(400).json({ error: "본인은 추천인으로 입력할 수 없습니다" });
+
+    const { data: joinedUser, error: userErr } = await sb
+      .from("users")
+      .select("*")
+      .eq("uid", user.id)
+      .single();
+    if (userErr || !joinedUser) return res.status(404).json({ error: "가입자 정보를 찾을 수 없습니다" });
+
+    const joinedReward = 100;
+    const referrerReward = 200;
+    const joinedPoints = Number(joinedUser.points || 0) + joinedReward;
+    const referrerPoints = Number(referrer.points || 0) + referrerReward;
+    const now = new Date().toISOString();
+
+    const { error: joinedUpdateErr } = await sb.from("users").update({ points: joinedPoints }).eq("uid", joinedUser.uid);
+    if (joinedUpdateErr) throw joinedUpdateErr;
+    const { error: refUpdateErr } = await sb.from("users").update({ points: referrerPoints }).eq("uid", referrer.uid);
+    if (refUpdateErr) throw refUpdateErr;
+
+    await sb.from("point_history").insert([
+      { uid: joinedUser.uid, delta: joinedReward, reason: `추천인 가입 보상 (${referrer.nick || referrer.email || referrer.uid})`, balance: joinedPoints, created_at: now },
+      { uid: referrer.uid, delta: referrerReward, reason: `추천 가입 보상 (${joinedUser.nick || joinedUser.email || joinedUser.uid})`, balance: referrerPoints, created_at: now },
+    ]);
+
+    return res.status(200).json({ ok: true, reward: { joined: joinedReward, referrer: referrerReward }, user: { ...joinedUser, points: joinedPoints } });
+  } catch (e) {
+    return res.status(500).json({ error: e.message || "추천인 보상 처리 실패" });
+  }
+}
+
 const ACTION_MAP = {
   publish: handlePublish,
   "multi-publish": handleMultiPublish,
@@ -1539,6 +1626,7 @@ const ACTION_MAP = {
   admin: handleAdmin,
   "track-log": handleTrackLog,
   "track-stats": handleTrackStats,
+  "referral-signup": handleReferralSignup,
 };
 
 export default async function handler(req, res) {

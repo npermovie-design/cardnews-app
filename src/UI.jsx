@@ -38,13 +38,13 @@ export const SecTitle = ({ badge, title, sub, left, C }) => (
   </div>
 );
 
-export const Btn = ({ children, onClick, ghost, small, full, style = {}, C, ariaLabel }) => {
+export const Btn = ({ children, onClick, ghost, small, full, style = {}, C, ariaLabel, className }) => {
   const base = {
     borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700,
     transition: "all 0.2s", fontFamily: "inherit", ...style,
   };
   if (ghost) return (
-    <button onClick={onClick} aria-label={ariaLabel} style={{
+    <button className={className} onClick={onClick} aria-label={ariaLabel} style={{
       ...base,
       padding: small ? "5px 14px" : "11px 26px",
       fontSize: small ? 12 : "clamp(13px,3.5vw,15px)",
@@ -58,7 +58,7 @@ export const Btn = ({ children, onClick, ghost, small, full, style = {}, C, aria
     </button>
   );
   return (
-    <button onClick={onClick} aria-label={ariaLabel} style={{
+    <button className={className} onClick={onClick} aria-label={ariaLabel} style={{
       ...base,
       padding: small ? "5px 14px" : "12px 28px",
       fontSize: small ? 12 : "clamp(13px,3.5vw,15px)",

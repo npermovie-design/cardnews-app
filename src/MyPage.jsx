@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { supabase, changePoints, getBrandKit } from "./storage";
+import { supabase, changePoints, getBrandKit, ensureReferralCode } from "./storage";
 import SnsConnectionManager from "./SnsConnectionManager";
 import { useI18n } from "./i18n.jsx";
 
@@ -58,7 +58,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
   // user prop 변경 시 즉시 반영 (포인트 차감 등)
   useEffect(() => {
     if (user) setUserData(u => ({ ...u, ...user }));
-  }, [user?.points, user?.nick]);
+  }, [user?.points, user?.nick, user?.referral_code]);
 
   // 닉네임 변경
   const [nickEdit, setNickEdit]   = useState(false);
@@ -111,12 +111,24 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
       // 최신 포인트 조회
       try {
-        const { data } = await supabase
+        let { data, error } = await supabase
           .from("users")
-          .select("points, nick, email")
+          .select("points, nick, email, referral_code")
           .eq("uid", user.uid)
           .single();
-        if (data) setUserData(prev => ({ ...prev, ...data }));
+        if (error) {
+          const fallback = await supabase
+            .from("users")
+            .select("points, nick, email")
+            .eq("uid", user.uid)
+            .single();
+          data = fallback.data;
+        }
+        if (data) {
+          const withCode = await ensureReferralCode({ ...user, ...data });
+          setUserData(prev => ({ ...prev, ...withCode }));
+          if (setUser && withCode?.referral_code && withCode.referral_code !== user?.referral_code) setUser({ ...user, ...withCode });
+        }
       } catch(e) {}
 
       // 활성 구독 조회 (active 또는 cancelled but ends_at 미래인 것)
@@ -196,6 +208,16 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
   const earned = history.filter(h=>h.delta>0).reduce((s,h)=>s+h.delta,0);
   const used   = history.filter(h=>h.delta<0).reduce((s,h)=>s+h.delta,0);
+  const referralCode = userData?.referral_code || "";
+  const referralLink = referralCode ? `${window.location.origin}/login?ref=${encodeURIComponent(referralCode)}` : "";
+  const copyReferral = async () => {
+    try {
+      await navigator.clipboard.writeText(referralLink || referralCode);
+      showToast(ko ? "추천 링크를 복사했어요." : "Referral link copied.");
+    } catch {
+      showToast(referralCode);
+    }
+  };
 
   return (
     <div style={{ maxWidth:860, margin:"0 auto", padding:"20px 16px 80px" }}>
@@ -417,9 +439,10 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
             );
           })()}
 
-          {[
+          {[ 
             { label:ko?"닉네임":"Nickname",         value:userData?.nick || "-" },
             { label:ko?"이메일":"Email",         value:userData?.email || "-" },
+            { label:ko?"추천코드":"Referral Code", value:referralCode || (ko?"생성 중":"Generating") },
             { label:ko?"가입일":"Joined",         value:userData?.join_date ? new Date(userData.join_date).toLocaleDateString(ko?"ko-KR":"en-US") : (userData?.joinDate ? new Date(userData.joinDate).toLocaleDateString(ko?"ko-KR":"en-US") : "-") },
             { label:ko?"마지막 로그인":"Last Login",  value:(userData?.last_login||userData?.lastLogin) ? new Date(userData.last_login||userData.lastLogin).toLocaleString(ko?"ko-KR":"en-US",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}) : "-" },
             { label:ko?"계정 유형":"Account Type",      value:userData?.provider==="google"?(ko?"구글":"Google"):userData?.provider==="kakao"?(ko?"카카오":"Kakao"):(ko?"이메일":"Email") },
@@ -431,6 +454,24 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
               <div className="myp-info-val" style={{ fontSize:13, fontWeight:600, color:text, textAlign:"right", wordBreak:"break-all" }}>{value}</div>
             </div>
           ))}
+
+          {referralCode && (
+            <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:14, padding:"16px 18px" }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap", marginBottom:10 }}>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:900, color:text }}>{ko?"내 추천코드":"My Referral Code"}</div>
+                  <div style={{ fontSize:12, color:muted, marginTop:3 }}>{ko?"친구가 이 코드로 가입하면 친구는 100P, 나는 200P를 받아요.":"A friend gets 100P and you get 200P when they sign up with this code."}</div>
+                </div>
+                <button onClick={copyReferral} style={{ padding:"9px 14px", borderRadius:9, border:"none", background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:12, fontWeight:800, cursor:"pointer" }}>
+                  {ko?"링크 복사":"Copy Link"}
+                </button>
+              </div>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                <div style={{ padding:"10px 12px", borderRadius:10, background:inputBg, border:`1px solid ${inputBdr}`, color:text, fontSize:15, fontWeight:900, letterSpacing:0.5 }}>{referralCode}</div>
+                <div style={{ flex:1, minWidth:220, padding:"10px 12px", borderRadius:10, background:inputBg, border:`1px solid ${inputBdr}`, color:muted, fontSize:12, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{referralLink}</div>
+              </div>
+            </div>
+          )}
 
           <div className="myp-quick-grid" style={{ marginTop:8, display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10 }}>
             {[

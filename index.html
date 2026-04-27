@@ -65,9 +65,9 @@
     <link rel="manifest" href="/manifest.json" />
 
     <!-- 기본 SEO -->
-    <title>SNS메이킷 - AI 카드뉴스·상세페이지·블로그 자동 생성</title>
-    <meta name="description" content="주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 네이버 블로그, 인스타그램, 유튜브 대본, SNS 카드뉴스까지 비회원 5회 무료 체험!"/>
-    <meta name="keywords" content="카드뉴스 만들기, AI 카드뉴스, 상세페이지 제작, AI 상세페이지, 상세페이지 자동 생성, 쇼핑몰 상세페이지, 블로그 자동 생성, SNS 콘텐츠, AI 글쓰기, 네이버 블로그 자동생성, 인스타그램 캡션, 유튜브 대본, 소셜미디어 콘텐츠, AI 이미지 생성, 상세페이지 디자인"/>
+    <title>SNS메이킷 - AI SNS 콘텐츠 자동 생성</title>
+    <meta name="description" content="키워드만 입력하면 블로그, 인스타그램, 쇼츠, SNS 게시글 초안을 AI가 자동 생성합니다. 비회원 5회 무료, 가입 시 150P로 바로 시작하세요."/>
+    <meta name="keywords" content="SNS 콘텐츠 자동 생성, AI 블로그 글쓰기, 인스타그램 캡션 생성, 쇼츠 자동 제작, 네이버 블로그 자동생성, SNS 자동 발행, AI 콘텐츠 제작, 카드뉴스 만들기, AI 이미지 생성, 상세페이지 제작"/>
     <meta name="author" content="SNS메이킷"/>
     <meta name="robots" content="index, follow"/>
     <meta name="theme-color" content="#7c6aff"/>
@@ -88,8 +88,8 @@
     <!-- Open Graph (카카오톡, 페이스북 등 SNS 공유) -->
     <meta property="og:type" content="website"/>
     <meta property="og:url" content="https://snsmakeit.com/"/>
-    <meta property="og:title" content="SNS메이킷 - AI 카드뉴스·상세페이지·블로그 자동 생성"/>
-    <meta property="og:description" content="주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 비회원 5회 무료 체험!"/>
+    <meta property="og:title" content="SNS메이킷 - AI SNS 콘텐츠 자동 생성"/>
+    <meta property="og:description" content="블로그, 인스타그램, 쇼츠 콘텐츠를 AI로 빠르게 제작하세요. 비회원 5회 무료, 가입 시 150P 지급."/>
     <meta property="og:image" content="https://snsmakeit.com/og-image.png"/>
     <meta property="og:image:width" content="1200"/>
     <meta property="og:image:height" content="630"/>
@@ -100,8 +100,8 @@
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image"/>
     <meta name="twitter:site" content="@snsmakeit"/>
-    <meta name="twitter:title" content="SNS메이킷 - AI 카드뉴스·상세페이지·블로그 자동 생성"/>
-    <meta name="twitter:description" content="주제만 입력하면 AI가 카드뉴스, 상세페이지, 블로그 글을 자동으로 만들어드려요. 비회원 5회 무료!"/>
+    <meta name="twitter:title" content="SNS메이킷 - AI SNS 콘텐츠 자동 생성"/>
+    <meta name="twitter:description" content="키워드만 입력하면 블로그, 인스타그램, 쇼츠 콘텐츠 초안을 AI가 자동 생성합니다. 비회원 5회 무료."/>
     <meta name="twitter:image" content="https://snsmakeit.com/og-image.png"/>
 
     <!-- Google Analytics GA4 -->
@@ -208,7 +208,7 @@
               "name": "무료로 사용할 수 있나요?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "네! 비회원도 로그인 없이 5회까지 무료로 체험할 수 있습니다. 회원가입 시 100포인트가 즉시 지급되며, 매일 출석체크(+3P), 게시글 작성(+2P) 등으로 포인트를 적립해 무료로 계속 사용할 수 있어요."
+                "text": "네! 비회원도 로그인 없이 5회까지 무료로 체험할 수 있습니다. 회원가입 시 150포인트가 즉시 지급되며, 매일 로그인(+3P), 게시글 작성(+1P) 등으로 포인트를 적립해 무료로 계속 사용할 수 있어요."
               }
             },
             {
@@ -232,7 +232,7 @@
               "name": "포인트는 어떻게 적립하나요?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "회원가입 시 100P가 즉시 지급됩니다. 이후 매일 출석체크(+3P), 커뮤니티 게시글 작성(+2P)으로 포인트를 적립할 수 있어요. 추가 포인트가 필요하면 합리적인 가격으로 충전할 수도 있습니다."
+                "text": "회원가입 시 150P가 즉시 지급됩니다. 이후 매일 로그인(+3P), 커뮤니티 게시글 작성(+1P)으로 포인트를 적립할 수 있어요. 추가 포인트가 필요하면 합리적인 가격으로 충전할 수도 있습니다."
               }
             },
             {
@@ -259,33 +259,34 @@
   </head>
   <body>
     <!-- React 로드 실패 시 폴백 (카카오톡 등) — React 마운트 시 숨김 -->
-    <div id="app-fallback" style="display:none;align-items:center;justify-content:center;min-height:100vh;background:#f5f4ff;color:#1a1730;font-family:-apple-system,sans-serif;text-align:center;padding:20px;position:fixed;inset:0;z-index:99999">
-      <div>
-        <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#7c6aff,#ec4899);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="#fff"/></svg>
-        </div>
-        <div style="font-size:20px;font-weight:900;margin-bottom:8px">SNS메이킷</div>
-        <div style="font-size:14px;color:rgba(26,23,48,0.5);margin-bottom:24px;line-height:1.8">AI 카드뉴스·블로그·이미지 자동 생성</div>
-        <a id="fallback-link" href="/" style="display:inline-block;padding:14px 32px;border-radius:12px;background:linear-gradient(135deg,#7c6aff,#8b5cf6);color:#fff;text-decoration:none;font-size:15px;font-weight:800;margin-bottom:12px">크롬/사파리에서 열기</a>
-        <div style="font-size:12px;color:rgba(26,23,48,0.3);margin-top:16px">카카오톡에서는 우측 상단 ⋮ →<br>"다른 브라우저로 열기"를 이용해주세요</div>
-      </div>
-    </div>
+    <div id="app-fallback" style="display:none"></div>
     <script>
     // 카카오톡 인앱에서만 폴백 표시
     (function(){
+      function showFallback() {
+        var fb = document.getElementById('app-fallback');
+        if (!fb) return;
+        fb.style.cssText = 'display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f5f4ff;color:#1a1730;font-family:-apple-system,sans-serif;text-align:center;padding:20px;position:fixed;inset:0;z-index:99999';
+        fb.innerHTML =
+          '<div>' +
+          '<div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#7c6aff,#ec4899);display:flex;align-items:center;justify-content:center;margin:0 auto 16px">' +
+          '<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6L12 2z" fill="#fff"/></svg>' +
+          '</div>' +
+          '<div style="font-size:20px;font-weight:900;margin-bottom:8px">SNS메이킷</div>' +
+          '<div style="font-size:14px;color:rgba(26,23,48,0.5);margin-bottom:24px;line-height:1.8">AI 블로그·인스타·쇼츠 콘텐츠 자동 생성</div>' +
+          '<a id="fallback-link" href="' + location.href + '" style="display:inline-block;padding:14px 32px;border-radius:12px;background:linear-gradient(135deg,#7c6aff,#8b5cf6);color:#fff;text-decoration:none;font-size:15px;font-weight:800;margin-bottom:12px">크롬/사파리에서 열기</a>' +
+          '<div style="font-size:12px;color:rgba(26,23,48,0.3);margin-top:16px">카카오톡에서는 우측 상단 ⋮ →<br>"다른 브라우저로 열기"를 이용해주세요</div>' +
+          '</div>';
+      }
       var ua = navigator.userAgent || '';
       if (ua.match(/KAKAOTALK/i)) {
-        var fb = document.getElementById('app-fallback');
-        if (fb) fb.style.display = 'flex';
-        var link = document.getElementById('fallback-link');
-        if (link) link.href = location.href;
+        showFallback();
       }
       // React 마운트 3초 후에도 root가 비어있으면 폴백 표시
       setTimeout(function(){
         var root = document.getElementById('root');
         if (root && !root.firstChild) {
-          var fb = document.getElementById('app-fallback');
-          if (fb) fb.style.display = 'flex';
+          showFallback();
         }
       }, 3000);
     })();

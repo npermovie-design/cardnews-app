@@ -3,7 +3,7 @@ import { Badge, Btn } from "./UI";
 import { useI18n } from "./i18n.jsx";
 import { useOnlineCount, AiSidebar } from "./AiSidebar.jsx";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
-import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken } from "./storage";
+import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken, syncLocalLibrary } from "./storage";
 
 // ── Lazy-loaded: 메뉴별 도구 (code-split) ──
 const ModelGenerator = React.lazy(() => import("./AiImageGenerators.jsx").then(m => ({ default: m.ModelGenerator })));
@@ -1913,6 +1913,20 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   // isGenerating은 state 대신 전역 변수로 (리렌더 방지 — BlogGenerator unmount 원인)
   const [shortsJob, setShortsJob] = useState(null);
   const [shortsActive, setShortsActive] = useState(false);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    let alive = true;
+    (async () => {
+      try {
+        const local = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
+        const merged = await syncLocalLibrary(user.uid, "blog", local);
+        if (!alive || !Array.isArray(merged)) return;
+        localStorage.setItem("sns_blog_saves_v1", JSON.stringify(merged.slice(0, 100)));
+      } catch {}
+    })();
+    return () => { alive = false; };
+  }, [user?.uid]);
 
   // Shorts Factory 메시지 수신 (전역 — 메뉴 이동해도 유지)
   useEffect(() => {

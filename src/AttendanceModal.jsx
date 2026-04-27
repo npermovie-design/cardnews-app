@@ -10,7 +10,13 @@ import { addAttendance, changePoints, fetchAttendance } from "./storage";
 ──────────────────────────────────────────────────────── */
 
 const STORAGE_KEY = "nper_attendance_v2";
-const today = () => new Date().toISOString().slice(0, 10);
+const dateKey = (d = new Date()) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+const today = () => dateKey();
 const thisMonth = () => today().slice(0, 7);
 
 function loadData(uid) {
@@ -30,12 +36,12 @@ function calcStreak(dates) {
   if (!dates.length) return 0;
   const sorted = [...dates].sort().reverse();
   const todayStr = today();
-  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const yesterdayStr = dateKey(new Date(Date.now() - 86400000));
   // 오늘 또는 어제 출석이 없으면 연속 끊김
   if (sorted[0] !== todayStr && sorted[0] !== yesterdayStr) return 0;
   let streak = 0, cur = sorted[0];
   for (const d of sorted) {
-    if (d === cur) { streak++; cur = new Date(new Date(cur) - 86400000).toISOString().slice(0, 10); }
+    if (d === cur) { streak++; cur = dateKey(new Date(new Date(cur).getTime() - 86400000)); }
     else break;
   }
   return streak;

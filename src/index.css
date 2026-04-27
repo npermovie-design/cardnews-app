@@ -29,6 +29,13 @@ body {
   background: #ffffff;
 }
 
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 a {
   text-decoration: none;
   color: inherit;

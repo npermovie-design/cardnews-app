@@ -27,6 +27,7 @@
     }
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@vitejs/plugin-react": "^4.3.0",
     "concurrently": "^8.0.0",
     "electron": "^28.0.0",
