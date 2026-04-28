@@ -59,23 +59,23 @@ const CATEGORIES = [
 
 const DEMO_PRODUCTS = [
   {
-    id: 1, title: "SNS 자동화 봇 v0.1.7",
-    desc: "테마만 입력하면 AI가 네이버 상위노출에 최적화된 글을 자동 생성하고 발행합니다. 인용구·소제목·이미지·스티커까지 블로거 수준의 포스팅을 원클릭으로. 매일 자동 운영 모드 지원.",
+    id: 1, title: "SNS 자동화 봇 v0.1.8",
+    desc: "테마만 입력하면 AI가 네이버 블로그 글을 자동 생성하고, 카테고리 선택부터 이미지 삽입, 발행까지 한 번에 처리합니다. 빠른 시작 모드로 1분 안에 첫 발행이 가능합니다.",
     category: "automation", price: 0, priceLabel: "무료",
-    version: "v0.1.7", platform: "Windows 10/11",
+    version: "v0.1.8", platform: "Windows 10/11",
     fileSize: "314MB", downloadCount: 180, viewCount: 420,
     tags: ["자동화", "블로그", "네이버", "SEO", "AEO"],
-    downloadUrl: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.7.zip",
+    downloadUrl: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.8.zip",
     thumbnail: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/uploads/automation-thumb.png",
     detailContent: [
       { type: "heading", value: "SNS 자동화 봇이란?" },
-      { type: "text", value: "테마 하나만 입력하면 AI가 최신 트렌드를 분석하고, 네이버 C-Rank/D.I.A 알고리즘에 최적화된 블로그 글을 자동으로 생성·발행하는 데스크톱 프로그램입니다.\n인용구, 번호 소제목, 강조 색상, 이미지, 스티커까지 실제 블로거가 쓴 것 같은 고퀄리티 포스팅을 완전 자동화합니다." },
+      { type: "text", value: "반복적인 네이버 블로그 운영을 자동화하는 데스크톱 프로그램입니다.\n주제를 입력하면 AI가 글 구조를 잡고 본문을 작성한 뒤, 인용구, 소제목, 이미지, 스티커를 포함해 발행 가능한 형태로 정리합니다.\n매일 비슷한 작업을 반복하는 운영자, 마케터, 1인 사업자에게 적합합니다." },
       { type: "divider" },
-      { type: "heading", value: "v0.1.7 주요 기능" },
-      { type: "text", value: "- AI 글 자동 생성: 테마만 입력하면 SEO/AEO 최적화 글 자동 작성\n- 인용구 스타일: 따옴표, 버티컬 라인, 말풍선, 포스트잇 등 6종 선택\n- 소제목 번호+색상: 01, 02, 03... 번호 자동 부여 + 강조 색상 적용\n- 짤/GIF 이미지: 본문에 움짤 삽입 지원\n- 스티커 랜덤 삽입: 글 마지막에 네이버 스티커 자동 추가\n- 강조 색상 선택: 초록/주황/파랑/빨강 프리셋\n- 자동 운영 모드: 매일 최신 트렌드 기반 자동 글 발행\n- 프리셋 저장: 설정을 저장하고 한번에 불러오기\n- 이전 설정 자동 복원: 앱 재시작 시 마지막 설정 유지" },
+      { type: "heading", value: "v0.1.8 주요 기능" },
+      { type: "text", value: "- 빠른 시작 모드: 테마와 카테고리만 입력하면 1개 바로 발행\n- AI 글 자동 생성: 최신 뉴스/트렌드 분석 후 SEO 최적화 본문 작성\n- 다중 테마 순환: 쉼표로 여러 테마 입력 시 순환하며 발행\n- 키워드 포인트 글색: 주제 키워드에 강조 색상 자동 적용 (글색/배경색/둘다 선택)\n- 카테고리 자동 선택: 네이버 블로그 카테고리 정확 매칭 후 발행\n- 참고 글 분석: URL을 분석해 구성, 인용구, 색상, 이미지 흐름 반영\n- 인용구 스타일 6종: 따옴표, 버티컬 라인, 말풍선, 포스트잇, 프레임 등\n- GIF/이미지/스티커 삽입: 본문 흐름에 맞춘 미디어 배치\n- 발행 시간 분산: 아침/점심/저녁 또는 오전/오후 시간대 분산 옵션\n- 발행 실패 자동 재시도: 실패한 글을 1회 자동 재시도\n- 홈 대시보드: 발행 통계, 최근 발행 글, 자동 운영 상태 한눈에\n- 진행 프로그레스바: 5단계 시각화 (계정 확인 > 글 생성 > 에디터 > 본문 입력 > 발행)\n- 데스크톱 알림: 발행 성공/실패 시 Windows 알림\n- 로그 URL 클릭: 발행된 글 URL을 로그에서 바로 열기\n- 네이버 계정 선택: 다중 계정 중 발행할 계정 선택\n- 글 제목 직접 입력: AI 제목 대신 원하는 제목으로 발행\n- 프리셋 저장: 자주 쓰는 설정 저장/불러오기" },
       { type: "divider" },
-      { type: "heading", value: "v0.1.7 변경 내역" },
-      { type: "text", value: "- 서버에 글 제목/주제 저장 중단: 사용량 계산용 익명 로그만 유지\n- AI 생성 실패 시 서버 재시도 + 대체 모델 폴백 추가\n- EXE 생성 실패 시 간소화 프롬프트로 추가 재시도\n- [[bold]], [[font-size:fs19]], [[underline]] 등 스타일 마커 노출 방지\n- 포인트 박스 느낌 강화를 위해 기본 인용구 스타일을 포스트잇으로 변경\n- 스티커가 삽입 후 삭제되던 템플릿 정리 순서 수정\n- 카테고리 선택 공백 무시 매칭 보강\n- 블로그 자동 운영 발행 성공/실패 이력이 자동화 현황에 저장되도록 수정" },
+      { type: "heading", value: "v0.1.8 변경 내역" },
+      { type: "text", value: "신규 기능:\n- 빠른 시작 모드 (테마+카테고리만 입력, 1개 바로 발행)\n- 홈 대시보드 (발행 통계 + 최근 글 + 운영 상태)\n- 진행 프로그레스바 (5단계 시각화)\n- 키워드 포인트 글색 + 강조 방식 선택 (글색/배경색/둘다)\n- 다중 테마 순환 발행 (쉼표 구분)\n- 발행 시간 분산 (아침/점심/저녁 또는 오전/오후)\n- 발행 실패 자동 재시도 (1회)\n- 데스크톱 알림 (성공/실패)\n- 로그 URL 클릭 가능\n- 에러 메시지 사용자 친화적 변환\n- 달력 숫자 뱃지 (성공/실패 표시)\n- 네이버 세션 만료 사전 감지\n- 글 제목 직접 입력 옵션\n- 네이버 계정 선택 발행\n- 발행 히스토리 500개로 확장\n\n버그 수정:\n- 카테고리 선택: Playwright 네이티브 방식으로 안정화\n- GIF 업로드: file_chooser 미발생 시 폴백 추가\n- 단건 발행 실패 (is_cafe 미정의) 수정\n- 발행 버튼 DOM detached 시 재탐색\n- 참고글 분석 무한 스크롤 방지\n- 네이버 로그인 버튼 예외 시 복구\n- Python pyc 캐시 방지 (PYTHONDONTWRITEBYTECODE)" },
       { type: "divider" },
       { type: "heading", value: "시스템 요구사항" },
       { type: "text", value: "- Windows 10/11 (64-bit)\n- 8GB RAM 이상 권장\n- 인터넷 연결 필수\n- 네이버 계정 필요\n- Python/Playwright 별도 설치 불필요 (내장)" },
@@ -83,42 +83,42 @@ const DEMO_PRODUCTS = [
   },
   {
     id: 2, title: "상세페이지 템플릿 팩 Vol.1",
-    desc: "쇼핑몰 상세페이지에 바로 적용 가능한 고퀄리티 템플릿 10종. 식품, 뷰티, 패션, 전자제품 등 카테고리별 최적화된 디자인.",
+    desc: "쇼핑몰 상세페이지 제작 시간을 줄여주는 PSD/Figma 템플릿 팩입니다. 식품, 뷰티, 패션, 전자제품 등 주요 카테고리에 맞춰 섹션 구성이 준비되어 있습니다.",
     category: "template", price: 9900, priceLabel: "9,900원",
     version: "v1.0", platform: "PSD / Figma",
     fileSize: "320MB", downloadCount: 56, viewCount: 189,
     tags: ["템플릿", "상세페이지", "디자인"],
     downloadUrl: null, thumbnail: null,
     detailContent: [
-      { type: "heading", value: "프로 디자이너가 만든 상세페이지 템플릿" },
-      { type: "text", value: "쇼핑몰 상세페이지에 바로 적용 가능한 고퀄리티 템플릿 10종입니다.\nPSD와 Figma 파일을 모두 포함하며, 텍스트와 이미지만 교체하면 바로 사용할 수 있습니다." },
+      { type: "heading", value: "바로 편집 가능한 상세페이지 템플릿" },
+      { type: "text", value: "상품 소개, 핵심 장점, 사용 장면, 구매 유도 섹션까지 기본 구조가 잡혀 있는 상세페이지 템플릿 10종입니다.\nPSD와 Figma 파일을 함께 제공해 디자이너와 운영자가 각자의 작업 방식에 맞게 수정할 수 있습니다." },
       { type: "divider" },
       { type: "text", value: "- 10종 카테고리별 템플릿 (식품, 뷰티, 패션, 전자제품, 생활용품)\n- PSD + Figma 동시 제공\n- 모바일 최적화 세로형 레이아웃\n- 폰트/컬러 가이드 포함" },
     ],
   },
   {
     id: 3, title: "키워드 분석 리포트 생성기",
-    desc: "네이버/구글 키워드를 자동 분석하여 경쟁도, 검색량, 추천 키워드를 포함한 리포트를 생성합니다. 엑셀 내보내기 지원.",
+    desc: "네이버/구글 키워드의 검색량, 경쟁도, 확장 키워드를 정리해 콘텐츠 기획용 리포트로 만들어주는 분석 도구입니다. 결과는 엑셀로 내보낼 수 있습니다.",
     category: "marketing", price: 19900, priceLabel: "19,900원",
     version: "v2.1", platform: "Windows / Mac",
     fileSize: "28MB", downloadCount: 89, viewCount: 245,
     tags: ["마케팅", "키워드", "SEO"],
     downloadUrl: null, thumbnail: null,
     detailContent: [
-      { type: "heading", value: "키워드 분석, 자동으로 끝내세요" },
-      { type: "text", value: "네이버와 구글에서 키워드별 월간 검색량, 경쟁도, 클릭률을 분석하고\n연관 키워드와 롱테일 키워드까지 자동으로 추천합니다.\n분석 결과는 시각화된 리포트로 생성되며, 엑셀 파일로 내보내기가 가능합니다." },
+      { type: "heading", value: "콘텐츠 기획을 위한 키워드 리포트" },
+      { type: "text", value: "키워드별 검색량과 경쟁도를 확인하고, 함께 다루기 좋은 연관 키워드와 롱테일 키워드를 정리합니다.\n블로그 글감 선정, 광고 소재 기획, 상세페이지 문구 작성 전에 참고할 수 있는 리포트를 빠르게 만들 수 있습니다." },
     ],
   },
   {
     id: 4, title: "이미지 일괄 리사이즈 툴",
-    desc: "수백 장의 이미지를 원하는 사이즈로 일괄 변환합니다. 워터마크 추가, 포맷 변환, 압축률 조절까지 한 번에.",
+    desc: "여러 장의 이미지를 지정한 규격으로 한 번에 변환하는 유틸리티입니다. 리사이즈, 워터마크, 포맷 변환, 압축 설정을 일괄 적용할 수 있습니다.",
     category: "utility", price: 0, priceLabel: "무료",
     version: "v1.3", platform: "Windows",
     fileSize: "12MB", downloadCount: 203, viewCount: 478,
     tags: ["유틸리티", "이미지", "일괄처리"],
     downloadUrl: null, thumbnail: null,
     detailContent: [
-      { type: "text", value: "쇼핑몰, 블로그, SNS 운영자를 위한 이미지 일괄 처리 도구입니다.\n드래그 앤 드롭으로 수백 장의 이미지를 한 번에 리사이즈하고,\n워터마크를 추가하며, JPEG/PNG/WebP 등 원하는 포맷으로 변환할 수 있습니다." },
+      { type: "text", value: "쇼핑몰, 블로그, SNS 운영자를 위한 이미지 일괄 처리 도구입니다.\n드래그 앤 드롭으로 여러 이미지를 추가한 뒤 원하는 크기와 포맷을 지정하면, 업로드용 이미지 세트를 빠르게 만들 수 있습니다. 워터마크와 압축률도 함께 설정할 수 있습니다." },
     ],
   },
 ];
@@ -1132,11 +1132,11 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
         <h1 style={{
           fontSize: "clamp(30px, 5vw, 46px)", fontWeight: 800, lineHeight: 1.25, marginBottom: 16, letterSpacing: -0.5,
         }}>
-          <span style={{ background: GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>필요한 자료를 한 곳에서.</span>
+          <span style={{ background: GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>운영에 필요한 자료를 빠르게 찾으세요.</span>
         </h1>
         <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.8 }}>
-          프로그램, 템플릿, 무료 사진, 무료 영상까지.<br />
-          SNS 운영에 필요한 모든 자료를 다운로드하세요.
+          자동화 프로그램, 템플릿, 무료 사진과 영상까지<br />
+          SNS 제작과 운영에 바로 활용할 수 있는 자료를 모았습니다.
         </p>
       </section>
 
