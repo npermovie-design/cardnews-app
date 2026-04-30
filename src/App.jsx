@@ -296,6 +296,11 @@ export default function App() {
   const [showAttendance, setShowAttendance] = useState(false);
   const attendancePromptKey = useRef("");
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showDownloadPopup, setShowDownloadPopup] = useState(() => {
+    const dismissed = localStorage.getItem("nper_download_popup_dismissed");
+    if (dismissed && Date.now() - Number(dismissed) < 24 * 60 * 60 * 1000) return false;
+    return true;
+  });
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
   const { t, lang, setLang } = useI18n();
@@ -1009,6 +1014,45 @@ export default function App() {
                 style={{ padding: "9px", borderRadius: 12, border: "none", cursor: "pointer", background: "transparent", color: "rgba(26,23,48,0.35)", fontSize: 12 }}>
                 닫기
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 다운로드 유도 팝업 ── */}
+      {showDownloadPopup && (
+        <div onClick={() => setShowDownloadPopup(false)} style={{ position: "fixed", inset: 0, zIndex: 99998, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)", animation: "fadeIn 0.2s ease" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 24, padding: "clamp(24px,5vw,40px) clamp(20px,4vw,32px)", maxWidth: 420, width: "90%", textAlign: "center", boxShadow: "0 24px 80px rgba(124,106,255,0.25)", position: "relative", animation: "fadeIn 0.25s ease" }}>
+            <button onClick={() => setShowDownloadPopup(false)} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", fontSize: 20, color: "rgba(26,23,48,0.3)", cursor: "pointer", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8 }} aria-label="닫기">&times;</button>
+            <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", fontSize: 28, color: "#fff", fontWeight: 900, boxShadow: "0 8px 24px rgba(124,106,255,0.3)" }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </div>
+            <div style={{ fontSize: "clamp(18px,4.5vw,22px)", fontWeight: 900, color: "#1a1730", marginBottom: 8 }}>
+              SNS 자동화 프로그램
+            </div>
+            <div style={{ fontSize: "clamp(12px,3vw,14px)", color: "rgba(26,23,48,0.5)", marginBottom: 18, lineHeight: 1.7 }}>
+              블로그 글 작성부터 발행까지<br/>AI가 자동으로 처리합니다
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginBottom: 22 }}>
+              {["AI 글 작성", "자동 발행", "SEO 최적화", "다중 테마"].map(t => (
+                <span key={t} style={{ padding: "6px 14px", borderRadius: 99, background: "rgba(124,106,255,0.08)", color: "#7c6aff", fontSize: 12, fontWeight: 700 }}>{t}</span>
+              ))}
+            </div>
+            <div style={{ background: "rgba(124,106,255,0.04)", border: "1px solid rgba(124,106,255,0.1)", borderRadius: 14, padding: "14px 18px", marginBottom: 22, display: "flex", justifyContent: "space-around", fontSize: 12, color: "rgba(26,23,48,0.5)" }}>
+              <span>Windows 10/11</span>
+              <span style={{ color: "rgba(26,23,48,0.15)" }}>|</span>
+              <span>v0.1.8</span>
+              <span style={{ color: "rgba(26,23,48,0.15)" }}>|</span>
+              <span>314MB</span>
+            </div>
+            <a href="https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.8.exe"
+              onClick={() => setShowDownloadPopup(false)}
+              style={{ display: "block", padding: "15px 24px", borderRadius: 14, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 16, fontWeight: 900, textDecoration: "none", boxShadow: "0 6px 20px rgba(124,106,255,0.3)", marginBottom: 12, transition: "transform 0.15s" }}>
+              Windows 무료 다운로드
+            </a>
+            <div style={{ display: "flex", justifyContent: "center", gap: 16, fontSize: 12, color: "rgba(26,23,48,0.35)" }}>
+              <button onClick={() => setShowDownloadPopup(false)} style={{ background: "none", border: "none", color: "rgba(26,23,48,0.35)", fontSize: 12, cursor: "pointer", padding: "8px 4px" }}>닫기</button>
+              <button onClick={() => { localStorage.setItem("nper_download_popup_dismissed", String(Date.now())); setShowDownloadPopup(false); }} style={{ background: "none", border: "none", color: "rgba(26,23,48,0.35)", fontSize: 12, cursor: "pointer", padding: "8px 4px" }}>오늘 하루 그만보기</button>
             </div>
           </div>
         </div>
