@@ -3734,11 +3734,19 @@ hospital equipment`
               _getUsageState().exhausted ? (
                 <div style={{textAlign:"center",padding:"40px 0"}}>
                   <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.5" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                  <div style={{fontSize:20,fontWeight:900,color:text,marginTop:16,marginBottom:8}}>프로 버전에서 사용 가능합니다</div>
-                  <div style={{fontSize:14,color:muted,lineHeight:1.7,marginBottom:24}}>무료 체험 횟수를 모두 사용했습니다.<br/>프로 버전으로 업그레이드하면 무제한으로 영상을 생성할 수 있어요.</div>
+                  <div style={{fontSize:20,fontWeight:900,color:text,marginTop:16,marginBottom:8}}>
+                    {_getUsageState().isGuest ? "무료 체험 횟수를 모두 사용했어요" : "포인트가 부족합니다"}
+                  </div>
+                  <div style={{fontSize:14,color:muted,lineHeight:1.7,marginBottom:24}}>
+                    {_getUsageState().isGuest
+                      ? <>비회원은 <b style={{color:accent}}>5회 무료</b>로 이용 가능합니다.<br/>로그인하면 <b style={{color:accent}}>150P 보너스</b> + 포인트로 계속 이용 가능해요!</>
+                      : <>영상 생성에는 <b style={{color:accent}}>30P</b>가 필요합니다.<br/>현재 보유 포인트: <b style={{color:"#f59e0b"}}>{_getUsageState().points}P</b></>}
+                  </div>
                   <div style={{display:"flex",gap:10,justifyContent:"center"}}>
                     <button onClick={()=>{setShortsMode(false);}} style={{padding:"12px 24px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",color:text,fontSize:14,fontWeight:700,cursor:"pointer"}}>돌아가기</button>
-                    <button onClick={()=>{try{window.location.hash="#pricing";}catch{}}} style={{padding:"12px 24px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>프로 버전 보기</button>
+                    {_getUsageState().isGuest
+                      ? <button onClick={()=>{if(onLoginRequest) onLoginRequest();}} style={{padding:"12px 24px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#7c6aff,#ec4899)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>로그인 / 회원가입</button>
+                      : <button onClick={()=>{try{window.location.hash="#pricing";}catch{}}} style={{padding:"12px 24px",borderRadius:12,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>포인트 충전하기</button>}
                   </div>
                 </div>
               ) : !videoSubMode ? (
