@@ -225,9 +225,7 @@ export default async function handler(req) {
   })();
   // slug가 다른 경우: 봇에게는 canonical로 안내 (200), 브라우저에는 리디렉션
   // 301 리디렉션은 Google에서 "리디렉션 오류"로 잡힐 수 있으므로 봇에게는 canonical만 설정
-  const ua = (req.headers.get("user-agent") || "").toLowerCase();
-  const isBotEarly = /bot|crawl|spider|slurp|googlebot|bingbot|yandexbot/i.test(ua);
-  if (canonicalPath !== path && !isBotEarly) {
+  if (canonicalPath !== path && !isBot) {
     return Response.redirect(canonicalUrl, 301);
   }
 
