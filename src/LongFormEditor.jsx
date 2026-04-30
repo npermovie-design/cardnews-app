@@ -271,15 +271,6 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
   const [autoMediaLoading, setAutoMediaLoading] = useState(false);
   const autoMediaTriggered = useRef(false);
 
-  // 편집 진입 시 자막이 있으면 자동 삽입 실행
-  useEffect(() => {
-    if (step !== "edit" || autoMediaTriggered.current || autoMediaLoading) return;
-    if (subtitles.length > 0 && subtitlesEnabled && overlays.length === 0) {
-      autoMediaTriggered.current = true;
-      setTimeout(() => autoInsertMedia(), 800);
-    }
-  }, [step, subtitles.length]);
-
   const autoInsertMedia = async () => {
     if (subtitles.length === 0) return;
     setAutoMediaLoading(true);
@@ -345,6 +336,15 @@ JSON 배열로만 응답 (다른 텍스트 없이):
     } catch (e) { console.error("Auto media failed:", e); }
     setAutoMediaLoading(false);
   };
+
+  // 편집 진입 시 자막이 있으면 자동 삽입 실행
+  useEffect(() => {
+    if (step !== "edit" || autoMediaTriggered.current || autoMediaLoading) return;
+    if (subtitles.length > 0 && subtitlesEnabled && overlays.length === 0) {
+      autoMediaTriggered.current = true;
+      setTimeout(() => autoInsertMedia(), 800);
+    }
+  }, [step, subtitles.length]);
 
   // 타임라인
   const [playhead, setPlayhead] = useState(0);

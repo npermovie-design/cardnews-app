@@ -827,16 +827,6 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [autoMediaResults, setAutoMediaResults] = useState([]);
   const autoMediaTriggered = useRef(false);
 
-  // 편집 진입 시 자막이 있으면 자동 삽입 실행
-  useEffect(() => {
-    if (step !== "edit" || autoMediaTriggered.current || autoMediaLoading) return;
-    const subs = curClip?.subtitles || [];
-    if (subs.length > 0 && subtitlesEnabled && overlays.length === 0) {
-      autoMediaTriggered.current = true;
-      setTimeout(() => autoInsertMedia(), 500);
-    }
-  }, [step, editIdx]);
-
   const autoInsertMedia = async () => {
     const subs = curClip?.subtitles || [];
     if (subs.length === 0) return;
@@ -921,6 +911,17 @@ JSON 배열로만 응답하세요 (다른 텍스트 없이):
     } catch (e) { console.error("Auto media insert failed:", e); }
     setAutoMediaLoading(false);
   };
+
+  // 편집 진입 시 자막이 있으면 자동 삽입 실행
+  useEffect(() => {
+    if (step !== "edit" || autoMediaTriggered.current || autoMediaLoading) return;
+    const subs = curClip?.subtitles || [];
+    if (subs.length > 0 && overlays.length === 0) {
+      autoMediaTriggered.current = true;
+      setSubtitlesEnabled(true);
+      setTimeout(() => autoInsertMedia(), 500);
+    }
+  }, [step, editIdx]);
 
   // ── 프로젝트 저장/불러오기 ─────────────────
   const PROJECTS_KEY = "shorts_projects_v1";
