@@ -167,13 +167,20 @@ async function insertUserWithReferralFallback(userData) {
 }
 
 // ── 내부 헬퍼: users 테이블에서 유저 가져오기 ────────────────────────────
+const _userCache = { uid: null, data: null, ts: 0 };
 async function _fetchUserRow(uid) {
+  if (!uid) return null;
+  // 5초 캐시 — 동시 호출 방지
+  if (_userCache.uid === uid && _userCache.data && Date.now() - _userCache.ts < 5000) return _userCache.data;
   const { data, error } = await supabase
     .from("users")
     .select("*")
     .eq("uid", uid)
     .single();
-  if (error) return null;
+  if (error) return _userCache.data || null;
+  _userCache.uid = uid;
+  _userCache.data = data;
+  _userCache.ts = Date.now();
   return data;
 }
 
