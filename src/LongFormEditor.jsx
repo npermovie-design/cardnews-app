@@ -384,14 +384,7 @@ JSON 배열로만 응답:
     setAutoMediaLoading(false);
   };
 
-  // 편집 진입 시 자막이 있으면 자동 삽입 실행
-  useEffect(() => {
-    if (step !== "edit" || autoMediaTriggered.current || autoMediaLoading) return;
-    if (subtitles.length > 0 && subtitlesEnabled && overlays.length === 0) {
-      autoMediaTriggered.current = true;
-      setTimeout(() => autoInsertMedia(), 800);
-    }
-  }, [step, subtitles.length]);
+  // 자동 삽입은 버튼 클릭으로만 실행 (자동 트리거 비활성화)
 
   // 타임라인
   const [playhead, setPlayhead] = useState(0);

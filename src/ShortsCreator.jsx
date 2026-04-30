@@ -929,16 +929,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
     setAutoMediaLoading(false);
   };
 
-  // 편집 진입 시 자막이 있으면 자동 삽입 실행
-  useEffect(() => {
-    if (step !== "edit" || autoMediaTriggered.current || autoMediaLoading) return;
-    const subs = curClip?.subtitles || [];
-    if (subs.length > 0 && overlays.length === 0) {
-      autoMediaTriggered.current = true;
-      setSubtitlesEnabled(true);
-      setTimeout(() => autoInsertMedia(), 500);
-    }
-  }, [step, editIdx]);
+  // 자동 삽입은 버튼 클릭으로만 실행 (자동 트리거 비활성화)
 
   // ── 프로젝트 저장/불러오기 ─────────────────
   const PROJECTS_KEY = "shorts_projects_v1";
