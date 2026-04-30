@@ -1254,9 +1254,10 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // Step: 편집 (프로 비디오 에디터)
   // ═══════════════════════════════════
   if (step === "edit") {
-  const pxPerSec = 20 * timelineZoom;
+  const pxPerSec = 24 * timelineZoom;
   const tlWidth = Math.max(clipDuration * pxPerSec, 800);
-  const TRACK_H = 32;
+  const TRACK_H = 44;
+  const TRIM_W = 14;
   // 동적 트랙: 오버레이(V2,V3...) → V1 → A1 → S1 (오버레이가 V1 위에)
   const overlayTracks = overlays.map((o, i) => ({
     id: o.id, label: `V${i+2}`,
@@ -1268,6 +1269,8 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     { id: "S1", label: "S1", color: "#f59e0b" },
   ];
   const allTracks = [...overlayTracks, ...baseTracks];
+  // 컨텍스트 액션: 선택된 요소에 따라 다른 버튼 표시
+  const hasSelection = selectedSegIdx >= 0 || selectedSubIdx >= 0 || selectedOverlay;
   const sourceUrl = fileId ? `${API}/source/${fileId}` : null;
   const visibleOverlays = overlays.filter(o => playhead >= o.start && playhead <= o.end);
 
@@ -1734,130 +1737,157 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         </div>
       </div>
 
-      {/* BOTTOM: AlphaCut 스타일 하단 (툴바 + 타임라인) — 높이 조절 가능 */}
-      <div style={{ flexShrink: 0, background: "#0f0f1a", borderTop: "2px solid #2a2a4a", display: "flex", flexDirection: "column", position: "relative" }}>
+      {/* BOTTOM: CapCut 스타일 하단 (컨트롤바 + 타임라인) */}
+      <div style={{ flexShrink: 0, background: "#111120", borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", position: "relative" }}>
         {/* 높이 조절 핸들 */}
         <div style={{ position: "absolute", top: -4, left: 0, right: 0, height: 8, cursor: "ns-resize", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center" }}
           onMouseDown={e => { e.preventDefault(); const sy = e.clientY; const oh = bottomPanelHeight;
-            const mv = ev => setBottomPanelHeight(Math.max(120, Math.min(400, oh - (ev.clientY - sy))));
+            const mv = ev => setBottomPanelHeight(Math.max(140, Math.min(400, oh - (ev.clientY - sy))));
             const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
             window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
           }}>
-          <div style={{ width: 40, height: 3, borderRadius: 2, background: "#3a3a5a" }} />
+          <div style={{ width: 36, height: 3, borderRadius: 2, background: "rgba(255,255,255,0.12)" }} />
         </div>
-        {/* 툴바 (AlphaCut 스타일) */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 14px", borderBottom: "1px solid #1a1a30", flexShrink: 0, background: "#12122a" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            <button onClick={splitAtPlayhead} title={t("sc_shortcut_split")} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#f59e0b", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
-              ✂ {t("sc_split")}
-            </button>
-            <button onClick={() => {
-              const subs = [...(curClip.subtitles || [])];
-              const newStart = clipStart + playhead;
-              subs.push({ start: newStart, end: newStart + 3, text: t("sc_new_sub_text") });
-              subs.sort((a, b) => a.start - b.start);
-              updateClip("subtitles", subs);
-              setSelectedSubIdx(subs.findIndex(s => s.start === newStart));
-            }} title={t("sc_add_sub")} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#a5b4fc", cursor: "pointer", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", gap: 3 }}>
-              + {t("sc_subtitle_on")}
-            </button>
-            {selectedSegIdx >= 0 && videoSegs.length > 1 && (
-              <button onClick={() => deleteSegment(selectedSegIdx)} title={t("sc_del_segment")} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #f8717140", background: "rgba(248,113,113,0.08)", color: "#f87171", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-                🗑 {t("sc_del_segment")}
-              </button>
-            )}
-            {selectedSubIdx >= 0 && (
-              <button onClick={() => deleteSubtitle(selectedSubIdx)} title={t("sc_del_subtitle")} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #f8717140", background: "rgba(248,113,113,0.08)", color: "#f87171", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-                🗑 {t("sc_del_subtitle")}
-              </button>
-            )}
-            <div style={{ width: 1, height: 20, background: "#2a2a4a", margin: "0 2px" }} />
-            <div style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 2 }}>
-              <button onClick={() => { setRemoveSilence(!removeSilence); }} style={{ padding: "5px 10px", borderRadius: "6px 0 0 6px", border: removeSilence ? "1px solid #4ade80" : "1px solid #2a2a4a", borderRight: "none", background: removeSilence ? "rgba(74,222,128,0.12)" : "#1a1a30", color: removeSilence ? "#4ade80" : "#888", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-                {t("sc_silence_remove")} {removeSilence ? "ON" : ""}
-              </button>
-              <button onClick={() => setShowSilenceSettings(!showSilenceSettings)} style={{ padding: "5px 6px", borderRadius: "0 6px 6px 0", border: removeSilence ? "1px solid #4ade80" : "1px solid #2a2a4a", background: showSilenceSettings ? "rgba(74,222,128,0.2)" : (removeSilence ? "rgba(74,222,128,0.12)" : "#1a1a30"), color: removeSilence ? "#4ade80" : "#888", cursor: "pointer", fontSize: 10, fontWeight: 700 }} title={t("sc_silence_settings")}>
-                {showSilenceSettings ? "▲" : "▼"}
-              </button>
-              {showSilenceSettings && (
-                <div style={{ position: "absolute", bottom: "calc(100% + 6px)", left: 0, width: 220, background: "#16162a", border: "1px solid #2a2a4a", borderRadius: 10, padding: 12, zIndex: 100, boxShadow: "0 -4px 20px rgba(0,0,0,0.5)" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", marginBottom: 10 }}>{t("sc_silence_settings")}</div>
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, color: "#888" }}>{t("sc_threshold_db")}</span>
-                      <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 700 }}>{silenceThreshold} dB</span>
-                    </div>
-                    <input type="range" min="-60" max="-10" value={silenceThreshold} onChange={e => setSilenceThreshold(Number(e.target.value))} style={{ width: "100%", accentColor: "#4ade80" }} />
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: "#555" }}><span>{t("sc_sensitive")}</span><span>{t("sc_insensitive")}</span></div>
-                  </div>
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, color: "#888" }}>{t("sc_min_silence_len")}</span>
-                      <span style={{ fontSize: 10, color: "#4ade80", fontWeight: 700 }}>{silenceMinGap}s</span>
-                    </div>
-                    <input type="range" min="0.1" max="3" step="0.1" value={silenceMinGap} onChange={e => setSilenceMinGap(Number(e.target.value))} style={{ width: "100%", accentColor: "#4ade80" }} />
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: "#555" }}><span>0.1s</span><span>3.0s</span></div>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div style={{ width: 1, height: 20, background: "#2a2a4a", margin: "0 2px" }} />
-            {/* 볼륨 */}
-            <span style={{ fontSize: 10, color: "#888" }}>🔊</span>
-            <input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} style={{ width: 50, accentColor: "#4ade80" }} title={`${t("sc_volume_title")} ${volume}%`} />
-            {/* BGM */}
-            <button onClick={() => bgmFileRef.current?.click()} style={{ padding: "5px 10px", borderRadius: 6, border: bgmFile ? "1px solid #ec4899" : "1px solid #2a2a4a", background: bgmFile ? "rgba(236,72,153,0.1)" : "#1a1a30", color: bgmFile ? "#ec4899" : "#888", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-              🎵 {bgmFile ? bgmFile.name.slice(0,8) : t("sc_bgm")}
-            </button>
-            {bgmFile && <input type="range" min="0" max="100" value={bgmVolume} onChange={e => setBgmVolume(Number(e.target.value))} style={{ width: 40, accentColor: "#ec4899" }} title={`${t("sc_bgm_volume_title")} ${bgmVolume}%`} />}
-            <input ref={bgmFileRef} type="file" accept="audio/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) setBgmFile({ name: f.name, url: URL.createObjectURL(f) }); e.target.value = ""; }} />
+
+        {/* 중앙 컨트롤바: 재생 + 시간 + 줌 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "8px 16px", gap: 16, flexShrink: 0 }}>
+          {/* 좌측: 되돌리기 */}
+          <div style={{ display: "flex", gap: 4 }}>
+            <button onClick={doUndo} style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: undoStack.current.length ? "rgba(255,255,255,0.08)" : "transparent", color: undoStack.current.length ? "#ccc" : "#444", cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center" }} title={t("sc_shortcut_undo")}>↩</button>
+            <button onClick={doRedo} style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: redoStack.current.length ? "rgba(255,255,255,0.08)" : "transparent", color: redoStack.current.length ? "#ccc" : "#444", cursor: "pointer", fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center" }} title={t("sc_shortcut_redo")}>↪</button>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {/* 자막 토글 */}
-            <button onClick={() => setSubtitlesEnabled(!subtitlesEnabled)}
-              style={{ padding: "5px 10px", borderRadius: 6, border: subtitlesEnabled ? "1px solid #f59e0b" : "1px solid #2a2a4a", background: subtitlesEnabled ? "rgba(245,158,11,0.1)" : "#1a1a30", color: subtitlesEnabled ? "#f59e0b" : "#555", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-              {t("sc_subtitle_toggle")} {subtitlesEnabled ? "ON" : "OFF"}
+
+          {/* 중앙: 재생 컨트롤 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.06)", color: "#aaa", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
             </button>
-            {/* 저장 */}
-            <button onClick={() => { saveProject(); alert(t("sc_project_saved")); }}
-              style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #4ade8040", background: "rgba(74,222,128,0.08)", color: "#4ade80", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-              💾 {t("sc_save_label")}
+            <button onClick={() => setIsPlaying(!isPlaying)} style={{ width: 44, height: 44, borderRadius: 22, border: "none", background: isPlaying ? "rgba(255,255,255,0.12)" : "#7c6aff", color: "#fff", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isPlaying ? "none" : "0 2px 12px rgba(124,106,255,0.4)" }}>
+              {isPlaying
+                ? <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+                : <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>}
             </button>
-            {/* Undo/Redo */}
-            <button onClick={doUndo} style={{ padding:"5px 8px", borderRadius:6, border:"1px solid #2a2a4a", background:"#1a1a30", color:undoStack.current.length?"#7c6aff":"#444", cursor:"pointer", fontSize:13 }} title={t("sc_shortcut_undo")}>↩</button>
-            <button onClick={doRedo} style={{ padding:"5px 8px", borderRadius:6, border:"1px solid #2a2a4a", background:"#1a1a30", color:redoStack.current.length?"#7c6aff":"#444", cursor:"pointer", fontSize:13 }} title={t("sc_shortcut_redo")}>↪</button>
-            {/* 단축키 가이드 */}
-            <button onClick={() => setShowShortcuts(true)}
-              style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#888", cursor: "pointer", fontSize: 11, fontWeight: 700 }}
-              title={t("sc_shortcut_guide")}>
-              ⌨
-            </button>
-            <div style={{ width: 1, height: 16, background: "#2a2a4a" }} />
-            <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
-              ⏮ {t("sc_to_start")}
-            </button>
-            <span style={{ fontSize: 11, color: "#7c6aff", fontFamily: "monospace", fontWeight: 600 }}>{fmt(playhead)} | {fmt(clipDuration)}</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-              <button onClick={() => setTimelineZoom(z => Math.max(0.5, z - 0.25))} style={{ width: 20, height: 20, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
-              <input type="range" min="50" max="400" value={timelineZoom * 100} onChange={e => setTimelineZoom(Number(e.target.value)/100)} style={{ width: 60, accentColor: "#7c6aff" }} />
-              <button onClick={() => setTimelineZoom(z => Math.min(4, z + 0.25))} style={{ width: 20, height: 20, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
+            <span style={{ fontSize: 13, color: "#fff", fontFamily: "monospace", fontWeight: 600, minWidth: 100, textAlign: "center" }}>{fmt(playhead)} <span style={{ color: "#555" }}>/</span> {fmt(clipDuration)}</span>
+          </div>
+
+          {/* 우측: 줌 + 저장 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: "4px 8px" }}>
+              <button onClick={() => setTimelineZoom(z => Math.max(0.5, z - 0.25))} style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: "#888", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
+              <input type="range" min="50" max="400" value={timelineZoom * 100} onChange={e => setTimelineZoom(Number(e.target.value)/100)} style={{ width: 60, accentColor: "#7c6aff", height: 3 }} />
+              <button onClick={() => setTimelineZoom(z => Math.min(4, z + 0.25))} style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: "#888", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
             </div>
+            <button onClick={() => { saveProject(); alert(t("sc_project_saved")); }} style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "rgba(74,222,128,0.1)", color: "#4ade80", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }} title={t("sc_save_label")}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            </button>
           </div>
         </div>
 
+        {/* 컨텍스트 액션바: 선택 상태에 따라 표시 */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 16px 8px", flexShrink: 0, minHeight: 36 }}>
+          {/* 항상 표시: 분할, 자막추가 */}
+          <button onClick={splitAtPlayhead} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "rgba(245,158,11,0.12)", color: "#f59e0b", cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="8 6 12 2 16 6"/><polyline points="8 18 12 22 16 18"/></svg>
+            {t("sc_split")}
+          </button>
+          <button onClick={() => {
+            const subs = [...(curClip.subtitles || [])];
+            const newStart = clipStart + playhead;
+            subs.push({ start: newStart, end: newStart + 3, text: t("sc_new_sub_text") });
+            subs.sort((a, b) => a.start - b.start);
+            updateClip("subtitles", subs);
+            setSelectedSubIdx(subs.findIndex(s => s.start === newStart));
+          }} style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: "rgba(165,180,252,0.12)", color: "#a5b4fc", cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            {t("sc_subtitle_on")}
+          </button>
+
+          <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.06)" }} />
+
+          {/* 무음 제거 */}
+          <div style={{ position: "relative" }}>
+            <button onClick={() => setRemoveSilence(!removeSilence)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: removeSilence ? "rgba(74,222,128,0.15)" : "rgba(255,255,255,0.05)", color: removeSilence ? "#4ade80" : "#666", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/>{removeSilence ? <path d="M23 9l-6 6m0-6l6 6" stroke="#4ade80"/> : <path d="M15.54 8.46a5 5 0 010 7.07"/>}</svg>
+              {t("sc_silence_remove")}
+            </button>
+            {removeSilence && (
+              <button onClick={() => setShowSilenceSettings(!showSilenceSettings)} style={{ position: "absolute", top: -2, right: -6, width: 16, height: 16, borderRadius: 8, border: "none", background: "#4ade80", color: "#111", cursor: "pointer", fontSize: 8, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900 }}>
+                {showSilenceSettings ? "x" : "..."}
+              </button>
+            )}
+            {showSilenceSettings && (
+              <div style={{ position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", width: 240, background: "#1a1a30", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: 16, zIndex: 100, boxShadow: "0 -8px 32px rgba(0,0,0,0.5)" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#4ade80", marginBottom: 14 }}>{t("sc_silence_settings")}</div>
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                    <span style={{ fontSize: 11, color: "#999" }}>{t("sc_threshold_db")}</span>
+                    <span style={{ fontSize: 11, color: "#4ade80", fontWeight: 700 }}>{silenceThreshold} dB</span>
+                  </div>
+                  <input type="range" min="-60" max="-10" value={silenceThreshold} onChange={e => setSilenceThreshold(Number(e.target.value))} style={{ width: "100%", accentColor: "#4ade80" }} />
+                </div>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                    <span style={{ fontSize: 11, color: "#999" }}>{t("sc_min_silence_len")}</span>
+                    <span style={{ fontSize: 11, color: "#4ade80", fontWeight: 700 }}>{silenceMinGap}s</span>
+                  </div>
+                  <input type="range" min="0.1" max="3" step="0.1" value={silenceMinGap} onChange={e => setSilenceMinGap(Number(e.target.value))} style={{ width: "100%", accentColor: "#4ade80" }} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 볼륨 */}
+          <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: "4px 10px" }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
+            <input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} style={{ width: 50, accentColor: "#7c6aff", height: 3 }} />
+          </div>
+
+          {/* BGM */}
+          <button onClick={() => bgmFileRef.current?.click()} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: bgmFile ? "rgba(236,72,153,0.12)" : "rgba(255,255,255,0.05)", color: bgmFile ? "#ec4899" : "#666", cursor: "pointer", fontSize: 12, fontWeight: 600, display: "flex", alignItems: "center", gap: 5 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            {bgmFile ? bgmFile.name.slice(0, 10) : t("sc_bgm")}
+          </button>
+          {bgmFile && <input type="range" min="0" max="100" value={bgmVolume} onChange={e => setBgmVolume(Number(e.target.value))} style={{ width: 40, accentColor: "#ec4899", height: 3 }} />}
+          <input ref={bgmFileRef} type="file" accept="audio/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) setBgmFile({ name: f.name, url: URL.createObjectURL(f) }); e.target.value = ""; }} />
+
+          <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.06)" }} />
+
+          {/* 자막 토글 */}
+          <button onClick={() => setSubtitlesEnabled(!subtitlesEnabled)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: subtitlesEnabled ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.05)", color: subtitlesEnabled ? "#f59e0b" : "#666", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+            CC {subtitlesEnabled ? "ON" : "OFF"}
+          </button>
+
+          {/* 선택 요소 삭제 (컨텍스트) */}
+          {selectedSegIdx >= 0 && videoSegs.length > 1 && (
+            <button onClick={() => deleteSegment(selectedSegIdx)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.1)", color: "#f87171", cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+              {t("sc_del_segment")}
+            </button>
+          )}
+          {selectedSubIdx >= 0 && (
+            <button onClick={() => deleteSubtitle(selectedSubIdx)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "rgba(248,113,113,0.1)", color: "#f87171", cursor: "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+              {t("sc_del_subtitle")}
+            </button>
+          )}
+        </div>
+
         {/* 타임라인 트랙 영역 */}
-        <div style={{ height: Math.max(20 + TRACK_H * allTracks.length + 4, bottomPanelHeight - 40), display: "flex", overflow: "hidden" }}>
-          {/* 트랙 라벨 (좌측 고정) */}
-          <div style={{ width: 44, flexShrink: 0, background: "#0a0a18", borderRight: "1px solid #1a1a30" }}>
-            <div style={{ height: 20 }} />
+        <div style={{ height: Math.max(24 + TRACK_H * allTracks.length + 8, bottomPanelHeight - 90), display: "flex", overflow: "hidden" }}>
+          {/* 트랙 라벨 (좌측 고정) — 아이콘 기반 */}
+          <div style={{ width: 40, flexShrink: 0, background: "#0d0d1a", borderRight: "1px solid rgba(255,255,255,0.04)" }}>
+            <div style={{ height: 24 }} />
             {allTracks.map(tr => (
-              <div key={tr.id} style={{ height: TRACK_H, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "1px solid #1a1a25" }}>
-                <span style={{ fontSize: 10, fontWeight: 800, color: tr.color }}>{tr.label}</span>
+              <div key={tr.id} style={{ height: TRACK_H, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {tr.id === "V1" ? <svg width="14" height="14" viewBox="0 0 24 24" fill={tr.color} opacity="0.6"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z"/></svg>
+                  : tr.id === "A1" ? <svg width="14" height="14" viewBox="0 0 24 24" fill={tr.color} opacity="0.6"><path d="M11 5L6 9H2v6h4l5 4V5z"/></svg>
+                  : tr.id === "S1" ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={tr.color} strokeWidth="2" opacity="0.6"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M7 12h4m-2-2v4m4-2h4"/></svg>
+                  : <span style={{ fontSize: 9, fontWeight: 800, color: tr.color, opacity: 0.6 }}>{tr.label}</span>}
               </div>
             ))}
           </div>
 
-          {/* 스크롤 가능한 트랙 — 캡처 단계에서 범위 선택 처리 (자막 위에서도 동작) */}
+          {/* 스크롤 가능한 트랙 */}
           <div ref={timelineRef} style={{ flex: 1, overflowX: "auto", overflowY: "hidden", position: "relative", cursor: "default" }}
             onMouseDownCapture={e => {
               if (e.button !== 0) return;
@@ -1876,32 +1906,23 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               const onUp = ev => {
                 window.removeEventListener("mousemove", onMove);
                 window.removeEventListener("mouseup", onUp);
-                if (!moved) {
-                  // 단순 클릭 → playhead 이동 (재생 중에도 가능)
-                  userSeekRef.current = true;
-                  setPlayhead(startPh);
-                  setRangeSelecting(null);
-                  return;
-                }
+                if (!moved) { userSeekRef.current = true; setPlayhead(startPh); setRangeSelecting(null); return; }
                 const mx = ev.clientX - rect.left + scrollEl.scrollLeft;
                 const endPh = Math.max(0, Math.min(clipDuration, mx / pxPerSec));
                 const lo = Math.min(startPh, endPh), hi = Math.max(startPh, endPh);
                 setPlayhead(lo);
-                // 범위 내 세그먼트(V1)
                 let accSeg = 0;
                 for (let si = 0; si < videoSegs.length; si++) {
                   const segLen = videoSegs[si].end - videoSegs[si].start;
                   if (accSeg + segLen > lo && accSeg < hi) { setSelectedSegIdx(si); setSelectedTrack("V1"); break; }
                   accSeg += segLen;
                 }
-                // 범위 내 자막(S1) — 타임라인 렌더링과 동일한 좌표 기준
                 const subs = curClip.subtitles || [];
                 for (let si = 0; si < subs.length; si++) {
                   const rs = Math.max(0, subs[si].start - clipStart);
                   const re = Math.max(rs + 0.5, (subs[si].end || subs[si].start + 3) - clipStart);
                   if (re > lo && rs < hi) { setSelectedSubIdx(si); break; }
                 }
-                // 범위 내 오버레이
                 const olHit = overlays.find(o => o.end > lo && o.start < hi);
                 if (olHit) { setSelectedOverlay(olHit.id); setPropTab("overlay"); }
                 setRangeSelecting(null);
@@ -1912,23 +1933,23 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             <div style={{ width: tlWidth, height: "100%", position: "relative" }}>
 
               {/* 룰러 */}
-              <div style={{ height: 20, position: "relative", borderBottom: "1px solid #1a1a30" }}>
+              <div style={{ height: 24, position: "relative", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                 {Array.from({ length: Math.ceil(clipDuration) + 1 }, (_, i) => i).filter(i => timelineZoom >= 2 ? true : timelineZoom >= 1 ? i % 2 === 0 : i % 5 === 0).map(sec => (
                   <div key={sec} style={{ position: "absolute", left: sec * pxPerSec, top: 0, height: "100%" }}>
-                    <div style={{ width: 1, height: sec % 5 === 0 ? 8 : 4, background: sec % 5 === 0 ? "#444" : "#2a2a4a" }} />
-                    {(sec % 5 === 0 || timelineZoom >= 2) && <span style={{ fontSize: 8, color: "#444", position: "absolute", left: 3, top: 7, fontFamily: "monospace", whiteSpace: "nowrap" }}>{fmt(sec)}</span>}
+                    <div style={{ width: 1, height: sec % 5 === 0 ? 10 : 5, background: sec % 5 === 0 ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.06)", marginTop: 14 }} />
+                    {(sec % 5 === 0 || timelineZoom >= 2) && <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)", position: "absolute", left: 4, top: 2, fontFamily: "monospace", whiteSpace: "nowrap" }}>{fmt(sec)}</span>}
                   </div>
                 ))}
               </div>
 
-              {/* 오버레이 트랙 V2, V3... (V1 위에 배치, 드래그+트림 가능) */}
+              {/* 오버레이 트랙 */}
               {overlayTracks.map(tr => {
                 const o = tr.overlay;
                 const left = o.start * pxPerSec;
-                const width = Math.max((o.end - o.start) * pxPerSec, 16);
+                const width = Math.max((o.end - o.start) * pxPerSec, 20);
                 const sel = selectedOverlay === o.id;
                 return (
-                  <div key={tr.id} style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
+                  <div key={tr.id} style={{ height: TRACK_H, position: "relative" }}>
                     <div
                       onClick={e => { e.stopPropagation(); setSelectedOverlay(o.id); setPropTab("overlay"); setSelectedSubIdx(-1); setSelectedSegIdx(-1); }}
                       onMouseDown={e => {
@@ -1936,39 +1957,36 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                         e.stopPropagation(); e.preventDefault();
                         setSelectedOverlay(o.id);
                         const sx = e.clientX; const origStart = o.start; const dur = o.end - o.start;
-                        const mv = ev => {
-                          const dt = (ev.clientX - sx) / pxPerSec;
-                          const ns = Math.max(0, Math.round((origStart + dt) * 10) / 10);
-                          setOverlays(prev => prev.map(x => x.id === o.id ? { ...x, start: ns, end: ns + dur } : x));
-                        };
+                        const mv = ev => { const dt = (ev.clientX - sx) / pxPerSec; const ns = Math.max(0, Math.round((origStart + dt) * 10) / 10); setOverlays(prev => prev.map(x => x.id === o.id ? { ...x, start: ns, end: ns + dur } : x)); };
                         const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
                         window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
                       }}
-                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? "rgba(236,72,153,0.4)" : "rgba(236,72,153,0.2)", border: `1.5px solid ${sel ? "#ec4899" : "rgba(236,72,153,0.4)"}`, borderRadius: 4, cursor: "grab", display: "flex", alignItems: "center", padding: "0 6px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
-                      <span style={{ fontSize: 8, color: "#f9a8d4", fontWeight: 600, pointerEvents: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.type === "text" ? o.text : o.type === "logo" ? "Logo" : "Img"}</span>
-                      {/* 좌측 트림 */}
-                      <div data-handle="left" style={{ position: "absolute", left: 0, top: 0, width: 5, height: "100%", cursor: "ew-resize", background: sel ? "#ec4899" : "transparent", borderRadius: "4px 0 0 4px", opacity: 0.7 }}
+                      style={{ position: "absolute", left, top: 4, width, height: TRACK_H - 8, background: sel ? "linear-gradient(135deg,rgba(236,72,153,0.35),rgba(236,72,153,0.2))" : "linear-gradient(135deg,rgba(236,72,153,0.18),rgba(236,72,153,0.08))", border: sel ? "2px solid #ec4899" : "1px solid rgba(236,72,153,0.25)", borderRadius: 8, cursor: "grab", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", zIndex: sel ? 5 : 1, transition: "border 0.15s" }}>
+                      <span style={{ fontSize: 10, color: sel ? "#fff" : "#f9a8d4", fontWeight: 600, pointerEvents: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 16px" }}>{o.type === "text" ? o.text : o.type === "logo" ? "Logo" : "Img"}</span>
+                      <div data-handle="left" style={{ position: "absolute", left: 0, top: 0, width: TRIM_W, height: "100%", cursor: "ew-resize", background: sel ? "rgba(236,72,153,0.6)" : "rgba(236,72,153,0.2)", borderRadius: "8px 0 0 8px", display: "flex", alignItems: "center", justifyContent: "center" }}
                         onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const os = o.start;
                           const mv = ev => { const ns = Math.max(0, Math.round((os + (ev.clientX - sx)/pxPerSec)*10)/10); setOverlays(prev => prev.map(x => x.id === o.id ? { ...x, start: Math.min(ns, o.end - 0.5) } : x)); };
                           const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
                           window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
-                        }} />
-                      {/* 우측 트림 */}
-                      <div data-handle="right" style={{ position: "absolute", right: 0, top: 0, width: 5, height: "100%", cursor: "ew-resize", background: sel ? "#ec4899" : "transparent", borderRadius: "0 4px 4px 0", opacity: 0.7 }}
+                        }}>
+                        <div style={{ width: 3, height: 14, borderRadius: 2, background: "rgba(255,255,255,0.4)" }} />
+                      </div>
+                      <div data-handle="right" style={{ position: "absolute", right: 0, top: 0, width: TRIM_W, height: "100%", cursor: "ew-resize", background: sel ? "rgba(236,72,153,0.6)" : "rgba(236,72,153,0.2)", borderRadius: "0 8px 8px 0", display: "flex", alignItems: "center", justifyContent: "center" }}
                         onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const oe = o.end;
                           const mv = ev => { const ne = Math.max(o.start + 0.5, Math.round((oe + (ev.clientX - sx)/pxPerSec)*10)/10); setOverlays(prev => prev.map(x => x.id === o.id ? { ...x, end: ne } : x)); };
                           const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
                           window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
-                        }} />
+                        }}>
+                        <div style={{ width: 3, height: 14, borderRadius: 2, background: "rgba(255,255,255,0.4)" }} />
+                      </div>
                     </div>
                   </div>
                 );
               })}
 
-              {/* V1 비디오 (세그먼트별 블록 + 트림 핸들) */}
-              <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
+              {/* V1 비디오 트랙 */}
+              <div style={{ height: TRACK_H, position: "relative" }}>
                 {videoSegs.map((seg, si) => {
-                  // 이전 세그먼트까지의 누적 시간 = 타임라인상 위치
                   let accLeft = 0;
                   for (let j = 0; j < si; j++) accLeft += (videoSegs[j].end - videoSegs[j].start);
                   const segLen = seg.end - seg.start;
@@ -1977,71 +1995,71 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   const isSel = selectedSegIdx === si;
                   return (
                     <div key={si} onClick={e => { e.stopPropagation(); setSelectedSegIdx(si); setSelectedTrack("V1"); setSelectedSubIdx(-1); setSelectedOverlay(null); }}
-                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: isSel ? "linear-gradient(90deg,#4a9eff55,#4a9eff40)" : "linear-gradient(90deg,#4a9eff30,#4a9eff20)", border: `1.5px solid ${isSel ? "#4a9eff" : "#4a9eff50"}`, borderRadius: 4, display: "flex", alignItems: "center", padding: "0 6px", overflow: "hidden", cursor: "pointer" }}>
-                      <span style={{ fontSize: 8, color: "#4a9eff", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fmt(seg.start)}~{fmt(seg.end)}</span>
-                      {/* 좌측 트림 */}
-                      <div style={{ position: "absolute", left: 0, top: 0, width: 5, height: "100%", cursor: "ew-resize", background: isSel ? "#4a9eff" : "transparent", borderRadius: "4px 0 0 4px", opacity: 0.6 }}
+                      style={{ position: "absolute", left, top: 4, width, height: TRACK_H - 8, background: isSel ? "linear-gradient(135deg,rgba(74,158,255,0.3),rgba(74,158,255,0.15))" : "linear-gradient(135deg,rgba(74,158,255,0.15),rgba(74,158,255,0.06))", border: isSel ? "2px solid #4a9eff" : "1px solid rgba(74,158,255,0.2)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", cursor: "pointer", transition: "border 0.15s" }}>
+                      <span style={{ fontSize: 10, color: isSel ? "#fff" : "rgba(74,158,255,0.8)", fontWeight: 600, whiteSpace: "nowrap", padding: "0 16px" }}>{fmt(seg.start)} - {fmt(seg.end)}</span>
+                      <div style={{ position: "absolute", left: 0, top: 0, width: TRIM_W, height: "100%", cursor: "ew-resize", background: isSel ? "rgba(74,158,255,0.5)" : "rgba(74,158,255,0.15)", borderRadius: "8px 0 0 8px", display: "flex", alignItems: "center", justifyContent: "center" }}
                         onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const os = seg.start;
                           const mv = ev => { const ns = Math.max(0, Math.round((os + (ev.clientX - sx)/pxPerSec)*10)/10); setVideoSegs(prev => { const n=[...prev]; n[si]={...n[si], start: Math.min(ns, seg.end-0.5)}; return n; }); };
                           const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
                           window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
-                        }} />
-                      {/* 우측 트림 */}
-                      <div style={{ position: "absolute", right: 0, top: 0, width: 5, height: "100%", cursor: "ew-resize", background: isSel ? "#4a9eff" : "transparent", borderRadius: "0 4px 4px 0", opacity: 0.6 }}
+                        }}>
+                        <div style={{ width: 3, height: 16, borderRadius: 2, background: "rgba(255,255,255,0.35)" }} />
+                      </div>
+                      <div style={{ position: "absolute", right: 0, top: 0, width: TRIM_W, height: "100%", cursor: "ew-resize", background: isSel ? "rgba(74,158,255,0.5)" : "rgba(74,158,255,0.15)", borderRadius: "0 8px 8px 0", display: "flex", alignItems: "center", justifyContent: "center" }}
                         onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx = e.clientX; const oe = seg.end;
                           const mv = ev => { const ne = Math.max(seg.start+0.5, Math.round((oe + (ev.clientX - sx)/pxPerSec)*10)/10); setVideoSegs(prev => { const n=[...prev]; n[si]={...n[si], end: ne}; return n; }); };
                           const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
                           window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
-                        }} />
+                        }}>
+                        <div style={{ width: 3, height: 16, borderRadius: 2, background: "rgba(255,255,255,0.35)" }} />
+                      </div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* A1 오디오 (클릭 선택) */}
-              <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
+              {/* A1 오디오 트랙 */}
+              <div style={{ height: TRACK_H, position: "relative" }}>
                 <div onClick={e => { e.stopPropagation(); setSelectedTrack("A1"); setSelectedSubIdx(-1); setSelectedOverlay(null); }}
-                  style={{ position: "absolute", left: 0, top: 3, width: clipDuration * pxPerSec, height: TRACK_H - 6, background: selectedTrack === "A1" ? "linear-gradient(90deg,#4ade8045,#4ade8030)" : "linear-gradient(90deg,#4ade8025,#4ade8015)", border: `1.5px solid ${selectedTrack === "A1" ? "#4ade80" : "#4ade8040"}`, borderRadius: 4, display: "flex", alignItems: "center", padding: "0 8px", overflow: "hidden", cursor: "pointer" }}>
-                  <svg width="100%" height="100%" viewBox="0 0 200 20" preserveAspectRatio="none" style={{ opacity: 0.5 }}>
-                    {Array.from({ length: 80 }, (_, i) => <rect key={i} x={i*2.5} y={10-(3+Math.abs(Math.sin(i*0.4))*12)/2} width={1.5} height={3+Math.abs(Math.sin(i*0.4))*12} fill="#4ade80" rx={0.5} />)}
+                  style={{ position: "absolute", left: 0, top: 4, width: clipDuration * pxPerSec, height: TRACK_H - 8, background: selectedTrack === "A1" ? "linear-gradient(135deg,rgba(74,222,128,0.2),rgba(74,222,128,0.1))" : "linear-gradient(135deg,rgba(74,222,128,0.1),rgba(74,222,128,0.04))", border: selectedTrack === "A1" ? "2px solid #4ade80" : "1px solid rgba(74,222,128,0.15)", borderRadius: 8, display: "flex", alignItems: "center", padding: "0 8px", overflow: "hidden", cursor: "pointer", transition: "border 0.15s" }}>
+                  <svg width="100%" height="100%" viewBox="0 0 200 24" preserveAspectRatio="none" style={{ opacity: 0.4 }}>
+                    {Array.from({ length: 100 }, (_, i) => <rect key={i} x={i*2} y={12-(2+Math.abs(Math.sin(i*0.3+Math.cos(i*0.7)))*14)/2} width={1.2} height={2+Math.abs(Math.sin(i*0.3+Math.cos(i*0.7)))*14} fill="#4ade80" rx={0.6} />)}
                   </svg>
                 </div>
               </div>
 
-              {/* S1 자막 (절대→상대 시간 변환, 겹침 방지: 인접 자막은 폭 축소) */}
-              <div style={{ height: TRACK_H, position: "relative", borderBottom: "1px solid #1a1a25" }}>
+              {/* S1 자막 트랙 */}
+              <div style={{ height: TRACK_H, position: "relative" }}>
                 {(curClip.subtitles || []).map((s, i) => {
                   const relStart = Math.max(0, s.start - clipStart);
                   const relEnd = Math.max(relStart + 0.5, (s.end || s.start + 3) - clipStart);
                   const left = relStart * pxPerSec;
-                  // 다음 자막과 겹치면 폭을 줄여서 표시
                   const nextSub = (curClip.subtitles || [])[i + 1];
                   let maxRight = relEnd * pxPerSec;
-                  if (nextSub) {
-                    const nextStart = Math.max(0, nextSub.start - clipStart) * pxPerSec;
-                    if (maxRight > nextStart) maxRight = nextStart - 1;
-                  }
-                  const width = Math.max(maxRight - left, 14);
+                  if (nextSub) { const nextStart = Math.max(0, nextSub.start - clipStart) * pxPerSec; if (maxRight > nextStart) maxRight = nextStart - 2; }
+                  const width = Math.max(maxRight - left, 20);
                   const color = subColors[i % subColors.length];
                   const sel = selectedSubIdx === i;
                   return (
                     <div key={i} onClick={e => { e.stopPropagation(); setSelectedSubIdx(i); setSelectedSegIdx(-1); setSelectedOverlay(null); setPlayhead(relStart); }}
-                      style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? `${color}50` : `${color}25`, border: `1.5px solid ${sel ? color : `${color}50`}`, borderRadius: 4, cursor: "pointer", display: "flex", alignItems: "center", padding: "0 4px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
-                      <span style={{ fontSize: 8, color: "#ddd", fontWeight: sel ? 700 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", pointerEvents: "none" }}>{s.text || `#${i+1}`}</span>
-                      {/* 좌측 트림 */}
-                      <div style={{ position: "absolute", left: 0, top: 0, width: 4, height: "100%", cursor: "ew-resize" }}
+                      style={{ position: "absolute", left, top: 4, width, height: TRACK_H - 8, background: sel ? `${color}35` : `${color}15`, border: sel ? `2px solid ${color}` : `1px solid ${color}30`, borderRadius: 8, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", zIndex: sel ? 5 : 1, transition: "border 0.15s" }}>
+                      <span style={{ fontSize: 10, color: sel ? "#fff" : "#ccc", fontWeight: sel ? 700 : 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", pointerEvents: "none", padding: "0 16px" }}>{s.text || `#${i+1}`}</span>
+                      <div style={{ position: "absolute", left: 0, top: 0, width: TRIM_W - 2, height: "100%", cursor: "ew-resize", background: sel ? `${color}60` : `${color}20`, borderRadius: "8px 0 0 8px", display: "flex", alignItems: "center", justifyContent: "center" }}
                         onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx=e.clientX; const os=s.start;
                           const mv=ev=>{const ns=Math.max(0,Math.round((os+(ev.clientX-sx)/pxPerSec)*10)/10);const subs=[...(curClip.subtitles||[])];subs[i]={...subs[i],start:Math.min(ns,(s.end||s.start+3)-0.5)};updateClip("subtitles",subs);};
                           const up=()=>{window.removeEventListener("mousemove",mv);window.removeEventListener("mouseup",up);};
                           window.addEventListener("mousemove",mv);window.addEventListener("mouseup",up);
-                        }} />
-                      {/* 우측 트림 */}
-                      <div style={{ position: "absolute", right: 0, top: 0, width: 4, height: "100%", cursor: "ew-resize" }}
+                        }}>
+                        <div style={{ width: 2, height: 12, borderRadius: 1, background: "rgba(255,255,255,0.3)" }} />
+                      </div>
+                      <div style={{ position: "absolute", right: 0, top: 0, width: TRIM_W - 2, height: "100%", cursor: "ew-resize", background: sel ? `${color}60` : `${color}20`, borderRadius: "0 8px 8px 0", display: "flex", alignItems: "center", justifyContent: "center" }}
                         onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx=e.clientX; const oe=s.end||s.start+3;
                           const mv=ev=>{const ne=Math.max(s.start+0.5,Math.round((oe+(ev.clientX-sx)/pxPerSec)*10)/10);const subs=[...(curClip.subtitles||[])];subs[i]={...subs[i],end:ne};updateClip("subtitles",subs);};
                           const up=()=>{window.removeEventListener("mousemove",mv);window.removeEventListener("mouseup",up);};
                           window.addEventListener("mousemove",mv);window.addEventListener("mouseup",up);
-                        }} />
+                        }}>
+                        <div style={{ width: 2, height: 12, borderRadius: 1, background: "rgba(255,255,255,0.3)" }} />
+                      </div>
                     </div>
                   );
                 })}
@@ -2049,12 +2067,12 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
               {/* 범위 선택 하이라이트 */}
               {rangeSelecting && Math.abs(rangeSelecting.endPh - rangeSelecting.startPh) > 0.1 && (
-                <div style={{ position: "absolute", left: Math.min(rangeSelecting.startPh, rangeSelecting.endPh) * pxPerSec, top: 0, width: Math.abs(rangeSelecting.endPh - rangeSelecting.startPh) * pxPerSec, height: "100%", background: "rgba(124,106,255,0.15)", border: "1px solid rgba(124,106,255,0.4)", zIndex: 18, pointerEvents: "none", borderRadius: 2 }} />
+                <div style={{ position: "absolute", left: Math.min(rangeSelecting.startPh, rangeSelecting.endPh) * pxPerSec, top: 0, width: Math.abs(rangeSelecting.endPh - rangeSelecting.startPh) * pxPerSec, height: "100%", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.3)", zIndex: 18, pointerEvents: "none", borderRadius: 4 }} />
               )}
 
               {/* 재생 헤드 */}
-              <div style={{ position: "absolute", left: playhead * pxPerSec, top: 0, width: 2, height: "100%", background: "#ff3b3b", zIndex: 20, pointerEvents: "none" }}>
-                <div style={{ position: "absolute", top: -1, left: -5, width: 12, height: 10, background: "#ff3b3b", clipPath: "polygon(0 0, 100% 0, 50% 100%)" }} />
+              <div style={{ position: "absolute", left: playhead * pxPerSec, top: 0, width: 2, height: "100%", background: "#fff", zIndex: 20, pointerEvents: "none", boxShadow: "0 0 8px rgba(255,255,255,0.3)" }}>
+                <div style={{ position: "absolute", top: 0, left: -6, width: 14, height: 14, background: "#fff", borderRadius: "50% 50% 50% 0", transform: "rotate(-45deg)", boxShadow: "0 1px 4px rgba(0,0,0,0.3)" }} />
               </div>
             </div>
           </div>
