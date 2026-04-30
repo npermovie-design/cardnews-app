@@ -825,12 +825,16 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // ── AI 자동 미디어 삽입 (자막 분석 → GIF/영상 자동 배치) ─────────────────
   const [autoMediaLoading, setAutoMediaLoading] = useState(false);
   const [autoMediaResults, setAutoMediaResults] = useState([]);
+  const [autoMediaStep, setAutoMediaStep] = useState(""); // "analyze" | "search_1" | "search_2" | ... | "done"
+  const [autoMediaProgress, setAutoMediaProgress] = useState(0); // 0~100
   const autoMediaTriggered = useRef(false);
 
   const autoInsertMedia = async () => {
     const subs = curClip?.subtitles || [];
     if (subs.length === 0) return;
     setAutoMediaLoading(true);
+    setAutoMediaStep("analyze");
+    setAutoMediaProgress(10);
     try {
       // 1) AI로 핵심 자막 구간 + 영어 검색 키워드 추출
       const subTexts = subs.map((s, i) => `[${i}] ${s.text}`).join("\n");
@@ -856,11 +860,16 @@ JSON 배열로만 응답하세요 (다른 텍스트 없이):
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (!jsonMatch) { setAutoMediaLoading(false); return; }
       const picks = JSON.parse(jsonMatch[0]);
+      setAutoMediaProgress(30);
 
       // 2) 각 키워드로 GIF/영상 검색 후 오버레이 자동 생성
       const results = [];
       const newOverlays = [];
-      for (const pick of picks.slice(0, 5)) {
+      const total = Math.min(picks.length, 5);
+      for (let pi = 0; pi < total; pi++) {
+        const pick = picks[pi];
+        setAutoMediaStep(`search_${pi + 1}`);
+        setAutoMediaProgress(30 + Math.round((pi / total) * 60));
         const sub = subs[pick.idx];
         if (!sub) continue;
         const q = encodeURIComponent(pick.keyword);
@@ -903,12 +912,16 @@ JSON 배열로만 응답하세요 (다른 텍스트 없이):
           results.push({ subIdx: pick.idx, keyword: pick.keyword, url: mediaUrl, type: mediaType, start: relStart, end: relEnd });
         }
       }
+      setAutoMediaProgress(95);
       if (newOverlays.length > 0) {
         pushUndo();
         setOverlays(prev => [...prev, ...newOverlays]);
       }
       setAutoMediaResults(results);
-    } catch (e) { console.error("Auto media insert failed:", e); }
+      setAutoMediaStep("done");
+      setAutoMediaProgress(100);
+      setTimeout(() => { setAutoMediaStep(""); setAutoMediaProgress(0); }, 2000);
+    } catch (e) { console.error("Auto media insert failed:", e); setAutoMediaStep(""); }
     setAutoMediaLoading(false);
   };
 
@@ -1602,6 +1615,27 @@ JSON 배열로만 응답하세요 (다른 텍스트 없이):
 
           {/* 9:16 프리뷰 (고정 비율, 크기 안정화) */}
           <div ref={previewRef} style={{ width: 360, maxWidth: "100%", aspectRatio: "9/16", maxHeight: "calc(100% - 40px)", borderRadius: 8, background: "#000", border: "2px solid #2a2a4a", overflow: "hidden", boxShadow: "0 8px 40px rgba(0,0,0,0.6)", flexShrink: 0, flexGrow: 0, position: "relative", userSelect: "none" }}>
+
+            {/* AI 미디어 삽입 진행 오버레이 */}
+            {autoMediaLoading && (
+              <div style={{ position: "absolute", inset: 0, zIndex: 50, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, borderRadius: 6 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 16, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(124,106,255,0.4)" }}>
+                  {autoMediaStep === "done"
+                    ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    : <div style={{ width: 22, height: 22, borderRadius: "50%", border: "3px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", animation: "spin 0.8s linear infinite" }} />}
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>
+                  {autoMediaStep === "analyze" ? "자막 분석 중..."
+                    : autoMediaStep.startsWith("search_") ? `미디어 검색 중 (${autoMediaStep.split("_")[1]}/${Math.min((curClip?.subtitles || []).length, 5)})`
+                    : autoMediaStep === "done" ? "삽입 완료!"
+                    : "준비 중..."}
+                </div>
+                <div style={{ width: "70%", height: 6, borderRadius: 3, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", borderRadius: 3, background: autoMediaStep === "done" ? "#4ade80" : "linear-gradient(90deg,#7c6aff,#ec4899)", width: `${autoMediaProgress}%`, transition: "width 0.3s ease" }} />
+                </div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>GIF, 영상, 사진을 자동으로 배치합니다</div>
+              </div>
+            )}
 
             {/* 공통: 영상 배경 */}
             {layoutMode === "bars" ? (
