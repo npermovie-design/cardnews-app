@@ -267,6 +267,75 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
   const [repeatedPhrases, setRepeatedPhrases] = useState([]);
   const [showRepeated, setShowRepeated] = useState(false);
 
+  // AI 자동 미디어 삽입
+  const [autoMediaLoading, setAutoMediaLoading] = useState(false);
+
+  const autoInsertMedia = async () => {
+    if (subtitles.length === 0) return;
+    setAutoMediaLoading(true);
+    try {
+      const subTexts = subtitles.slice(0, 60).map((s, i) => `[${i}] ${s.text}`).join("\n");
+      const res = await fetch("/api/ai-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          messages: [{ role: "user", content: `다음 자막에서 시각적으로 보여주면 효과적인 구간 5~8개를 골라주세요.
+각 구간에 어울리는 영어 검색 키워드 1~2개를 추출해주세요.
+반응/감정 표현이면 GIF, 풍경/장소/물체면 video를 추천하세요.
+
+자막:
+${subTexts}
+
+JSON 배열로만 응답 (다른 텍스트 없이):
+[{"idx":0,"keyword":"term","type":"gif"}]` }],
+          max_tokens: 600,
+        }),
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || data.text || "";
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) { setAutoMediaLoading(false); return; }
+      const picks = JSON.parse(jsonMatch[0]);
+
+      const newOverlays = [];
+      for (const pick of picks.slice(0, 8)) {
+        const sub = subtitles[pick.idx];
+        if (!sub) continue;
+        const q = encodeURIComponent(pick.keyword);
+        let mediaUrl = null;
+
+        if (pick.type === "gif") {
+          try {
+            const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${q}&limit=5`).then(r => r.json());
+            const gifs = r.data || r.results || [];
+            const g = gifs[Math.floor(Math.random() * Math.min(3, gifs.length))];
+            if (g) mediaUrl = g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url;
+          } catch {}
+        }
+        if (!mediaUrl) {
+          try {
+            const r = await fetch(`/api/proxy?action=pixabay&q=${q}&per_page=5&image_type=photo`).then(r => r.json());
+            if (r.hits?.[0]) mediaUrl = r.hits[0].webformatURL;
+          } catch {}
+        }
+        if (mediaUrl) {
+          newOverlays.push({
+            id: "auto_" + Date.now() + "_" + pick.idx,
+            type: "image", src: mediaUrl,
+            x: 50, y: 40, w: 30, h: 30,
+            start: sub.start, end: sub.end || sub.start + 3,
+          });
+        }
+      }
+      if (newOverlays.length > 0) {
+        pushUndo();
+        setOverlays(prev => [...prev, ...newOverlays]);
+      }
+    } catch (e) { console.error("Auto media failed:", e); }
+    setAutoMediaLoading(false);
+  };
+
   // 타임라인
   const [playhead, setPlayhead] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -1662,6 +1731,12 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
               )}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {subtitles.length > 0 && (
+                <button onClick={autoInsertMedia} disabled={autoMediaLoading}
+                  style={{ padding: "5px 10px", borderRadius: 6, border: autoMediaLoading ? "1px solid #7c6aff40" : "1px solid #c084fc40", background: autoMediaLoading ? "rgba(124,106,255,0.1)" : "linear-gradient(135deg,rgba(124,106,255,0.1),rgba(236,72,153,0.08))", color: autoMediaLoading ? "#7c6aff" : "#c084fc", cursor: autoMediaLoading ? "wait" : "pointer", fontSize: 11, fontWeight: 700 }}>
+                  {autoMediaLoading ? "AI 삽입중..." : "AI 미디어"}
+                </button>
+              )}
               <button onClick={doUndo} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: undoStack.current.length ? "#7c6aff" : "#444", cursor: "pointer", fontSize: 13 }} title="되돌리기 (Ctrl+Z)">↩</button>
               <button onClick={doRedo} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: redoStack.current.length ? "#7c6aff" : "#444", cursor: "pointer", fontSize: 13 }} title="다시실행 (Ctrl+Y)">↪</button>
               <div style={{ width: 1, height: 16, background: "#2a2a4a" }} />

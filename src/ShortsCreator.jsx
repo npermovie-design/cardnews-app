@@ -822,6 +822,95 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     setTranslating(false);
   };
 
+  // ── AI 자동 미디어 삽입 (자막 분석 → GIF/영상 자동 배치) ─────────────────
+  const [autoMediaLoading, setAutoMediaLoading] = useState(false);
+  const [autoMediaResults, setAutoMediaResults] = useState([]); // [{subIdx, keyword, url, type, start, end}]
+
+  const autoInsertMedia = async () => {
+    const subs = curClip?.subtitles || [];
+    if (subs.length === 0) return;
+    setAutoMediaLoading(true);
+    try {
+      // 1) AI로 핵심 자막 구간 + 영어 검색 키워드 추출
+      const subTexts = subs.map((s, i) => `[${i}] ${s.text}`).join("\n");
+      const res = await fetch("/api/ai-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          messages: [{ role: "user", content: `다음 자막에서 시각적으로 보여주면 효과적인 구간 3~5개를 골라주세요.
+각 구간에 어울리는 영어 검색 키워드 1~2개를 추출해주세요.
+반응/감정 표현이 있으면 GIF를, 풍경/장소/물체면 video를 추천해주세요.
+
+자막:
+${subTexts}
+
+JSON 배열로만 응답하세요 (다른 텍스트 없이):
+[{"idx":0,"keyword":"search term","type":"gif"},{"idx":3,"keyword":"search term","type":"video"}]` }],
+          max_tokens: 500,
+        }),
+      });
+      const data = await res.json();
+      const text = data.content?.[0]?.text || data.text || "";
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) { setAutoMediaLoading(false); return; }
+      const picks = JSON.parse(jsonMatch[0]);
+
+      // 2) 각 키워드로 GIF/영상 검색 후 오버레이 자동 생성
+      const results = [];
+      const newOverlays = [];
+      for (const pick of picks.slice(0, 5)) {
+        const sub = subs[pick.idx];
+        if (!sub) continue;
+        const q = encodeURIComponent(pick.keyword);
+        let mediaUrl = null;
+        let mediaType = "image";
+
+        if (pick.type === "gif" || pick.type === "reaction") {
+          try {
+            const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${q}&limit=5`).then(r => r.json());
+            const gifs = r.data || r.results || [];
+            const g = gifs[Math.floor(Math.random() * Math.min(3, gifs.length))];
+            if (g) { mediaUrl = g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url; mediaType = "image"; }
+          } catch {}
+        }
+        if (!mediaUrl && (pick.type === "video" || pick.type === "gif")) {
+          try {
+            const r = await fetch(`/api/proxy?action=pixabay&q=${q}&per_page=5&video=true`).then(r => r.json());
+            const v = (r.hits || [])[Math.floor(Math.random() * Math.min(3, (r.hits || []).length))];
+            if (v?.videos?.tiny?.url) { mediaUrl = v.videos.tiny.url; mediaType = "video"; }
+          } catch {}
+        }
+        if (!mediaUrl) {
+          try {
+            const r = await fetch(`/api/proxy?action=pixabay&q=${q}&per_page=5&image_type=photo`).then(r => r.json());
+            const img = (r.hits || [])[0];
+            if (img) { mediaUrl = img.webformatURL; mediaType = "image"; }
+          } catch {}
+        }
+
+        if (mediaUrl) {
+          const relStart = sub.start - clipStart;
+          const relEnd = (sub.end || sub.start + 3) - clipStart;
+          const id = "auto_" + Date.now() + "_" + pick.idx;
+          newOverlays.push({
+            id, type: mediaType === "video" ? "video" : "image",
+            src: mediaUrl, x: 50, y: 40, w: 35, h: 35,
+            start: relStart, end: relEnd,
+            _autoInserted: true, _keyword: pick.keyword,
+          });
+          results.push({ subIdx: pick.idx, keyword: pick.keyword, url: mediaUrl, type: mediaType, start: relStart, end: relEnd });
+        }
+      }
+      if (newOverlays.length > 0) {
+        pushUndo();
+        setOverlays(prev => [...prev, ...newOverlays]);
+      }
+      setAutoMediaResults(results);
+    } catch (e) { console.error("Auto media insert failed:", e); }
+    setAutoMediaLoading(false);
+  };
+
   // ── 프로젝트 저장/불러오기 ─────────────────
   const PROJECTS_KEY = "shorts_projects_v1";
 
@@ -2013,6 +2102,16 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           </button>
           {bgmFile && <input type="range" min="0" max="100" value={bgmVolume} onChange={e => setBgmVolume(Number(e.target.value))} style={{ width: 40, accentColor: "#ec4899", height: 3 }} />}
           <input ref={bgmFileRef} type="file" accept="audio/*" style={{ display: "none" }} onChange={e => { const f = e.target.files?.[0]; if (f) setBgmFile({ name: f.name, url: URL.createObjectURL(f) }); e.target.value = ""; }} />
+
+          {/* AI 자동 미디어 삽입 */}
+          {subtitlesEnabled && (curClip?.subtitles || []).length > 0 && (
+            <button onClick={autoInsertMedia} disabled={autoMediaLoading}
+              style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: autoMediaLoading ? "rgba(124,106,255,0.2)" : "linear-gradient(135deg,rgba(124,106,255,0.15),rgba(236,72,153,0.12))", color: autoMediaLoading ? "#7c6aff" : "#c084fc", cursor: autoMediaLoading ? "wait" : "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+              {autoMediaLoading
+                ? <><div style={{ width: 12, height: 12, borderRadius: "50%", border: "2px solid rgba(124,106,255,0.2)", borderTopColor: "#7c6aff", animation: "spin 0.8s linear infinite" }} /> AI 삽입 중...</>
+                : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> AI 미디어 자동삽입</>}
+            </button>
+          )}
 
           <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.06)" }} />
 
