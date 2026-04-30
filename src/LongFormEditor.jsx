@@ -285,21 +285,21 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
-          messages: [{ role: "user", content: `다음 자막에서 시각적 보조 자료(GIF/밈)를 넣으면 좋을 구간을 10~15개 골라주세요.
+          messages: [{ role: "user", content: `다음 자막의 50% 이상 구간에 GIF/밈 자료를 배치하세요. 자막이 ${subtitles.length}개이면 최소 ${Math.max(15, Math.ceil(subtitles.length * 0.5))}개를 선택하세요.
 
 규칙:
-1. 영상 전체에 고르게 분포 (앞/중간/뒤 모두)
-2. keyword는 자막 내용에 직접 등장하는 구체적 명사/동사를 영어로 번역 (예: "커피를 마시다" → "drinking coffee", "노트북" → "laptop typing")
-3. 추상적/일반적 키워드 금지 (예: "success", "business", "happy" 같은 모호한 단어 쓰지 말 것)
-4. 감정 표현이나 리액션 자막이면 → 해당 감정의 구체적 리액션 GIF 키워드 (예: "놀랍다" → "shocked face reaction", "웃기다" → "laughing hard meme")
-5. 물건/장소/행동이 언급되면 → 그 구체적 대상 키워드 (예: "핸드폰 보면서" → "scrolling phone", "요리하다" → "cooking kitchen")
+1. 자막 2~3개마다 1개씩 고르게 배치 (빈 구간 없이)
+2. keyword는 자막 내용의 구체적 명사/동사를 영어 번역 (예: "커피" → "drinking coffee")
+3. 추상적 키워드 금지 (success, business 등)
+4. 감정/리액션 → 구체적 GIF (예: "놀랍다" → "shocked face reaction")
+5. 물건/행동 → 구체적 대상 (예: "코딩" → "typing code fast")
 
 자막:
 ${subTexts}
 
-JSON 배열로만 응답 (다른 텍스트 없이):
-[{"idx":0,"keyword":"specific english term","type":"gif"}]` }],
-          max_tokens: 1000,
+JSON 배열로만 응답:
+[{"idx":0,"keyword":"specific term","type":"gif"}]` }],
+          max_tokens: 2000,
         }),
       });
       const data = await res.json();
@@ -310,7 +310,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
 
       setAutoMediaProgress(30);
       const newOverlays = [];
-      const total = Math.min(picks.length, 15);
+      const total = Math.min(picks.length, 30);
       for (let pi = 0; pi < total; pi++) {
         const pick = picks[pi];
         setAutoMediaStep(`search_${pi + 1}`);
@@ -346,7 +346,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
           newOverlays.push({
             id: "auto_" + Date.now() + "_" + pick.idx,
             type: "image", src: mediaUrl,
-            x: 50, y: 45, w: 60, h: 50,
+            x: 50, y: 50, w: 90, h: 80,
             start: sub.start, end: sub.end || sub.start + 3,
           });
         }
@@ -1278,7 +1278,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
                   {o.type === "text" ? (
                     <span style={{ fontSize: o.fontSize || 24, fontWeight: 700, color: o.color || "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.7)", whiteSpace: "nowrap" }}>{o.text}</span>
                   ) : (
-                    <img src={o.src} alt="" style={{ width: "100%", height: "auto", maxHeight: 300, objectFit: "contain", borderRadius: 0 }} draggable={false} />
+                    <img src={o.src} alt="" style={{ width: "100%", height: "auto", objectFit: "contain" }} draggable={false} />
                   )}
                 </div>
               ))}
@@ -1593,7 +1593,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
               {propTab === "overlay" && (
                 <div>
                   <input ref={overlayFileRef} type="file" accept="image/*,video/*" style={{ display: "none" }}
-                    onChange={e => { const f = e.target.files?.[0]; if (!f) return; const reader = new FileReader(); reader.onload = ev => { const id = "ol_" + Date.now(); const isVid = f.type.startsWith("video"); setOverlays(prev => [...prev, { id, type: isVid ? "video" : "image", src: ev.target.result, x: 50, y: 45, w: 60, h: 50, start: playheadToAbsolute(playhead), end: Math.min(playheadToAbsolute(playhead) + 5, videoDuration) }]); setSelectedOverlay(id); }; reader.readAsDataURL(f); e.target.value = ""; }} />
+                    onChange={e => { const f = e.target.files?.[0]; if (!f) return; const reader = new FileReader(); reader.onload = ev => { const id = "ol_" + Date.now(); const isVid = f.type.startsWith("video"); setOverlays(prev => [...prev, { id, type: isVid ? "video" : "image", src: ev.target.result, x: 50, y: 50, w: 90, h: 80, start: playheadToAbsolute(playhead), end: Math.min(playheadToAbsolute(playhead) + 5, videoDuration) }]); setSelectedOverlay(id); }; reader.readAsDataURL(f); e.target.value = ""; }} />
 
                   <div style={{ fontSize: 13, fontWeight: 800, color: "#e0e0e0", marginBottom: 12 }}>소스 삽입</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 14 }}>
@@ -1605,7 +1605,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
                       style={{ padding: "14px 6px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 11, fontWeight: 700, textAlign: "center" }}>
                       <div style={{ fontSize: 18, marginBottom: 4 }}>Aa</div>텍스트
                     </button>
-                    <button onClick={() => { const url = prompt("이미지/GIF URL을 입력하세요"); if (url) { const id = "ol_" + Date.now(); setOverlays(prev => [...prev, { id, type: "image", src: url, x: 50, y: 45, w: 60, h: 50, start: playheadToAbsolute(playhead), end: Math.min(playheadToAbsolute(playhead) + 5, videoDuration) }]); setSelectedOverlay(id); } }}
+                    <button onClick={() => { const url = prompt("이미지/GIF URL을 입력하세요"); if (url) { const id = "ol_" + Date.now(); setOverlays(prev => [...prev, { id, type: "image", src: url, x: 50, y: 50, w: 90, h: 80, start: playheadToAbsolute(playhead), end: Math.min(playheadToAbsolute(playhead) + 5, videoDuration) }]); setSelectedOverlay(id); } }}
                       style={{ padding: "14px 6px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 11, fontWeight: 700, textAlign: "center" }}>
                       <div style={{ fontSize: 18, marginBottom: 4 }}>URL</div>링크
                     </button>
@@ -1657,7 +1657,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
                           : (
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, maxHeight: 240, overflowY: "auto" }}>
                             {srcSearchItems.slice(0, 24).map((it, i) => (
-                              <div key={i} onClick={() => { const id = "ol_" + Date.now(); setOverlays(prev => [...prev, { id, type: "image", src: it.videoUrl || it.url, x: 50, y: 45, w: 60, h: 50, start: playheadToAbsolute(playhead), end: Math.min(playheadToAbsolute(playhead) + 5, videoDuration) }]); setSelectedOverlay(id); }}
+                              <div key={i} onClick={() => { const id = "ol_" + Date.now(); setOverlays(prev => [...prev, { id, type: "image", src: it.videoUrl || it.url, x: 50, y: 50, w: 90, h: 80, start: playheadToAbsolute(playhead), end: Math.min(playheadToAbsolute(playhead) + 5, videoDuration) }]); setSelectedOverlay(id); }}
                                 style={{ cursor: "pointer", borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a", height: 60, position: "relative", background: "#12122a" }}
                                 title={`[${it.src}] ${it.title}`}>
                                 <img src={it.url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} draggable={false} />
