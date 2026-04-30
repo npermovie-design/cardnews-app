@@ -1692,17 +1692,26 @@ JSON 배열로만 응답:
                   {/* 오버레이 목록 */}
                   {overlays.length > 0 && (
                     <div style={{ marginBottom: 12 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>삽입된 소스 ({overlays.length})</div>
-                      {overlays.map(o => (
-                        <div key={o.id} onClick={() => setSelectedOverlay(o.id)}
-                          style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", borderRadius: 6, cursor: "pointer", marginBottom: 3, background: selectedOverlay === o.id ? "rgba(124,106,255,0.15)" : "transparent", border: selectedOverlay === o.id ? `1px solid ${acc}40` : "1px solid transparent" }}>
-                          {o.type === "text" ? <span style={{ fontSize: 14 }}>Aa</span> : <img src={o.src} alt="" style={{ width: 28, height: 20, objectFit: "cover", borderRadius: 3 }} />}
-                          <span style={{ fontSize: 11, color: "#ccc", flex: 1 }}>{o.type === "text" ? o.text : o.type}</span>
-                          <span style={{ fontSize: 9, color: "#666", fontFamily: "monospace" }}>{fmtLong(o.start)}~{fmtLong(o.end)}</span>
-                          <button onClick={e => { e.stopPropagation(); setOverlays(prev => prev.filter(x => x.id !== o.id)); if (selectedOverlay === o.id) setSelectedOverlay(null); }}
-                            style={{ fontSize: 10, color: "#f87171", background: "none", border: "none", cursor: "pointer" }}>X</button>
-                        </div>
-                      ))}
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#ccc" }}>삽입된 소스 ({overlays.length})</span>
+                        <button onClick={() => { if (confirm("모든 소스를 삭제하시겠습니까?")) { pushUndo(); setOverlays([]); setSelectedOverlay(null); } }}
+                          style={{ fontSize: 10, color: "#f87171", background: "none", border: "none", cursor: "pointer" }}>전체 삭제</button>
+                      </div>
+                      <div style={{ maxHeight: 240, overflowY: "auto", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 4 }}>
+                        {overlays.map((o, idx) => (
+                          <div key={o.id} onClick={() => { setSelectedOverlay(o.id); const abs = o.start; setPlayhead(absoluteToPlayhead ? absoluteToPlayhead(abs) : abs); }}
+                            style={{ position: "relative", borderRadius: 6, overflow: "hidden", cursor: "pointer", border: selectedOverlay === o.id ? `2px solid ${acc}` : "1px solid #2a2a4a", aspectRatio: "1", background: "#12122a" }}>
+                            {o.type === "text"
+                              ? <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#ccc", fontWeight: 700 }}>Aa</div>
+                              : <img src={o.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(0,0,0,0.8))", padding: "2px 4px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                              <span style={{ fontSize: 7, color: "#aaa", fontFamily: "monospace" }}>{idx + 1}</span>
+                              <button onClick={e => { e.stopPropagation(); setOverlays(prev => prev.filter(x => x.id !== o.id)); if (selectedOverlay === o.id) setSelectedOverlay(null); }}
+                                style={{ fontSize: 9, color: "#f87171", background: "none", border: "none", cursor: "pointer", padding: 0 }}>x</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
@@ -1909,8 +1918,9 @@ JSON 배열로만 응답:
                           const up = () => { window.removeEventListener("mousemove", mv); window.removeEventListener("mouseup", up); };
                           window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
                         }}
-                        style={{ position: "absolute", left, top: 3, width, height: TRACK_H - 6, background: sel ? "rgba(236,72,153,0.4)" : "rgba(236,72,153,0.2)", border: `1.5px solid ${sel ? "#ec4899" : "rgba(236,72,153,0.4)"}`, borderRadius: 4, cursor: "grab", display: "flex", alignItems: "center", padding: "0 6px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
-                        <span style={{ fontSize: 8, color: "#f9a8d4", fontWeight: 600, pointerEvents: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.type === "text" ? o.text : "Img"}</span>
+                        style={{ position: "absolute", left, top: 2, width, height: TRACK_H - 4, background: sel ? "rgba(236,72,153,0.5)" : "rgba(236,72,153,0.15)", border: sel ? "2px solid #ec4899" : "1px solid rgba(236,72,153,0.35)", borderRadius: 6, cursor: "grab", display: "flex", alignItems: "center", gap: 3, padding: "0 3px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
+                        {o.type !== "text" && o.src && <img src={o.src} alt="" style={{ width: TRACK_H - 10, height: TRACK_H - 10, objectFit: "cover", borderRadius: 4, flexShrink: 0, pointerEvents: "none" }} />}
+                        <span style={{ fontSize: 8, color: sel ? "#fff" : "#f9a8d4", fontWeight: 600, pointerEvents: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.type === "text" ? o.text : `${oi + 1}`}</span>
                         <div data-handle="left" style={{ position: "absolute", left: 0, top: 0, width: 5, height: "100%", cursor: "ew-resize", background: sel ? "#ec4899" : "transparent", borderRadius: "4px 0 0 4px", opacity: 0.7 }}
                           onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx2 = e.clientX; const os = o.start;
                             const mv = ev => { const ns = Math.max(0, Math.round((os + (ev.clientX - sx2) / pxPerSec) * 10) / 10); setOverlays(prev => prev.map(x => x.id === o.id ? { ...x, start: Math.min(ns, o.end - 0.5) } : x)); };
