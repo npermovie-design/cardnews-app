@@ -247,7 +247,7 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
         }),
       });
       const data = await res.json();
-      const translated = (data.content?.[0]?.text || data.text || "").split(/\n---\n/);
+      const translated = (data.choices?.[0]?.message?.content || data.content?.[0]?.text || data.text || "").split(/\n---\n/);
       setDualSubs(subtitles.map((s, i) => ({ start: s.start, end: s.end, text: (translated[i] || "").trim() })));
       setDualSubEnabled(true);
       setDualSubLang(targetLang);
@@ -294,7 +294,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
         }),
       });
       const data = await res.json();
-      const text = data.content?.[0]?.text || data.text || "";
+      const text = data.choices?.[0]?.message?.content || data.content?.[0]?.text || data.text || "";
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (!jsonMatch) { setAutoMediaLoading(false); return; }
       const picks = JSON.parse(jsonMatch[0]);
