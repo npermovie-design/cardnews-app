@@ -41,22 +41,22 @@ async function handleSitemap(req, res) {
   const SITE = "https://snsmakeit.com";
   const today = new Date().toISOString().slice(0, 10);
 
-  // 정적 페이지
+  // 정적 페이지 (lastmod는 실제 수정일 기준, 매일 today로 넣으면 구글이 신뢰하지 않음)
   const staticPages = [
-    { url: "/", priority: "1.0", freq: "weekly", langs: true },
-    { url: "/about", priority: "0.8", freq: "monthly", langs: true },
-    { url: "/howto", priority: "0.7", freq: "monthly", langs: true },
-    { url: "/pricing", priority: "0.8", freq: "monthly", langs: true },
-    { url: "/ai", priority: "0.9", freq: "weekly", langs: true },
-    { url: "/programs", priority: "0.8", freq: "weekly" },
-    { url: "/snsnews", priority: "0.8", freq: "daily" },
-    { url: "/community/info", priority: "0.7", freq: "daily" },
-    { url: "/community/qna", priority: "0.7", freq: "daily" },
-    { url: "/community/free", priority: "0.7", freq: "daily" },
-    { url: "/community/review", priority: "0.7", freq: "daily" },
-    { url: "/community/sns_briefing", priority: "0.7", freq: "daily" },
-    { url: "/contact", priority: "0.5", freq: "monthly" },
-    { url: "/event", priority: "0.6", freq: "weekly" },
+    { url: "/", priority: "1.0", freq: "weekly", langs: true, lastmod: today },
+    { url: "/about", priority: "0.8", freq: "monthly", langs: true, lastmod: "2026-04-20" },
+    { url: "/howto", priority: "0.7", freq: "monthly", langs: true, lastmod: "2026-04-20" },
+    { url: "/pricing", priority: "0.8", freq: "monthly", langs: true, lastmod: "2026-04-17" },
+    { url: "/ai", priority: "0.9", freq: "weekly", langs: true, lastmod: today },
+    { url: "/programs", priority: "0.8", freq: "weekly", lastmod: today },
+    { url: "/snsnews", priority: "0.8", freq: "daily", lastmod: today },
+    { url: "/community/info", priority: "0.7", freq: "daily", lastmod: today },
+    { url: "/community/qna", priority: "0.7", freq: "daily", lastmod: today },
+    { url: "/community/free", priority: "0.7", freq: "daily", lastmod: today },
+    { url: "/community/review", priority: "0.7", freq: "daily", lastmod: today },
+    { url: "/community/sns_briefing", priority: "0.7", freq: "daily", lastmod: today },
+    { url: "/contact", priority: "0.5", freq: "monthly", lastmod: "2026-03-15" },
+    { url: "/event", priority: "0.6", freq: "weekly", lastmod: "2026-04-17" },
     { url: "/legal", priority: "0.3", freq: "yearly" },
     { url: "/library", priority: "0.6", freq: "weekly" },
   ];
