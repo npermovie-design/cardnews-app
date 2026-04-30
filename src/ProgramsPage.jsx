@@ -248,7 +248,7 @@ const DEMO_PRODUCTS = [
     version: "v0.1.8", platform: "Windows 10/11",
     fileSize: "314MB", downloadCount: 180, viewCount: 420,
     tags: ["자동화", "블로그", "네이버", "SEO", "AEO"],
-    downloadUrl: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.8.zip",
+    downloadUrl: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.8.exe",
     thumbnail: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/uploads/automation-thumb.png",
     detailContent: [
       { type: "heading", value: "SNS 자동화 봇이란?" },
