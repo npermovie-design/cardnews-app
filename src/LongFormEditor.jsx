@@ -269,7 +269,7 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
 
   // 효과음 시스템
   const SFX_LIST = ["pop","whoosh","ding","boom","click","boing","rise","drop","sparkle","swoosh","notification","drum","snap","tada","buzz"];
-  const [sfxEnabled, setSfxEnabled] = useState(true);
+  const [sfxEnabled, setSfxEnabled] = useState(false);
   const sfxPlayed = useRef(new Set());
   const playSfx = useCallback((name) => {
     if (!sfxEnabled) return;
@@ -290,16 +290,16 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
     setAutoMediaStep("analyze");
     setAutoMediaProgress(10);
     try {
-      const subTexts = subtitles.slice(0, 60).map((s, i) => `[${i}] ${s.text}`).join("\n");
+      const subTexts = subtitles.slice(0, 120).map((s, i) => `[${i}] ${s.text}`).join("\n");
       const res = await fetch("/api/ai-proxy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
-          messages: [{ role: "user", content: `다음 자막의 50% 이상 구간에 GIF/밈 자료를 배치하세요. 자막이 ${subtitles.length}개이면 최소 ${Math.max(15, Math.ceil(subtitles.length * 0.5))}개를 선택하세요.
+          messages: [{ role: "user", content: `다음 자막의 70% 이상 구간에 GIF/밈 자료를 배치하세요. 자막이 ${Math.min(subtitles.length,120)}개이면 최소 ${Math.max(20, Math.ceil(Math.min(subtitles.length,120) * 0.7))}개를 선택하세요.
 
 규칙:
-1. 자막 2~3개마다 1개씩 고르게 배치 (빈 구간 없이)
+1. 거의 모든 자막에 1개씩 배치 (1~2개 건너뛰기 허용)
 2. keyword는 자막 내용의 구체적 명사/동사를 영어 번역 (예: "커피" → "drinking coffee")
 3. 추상적 키워드 금지 (success, business 등)
 4. 감정/리액션 → 구체적 GIF (예: "놀랍다" → "shocked face reaction")
@@ -321,7 +321,7 @@ JSON 배열로만 응답:
 
       setAutoMediaProgress(30);
       const newOverlays = [];
-      const total = Math.min(picks.length, 30);
+      const total = picks.length; // 제한 없음
       for (let pi = 0; pi < total; pi++) {
         const pick = picks[pi];
         setAutoMediaStep(`search_${pi + 1}`);
@@ -357,7 +357,7 @@ JSON 배열로만 응답:
           newOverlays.push({
             id: "auto_" + Date.now() + "_" + pick.idx,
             type: "image", src: mediaUrl,
-            x: 50, y: 50, w: 50, h: 45,
+            x: 50, y: 50, w: 30, h: 25,
             start: sub.start, end: sub.end || sub.start + 3,
           });
         }
@@ -1610,7 +1610,7 @@ JSON 배열로만 응답:
               {propTab === "overlay" && (
                 <div>
                   <input ref={overlayFileRef} type="file" accept="image/*,video/*" style={{ display: "none" }}
-                    onChange={e => { const f = e.target.files?.[0]; if (!f) return; const reader = new FileReader(); reader.onload = ev => { const id = "ol_" + Date.now(); const isVid = f.type.startsWith("video"); setOverlays(prev => [...prev, { id, type: isVid ? "video" : "image", src: ev.target.result, x: 50, y: 50, w: 50, h: 45, start: playheadToAbsolute(playhead), end: Math.min(playheadToAbsolute(playhead) + 5, videoDuration) }]); setSelectedOverlay(id); }; reader.readAsDataURL(f); e.target.value = ""; }} />
+                    onChange={e => { const f = e.target.files?.[0]; if (!f) return; const reader = new FileReader(); reader.onload = ev => { const id = "ol_" + Date.now(); const isVid = f.type.startsWith("video"); setOverlays(prev => [...prev, { id, type: isVid ? "video" : "image", src: ev.target.result, x: 50, y: 50, w: 30, h: 25, start: playheadToAbsolute(playhead), end: Math.min(playheadToAbsolute(playhead) + 5, videoDuration) }]); setSelectedOverlay(id); }; reader.readAsDataURL(f); e.target.value = ""; }} />
 
                   <div style={{ fontSize: 13, fontWeight: 800, color: "#e0e0e0", marginBottom: 12 }}>소스 삽입</div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 14 }}>
@@ -1622,7 +1622,7 @@ JSON 배열로만 응답:
                       style={{ padding: "14px 6px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 11, fontWeight: 700, textAlign: "center" }}>
                       <div style={{ fontSize: 18, marginBottom: 4 }}>Aa</div>텍스트
                     </button>
-                    <button onClick={() => { const url = prompt("이미지/GIF URL을 입력하세요"); if (url) { const id = "ol_" + Date.now(); setOverlays(prev => [...prev, { id, type: "image", src: url, x: 50, y: 50, w: 50, h: 45, start: playheadToAbsolute(playhead), end: Math.min(playheadToAbsolute(playhead) + 5, videoDuration) }]); setSelectedOverlay(id); } }}
+                    <button onClick={() => { const url = prompt("이미지/GIF URL을 입력하세요"); if (url) { const id = "ol_" + Date.now(); setOverlays(prev => [...prev, { id, type: "image", src: url, x: 50, y: 50, w: 30, h: 25, start: playheadToAbsolute(playhead), end: Math.min(playheadToAbsolute(playhead) + 5, videoDuration) }]); setSelectedOverlay(id); } }}
                       style={{ padding: "14px 6px", borderRadius: 8, border: "1px solid #2a2a4a", background: "#12122a", color: "#ccc", cursor: "pointer", fontSize: 11, fontWeight: 700, textAlign: "center" }}>
                       <div style={{ fontSize: 18, marginBottom: 4 }}>URL</div>링크
                     </button>
@@ -1674,7 +1674,7 @@ JSON 배열로만 응답:
                           : (
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, maxHeight: 240, overflowY: "auto" }}>
                             {srcSearchItems.slice(0, 24).map((it, i) => (
-                              <div key={i} onClick={() => { const id = "ol_" + Date.now(); setOverlays(prev => [...prev, { id, type: "image", src: it.videoUrl || it.url, x: 50, y: 50, w: 50, h: 45, start: playheadToAbsolute(playhead), end: Math.min(playheadToAbsolute(playhead) + 5, videoDuration) }]); setSelectedOverlay(id); }}
+                              <div key={i} onClick={() => { const id = "ol_" + Date.now(); setOverlays(prev => [...prev, { id, type: "image", src: it.videoUrl || it.url, x: 50, y: 50, w: 30, h: 25, start: playheadToAbsolute(playhead), end: Math.min(playheadToAbsolute(playhead) + 5, videoDuration) }]); setSelectedOverlay(id); }}
                                 style={{ cursor: "pointer", borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a", height: 60, position: "relative", background: "#12122a" }}
                                 title={`[${it.src}] ${it.title}`}>
                                 <img src={it.url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} draggable={false} />
