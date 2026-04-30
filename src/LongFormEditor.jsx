@@ -292,6 +292,11 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
   // 속성 패널 탭
   const [propTab, setPropTab] = useState("silence"); // silence | caption | style | overlay
   const [editingSubOnCanvas, setEditingSubOnCanvas] = useState(false);
+  // 소스 탭 - 무료 소스 검색 상태
+  const [srcSearchQuery, setSrcSearchQuery] = useState("");
+  const [srcSearchItems, setSrcSearchItems] = useState([]);
+  const [srcSearchLoading, setSrcSearchLoading] = useState(false);
+  const [srcSearchCat, setSrcSearchCat] = useState("photo");
   const overlayFileRef = useRef(null);
 
   // Undo/Redo
@@ -1474,54 +1479,50 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
 
                   {/* 무료 이미지 검색 */}
                   {(() => {
-                    const [sq, setSq] = useState("");
-                    const [sItems, setSItems] = useState([]);
-                    const [sLoading, setSLoading] = useState(false);
-                    const [sCat, setSCat] = useState("photo");
                     const doSearch = async () => {
-                      if (!sq.trim()) return;
-                      setSLoading(true); setSItems([]);
+                      if (!srcSearchQuery.trim()) return;
+                      setSrcSearchLoading(true); setSrcSearchItems([]);
                       try {
                         const all = [];
-                        if (sCat === "photo") {
+                        if (srcSearchCat === "photo") {
                           const [px, us] = await Promise.allSettled([
-                            fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(sq)}&per_page=12&image_type=photo`).then(r => r.json()),
-                            fetch(`/api/proxy?action=unsplash&query=${encodeURIComponent(sq)}&per_page=12`).then(r => r.json()),
+                            fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(srcSearchQuery)}&per_page=12&image_type=photo`).then(r => r.json()),
+                            fetch(`/api/proxy?action=unsplash&query=${encodeURIComponent(srcSearchQuery)}&per_page=12`).then(r => r.json()),
                           ]);
                           if (px.status === "fulfilled" && px.value.hits) all.push(...px.value.hits.map(h => ({ url: h.webformatURL, title: h.tags || "", src: "Pixabay" })));
                           if (us.status === "fulfilled" && us.value.results) all.push(...us.value.results.map(h => ({ url: h.urls?.small, title: h.alt_description || "", src: "Unsplash" })));
-                        } else if (sCat === "gif") {
-                          const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${encodeURIComponent(sq)}&limit=18`).then(r => r.json());
+                        } else if (srcSearchCat === "gif") {
+                          const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${encodeURIComponent(srcSearchQuery)}&limit=18`).then(r => r.json());
                           (r.data || r.results || []).forEach(g => all.push({ url: g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url, title: g.title || "", src: "GIF" }));
-                        } else if (sCat === "video") {
-                          const px = await fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(sq)}&per_page=12&video=true`).then(r => r.json()).catch(() => ({}));
+                        } else if (srcSearchCat === "video") {
+                          const px = await fetch(`/api/proxy?action=pixabay&q=${encodeURIComponent(srcSearchQuery)}&per_page=12&video=true`).then(r => r.json()).catch(() => ({}));
                           if (px.hits) all.push(...px.hits.map(h => ({ url: `https://i.vimeocdn.com/video/${h.picture_id}_295x166.jpg`, title: h.tags || "", src: "Pixabay", videoUrl: h.videos?.tiny?.url })));
                         }
-                        setSItems(all);
+                        setSrcSearchItems(all);
                       } catch {}
-                      setSLoading(false);
+                      setSrcSearchLoading(false);
                     };
                     return (
                       <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 12 }}>
                         <div style={{ fontSize: 12, fontWeight: 700, color: "#ccc", marginBottom: 8 }}>무료 소스 검색</div>
                         <div style={{ display: "flex", gap: 0, marginBottom: 8, borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a" }}>
                           {[["photo","사진"],["gif","GIF"],["video","영상"]].map(([k,l]) => (
-                            <button key={k} onClick={() => setSCat(k)}
-                              style={{ flex: 1, padding: "5px 4px", border: "none", background: sCat === k ? "#7c6aff" : "#12122a", color: sCat === k ? "#fff" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
+                            <button key={k} onClick={() => setSrcSearchCat(k)}
+                              style={{ flex: 1, padding: "5px 4px", border: "none", background: srcSearchCat === k ? "#7c6aff" : "#12122a", color: srcSearchCat === k ? "#fff" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
                           ))}
                         </div>
                         <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
-                          <input value={sq} onChange={e => setSq(e.target.value)}
+                          <input value={srcSearchQuery} onChange={e => setSrcSearchQuery(e.target.value)}
                             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); doSearch(); } }}
                             placeholder="영어로 검색 (예: nature, fire)"
                             style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none" }} />
                           <button onClick={doSearch} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>검색</button>
                         </div>
-                        {sLoading ? <div style={{ textAlign: "center", padding: 12, color: "#666", fontSize: 11 }}>검색 중...</div>
-                          : sItems.length === 0 ? <div style={{ textAlign: "center", padding: 12, color: "#555", fontSize: 11 }}>검색어를 입력하고 Enter</div>
+                        {srcSearchLoading ? <div style={{ textAlign: "center", padding: 12, color: "#666", fontSize: 11 }}>검색 중...</div>
+                          : srcSearchItems.length === 0 ? <div style={{ textAlign: "center", padding: 12, color: "#555", fontSize: 11 }}>검색어를 입력하고 Enter</div>
                           : (
                           <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, maxHeight: 240, overflowY: "auto" }}>
-                            {sItems.slice(0, 24).map((it, i) => (
+                            {srcSearchItems.slice(0, 24).map((it, i) => (
                               <div key={i} onClick={() => { const id = "ol_" + Date.now(); setOverlays(prev => [...prev, { id, type: "image", src: it.videoUrl || it.url, x: 50, y: 50, w: 30, h: 30, start: playheadToAbsolute(playhead), end: Math.min(playheadToAbsolute(playhead) + 5, videoDuration) }]); setSelectedOverlay(id); }}
                                 style={{ cursor: "pointer", borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a", height: 60, position: "relative", background: "#12122a" }}
                                 title={`[${it.src}] ${it.title}`}>
