@@ -80,7 +80,7 @@ function ArchiveGallery({ onSelect }) {
         // Klipy GIF
         const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${encodeURIComponent(q)}&limit=24`).then(r => r.json());
         const data = r.data || r.results || [];
-        all.push(...data.map(g => ({ url: g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url, title: g.title || "", src: "Klipy" })));
+        all.push(...data.map(g => ({ url: g.file?.md?.gif?.url || g.file?.sm?.gif?.url || g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url, title: g.title || "", src: "Klipy" })));
       } else if (cat === "archive") {
         setItems(prev => prev.filter(it => it.title?.toLowerCase().includes(q.toLowerCase())));
         setLoading(false); return;
@@ -109,7 +109,7 @@ function ArchiveGallery({ onSelect }) {
       } else if (cat === "gif") {
         const r = await fetch(`/api/proxy?action=klipy&path=gifs/trending&limit=18`).then(r => r.json()).catch(() => ({}));
         const data = r.data || r.results || [];
-        all.push(...data.map(g => ({ url: g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url, title: g.title || "", src: "Klipy" })));
+        all.push(...data.map(g => ({ url: g.file?.md?.gif?.url || g.file?.sm?.gif?.url || g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url, title: g.title || "", src: "Klipy" })));
       }
     } catch {}
     setItems(all);
@@ -879,9 +879,9 @@ JSON 배열로만 응답하세요 (다른 텍스트 없이):
         // 1순위: GIF (항상 먼저)
         try {
           const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${q}&limit=6`).then(r => r.json());
-          const gifs = r.data || r.results || [];
+          const gifs = r.data?.data || r.data || r.results || [];
           const g = gifs[Math.floor(Math.random() * Math.min(4, gifs.length))];
-          if (g) { mediaUrl = g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url; mediaType = "image"; }
+          if (g) { mediaUrl = g.file?.md?.gif?.url || g.file?.sm?.gif?.url || g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url; mediaType = "image"; }
         } catch {}
         // 2순위: 영상
         if (!mediaUrl) {

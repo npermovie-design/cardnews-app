@@ -285,16 +285,16 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
-          messages: [{ role: "user", content: `다음 자막에서 시각적으로 보여주면 효과적인 구간 5~8개를 골라주세요.
-각 구간에 어울리는 영어 검색 키워드 1~2개를 추출해주세요.
-반응/감정 표현이면 GIF, 풍경/장소/물체면 video를 추천하세요.
+          messages: [{ role: "user", content: `다음 자막에서 시각적 보조 자료(GIF, 영상, 사진)를 넣으면 좋을 구간을 최대한 많이 골라주세요 (10~15개).
+영상 전체에 걸쳐 고르게 분포되도록 선택하세요. 자막이 60개면 4~5개마다 하나씩.
+각 구간에 어울리는 영어 검색 키워드 1~2개를 추출하세요.
 
 자막:
 ${subTexts}
 
 JSON 배열로만 응답 (다른 텍스트 없이):
-[{"idx":0,"keyword":"term","type":"gif"}]` }],
-          max_tokens: 600,
+[{"idx":0,"keyword":"english search term","type":"gif"}]` }],
+          max_tokens: 1000,
         }),
       });
       const data = await res.json();
@@ -305,7 +305,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
 
       setAutoMediaProgress(30);
       const newOverlays = [];
-      const total = Math.min(picks.length, 8);
+      const total = Math.min(picks.length, 15);
       for (let pi = 0; pi < total; pi++) {
         const pick = picks[pi];
         setAutoMediaStep(`search_${pi + 1}`);
@@ -318,9 +318,9 @@ JSON 배열로만 응답 (다른 텍스트 없이):
         // 1순위: GIF (항상 먼저 시도)
         try {
           const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${q}&limit=6`).then(r => r.json());
-          const gifs = r.data || r.results || [];
+          const gifs = r.data?.data || r.data || r.results || [];
           const g = gifs[Math.floor(Math.random() * Math.min(4, gifs.length))];
-          if (g) mediaUrl = g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url;
+          if (g) mediaUrl = g.file?.md?.gif?.url || g.file?.sm?.gif?.url || g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url;
         } catch {}
         // 2순위: 영상
         if (!mediaUrl) {
@@ -1694,15 +1694,30 @@ JSON 배열로만 응답 (다른 텍스트 없이):
                         {o.type === "text" && <>
                           <input value={o.text || ""} onChange={e => upd("text", e.target.value)} style={{ width: "100%", padding: "8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", marginBottom: 6, boxSizing: "border-box" }} />
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 6 }}>
-                            <div><div style={{ fontSize: 10, color: "#666", marginBottom: 2 }}>크기</div><input type="number" value={o.fontSize || 24} onChange={e => upd("fontSize", +e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} /></div>
+                            <div><div style={{ fontSize: 10, color: "#666", marginBottom: 2 }}>글자 크기</div><input type="number" value={o.fontSize || 24} onChange={e => upd("fontSize", +e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} /></div>
                             <div><div style={{ fontSize: 10, color: "#666", marginBottom: 2 }}>색상</div><input type="color" value={o.color || "#ffffff"} onChange={e => upd("color", e.target.value)} style={{ width: "100%", height: 28, borderRadius: 4, cursor: "pointer", border: "1px solid #2a2a4a" }} /></div>
                           </div>
                         </>}
+                        {/* 이미지/GIF 크기 조절 */}
+                        {o.type !== "text" && (
+                          <div style={{ marginBottom: 8 }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                              <span style={{ fontSize: 10, color: "#666" }}>크기</span>
+                              <span style={{ fontSize: 10, color: acc, fontWeight: 700 }}>{o.w || 60}%</span>
+                            </div>
+                            <input type="range" min="10" max="100" value={o.w || 60} onChange={e => { const v = +e.target.value; upd("w", v); upd("h", Math.round(v * 0.83)); }} style={{ width: "100%", accentColor: acc }} />
+                            {o.src && <img src={o.src} alt="" style={{ width: "100%", height: 60, objectFit: "cover", borderRadius: 6, marginTop: 6, border: "1px solid #2a2a4a" }} />}
+                          </div>
+                        )}
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
                           <div><div style={{ fontSize: 10, color: "#666", marginBottom: 2 }}>시작 (초)</div><input type="number" step={0.1} value={o.start} onChange={e => upd("start", +e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} /></div>
                           <div><div style={{ fontSize: 10, color: "#666", marginBottom: 2 }}>끝 (초)</div><input type="number" step={0.1} value={o.end} onChange={e => upd("end", +e.target.value)} style={{ width: "100%", padding: "6px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none", boxSizing: "border-box" }} /></div>
                         </div>
-                        <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>* 프리뷰에서 드래그하여 위치 이동 가능</div>
+                        <button onClick={() => { setOverlays(prev => prev.filter(x => x.id !== o.id)); setSelectedOverlay(null); }}
+                          style={{ width: "100%", marginTop: 8, padding: "7px", borderRadius: 6, border: "1px solid #f8717130", background: "rgba(248,113,113,0.08)", color: "#f87171", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                          삭제
+                        </button>
+                        <div style={{ fontSize: 10, color: "#555", marginTop: 6 }}>프리뷰에서 드래그로 위치 이동</div>
                       </div>
                     );
                   })()}
