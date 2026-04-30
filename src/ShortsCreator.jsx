@@ -905,7 +905,7 @@ JSON 배열로만 응답하세요 (다른 텍스트 없이):
           const id = "auto_" + Date.now() + "_" + pick.idx;
           newOverlays.push({
             id, type: mediaType === "video" ? "video" : "image",
-            src: mediaUrl, x: 50, y: 40, w: 35, h: 35,
+            src: mediaUrl, x: 50, y: 45, w: 65, h: 55,
             start: relStart, end: relEnd,
             _autoInserted: true, _keyword: pick.keyword,
           });
