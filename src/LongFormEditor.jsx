@@ -224,6 +224,37 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
     highlightColor: "#FFD700", position: "bottom", // bottom | center | top
   });
 
+  // 번역 자막 (이중 자막)
+  const [dualSubEnabled, setDualSubEnabled] = useState(false);
+  const [dualSubLang, setDualSubLang] = useState("en");
+  const [dualSubs, setDualSubs] = useState([]);
+  const [translating, setTranslating] = useState(false);
+  const SUB_LANGS = [["ko","한국어"],["en","English"],["ja","日本語"],["zh","中文"],["es","Español"],["vi","Tiếng Việt"],["th","ไทย"],["id","Bahasa"]];
+
+  const translateSubtitles = async (targetLang) => {
+    if (subtitles.length === 0) return;
+    setTranslating(true);
+    try {
+      const texts = subtitles.map(s => s.text).join("\n---\n");
+      const langName = SUB_LANGS.find(l => l[0] === targetLang)?.[1] || targetLang;
+      const res = await fetch("/api/ai-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          messages: [{ role: "user", content: `Translate the following subtitles to ${langName}. Keep the same format, separated by ---. Only output the translations, nothing else.\n\n${texts}` }],
+          max_tokens: 4000,
+        }),
+      });
+      const data = await res.json();
+      const translated = (data.content?.[0]?.text || data.text || "").split(/\n---\n/);
+      setDualSubs(subtitles.map((s, i) => ({ start: s.start, end: s.end, text: (translated[i] || "").trim() })));
+      setDualSubEnabled(true);
+      setDualSubLang(targetLang);
+    } catch (e) { console.error("Translation failed:", e); }
+    setTranslating(false);
+  };
+
   // 무음 감지/제거
   const [silenceThreshold, setSilenceThreshold] = useState(-40); // dB (더 보수적)
   const [silenceMinDuration, setSilenceMinDuration] = useState(0.8); // 초 (짧은 쉼은 유지)
@@ -1100,6 +1131,17 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
                   pointerEvents: "none",
                 }}>
                   {renderAnimatedCaption(currentSub)}
+                  {/* 번역 자막 */}
+                  {dualSubEnabled && (() => {
+                    const abs = playheadToAbsolute(playhead);
+                    const ds = dualSubs.find(d => abs >= d.start && abs < d.end);
+                    return ds ? <div style={{ marginTop: 4 }}><span style={{
+                      fontSize: Math.max((captionStyle.fontSize || 18) - 3, 12), color: "rgba(255,255,255,0.85)", fontWeight: 600,
+                      lineHeight: 1.3, display: "inline-block",
+                      textShadow: "0 1px 6px rgba(0,0,0,0.8)",
+                      background: "rgba(0,0,0,0.5)", padding: "3px 10px", borderRadius: 4,
+                    }}>{ds.text}</span></div> : null;
+                  })()}
                 </div>
               )}
             </div>
@@ -1562,6 +1604,18 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
                 style={{ padding: "5px 10px", borderRadius: 6, border: subtitlesEnabled ? "1px solid #f59e0b" : "1px solid #2a2a4a", background: subtitlesEnabled ? "rgba(245,158,11,0.1)" : "#1a1a30", color: subtitlesEnabled ? "#f59e0b" : "#555", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
                 자막 {subtitlesEnabled ? "ON" : "OFF"}
               </button>
+              {subtitlesEnabled && (
+                <div style={{ display: "inline-flex", alignItems: "center" }}>
+                  <button onClick={() => setDualSubEnabled(!dualSubEnabled)} style={{ padding: "5px 8px", borderRadius: "6px 0 0 6px", border: dualSubEnabled ? "1px solid #22d3ee" : "1px solid #2a2a4a", borderRight: "none", background: dualSubEnabled ? "rgba(34,211,238,0.1)" : "#1a1a30", color: dualSubEnabled ? "#22d3ee" : "#555", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+                    {dualSubEnabled ? "2" : "+"}번역
+                  </button>
+                  <select value={dualSubLang} onChange={e => { setDualSubLang(e.target.value); translateSubtitles(e.target.value); }}
+                    style={{ padding: "5px 6px", borderRadius: "0 6px 6px 0", border: dualSubEnabled ? "1px solid #22d3ee" : "1px solid #2a2a4a", background: dualSubEnabled ? "rgba(34,211,238,0.08)" : "#1a1a30", color: dualSubEnabled ? "#22d3ee" : "#888", cursor: "pointer", fontSize: 10, fontWeight: 600 }}>
+                    {SUB_LANGS.map(l => <option key={l[0]} value={l[0]}>{l[1]}</option>)}
+                  </select>
+                  {translating && <div style={{ width: 12, height: 12, borderRadius: "50%", border: "2px solid rgba(34,211,238,0.2)", borderTopColor: "#22d3ee", animation: "spin 0.8s linear infinite", marginLeft: 4 }} />}
+                </div>
+              )}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <button onClick={doUndo} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: undoStack.current.length ? "#7c6aff" : "#444", cursor: "pointer", fontSize: 13 }} title="되돌리기 (Ctrl+Z)">↩</button>

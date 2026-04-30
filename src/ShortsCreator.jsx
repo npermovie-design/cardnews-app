@@ -241,6 +241,12 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [userPrompt, setUserPrompt] = useState("");
   const [maxSegments, setMaxSegments] = useState(3); // 쇼츠 생성 개수 (1~5)
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false); // 자동자막 기본 OFF
+  const [subLang, setSubLang] = useState("ko"); // 주 자막 언어
+  const [dualSubEnabled, setDualSubEnabled] = useState(false); // 이중 자막 ON/OFF
+  const [dualSubLang, setDualSubLang] = useState("en"); // 보조 자막 언어
+  const [dualSubs, setDualSubs] = useState([]); // [{start, end, text}] 번역된 자막
+  const [translating, setTranslating] = useState(false);
+  const SUB_LANGS = [["ko","한국어"],["en","English"],["ja","日本語"],["zh","中文"],["es","Español"],["vi","Tiếng Việt"],["th","ไทย"],["id","Bahasa"]];
   const [projectId, setProjectId] = useState(null); // 저장된 프로젝트 ID
 
   // 생성
@@ -690,6 +696,36 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   });
 
   const subColors = ["#7c6aff", "#ff6a8a", "#6affb2", "#ffd76a", "#6ac4ff", "#ff9f6a", "#c46aff", "#6afff0"];
+
+  // ── 자막 번역 (AI) ─────────────────
+  const translateSubtitles = async (targetLang) => {
+    const subs = curClip?.subtitles || [];
+    if (subs.length === 0) return;
+    setTranslating(true);
+    try {
+      const texts = subs.map(s => s.text).join("\n---\n");
+      const langName = SUB_LANGS.find(l => l[0] === targetLang)?.[1] || targetLang;
+      const res = await fetch("/api/ai-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          messages: [{ role: "user", content: `Translate the following subtitles to ${langName}. Keep the same format, separated by ---. Only output the translations, nothing else.\n\n${texts}` }],
+          max_tokens: 4000,
+        }),
+      });
+      const data = await res.json();
+      const translated = (data.content?.[0]?.text || data.text || "").split(/\n---\n/);
+      const dualArr = subs.map((s, i) => ({
+        start: s.start, end: s.end,
+        text: (translated[i] || "").trim(),
+      }));
+      setDualSubs(dualArr);
+      setDualSubEnabled(true);
+      setDualSubLang(targetLang);
+    } catch (e) { console.error("Translation failed:", e); }
+    setTranslating(false);
+  };
 
   // ── 프로젝트 저장/불러오기 ─────────────────
   const PROJECTS_KEY = "shorts_projects_v1";
@@ -1437,6 +1473,16 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
                   padding: captionStyle.bgBox ? "5px 14px" : 0, borderRadius: captionStyle.bgBox ? 6 : 0,
                 }}>{currentSub.text}</span>
+                {/* 번역 자막 (이중 자막) */}
+                {dualSubEnabled && (() => {
+                  const ds = dualSubs.find(d => playhead >= (d.start - clipStart) && playhead < (d.end - clipStart));
+                  return ds ? <div style={{ marginTop: 4 }}><span style={{
+                    fontSize: Math.max(captionStyle.fontSize - 3, 11), color: "rgba(255,255,255,0.85)", fontWeight: 600,
+                    lineHeight: 1.3, display: "inline-block",
+                    textShadow: "0 1px 6px rgba(0,0,0,0.8)",
+                    background: "rgba(0,0,0,0.5)", padding: "3px 10px", borderRadius: 4,
+                  }}>{ds.text}</span></div> : null;
+                })()}
               </div>
             )}
 
@@ -1856,6 +1902,20 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           <button onClick={() => setSubtitlesEnabled(!subtitlesEnabled)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: subtitlesEnabled ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.05)", color: subtitlesEnabled ? "#f59e0b" : "#666", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
             CC {subtitlesEnabled ? "ON" : "OFF"}
           </button>
+
+          {/* 번역 자막 */}
+          {subtitlesEnabled && (
+            <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }}>
+              <button onClick={() => setDualSubEnabled(!dualSubEnabled)} style={{ padding: "6px 12px", borderRadius: "8px 0 0 8px", border: "none", background: dualSubEnabled ? "rgba(34,211,238,0.12)" : "rgba(255,255,255,0.05)", color: dualSubEnabled ? "#22d3ee" : "#666", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
+                {dualSubEnabled ? "2" : "+"}{lang === "ko" ? "번역" : "Trans"}
+              </button>
+              <select value={dualSubLang} onChange={e => { setDualSubLang(e.target.value); translateSubtitles(e.target.value); }}
+                style={{ padding: "6px 8px", borderRadius: "0 8px 8px 0", border: "none", borderLeft: "1px solid rgba(255,255,255,0.06)", background: dualSubEnabled ? "rgba(34,211,238,0.08)" : "rgba(255,255,255,0.03)", color: dualSubEnabled ? "#22d3ee" : "#888", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>
+                {SUB_LANGS.filter(l => l[0] !== subLang).map(l => <option key={l[0]} value={l[0]}>{l[1]}</option>)}
+              </select>
+              {translating && <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(34,211,238,0.2)", borderTopColor: "#22d3ee", animation: "spin 0.8s linear infinite", marginLeft: 6 }} />}
+            </div>
+          )}
 
           {/* 선택 요소 삭제 (컨텍스트) */}
           {selectedSegIdx >= 0 && videoSegs.length > 1 && (
