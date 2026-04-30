@@ -876,15 +876,15 @@ JSON 배열로만 응답하세요 (다른 텍스트 없이):
         let mediaUrl = null;
         let mediaType = "image";
 
-        if (pick.type === "gif" || pick.type === "reaction") {
-          try {
-            const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${q}&limit=5`).then(r => r.json());
-            const gifs = r.data || r.results || [];
-            const g = gifs[Math.floor(Math.random() * Math.min(3, gifs.length))];
-            if (g) { mediaUrl = g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url; mediaType = "image"; }
-          } catch {}
-        }
-        if (!mediaUrl && (pick.type === "video" || pick.type === "gif")) {
+        // 1순위: GIF (항상 먼저)
+        try {
+          const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${q}&limit=6`).then(r => r.json());
+          const gifs = r.data || r.results || [];
+          const g = gifs[Math.floor(Math.random() * Math.min(4, gifs.length))];
+          if (g) { mediaUrl = g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url; mediaType = "image"; }
+        } catch {}
+        // 2순위: 영상
+        if (!mediaUrl) {
           try {
             const r = await fetch(`/api/proxy?action=pixabay&q=${q}&per_page=5&video=true`).then(r => r.json());
             const v = (r.hits || [])[Math.floor(Math.random() * Math.min(3, (r.hits || []).length))];

@@ -269,11 +269,15 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
 
   // AI 자동 미디어 삽입
   const [autoMediaLoading, setAutoMediaLoading] = useState(false);
+  const [autoMediaStep, setAutoMediaStep] = useState("");
+  const [autoMediaProgress, setAutoMediaProgress] = useState(0);
   const autoMediaTriggered = useRef(false);
 
   const autoInsertMedia = async () => {
     if (subtitles.length === 0) return;
     setAutoMediaLoading(true);
+    setAutoMediaStep("analyze");
+    setAutoMediaProgress(10);
     try {
       const subTexts = subtitles.slice(0, 60).map((s, i) => `[${i}] ${s.text}`).join("\n");
       const res = await fetch("/api/ai-proxy", {
@@ -299,21 +303,34 @@ JSON 배열로만 응답 (다른 텍스트 없이):
       if (!jsonMatch) { setAutoMediaLoading(false); return; }
       const picks = JSON.parse(jsonMatch[0]);
 
+      setAutoMediaProgress(30);
       const newOverlays = [];
-      for (const pick of picks.slice(0, 8)) {
+      const total = Math.min(picks.length, 8);
+      for (let pi = 0; pi < total; pi++) {
+        const pick = picks[pi];
+        setAutoMediaStep(`search_${pi + 1}`);
+        setAutoMediaProgress(30 + Math.round((pi / total) * 60));
         const sub = subtitles[pick.idx];
         if (!sub) continue;
         const q = encodeURIComponent(pick.keyword);
         let mediaUrl = null;
 
-        if (pick.type === "gif") {
+        // 1순위: GIF (항상 먼저 시도)
+        try {
+          const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${q}&limit=6`).then(r => r.json());
+          const gifs = r.data || r.results || [];
+          const g = gifs[Math.floor(Math.random() * Math.min(4, gifs.length))];
+          if (g) mediaUrl = g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url;
+        } catch {}
+        // 2순위: 영상
+        if (!mediaUrl) {
           try {
-            const r = await fetch(`/api/proxy?action=klipy&path=gifs/search&q=${q}&limit=5`).then(r => r.json());
-            const gifs = r.data || r.results || [];
-            const g = gifs[Math.floor(Math.random() * Math.min(3, gifs.length))];
-            if (g) mediaUrl = g.images?.fixed_width?.url || g.images?.original?.url || g.url || g.media_url;
+            const r = await fetch(`/api/proxy?action=pixabay&q=${q}&per_page=5&video=true`).then(r => r.json());
+            const v = (r.hits || [])[Math.floor(Math.random() * Math.min(3, (r.hits || []).length))];
+            if (v?.videos?.tiny?.url) mediaUrl = v.videos.tiny.url;
           } catch {}
         }
+        // 3순위: 사진 (fallback)
         if (!mediaUrl) {
           try {
             const r = await fetch(`/api/proxy?action=pixabay&q=${q}&per_page=5&image_type=photo`).then(r => r.json());
@@ -333,7 +350,10 @@ JSON 배열로만 응답 (다른 텍스트 없이):
         pushUndo();
         setOverlays(prev => [...prev, ...newOverlays]);
       }
-    } catch (e) { console.error("Auto media failed:", e); }
+      setAutoMediaStep("done");
+      setAutoMediaProgress(100);
+      setTimeout(() => { setAutoMediaStep(""); setAutoMediaProgress(0); }, 2000);
+    } catch (e) { console.error("Auto media failed:", e); setAutoMediaStep(""); }
     setAutoMediaLoading(false);
   };
 
@@ -1212,6 +1232,27 @@ JSON 배열로만 응답 (다른 텍스트 없이):
                 onLoadedMetadata={e => { if (!videoDuration) setVideoDuration(e.target.duration); }}
               />
 
+              {/* AI 미디어 삽입 로딩 오버레이 */}
+              {autoMediaLoading && (
+                <div style={{ position: "absolute", inset: 0, zIndex: 50, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 14, borderRadius: 8 }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 16, background: `linear-gradient(135deg,${acc},#ec4899)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 20px ${acc}60` }}>
+                    {autoMediaStep === "done"
+                      ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
+                      : <div style={{ width: 22, height: 22, borderRadius: "50%", border: "3px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", animation: "lf-spin 0.8s linear infinite" }} />}
+                  </div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>
+                    {autoMediaStep === "analyze" ? "자막 분석 중..."
+                      : autoMediaStep.startsWith("search_") ? `자료 추가 중 (${autoMediaStep.split("_")[1]}/${Math.min(subtitles.length, 8)})`
+                      : autoMediaStep === "done" ? "삽입 완료!"
+                      : "준비 중..."}
+                  </div>
+                  <div style={{ width: "60%", height: 5, borderRadius: 3, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
+                    <div style={{ height: "100%", borderRadius: 3, background: autoMediaStep === "done" ? "#4ade80" : `linear-gradient(90deg,${acc},#ec4899)`, width: `${autoMediaProgress}%`, transition: "width 0.3s" }} />
+                  </div>
+                  <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>GIF, 영상, 사진을 자동으로 배치합니다</div>
+                </div>
+              )}
+
               {/* 오버레이 (이미지/텍스트) 표시 */}
               {overlays.filter(o => { const absTime = playheadToAbsolute(playhead); return absTime >= o.start && absTime <= o.end; }).map(o => (
                 <div key={o.id}
@@ -1232,7 +1273,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
                   {o.type === "text" ? (
                     <span style={{ fontSize: o.fontSize || 24, fontWeight: 700, color: o.color || "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.7)", whiteSpace: "nowrap" }}>{o.text}</span>
                   ) : (
-                    <img src={o.src} alt="" style={{ width: `${o.w * 3}px`, height: "auto", maxHeight: `${o.h * 4}px`, objectFit: "contain", borderRadius: 4 }} draggable={false} />
+                    <img src={o.src} alt="" style={{ width: `${o.w}%`, height: "auto", maxHeight: `${o.h}%`, objectFit: "contain", borderRadius: 8, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }} draggable={false} />
                   )}
                 </div>
               ))}
