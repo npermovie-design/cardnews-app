@@ -241,6 +241,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [userPrompt, setUserPrompt] = useState("");
   const [maxSegments, setMaxSegments] = useState(3); // 쇼츠 생성 개수 (1~5)
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false); // 자동자막 기본 OFF
+  const [editingSubOnCanvas, setEditingSubOnCanvas] = useState(false); // 캔버스 자막 인라인 편집 중
   const [subLang, setSubLang] = useState("ko"); // 주 자막 언어
   const [dualSubEnabled, setDualSubEnabled] = useState(false); // 이중 자막 ON/OFF
   const [dualSubLang, setDualSubLang] = useState("en"); // 보조 자막 언어
@@ -665,15 +666,36 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     if (selectedSubIdx === idx) setSelectedSubIdx(-1);
   };
 
-  // ── 볼륨 동기화 ─────
+  // ── 볼륨 동기화 (200%까지 부스트 지원 — Web Audio GainNode) ─────
+  const gainNodeRef = useRef(null);
+  const audioCtxRef = useRef(null);
   useEffect(() => {
     const v = videoRef.current;
-    if (v) v.volume = volume / 100;
+    if (!v) return;
+    if (volume <= 100) {
+      v.volume = volume / 100;
+      if (gainNodeRef.current) gainNodeRef.current.gain.value = 1;
+    } else {
+      v.volume = 1;
+      // Web Audio API로 100% 이상 부스트
+      if (!audioCtxRef.current) {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const source = ctx.createMediaElementSource(v);
+          const gain = ctx.createGain();
+          source.connect(gain);
+          gain.connect(ctx.destination);
+          audioCtxRef.current = ctx;
+          gainNodeRef.current = gain;
+        } catch (e) { console.warn("AudioContext failed:", e); }
+      }
+      if (gainNodeRef.current) gainNodeRef.current.gain.value = volume / 100;
+    }
   }, [volume]);
 
   useEffect(() => {
     const a = bgmRef.current;
-    if (a) { a.volume = bgmVolume / 100; a.loop = true; }
+    if (a) { a.volume = Math.min(bgmVolume / 100, 1); a.loop = true; }
   }, [bgmVolume]);
 
   // BGM 재생/정지 연동
@@ -1460,10 +1482,31 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
               </div>
             )}
 
-            {/* 자막 (시간별, 드래그 가능) */}
+            {/* 자막 (시간별, 드래그 가능, 더블클릭으로 편집) */}
             {subtitlesEnabled && currentSub && (
-              <div onMouseDown={e => handlePreviewMouseDown("caption", e)}
-                style={{ position: "absolute", left: `${captionPos.x}%`, top: `${captionPos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 11, maxWidth: "90%", textAlign: captionStyle.align || "center", opacity: captionStyle.opacity / 100, border: dragging === "caption" ? "2px solid #22d3ee" : "2px solid transparent", borderRadius: 6, padding: "2px" }}>
+              <div onMouseDown={e => { if (!editingSubOnCanvas) handlePreviewMouseDown("caption", e); }}
+                onDoubleClick={e => { e.stopPropagation(); setEditingSubOnCanvas(true); setIsPlaying(false); const idx = (curClip.subtitles || []).findIndex(s => s.start === currentSub.start); if (idx >= 0) setSelectedSubIdx(idx); }}
+                style={{ position: "absolute", left: `${captionPos.x}%`, top: `${captionPos.y}%`, transform: "translate(-50%,-50%)", cursor: editingSubOnCanvas ? "text" : "move", zIndex: 11, maxWidth: "90%", textAlign: captionStyle.align || "center", opacity: captionStyle.opacity / 100, border: editingSubOnCanvas ? "2px solid #22d3ee" : dragging === "caption" ? "2px solid #22d3ee" : "2px solid transparent", borderRadius: 6, padding: "2px" }}>
+                {editingSubOnCanvas ? (
+                  <input
+                    autoFocus
+                    value={currentSub.text}
+                    onChange={e => {
+                      const idx = (curClip.subtitles || []).findIndex(s => s.start === currentSub.start);
+                      if (idx >= 0) { const subs = [...(curClip.subtitles || [])]; subs[idx] = { ...subs[idx], text: e.target.value }; updateClip("subtitles", subs); }
+                    }}
+                    onBlur={() => setEditingSubOnCanvas(false)}
+                    onKeyDown={e => { if (e.key === "Enter" || e.key === "Escape") { e.preventDefault(); setEditingSubOnCanvas(false); } }}
+                    style={{
+                      fontSize: captionStyle.fontSize, color: captionStyle.color, fontWeight: 800,
+                      fontFamily: captionStyle.font === "default" ? "inherit" : captionStyle.font,
+                      lineHeight: 1.4, background: captionStyle.bgBox ? captionStyle.bgColor : "rgba(0,0,0,0.6)",
+                      padding: "5px 14px", borderRadius: 6, border: "2px solid #22d3ee",
+                      textShadow: captionStyle.shadow ? "0 2px 8px rgba(0,0,0,0.9)" : "none",
+                      outline: "none", textAlign: "center", width: "100%", minWidth: 120,
+                    }}
+                  />
+                ) : (
                 <span style={{
                   fontSize: captionStyle.fontSize, color: captionStyle.color, fontWeight: 800,
                   fontFamily: captionStyle.font === "default" ? "inherit" : captionStyle.font,
@@ -1473,6 +1516,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
                   padding: captionStyle.bgBox ? "5px 14px" : 0, borderRadius: captionStyle.bgBox ? 6 : 0,
                 }}>{currentSub.text}</span>
+                )}
                 {/* 번역 자막 (이중 자막) */}
                 {dualSubEnabled && (() => {
                   const ds = dualSubs.find(d => playhead >= (d.start - clipStart) && playhead < (d.end - clipStart));
@@ -1882,10 +1926,11 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
             )}
           </div>
 
-          {/* 볼륨 */}
+          {/* 볼륨 (200%까지 부스트) */}
           <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: "4px 10px" }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
-            <input type="range" min="0" max="100" value={volume} onChange={e => setVolume(Number(e.target.value))} style={{ width: 50, accentColor: "#7c6aff", height: 3 }} />
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={volume > 100 ? "#f59e0b" : "#888"} strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
+            <input type="range" min="0" max="200" value={volume} onChange={e => setVolume(Number(e.target.value))} style={{ width: 60, accentColor: volume > 100 ? "#f59e0b" : "#7c6aff", height: 3 }} />
+            <span style={{ fontSize: 10, color: volume > 100 ? "#f59e0b" : "#666", fontWeight: 700, minWidth: 30 }}>{volume}%</span>
           </div>
 
           {/* BGM */}

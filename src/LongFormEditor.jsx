@@ -291,6 +291,7 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
 
   // 속성 패널 탭
   const [propTab, setPropTab] = useState("silence"); // silence | caption | style | overlay
+  const [editingSubOnCanvas, setEditingSubOnCanvas] = useState(false);
   const overlayFileRef = useRef(null);
 
   // Undo/Redo
@@ -417,8 +418,30 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
     return () => { if (raf) cancelAnimationFrame(raf); };
   }, [isPlaying, videoSegs, clipDuration]);
 
-  // ── 볼륨 동기화 ──
-  useEffect(() => { const v = videoRef.current; if (v) v.volume = volume / 100; }, [volume]);
+  // ── 볼륨 동기화 (200%까지 부스트 — Web Audio GainNode) ──
+  const gainNodeRef = useRef(null);
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (volume <= 100) {
+      v.volume = volume / 100;
+      if (gainNodeRef.current) gainNodeRef.current.gain.value = 1;
+    } else {
+      v.volume = 1;
+      if (!audioCtxRef.current) {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          const source = ctx.createMediaElementSource(v);
+          const gain = ctx.createGain();
+          source.connect(gain);
+          gain.connect(ctx.destination);
+          audioCtxRef.current = ctx;
+          gainNodeRef.current = gain;
+        } catch (e) { console.warn("AudioContext failed:", e); }
+      }
+      if (gainNodeRef.current) gainNodeRef.current.gain.value = volume / 100;
+    }
+  }, [volume]);
 
   // ── Web Audio API 파형 분석 ──
   const analyzeAudio = useCallback(async (file) => {
@@ -1121,16 +1144,36 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
                 </div>
               ))}
 
-              {/* 자막 표시 */}
+              {/* 자막 표시 (더블클릭으로 편집) */}
               {subtitlesEnabled && currentSub && (
-                <div style={{
+                <div
+                  onDoubleClick={e => { e.stopPropagation(); setEditingSubOnCanvas(true); setIsPlaying(false); const idx = subtitles.findIndex(s => s.start === currentSub.start); if (idx >= 0) setSelectedSubIdx(idx); }}
+                  style={{
                   position: "absolute",
                   left: "50%", transform: "translateX(-50%)",
                   ...(captionStyle.position === "top" ? { top: "8%" } : captionStyle.position === "center" ? { top: "45%" } : { bottom: "8%" }),
                   maxWidth: "90%", textAlign: "center", zIndex: 10,
-                  pointerEvents: "none",
+                  cursor: editingSubOnCanvas ? "text" : "pointer",
                 }}>
-                  {renderAnimatedCaption(currentSub)}
+                  {editingSubOnCanvas ? (
+                    <input
+                      autoFocus
+                      value={currentSub.text}
+                      onChange={e => {
+                        const idx = subtitles.findIndex(s => s.start === currentSub.start);
+                        if (idx >= 0) { const subs = [...subtitles]; subs[idx] = { ...subs[idx], text: e.target.value }; setSubtitles(subs); }
+                      }}
+                      onBlur={() => setEditingSubOnCanvas(false)}
+                      onKeyDown={e => { if (e.key === "Enter" || e.key === "Escape") { e.preventDefault(); setEditingSubOnCanvas(false); } }}
+                      style={{
+                        fontSize: captionStyle.fontSize || 18, color: captionStyle.color || "#fff", fontWeight: 800,
+                        background: captionStyle.bgBox ? captionStyle.bgColor : "rgba(0,0,0,0.6)",
+                        padding: "5px 14px", borderRadius: 6, border: "2px solid #22d3ee",
+                        textShadow: captionStyle.shadow ? "0 2px 8px rgba(0,0,0,0.9)" : "none",
+                        outline: "none", textAlign: "center", width: "100%", minWidth: 150,
+                      }}
+                    />
+                  ) : renderAnimatedCaption(currentSub)}
                   {/* 번역 자막 */}
                   {dualSubEnabled && (() => {
                     const abs = playheadToAbsolute(playhead);
@@ -1598,7 +1641,7 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
               )}
               <div style={{ width: 1, height: 20, background: "#2a2a4a", margin: "0 2px" }} />
               <span style={{ fontSize: 10, color: "#888" }}>볼륨</span>
-              <input type="range" min={0} max={100} value={volume} onChange={e => setVolume(+e.target.value)} style={{ width: 50, accentColor: "#4ade80" }} title={`볼륨 ${volume}%`} />
+              <input type="range" min={0} max={200} value={volume} onChange={e => setVolume(+e.target.value)} style={{ width: 60, accentColor: volume > 100 ? "#f59e0b" : "#4ade80" }} title={`볼륨 ${volume}%`} /><span style={{ fontSize: 10, color: volume > 100 ? "#f59e0b" : "#888", fontWeight: 700, minWidth: 30 }}>{volume}%</span>
               <div style={{ width: 1, height: 20, background: "#2a2a4a", margin: "0 2px" }} />
               <button onClick={() => setSubtitlesEnabled(!subtitlesEnabled)}
                 style={{ padding: "5px 10px", borderRadius: 6, border: subtitlesEnabled ? "1px solid #f59e0b" : "1px solid #2a2a4a", background: subtitlesEnabled ? "rgba(245,158,11,0.1)" : "#1a1a30", color: subtitlesEnabled ? "#f59e0b" : "#555", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
