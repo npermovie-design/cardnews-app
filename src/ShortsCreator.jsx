@@ -242,6 +242,13 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const [maxSegments, setMaxSegments] = useState(3); // 쇼츠 생성 개수 (1~5)
   const [subtitlesEnabled, setSubtitlesEnabled] = useState(false); // 자동자막 기본 OFF
   const [editingSubOnCanvas, setEditingSubOnCanvas] = useState(false); // 캔버스 자막 인라인 편집 중
+  const [captionAnimation, setCaptionAnimation] = useState("none"); // 자막 애니메이션
+  const CAPTION_ANIMS = [
+    { id: "none", name: "없음" }, { id: "fade", name: "페이드" }, { id: "typewriter", name: "타이핑" },
+    { id: "highlight", name: "하이라이트" }, { id: "bounce", name: "바운스" }, { id: "slide", name: "슬라이드" },
+    { id: "karaoke", name: "가라오케" }, { id: "glow", name: "글로우" }, { id: "pop", name: "팝" },
+    { id: "wave", name: "웨이브" }, { id: "blur_in", name: "블러 인" }, { id: "color_cycle", name: "컬러" },
+  ];
   const [subLang, setSubLang] = useState("ko"); // 주 자막 언어
   const [dualSubEnabled, setDualSubEnabled] = useState(false); // 이중 자막 ON/OFF
   const [dualSubLang, setDualSubLang] = useState("en"); // 보조 자막 언어
@@ -718,6 +725,72 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   });
 
   const subColors = ["#7c6aff", "#ff6a8a", "#6affb2", "#ffd76a", "#6ac4ff", "#ff9f6a", "#c46aff", "#6afff0"];
+
+  // ── 자막 애니메이션 렌더러 ──
+  const renderAnimatedCaption = (sub) => {
+    if (!sub || captionAnimation === "none") return sub?.text || "";
+    const elapsed = playhead - Math.max(0, sub.start - clipStart);
+    const duration = (sub.end || sub.start + 3) - sub.start;
+    const progress = Math.min(1, elapsed / duration);
+    const t = sub.text || "";
+    const hlColor = captionStyle.highlightColor || "#FFD700";
+    switch (captionAnimation) {
+      case "fade": {
+        const fi = Math.min(1, elapsed / 0.3), fo = Math.min(1, (duration - elapsed) / 0.3);
+        return <span style={{ opacity: Math.min(fi, fo) }}>{t}</span>;
+      }
+      case "typewriter": {
+        const chars = Math.floor(t.length * Math.min(1, elapsed / Math.max(0.5, duration * 0.6)));
+        return <>{t.slice(0, chars)}<span style={{ opacity: elapsed % 0.6 < 0.3 ? 1 : 0 }}>|</span></>;
+      }
+      case "highlight": {
+        const words = t.split(/(\s+)/);
+        const wp = elapsed / Math.max(0.5, duration * 0.8);
+        return words.map((w, i) => {
+          const wi = words.slice(0, i).filter(x => x.trim()).length;
+          const total = words.filter(x => x.trim()).length;
+          const hl = wi / total <= wp;
+          return <span key={i} style={{ color: w.trim() ? (hl ? hlColor : `${captionStyle.color}60`) : undefined, fontWeight: hl ? 900 : 500, transition: "color 0.15s" }}>{w}</span>;
+        });
+      }
+      case "bounce": {
+        const s = elapsed < 0.2 ? 0.5 + elapsed * 2.5 : elapsed < 0.35 ? 1.1 - (elapsed - 0.2) * 0.67 : 1;
+        return <span style={{ display: "inline-block", transform: `scale(${s})` }}>{t}</span>;
+      }
+      case "slide": {
+        const y = elapsed < 0.25 ? 20 * (1 - elapsed / 0.25) : 0;
+        return <span style={{ display: "inline-block", transform: `translateY(${y}px)`, opacity: elapsed < 0.25 ? elapsed / 0.25 : 1 }}>{t}</span>;
+      }
+      case "karaoke": {
+        const pct = Math.min(100, progress * 120);
+        return <span style={{ background: `linear-gradient(90deg, ${hlColor} ${pct}%, ${captionStyle.color} ${pct}%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{t}</span>;
+      }
+      case "glow": {
+        const g = Math.sin(elapsed * 4) * 0.5 + 0.5;
+        return <span style={{ textShadow: `0 0 ${8 + g * 12}px ${hlColor}, 0 0 ${4 + g * 6}px ${captionStyle.color}` }}>{t}</span>;
+      }
+      case "pop":
+        return t.split("").map((ch, ci) => {
+          const ce = Math.max(0, elapsed - ci * 0.04);
+          const s = ce < 0.15 ? 0.3 + ce / 0.15 * 1.2 : ce < 0.25 ? 1.5 - (ce - 0.15) / 0.1 * 0.5 : 1;
+          return <span key={ci} style={{ display: "inline-block", transform: `scale(${s})`, opacity: ce > 0 ? 1 : 0 }}>{ch}</span>;
+        });
+      case "wave":
+        return t.split("").map((ch, ci) => {
+          const y = Math.sin(elapsed * 5 - ci * 0.5) * 4;
+          return <span key={ci} style={{ display: "inline-block", transform: `translateY(${y}px)` }}>{ch}</span>;
+        });
+      case "blur_in": {
+        const blur = elapsed < 0.4 ? (1 - elapsed / 0.4) * 8 : 0;
+        return <span style={{ filter: `blur(${blur}px)`, opacity: elapsed < 0.4 ? elapsed / 0.4 : 1 }}>{t}</span>;
+      }
+      case "color_cycle": {
+        const hue = (elapsed * 120) % 360;
+        return <span style={{ color: `hsl(${hue}, 80%, 65%)` }}>{t}</span>;
+      }
+      default: return t;
+    }
+  };
 
   // ── 자막 번역 (AI) ─────────────────
   const translateSubtitles = async (targetLang) => {
@@ -1515,7 +1588,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
                   WebkitTextStroke: captionStyle.border ? `1px ${captionStyle.borderColor}` : "none",
                   background: captionStyle.bgBox ? captionStyle.bgColor : "transparent",
                   padding: captionStyle.bgBox ? "5px 14px" : 0, borderRadius: captionStyle.bgBox ? 6 : 0,
-                }}>{currentSub.text}</span>
+                }}>{renderAnimatedCaption(currentSub)}</span>
                 )}
                 {/* 번역 자막 (이중 자막) */}
                 {dualSubEnabled && (() => {
@@ -1947,6 +2020,14 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
           <button onClick={() => setSubtitlesEnabled(!subtitlesEnabled)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: subtitlesEnabled ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.05)", color: subtitlesEnabled ? "#f59e0b" : "#666", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>
             CC {subtitlesEnabled ? "ON" : "OFF"}
           </button>
+
+          {/* 자막 애니메이션 */}
+          {subtitlesEnabled && (
+            <select value={captionAnimation} onChange={e => setCaptionAnimation(e.target.value)}
+              style={{ padding: "6px 8px", borderRadius: 8, border: "none", background: captionAnimation !== "none" ? "rgba(245,158,11,0.12)" : "rgba(255,255,255,0.05)", color: captionAnimation !== "none" ? "#f59e0b" : "#666", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+              {CAPTION_ANIMS.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+          )}
 
           {/* 번역 자막 */}
           {subtitlesEnabled && (
