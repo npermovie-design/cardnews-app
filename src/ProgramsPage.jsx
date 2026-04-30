@@ -103,10 +103,10 @@ const CATEGORIES = [
 ];
 
 const AUTOMATION_DOWNLOAD = {
-  fileName: "메이킷 SNS 자동화 Setup 0.1.0.exe",
-  url: "",
-  size: "189.3MB",
-  version: "v0.1.0",
+  fileName: "메이킷 SNS자동화 Setup 0.1.8.exe",
+  url: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.8.exe",
+  size: "314MB",
+  version: "v0.1.8",
 };
 const AUTOMATION_DOWNLOAD_READY = Boolean(AUTOMATION_DOWNLOAD.url);
 
