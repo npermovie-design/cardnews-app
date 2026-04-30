@@ -276,18 +276,7 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
     try { const a = new Audio(`/sfx/${name}.mp3`); a.volume = 0.4; a.play().catch(()=>{}); } catch {}
   }, [sfxEnabled]);
 
-  // 오버레이 등장 시 효과음 재생
-  useEffect(() => {
-    if (!sfxEnabled || step !== "edit") return;
-    const absTime = typeof playheadToAbsolute === "function" ? playheadToAbsolute(playhead) : playhead;
-    overlays.forEach((o, i) => {
-      const key = `${o.id}_${Math.floor(absTime)}`;
-      if (absTime >= o.start && absTime < o.start + 0.3 && !sfxPlayed.current.has(key)) {
-        sfxPlayed.current.add(key);
-        playSfx(SFX_LIST[i % SFX_LIST.length]);
-      }
-    });
-  }, [playhead, overlays, sfxEnabled, step]);
+  // 오버레이 등장 시 효과음 재생 → playhead 선언 뒤에 배치 (아래 참조)
 
   // AI 자동 미디어 삽입
   const [autoMediaLoading, setAutoMediaLoading] = useState(false);
@@ -395,6 +384,19 @@ JSON 배열로만 응답:
   // 오버레이
   const [overlays, setOverlays] = useState([]);
   const [selectedOverlay, setSelectedOverlay] = useState(null);
+
+  // 오버레이 등장 시 효과음 재생
+  useEffect(() => {
+    if (!sfxEnabled || step !== "edit") return;
+    const absTime = typeof playheadToAbsolute === "function" ? playheadToAbsolute(playhead) : playhead;
+    overlays.forEach((o, i) => {
+      const key = `${o.id}_${Math.floor(absTime)}`;
+      if (absTime >= o.start && absTime < o.start + 0.3 && !sfxPlayed.current.has(key)) {
+        sfxPlayed.current.add(key);
+        playSfx(SFX_LIST[i % SFX_LIST.length]);
+      }
+    });
+  }, [playhead, overlays, sfxEnabled, step]);
 
   // 패널 크기
   const [rightPanelWidth, setRightPanelWidth] = useState(300);
