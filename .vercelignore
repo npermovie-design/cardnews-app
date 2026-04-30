@@ -7,3 +7,4 @@ snsmakeit-yt-server/
 supabase/
 supabase/migrations/_tmp_hold_existing/
 public/downloads/
+dist/downloads/
