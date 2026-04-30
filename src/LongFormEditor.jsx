@@ -1291,7 +1291,7 @@ JSON 배열로만 응답:
                     const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
                     window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
                   }}
-                  style={{ position: "absolute", left: `${o.x}%`, top: `${o.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 15, border: "none", borderRadius: 0, userSelect: "none", width: `${o.w || 60}%`, display: "flex", justifyContent: "center" }}>
+                  style={{ position: "absolute", left: `${o.x}%`, top: `${o.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 10, border: "none", borderRadius: 0, userSelect: "none", width: `${o.w || 60}%`, display: "flex", justifyContent: "center" }}>
                   {o.type === "text" ? (
                     <span style={{ fontSize: o.fontSize || 24, fontWeight: 700, color: o.color || "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.7)", whiteSpace: "nowrap" }}>{o.text}</span>
                   ) : (
@@ -1308,7 +1308,7 @@ JSON 배열로만 응답:
                   position: "absolute",
                   left: "50%", transform: "translateX(-50%)",
                   ...(captionStyle.position === "top" ? { top: "8%" } : captionStyle.position === "center" ? { top: "45%" } : { bottom: "8%" }),
-                  maxWidth: "90%", textAlign: "center", zIndex: 10,
+                  maxWidth: "90%", textAlign: "center", zIndex: 20,
                   cursor: editingSubOnCanvas ? "text" : "pointer",
                 }}>
                   {editingSubOnCanvas ? (
