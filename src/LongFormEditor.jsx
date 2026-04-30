@@ -282,6 +282,8 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
   const [autoMediaLoading, setAutoMediaLoading] = useState(false);
   const [autoMediaStep, setAutoMediaStep] = useState("");
   const [autoMediaProgress, setAutoMediaProgress] = useState(0);
+  const [showMediaRatioPopup, setShowMediaRatioPopup] = useState(false);
+  const [mediaRatio, setMediaRatio] = useState(30); // 기본 30%
   const autoMediaTriggered = useRef(false);
 
   const autoInsertMedia = async () => {
@@ -296,10 +298,10 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
-          messages: [{ role: "user", content: `다음 자막의 70% 이상 구간에 GIF/밈 자료를 배치하세요. 자막이 ${Math.min(subtitles.length,120)}개이면 최소 ${Math.max(20, Math.ceil(Math.min(subtitles.length,120) * 0.7))}개를 선택하세요.
+          messages: [{ role: "user", content: `다음 자막의 ${mediaRatio}% 구간에 GIF/밈 자료를 배치하세요. 자막이 ${Math.min(subtitles.length,120)}개이면 약 ${Math.max(3, Math.ceil(Math.min(subtitles.length,120) * mediaRatio / 100))}개를 선택하세요.
 
 규칙:
-1. 거의 모든 자막에 1개씩 배치 (1~2개 건너뛰기 허용)
+1. 영상 전체에 걸쳐 고르게 분포 (앞/중간/뒤 균등)
 2. keyword는 자막 내용의 구체적 명사/동사를 영어 번역 (예: "커피" → "drinking coffee")
 3. 추상적 키워드 금지 (success, business 등)
 4. 감정/리액션 → 구체적 GIF (예: "놀랍다" → "shocked face reaction")
@@ -1842,10 +1844,32 @@ JSON 배열로만 응답:
                 SFX {sfxEnabled ? "ON" : "OFF"}
               </button>
               {subtitles.length > 0 && (
-                <button onClick={autoInsertMedia} disabled={autoMediaLoading}
-                  style={{ padding: "5px 10px", borderRadius: 6, border: autoMediaLoading ? "1px solid #7c6aff40" : "1px solid #c084fc40", background: autoMediaLoading ? "rgba(124,106,255,0.1)" : "linear-gradient(135deg,rgba(124,106,255,0.1),rgba(236,72,153,0.08))", color: autoMediaLoading ? "#7c6aff" : "#c084fc", cursor: autoMediaLoading ? "wait" : "pointer", fontSize: 11, fontWeight: 700 }}>
-                  {autoMediaLoading ? "AI 삽입중..." : "AI 미디어"}
-                </button>
+                <div style={{ position: "relative" }}>
+                  <button onClick={() => setShowMediaRatioPopup(!showMediaRatioPopup)} disabled={autoMediaLoading}
+                    style={{ padding: "5px 10px", borderRadius: 6, border: autoMediaLoading ? "1px solid #7c6aff40" : "1px solid #c084fc40", background: autoMediaLoading ? "rgba(124,106,255,0.1)" : "linear-gradient(135deg,rgba(124,106,255,0.1),rgba(236,72,153,0.08))", color: autoMediaLoading ? "#7c6aff" : "#c084fc", cursor: autoMediaLoading ? "wait" : "pointer", fontSize: 11, fontWeight: 700 }}>
+                    {autoMediaLoading ? "AI 삽입중..." : "AI 미디어"}
+                  </button>
+                  {showMediaRatioPopup && !autoMediaLoading && (
+                    <div style={{ position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", width: 220, background: "#1a1a30", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: 16, zIndex: 100, boxShadow: "0 -8px 32px rgba(0,0,0,0.5)" }}>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: "#fff", marginBottom: 12 }}>짤 삽입 비중</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                        <span style={{ fontSize: 11, color: "#999" }}>타임라인 비중</span>
+                        <span style={{ fontSize: 13, color: "#c084fc", fontWeight: 800 }}>{mediaRatio}%</span>
+                      </div>
+                      <input type="range" min="10" max="80" value={mediaRatio} onChange={e => setMediaRatio(+e.target.value)} style={{ width: "100%", accentColor: "#c084fc", marginBottom: 8 }} />
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#555", marginBottom: 12 }}>
+                        <span>적게 (10%)</span><span>많이 (80%)</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: "#888", marginBottom: 12, lineHeight: 1.5 }}>
+                        {videoDuration > 0 ? `${Math.floor(videoDuration/60)}분 영상 중 약 ${Math.floor(videoDuration * mediaRatio / 100 / 60)}분 ${Math.floor(videoDuration * mediaRatio / 100 % 60)}초 구간에 짤 삽입` : "영상 로드 후 계산됩니다"}
+                      </div>
+                      <button onClick={() => { setShowMediaRatioPopup(false); autoInsertMedia(); }}
+                        style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+                        삽입 시작
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
               <button onClick={doUndo} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: undoStack.current.length ? "#7c6aff" : "#444", cursor: "pointer", fontSize: 13 }} title="되돌리기 (Ctrl+Z)">↩</button>
               <button onClick={doRedo} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: redoStack.current.length ? "#7c6aff" : "#444", cursor: "pointer", fontSize: 13 }} title="다시실행 (Ctrl+Y)">↪</button>
