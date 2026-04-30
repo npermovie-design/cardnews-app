@@ -285,15 +285,20 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
-          messages: [{ role: "user", content: `다음 자막에서 시각적 보조 자료(GIF, 영상, 사진)를 넣으면 좋을 구간을 최대한 많이 골라주세요 (10~15개).
-영상 전체에 걸쳐 고르게 분포되도록 선택하세요. 자막이 60개면 4~5개마다 하나씩.
-각 구간에 어울리는 영어 검색 키워드 1~2개를 추출하세요.
+          messages: [{ role: "user", content: `다음 자막에서 시각적 보조 자료(GIF/밈)를 넣으면 좋을 구간을 10~15개 골라주세요.
+
+규칙:
+1. 영상 전체에 고르게 분포 (앞/중간/뒤 모두)
+2. keyword는 자막 내용에 직접 등장하는 구체적 명사/동사를 영어로 번역 (예: "커피를 마시다" → "drinking coffee", "노트북" → "laptop typing")
+3. 추상적/일반적 키워드 금지 (예: "success", "business", "happy" 같은 모호한 단어 쓰지 말 것)
+4. 감정 표현이나 리액션 자막이면 → 해당 감정의 구체적 리액션 GIF 키워드 (예: "놀랍다" → "shocked face reaction", "웃기다" → "laughing hard meme")
+5. 물건/장소/행동이 언급되면 → 그 구체적 대상 키워드 (예: "핸드폰 보면서" → "scrolling phone", "요리하다" → "cooking kitchen")
 
 자막:
 ${subTexts}
 
 JSON 배열로만 응답 (다른 텍스트 없이):
-[{"idx":0,"keyword":"english search term","type":"gif"}]` }],
+[{"idx":0,"keyword":"specific english term","type":"gif"}]` }],
           max_tokens: 1000,
         }),
       });

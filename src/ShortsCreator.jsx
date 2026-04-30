@@ -843,15 +843,19 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "claude-haiku-4-5-20251001",
-          messages: [{ role: "user", content: `다음 자막에서 시각적으로 보여주면 효과적인 구간 3~5개를 골라주세요.
-각 구간에 어울리는 영어 검색 키워드 1~2개를 추출해주세요.
-반응/감정 표현이 있으면 GIF를, 풍경/장소/물체면 video를 추천해주세요.
+          messages: [{ role: "user", content: `다음 자막에서 GIF/밈을 넣으면 좋을 구간 3~5개를 골라주세요.
+
+규칙:
+1. keyword는 자막에 직접 등장하는 구체적 명사/동사를 영어로 번역
+2. 추상적 키워드 금지 (success, business, happy 등 모호한 단어 쓰지 말 것)
+3. 감정/리액션 → 구체적 리액션 키워드 (예: "놀랍다" → "shocked face reaction")
+4. 물건/행동 → 구체적 대상 (예: "커피" → "drinking coffee", "코딩" → "typing code")
 
 자막:
 ${subTexts}
 
-JSON 배열로만 응답하세요 (다른 텍스트 없이):
-[{"idx":0,"keyword":"search term","type":"gif"},{"idx":3,"keyword":"search term","type":"video"}]` }],
+JSON 배열로만 응답 (다른 텍스트 없이):
+[{"idx":0,"keyword":"specific english term","type":"gif"}]` }],
           max_tokens: 500,
         }),
       });
