@@ -1274,11 +1274,11 @@ JSON 배열로만 응답 (다른 텍스트 없이):
                     const onUp = () => { window.removeEventListener("mousemove", onMove); window.removeEventListener("mouseup", onUp); };
                     window.addEventListener("mousemove", onMove); window.addEventListener("mouseup", onUp);
                   }}
-                  style={{ position: "absolute", left: `${o.x}%`, top: `${o.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 15, border: selectedOverlay === o.id ? `2px solid ${acc}` : "2px solid transparent", borderRadius: 8, userSelect: "none", width: `${o.w || 60}%`, display: "flex", justifyContent: "center" }}>
+                  style={{ position: "absolute", left: `${o.x}%`, top: `${o.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 15, border: "none", borderRadius: 0, userSelect: "none", width: `${o.w || 60}%`, display: "flex", justifyContent: "center" }}>
                   {o.type === "text" ? (
                     <span style={{ fontSize: o.fontSize || 24, fontWeight: 700, color: o.color || "#fff", textShadow: "0 2px 8px rgba(0,0,0,0.7)", whiteSpace: "nowrap" }}>{o.text}</span>
                   ) : (
-                    <img src={o.src} alt="" style={{ width: "100%", height: "auto", maxHeight: 300, objectFit: "contain", borderRadius: 8, boxShadow: "0 4px 20px rgba(0,0,0,0.4)" }} draggable={false} />
+                    <img src={o.src} alt="" style={{ width: "100%", height: "auto", maxHeight: 300, objectFit: "contain", borderRadius: 0 }} draggable={false} />
                   )}
                 </div>
               ))}
