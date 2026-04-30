@@ -878,6 +878,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
       }, 3000);
     } catch (e) {
       setError("생성 실패: " + e.message);
+      setStep("edit");
       window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
         detail: { action: "complete", task: { id: "longform_gen", message: "생성 실패" } }
       }));
@@ -1145,7 +1146,15 @@ JSON 배열로만 응답 (다른 텍스트 없이):
               <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: acc, animation: "lf-spin 1.5s linear infinite" }} />
             </div>
             <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 8 }}>영상 생성 중...</div>
-            <div style={{ fontSize: 13, color: muted }}>{jobStatus?.progress ? `${jobStatus.progress}%` : "처리 대기 중"}</div>
+            <div style={{ fontSize: 13, color: muted, marginBottom: 16 }}>{jobStatus?.progress ? `${jobStatus.progress}%` : "서버에 요청 중..."}</div>
+            {/* 진행 바 */}
+            <div style={{ width: 200, height: 6, borderRadius: 3, background: `${bdr}`, margin: "0 auto 16px", overflow: "hidden" }}>
+              <div style={{ height: "100%", borderRadius: 3, background: `linear-gradient(90deg,${acc},#ec4899)`, width: jobStatus?.progress ? `${jobStatus.progress}%` : "15%", transition: "width 0.5s", animation: jobStatus?.progress ? "none" : "lf-pulse 2s ease-in-out infinite" }} />
+            </div>
+            <button onClick={() => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } setStep("edit"); }}
+              style={{ padding: "8px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>
+              편집으로 돌아가기
+            </button>
           </>
         ) : (
           <>
