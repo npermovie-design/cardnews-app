@@ -194,6 +194,80 @@ function wrapText(ctx, text, maxW) {
   return lines.length ? lines : [""];
 }
 
+function parseAIJson(text) {
+  let clean = (text || "").split("```json").join("").split("```").join("").trim();
+  let jsonMatch = clean.match(/\{[\s\S]*\}/);
+  return JSON.parse(jsonMatch ? jsonMatch[0] : clean);
+}
+
+function applyFinalCommentPrompt(parsed, commentPrompt) {
+  let result = Object.assign({}, parsed || {});
+  let slides = Array.isArray(result.slides) ? result.slides.slice() : [];
+  let prompt = (commentPrompt || "").trim();
+  if (!slides.length || !prompt) { result.slides = slides; return result; }
+  let lastIdx = slides.length - 1;
+  let last = Object.assign({}, slides[lastIdx] || {});
+  last.title = last.title || "댓글로 알려주세요";
+  last.subtitle = last.subtitle || "마지막 안내";
+  last.body = prompt;
+  last.highlight = prompt.length > 28 ? "댓글로 참여해보세요" : prompt;
+  slides[lastIdx] = last;
+  result.slides = slides;
+  return result;
+}
+
+function strengthenFirstSlide(parsed, fallbackTopic) {
+  let result = Object.assign({}, parsed || {});
+  let slides = Array.isArray(result.slides) ? result.slides.slice() : [];
+  if (!slides.length) { result.slides = slides; return result; }
+  let first = Object.assign({}, slides[0] || {});
+  let topicText = (result.topic || fallbackTopic || "").trim();
+  first.index = 1;
+  first.isHookCover = true;
+  first.badge = first.badge || "저장 필수";
+  first.visualKeyword = first.visualKeyword || topicText || first.title || "business marketing";
+  if (!first.title && topicText) { first.title = topicText; }
+  if (first.title && first.title.length > 34) { first.title = first.title.slice(0, 32) + "..."; }
+  if (first.subtitle && first.subtitle.length > 34) { first.subtitle = first.subtitle.slice(0, 32) + "..."; }
+  if (first.body) {
+    let sentence = String(first.body).split(/[.!?。]\s*|\n/).find(function(v) { return v.trim().length > 0; }) || first.body;
+    first.body = sentence.trim().slice(0, 54);
+  }
+  if (!first.highlight) { first.highlight = "끝까지 보세요"; }
+  if (first.highlight.length > 18) { first.highlight = first.highlight.slice(0, 18); }
+  slides[0] = first;
+  result.slides = slides;
+  return result;
+}
+
+const CARDNEWS_HOOK_RULES = "\n\n[첫 장 후킹 커버 규칙]\n- 1번 슬라이드는 설명 페이지가 아니라 강한 후킹 커버입니다.\n- 1번 title은 12~24자 안에서 문제, 손실회피, 숫자, 반전, 즉시 얻는 이득 중 하나를 담아 클릭하고 싶게 작성하세요.\n- 1번 title에는 '가이드', '소개', '방법'처럼 밋밋한 단어만 단독으로 쓰지 마세요.\n- 1번 subtitle은 대상 독자나 긴급성을 20자 안팎으로 짧게 씁니다.\n- 1번 body는 비우거나 한 문장만 씁니다. 긴 설명은 2번 슬라이드부터 배치하세요.\n- 1번 highlight는 저장/확인/주의처럼 행동을 유도하는 6~14자 문구로 작성하세요.\n- 가능하면 1번 슬라이드에 badge 필드를 넣고 '저장 필수', '놓치면 손해', '바로 확인' 중 문맥에 맞게 사용하세요.\n- 1번 슬라이드에는 visualKeyword 필드를 반드시 넣으세요. 배경 사진 검색용 영어 키워드 2~5단어로, 실제로 보이면 좋은 장면/사물/상황을 구체적으로 씁니다. 예: skincare product, instagram analytics dashboard, office burnout, money saving wallet";
+
+function proxiedImageUrl(url) {
+  return url ? "/api/proxy-image?url=" + encodeURIComponent(url) : "";
+}
+
+async function findCardCoverImage(query, ratio) {
+  let q = (query || "business marketing").trim();
+  let portrait = ratio === "9:16" || ratio === "4:5";
+  let orientation = portrait ? "portrait" : "landscape";
+  try {
+    let pex = await fetch("/api/proxy-pexels?path=v1/search&query=" + encodeURIComponent(q) + "&per_page=8&orientation=" + orientation).then(function(r) { return r.json(); }).catch(function() { return {}; });
+    let p = (pex.photos || []).find(function(item) { return item?.src?.large2x || item?.src?.large || item?.src?.portrait; });
+    if (p) { return proxiedImageUrl(p.src.large2x || p.src.large || p.src.portrait); }
+  } catch(e) {}
+  try {
+    let uns = await fetch("/api/proxy-unsplash?query=" + encodeURIComponent(q) + "&per_page=8&orientation=" + orientation).then(function(r) { return r.json(); }).catch(function() { return {}; });
+    let u = (uns.results || []).find(function(item) { return item?.urls?.regular || item?.urls?.full; });
+    if (u) { return proxiedImageUrl(u.urls.regular || u.urls.full); }
+  } catch(e) {}
+  try {
+    let pix = await fetch("/api/proxy-pixabay?q=" + encodeURIComponent(q) + "&per_page=8&safesearch=true&image_type=photo&orientation=" + (portrait ? "vertical" : "horizontal")).then(function(r) { return r.json(); }).catch(function() { return {}; });
+    let px = (pix.hits || []).find(function(item) { return item?.largeImageURL || item?.webformatURL; });
+    if (px) { return proxiedImageUrl(px.largeImageURL || px.webformatURL); }
+  } catch(e) {}
+  return proxiedImageUrl("https://picsum.photos/seed/" + encodeURIComponent(q.toLowerCase().replace(/\s+/g, "-")) + "/1080/1350");
+}
+
 // ─── drawSlide (완전 재작성 - 한글 최적화) ───────────────────────────────────
 function drawSlide(canvas, slide, style, bgImgEl) {
   let rKey = style.ratio || "1:1";
@@ -220,29 +294,52 @@ function drawSlide(canvas, slide, style, bgImgEl) {
     ctx.fillRect(0, 0, CW, CH);
   }
 
+  let isHookCover = !!(slide && slide.isHookCover);
+  if (isHookCover && bgImgEl && bgImgEl.complete && bgImgEl.naturalWidth > 0) {
+    let grad = ctx.createLinearGradient(0, CH * 0.22, 0, CH);
+    grad.addColorStop(0, "rgba(0,0,0,0.05)");
+    grad.addColorStop(0.55, "rgba(0,0,0,0.35)");
+    grad.addColorStop(1, "rgba(0,0,0,0.82)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, CW, CH);
+  }
+
   // 장식 원
   ctx.save(); ctx.globalAlpha = 0.06; ctx.fillStyle = style.textColor || "#fff";
   ctx.beginPath(); ctx.arc(CW * 0.88, CH * 0.06, CW * 0.18, 0, Math.PI * 2); ctx.fill();
   ctx.beginPath(); ctx.arc(CW * 0.08, CH * 0.94, CW * 0.11, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
+  if (isHookCover) {
+    let tc0 = style.textColor || "#fff";
+    ctx.save();
+    ctx.globalAlpha = 0.14;
+    ctx.fillStyle = tc0;
+    ctx.beginPath();
+    ctx.roundRect(CW * 0.07, CH * 0.08, CW * 0.52, CH * 0.018, CH * 0.009);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(CW * 0.86, CH * 0.18, CW * 0.24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 
   // 텍스트 설정
   let tc     = style.textColor || "#ffffff";
-  let al     = style.textAlign || "left";
-  let va     = style.textValign || "middle";
+  let al     = isHookCover ? "left" : (style.textAlign || "left");
+  let va     = isHookCover ? "bottom" : (style.textValign || "middle");
   let ff     = style.fontFamily || "sans-serif";
   let SC     = CW / 420;
   let PAD    = Math.round(CW * 0.09);
   let padX   = PAD + (style.paddingX || 0) * SC;
   let maxW   = CW - padX * 2;
 
-  let tSz  = Math.round((style.titleSize || 28) * SC);
-  let bSz  = Math.round((style.bodySize || 13) * SC);
+  let tSz  = Math.round((style.titleSize || 28) * SC * (isHookCover ? 1.18 : 1));
+  let bSz  = Math.round((style.bodySize || 13) * SC * (isHookCover ? 0.95 : 1));
   let sSz  = Math.round((style.subtitleSize || 11) * SC);
-  let hSz  = Math.round((style.highlightSize || 13) * SC);
+  let hSz  = Math.round((style.highlightSize || 13) * SC * (isHookCover ? 1.08 : 1));
   let lhT  = style.lineHeightTitle || 1.35;
   let lhB  = style.lineHeightBody || 1.7;
-  let tw   = style.titleWeight || "800";
+  let tw   = isHookCover ? "900" : (style.titleWeight || "800");
 
   // 줄 계산
   ctx.font = getCanvasFont(tw, tSz, ff);
@@ -260,7 +357,11 @@ function drawSlide(canvas, slide, style, bgImgEl) {
   let GAP_BOD  = Math.round(bSz * 0.6);
   let GAP_HL   = Math.round(hSz * 0.5);
 
-  let totalH = 0;
+  let badgeText = isHookCover ? (slide.badge || "저장 필수") : "";
+  let badgeH = 0;
+  if (badgeText) { badgeH = Math.round(sSz * 2.6); }
+  let totalH = badgeH;
+  if (badgeH) { totalH = totalH + Math.round(sSz * 0.7); }
   if (subLines.length) { totalH = totalH + subLines.length * Math.round(sSz * lhB) + GAP_SUB; }
   totalH = totalH + titLines.length * Math.round(tSz * lhT);
   if (bodLines.length) { totalH = totalH + GAP_TIT + bodLines.length * Math.round(bSz * lhB); }
@@ -291,6 +392,23 @@ function drawSlide(canvas, slide, style, bgImgEl) {
       y = y + lineH;
     }
     ctx.globalAlpha = 1;
+  }
+
+  if (badgeText) {
+    ctx.font = getCanvasFont("900", sSz, ff);
+    let bw = ctx.measureText(badgeText).width + Math.round(sSz * 2.2);
+    let bx = getX(bw);
+    ctx.save();
+    ctx.globalAlpha = 0.92;
+    ctx.fillStyle = tc;
+    ctx.beginPath();
+    ctx.roundRect(bx, y, bw, badgeH, Math.round(badgeH / 2));
+    ctx.fill();
+    ctx.fillStyle = style.bgColor || "#111827";
+    ctx.textBaseline = "middle";
+    ctx.fillText(badgeText, bx + Math.round(sSz * 1.1), y + badgeH / 2);
+    ctx.restore();
+    y = y + badgeH + Math.round(sSz * 0.7);
   }
 
   // 부제목
@@ -515,7 +633,7 @@ function LayoutTab(props) {
       <SliderRow label={t("cn_paddingX")} value={gs.paddingX || 0} minV={0} maxV={40} onChange={function(v) { updGs("paddingX", v); }}/>
       <Sep/>
       <FieldLabel>{t("cn_currentSlide")}</FieldLabel>
-      {[{k:"title",l:t("cn_title")},{k:"subtitle",l:t("cn_subtitle")},{k:"body",l:t("cn_body")},{k:"highlight",l:t("cn_highlight")}].map(function(f) {
+      {[{k:"badge",l:"후킹 배지"},{k:"title",l:t("cn_title")},{k:"subtitle",l:t("cn_subtitle")},{k:"body",l:t("cn_body")},{k:"highlight",l:t("cn_highlight")}].map(function(f) {
         let curV = (curEd[f.k] !== undefined) ? curEd[f.k] : ((curSlide && curSlide[f.k]) ? curSlide[f.k] : "");
         return (
           <div key={f.k} style={{marginBottom:8}}>
@@ -615,9 +733,14 @@ function PreviewPanel(props) {
   let bgIs = props.bgIs; let sted = props.sted; let tname = props.tname;
   let dlSt = props.dlSt; let dlOne = props.dlOne; let dlZip = props.dlZip;
   let onNew = props.onNew; let onSave = props.onSave; let previewW = props.previewW;
+  let caption = props.caption || "";
   let { t } = useI18n();
   let prevDis = idx === 0; let nextDis = idx === slides.length - 1;
   let msgCol = dlSt.msg && dlSt.msg.indexOf("fail") >= 0 ? "#ff9090" : "#86efac";
+  function copyCaption() {
+    if (!caption.trim() || !navigator.clipboard) { return; }
+    navigator.clipboard.writeText(caption).catch(function() {});
+  }
   return (
     <div style={{flex:1, overflowY:"auto", padding:"14px 18px 24px", display:"flex", flexDirection:"column", alignItems:"center", gap:12}}>
       <div style={{width:"100%", maxWidth:previewW + 40, display:"flex", flexDirection:"column", alignItems:"center", gap:10}}>
@@ -658,6 +781,19 @@ function PreviewPanel(props) {
         </div>
         {dlSt.msg && <div style={{fontSize:11, color:msgCol, textAlign:"center"}}>{dlSt.msg}</div>}
       </div>
+
+      {caption.trim() && (
+        <div style={{width:"100%", maxWidth:previewW + 40, border:"1px solid rgba(255,255,255,0.08)", background:"rgba(255,255,255,0.04)", borderRadius:8, padding:"12px 14px", boxSizing:"border-box"}}>
+          <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, marginBottom:8}}>
+            <div style={{fontSize:11, color:"rgba(255,255,255,0.45)", fontWeight:800}}>{t("cn_generatedCaption")}</div>
+            <button onClick={copyCaption}
+              style={{padding:"5px 10px", borderRadius:6, border:"1px solid rgba(99,102,241,0.35)", background:"rgba(99,102,241,0.12)", color:"#a5b4fc", fontSize:11, fontWeight:700, cursor:"pointer"}}>
+              {t("copy")}
+            </button>
+          </div>
+          <div style={{whiteSpace:"pre-wrap", color:"rgba(255,255,255,0.78)", fontSize:12, lineHeight:1.7}}>{caption}</div>
+        </div>
+      )}
 
       <div style={{width:"100%", maxWidth:previewW + 40}}>
         <div style={{fontSize:11, color:"rgba(255,255,255,0.3)", marginBottom:7, fontWeight:700}}>{t("cn_allSlides")} ({slides.length}{t("cn_slideUnit")})</div>
@@ -747,15 +883,12 @@ export function PlannerPanel(props) {
       if (!pageText || pageText.length < 50) { setUrlErr(t("cn_readEmpty")); setUrlLoading(false); return; }
 
       // Step 2: Plan with AI
-      let sysMsg = "You are a Korean card news planning expert. Respond ONLY with a JSON object. No explanation, no markdown, no text before or after. Just the raw JSON.\nFormat: {\"topic\":\"주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문 2-3문장\",\"highlight\":\"핵심 강조 문구\"}]}";
+      let sysMsg = "You are a Korean card news planning expert. Respond ONLY with a JSON object. No explanation, no markdown, no text before or after. Just the raw JSON.\nFormat: {\"topic\":\"주제명\",\"caption\":\"SNS 게시글 캡션\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문 2-3문장\",\"highlight\":\"핵심 강조 문구\",\"badge\":\"짧은 배지\"}]}" + CARDNEWS_HOOK_RULES;
       let userMsg = "다음 웹페이지 내용으로 카드뉴스 " + planCnt + "장을 기획해주세요.\n\n[페이지 내용]\n" + pageText;
       if (planNote.trim()) { userMsg = userMsg + "\n\n[추가 요청]\n" + planNote; }
       let text = await callAI("claude-haiku-4-5", [{role:"user", content:userMsg}], 4000, sysMsg).catch(function(e2) { setUrlErr(t("cn_error") + ": " + e2.message); setUrlLoading(false); return null; });
       if (text === null) return;
-      let clean = text.split("```json").join("").split("```").join("").trim();
-      let jsonMatch = clean.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) { setUrlErr(t("cn_error") + ": " + t("cn_jsonNotFound")); setUrlLoading(false); return; }
-      let parsed = JSON.parse(jsonMatch[0]);
+      let parsed = strengthenFirstSlide(parseAIJson(text), urlInput);
       setParsedPlan(parsed);
     } catch(e3) { setUrlErr(t("cn_error") + e3.message); }
     finally { setUrlLoading(false); }
@@ -765,15 +898,12 @@ export function PlannerPanel(props) {
     if (!planTopic.trim()) { return; }
     setPlanLoading(true); setPlanErr(""); setPlanResult(""); setParsedPlan(null);
     try {
-      let sysMsg = "당신은 인스타그램 카드뉴스 기획 전문가입니다.\n사용자가 주제와 요구사항을 주면, 각 슬라이드의 제목/부제목/본문/하이라이트 문구를 기획해주세요.\n반드시 아래 JSON 형식만 반환하세요:\n{\"topic\":\"최종 주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문 2-3문장\",\"highlight\":\"핵심 강조 문구\"}]}";
+      let sysMsg = "당신은 인스타그램 카드뉴스 기획 전문가입니다.\n사용자가 주제와 요구사항을 주면, 각 슬라이드의 제목/부제목/본문/하이라이트 문구와 SNS 게시글 캡션을 기획해주세요.\n반드시 아래 JSON 형식만 반환하세요:\n{\"topic\":\"최종 주제명\",\"caption\":\"SNS 게시글 캡션\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문 2-3문장\",\"highlight\":\"핵심 강조 문구\",\"badge\":\"짧은 배지\"}]}" + CARDNEWS_HOOK_RULES;
       let userMsg = "주제: " + planTopic + "\n슬라이드 수: " + planCnt + "장";
       if (planNote.trim()) { userMsg = userMsg + "\n추가 요청: " + planNote; }
       let text = await callAI("claude-haiku-4-5", [{role:"user", content:userMsg}], 4000, sysMsg).catch(function(e2) { setPlanErr(t("cn_error") + ": " + e2.message); setPlanLoading(false); return null; });
       if (text === null) return;
-      let clean = text.split("```json").join("").split("```").join("").trim();
-      let jsonMatch2 = clean.match(/\{[\s\S]*\}/);
-      if (!jsonMatch2) { setPlanErr(t("cn_error") + ": " + t("cn_jsonNotFound")); setPlanLoading(false); return; }
-      let parsed = JSON.parse(jsonMatch2[0]);
+      let parsed = strengthenFirstSlide(parseAIJson(text), planTopic);
       setParsedPlan(parsed);
       setPlanResult(JSON.stringify(parsed, null, 2));
     } catch(e3) { setPlanErr(t("cn_error") + e3.message); }
@@ -1198,6 +1328,9 @@ function PageMake(props) {
   let tname = props.tname; let slides = props.slides;
   let setPage = props.setPage; let onGenerate = props.onGenerate;
   let onShowPlanner = props.onShowPlanner;
+  let user = props.user;
+  let postCaption = props.postCaption || "";
+  let setPostCaption = props.setPostCaption;
   let canGo = topic.trim().length > 0;
 
   // ── 테마 변수 ──
@@ -1325,6 +1458,16 @@ function PageMake(props) {
               style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr,
                 borderRadius:9, padding:"10px 14px", color:text, fontSize:13,
                 fontFamily:"inherit", resize:"none", outline:"none", boxSizing:"border-box", lineHeight:1.7}}/>
+          </div>
+
+          <div style={{padding:"14px 18px", borderRadius:12, border:"1px solid "+bdr, background:sectionBg, marginBottom:16}}>
+            <div style={{fontSize:13, fontWeight:700, color:text, marginBottom:5}}>{t("cn_captionPromptLabel")}</div>
+            <div style={{fontSize:11, color:muted, lineHeight:1.6, marginBottom:8}}>{t("cn_captionPromptDesc")}</div>
+            <textarea value={postCaption} onChange={function(e) { if (setPostCaption) { setPostCaption(e.target.value); } }}
+              placeholder={t("cn_captionPromptPlaceholder")} rows={3}
+              style={{width:"100%", background:inputBg, border:"1px solid "+inputBdr,
+                borderRadius:9, padding:"10px 14px", color:text, fontSize:13,
+                fontFamily:"inherit", resize:"vertical", outline:"none", boxSizing:"border-box", lineHeight:1.7}}/>
           </div>
 
           {/* 슬라이드 수 */}
@@ -1498,6 +1641,8 @@ export function CardNewsApp(props) {
   p = useState(function(){ try{let cc=JSON.parse(localStorage.getItem("sns_cn_cache")||"null");if(cc&&cc.slides&&cc.slides.length)return"edit";}catch(e){}return props.initialSubPage||"home";}); let page=p[0];let setPage=p[1];
   p = useState(1);       let makeStep  = p[0]; let setMakeStep  = p[1];
   p = useState(function(){ try{let cc=JSON.parse(localStorage.getItem("sns_cn_cache")||"null");if(cc&&cc.topic)return cc.topic;}catch(e){}return"";}); let topic=p[0];let setTopic=p[1];
+  p = useState(function(){ try{let cc=JSON.parse(localStorage.getItem("sns_cn_cache")||"null");if(cc&&cc.postCaption)return cc.postCaption;}catch(e){}return"";}); let postCaption=p[0];let setPostCaption=p[1];
+  p = useState(function(){ try{let cc=JSON.parse(localStorage.getItem("sns_cn_cache")||"null");if(cc&&cc.generatedCaption)return cc.generatedCaption;}catch(e){}return"";}); let generatedCaption=p[0];let setGeneratedCaption=p[1];
   p = useState(6);       let cnt       = p[0]; let setCnt       = p[1];
   p = useState(null);    let selPreset = p[0]; let setSelPreset = p[1];
   p = useState(function(){ try{let cc=JSON.parse(localStorage.getItem("sns_cn_cache")||"null");if(cc&&cc.slides&&cc.slides.length)return cc.slides;}catch(e){}return[];}); let slides=p[0];let setSlides=p[1];
@@ -1514,7 +1659,7 @@ export function CardNewsApp(props) {
   });
   let gs = p[0]; let setGs = p[1];
   p = useState({}); let sted = p[0]; let setSted = p[1];
-  p = useState({}); let bgIs = p[0]; let setBgIs = p[1];
+  p = useState(function(){ try{let cc=JSON.parse(localStorage.getItem("sns_cn_cache")||"null");if(cc&&cc.bgIs)return cc.bgIs;}catch(e){}return{};}); let bgIs = p[0]; let setBgIs = p[1];
   p = useState(false); let showSaved   = p[0]; let setShowSaved   = p[1];
   p = useState(false); let showPlanner = p[0]; let setShowPlanner = p[1];
   p = useState("topic"); let plannerMode = p[0]; let setPlannerMode = p[1];
@@ -1538,9 +1683,9 @@ export function CardNewsApp(props) {
   // 슬라이드 변경 시 localStorage 캐시
   useEffect(function() {
     if (slides.length > 0) {
-      try { localStorage.setItem("sns_cn_cache", JSON.stringify({ slides: slides, gs: gs, topic: topic, tname: tname })); } catch(e) {}
+      try { localStorage.setItem("sns_cn_cache", JSON.stringify({ slides: slides, gs: gs, bgIs: bgIs, topic: topic, tname: tname, postCaption: postCaption, generatedCaption: generatedCaption })); } catch(e) {}
     }
-  }, [slides, gs]);
+  }, [slides, gs, bgIs, postCaption, generatedCaption]);
 
   // initialSubPage="plan" 이면 마운트 시 PlannerPanel 자동 열기
   useEffect(function() {
@@ -1568,8 +1713,23 @@ export function CardNewsApp(props) {
     });
   }
   function handleApplyPlanSlides(parsed) {
-    setSlides(parsed.slides || []); setTname(parsed.topic || topic);
+    let planned = strengthenFirstSlide(applyFinalCommentPrompt(parsed, postCaption), topic);
+    setSlides(planned.slides || []); setTname(planned.topic || topic);
+    setGeneratedCaption(planned.caption || "");
     setIdx(0); setSted({}); setBgIs({}); setPage("edit");
+    applyAutoCoverImage(planned);
+  }
+  async function applyAutoCoverImage(planned) {
+    let first = planned?.slides?.[0] || {};
+    let query = first.visualKeyword || first.title || planned?.topic || topic || "social media marketing";
+    let imgUrl = await findCardCoverImage(query, gs.ratio || "1:1");
+    if (imgUrl) {
+      setBgIs(function(prev) {
+        let next = Object.assign({}, prev);
+        next[0] = imgUrl;
+        return next;
+      });
+    }
   }
   function getEl(url) {
     if (!url) { return Promise.resolve(null); }
@@ -1590,14 +1750,15 @@ export function CardNewsApp(props) {
     let ds = now.getFullYear() + "." + String(now.getMonth() + 1).padStart(2, "0") + "." + String(now.getDate()).padStart(2, "0");
     let thumb = null;
     try { let c = document.createElement("canvas"); drawSlide(c, Object.assign({}, slides[0], (sted[0] || {})), gs, null); thumb = c.toDataURL("image/jpeg", 0.5); } catch(e) {}
-    let updated = saveWork({ id:id, topic:tname || topic, count:slides.length, date:ds, thumb:thumb, slides:slides, gs:gs, sted:sted });
+    let updated = saveWork({ id:id, topic:tname || topic, count:slides.length, date:ds, thumb:thumb, slides:slides, gs:gs, sted:sted, bgIs:bgIs, postCaption:postCaption, generatedCaption:generatedCaption });
     setSavedWorks(updated);
     setDlSt({busy:false, msg:t("cn_savedToLib")});
     setTimeout(function() { setDlSt(function(prev) { return Object.assign({}, prev, {msg:""}); }); }, 2500);
   }
   function handleLoadWork(work) {
     setSlides(work.slides || []); setTname(work.topic || "");
-    setGs(work.gs || gs); setSted(work.sted || {}); setBgIs({}); setIdx(0);
+    setPostCaption(work.postCaption || ""); setGeneratedCaption(work.generatedCaption || "");
+    setGs(work.gs || gs); setSted(work.sted || {}); setBgIs(work.bgIs || {}); setIdx(0);
     setPage("edit"); setShowSaved(false);
   }
   function handleDeleteWork(id) { setSavedWorks(deleteWork(id)); }
@@ -1608,14 +1769,17 @@ export function CardNewsApp(props) {
     if (!left.canUse) { setErr(user ? t("cn_pointsLow") : t("cn_guestOver").replace("{n}", FREE_GUEST)); return; }
     setLoading(true); setErr("");
     try {
-      let sysMsg = "인스타그램 카드뉴스 전문 카피라이터.\n반드시 JSON만 반환하세요.\n형식:{\"topic\":\"주제명\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문\",\"highlight\":\"핵심문구\"}]}";
-      let text = await callAI("claude-haiku-4-5", [{role:"user", content:"주제: " + topic + "\n슬라이드 수: " + cnt + "장"}], 4000, sysMsg).catch(function(e2) { setErr("오류: " + e2.message); setLoading(false); return null; });
+      let sysMsg = "인스타그램 카드뉴스 전문 카피라이터.\n반드시 JSON만 반환하세요.\n형식:{\"topic\":\"주제명\",\"caption\":\"인스타그램 게시글 캡션 4-6줄과 해시태그\",\"slides\":[{\"index\":1,\"title\":\"제목\",\"subtitle\":\"부제목\",\"body\":\"본문\",\"highlight\":\"핵심문구\",\"badge\":\"짧은 배지\"}]}\n규칙:\n- caption은 카드뉴스 내용과 자연스럽게 이어지는 게시글 본문으로 작성합니다.\n- 사용자가 댓글 유도 멘트나 CTA를 제공하면 caption 끝부분과 마지막 슬라이드에 자연스럽게 반영합니다.\n- 마지막 슬라이드는 저장/댓글/문의 등 다음 행동을 유도하는 마무리 페이지로 구성합니다." + CARDNEWS_HOOK_RULES;
+      let userMsg = "주제: " + topic + "\n슬라이드 수: " + cnt + "장";
+      if (postCaption.trim()) { userMsg = userMsg + "\n게시글 캡션/댓글 유도 멘트: " + postCaption.trim(); }
+      let text = await callAI("claude-haiku-4-5", [{role:"user", content:userMsg}], 4000, sysMsg).catch(function(e2) { setErr("오류: " + e2.message); setLoading(false); return null; });
       if (text === null) return;
-      let clean = text.split("```json").join("").split("```").join("").trim();
-      let parsed = JSON.parse(clean);
+      let parsed = strengthenFirstSlide(applyFinalCommentPrompt(parseAIJson(text), postCaption), topic);
       setSlides(parsed.slides || []); setTname(parsed.topic || topic);
+      setGeneratedCaption(parsed.caption || "");
       setIdx(0); setSted({}); setBgIs({});
       if (selPreset) { applyPreset(selPreset); }
+      applyAutoCoverImage(parsed);
       setPage("edit"); consumeOne(user);
       if (user && user.uid) { changePoints(user.uid, -30, "카드뉴스 생성").catch(function(e) {}); }
       // 보관함 자동저장
@@ -1630,7 +1794,7 @@ export function CardNewsApp(props) {
         } catch(te) {}
         saveWork({ id: Date.now().toString(), topic: _tname, count: _slides.length,
           date: new Date().toLocaleDateString("ko-KR"), thumb: _thumb,
-          slides: _slides, gs: gs, sted: {} });
+          slides: _slides, gs: gs, sted: {}, bgIs: bgIs, postCaption: postCaption, generatedCaption: parsed.caption || "" });
       } catch(se) {}
     } catch(e3) { setErr(t("cn_error") + e3.message); }
     finally { setLoading(false); }
@@ -1741,7 +1905,7 @@ export function CardNewsApp(props) {
             <PageHome setPage={setPage} setMakeStep={setMakeStep} hasSlides={slides.length > 0} tname={tname} slideCnt={slides.length} savedWorks={savedWorks} theme={props.theme} onShowSaved={function() { setShowSaved(true); }} onShowPlanner={function(mode) { setPlannerMode(mode||"topic"); setShowPlanner(true); }}/>
           )}
           {page === "make" && (
-            <PageMake topic={topic} setTopic={setTopic} cnt={cnt} setCnt={setCnt} makeStep={makeStep} setMakeStep={setMakeStep} selPreset={selPreset} setSelPreset={setSelPreset} loading={loading} err={err} tname={tname} slides={slides} setPage={setPage} onGenerate={generate} theme={props.theme} onShowPlanner={function(mode) { setPlannerMode(mode||"topic"); setShowPlanner(true); }}/>
+            <PageMake topic={topic} setTopic={setTopic} postCaption={postCaption} setPostCaption={setPostCaption} cnt={cnt} setCnt={setCnt} makeStep={makeStep} setMakeStep={setMakeStep} selPreset={selPreset} setSelPreset={setSelPreset} loading={loading} err={err} tname={tname} slides={slides} setPage={setPage} onGenerate={generate} theme={props.theme} user={user} onShowPlanner={function(mode) { setPlannerMode(mode||"topic"); setShowPlanner(true); }}/>
           )}
           {page === "edit" && slides.length > 0 && (
             <div style={{flex:1, display:"flex", flexDirection: narrow ? "column" : "row", height:"100%", overflow:"hidden"}}>
@@ -1749,7 +1913,7 @@ export function CardNewsApp(props) {
                 <>
                   {/* 모바일: 미리보기 상단, 편집패널 하단 스크롤 */}
                   <div style={{flexShrink:0, display:"flex", flexDirection:"column", alignItems:"center", padding:"12px 16px 8px", background:"rgba(0,0,0,0.2)", borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
-                    <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { if (window.confirm(t("cn_regenConfirm"))) { try{localStorage.removeItem("sns_cn_cache");}catch(e){} setSlides([]); setTname(""); setPage("make"); setMakeStep(1); } }} onSave={handleSaveWork} previewW={Math.min(winW - 32, 340)}/>
+                    <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} caption={generatedCaption} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { if (window.confirm(t("cn_regenConfirm"))) { try{localStorage.removeItem("sns_cn_cache");}catch(e){} setSlides([]); setTname(""); setGeneratedCaption(""); setPage("make"); setMakeStep(1); } }} onSave={handleSaveWork} previewW={Math.min(winW - 32, 340)}/>
                   </div>
                   <div style={{flex:1, overflowY:"auto"}}>
                     <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>
@@ -1758,7 +1922,7 @@ export function CardNewsApp(props) {
               ) : (
                 <>
                   <EditPanel gs={gs} updGs={updGs} etab={etab} setEtab={setEtab} curBg={curBg} bgRef={bgRef} handleBg={handleBg} onRemoveBg={removeBg} curSlide={curSlide} curEd={curEd} updEd={updEd} selPreset={selPreset} applyPreset={applyPreset}/>
-                  <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { if (window.confirm(t("cn_regenConfirm"))) { try{localStorage.removeItem("sns_cn_cache");}catch(e){} setSlides([]); setTname(""); setPage("make"); setMakeStep(1); } }} onSave={handleSaveWork} previewW={previewW}/>
+                  <PreviewPanel slides={slides} idx={idx} setIdx={setIdx} merged={merged} gs={gs} curBg={curBg} bgIs={bgIs} sted={sted} tname={tname} caption={generatedCaption} dlSt={dlSt} dlOne={dlOne} dlZip={dlZip} onNew={function() { if (window.confirm(t("cn_regenConfirm"))) { try{localStorage.removeItem("sns_cn_cache");}catch(e){} setSlides([]); setTname(""); setGeneratedCaption(""); setPage("make"); setMakeStep(1); } }} onSave={handleSaveWork} previewW={previewW}/>
                 </>
               )}
             </div>

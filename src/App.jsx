@@ -323,7 +323,7 @@ export default function App() {
         howto: "이용방법 - SNS메이킷",
         faq: "자주 묻는 질문 - SNS메이킷",
         ai: "AI 생성기 - SNS메이킷",
-        programs: "자료실 - SNS메이킷",
+        programs: "자동화 - SNS메이킷",
         pricing: "가격정책 - SNS메이킷",
         contact: "문의하기 - SNS메이킷",
         event: "이벤트 - SNS메이킷",
@@ -600,7 +600,7 @@ export default function App() {
     // SEO: 다국어 동적 타이틀
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
     const titleMap = {
-      ko: { home:"SNS메이킷 - AI SNS 콘텐츠 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자료실", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
+      ko: { home:"SNS메이킷 - AI SNS 콘텐츠 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자동화", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
       en: { home:"SNS Makeit - AI Social Content Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", notice:"Notices", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy" },
       ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", programs:"プログラムストア", notice:"お知らせ", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約" },
     };
@@ -614,7 +614,7 @@ export default function App() {
         ai: "AI로 블로그, 이미지, 숏폼 영상을 자동 생성하세요. 비회원 5회 무료.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류 등 1:1 문의를 받고 있어요.",
         community: "SNS메이킷 커뮤니티. 마케터와 크리에이터를 위한 정보, Q&A, 자료실.",
-        programs: "자동화 도구, 템플릿, 유틸리티 프로그램을 다운로드하세요. 무료부터 프리미엄까지.",
+        programs: "SNS 자동화봇으로 네이버 블로그 글 생성, 드라이브 자료 기반 발행, 자동 운영 흐름을 확인하세요.",
       },
       en: {
         home: "Enter a keyword and AI creates drafts for blogs, Instagram, and shorts. 5 guest uses and 150P on signup.",
@@ -1038,7 +1038,7 @@ export default function App() {
           <NavBtn id="home" label={t("home")} />
           {/* AI 도구 - 드롭다운 없이 바로 진입 */}
           <NavBtn id="ai" label="AI 도구" />
-          <NavBtn id="programs" label="자료실" />
+          <NavBtn id="programs" label="자동화" />
           <NavBtn id="notice" label="공지사항" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
           {/* 커뮤니티 */}
@@ -1260,7 +1260,7 @@ export default function App() {
           {[
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
             { id: "ai",       label: "AI 도구",       onClick: () => { navigate("ai"); setMobileOpen(false); },       active: page==="ai"||page==="analyzer" },
-            { id: "programs", label: "자료실", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
+            { id: "programs", label: "자동화", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
             { id: "notice",   label: "공지사항", onClick: () => { navigate("notice"); setMobileOpen(false); }, active: page==="notice" },
 
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },

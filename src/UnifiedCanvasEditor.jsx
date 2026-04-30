@@ -37,11 +37,13 @@ export default function UnifiedCanvasEditor({
   slides: initSlides = [],
   width = 1080, height = 1080,
   mode = "cardnews",
+  sourceText = "",
   onSave, onClose, onShareTemplate, inline = false,
 }) {
   const boxRef = useRef(null);
   const fcRef = useRef(null);
   const slidesRef = useRef([]);
+  const buildSeqRef = useRef(0);
   const [idx, setIdx] = useState(0);
   const total = Math.max(initSlides.length, 1);
   const [sel, setSel] = useState(null);
@@ -66,16 +68,21 @@ export default function UnifiedCanvasEditor({
   useEffect(() => {
     if (captionGenerated.current || !initSlides?.length) return;
     captionGenerated.current = true;
+    const firstTitle = (initSlides[0]?.title || "오늘 카드뉴스").replace(/\[P\]|\[\/P\]/g,"");
+    const fallbackTags = (firstTitle.match(/[가-힣A-Za-z0-9]+/g) || []).slice(0, 4).map(v => "#" + v).join(" ");
+    const sourceLead = sourceText ? sourceText.replace(/\s+/g," ").trim().slice(0, 120) : firstTitle;
+    const fallbackCaption = `${sourceLead}\n\n핵심만 빠르게 정리했습니다. 저장해두고 필요할 때 다시 확인해보세요.\n\n${fallbackTags} #카드뉴스 #SNS메이킷`;
+    setCaptionText(fallbackCaption);
     (async () => {
       setCaptionLoading(true);
       try {
         const slideTexts = initSlides.map((s,i) =>
           `[${i+1}] ${s.title||""} ${s.subtitle||""} ${s.body||""} ${s.highlight||""}`
         ).join("\n");
-        const prompt = `인스타그램 카드뉴스 캡션을 작성해주세요.\n\n카드뉴스 내용:\n${slideTexts}\n\n조건:\n- 전문적이고 신뢰감 있는 말투\n- 이모티콘을 적절히 활용해주세요.\n- 해시태그 5~8개 포함\n- 캡션 길이: 3~5문장\n- 줄바꿈으로 가독성 높게\n- 마지막에 행동 유도(CTA) 한 줄 포함\n\n캡션만 출력하세요.`;
+        const prompt = `인스타그램 카드뉴스 캡션을 작성해주세요.\n\n사용자가 처음 입력한 글:\n${sourceText || "(없음)"}\n\n카드뉴스 내용:\n${slideTexts}\n\n조건:\n- 사용자가 처음 입력한 글의 핵심 의도와 표현을 우선 반영\n- 전문적이고 신뢰감 있는 말투\n- 이모티콘을 적절히 활용해주세요.\n- 해시태그 5~8개 포함\n- 캡션 길이: 3~5문장\n- 줄바꿈으로 가독성 높게\n- 마지막에 행동 유도(CTA) 한 줄 포함\n- 사용자가 나중에 직접 고칠 수 있으므로 초안처럼 자연스럽게 작성\n\n캡션만 출력하세요.`;
         const result = await callAI("claude-haiku-4-5",[{role:"user",content:prompt}],800);
-        setCaptionText(result?.trim()||"");
-      } catch(e) { setCaptionText("캡션 자동 생성 실패: "+(e.message||e)); }
+        setCaptionText(result?.trim()||fallbackCaption);
+      } catch(e) { setCaptionText(fallbackCaption); }
       setCaptionLoading(false);
     })();
   }, []);
@@ -205,13 +212,17 @@ export default function UnifiedCanvasEditor({
   /* ── 슬라이드 빌드 ── */
   const buildSlide = (fc, s, i) => {
     if (!fc||!s) return;
+    const buildSeq = ++buildSeqRef.current;
     fc.clear();
     fc.backgroundColor = s.bgColor || "#ffffff";
 
-    // 배경 이미지
-    if (s.image) {
-      FabricImage.fromURL(s.image, {crossOrigin:"anonymous"}).then(img => {
-        if(!img||!fcRef.current) return;
+    const fallbackBg = `/api/proxy-image?url=${encodeURIComponent(`https://picsum.photos/seed/${encodeURIComponent(((s.visualKeyword || s.title || `slide-${i}`).replace(/\[P\]|\[\/P\]/g,"") || "cardnews").toLowerCase().replace(/\s+/g,"-"))}/1080/1350`)}`;
+
+    // 배경 이미지: 검색 이미지가 실패해도 슬라이드가 빈 배경으로 남지 않게 fallback을 다시 로드
+    const loadBgImage = (src, allowFallback = true) => {
+      if (!src) return;
+      FabricImage.fromURL(src, {crossOrigin:"anonymous"}).then(img => {
+        if(!img||!fcRef.current||buildSeqRef.current!==buildSeq) return;
         // 이미지 실제 크기 확인 (fabric v6 호환)
         const imgW = img.width || img.getScaledWidth?.() || img._element?.naturalWidth || 800;
         const imgH = img.height || img.getScaledHeight?.() || img._element?.naturalHeight || 800;
@@ -238,11 +249,66 @@ export default function UnifiedCanvasEditor({
           fc.insertAt(1,gradOv);
         }
         fc.renderAll();
-      }).catch(()=>{});
-    }
+      }).catch(()=>{
+        if (allowFallback) loadBgImage(fallbackBg, false);
+      });
+    };
+    loadBgImage(s.image || fallbackBg, Boolean(s.image));
 
     // ── 포인트 색 텍스트 헬퍼 ──
     const pointColor = s.pointColor || "#e4ff1a";
+    const isReferenceMode = Boolean(s.referenceMode);
+    const colorWithAlpha = (hex, alpha = 0.85) => {
+      const m = String(hex || "").match(/^#?([0-9a-f]{6})$/i);
+      if (!m) return hex || "#ffffff";
+      const n = parseInt(m[1], 16);
+      return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
+    };
+    const addDesignFrame = (variant = "default") => {
+      if (!isReferenceMode) return;
+      const lineW = Math.max(3, Math.round(width * 0.004));
+      const accentColor = colorWithAlpha(pointColor, variant === "cover" ? 0.88 : 0.74);
+      const topBar = new Rect({
+        left:width*0.07, top:height*0.055, width:width*0.16, height:lineW,
+        originX:"left", originY:"top", fill:accentColor,
+        selectable:true, evented:true, name:"styleTopRule",
+      });
+      const sideBar = new Rect({
+        left:width*0.07, top:height*0.12, width:lineW, height:height*0.13,
+        originX:"left", originY:"top", fill:accentColor,
+        selectable:true, evented:true, name:"styleSideRule",
+      });
+      const cornerA = new Rect({
+        left:width*0.07, top:height*0.92, width:width*0.1, height:lineW,
+        originX:"left", originY:"top", fill:"#ffffff88",
+        selectable:true, evented:true, name:"styleCornerA",
+      });
+      const cornerB = new Rect({
+        left:width*0.07, top:height*0.86, width:lineW, height:height*0.06,
+        originX:"left", originY:"top", fill:"#ffffff88",
+        selectable:true, evented:true, name:"styleCornerB",
+      });
+      fc.add(topBar, sideBar, cornerA, cornerB);
+      if (variant === "cover" || variant === "last") {
+        const bottomPanel = new Rect({
+          left:width*0.055, top:height*0.52, width:width*0.89, height:height*0.31,
+          originX:"left", originY:"top", rx:0, ry:0,
+          fill:"rgba(0,0,0,0.24)", stroke:"rgba(255,255,255,0.10)", strokeWidth:1,
+          selectable:true, evented:true, name:"styleTextPanel",
+        });
+        fc.add(bottomPanel);
+      }
+      if (variant !== "cover") {
+        const indexText = new Textbox(String(i + 1).padStart(2, "0"), {
+          left:width*0.87, top:height*0.075, width:width*0.08,
+          originX:"right", originY:"top",
+          fontSize:Math.round(width*0.024), fontWeight:"900",
+          fill:"#ffffff99", fontFamily:s.fontFamily||"Pretendard",
+          textAlign:"right", name:"stylePageNo",
+        });
+        fc.add(indexText);
+      }
+    };
     const addColoredText = (raw, opts) => {
       const clean = (raw||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,"");
       const tb = new Textbox(clean, opts);
@@ -288,7 +354,7 @@ export default function UnifiedCanvasEditor({
     };
 
     // ── 브랜드명 (중앙 하단) ──
-    if (s.brandName) {
+    if (s.brandName && !(i === 0 || s.isCover || s.isLastSlide)) {
       const brandTb = new Textbox(s.brandName, {
         left:width/2, top:height-50, width:width*0.5,
         originX:"center", originY:"bottom",
@@ -299,33 +365,115 @@ export default function UnifiedCanvasEditor({
       fc.add(brandTb);
     }
 
+    // ── 첫 페이지 후킹 커버: 사진/짤 배경 + 큰 문구 ──
+    if (i === 0 || s.isCover) {
+      addDesignFrame("cover");
+      const mx = width * 0.07;
+      const tw = width * 0.86;
+      let curY = height * 0.55;
+      const badge = (s.hookBadge || s.badge || "저장 필수").replace(/\[P\]|\[\/P\]/g,"").slice(0, 16);
+      if (badge) {
+        const badgeFont = Math.round(width * 0.024);
+        const badgeW = Math.min(width * 0.58, Math.max(width * 0.22, badge.length * badgeFont * 0.72 + badgeFont * 2.2));
+        const badgeRect = new Rect({
+          left:mx, top:curY, width:badgeW, height:badgeFont * 2.15,
+          originX:"left", originY:"top", rx:0, ry:0,
+          fill:pointColor, selectable:true, evented:true, name:"hookBadgeBg",
+        });
+        fc.add(badgeRect);
+        const badgeText = new Textbox(badge, {
+          left:mx + badgeFont * 1.05, top:curY + badgeFont * 0.42, width:badgeW - badgeFont * 2.1,
+          originX:"left", originY:"top",
+          fontSize:badgeFont, fontWeight:"900",
+          fill:"#ffffff", fontFamily:s.fontFamily||"Pretendard",
+          textAlign:"left", name:"hookBadge",
+        });
+        fc.add(badgeText);
+        curY += badgeFont * 2.65;
+      }
+
+      if (s.title) {
+        const titleTb = addColoredText((s.title||"").replace(/\n{3,}/g,"\n\n"), {
+          left:mx, top:curY, width:tw,
+          originX:"left", originY:"top",
+          fontSize:Math.round(width*0.078), fontWeight:"900",
+          fill:s.textColor||"#ffffff",
+          fontFamily:s.fontFamily||"Pretendard",
+          lineHeight:1.12, textAlign:"left", name:"title",
+          stroke:"rgba(0,0,0,0.22)", strokeWidth:1.2,
+        });
+        curY += titleTb.calcTextHeight() + Math.round(width * 0.025);
+      }
+
+      const bodyText = (s.body || s.subtitle || "").replace(/\[P\]|\[\/P\]/g,"").trim();
+      if (bodyText) {
+        const bodyTb = new Textbox(bodyText.slice(0, 80), {
+          left:mx, top:curY, width:tw,
+          originX:"left", originY:"top",
+          fontSize:Math.round(width*0.029), fontWeight:"600",
+          fill:s.textColor||"#ffffff", fontFamily:s.fontFamily||"Pretendard",
+          lineHeight:1.55, textAlign:"left", name:"body", opacity:0.78,
+        });
+        fc.add(bodyTb);
+      }
+
+      if (s.brandName) {
+        fc.add(new Textbox(s.brandName, {
+          left:width/2, top:height-42, width:width*0.5,
+          originX:"center", originY:"bottom",
+          fontSize:Math.round(width*0.018), fontWeight:"800",
+          fill:pointColor, fontFamily:s.fontFamily||"Pretendard",
+          textAlign:"center", name:"brandCover", opacity:0.9,
+        }));
+      }
+      fc.renderAll();
+      return;
+    }
+
     // ── 마지막 팔로우 유도 페이지 ──
     if (s.isLastSlide) {
+      addDesignFrame("last");
       const ctaTitle = (s.title||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,"");
       const ctaBody = (s.body||"").replace(/\[P\]/g,"").replace(/\[\/P\]/g,"");
       const mx = width * 0.07;
       const tw = width * 0.86;
-      let curY = height * 0.20;
+      let curY = height * 0.54;
+      const badgeFont = Math.round(width * 0.024);
+      const badge = "다음 행동";
+      const badgeW = Math.max(width * 0.22, badge.length * badgeFont * 0.72 + badgeFont * 2.2);
+      fc.add(new Rect({
+        left:mx, top:curY, width:badgeW, height:badgeFont * 2.15,
+        originX:"left", originY:"top", rx:0, ry:0,
+        fill:pointColor, selectable:true, evented:true, name:"ctaBadgeBg",
+      }));
+      fc.add(new Textbox(badge, {
+        left:mx + badgeFont * 1.05, top:curY + badgeFont * 0.42, width:badgeW - badgeFont * 2.1,
+        originX:"left", originY:"top",
+        fontSize:badgeFont, fontWeight:"900",
+        fill:"#ffffff", fontFamily:s.fontFamily||"Pretendard",
+        textAlign:"left", name:"ctaBadge",
+      }));
+      curY += badgeFont * 2.75;
 
       const t1 = new Textbox(ctaTitle || "이 콘텐츠가 도움이 됐다면", {
         left:mx, top:curY, width:tw,
         originX:"left", originY:"top",
-        fontSize:Math.round(width*0.042), fontWeight:"900",
+        fontSize:Math.round(width*0.072), fontWeight:"900",
         fill:s.textColor||"#ffffff", fontFamily:s.fontFamily||"Pretendard",
-        textAlign:"left", name:"title", lineHeight:1.3,
+        textAlign:"left", name:"title", lineHeight:1.12,
       });
-      fc.add(t1); curY += t1.calcTextHeight() + 20;
+      fc.add(t1); curY += t1.calcTextHeight() + Math.round(width * 0.028);
 
       const t2 = new Textbox(ctaBody || "좋아요 · 저장 · 팔로우", {
         left:mx, top:curY, width:tw,
         originX:"left", originY:"top",
-        fontSize:Math.round(width*0.032), fontWeight:"700",
+        fontSize:Math.round(width*0.034), fontWeight:"800",
         fill:pointColor, fontFamily:s.fontFamily||"Pretendard",
-        textAlign:"left", name:"highlight", lineHeight:1.5,
+        textAlign:"left", name:"highlight", lineHeight:1.35,
       });
-      fc.add(t2); curY += t2.calcTextHeight() + 24;
+      fc.add(t2); curY += t2.calcTextHeight() + Math.round(width * 0.018);
 
-      const t3 = new Textbox("다음에도 유익한 콘텐츠로 찾아올게요!\n팔로우하고 놓치지 마세요", {
+      const t3 = new Textbox("저장해두고 필요할 때 다시 확인하세요.\n다음 콘텐츠도 놓치지 않게 팔로우해주세요.", {
         left:mx, top:curY, width:tw,
         originX:"left", originY:"top",
         fontSize:Math.round(width*0.022), fontWeight:"500",
@@ -336,11 +484,11 @@ export default function UnifiedCanvasEditor({
 
       if (s.brandName) {
         fc.add(new Textbox(`@${s.brandName}`, {
-          left:mx, top:curY, width:tw,
-          originX:"left", originY:"top",
-          fontSize:Math.round(width*0.024), fontWeight:"800",
+          left:width/2, top:height-42, width:width*0.5,
+          originX:"center", originY:"bottom",
+          fontSize:Math.round(width*0.018), fontWeight:"800",
           fill:pointColor, fontFamily:s.fontFamily||"Pretendard",
-          textAlign:"left", name:"brand", opacity:0.9,
+          textAlign:"center", name:"brand", opacity:0.9,
         }));
       }
       fc.renderAll();
@@ -348,6 +496,7 @@ export default function UnifiedCanvasEditor({
     }
 
     // ── 레이아웃: 사진 상단 + 텍스트 하단 ──
+    addDesignFrame("content");
     const mx = width * 0.07;
     const tw = width * 0.86;
     let curY = height * 0.48;
@@ -441,12 +590,19 @@ export default function UnifiedCanvasEditor({
   const set = (k,v) => { const fc=fcRef.current; const o=fc?.getActiveObject(); if(!o)return; o.set(k,v); fc.renderAll(); syncSel(o); };
 
   /* ── 슬라이드 전환 ── */
-  const save = () => { const fc=fcRef.current; if(fc) slidesRef.current[idx]=fc.toJSON(); };
+  const jsonHasBg = (json) => Array.isArray(json?.objects) && json.objects.some(o => o?.name === "bg" || o?.name === "gradient");
+  const save = () => {
+    const fc=fcRef.current;
+    if(!fc) return;
+    const json = fc.toJSON();
+    if (!jsonHasBg(json) && initSlides[idx]?.image && !slidesRef.current[idx]) return;
+    slidesRef.current[idx]=json;
+  };
   const go = (i) => {
     if(i<0||i>=total) return; save(); setIdx(i);
     const fc=fcRef.current; if(!fc) return;
     const s=slidesRef.current[i];
-    if(s) fc.loadFromJSON(s).then(()=>fc.renderAll());
+    if(s && (jsonHasBg(s) || !initSlides[i]?.image)) fc.loadFromJSON(s).then(()=>fc.renderAll());
     else if(initSlides[i]) buildSlide(fc,initSlides[i],i);
   };
 
@@ -585,8 +741,8 @@ export default function UnifiedCanvasEditor({
     const zip=new window.JSZip();
     for(let i=0;i<total;i++){
       const s=slidesRef.current[i];
-      if(s) await fc.loadFromJSON(s).then(()=>fc.renderAll());
-      else if(initSlides[i]) buildSlide(fc,initSlides[i],i);
+      if(s && (jsonHasBg(s) || !initSlides[i]?.image)) await fc.loadFromJSON(s).then(()=>fc.renderAll());
+      else if(initSlides[i]) { buildSlide(fc,initSlides[i],i); await new Promise(r=>setTimeout(r,700)); }
       const b64=fc.toDataURL({format:"png"}).split(",")[1];
       zip.file(`slide_${String(i+1).padStart(2,"0")}.png`,b64,{base64:true});
     }
@@ -634,8 +790,8 @@ export default function UnifiedCanvasEditor({
     for (let i = 0; i < total; i++) {
       if (i > 0) pdf.addPage([width, height], orientation);
       const s = slidesRef.current[i];
-      if (s) await fc.loadFromJSON(s).then(() => fc.renderAll());
-      else if (initSlides[i]) buildSlide(fc, initSlides[i], i);
+      if (s && (jsonHasBg(s) || !initSlides[i]?.image)) await fc.loadFromJSON(s).then(() => fc.renderAll());
+      else if (initSlides[i]) { buildSlide(fc, initSlides[i], i); await new Promise(r=>setTimeout(r,700)); }
       const dataUrl = fc.toDataURL({ format: "jpeg", quality: 0.92, multiplier: 1 });
       pdf.addImage(dataUrl, "JPEG", 0, 0, width, height);
     }
@@ -1290,10 +1446,14 @@ export default function UnifiedCanvasEditor({
                 const emojiInst = captionEmoji ? "이모티콘을 적절히 활용해주세요." : "이모티콘은 사용하지 마세요.";
                 const prompt = `인스타그램 카드뉴스 캡션을 작성해주세요.
 
+사용자가 처음 입력한 글:
+${sourceText || "(없음)"}
+
 카드뉴스 내용:
 ${slideTexts}
 
 조건:
+- 사용자가 처음 입력한 글의 핵심 의도와 표현을 우선 반영
 - ${toneDesc} 말투로 작성
 - ${emojiInst}
 - 해시태그 5~8개 포함
@@ -1303,8 +1463,8 @@ ${slideTexts}
 
 캡션만 출력하세요.`;
                 const result = await callAI("claude-haiku-4-5",[{role:"user",content:prompt}],800);
-                setCaptionText(result?.trim()||"");
-              } catch(e) { setCaptionText("캡션 생성 오류: "+(e.message||e)); }
+                setCaptionText(result?.trim()||captionText||"");
+              } catch(e) { setCaptionText(captionText || "캡션 생성 오류: "+(e.message||e)); }
               setCaptionLoading(false);
             }} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",cursor:captionLoading?"not-allowed":"pointer",
               background:captionLoading?"#ccc":"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,
@@ -1317,9 +1477,9 @@ ${slideTexts}
             </button>
 
             {/* 결과 */}
-            {captionText&&(
               <div style={{position:"relative"}}>
                 <textarea value={captionText} onChange={e=>setCaptionText(e.target.value)}
+                  placeholder="처음 입력한 글을 기준으로 캡션 초안이 자동으로 들어옵니다. 마음에 들지 않으면 여기서 직접 수정하거나 다시 생성하세요."
                   rows={16} style={{width:"100%",padding:"12px",borderRadius:10,border:"1px solid #ddd",fontSize:13,lineHeight:1.7,
                     resize:"vertical",outline:"none",boxSizing:"border-box",fontFamily:"inherit",background:"#fff",minHeight:280}}/>
                 <div style={{display:"flex",gap:6,marginTop:8}}>
@@ -1333,7 +1493,6 @@ ${slideTexts}
                   </button>
                 </div>
               </div>
-            )}
           </div>
         </div>
         )}

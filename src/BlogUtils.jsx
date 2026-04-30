@@ -10,7 +10,7 @@ function cleanBlogText(text) {
     .replace(/\[(?:image|이미지):\s*[^\]]+\]/gi, '')  // [image: keyword] 태그 제거
     .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1FA00}-\u{1FA9F}\u{200D}\u{FE0F}]/gu, '')
     .replace(/^#{1,6}\s*/gm, '')
-    .replace(/\*{1,3}([^*]+)\*{1,3}/g, '$1')
+    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1$2')
     .replace(/_{1,2}([^_]+)_{1,2}/g, '$1')
     .replace(/~~([^~]+)~~/g, '$1')
     .replace(/^>\s+/gm, '')
@@ -26,6 +26,8 @@ function cleanBlogText(text) {
 function mdToHtml(md) {
   let html = md
     .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/^\[(?:quote|인용)\]\s*(.+?)\s*\[\/(?:quote|인용)\]$/gim,'<blockquote>$1</blockquote>')
+    .replace(/^\[(?:QUOTE|인용구)\]\s*(.+)$/gm,'<blockquote>$1</blockquote>')
     .replace(/^### (.+)$/gm,"<h3>$1</h3>")
     .replace(/^## (.+)$/gm,"<h2>$1</h2>")
     .replace(/^# (.+)$/gm,"<h1>$1</h1>")
@@ -181,8 +183,16 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
 
 /* ── 일반 텍스트 + 이미지 렌더러 ── */
 // 6번째 인자: suggestedImages 배열 [{url, preview}, ...] 직접 전달
-function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imagePool) {
+function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imagePool, skipFirstImage, startImageIndex, formatOptions) {
   if (!text) return null;
+  const opts = formatOptions || {};
+  const pointColor = opts.pointColor || accentColor || "#03C75A";
+  const quoteStyle = opts.quoteStyle || "underline";
+  const pointKeywords = String(opts.pointKeywords || "")
+    .split(/[,\s/|]+/)
+    .map(s => s.trim())
+    .filter(s => s.length >= 2)
+    .slice(0, 5);
   // imagePool: suggestedImages 배열 — {url, preview, keyword?} 형태
   const pool = Array.isArray(imagePool) ? imagePool : [];
   const imgUrls = pool.map(img => img?.url || img?.preview).filter(Boolean);
@@ -193,42 +203,85 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
   // 마크다운 기호 제거 — [image:] 태그는 별도 처리할 것이므로 여기선 유지
   const cleaned = text
     .replace(/^#{1,6}\s*/gm, "")                    // # 헤딩 기호 제거
-    .replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")        // **볼드**, *이탤릭* 제거
+    .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, "$1$2") // 단일 *이탤릭*만 제거, **포인트**는 유지
     .replace(/_{1,2}([^_]+)_{1,2}/g, "$1")           // __밑줄__ 제거
     .replace(/~~([^~]+)~~/g, "$1")                   // ~~취소선~~ 제거
     .replace(/`([^`]+)`/g, "$1")                     // `코드` 제거
     .replace(/^>\s+/gm, "")                          // > 인용 제거
     .replace(/^[*]{3,}$/gm, "---")                     // *** → --- 통일
     .replace(/^[-*+]\s+/gm, "- ")                    // 리스트 기호 통일
-    .replace(/!\[.*?\]\((?!data:).*?\)/g, "");         // ![image](url) 제거 (data: base64는 유지)
+    .replace(/!\[.*?\]\((?!data:)(?!https?:\/\/).*?\)/g, ""); // 상대경로 이미지만 제거 (data: base64, http URL은 유지)
 
   const lines = cleaned.split("\n");
   const elements = [];
   // 7번째 인자: skipFirstImage, 8번째 인자: 시작 이미지 인덱스
-  const skipFirst = arguments[6] === true;
-  const startImgIdx = typeof arguments[7] === "number" ? arguments[7] : 0;
+  const skipFirst = skipFirstImage === true;
+  const startImgIdx = typeof startImageIndex === "number" ? startImageIndex : 0;
   let imgIdx = startImgIdx;
   let headingCount = 0;
 
   // AI가 [image:] 태그를 만들었는지 체크 — 만들었으면 태그 위치 기반, 아니면 소제목 뒤
   const hasInlineTags = /\[(?:image|이미지):\s*[^\]]+\]/i.test(text);
-  const quoteBg = isDark ? "rgba(124,106,255,0.12)" : "rgba(124,106,255,0.06)";
-  const quoteBorder = accentColor || "#7c6aff";
   const renderQuote = (quote, key) => (
-    <div key={key} style={{
-      margin: "16px 0",
-      padding: "14px 18px",
-      borderLeft: `4px solid ${quoteBorder}`,
-      borderRadius: 10,
-      background: quoteBg,
-      color: textColor,
-      fontSize: 17,
-      fontWeight: 800,
-      lineHeight: 1.65,
-      letterSpacing: 0
-    }}>
-      {quote}
-    </div>
+    (() => {
+      const base = {
+        margin: "16px 0",
+        color: textColor,
+        fontSize: 16,
+        fontWeight: 800,
+        lineHeight: 1.8,
+        letterSpacing: 0,
+        boxSizing: "border-box",
+      };
+      if (quoteStyle === "따옴표" || quoteStyle === "quotemark") {
+        return <div key={key} style={{...base,textAlign:"center",padding:"18px 20px",color:mutedColor}}>
+          <div style={{fontSize:26,lineHeight:1,color:isDark?"rgba(255,255,255,0.25)":"#c8c8cf"}}>"</div>
+          <div style={{color:textColor,fontStyle:"italic"}}>{inlineFormat(quote, pointColor, pointKeywords)}</div>
+          <div style={{fontSize:26,lineHeight:1,color:isDark?"rgba(255,255,255,0.25)":"#c8c8cf"}}>"</div>
+        </div>;
+      }
+      if (quoteStyle === "vertical" || quoteStyle === "line") {
+        return <div key={key} style={{...base,padding:"6px 0 6px 16px",borderLeft:`5px solid ${pointColor}`}}>
+          {inlineFormat(quote, pointColor, pointKeywords)}
+        </div>;
+      }
+      if (quoteStyle === "underline") {
+        return <div key={key} style={{
+          ...base,
+          margin: "26px 0",
+          padding: "34px 28px 30px",
+          border: `2px solid ${pointColor}`,
+          background: isDark ? "rgba(255,255,255,0.015)" : "#fff",
+          position: "relative",
+          minHeight: 116,
+        }}>
+          <div style={{
+            position: "absolute",
+            left: 0,
+            top: 7,
+            transform: "translateX(-2px)",
+            fontSize: 30,
+            fontWeight: 900,
+            color: isDark ? "rgba(255,255,255,0.35)" : "#9ca3af",
+            lineHeight: 1,
+            fontFamily: "Georgia, serif",
+          }}>"</div>
+          <div style={{color:textColor,fontSize:18,fontWeight:700,lineHeight:1.9}}>
+            {inlineFormat(quote, pointColor, pointKeywords)}
+          </div>
+        </div>;
+      }
+      if (quoteStyle === "frame") {
+        return <div key={key} style={{...base,margin:"22px auto",padding:"28px 30px",maxWidth:560,textAlign:"center",position:"relative"}}>
+          <span style={{position:"absolute",left:0,top:0,width:34,height:34,borderTop:`5px solid ${pointColor}`,borderLeft:`5px solid ${pointColor}`}}/>
+          <span style={{position:"absolute",right:0,bottom:0,width:34,height:34,borderRight:`5px solid ${pointColor}`,borderBottom:`5px solid ${pointColor}`}}/>
+          {inlineFormat(quote, pointColor, pointKeywords)}
+        </div>;
+      }
+      return <div key={key} style={{...base,padding:"6px 0 6px 16px",borderLeft:`5px solid ${pointColor}`}}>
+        {inlineFormat(quote, pointColor, pointKeywords)}
+      </div>;
+    })()
   );
 
   for (let i = 0; i < lines.length; i++) {
@@ -252,7 +305,7 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
       elements.push(renderQuote(quoteMatch[1].trim(), `quote${i}`));
       continue;
     }
-    const legacyQuoteMatch = trimmed.match(/^\[(?:QUOTE|인용구)\]\s*(.+)$/);
+    const legacyQuoteMatch = trimmed.match(/^\[(?:QUOTE|인용구)\]\s*[:：-]?\s*(.+)$/);
     if (legacyQuoteMatch) {
       elements.push(renderQuote(legacyQuoteMatch[1].trim(), `quote${i}`));
       continue;
@@ -262,10 +315,10 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
       continue;
     }
 
-    // 사용자 첨부 이미지 (base64 마크다운) → <img> 렌더링
-    const userImgMatch = trimmed.match(/^!\[([^\]]*)\]\((data:[^)]+)\)$/);
+    // 사용자 첨부 이미지 (base64 또는 URL 마크다운) → <img> 렌더링
+    const userImgMatch = trimmed.match(/^!\[([^\]]*)\]\(((?:data:|https?:\/\/)[^)]+)\)$/);
     if (userImgMatch) {
-      elements.push(<img key={`uimg${i}`} src={userImgMatch[2]} alt={userImgMatch[1]} style={{width:"100%",maxWidth:600,borderRadius:12,margin:"8px 0",display:"block"}}/>);
+      elements.push(<img key={`uimg${i}`} src={userImgMatch[2]} alt={userImgMatch[1]} style={{width:"100%",maxWidth:600,borderRadius:12,margin:"8px 0",display:"block"}} onError={e=>{e.target.onerror=null;e.target.style.opacity="0.3";}}/>);
       continue;
     }
 
@@ -295,15 +348,40 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
         elements.push(<ReplaceableImage key={`img${i}`} src={imgUrls[imgIdx]} desc={trimmed} isDark={isDark} mutedColor={mutedColor} fallbackSeed={encodeURIComponent(trimmed.slice(0,20))} />);
         imgIdx++;
       }
-      elements.push(<p key={i} style={{margin:"0 0 14px",fontSize:16,fontWeight:800,color:textColor,lineHeight:1.5}}>{trimmed}</p>);
+      elements.push(<p key={i} style={{margin:"0 0 14px",fontSize:16,fontWeight:800,color:textColor,lineHeight:1.5}}>{inlineFormat(trimmed, pointColor, pointKeywords)}</p>);
     } else {
-      elements.push(<p key={i} style={{margin:"4px 0",lineHeight:1.95,color:textColor}}>{trimmed}</p>);
+      elements.push(<p key={i} style={{margin:"4px 0",lineHeight:1.95,color:textColor}}>{inlineFormat(trimmed, pointColor, pointKeywords)}</p>);
     }
   }
   return elements;
 }
-function inlineFormat(text, accentColor) {
-  return text; // 마크다운 포맷 제거 — 일반 텍스트 반환
+function inlineFormat(text, accentColor, pointKeywords) {
+  const highlightKeywords = (value, keyPrefix) => {
+    const keywords = Array.isArray(pointKeywords) ? pointKeywords : [];
+    if (!keywords.length || !value) return value;
+    const escaped = keywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).filter(Boolean);
+    if (!escaped.length) return value;
+    const reKw = new RegExp(`(${escaped.join("|")})`, "gi");
+    const out = [];
+    let lastKw = 0;
+    let kwMatch;
+    while ((kwMatch = reKw.exec(value)) !== null) {
+      if (kwMatch.index > lastKw) out.push(value.slice(lastKw, kwMatch.index));
+      out.push(<strong key={`${keyPrefix}-${kwMatch.index}`} style={{fontWeight:900,color:accentColor}}>{kwMatch[0]}</strong>);
+      lastKw = kwMatch.index + kwMatch[0].length;
+    }
+    if (lastKw < value.length) out.push(value.slice(lastKw));
+    return out.length ? out : value;
+  };
+  const parts=[]; const re=/\*\*([^*]+)\*\*/g;
+  let last=0,m;
+  while((m=re.exec(text))!==null){
+    if(m.index>last) parts.push(highlightKeywords(text.slice(last,m.index), `kw-${m.index}`));
+    parts.push(<strong key={m.index} style={{fontWeight:900,color:accentColor}}>{m[1]}</strong>);
+    last=m.index+m[0].length;
+  }
+  if(last<text.length) parts.push(highlightKeywords(text.slice(last), `kw-${last}`));
+  return parts.length?parts:highlightKeywords(text, "kw");
 }
 function _inlineFormat_legacy(text, accentColor) {
   const parts=[]; const re=/(\*\*[^*]+\*\*|\*[^*]+\*|`[^`]+`)/g;
@@ -367,17 +445,18 @@ const PLATFORMS = {
       const imgRule = `\n\n[글 구조 필수 규칙]\n1. 큰 소제목 → [image: 영문 키워드] → 본문 설명 순서로 반복\n2. [image: keyword] 형태로 각 소제목마다 1개씩 이미지 삽입\n3. 키워드는 반드시 영문 2~3단어로, 사진 검색 시 정확히 해당 사물/장면이 나올 만큼 구체적으로 작성\n   좋은 예시: [image: glucose meter finger], [image: vegetable salad plate], [image: morning jogging park], [image: cafe latte art], [image: laptop home desk]\n   나쁜 예시: [image: health], [image: food], [image: nature], [image: technology]\n4. 해당 문단에서 설명하는 구체적 사물, 음식, 장소, 행동을 영어로 묘사할 것\n5. 소제목은 3~5개 정도`;
       const speechRule = speech ? `\n\n[말투/문체] ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
       const noEnding = `\n\n[마무리 금지] "마치며", "끝으로", "마무리하며", "글을 마치며", "정리하면" 같은 진부한 마무리 표현 절대 사용 금지. 마지막 문단도 자연스럽게 본문처럼 이어서 끝낼 것`;
-      const quoteRule = `\n\n[인용구 필수]\n1. 본문 안에 저장하고 싶은 한 줄 인용구를 3~5개 넣으세요.\n2. 인용구는 반드시 독립된 한 줄로 [quote]문장[/quote] 형식만 사용하세요.\n3. 인용구는 18~42자 정도로 짧고 단정하게, 독자가 캡처하거나 기억하기 쉬운 문장으로 작성하세요.\n4. 첫 번째 인용구는 도입 문단 직후에 배치하고, 이후에는 핵심 소제목 사이에 자연스럽게 배치하세요.\n5. 따옴표, >, ##, 굵게 표시는 쓰지 말고 [quote] 태그만 사용하세요.`;
+      const quoteRule = `\n\n[인용구 필수]\n1. 각 큰 소제목마다 핵심 메시지를 요약하는 한 줄 인용구를 1개씩 넣으세요.\n2. 인용구는 반드시 독립된 한 줄로 [quote]문장[/quote] 형식만 사용하세요.\n3. 인용구는 18~42자 정도로 짧고 단정하게, 독자가 캡처하거나 기억하기 쉬운 문장으로 작성하세요.\n4. 인용구는 소제목 직후 또는 해당 소제목 본문 첫 문단 뒤에 자연스럽게 배치하세요.\n5. 따옴표, >, ## 표시는 쓰지 말고 [quote] 태그만 사용하세요.`;
       const flowRule = `\n\n[원하는 글감 흐름]\n- 첫 문단은 문제 제기나 독자의 상황 공감으로 짧게 시작\n- 정보만 나열하지 말고 관찰, 이유, 예시, 실천 팁 순서로 이어가기\n- 문단은 2~4문장 단위로 짧게 끊기\n- 소제목은 딱딱한 명사형보다 궁금증이나 결론이 보이는 문장형으로 작성`;
-      const noSpecial = `\n\n[절대 금지]\n##, **, ~~, *, -, 이모티콘, 이모지, 특수기호(★●■▶♥☆→), 마크다운 문법 일체 사용 금지. 단, [image: english keyword]와 [quote]문장[/quote] 태그는 예외로 반드시 사용. 소제목은 그냥 별도 줄에 작성.\n\n[필수 규칙]\n1. 이미지 삽입용 [image: english keyword] 태그 사용: 각 소제목 바로 아래에 [image: 구체적 영어 키워드 2~3단어] 형식으로 1줄씩 삽입. 예) [image: puppy playing park]\n2. 글 마지막에는 반드시 # 기호로 시작하는 해시태그 10개를 작성. 예) #강아지키우기 #반려견관리 #강아지건강 (띄어쓰기로 구분, 한 줄 또는 두 줄로)\n3. 본문 중간에는 # 기호를 사용하지 마세요. 해시태그는 오직 글 맨 마지막에만.`;
+      const emphasisRule = `\n\n[포인트 강조 필수]\n- 핵심 단어, 숫자, 결론 문구는 **강조 문구** 형식으로 감싸세요.\n- 한 문단에 1개 정도만 사용하고, 짧은 구문에만 적용하세요.\n- 강조할 문구는 실제 독자가 기억해야 할 핵심 표현으로 고르세요.`;
+      const noSpecial = `\n\n[절대 금지]\n##, ~~, 이모티콘, 이모지, 특수기호(★●■▶♥☆→), HTML/CSS, 색상 태그 사용 금지. 단, [image: english keyword], [quote]문장[/quote], **포인트 문구** 형식은 예외로 반드시 사용. 소제목은 그냥 별도 줄에 작성.\n\n[필수 규칙]\n1. 이미지 삽입용 [image: english keyword] 태그 사용: 각 소제목 바로 아래에 [image: 구체적 영어 키워드 2~3단어] 형식으로 1줄씩 삽입. 예) [image: puppy playing park]\n2. 글 마지막에는 반드시 # 기호로 시작하는 해시태그 10개를 작성. 예) #강아지키우기 #반려견관리 #강아지건강 (띄어쓰기로 구분, 한 줄 또는 두 줄로)\n3. 본문 중간에는 # 기호를 사용하지 마세요. 해시태그는 오직 글 맨 마지막에만.`;
       const custom = f.extra ? `\n\n[사용자 맞춤 요청] ${f.extra}` : "";
-      const tail = speechRule + quoteRule + flowRule + noEnding + noSpecial;
-      if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}${custom}${imgRule}\n- 검색 최적화 제목\n- 실용적 팁/정보 위주${tail}`;
+      const tail = speechRule + quoteRule + emphasisRule + flowRule + noEnding + noSpecial;
+      if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}${custom}${imgRule}\n- 키워드를 본문과 소제목에 자연스럽게 반영\n- 실용적 팁/정보 위주${tail}`;
       if(sub==="visit")   return `네이버 블로그 체험·방문후기 (${w}, ${t})\n장소: ${f.keyword} / 위치: ${f.location||""} / 날짜: ${f.visitDate||"최근"} / 평점: ${f.rating||"4.5"}/5${custom}${imgRule}\n- 방문 전 기대→방문 과정→솔직 총평\n- 장단점 명확히, 재방문 의사 포함${tail}`;
       if(sub==="travel")  return `네이버 블로그 여행후기 (${w}, ${t})\n여행지: ${f.keyword} / 장소: ${f.location||""} / 기간: ${f.duration||"당일"} / 예산: ${f.budget||""}\n${custom}${imgRule}\n- 일정별 구조화, 맛집/명소/교통 포함\n- 실제 여행자 감성, 예산 팁 포함${tail}`;
       if(sub==="product") return `네이버 블로그 제품후기 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}${custom}${imgRule}\n- 구매 전 고민→언박싱→실사용 구조\n- 추천 대상·가성비 총평 포함${tail}`;
-      if(sub==="column")  return `네이버 블로그 칼럼 (${w}, 전문적이고 논리적인 칼럼체)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}${custom}\n\n글 맨 처음에 제목과 부제목 추천:\n제목: (SEO 최적화된 제목)\n부제목: (핵심 내용 요약)${imgRule}\n- 주장→근거→반론→결론 구조\n- 데이터·사례·통계 인용${tail}`;
-      if(sub==="article") return `네이버 블로그 기사 방식 글 (${w}, 객관적이고 보도 형식의)\n주제: ${f.keyword}${custom}\n\n글 맨 처음에 제목과 부제목 추천:\n제목: (뉴스 기사 스타일 제목)\n부제목: (핵심 내용 한 줄 요약)${imgRule}\n- 역피라미드 구조 (핵심→세부→배경)\n- 5W1H 포함\n- 객관적 사실 기반${tail}`;
+      if(sub==="column")  return `네이버 블로그 칼럼 (${w}, 전문적이고 논리적인 칼럼체)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}${custom}${imgRule}\n- 본문부터 자연스럽게 시작\n- 주장→근거→반론→결론 구조\n- 데이터·사례·통계 인용${tail}`;
+      if(sub==="article") return `네이버 블로그 기사 방식 글 (${w}, 객관적이고 보도 형식의)\n주제: ${f.keyword}${custom}${imgRule}\n- 본문부터 자연스럽게 시작\n- 역피라미드 구조 (핵심→세부→배경)\n- 5W1H 포함\n- 객관적 사실 기반${tail}`;
       return "";
     },
   },
@@ -428,12 +507,12 @@ const PLATFORMS = {
       const noSp = `\n\n[필수] 이모티콘·이모지·특수기호(★●■)·마크다운(##·###·**·~~) 절대 사용 금지. 순수 문장만 작성. 글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
       const imgRule = `\n\n[이미지 필수] 소제목마다 [image: 영문 2~3단어] 1개. 해당 문단의 구체적 사물/장면을 영어로 (예: laptop typing hands, korean street food, morning coffee desk). 추상적 단어(nature, life, beauty) 금지`;
       const tail = sp + noEnd + noSp;
-      if(sub==="info")    return `티스토리 SEO 최적화 정보성 글 (${w}, ${t})\n키워드: ${f.keyword} / 대상: ${f.target||"일반"}\n${f.extra||""}${imgRule}\n\n- 소제목은 일반 텍스트로 (마크다운 ## 사용 금지)\n- 키워드 제목·소제목에 자연스럽게 포함\n- 결론에 CTA 포함, 관련 키워드 녹임${tail}`;
+      if(sub==="info")    return `티스토리 SEO 최적화 정보성 글 (${w}, ${t})\n키워드: ${f.keyword} / 대상: ${f.target||"일반"}\n${f.extra||""}${imgRule}\n\n- 소제목은 일반 텍스트로 (마크다운 ## 사용 금지)\n- 키워드를 소제목과 본문에 자연스럽게 포함\n- 결론에 CTA 포함, 관련 키워드 녹임${tail}`;
       if(sub==="review")  return `티스토리 제품·서비스 리뷰 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}${imgRule}\n\n- 상세 스펙·실사용 경험·객관적 평가\n- 구매 가이드 제공${tail}`;
       if(sub==="howto")   return `티스토리 How-to 가이드 (${w}, ${t})\n주제: ${f.keyword} / 단계: ${f.steps||""}\n${f.extra||""}${imgRule}\n\n- 번호 매긴 단계별 설명 (숫자 목록은 허용)\n- 각 단계 팁·주의사항, FAQ 포함${tail}`;
       if(sub==="opinion") return `티스토리 칼럼/의견 (${w}, ${t})\n주제: ${f.keyword} / 핵심 주장: ${f.mainPoint||""}\n${f.extra||""}${imgRule}\n\n- 주장→근거→반론→결론 구조\n- 데이터·사례 언급, 독자 공감 유도${tail}`;
-      if(sub==="column")  return `티스토리 전문 칼럼 (${w}, 전문적이고 논리적인)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}\n${f.extra||""}${imgRule}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (SEO 키워드 포함 제목)\n부제목: (핵심 한 줄 요약)\n\n- 주장→근거→반론→결론\n- 데이터·사례·통계 인용${tail}`;
-      if(sub==="article") return `티스토리 기사 방식 글 (${w}, 보도 형식)\n주제: ${f.keyword}\n${f.extra||""}${imgRule}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (뉴스 스타일 제목)\n부제목: (핵심 한 줄)\n\n- 역피라미드 구조\n- 5W1H, 객관적 사실 기반${tail}`;
+      if(sub==="column")  return `티스토리 전문 칼럼 (${w}, 전문적이고 논리적인)\n주제: ${f.keyword}\n핵심 주장: ${f.mainPoint||""}\n${f.extra||""}${imgRule}\n\n- 본문부터 자연스럽게 시작\n- 주장→근거→반론→결론\n- 데이터·사례·통계 인용${tail}`;
+      if(sub==="article") return `티스토리 기사 방식 글 (${w}, 보도 형식)\n주제: ${f.keyword}\n${f.extra||""}${imgRule}\n\n- 본문부터 자연스럽게 시작\n- 역피라미드 구조\n- 5W1H, 객관적 사실 기반${tail}`;
       return "";
     },
   },
@@ -487,8 +566,8 @@ const PLATFORMS = {
       if(sub==="product") return `인스타그램 제품 홍보 캡션 (${w}, ${t})\n제품: ${f.productName||f.keyword} / 가격: ${f.price||""}\n${f.extra||""}\n\n- 제품 매력 훅, 핵심 특징 3가지 이내\n- 구매 유도 CTA 포함\n- ${htag}${sp}`;
       if(sub==="info")    return `인스타그램 정보 피드 캡션 (${w}, ${t})\n주제: ${f.keyword} / 포인트: ${f.points||""}\n${f.extra||""}\n\n- "저장 필수" 유도 첫 문장\n- 번호 매긴 핵심 포인트\n- ${htag}${sp}`;
       if(sub==="event")   return `인스타그램 이벤트/공지 캡션 (${w}, ${t})\n이벤트: ${f.keyword} / 날짜: ${f.eventDate||""}\n${f.extra||""}\n\n- 강렬한 첫 줄 (이모지 없이 텍스트로), 참여 방법 명확히\n- ${htag}${sp}\n\n[필수] 이모티콘·이모지·특수기호 절대 사용 금지. 해시태그만 허용`;
-      if(sub==="column")  return `인스타그램 칼럼 캡션 (${w}, 전문적이고 통찰력 있는)\n주제: ${f.keyword}\n핵심: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 첫 줄에 추천 제목을 넣어주세요.\n\n- 전문 인사이트 공유, 깊이 있는 분석\n- 저장 유도 첫 문장\n- ${htag}${sp}`;
-      if(sub==="article") return `인스타그램 기사 정리 캡션 (${w}, 객관적 보도체)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 첫 줄에 추천 제목을 넣어주세요.\n\n- 핵심 뉴스/정보를 짧고 명확하게 정리\n- 팩트 중심, 출처 언급 형식\n- ${htag}${sp}`;
+      if(sub==="column")  return `인스타그램 칼럼 캡션 (${w}, 전문적이고 통찰력 있는)\n주제: ${f.keyword}\n핵심: ${f.mainPoint||""}\n${f.extra||""}\n\n- 첫 줄부터 핵심 내용으로 시작\n- 전문 인사이트 공유, 깊이 있는 분석\n- 저장 유도 첫 문장\n- ${htag}${sp}`;
+      if(sub==="article") return `인스타그램 기사 정리 캡션 (${w}, 객관적 보도체)\n주제: ${f.keyword}\n${f.extra||""}\n\n- 첫 줄부터 핵심 내용으로 시작\n- 핵심 뉴스/정보를 짧고 명확하게 정리\n- 팩트 중심, 출처 언급 형식\n- ${htag}${sp}`;
       return "";
     },
   },
@@ -597,8 +676,8 @@ const PLATFORMS = {
       if(sub==="story")    return `스레드 경험 이야기 (${t})\n경험: ${f.keyword} / 교훈: ${f.lesson||""}\n${f.extra||""}${fmt}`;
       if(sub==="tip")      return `스레드 꿀팁 공유 (${t})\n주제: ${f.keyword} / 포인트: ${f.points||""}\n${f.extra||""}${fmt}`;
       if(sub==="question") return `스레드 질문·토론 (${t})\n주제: ${f.keyword} / 각도: ${f.angle||""}\n${f.extra||""}${fmt}`;
-      if(sub==="column")  return `스레드 전문 칼럼 (사려 깊고 전문적인)\n주제: ${f.keyword}\n핵심: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 첫 글에 추천 제목을 넣어주세요.${fmt}`;
-      if(sub==="article") return `스레드 뉴스 정리 (객관적 보도체)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 첫 글에 추천 제목을 넣어주세요.${fmt}`;
+      if(sub==="column")  return `스레드 전문 칼럼 (사려 깊고 전문적인)\n주제: ${f.keyword}\n핵심: ${f.mainPoint||""}\n${f.extra||""}${fmt}`;
+      if(sub==="article") return `스레드 뉴스 정리 (객관적 보도체)\n주제: ${f.keyword}\n${f.extra||""}${fmt}`;
       return "";
     },
   },
@@ -651,8 +730,8 @@ const PLATFORMS = {
       if(sub==="review")   return `네이버 카페 후기 게시글 (${w}, ${t})\n대상: ${f.keyword} / 제품명: ${f.productName||""}\n장점: ${f.pros||""} / 단점: ${f.cons||""}\n${f.extra||""}\n\n- 구매/방문 동기부터 솔직 후기까지\n- 장단점 균형 있게\n- 추천 대상 언급${tail}`;
       if(sub==="question") return `네이버 카페 질문 게시글 (${w}, ${t})\n주제: ${f.keyword}\n${f.extra||""}\n\n- 상황 설명 후 궁금한 점 명확히\n- 카페 회원들에게 도움 요청하는 자연스러운 글${tail}`;
       if(sub==="free")     return `네이버 카페 자유 게시글 (${w}, ${t})\n주제: ${f.keyword}\n${f.extra||""}\n\n- 가볍고 친근한 일상 공유\n- 카페 분위기에 맞는 짧고 자연스러운 글${tail}`;
-      if(sub==="column")  return `네이버 카페 칼럼 (${w}, 전문적이고 논리적인)\n주제: ${f.keyword}\n핵심: ${f.mainPoint||""}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (카페에 적합한 전문 제목)\n부제목: (핵심 한 줄)\n\n- 주장→근거→결론 구조\n- 카페 회원 눈높이에 맞춘 전문 글${tail}\n글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
-      if(sub==="article") return `네이버 카페 기사 스타일 글 (${w}, 객관적 정리체)\n주제: ${f.keyword}\n${f.extra||""}\n\n[필수] 글 맨 처음에 제목과 부제목을 추천:\n제목: (뉴스 스타일 제목)\n부제목: (핵심 한 줄)\n\n- 팩트 기반 정리, 수치/통계 활용\n- 카페 회원이 이해하기 쉬운 언어${tail}\n글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
+      if(sub==="column")  return `네이버 카페 칼럼 (${w}, 전문적이고 논리적인)\n주제: ${f.keyword}\n핵심: ${f.mainPoint||""}\n${f.extra||""}\n\n- 본문부터 자연스럽게 시작\n- 주장→근거→결론 구조\n- 카페 회원 눈높이에 맞춘 전문 글${tail}\n글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
+      if(sub==="article") return `네이버 카페 기사 스타일 글 (${w}, 객관적 정리체)\n주제: ${f.keyword}\n${f.extra||""}\n\n- 본문부터 자연스럽게 시작\n- 팩트 기반 정리, 수치/통계 활용\n- 카페 회원이 이해하기 쉬운 언어${tail}\n글 마지막에 줄바꿈 후 관련 해시태그 10개 추가`;
       return "";
     },
   },
@@ -763,7 +842,7 @@ const PLATFORMS = {
       const t={literary:"문학적이고 서정적인",reflective:"성찰적이고 깊이 있는",casual:"편안하고 자연스러운"}[tone];
       const sp = speech ? `\n- 말투: ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
       const imgRule = `\n\n[이미지 필수] 소제목마다 [image: 영문 2~3단어] 1개. 해당 문단의 구체적 사물/장면을 영어로 (예: coffee latte art, sunset beach walk, fresh vegetable basket). 추상적 단어(nature, beauty, life) 절대 금지`;
-      return `브런치 ${sub} (${w}, ${t})\n주제: ${f.keyword}\n${f.mood?`분위기: ${f.mood}`:""}\n${f.mainPoint?`핵심: ${f.mainPoint}`:""}\n${f.extra||""}\n\n[필수] 글 첫줄에 추천 제목\n- 브런치 특유의 감성적이고 깊이 있는 문체\n- 이모지·마크다운 금지${imgRule}${sp}`;
+      return `브런치 ${sub} (${w}, ${t})\n주제: ${f.keyword}\n${f.mood?`분위기: ${f.mood}`:""}\n${f.mainPoint?`핵심: ${f.mainPoint}`:""}\n${f.extra||""}\n\n- 본문부터 자연스럽게 시작\n- 브런치 특유의 감성적이고 깊이 있는 문체\n- 이모지·마크다운 금지${imgRule}${sp}`;
     },
   },
 
@@ -1112,6 +1191,8 @@ const PLATFORMS = {
 const SPEECH_STYLES = [
   { id:"polite_yo",  label:"~요 체", desc:"해요체 (친근한 존댓말)", prompt:"해요체(~요, ~이에요, ~했어요)로 작성" },
   { id:"formal",     label:"~합니다 체", desc:"합니다체 (격식 존댓말)", prompt:"합니다체(~입니다, ~했습니다, ~됩니다)로 작성" },
+  { id:"plain_past",  label:"~했다 체", desc:"담백한 서술체", prompt:"문장 끝을 '~했다', '~이었다', '~된다', '~한다' 중심의 담백한 서술체로 작성. 과장된 감탄형과 대화체 표현은 피하고 정보 전달형 문장으로 정리" },
+  { id:"literary_past", label:"~하였다 체", desc:"정돈된 문어체", prompt:"문장 끝을 '~하였다', '~이었다', '~된다', '~한다' 중심의 정돈된 문어체로 작성. 보고서나 칼럼처럼 차분하고 격식 있게 서술" },
   { id:"casual",     label:"반말 체", desc:"반말 (친구 대화체)", prompt:"반말(~야, ~거든, ~했어, ~인데)로 작성. 자연스러운 구어체" },
   { id:"friendly",   label:"~거든요 체", desc:"친근한 경험 공유체", prompt:"친근한 경험 공유체(~거든요, ~해보세요, ~더라고요, ~있잖아요)로 작성. 친구에게 경험을 공유하듯 자연스럽게" },
   { id:"mixed",      label:"혼합 체", desc:"상황에 맞게 자유롭게", prompt:"상황에 맞게 존댓말과 반말을 자연스럽게 섞어서 작성" },

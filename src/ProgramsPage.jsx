@@ -32,12 +32,67 @@ function programPath(product) {
   return `/programs/${product.id}/${slugifyKo(product.title, "program")}`;
 }
 
-const BRAND = "#7c6aff";
-const BRAND2 = "#ec4899";
-const GRAD = "linear-gradient(135deg, #7c6aff, #ec4899)";
+const BRAND = "#6d5dfc";
+const BRAND2 = "#f45aa2";
+const ACCENT = "#16bfa3";
+const INK = "#15172f";
+const GRAD = "linear-gradient(135deg, #6d5dfc 0%, #8b6dff 48%, #f45aa2 100%)";
+
+function AutomationIcon({ type, color = BRAND, size = 28 }) {
+  const common = { stroke: color, strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", fill: "none" };
+  const paths = {
+    clock: (
+      <>
+        <circle cx="12" cy="12" r="8" {...common} />
+        <path d="M12 8v4l3 2" {...common} />
+      </>
+    ),
+    repeat: (
+      <>
+        <path d="M17 2l3 3-3 3" {...common} />
+        <path d="M4 11V9a4 4 0 014-4h12" {...common} />
+        <path d="M7 22l-3-3 3-3" {...common} />
+        <path d="M20 13v2a4 4 0 01-4 4H4" {...common} />
+      </>
+    ),
+    folder: (
+      <>
+        <path d="M3 6.5A2.5 2.5 0 015.5 4H10l2 2h6.5A2.5 2.5 0 0121 8.5v7A2.5 2.5 0 0118.5 18h-13A2.5 2.5 0 013 15.5v-9z" {...common} />
+        <path d="M7 13h10" {...common} />
+      </>
+    ),
+    write: (
+      <>
+        <path d="M5 19l4.5-1 9-9a2.1 2.1 0 00-3-3l-9 9L5 19z" {...common} />
+        <path d="M13.5 7.5l3 3" {...common} />
+      </>
+    ),
+    image: (
+      <>
+        <rect x="4" y="5" width="16" height="14" rx="2" {...common} />
+        <circle cx="9" cy="10" r="1.5" {...common} />
+        <path d="M6.5 17l4.5-4 3 2.5 2-2.5 3.5 4" {...common} />
+      </>
+    ),
+    publish: (
+      <>
+        <path d="M12 19V5" {...common} />
+        <path d="M7 10l5-5 5 5" {...common} />
+        <path d="M5 19h14" {...common} />
+      </>
+    ),
+    chart: (
+      <>
+        <path d="M5 19V5" {...common} />
+        <path d="M5 19h14" {...common} />
+        <path d="M8 15l3-4 3 2 4-6" {...common} />
+      </>
+    ),
+  };
+  return <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">{paths[type] || paths.write}</svg>;
+}
 
 const CATEGORIES = [
-  { id: "all", label: "전체" },
   { id: "automation", label: "자동화" },
   { id: "design", label: "디자인" },
   { id: "marketing", label: "마케팅" },
@@ -45,6 +100,134 @@ const CATEGORIES = [
   { id: "template", label: "템플릿" },
   { id: "free_photo", label: "무료사진", special: true },
   { id: "free_video", label: "무료영상", special: true },
+];
+
+const AUTOMATION_DOWNLOAD = {
+  fileName: "메이킷 SNS 자동화 Setup 0.1.0.exe",
+  url: "",
+  size: "189.3MB",
+  version: "v0.1.0",
+};
+const AUTOMATION_DOWNLOAD_READY = Boolean(AUTOMATION_DOWNLOAD.url);
+
+const AUTOMATION_SECTIONS = [
+  {
+    title: "블로그 발행 자동화",
+    desc: "주제 입력부터 글 구성, 본문 작성, 이미지 삽입, 네이버 블로그 발행 흐름까지 반복 업무를 줄입니다.",
+    points: ["AI 글 초안 생성", "카테고리 선택 보조", "발행 작업 자동화"],
+  },
+  {
+    title: "SNS 운영 자료",
+    desc: "콘텐츠 제작에 바로 활용할 수 있는 디자인 소스와 영상 효과 자료를 운영 목적별로 정리했습니다.",
+    points: ["썸네일/아이콘 소스", "그린스크린 효과", "상세페이지/카드뉴스 참고"],
+  },
+  {
+    title: "실무형 템플릿",
+    desc: "반복 제작이 많은 운영자를 위해 자주 쓰는 구성과 소재를 빠르게 찾을 수 있게 묶었습니다.",
+    points: ["자동화", "디자인", "마케팅", "유틸리티"],
+  },
+];
+
+const NAVERBOT_SCREENSHOTS = [
+  {
+    src: "/screenshots/naverbot/dashboard.png",
+    label: "홈 대시보드",
+    title: "발행 현황과 자동 운영 상태를 한 화면에서 확인",
+    desc: "메이킷 계정, 구독 플랜, 이번 주 발행 수, 성공률, 전체 발행 수, 자동 운영 상태와 최근 발행 글을 대시보드에서 바로 확인합니다.",
+  },
+  {
+    src: "/screenshots/naverbot/quick-start.png",
+    label: "빠른 시작",
+    title: "테마와 카테고리만 넣고 1개 바로 발행",
+    desc: "블로그 품질 안내 후 빠른 시작 영역에서 테마, 카테고리, 직접 제목, 템플릿 이름을 입력하고 즉시 발행을 시작할 수 있습니다.",
+  },
+  {
+    src: "/screenshots/naverbot/blog-modes.png",
+    label: "발행 방식",
+    title: "빠른 발행, 자동 운영, 원하는 사진 자동 운영으로 분리",
+    desc: "간단한 1회 발행과 상세 자동 운영을 분리하고, 구글 드라이브 자료와 사진을 쓰는 자동 운영 카드를 별도로 배치했습니다.",
+  },
+  {
+    src: "/screenshots/naverbot/drive-setup.png",
+    label: "드라이브 연동",
+    title: "구글 드라이브 폴더 링크를 글감과 이미지 소스로 사용",
+    desc: "구글 드라이브 자료 폴더 링크를 넣으면 폴더 안의 문서/텍스트 파일은 글감으로 쓰고, 이미지 파일은 본문 중간에 함께 삽입하는 흐름입니다.",
+  },
+];
+
+const FEATURE_VISUALS = [
+  {
+    src: "/screenshots/naverbot/feature-drive-complete.png",
+    label: "드라이브 자동 완성",
+    title: "드라이브만 연결하면 사진, 글, 인용구, 스티커까지 자동 구성",
+  },
+  {
+    src: "/screenshots/naverbot/feature-account-setup.png",
+    label: "계정 설정",
+    title: "네이버 계정 연결과 로그인 안내를 한 화면에서 확인",
+  },
+  {
+    src: "/screenshots/naverbot/feature-quick-publish.png",
+    label: "빠른 시작",
+    title: "테마와 카테고리만 입력해 1개 글을 바로 발행",
+  },
+  {
+    src: "/screenshots/naverbot/feature-blog-main.png",
+    label: "발행 화면",
+    title: "빠른 시작, 자동 운영, 원하는 사진 운영을 분리",
+  },
+  {
+    src: "/screenshots/naverbot/feature-topic-drive.png",
+    label: "주제 설정",
+    title: "주제 방향과 구글 드라이브 폴더를 함께 설정",
+  },
+  {
+    src: "/screenshots/naverbot/feature-drive-folder.png",
+    label: "사진 자동 삽입",
+    title: "폴더 속 이미지와 텍스트를 불러와 블로그 글로 완성",
+  },
+];
+
+const LANDING_FEATURES = [
+  {
+    title: "빠른 시작",
+    desc: "매번 복잡한 설정을 열지 않아도 테마와 카테고리만 입력하면 1개 글을 바로 발행할 수 있습니다. 직접 제목을 넣지 않으면 AI가 제목을 생성하고, 네이버 블로그 템플릿 이름을 입력하면 기존 템플릿 흐름까지 맞춰 사용할 수 있게 구성되어 있습니다.",
+  },
+  {
+    title: "상세 자동 운영",
+    desc: "자동 운영 모드는 주제 설정, 스타일 설정, 발행 설정으로 나누어 운영자가 원하는 방식으로 글을 만들 수 있게 구성했습니다. 테마 순환, 원하는 글 방향, 분량, 인용구 스타일, 카테고리 순환, 발행 간격 같은 세부 조건을 한 흐름으로 묶습니다.",
+  },
+  {
+    title: "구글 드라이브 자료 기반 발행",
+    desc: "사용자가 공유한 구글 드라이브 폴더 링크를 입력하면 폴더 안 문서와 텍스트 파일을 글감으로 쓰고, 이미지 파일은 본문에 함께 넣습니다. 폴더별 자료를 운영 주제로 바꾸는 방식이라, 직접 촬영한 사진이나 정리된 자료가 많은 사용자에게 특히 맞습니다.",
+  },
+  {
+    title: "운영 현황 대시보드",
+    desc: "자동화 프로그램을 실행한 뒤에는 이번 주 발행 수, 성공률, 전체 발행 수, 자동 운영 상태, 최근 발행 글을 확인할 수 있습니다. 단순히 글을 발행하는 것에서 끝나는 것이 아니라 운영 결과를 계속 볼 수 있는 관리 화면까지 포함합니다.",
+  },
+];
+
+const INTERACTIVE_FLOW = [
+  {
+    label: "빠른 시작",
+    title: "테마와 카테고리 입력",
+    desc: "가볍게 시작할 때는 테마와 카테고리만 입력합니다. 직접 제목이나 네이버 블로그 템플릿 이름은 선택 입력으로 두어 초보자도 바로 실행할 수 있게 했습니다.",
+  },
+  {
+    label: "자료 연결",
+    title: "구글 드라이브 폴더 링크",
+    desc: "원하는 사진으로 자동 운영을 선택하면 드라이브 폴더 링크 입력칸이 열립니다. 하위 폴더 포함 옵션으로 폴더 구조까지 글감으로 활용할 수 있습니다.",
+  },
+  {
+    label: "자동 운영",
+    title: "세부 설정 후 발행",
+    desc: "주제 설정, 스타일 설정, 발행 설정을 순서대로 진행합니다. 계정이 여러 개라면 글마다 순환 발행하고, 카테고리도 여러 개를 순환하도록 구성할 수 있습니다.",
+  },
+  {
+    label: "현황 확인",
+    title: "대시보드에서 결과 확인",
+    desc: "발행 후에는 발행 현황과 최근 발행 목록을 확인합니다. 운영 중인 자동화 정보가 남기 때문에 현재 어떤 테마와 카테고리로 돌아가는지 바로 볼 수 있습니다.",
+  },
 ];
 
 /*
@@ -883,444 +1066,319 @@ function ProductDetail({ p, C, user, onLogin, onBack, isMobile, isAdmin, onUpdat
           )
         )}
       </section>
+
+      <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 20px 90px" }}>
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: BRAND, marginBottom: 8 }}>Download</div>
+          <h2 style={{ fontSize: isMobile ? 24 : 30, fontWeight: 800, margin: 0, lineHeight: 1.25 }}>운영 환경에 맞게 설치하세요</h2>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+          <div style={{
+            borderRadius: 18, border: `1px solid ${BRAND}30`,
+            background: C.bg === "#fff" ? "linear-gradient(135deg,#f8f6ff,#ffffff)" : "rgba(124,106,255,0.08)",
+            padding: isMobile ? 22 : 28,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Windows용</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Windows 10/11 설치 파일</div>
+              </div>
+              <span style={{ padding: "7px 12px", borderRadius: 999, background: "#10b98115", color: "#10b981", fontSize: 12, fontWeight: 800 }}>다운로드 가능</span>
+            </div>
+            <div style={{ display: "grid", gap: 8, fontSize: 13, color: C.muted, marginBottom: 20 }}>
+              <div>파일명: {AUTOMATION_DOWNLOAD.fileName}</div>
+              <div>버전: {AUTOMATION_DOWNLOAD.version} · 용량: {AUTOMATION_DOWNLOAD.size}</div>
+            </div>
+            <a
+              href={AUTOMATION_DOWNLOAD.url}
+              download={AUTOMATION_DOWNLOAD.fileName}
+              onClick={() => onDownload && onDownload(p.id)}
+              style={{
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10,
+                padding: "14px 22px", borderRadius: 12, background: GRAD, color: "#fff",
+                fontSize: 15, fontWeight: 800, textDecoration: "none", boxShadow: "0 4px 16px rgba(124,106,255,0.24)",
+              }}
+            >
+              <svg width="17" height="17" viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              Windows 파일 받기
+            </a>
+          </div>
+
+          <div style={{
+            borderRadius: 18, border: `1px solid ${C.border}`,
+            background: C.bg === "#fff" ? "#f8fafc" : "rgba(255,255,255,0.04)",
+            padding: isMobile ? 22 : 28,
+            opacity: 0.9,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>Mac용</div>
+                <div style={{ fontSize: 13, color: C.muted }}>macOS 버전은 준비 중입니다</div>
+              </div>
+              <span style={{ padding: "7px 12px", borderRadius: 999, background: `${BRAND}12`, color: BRAND, fontSize: 12, fontWeight: 800 }}>개발중</span>
+            </div>
+            <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, marginBottom: 20 }}>
+              Mac 환경에서도 동일한 자동화 흐름을 사용할 수 있도록 별도 빌드를 개발하고 있습니다.
+            </div>
+            <button disabled style={{
+              padding: "14px 22px", borderRadius: 12, border: `1px solid ${C.border}`,
+              background: C.bg === "#fff" ? "#eef2f7" : "rgba(255,255,255,0.06)",
+              color: C.muted, fontSize: 15, fontWeight: 800, cursor: "not-allowed",
+            }}>
+              개발중
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
 
 /* ── 메인 목록 페이지 ── */
-export default function ProgramsPage({ C, navigate, user, onLogin, initialProductId, onProductIdChange }) {
-  const [category, setCategory] = useState("all");
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState("latest");
-
-  // 무료 미디어 검색
-  const [mediaQuery, setMediaQuery] = useState("");
-  const [mediaResults, setMediaResults] = useState([]);
-  const [mediaLoading, setMediaLoading] = useState(false);
-  const isMediaTab = category === "free_photo" || category === "free_video";
-
-  const searchMedia = async (q) => {
-    setMediaLoading(true);
-    setMediaResults([]);
-    try {
-      const results = [];
-      const isVideo = category === "free_video";
-      // Pixabay
-      try {
-        const suffix = isVideo ? "&video=true" : "&image_type=photo";
-        const d = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(q || "nature")}&per_page=18&page=1&safesearch=true${suffix}`).then(r=>r.json());
-        (d.hits||[]).forEach(h => {
-          if (isVideo) {
-            results.push({ id: "px_"+h.id, title: h.tags, url: h.videos?.medium?.url||"", preview: h.videos?.tiny?.thumbnail||"", type: "video", src: "Pixabay" });
-          } else {
-            results.push({ id: "px_"+h.id, title: h.tags, url: h.largeImageURL||h.webformatURL, preview: h.webformatURL||h.previewURL, type: "image", src: "Pixabay" });
-          }
-        });
-      } catch {}
-      // Pexels
-      try {
-        const path = isVideo ? (q ? "videos/search" : "videos/popular") : (q ? "v1/search" : "v1/curated");
-        const params = q ? `query=${encodeURIComponent(q)}&per_page=18&page=1` : "per_page=18&page=1";
-        const d = await fetch(`/api/proxy-pexels?path=${path}&${params}`).then(r=>r.json());
-        if (isVideo) {
-          (d.videos||[]).forEach(v => {
-            results.push({ id: "pe_"+v.id, title: v.user?.name||"Pexels", url: (v.video_files||[]).find(f=>f.quality==="hd")?.link||(v.video_files||[])[0]?.link||"", preview: v.image||"", type: "video", src: "Pexels" });
-          });
-        } else {
-          (d.photos||[]).forEach(p => {
-            results.push({ id: "pe_"+p.id, title: p.photographer||"Pexels", url: p.src?.large2x||p.src?.large||"", preview: p.src?.medium||"", type: "image", src: "Pexels" });
-          });
-        }
-      } catch {}
-      // Unsplash (사진만)
-      if (!isVideo) {
-        try {
-          const key = import.meta.env.VITE_UNSPLASH_KEY;
-          if (key) {
-            const uUrl = q ? `https://api.unsplash.com/search/photos?query=${encodeURIComponent(q)}&per_page=18&page=1&client_id=${key}` : `https://api.unsplash.com/photos?per_page=18&order_by=popular&client_id=${key}`;
-            const d = await fetch(uUrl).then(r=>r.json());
-            const photos = q ? (d.results||[]) : (Array.isArray(d)?d:[]);
-            photos.forEach(p => {
-              results.push({ id: "un_"+p.id, title: p.description||p.alt_description||"Unsplash", url: p.urls?.full||p.urls?.regular||"", preview: p.urls?.regular||p.urls?.small||"", type: "image", src: "Unsplash" });
-            });
-          }
-        } catch {}
-      }
-      setMediaResults(results);
-    } catch {}
-    setMediaLoading(false);
-  };
-
-  // 무료 미디어 탭 진입 시 인기 사진/영상 로드
-  React.useEffect(() => {
-    if (isMediaTab) searchMedia("");
-  }, [category]);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedProduct, setSelectedProduct] = useState(null);
-  const [showUploadModal, setShowUploadModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
+export default function ProgramsPage({ C }) {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-  const isAdmin = user?.role === "admin";
 
-  // DB에서 상품 목록 불러오기
-  const loadProducts = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("programs")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      if (data) {
-        const mapped = data.map(d => ({
-          id: d.id, dbId: d.id,
-          title: d.title, desc: d.desc,
-          category: d.category, price: d.price,
-          priceLabel: d.price_label || (d.price === 0 ? "무료" : d.price.toLocaleString("ko-KR") + "원"),
-          version: d.version, platform: d.platform,
-          fileSize: d.file_size, downloadCount: d.download_count || 0,
-          viewCount: d.view_count || 0,
-          tags: d.tags || [], thumbnail: d.thumbnail,
-          downloadUrl: d.download_url,
-          detailContent: d.detail_content || [],
-        }));
-        // SNS 자동화 프로그램을 맨 위로 고정 (추천)
-        const PINNED_ID = "6ebdab70-6936-465b-8fd7-4a8558eec02f";
-        const pinned = mapped.filter(p => p.id === PINNED_ID);
-        const rest = mapped.filter(p => p.id !== PINNED_ID);
-        setProducts([...pinned, ...rest]);
-      }
-    } catch (err) {
-      console.log("DB 로드 실패:", err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { loadProducts(); }, []);
-
-  // URL의 productId로 상품 자동 선택
   useEffect(() => {
-    if (initialProductId && products.length > 0 && !selectedProduct) {
-      const found = products.find(p => p.id === initialProductId);
-      if (found) {
-        handleView(found);
-      }
-    }
-  }, [initialProductId, products]);
-
-  // 상품 선택/해제 시 URL + OG 메타태그 업데이트
-  useEffect(() => {
-    if (selectedProduct) {
-      // URL 변경
-      const path = programPath(selectedProduct);
-      window.history.replaceState(null, "", path);
-      if (onProductIdChange) onProductIdChange(selectedProduct.id);
-      // 페이지 타이틀
-      document.title = selectedProduct.title + " - SNS메이킷";
-      // OG 메타태그 업데이트
-      updateMeta("og:title", selectedProduct.title);
-      updateMeta("og:description", selectedProduct.desc);
-      updateMeta("og:url", "https://snsmakeit.com" + path);
-      if (selectedProduct.thumbnail) updateMeta("og:image", selectedProduct.thumbnail);
-      updateMeta("og:type", "product");
-    } else {
-      window.history.replaceState(null, "", "/programs");
-      if (onProductIdChange) onProductIdChange(null);
-      document.title = "자료실 - SNS메이킷";
-      updateMeta("og:title", "자료실 - SNS메이킷");
-      updateMeta("og:description", "프로그램, 무료 사진, 무료 영상 등 다양한 자료를 다운로드하세요.");
-      updateMeta("og:url", "https://snsmakeit.com/programs");
-      updateMeta("og:image", "https://snsmakeit.com/og-default.png");
-      updateMeta("og:type", "website");
-    }
-  }, [selectedProduct]);
-
-  const handleUpdateDetail = (productId, newBlocks) => {
-    setProducts(prev => prev.map(p => p.id === productId ? { ...p, detailContent: newBlocks } : p));
-    setSelectedProduct(prev => prev && prev.id === productId ? { ...prev, detailContent: newBlocks } : prev);
-    // DB 저장
-    adminSupabase.from("programs").update({ detail_content: newBlocks }).eq("id", productId).then(() => {});
-  };
-
-  // 하루 1회 제한 체크
-  const canCountToday = (type, id) => {
-    try {
-      const key = `prog_${type}_${id}`;
-      const last = localStorage.getItem(key);
-      const today = new Date().toISOString().slice(0, 10);
-      if (last === today) return false;
-      localStorage.setItem(key, today);
-      return true;
-    } catch { return true; }
-  };
-
-  // 조회수 증가 (하루 1회)
-  const handleView = (product) => {
-    setSelectedProduct(product);
-    if (!canCountToday("view", product.id)) return;
-    const newCount = (product.viewCount || 0) + 1;
-    const updated = { ...product, viewCount: newCount };
-    setProducts(prev => prev.map(p => p.id === product.id ? updated : p));
-    setSelectedProduct(updated);
-    if (product.dbId) {
-      adminSupabase.from("programs").update({ view_count: newCount }).eq("id", product.dbId).then(() => {});
-    }
-  };
-
-  // 다운로드 카운트 증가 (하루 1회)
-  const handleDownload = (productId) => {
-    if (!canCountToday("dl", productId)) return;
-    setProducts(prev => prev.map(p => {
-      if (p.id === productId) {
-        const newCount = (p.downloadCount || 0) + 1;
-        if (p.dbId) adminSupabase.from("programs").update({ download_count: newCount }).eq("id", p.dbId).then(() => {});
-        return { ...p, downloadCount: newCount };
-      }
-      return p;
-    }));
-    setSelectedProduct(prev => prev && prev.id === productId ? { ...prev, downloadCount: (prev.downloadCount || 0) + 1 } : prev);
-  };
-
-  // 프로그램 삭제 (관리자)
-  const handleDelete = async (productId) => {
-    if (!confirm("정말 삭제하시겠습니까?")) return;
-    const product = products.find(p => p.id === productId);
-    if (product?.dbId) {
-      await adminSupabase.from("programs").delete().eq("id", product.dbId);
-    }
-    setProducts(prev => prev.filter(p => p.id !== productId));
-    setSelectedProduct(null);
-  };
-
-  const filtered = products
-    .filter(p => category === "all" || p.category === category)
-    .filter(p => !search || p.title.toLowerCase().includes(search.toLowerCase()) || p.desc.toLowerCase().includes(search.toLowerCase()) || p.tags.some(t => t.includes(search)))
-    .sort((a, b) => {
-      if (sort === "popular") return b.downloadCount - a.downloadCount;
-      if (sort === "price_low") return a.price - b.price;
-      if (sort === "price_high") return b.price - a.price;
-      return b.id - a.id;
-    });
-
-  if (selectedProduct) {
-    return (
-      <ProductDetail
-        p={selectedProduct} C={C} user={user} onLogin={onLogin}
-        onBack={() => setSelectedProduct(null)} isMobile={isMobile}
-        isAdmin={isAdmin} onUpdateDetail={handleUpdateDetail}
-        onDownload={handleDownload} onDelete={handleDelete}
-        onEdit={(prod) => {
-          setEditingProduct({
-            ...prod,
-            tags: Array.isArray(prod.tags) ? prod.tags.join(", ") : "",
-            downloadUrl: prod.downloadUrl || "",
-          });
-          setShowUploadModal(true);
-        }}
-      />
-    );
-  }
+    document.title = "SNS 자동화봇 - SNS메이킷";
+    updateMeta("og:title", "SNS 자동화봇 - SNS메이킷");
+    updateMeta("og:description", "네이버 블로그 글 생성, 에디터 입력, 이미지 삽입, 카테고리 선택, 발행 설정까지 반복 운영 업무를 줄이는 Windows용 자동화 프로그램입니다.");
+    updateMeta("og:url", "https://snsmakeit.com/programs");
+    updateMeta("og:image", "https://snsmakeit.com/og-default.png");
+    updateMeta("og:type", "website");
+  }, []);
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text }}>
-      <section style={{ textAlign: "center", padding: "80px 20px 48px", maxWidth: 700, margin: "0 auto" }}>
-        <div style={{
-          display: "inline-block", padding: "6px 18px", borderRadius: 20,
-          background: `${BRAND}10`, border: `1px solid ${BRAND}25`, color: BRAND, fontSize: 13, fontWeight: 600, marginBottom: 18,
-        }}>Resource Library</div>
-        <h1 style={{
-          fontSize: "clamp(30px, 5vw, 46px)", fontWeight: 800, lineHeight: 1.25, marginBottom: 16, letterSpacing: -0.5,
-        }}>
-          <span style={{ background: GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>운영에 필요한 자료를 빠르게 찾으세요.</span>
+      <style>{`
+        .makeit-focus-card { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+        .makeit-focus-card:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(124,106,255,.12); border-color: rgba(124,106,255,.35) !important; }
+        .makeit-tab { transition: background .18s ease, color .18s ease, border-color .18s ease; }
+        .makeit-icon-node { transition: transform .18s ease, box-shadow .18s ease; }
+        .makeit-icon-node:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(21,23,47,.10); }
+        .makeit-faq summary::-webkit-details-marker { display: none; }
+        .makeit-faq summary { list-style: none; }
+        @keyframes makeitBannerSlide { 0%, 26% { transform: translateX(0); } 33%, 59% { transform: translateX(-33.333%); } 66%, 92% { transform: translateX(-66.666%); } 100% { transform: translateX(0); } }
+        @keyframes makeitProgress { 0% { width: 0%; } 26% { width: 33%; } 33% { width: 33%; } 59% { width: 66%; } 66% { width: 66%; } 92% { width: 100%; } 100% { width: 0%; } }
+      `}</style>
+      <section style={{ maxWidth: 1120, margin: "0 auto", padding: isMobile ? "60px 20px 42px" : "92px 24px 56px", textAlign: "center" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", padding: "7px 14px", borderRadius: 999, background: `${BRAND}10`, border: `1px solid ${BRAND}24`, color: BRAND, fontSize: 13, fontWeight: 900, marginBottom: 18 }}>
+          SNS메이킷 자동화
+        </div>
+        <h1 style={{ fontSize: isMobile ? 38 : 60, lineHeight: 1.12, letterSpacing: 0, margin: "0 auto 18px", fontWeight: 900, maxWidth: 760 }}>
+          <span style={{ background: GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>SNS 자동화봇</span>
         </h1>
-        <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.8 }}>
-          자동화 프로그램, 템플릿, 무료 사진과 영상까지<br />
-          SNS 제작과 운영에 바로 활용할 수 있는 자료를 모았습니다.
+        <p style={{ maxWidth: 820, margin: "0 auto", fontSize: isMobile ? 17 : 21, color: INK, lineHeight: 1.72, fontWeight: 900 }}>
+          매일 글감을 찾고, 사진을 고르고, 제목을 만들고, 발행 버튼을 누르는 반복 업무를 줄이기 위해 만든 네이버 블로그 자동 운영 프로그램입니다.
+        </p>
+        <p style={{ maxWidth: 760, margin: "12px auto 0", fontSize: isMobile ? 14 : 16, color: C.muted, lineHeight: 1.8, fontWeight: 700 }}>
+          사장님, 마케터, 대행 실무자가 콘텐츠 운영 시간을 줄이고 더 자주, 더 일정하게 블로그를 관리할 수 있도록 글 생성부터 자료 기반 발행까지 한 화면에서 처리합니다.
         </p>
       </section>
 
-      <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 20px 32px" }}>
-        <div style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+      <section style={{ maxWidth: 1120, margin: "0 auto", padding: isMobile ? "0 24px 72px" : "0 24px 92px" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "0.92fr 1.08fr",
+          gap: 18,
+          alignItems: "stretch",
+        }}>
           <div style={{
-            flex: 1, minWidth: 200, display: "flex", alignItems: "center", gap: 8,
-            padding: "10px 16px", borderRadius: 12, background: C.bg === "#fff" ? "#f5f5f8" : "rgba(255,255,255,0.06)",
-            border: `1px solid ${C.border}`,
+            borderRadius: 24,
+            border: `1px solid ${BRAND}24`,
+            background: C.bg === "#fff" ? "linear-gradient(135deg,#fbfaff,#ffffff)" : "rgba(255,255,255,0.04)",
+            padding: isMobile ? 22 : 28,
           }}>
-            <span style={{ color: C.muted, fontSize: 16 }}>&#128269;</span>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="자료실 검색..."
-              style={{ flex: 1, border: "none", outline: "none", background: "transparent", color: C.text, fontSize: 15 }} />
-          </div>
-          <select value={sort} onChange={e => setSort(e.target.value)} style={{
-            padding: "10px 16px", borderRadius: 12, border: `1px solid ${C.border}`,
-            background: C.bg === "#fff" ? "#f5f5f8" : "rgba(255,255,255,0.06)",
-            color: C.text, fontSize: 14, fontWeight: 500, cursor: "pointer", outline: "none",
-          }}>
-            <option value="latest">최신순</option>
-            <option value="popular">인기순</option>
-            <option value="price_low">가격 낮은순</option>
-            <option value="price_high">가격 높은순</option>
-          </select>
-          {isAdmin && (
-            <button onClick={() => { setEditingProduct(null); setShowUploadModal(true); }} style={{
-              padding: "10px 20px", borderRadius: 12, border: "none",
-              background: GRAD, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer",
-              display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
-            }}>
-              + 프로그램 등록
-            </button>
-          )}
-        </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-          {CATEGORIES.map(c => (
-            <button key={c.id} onClick={() => setCategory(c.id)} style={{
-              padding: "8px 20px", borderRadius: 20, border: c.special ? `1.5px solid ${category === c.id ? "#10b981" : (C.bg === "#fff" ? "#d1fae5" : "rgba(16,185,129,0.3)")}` : `1.5px solid ${category === c.id ? BRAND : "transparent"}`, cursor: "pointer",
-              fontSize: 14, fontWeight: 600, transition: "all 0.15s",
-              background: category === c.id ? (c.special ? "#10b981" : BRAND) : (c.special ? (C.bg === "#fff" ? "#ecfdf5" : "rgba(16,185,129,0.1)") : (C.bg === "#fff" ? "#f0f0f4" : "rgba(255,255,255,0.08)")),
-              color: category === c.id ? "#fff" : (c.special ? "#10b981" : C.muted),
-            }}>{c.label}</button>
-          ))}
-        </div>
-      </section>
-
-      {/* 무료 미디어 검색 영역 */}
-      {isMediaTab && (
-        <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 20px 20px" }}>
-          <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-            <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, background: C.bg === "#fff" ? "#f5f5f8" : "rgba(255,255,255,0.06)", border: `1px solid ${C.border}` }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input value={mediaQuery} onChange={e => setMediaQuery(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") searchMedia(mediaQuery); }}
-                placeholder={category === "free_photo" ? "무료 사진 검색 (영어 추천)..." : "무료 영상 검색 (영어 추천)..."}
-                style={{ flex: 1, border: "none", outline: "none", background: "transparent", color: C.text, fontSize: 14 }} />
-            </div>
-            <button onClick={() => searchMedia(mediaQuery)} style={{ padding: "10px 20px", borderRadius: 12, border: "none", background: "#10b981", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
-              검색
-            </button>
-          </div>
-        </section>
-      )}
-
-      <section style={{ maxWidth: 1100, margin: "0 auto", padding: "0 20px 80px" }}>
-        {isMediaTab ? (
-          mediaLoading ? (
-            <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted }}><div style={{ fontSize: 14 }}>검색 중...</div></div>
-          ) : mediaResults.length === 0 ? (
-            <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted }}>
-              <div style={{ fontSize: 14 }}>검색어를 입력하고 Enter를 눌러주세요</div>
-            </div>
-          ) : (
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
-              {mediaResults.map(m => (
-                <div key={m.id} style={{ borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg === "#fff" ? "#fff" : "rgba(255,255,255,0.04)", cursor: "pointer", transition: "all 0.2s" }}
-                  onClick={async () => {
-                    try {
-                      const res = await fetch(m.url); const blob = await res.blob();
-                      const ext = m.type === "video" ? ".mp4" : ".jpg";
-                      const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-                      a.download = (m.title || "media").slice(0,30).replace(/[^a-zA-Z0-9가-힣\s]/g,"_") + ext;
-                      a.click(); URL.revokeObjectURL(a.href);
-                    } catch { window.open(m.url, "_blank"); }
-                  }}>
-                  <div style={{ aspectRatio: category === "free_video" ? "16/9" : "4/3", overflow: "hidden", background: "#000" }}>
-                    {m.type === "video" ? (
-                      <video src={m.url} poster={m.preview} muted style={{ width: "100%", height: "100%", objectFit: "cover" }} onMouseEnter={e => e.target.play()} onMouseLeave={e => { e.target.pause(); e.target.currentTime = 0; }} />
-                    ) : (
-                      <img src={m.preview} alt={m.title} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    )}
+            <div style={{ fontSize: 13, fontWeight: 900, color: BRAND, marginBottom: 10 }}>사용 이유</div>
+            <h2 style={{ fontSize: isMobile ? 27 : 34, lineHeight: 1.25, margin: "0 0 18px", color: INK, fontWeight: 900 }}>
+              고객이 쓰는 이유를 한눈에 정리하면 이렇습니다
+            </h2>
+            <div style={{ display: "grid", gap: 12 }}>
+              {[
+                ["clock", "시간 절약", "글감 찾기, 제목 작성, 이미지 정리, 발행 준비에 쓰는 반복 시간을 줄입니다.", BRAND],
+                ["repeat", "꾸준한 운영", "블로그 운영에서 가장 어려운 꾸준한 발행 흐름을 자동화 설정으로 유지합니다.", BRAND2],
+                ["folder", "자료 활용", "현장 사진, 상품 이미지, 문서 자료를 구글 드라이브 폴더에서 바로 연결합니다.", ACCENT],
+              ].map(([icon, title, desc, color]) => (
+                <div key={title} className="makeit-icon-node" style={{ display: "grid", gridTemplateColumns: "54px 1fr", gap: 14, alignItems: "center", borderRadius: 16, border: `1px solid ${C.border}`, background: "#fff", padding: 15 }}>
+                  <div style={{ width: 54, height: 54, borderRadius: 16, background: `${color}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <AutomationIcon type={icon} color={color} size={29} />
                   </div>
-                  <div style={{ padding: "10px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.title}</div>
-                      <div style={{ fontSize: 10, color: "#10b981", fontWeight: 600, marginTop: 2 }}>무료</div>
-                    </div>
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(16,185,129,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                    </div>
+                  <div>
+                    <div style={{ fontSize: 17, color: INK, fontWeight: 900, marginBottom: 5 }}>{title}</div>
+                    <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6 }}>{desc}</div>
                   </div>
                 </div>
               ))}
             </div>
-          )
-        ) : loading ? (
-          <div style={{ textAlign: "center", padding: "80px 20px", color: C.muted }}>
-            <div style={{ fontSize: 15, fontWeight: 500 }}>불러오는 중...</div>
           </div>
-        ) : filtered.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "80px 20px", color: C.muted }}>
-            <div style={{ fontSize: 40, opacity: 0.3, marginBottom: 12 }}>&#128230;</div>
-            <div style={{ fontSize: 15, fontWeight: 500 }}>
-              {products.length === 0 ? "등록된 프로그램이 없습니다." : "검색 결과가 없습니다"}
+
+          <div style={{
+            borderRadius: 24,
+            border: `1px solid ${C.border}`,
+            background: C.bg === "#fff" ? "#fff" : "rgba(255,255,255,0.04)",
+            padding: isMobile ? 20 : 26,
+            boxShadow: C.bg === "#fff" ? "0 18px 46px rgba(21,23,47,0.08)" : "none",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 18 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 900, color: BRAND, marginBottom: 6 }}>운영 흐름</div>
+                <h2 style={{ fontSize: isMobile ? 25 : 32, lineHeight: 1.25, margin: 0, color: INK, fontWeight: 900 }}>운영 흐름</h2>
+              </div>
+              <div style={{ padding: "8px 12px", borderRadius: 999, background: `${ACCENT}12`, color: ACCENT, fontSize: 12, fontWeight: 900 }}>반복 업무 자동화</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(5, 1fr)", gap: isMobile ? 10 : 8, alignItems: "stretch" }}>
+              {[
+                ["folder", "자료 입력", "주제/드라이브"],
+                ["write", "글 생성", "제목/본문"],
+                ["image", "사진 삽입", "본문 이미지"],
+                ["publish", "자동 발행", "네이버 블로그"],
+                ["chart", "현황 확인", "성공률/로그"],
+              ].map(([icon, title, desc], idx) => (
+                <div key={title} style={{ position: "relative" }}>
+                  {!isMobile && idx < 4 && (
+                    <div style={{ position: "absolute", top: 38, right: -13, width: 18, height: 2, background: `${BRAND}30`, zIndex: 0 }} />
+                  )}
+                  <div className="makeit-icon-node" style={{ position: "relative", zIndex: 1, height: "100%", borderRadius: 18, border: `1px solid ${idx === 3 ? `${BRAND2}40` : C.border}`, background: idx === 3 ? "linear-gradient(135deg,#fff5fb,#ffffff)" : "#fbfbff", padding: "18px 12px", textAlign: "center" }}>
+                    <div style={{ width: 48, height: 48, margin: "0 auto 12px", borderRadius: 16, background: idx === 3 ? `${BRAND2}12` : `${BRAND}10`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <AutomationIcon type={icon} color={idx === 3 ? BRAND2 : BRAND} size={27} />
+                    </div>
+                    <div style={{ fontSize: 15, color: INK, fontWeight: 900, marginBottom: 5 }}>{title}</div>
+                    <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.45 }}>{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 16, borderRadius: 16, background: `linear-gradient(135deg, ${BRAND}10, ${BRAND2}10)`, padding: "14px 16px", color: INK, fontSize: 14, lineHeight: 1.7, fontWeight: 800 }}>
+              핵심은 글을 대신 쓰는 도구가 아니라, 블로그 운영에 필요한 반복 과정을 한 흐름으로 묶어주는 자동화 프로그램이라는 점입니다.
             </div>
           </div>
-        ) : (
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: 20,
-          }}>
-            {filtered.map(p => (
-              <div key={p.id} onClick={() => handleView(p)} style={{
-                background: C.bg === "#fff" ? "#fff" : "rgba(255,255,255,0.04)",
-                borderRadius: 16, border: `1px solid ${C.border}`,
-                cursor: "pointer", transition: "all 0.2s", overflow: "hidden",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(124,106,255,0.12)"; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.04)"; }}
-              >
-                <div style={{
-                  aspectRatio: "16/10", position: "relative",
-                  background: `linear-gradient(135deg, ${BRAND}10, ${BRAND2}10)`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  borderBottom: `1px solid ${C.border}`,
-                }}>
-                  {p.thumbnail
-                    ? <img src={p.thumbnail} alt={p.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <div style={{ fontSize: 40, opacity: 0.2 }}>&#128230;</div>
-                  }
+        </div>
+      </section>
+
+      <section style={{ maxWidth: 1120, margin: "0 auto", padding: isMobile ? "0 24px 82px" : "0 24px 104px" }}>
+        <div style={{ borderRadius: 26, border: `1px solid ${C.border}`, background: C.bg === "#fff" ? "#fff" : "rgba(255,255,255,0.05)", overflow: "hidden", boxShadow: C.bg === "#fff" ? "0 18px 50px rgba(21,23,47,0.12)" : "none" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 16px", borderBottom: `1px solid ${C.border}`, background: C.bg === "#fff" ? "#fbfbff" : "rgba(255,255,255,0.03)" }}>
+            <span style={{ width: 10, height: 10, borderRadius: 999, background: BRAND2 }} />
+            <span style={{ width: 10, height: 10, borderRadius: 999, background: BRAND }} />
+            <span style={{ width: 10, height: 10, borderRadius: 999, background: ACCENT }} />
+            <span style={{ marginLeft: 8, color: C.muted, fontSize: 12, fontWeight: 800 }}>{isMobile ? "자동화 핵심 요약" : "SNS 자동화 영상 배너"}</span>
+          </div>
+          {isMobile ? (
+            <div style={{ display: "grid", gap: 1, background: C.border }}>
+              {[
+                ["write", "글 생성", "테마와 카테고리만 입력하면 블로그 글 초안을 만듭니다.", BRAND],
+                ["image", "사진 활용", "구글 드라이브의 사진과 문서를 본문 자료로 연결합니다.", ACCENT],
+                ["publish", "발행 준비", "첫 설정 이후 반복되는 발행 준비 시간을 줄입니다.", BRAND2],
+              ].map(([icon, title, desc, color]) => (
+                <div key={title} style={{ display: "grid", gridTemplateColumns: "52px 1fr", gap: 13, alignItems: "center", padding: 16, background: "#fff" }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 16, background: `${color}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <AutomationIcon type={icon} color={color} size={26} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 900, color: INK, marginBottom: 5 }}>{title}</div>
+                    <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6 }}>{desc}</div>
+                  </div>
                 </div>
-                <div style={{ padding: "20px 20px 16px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                    <div style={{
-                      padding: "5px 14px", borderRadius: 16,
-                      background: p.price === 0 ? "#10b98115" : `${BRAND}12`,
-                      color: p.price === 0 ? "#10b981" : BRAND,
-                      fontSize: 13, fontWeight: 700,
-                    }}>{p.priceLabel}</div>
-                  </div>
-                  <div style={{ display: "flex", gap: 5, marginBottom: 10, flexWrap: "wrap" }}>
-                    {p.tags.slice(0, 3).map(t => (
-                      <span key={t} style={{
-                        padding: "3px 10px", borderRadius: 12, fontSize: 11, fontWeight: 600,
-                        background: `${BRAND}10`, color: BRAND,
-                      }}>{t}</span>
-                    ))}
-                  </div>
-                  <div style={{ fontSize: 17, fontWeight: 700, marginBottom: 8, lineHeight: 1.35 }}>
-                    {p.id === "6ebdab70-6936-465b-8fd7-4a8558eec02f" && <span style={{ display: "inline-block", fontSize: 10, fontWeight: 700, background: "linear-gradient(135deg,#ff6b6b,#ff4757)", color: "#fff", padding: "2px 8px", borderRadius: 4, marginRight: 6, verticalAlign: "middle" }}>추천</span>}
-                    {p.title}
-                  </div>
-                  <div style={{
-                    fontSize: 13, color: C.muted, lineHeight: 1.7, marginBottom: 16,
-                    display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden",
-                  }}>{p.desc}</div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, color: C.muted }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2.5C3 2.5 1 6 1 6s2 3.5 5 3.5S11 6 11 6s-2-3.5-5-3.5z" stroke="currentColor" strokeWidth="1.2"/><circle cx="6" cy="6" r="1.5" stroke="currentColor" strokeWidth="1.2"/></svg>
-                        {(p.viewCount || 0).toLocaleString()}
-                      </span>
-                      <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v6M3 4l3 3 3-3M2 9h8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        {(p.downloadCount || 0).toLocaleString()}
-                      </span>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div style={{ position: "relative", overflow: "hidden", background: "#f7f5ff" }}>
+                <div style={{ display: "flex", width: "300%", animation: "makeitBannerSlide 12s ease-in-out infinite" }}>
+                  {[
+                    ["/screenshots/naverbot/banner-sns-program.png", "메이킷 SNS 자동관리 프로그램"],
+                    ["/screenshots/naverbot/banner-blog-smart.png", "블로그 운영 자동화"],
+                    ["/screenshots/naverbot/banner-auto-publish.png", "예약 자동 발행"],
+                  ].map(([src, label]) => (
+                    <div key={src} style={{ width: "33.333%", position: "relative" }}>
+                      <img src={src} alt={label} style={{ width: "100%", display: "block", aspectRatio: "3/2", objectFit: "cover", objectPosition: "center", opacity: 0.98, background: "#fff" }} />
                     </div>
-                    <div style={{ display: "flex", gap: 12, fontSize: 12, color: C.muted }}>
-                      <span>{p.platform}</span>
-                      <span>{p.fileSize}</span>
-                    </div>
+                  ))}
+                </div>
+              </div>
+              <div style={{ height: 5, background: `${BRAND}12` }}>
+                <div style={{ height: "100%", background: GRAD, animation: "makeitProgress 12s linear infinite" }} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 1, background: C.border }}>
+                {["SNS 자동관리", "블로그 운영", "예약 발행"].map(text => (
+                  <div key={text} style={{ padding: "13px 16px", background: "#fbfbff", color: INK, fontSize: 13, fontWeight: 900, textAlign: "center" }}>
+                    {text}
                   </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      <section style={{ maxWidth: 1120, margin: "0 auto", padding: isMobile ? "0 24px 86px" : "0 24px 112px" }}>
+        <div style={{ marginBottom: 22, textAlign: "center" }}>
+          <div style={{ fontSize: 13, fontWeight: 900, color: BRAND, marginBottom: 8 }}>시작 안내</div>
+          <h2 style={{ fontSize: isMobile ? 28 : 38, lineHeight: 1.25, margin: "0 0 10px", fontWeight: 900, color: INK }}>처음 시작은 4단계면 충분합니다</h2>
+          <p style={{ maxWidth: 700, margin: "0 auto", fontSize: 15, color: C.muted, lineHeight: 1.8 }}>
+            설치, 로그인, 네이버 계정 연결, 첫 발행까지 필요한 과정만 간단하게 정리했습니다.
+          </p>
+        </div>
+        {isMobile ? (
+          <div style={{ display: "grid", gap: 12 }}>
+            {[
+              ["publish", "1단계", "Windows 파일 설치", "설치 파일을 내려받고 프로그램을 실행합니다.", BRAND],
+              ["write", "2단계", "메이킷 로그인", "메이킷 계정으로 로그인하고 사용 환경을 불러옵니다.", BRAND2],
+              ["folder", "3단계", "네이버 계정 연결", "네이버 로그인 후 블로그 발행 세션을 저장합니다.", ACCENT],
+              ["repeat", "4단계", "첫 블로그 발행", "테마와 카테고리를 입력하고 1개 글을 바로 발행합니다.", BRAND2],
+            ].map(([icon, step, title, desc, color]) => (
+              <div key={step} style={{ display: "grid", gridTemplateColumns: "58px 1fr", gap: 14, alignItems: "center", borderRadius: 18, border: `1px solid ${C.border}`, background: "#fff", padding: 16 }}>
+                <div style={{ width: 58, height: 58, borderRadius: 18, background: `${color}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <AutomationIcon type={icon} color={color} size={28} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 900, color, marginBottom: 4 }}>{step}</div>
+                  <div style={{ fontSize: 17, fontWeight: 900, color: INK, marginBottom: 5 }}>{title}</div>
+                  <div style={{ fontSize: 13, lineHeight: 1.65, color: C.muted }}>{desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ borderRadius: 26, border: `1px solid ${C.border}`, background: "#fff", padding: 14, overflow: "hidden", boxShadow: C.bg === "#fff" ? "0 18px 46px rgba(21,23,47,0.08)" : "none" }}>
+            <img src="/screenshots/naverbot/setup-4-steps.png" alt="설치 후 4단계 시작 안내" style={{ width: "100%", display: "block", borderRadius: 20, aspectRatio: "3/2", objectFit: "contain", background: "#fff" }} />
+          </div>
+        )}
+      </section>
+
+      <section style={{ maxWidth: 1120, margin: "0 auto", padding: isMobile ? "0 24px 86px" : "0 24px 112px" }}>
+        <div style={{ marginBottom: 22, textAlign: "center" }}>
+          <div style={{ fontSize: 13, fontWeight: 900, color: BRAND, marginBottom: 8 }}>핵심 기능</div>
+          <h2 style={{ fontSize: isMobile ? 28 : 38, lineHeight: 1.25, margin: "0 0 10px", fontWeight: 900, color: INK }}>기능은 3가지만 기억하면 됩니다</h2>
+          <p style={{ maxWidth: 700, margin: "0 auto", fontSize: 15, color: C.muted, lineHeight: 1.8 }}>
+            빠르게 발행하고, 드라이브 자료를 활용하고, 네이버 계정을 연결해 반복 운영을 줄입니다.
+          </p>
+        </div>
+        {isMobile ? (
+          <div style={{ display: "grid", gap: 12 }}>
+            {[
+              ["write", "빠른 발행", "테마와 카테고리만 입력해 1개 글을 바로 발행합니다.", BRAND],
+              ["folder", "드라이브 자동 완성", "사진, 글감, 인용구를 자료 폴더에서 불러와 구성합니다.", ACCENT],
+              ["clock", "계정 설정", "네이버 로그인 세션을 저장해 다음 운영을 더 빠르게 시작합니다.", BRAND2],
+            ].map(([icon, title, desc, color]) => (
+              <div key={title} className="makeit-icon-node" style={{ display: "grid", gridTemplateColumns: "56px 1fr", gap: 14, alignItems: "center", borderRadius: 18, border: `1px solid ${C.border}`, background: "#fff", padding: 16 }}>
+                <div style={{ width: 56, height: 56, borderRadius: 18, background: `${color}12`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <AutomationIcon type={icon} color={color} size={28} />
+                </div>
+                <div>
+                  <div style={{ fontSize: 17, color: INK, fontWeight: 900, marginBottom: 6 }}>{title}</div>
+                  <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.65 }}>{desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }}>
+            {[FEATURE_VISUALS[2], FEATURE_VISUALS[0], FEATURE_VISUALS[1]].map((visual) => (
+              <div key={visual.src} className="makeit-focus-card" style={{ borderRadius: 22, border: `1px solid ${C.border}`, background: "#fff", padding: 12, overflow: "hidden" }}>
+                <img src={visual.src} alt={visual.title} style={{ width: "100%", display: "block", aspectRatio: "3/2", objectFit: "contain", borderRadius: 16, background: "#fbfaff" }} />
+                <div style={{ padding: "15px 5px 6px" }}>
+                  <div style={{ fontSize: 12, color: BRAND, fontWeight: 900, marginBottom: 6 }}>{visual.label}</div>
+                  <div style={{ fontSize: 17, color: INK, fontWeight: 900, lineHeight: 1.42 }}>{visual.title}</div>
                 </div>
               </div>
             ))}
@@ -1328,15 +1386,131 @@ export default function ProgramsPage({ C, navigate, user, onLogin, initialProduc
         )}
       </section>
 
-      {/* 등록 모달 */}
-      {showUploadModal && (
-        <ProgramUploadModal
-          C={C} isMobile={isMobile}
-          editItem={editingProduct}
-          onClose={() => { setShowUploadModal(false); setEditingProduct(null); }}
-          onSave={() => { loadProducts(); }}
-        />
-      )}
+      <section style={{ maxWidth: 1120, margin: "0 auto", padding: isMobile ? "0 24px 86px" : "0 24px 112px" }}>
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: isMobile ? "1fr" : "0.82fr 1.18fr",
+          gap: 22,
+          alignItems: "start",
+        }}>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 900, color: BRAND, marginBottom: 8 }}>자주 묻는 질문</div>
+            <h2 style={{ fontSize: isMobile ? 28 : 36, fontWeight: 900, margin: "0 0 12px", lineHeight: 1.25, color: INK }}>
+              구매 전에 많이 묻는 질문
+            </h2>
+            <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.85, margin: "0 0 18px" }}>
+              자동화 프로그램은 운영 시간을 줄이는 도구입니다. 노출, 계정 상태, 비용처럼 실제 운영자가 가장 궁금해하는 부분을 먼저 정리했습니다.
+            </p>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 13px", borderRadius: 999, background: `${ACCENT}12`, color: ACCENT, fontSize: 13, fontWeight: 900 }}>
+              <AutomationIcon type="chart" color={ACCENT} size={18} />
+              운영 전 확인 권장
+            </div>
+          </div>
+          <div style={{ display: "grid", gap: 10 }}>
+            {[
+              [
+                "이 프로그램을 쓰면 네이버 노출이 보장되나요?",
+                "검색 노출이나 상위 노출을 보장하지는 않습니다. 다만 글감 정리, 본문 작성, 사진 삽입, 발행 준비에 들어가는 시간을 줄여 꾸준한 운영을 돕습니다. 실제 노출은 키워드 경쟁도, 콘텐츠 품질, 블로그 상태, 운영 이력에 따라 달라집니다.",
+              ],
+              [
+                "계정 운영에 문제가 생기지 않나요?",
+                "프로그램은 반복 운영을 줄이기 위한 도구이며, 무리한 대량 발행이나 동일한 문구 반복 사용은 권장하지 않습니다. 블로그 품질 유지를 위해 하루 발행량과 발행 간격을 보수적으로 잡고, 직접 검수 후 운영하는 방식이 좋습니다.",
+              ],
+              [
+                "추가비용이 발생하나요?",
+                "현재는 Windows 설치 파일을 먼저 제공하는 단계입니다. 정식 운영 방식과 비용이 확정되면 홈페이지를 통해 별도로 안내하며, 다계정 운영이나 맞춤 자동화가 필요한 경우에는 운영 범위에 따라 별도 안내가 필요할 수 있습니다.",
+              ],
+              [
+                "구글 드라이브 자료를 꼭 써야 하나요?",
+                "필수는 아닙니다. 간단히 테마와 카테고리만 입력해 빠른 발행을 시작할 수 있고, 사진이나 문서 자료가 많은 경우 구글 드라이브 폴더를 연결해 더 효율적으로 운영할 수 있습니다.",
+              ],
+              [
+                "완전히 자동으로만 운영해도 되나요?",
+                "가능한 영역은 자동화하되, 최종 발행 전 제목, 본문, 사진, 업종 표현은 확인하는 것을 권장합니다. 특히 병원, 금융, 법률, 부동산처럼 표현 리스크가 있는 업종은 운영자가 직접 검수해야 합니다.",
+              ],
+              [
+                "여러 블로그 계정도 운영할 수 있나요?",
+                "다계정 운영은 프로그램 구조상 확장 가능한 영역이지만, 계정 수와 운영 방식에 따라 설정과 안정화 범위가 달라질 수 있습니다. 여러 브랜드나 대행 목적의 운영은 별도 협의 항목으로 안내합니다.",
+              ],
+            ].map(([question, answer], idx) => (
+              <details key={question} className="makeit-faq" open={idx === 0} style={{
+                borderRadius: 16,
+                border: `1px solid ${idx === 0 ? `${BRAND}35` : C.border}`,
+                background: C.bg === "#fff" ? "#fff" : "rgba(255,255,255,0.04)",
+                overflow: "hidden",
+              }}>
+                <summary style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 16,
+                  cursor: "pointer",
+                  padding: isMobile ? "17px 18px" : "18px 20px",
+                  color: INK,
+                  fontSize: isMobile ? 15 : 16,
+                  fontWeight: 900,
+                }}>
+                  <span>{question}</span>
+                  <span style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 999, background: `${BRAND}10`, color: BRAND, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900 }}>+</span>
+                </summary>
+                <div style={{ padding: isMobile ? "0 18px 18px" : "0 20px 20px", color: C.muted, fontSize: 14, lineHeight: 1.85 }}>
+                  {answer}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section style={{ maxWidth: 1120, margin: "0 auto", padding: isMobile ? "0 24px 108px" : "0 24px 136px" }}>
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 13, fontWeight: 900, color: BRAND, marginBottom: 8 }}>다운로드</div>
+          <h2 style={{ fontSize: isMobile ? 28 : 36, fontWeight: 900, margin: 0, lineHeight: 1.25 }}>다운로드</h2>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
+          <div style={{ borderRadius: 18, border: `1px solid ${BRAND}30`, background: C.bg === "#fff" ? "linear-gradient(135deg,#f8f6ff,#ffffff)" : "rgba(124,106,255,0.08)", padding: isMobile ? 22 : 28 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 6 }}>Windows용</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Windows 10/11 설치 파일</div>
+              </div>
+              <span style={{ padding: "7px 12px", borderRadius: 999, background: AUTOMATION_DOWNLOAD_READY ? "#10b98115" : `${BRAND}12`, color: AUTOMATION_DOWNLOAD_READY ? "#10b981" : BRAND, fontSize: 12, fontWeight: 900 }}>
+                {AUTOMATION_DOWNLOAD_READY ? "파일 등록됨" : "링크 준비중"}
+              </span>
+            </div>
+            <div style={{ display: "grid", gap: 8, fontSize: 13, color: C.muted, marginBottom: 20 }}>
+              <div>파일명: {AUTOMATION_DOWNLOAD.fileName}</div>
+              <div>버전: {AUTOMATION_DOWNLOAD.version} · 용량: {AUTOMATION_DOWNLOAD.size}</div>
+            </div>
+            {AUTOMATION_DOWNLOAD_READY ? (
+              <a href={AUTOMATION_DOWNLOAD.url} download={AUTOMATION_DOWNLOAD.fileName} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "14px 22px", borderRadius: 12, background: GRAD, color: "#fff", fontSize: 15, fontWeight: 900, textDecoration: "none", boxShadow: "0 4px 16px rgba(124,106,255,0.24)" }}>
+                <svg width="17" height="17" viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Windows 파일 받기
+              </a>
+            ) : (
+              <button disabled style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "14px 22px", borderRadius: 12, border: "none", background: "#eef2f7", color: C.muted, fontSize: 15, fontWeight: 900, cursor: "not-allowed" }}>
+                외부 다운로드 링크 준비중
+              </button>
+            )}
+          </div>
+
+          <div style={{ borderRadius: 18, border: `1px solid ${C.border}`, background: C.bg === "#fff" ? "#f8fafc" : "rgba(255,255,255,0.04)", padding: isMobile ? 22 : 28, opacity: 0.92 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 6 }}>Mac용</div>
+                <div style={{ fontSize: 13, color: C.muted }}>macOS 버전은 준비 중입니다</div>
+              </div>
+              <span style={{ padding: "7px 12px", borderRadius: 999, background: `${BRAND}12`, color: BRAND, fontSize: 12, fontWeight: 900 }}>개발중</span>
+            </div>
+            <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, marginBottom: 20 }}>
+              현재 배포 파일은 Windows용으로만 제공됩니다. Mac용은 Electron 빌드 타깃과 자동화 실행 안정화 작업이 끝난 뒤 이 영역에 별도로 등록됩니다.
+            </div>
+            <button disabled style={{ padding: "14px 22px", borderRadius: 12, border: `1px solid ${C.border}`, background: C.bg === "#fff" ? "#eef2f7" : "rgba(255,255,255,0.06)", color: C.muted, fontSize: 15, fontWeight: 900, cursor: "not-allowed" }}>
+              개발중
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

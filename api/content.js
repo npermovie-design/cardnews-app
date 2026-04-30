@@ -34,6 +34,106 @@ function setCors(req, res, { methods = "POST,OPTIONS", useWildcard = false } = {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
 
+function decodeHtmlEntities(value = "") {
+  return String(value)
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10)))
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/gi, "'");
+}
+
+function stripHtmlToText(html = "") {
+  return decodeHtmlEntities(String(html)
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, " ")
+    .replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, " ")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|li|h[1-6]|blockquote|article|section)>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&[a-z]+;/gi, " "))
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function cleanArticleText(text = "") {
+  const blocked = /(무단전재|재배포 금지|기자|구독|공유|댓글|좋아요|Copyright|All rights reserved|닫기|본문 바로가기)/i;
+  const seen = new Set();
+  return String(text)
+    .split(/\n+|(?<=[.!?。])\s+/)
+    .map(line => line.replace(/\s+/g, " ").trim())
+    .filter(line => line.length >= 18 && !blocked.test(line))
+    .filter(line => {
+      const key = line.slice(0, 80);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .join("\n")
+    .trim();
+}
+
+function extractJsonLdArticle(html = "") {
+  const scripts = String(html).match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi) || [];
+  const found = [];
+  const visit = (node) => {
+    if (!node) return;
+    if (Array.isArray(node)) return node.forEach(visit);
+    if (typeof node !== "object") return;
+    const type = Array.isArray(node["@type"]) ? node["@type"].join(" ") : String(node["@type"] || "");
+    if (/Article|NewsArticle|BlogPosting|SocialMediaPosting/i.test(type) || node.articleBody) found.push(node);
+    if (node["@graph"]) visit(node["@graph"]);
+    if (node.mainEntity) visit(node.mainEntity);
+  };
+  for (const script of scripts) {
+    const raw = script.replace(/^<script[^>]*>/i, "").replace(/<\/script>$/i, "").trim();
+    try { visit(JSON.parse(decodeHtmlEntities(raw))); } catch {}
+  }
+  return found.find(item => item.articleBody || item.description || item.headline) || null;
+}
+
+function extractArticleContent(html = "") {
+  const jsonLd = extractJsonLdArticle(html);
+  if (jsonLd?.articleBody) {
+    return { content: cleanArticleText(jsonLd.articleBody).slice(0, 6000), extraction: "jsonld" };
+  }
+
+  const cleanedHtml = String(html)
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+    .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, " ")
+    .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, " ")
+    .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, " ")
+    .replace(/<aside[^>]*>[\s\S]*?<\/aside>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ");
+
+  const candidates = [];
+  const blockPatterns = [
+    /<article\b[^>]*>[\s\S]*?<\/article>/gi,
+    /<main\b[^>]*>[\s\S]*?<\/main>/gi,
+    /<section[^>]+(?:id|class)=["'][^"']*(?:article|news|content|post|entry|story|view|본문|dic_area|newsct_article|harmonyContainer|articleBody|articeBody|news_end)[^"']*["'][^>]*>[\s\S]*?<\/section>/gi,
+    /<div[^>]+(?:id|class)=["'][^"']*(?:article|news|content|post|entry|story|view|본문|dic_area|newsct_article|harmonyContainer|articleBody|articeBody|news_end)[^"']*["'][^>]*>[\s\S]*?<\/div>/gi,
+  ];
+  for (const pattern of blockPatterns) {
+    const matches = cleanedHtml.match(pattern) || [];
+    for (const match of matches) candidates.push(cleanArticleText(stripHtmlToText(match)));
+  }
+  candidates.push(cleanArticleText(stripHtmlToText(cleanedHtml)));
+
+  const best = candidates
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)[0] || "";
+  return { content: best.slice(0, 6000), extraction: best ? "article" : "body" };
+}
+
 // ── Action: crawl ────────────────────────────────────────────────────────
 
 async function handleCrawl(req, res) {
@@ -205,43 +305,42 @@ async function handleFetchUrlContent(req, res) {
       ];
       for (const p of patterns) {
         const m = html.match(p);
-        if (m?.[1]) return m[1].trim();
+        if (m?.[1]) return decodeHtmlEntities(m[1]).trim();
       }
       return "";
     };
+    const jsonLd = extractJsonLdArticle(html);
 
     // 제목 추출
-    let title = getMeta("og:title") || getMeta("twitter:title");
+    let title = getMeta("og:title") || getMeta("twitter:title") || decodeHtmlEntities(jsonLd?.headline || "");
     if (!title) {
       const tm = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-      title = tm?.[1]?.trim() || "";
+      title = decodeHtmlEntities(tm?.[1] || "").trim();
     }
     title = title.replace(/\s*[|\-–—]\s*[^|\-–—]+$/, "").trim(); // 사이트명 제거
 
     // 설명 추출
-    const description = getMeta("og:description") || getMeta("twitter:description") || getMeta("description");
+    const description = getMeta("og:description") || getMeta("twitter:description") || getMeta("description") || decodeHtmlEntities(jsonLd?.description || "");
 
     // 썸네일
-    const thumbnail = getMeta("og:image") || getMeta("twitter:image");
+    const jsonImage = Array.isArray(jsonLd?.image) ? jsonLd.image[0]?.url || jsonLd.image[0] : jsonLd?.image?.url || jsonLd?.image;
+    const thumbnail = getMeta("og:image") || getMeta("twitter:image") || jsonImage || "";
+    const publishedAt = getMeta("article:published_time") || getMeta("pubdate") || jsonLd?.datePublished || "";
+    const sourceName = getMeta("og:site_name") || "";
+    const jsonAuthor = Array.isArray(jsonLd?.author) ? jsonLd.author[0] : jsonLd?.author;
+    const author = getMeta("author") || jsonAuthor?.name || (typeof jsonAuthor === "string" ? jsonAuthor : "");
 
-    // 본문 텍스트 추출 (스크립트/스타일 제거 후)
-    let bodyText = html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&[a-z]+;/gi, " ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    // 의미있는 본문만 (100자 이상 연속 텍스트 블록)
-    const sentences = bodyText.match(/[가-힣a-zA-Z][^.!?。]{20,}[.!?。]?/g) || [];
-    const content = sentences.slice(0, 15).join(" ").slice(0, 800);
+    const extracted = extractArticleContent(html);
+    const content = extracted.content;
 
     // 사이트 종류 감지
     let type = "web";
     const urlLower = url.toLowerCase();
-    if (urlLower.includes("naver.com") || urlLower.includes("daum.net") ||
-        urlLower.includes("news") || urlLower.includes("article") || urlLower.includes("기사")) {
+    if (/(instagram\.com|threads\.(net|com)|tiktok\.com|twitter\.com|x\.com|facebook\.com|fb\.watch|band\.us|pinterest\.com)/i.test(urlLower)) {
+      type = "sns";
+    } else if (urlLower.includes("naver.com") || urlLower.includes("daum.net") ||
+        urlLower.includes("news") || urlLower.includes("article") || urlLower.includes("기사") ||
+        /(chosun|joongang|donga|hani|khan|mk\.co\.kr|hankyung|yna\.co\.kr|newsis|edaily|etnews|zdnet|itworld|bbc|cnn|reuters|apnews)/i.test(urlLower)) {
       type = "news";
     } else if (urlLower.includes("blog") || urlLower.includes("tistory") || urlLower.includes("brunch")) {
       type = "blog";
@@ -252,6 +351,11 @@ async function handleFetchUrlContent(req, res) {
       title,
       description,
       content,
+      contentLength: content.length,
+      extraction: extracted.extraction,
+      sourceName,
+      publishedAt,
+      author,
       thumbnail,
       url,
     });

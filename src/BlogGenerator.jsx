@@ -348,7 +348,7 @@ function AutomationPanel({ isDark, text, muted, accent, border, cardBg, user, on
     setStatus("generating"); setProgress(t("bg_aiWritingProgress")); setResultPreview("");
     try {
       const { callAI } = await import("./aiClient.js");
-      const spMap = { polite_yo:"해요체(~요, ~이에요, ~했어요)", formal:"합니다체(~입니다, ~했습니다)", casual:"반말(~야, ~거든, ~했어)", friendly:"친근한 경험 공유체(~거든요, ~해보세요, ~더라고요)", mixed:"상황에 맞게 존댓말과 반말을 자연스럽게 섞어서" };
+      const spMap = { polite_yo:"해요체(~요, ~이에요, ~했어요)", formal:"합니다체(~입니다, ~했습니다)", plain_past:"했다체(~했다, ~이었다)", literary_past:"하였다체(~하였다, ~이었다)", casual:"반말(~야, ~거든, ~했어)", friendly:"친근한 경험 공유체(~거든요, ~해보세요, ~더라고요)", mixed:"상황에 맞게 존댓말과 반말을 자연스럽게 섞어서" };
       const toneMap = { friendly:"친근하고 대화하듯이", diary:"일기/에세이처럼 개인 경험 중심으로", review:"리뷰/후기 느낌으로 장단점 분석", professional:"전문적이고 신뢰감 있게 데이터 기반으로" };
       const wcMap = { short:"3000자", medium:"5000자", long:"7000자" };
       const subtypeMap = { info:"정보성 글 (핵심 정보 전달)", visit:"방문기/체험기 (장소 소개)", review:"리뷰/비교 분석 (장단점)", product:"제품/서비스 소개", column:"칼럼/의견 (전문가 관점)" };
@@ -925,6 +925,9 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [tone,       setTone]       = useState(cfg.tones[0].id);
   const [speechStyle, setSpeechStyle] = useState("polite_yo");
   const [wordCount,  setWordCount]  = useState(cfg.wordCounts[1]?.id || cfg.wordCounts[0].id);
+  const [writeStep, setWriteStep] = useState("input");
+  const [quoteStyle, setQuoteStyle] = useState("underline");
+  const [pointColor, setPointColor] = useState("#2DB400");
   // 플랫폼 변경 시 설정 리셋
   useEffect(() => {
     const newCfg = PLATFORMS[platformId] || PLATFORMS.blog_naver;
@@ -932,6 +935,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     setTone(newCfg.tones[0].id);
     setWordCount(newCfg.wordCounts[1]?.id || newCfg.wordCounts[0].id);
     setFields({});
+    setWriteStep("input");
   }, [platformId]);
   // ── remount 복원: 부모 리렌더로 unmount/remount 시 전체 상태 유지 ──
   const _ssKey = useRef("_bg_res_" + (initialType || "blog")).current;
@@ -1068,7 +1072,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   };
   const UnifiedCanvasEditorLazy = React.lazy(() => import("./UnifiedCanvasEditor"));
   const [designRef, setDesignRef] = useState(""); // 참고 글감
-  const [designRefImage, setDesignRefImage] = useState(null); // 참고 이미지 base64
+  const [designRefImages, setDesignRefImages] = useState([]); // 참고 이미지 base64[]
   const [designPointColor, setDesignPointColor] = useState("#e4ff1a"); // 포인트 색상
   const [designUseEmoji, setDesignUseEmoji] = useState(false); // 이모티콘 사용 여부
   const [showBrandHelp, setShowBrandHelp] = useState(false);
@@ -1255,6 +1259,27 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     return { used: _used, limit: _lim, points: _pts, exhausted, isGuest };
   };
   // ── 카드뉴스 생성 함수 ──
+  const proxiedCoverImageUrl = (url) => url ? `/api/proxy-image?url=${encodeURIComponent(url)}` : null;
+  const findDesignCoverImage = async (query) => {
+    const q = (query || "social media marketing").trim();
+    try {
+      const pex = await fetch(`/api/proxy-pexels?path=v1/search&query=${encodeURIComponent(q)}&per_page=8&orientation=portrait`).then(r=>r.json());
+      const p = (pex.photos || []).find(item => item?.src?.large2x || item?.src?.large || item?.src?.portrait);
+      if (p) return proxiedCoverImageUrl(p.src.large2x || p.src.large || p.src.portrait);
+    } catch {}
+    try {
+      const uns = await fetch(`/api/proxy-unsplash?query=${encodeURIComponent(q)}&per_page=8&orientation=portrait`).then(r=>r.json());
+      const u = (uns.results || []).find(item => item?.urls?.regular || item?.urls?.full);
+      if (u) return proxiedCoverImageUrl(u.urls.regular || u.urls.full);
+    } catch {}
+    try {
+      const pix = await fetch(`/api/proxy-pixabay?q=${encodeURIComponent(q)}&per_page=8&safesearch=true&image_type=photo&orientation=vertical`).then(r=>r.json());
+      const px = (pix.hits || []).find(item => item?.largeImageURL || item?.webformatURL);
+      if (px) return proxiedCoverImageUrl(px.largeImageURL || px.webformatURL);
+    } catch {}
+    return proxiedCoverImageUrl(`https://picsum.photos/seed/${encodeURIComponent(q.toLowerCase().replace(/\s+/g,"-"))}/1080/1350`);
+  };
+
   const generateCardNews = async () => {
     const content = (fields.keyword || "").trim();
     if (!content) return;
@@ -1282,9 +1307,17 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
 
 구성 규칙:
 - 슬라이드 수: 내용에 따라 5~10장 자동 결정
-- 1번(표지): 호기심 유발 큰 제목
+- 1번(표지): 사진/짤 배경 위에 올라가는 강한 후킹 커버
 - 2~N-1번: 각 핵심 포인트별 1장
 - 마지막: 팔로우/저장 유도
+- 1번 title은 12~24자 안에서 손실회피, 숫자, 반전, 즉시 이득 중 하나를 담아 확 끌리게 작성
+- 1번 body는 한 문장만. 긴 설명 금지
+- 1번 hookBadge는 "저장 필수", "놓치면 손해", "바로 확인"처럼 4~8자
+- 모든 슬라이드에 visualKeyword를 반드시 넣으세요
+- visualKeyword는 배경 사진 검색용 영어 2~5단어입니다
+- visualKeyword는 슬라이드 문구와 직접 맞는 실제 장면/제품/화면/행동을 구체적으로 작성하세요
+- 추상어 금지: success, business, marketing, growth, concept 같은 단어만 단독 사용 금지
+- 예: "stock market trading screen", "instagram analytics dashboard", "skincare product package", "office worker burnout", "tax document calculator"
 
 포인트 색상 규칙 (중요!):
 - title과 body 안에서 핵심 키워드를 [P]단어[/P]로 감싸주세요
@@ -1298,19 +1331,25 @@ ${emojiRule}
 - title: 짧고 임팩트 (20자 이내). 핵심 단어에 [P][/P]
 - subtitle: 보조 설명 (없어도 됨)
 - body: 2-3줄. 핵심 단어에 [P][/P]
+- 모든 슬라이드에는 visualKeyword 필드 포함
+- 첫 슬라이드에는 hookBadge 필드도 포함
 
 반드시 JSON만 반환.
-형식:{"slides":[{"title":"","subtitle":"","body":""}]}`;
+형식:{"slides":[{"title":"","subtitle":"","body":"","hookBadge":"","visualKeyword":""}]}`;
       let userMsg = `다음 내용을 카드뉴스로 만들어줘 (슬라이드 수는 내용에 맞게 자동 결정):\n\n${content.slice(0, 6000)}`;
       if (designRef.trim()) userMsg += `\n\n참고 글감 (이 스타일과 말투를 참고해서 만들어줘):\n${designRef.slice(0, 3000)}`;
+      if (designRefImages.length > 0) {
+        userMsg += `\n\n참고 이미지 ${designRefImages.length}장을 함께 제공합니다. 중요: 참고 이미지 속 문구, 주제, 피사체, 브랜드명은 절대 따라 쓰지 마세요. 오직 레이아웃 구조, 텍스트 위치, 여백, 폰트 위계, 도형/박스 형태, 색 대비, 그라데이션 방향, 첫 장 후킹 배치 방식만 참고하세요. 카드뉴스 내용은 반드시 사용자가 입력한 글을 기준으로 작성하세요.`;
+      }
       let text;
       let retries = 0;
       while (retries < 2) {
         try {
-          const msgs = designRefImage ? [{role:"user",content:[
-            {type:"text",text:userMsg},
-            {type:"image",source:{type:"base64",media_type:"image/jpeg",data:designRefImage.replace(/^data:image\/\w+;base64,/,"")}}
-          ]}] : [{role:"user",content:userMsg}];
+          const msgContent = [{type:"text",text:userMsg}];
+          designRefImages.slice(0, 5).forEach(img => {
+            msgContent.push({type:"image",source:{type:"base64",media_type:"image/jpeg",data:img.replace(/^data:image\/\w+;base64,/,"")}});
+          });
+          const msgs = designRefImages.length ? [{role:"user",content:msgContent}] : [{role:"user",content:userMsg}];
           text = await callAI("claude-haiku-4-5", msgs, 4000, sysMsg);
           if (text && text.trim().length > 10) break;
           retries++;
@@ -1345,6 +1384,8 @@ ${emojiRule}
         title: (s.title || "").slice(0, 60),
         subtitle: (s.subtitle || "").slice(0, 80),
         body: (s.body || "").slice(0, 400),
+        hookBadge: (s.hookBadge || s.badge || (i === 0 ? "저장 필수" : "")).slice(0, 16),
+        visualKeyword: (s.visualKeyword || s.imageKeyword || "").slice(0, 80),
         bgColor: "#0a0a0a",
         textColor: "#ffffff",
         pointColor: designPointColor,
@@ -1352,8 +1393,21 @@ ${emojiRule}
         fontFamily: "Pretendard",
         image: null,
         brandName: brandName,
+        referenceMode: designRefImages.length > 0,
+        isCover: i === 0,
         isLastSlide: i === rawSlides.length - 1,
       }));
+      const imageJobs = slides.map(async (slide) => {
+        const cleanTitle = (slide.title || "").replace(/\[P\]|\[\/P\]/g,"");
+        const cleanBody = (slide.body || "").replace(/\[P\]|\[\/P\]/g,"").slice(0, 80);
+        const q = slide.visualKeyword || `${cleanTitle} ${cleanBody}` || content.slice(0, 40);
+        return findDesignCoverImage(q);
+      });
+      const slideImages = await Promise.all(imageJobs);
+      slideImages.forEach((img, i) => {
+        if (!slides[i]) return;
+        slides[i].image = img || proxiedCoverImageUrl(`https://picsum.photos/seed/${encodeURIComponent((slides[i].visualKeyword || slides[i].title || "cardnews").toLowerCase().replace(/\s+/g,"-"))}/1080/1350`);
+      });
       setDesignSlides(slides);
       setDesignStep("editor");
       // 보관함에 자동 저장
@@ -1377,23 +1431,18 @@ ${emojiRule}
         localStorage.setItem("sns_blog_saves_v1", JSON.stringify(saves.slice(0, 100)));
         if (user?.uid) upsertLibraryItem(user.uid, "blog", savedItem);
       } catch {}
-      // 배경 이미지 자동 검색 (비동기, UI 차단 없이)
+      // 누락된 슬라이드만 보강 검색 (비동기, UI 차단 없이)
       (async () => {
         try {
-          const kwText = slides.map(s => s.title).join(", ");
-          const kwResult = await callAI("claude-haiku-4-5", [{role:"user",content:`다음 카드뉴스 제목들에 어울리는 이미지 검색 키워드를 영어로 1개만 추천 (단어만 출력):\n${kwText}`}], 50);
-          const keyword = (kwResult||"").trim().split(/[\n,]/)[0]?.trim() || "business";
-          const res = await fetch(`/api/proxy?action=pexels&path=v1/search&query=${encodeURIComponent(keyword)}&per_page=${slides.length}&orientation=square`).then(r=>r.json());
-          const photos = res.photos || [];
-          if (photos.length > 0) {
-            setDesignSlides(prev => {
-              if (!prev) return prev;
-              return prev.map((s, i) => ({
-                ...s,
-                image: photos[i % photos.length]?.src?.large || photos[0]?.src?.large || null,
-              }));
-            });
-          }
+          const missing = slides.map((s,i)=>({s,i})).filter(x=>!x.s.image);
+          if (!missing.length) return;
+          const found = await Promise.all(missing.map(x => findDesignCoverImage(x.s.visualKeyword || x.s.title || "social media post")));
+          setDesignSlides(prev => {
+            if (!prev) return prev;
+            const next = [...prev];
+            missing.forEach((x, j) => { if (found[j]) next[x.i] = { ...next[x.i], image: found[j] }; });
+            return next;
+          });
         } catch (imgErr) { console.warn("Auto image fetch:", imgErr); }
       })();
       // 포인트 차감
@@ -1415,6 +1464,13 @@ ${emojiRule}
 
   const handleGenerateClick = () => {
     if (mode === "write") {
+      if (writeStep === "input") {
+        setError("");
+        setTitleSugg([]);
+        setTitleLoading(false);
+        setWriteStep("settings");
+        return;
+      }
       if (result && !loading) {
         setShowRegenConfirm(true);
       } else {
@@ -1453,19 +1509,48 @@ ${emojiRule}
 
   const IS = {width:"100%", padding:"11px 14px", borderRadius:12, border:`1.5px solid ${inputBdr}`, background:inputBg, color:text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box"};
 
+  const normalizeDetectedUrl = (raw = "") => String(raw)
+    .trim()
+    .replace(/^[("'[<]+/g, "")
+    .replace(/[)"'\]>,.!?。！？、，]+$/g, "");
+  const extractFirstUrl = (value = "") => {
+    const match = String(value).match(/https?:\/\/[^\s<>"']+/i);
+    return match ? normalizeDetectedUrl(match[0]) : "";
+  };
+  const isSnsUrl = (url = "") => /(instagram\.com|threads\.(net|com)|tiktok\.com|twitter\.com|x\.com|facebook\.com|fb\.watch|band\.us|pinterest\.com|naver\.me)/i.test(url);
+  const linkTypeLabel = (data = {}, fallbackUrl = "") => {
+    const type = data.type || (isSnsUrl(fallbackUrl) ? "sns" : "web");
+    if (type === "youtube") return "유튜브";
+    if (type === "news") return "뉴스 기사";
+    if (type === "sns") return "SNS 링크";
+    if (type === "blog") return "블로그";
+    return "웹페이지";
+  };
+
   const fetchFromUrl = async () => {
-    if (!urlInput.trim()) return;
+    const targetUrl = normalizeDetectedUrl(urlInput.trim());
+    if (!targetUrl) return;
     setUrlLoading(true); setUrlResult(null);
     try {
-      const r = await fetch(`/api/fetch-url-content?url=${encodeURIComponent(urlInput.trim())}`);
+      const r = await fetch(`/api/fetch-url-content?url=${encodeURIComponent(targetUrl)}`);
       const data = await r.json();
       if (data.error) { alert(data.error); setUrlLoading(false); return; }
       setUrlResult(data);
+      setUrlInput(targetUrl);
       setShowLinkInput(false);
-      // keyword = title, extra = description + content
       if (data.title) setField("keyword", data.title.slice(0, 80));
-      const desc = [data.description, data.content].filter(Boolean).join(" ").slice(0, 200);
-      if (desc) setField("extra", (fields.extra ? fields.extra + "\n" : "") + t("bg_referenceContent") + desc);
+      const sourceLines = [
+        `[링크 출처] ${linkTypeLabel(data, targetUrl)}: ${data.title || targetUrl}`,
+        data.sourceName ? `매체/사이트: ${data.sourceName}` : "",
+        data.author ? `작성자: ${data.author}` : "",
+        data.publishedAt ? `게시일: ${data.publishedAt}` : "",
+        `URL: ${data.url || targetUrl}`,
+        data.description ? `요약/메타 설명:\n${data.description}` : "",
+        data.content ? `원문 내용:\n${data.content.slice(0, 5500)}` : "",
+      ].filter(Boolean).join("\n");
+      if (sourceLines) {
+        setField("extra", (fields.extra ? fields.extra.trim() + "\n\n" : "") + t("bg_referenceContent") + "\n" + sourceLines);
+      }
     } catch(e) { alert(t("bg_urlFetchFail") + e.message); }
     setUrlLoading(false);
   };
@@ -1486,11 +1571,8 @@ ${emojiRule}
   const titleTimerRef = useRef(null);
   useEffect(() => {
     if (titleTimerRef.current) clearTimeout(titleTimerRef.current);
-    if (fields.keyword && fields.keyword.trim().length >= 2 && mode === "write") {
-      titleTimerRef.current = setTimeout(() => suggestTitle(fields.keyword), 1500);
-    } else {
-      setTitleSugg([]);
-    }
+    setTitleSugg([]);
+    setTitleLoading(false);
     return () => { if (titleTimerRef.current) clearTimeout(titleTimerRef.current); };
   }, [fields.keyword]);
 
@@ -1549,7 +1631,11 @@ ${emojiRule}
     if (advExtra) advPromptExtra += `\n[추가 지시사항] ${advExtra}`;
 
     const basePrompt = cfg.buildPrompt(subtype, fields, tone, wordCount, speechStyle);
-    const prompt = advPromptExtra ? basePrompt + advPromptExtra : basePrompt;
+    const formatPromptExtra = `\n\n[AEO/GEO/SEO 노출 최적화 규칙]\n- SEO: 핵심 키워드와 롱테일 키워드를 도입부, 소제목, 본문, 해시태그에 자연스럽게 분산하세요. 키워드 반복은 과하지 않게 문맥 안에서만 사용하세요.\n- AEO: 검색자가 바로 답을 얻을 수 있게 각 소제목 첫 문단에 짧은 결론부터 제시하고, 질문형 소제목과 실천 답변을 포함하세요.\n- GEO: AI 검색/생성형 검색에 인용되기 좋게 정의, 절차, 체크리스트, 비교, 주의사항을 명확한 문장으로 정리하세요.\n- E-E-A-T: 경험 기반 관찰, 구체적 상황, 검증 가능한 기준, 독자가 바로 적용할 행동을 포함하세요.\n\n[화면 표시용 서식 규칙]\n- 각 큰 소제목마다 [quote]짧은 핵심 문장[/quote] 인용구를 1개씩 넣으세요.\n- 포인트로 강조할 핵심 키워드, 숫자, 결론 문구는 반드시 **강조 문구** 형식으로 감싸세요.\n- 한 문단마다 0~1개만 강조하고, 전체 글에는 8~14개의 **강조 문구**를 넣으세요.\n- 색상 이름이나 HTML/CSS는 출력하지 마세요. 선택한 포인트 색상은 화면에서 자동 적용됩니다.`;
+    const sourcePromptExtra = fields.extra || urlResult || (fields._files && fields._files.length)
+      ? `\n\n[제공된 정보/출처 활용 규칙]\n- 사용자가 입력한 URL, 참고 파일, 추가 지시사항이 있으면 그 내용을 우선 근거로 사용하세요.\n- 뉴스 기사 URL은 제목/메타 설명보다 추출된 원문 내용을 우선 기준으로 삼고, 원문에 없는 발언/수치/기관명은 만들지 마세요.\n- SNS 링크는 본문 추출이 제한될 수 있으므로 추출된 텍스트, 메타 설명, 사용자가 입력한 설명 범위 안에서만 재구성하세요.\n- 제공된 정보에 없는 세율, 법 조항, 금액, 기한, 기관명, 통계는 임의로 만들지 마세요.\n- 출처가 분명한 내용과 일반 설명을 구분해서 쓰고, 불확실한 내용은 상황에 따라 달라질 수 있다고 표현하세요.\n- 글 안에 출처를 넣어야 할 때는 사용자가 제공한 URL/자료명만 사용하세요.`
+      : "";
+    const prompt = basePrompt + formatPromptExtra + sourcePromptExtra + (advPromptExtra ? advPromptExtra : "");
     // 분량에 따른 max_tokens 설정 (여유 있게)
     const tokenMap = { short: 3000, medium: 5500, long: 8000, xlong: 10000 };
     const maxTok = tokenMap[wordCount] || 5500;
@@ -1601,17 +1687,6 @@ ${emojiRule}
         // 첨부 이미지가 있으면 본문 중간에 균등 배치
         const userImages = (fields._files || []).filter(f => f.type === "image" && f.b64);
         let finalText = userImages.length > 0 ? await insertUserImages(cleaned, userImages) : cleaned;
-        // 상단 대표 제목 + 이미지 자동 삽입
-        try {
-          let headerKw = fields.keyword || "";
-          // 1) 대표 제목 생성
-          let blogTitle = "";
-          try {
-            blogTitle = (await callAI("claude-haiku-4-5", [{ role: "user", content: `키워드: ${headerKw}\n이 키워드로 블로그 대표 제목 1개만 작성하세요. 클릭하고 싶고, SEO에 좋은 제목. 제목만 출력.` }], 100))?.trim()?.replace(/^["']|["']$/g, "") || "";
-          } catch {}
-          // 2) 제목만 상단 삽입 (이미지 없이)
-          if (blogTitle) finalText = `# ${blogTitle}\n\n${finalText}`;
-        } catch {}
         setResult(finalText);
         if (isTistory) setHtmlResult(mdToHtml(fullText));
       } else {
@@ -2337,7 +2412,8 @@ hospital equipment`
                     const publicUrl = await uploadFileToStorage(file, path);
                     setResult(prev => prev.replace(placeholder, `![image](${publicUrl})`));
                   } catch {
-                    setResult(prev => prev.replace("![uploading...]", "![image]"));
+                    // 업로드 실패 시 base64 유지 (이미지가 사라지지 않도록)
+                    setResult(prev => prev.replace(placeholder, `![image](${dataUri})`));
                   }
                 };
                 reader.readAsDataURL(file);
@@ -2366,8 +2442,8 @@ hospital equipment`
                         const publicUrl = await uploadFileToStorage(blob, path);
                         setResult(prev => prev.replace(placeholder, `![image](${publicUrl})`));
                       } catch {
-                        // 업로드 실패 시 base64 유지
-                        setResult(prev => prev.replace("![uploading...]", "![image]"));
+                        // 업로드 실패 시 base64 유지 (이미지가 사라지지 않도록)
+                        setResult(prev => prev.replace(placeholder, `![image](${dataUri})`));
                       }
                     };
                     reader.readAsDataURL(blob);
@@ -2402,7 +2478,7 @@ hospital equipment`
                   return (
                     <div key={si} style={{ position: "relative", marginBottom: 4 }}
                       className="blog-section-wrap">
-                      {renderMarkdown(secText, isDark, text, muted, accentRaw, suggestedImages, si === 0, si === 0 ? 0 : si - 1)}
+                      {renderMarkdown(secText, isDark, text, muted, accentRaw, suggestedImages, si === 0, si === 0 ? 0 : si - 1, { quoteStyle, pointColor, pointKeywords: fields.keyword })}
                       {/* 섹션 AI 재작업 버튼 (호버 시 표시) */}
                       {!loading && sections.length > 1 && sec.heading && (
                         <div className="section-ai-btn" style={{
@@ -2657,13 +2733,14 @@ hospital equipment`
   // URL 자동 감지
   // 유튜브 URL 감지 헬퍼
   const isYoutubeUrl = (url) => /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/.test(url);
-  const detectedYoutubeUrl = fields.keyword ? fields.keyword.match(/https?:\/\/[^\s]*(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)[^\s]*/)?.[0] : null;
+  const detectedInputUrl = extractFirstUrl(fields.keyword || "");
+  const detectedYoutubeUrl = detectedInputUrl && isYoutubeUrl(detectedInputUrl) ? detectedInputUrl : null;
 
   const handleMainInput = (val) => {
     setField("keyword", val);
-    const urlMatch = val.match(/https?:\/\/[^\s]+/);
-    if (urlMatch && !urlResult && !urlLoading) {
-      setUrlInput(urlMatch[0]);
+    const detectedUrl = extractFirstUrl(val);
+    if (detectedUrl && !urlResult && !urlLoading) {
+      setUrlInput(detectedUrl);
     }
   };
 
@@ -2677,6 +2754,127 @@ hospital equipment`
 
   // 현재 선택된 플랫폼 정보
   const currentPlatform = SNS_OPTIONS.find(p => p.id === platformId) || SNS_OPTIONS[0];
+
+  const renderWriteSettingsPage = () => (
+    <div className="bl-settings-panel" style={{maxWidth:720,margin:"0 auto",background:cardBg,border:`1px solid ${border}`,borderRadius:20,padding:"22px",boxShadow:isDark?"0 4px 20px rgba(0,0,0,0.3)":"0 4px 20px rgba(0,0,0,0.06)"}}>
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,marginBottom:20}}>
+        <div>
+          <div style={{fontSize:18,fontWeight:900,color:text,marginBottom:4}}>글 설정</div>
+          <div style={{fontSize:12,color:muted,lineHeight:1.6}}>유형, 톤, 말투, 분량을 정한 뒤 글을 생성합니다.</div>
+        </div>
+        <button onClick={()=>setWriteStep("input")}
+          style={{padding:"8px 14px",borderRadius:12,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          이전
+        </button>
+      </div>
+
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          {t("selectType")}
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {cfg.subtypes.map(s=>{
+            const isA=subtype===s.id;
+            return <button key={s.id} onClick={()=>handleSubtype(s.id)} style={{padding:"8px 16px",borderRadius:12,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit",transition:"all 0.15s"}}>{s.label}</button>;
+          })}
+        </div>
+      </div>
+
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          {t("selectTone")}
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {cfg.tones.map(t2=>{const isA=tone===t2.id;return<button key={t2.id} onClick={()=>setTone(t2.id)} style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit"}}>{t2.label}</button>;})}
+        </div>
+      </div>
+
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+          말투
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {SPEECH_STYLES.map(s=>{const isA=speechStyle===s.id;return<button key={s.id} onClick={()=>setSpeechStyle(s.id)} title={s.desc} style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>;})}
+        </div>
+      </div>
+
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M7 17h10M8 7h8M5 4h14v16H5z"/></svg>
+          인용구 스타일
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {[
+            {id:"따옴표",label:"따옴표"},
+            {id:"vertical",label:"버티컬 라인"},
+            {id:"underline",label:"라인&따옴표"},
+            {id:"frame",label:"프레임"},
+          ].map(s=>{const isA=quoteStyle===s.id;return<button key={s.id} onClick={()=>setQuoteStyle(s.id)} style={{padding:"8px 14px",borderRadius:12,border:`1.5px solid ${isA?pointColor:border}`,background:isA?`${pointColor}12`:"transparent",color:isA?pointColor:text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>;})}
+        </div>
+        <div style={{fontSize:11,color:muted,marginTop:7,lineHeight:1.6}}>생성된 인용구가 선택한 스타일로 소제목마다 적용됩니다.</div>
+      </div>
+
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          포인트 색상
+        </div>
+        <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+          <input type="color" value={pointColor} onChange={e=>setPointColor(e.target.value)}
+            style={{width:42,height:34,border:`1px solid ${border}`,borderRadius:8,background:"transparent",cursor:"pointer",padding:2}} />
+          {[
+            ["#2DB400","초록"],
+            ["#FF6B35","주황"],
+            ["#4A90D9","파랑"],
+            ["#E74C3C","빨강"],
+            ["#7c6aff","보라"],
+          ].map(c=>{const isA=pointColor.toLowerCase()===c[0].toLowerCase();return<button key={c[0]} onClick={()=>setPointColor(c[0])} style={{padding:"7px 12px",borderRadius:10,border:`1.5px solid ${isA?c[0]:border}`,background:c[0],color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",boxShadow:isA?`0 0 0 3px ${c[0]}22`:"none"}}>{c[1]}</button>;})}
+        </div>
+        <div style={{fontSize:11,color:muted,marginTop:7,lineHeight:1.6}}>AI가 **강조**한 포인트 문구에 이 색상이 자동 적용됩니다.</div>
+      </div>
+
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><line x1="21" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="21" y1="18" x2="3" y2="18"/></svg>
+          {t("selectLength")}
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+          {cfg.wordCounts.map(w=>{
+            const isA=wordCount===w.id;
+            return <button key={w.id} onClick={()=>setWordCount(w.id)} style={{padding:"8px 16px",borderRadius:12,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit",display:"flex",flexDirection:"column",alignItems:"flex-start",gap:2}}>
+              <span>{w.label}</span>
+              {w.desc && <span style={{fontSize:10,color:muted,fontWeight:500}}>{w.desc}</span>}
+            </button>;
+          })}
+        </div>
+      </div>
+
+      <div>
+        <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          추가 지시사항 <span style={{fontSize:11,fontWeight:500,color:muted}}>(선택)</span>
+        </div>
+        <textarea value={fields.extra||""} onChange={e=>setField("extra",e.target.value)} rows={3}
+          placeholder="AI에게 전달할 내용이나 참고 출처를 적어주세요. 예) 국세청 자료 기준으로, 첨부 파일 중심으로, 초보자도 이해할 수 있게"
+          style={{width:"100%",padding:"10px 14px",borderRadius:12,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",resize:"vertical",lineHeight:1.6}}/>
+      </div>
+
+      <div style={{display:"flex",justifyContent:"flex-end",gap:10,marginTop:22,paddingTop:16,borderTop:`1px solid ${border}`}}>
+        <button onClick={()=>setWriteStep("input")}
+          style={{padding:"10px 18px",borderRadius:12,border:`1px solid ${border}`,background:"transparent",color:text,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          이전
+        </button>
+        <button onClick={handleGenerateClick} disabled={loading||fileLoading||!fields.keyword?.trim()}
+          style={{padding:"10px 24px",borderRadius:14,border:"none",background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,cursor:loading||fileLoading||!fields.keyword?.trim()?"not-allowed":"pointer",opacity:loading||fileLoading||!fields.keyword?.trim()?0.5:1,fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
+          {loading ? <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</> : <>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>30P</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>}
+        </button>
+      </div>
+    </div>
+  );
 
   const content = (
     <div style={{display:"flex",flex:1,height:"100%",overflow:"hidden",flexDirection:"column"}}
@@ -2780,7 +2978,7 @@ hospital equipment`
               ].map(m => {
                 const isActive = m.id==="shorts" ? shortsMode : mode===m.id && !shortsMode;
                 return (
-                <button key={m.id} onClick={()=>{if(m.navigate&&setAiMenu){setAiMenu(m.id);return;}if(m.id==="shorts"){setShortsMode(true);setVideoSubMode(null);setShortsYtUrl("");}else{setShortsMode(false);setVideoSubMode(null);setMode(m.id);if(m.id==="design"){setDesignSlides(null);setDesignStep("input");}}}} style={{
+                <button key={m.id} onClick={()=>{if(m.navigate&&setAiMenu){setAiMenu(m.id);return;}if(m.id==="shorts"){setShortsMode(true);setVideoSubMode(null);setShortsYtUrl("");}else{setShortsMode(false);setVideoSubMode(null);setMode(m.id);if(m.id==="write"){setWriteStep("input");}if(m.id==="design"){setDesignSlides(null);setDesignStep("input");}}}} style={{
                   padding:"10px 20px", borderRadius:20,
                   border: isActive ? `2px solid ${m.color}` : `1.5px solid ${border}`,
                   background: isActive ? (isDark?`${m.color}15`:`${m.color}08`) : "transparent",
@@ -2986,22 +3184,34 @@ hospital equipment`
                       <textarea value={designRef} onChange={e=>setDesignRef(e.target.value)}
                         placeholder="참고할 글감이나 스타일을 붙여넣기..."
                         rows={3} style={{width:"100%",padding:"8px 10px",borderRadius:8,border:`1px solid ${inputBdr}`,background:inputBg,color:text,fontSize:12,fontFamily:"inherit",outline:"none",resize:"vertical",lineHeight:1.6,boxSizing:"border-box"}}/>
-                      <div style={{display:"flex",gap:6,marginTop:8}}>
+                      <div style={{display:"flex",gap:6,marginTop:8,alignItems:"center",flexWrap:"wrap"}}>
                         <button onClick={()=>{
-                          const inp=document.createElement("input");inp.type="file";inp.accept="image/*";
-                          inp.onchange=ev=>{const f=ev.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=e2=>{setDesignRefImage(e2.target.result);};r.readAsDataURL(f);};
+                          const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.multiple=true;
+                          inp.onchange=ev=>{
+                            const files=Array.from(ev.target.files||[]).slice(0,5);
+                            if(!files.length)return;
+                            Promise.all(files.map(f=>new Promise(res=>{const r=new FileReader();r.onload=e2=>res(e2.target.result);r.readAsDataURL(f);})))
+                              .then(imgs=>setDesignRefImages(prev=>[...prev,...imgs].slice(0,5)));
+                          };
                           inp.click();
                         }} style={{padding:"6px 12px",borderRadius:8,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:11,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:4}}>
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                          사진 첨부
+                          참고 이미지 여러 장
                         </button>
-                        {designRefImage && (
-                          <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <img src={designRefImage} alt="" style={{width:32,height:32,borderRadius:6,objectFit:"cover"}}/>
-                            <button onClick={()=>setDesignRefImage(null)} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${border}`,background:"transparent",color:"#ef4444",fontSize:10,cursor:"pointer"}}>제거</button>
+                        {designRefImages.length > 0 && (
+                          <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
+                            {designRefImages.map((img,i)=>(
+                              <div key={i} style={{position:"relative"}}>
+                                <img src={img} alt="" style={{width:34,height:34,borderRadius:6,objectFit:"cover",border:`1px solid ${border}`}}/>
+                                <button onClick={()=>setDesignRefImages(prev=>prev.filter((_,idx)=>idx!==i))}
+                                  style={{position:"absolute",right:-5,top:-5,width:16,height:16,borderRadius:"50%",border:"none",background:"#ef4444",color:"#fff",fontSize:10,cursor:"pointer",lineHeight:"16px",padding:0}}>×</button>
+                              </div>
+                            ))}
+                            <button onClick={()=>setDesignRefImages([])} style={{padding:"4px 8px",borderRadius:6,border:`1px solid ${border}`,background:"transparent",color:"#ef4444",fontSize:10,cursor:"pointer"}}>전체 제거</button>
                           </div>
                         )}
                       </div>
+                      <div style={{fontSize:10,color:muted,marginTop:6}}>최대 5장까지 참고합니다. 색감, 레이아웃, 톤앤매너를 생성에 반영합니다.</div>
                     </div>
                   )}
                 </div>
@@ -3213,6 +3423,8 @@ hospital equipment`
                 </div>
                 </>)}
               </div>
+            ) : mode==="write" && writeStep==="settings" ? (
+              renderWriteSettingsPage()
             ) : (
             <>
             {/* 현재 선택된 플랫폼 표시 (글쓰기 모드에서만) */}
@@ -3299,7 +3511,7 @@ hospital equipment`
                     <div style={{fontSize:12,fontWeight:800,color:text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{urlResult.title}</div>
                     <div style={{fontSize:11,color:"#22c55e",marginTop:2,fontWeight:700,display:"flex",alignItems:"center",gap:4}}>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      {urlResult.type==="youtube"?t("bg_ytAnalyzed"):urlResult.type==="news"?t("bg_newsAnalyzed"):t("bg_webAnalyzed")} {t("bg_analyzeComplete")}
+                      {urlResult.type==="youtube"?t("bg_ytAnalyzed"):urlResult.type==="news"?t("bg_newsAnalyzed"):urlResult.type==="sns"?"SNS 링크 분석":t("bg_webAnalyzed")} {t("bg_analyzeComplete")}
                     </div>
                   </div>
                   <button onClick={()=>{setUrlResult(null);setUrlInput("");}} style={{background:"none",border:"none",cursor:"pointer",color:muted,padding:4}}>
@@ -3359,7 +3571,7 @@ hospital equipment`
                   </button>
                   )}
                   {/* 설정 버튼 (쇼츠 모드에서 숨김) */}
-                  {true && (
+                  {false && (
                   <button onClick={()=>setShowSettings(!showSettings)}
                     title={t("bg_postSettingsBtn")}
                     style={{padding:"7px 14px",borderRadius:12,border:`1px solid ${showSettings?accent:border}`,background:showSettings?(isDark?"rgba(99,102,241,0.12)":"rgba(99,102,241,0.06)"):"transparent",color:showSettings?accent:muted,fontSize:13,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",transition:"all 0.15s"}}
@@ -3385,20 +3597,20 @@ hospital equipment`
                   {loading ? (
                     <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
                   ) : (
-                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>30P</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
+                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>{mode==="write"&&writeStep==="input"?"다음":"생성"}{!(mode==="write"&&writeStep==="input")&&user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>30P</span>}{!(mode==="write"&&writeStep==="input")&&!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
                   )}
                 </button>
               </div>
             </div>
 
             {/* 제목 추천 (키워드 입력 시 자동 표시) */}
-            {mode==="write" && titleLoading && (
+            {false && mode==="write" && titleLoading && (
               <div style={{maxWidth:720,margin:"10px auto 0",textAlign:"center",padding:"12px",fontSize:12,color:accent,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
                 <div style={{width:12,height:12,borderRadius:"50%",border:"2px solid "+accent,borderTopColor:"transparent",animation:"spin 0.8s linear infinite"}}/>
                 제목 추천 중...
               </div>
             )}
-            {mode==="write" && !titleLoading && titleSugg.length>0 && (
+            {false && mode==="write" && !titleLoading && titleSugg.length>0 && (
               <div style={{maxWidth:720,margin:"10px auto 0",background:isDark?"rgba(99,102,241,0.08)":"#f0f0ff",borderRadius:14,padding:"14px 18px",border:"1px solid rgba(99,102,241,0.15)"}}>
                 <div style={{fontSize:12,color:accent,fontWeight:700,marginBottom:10}}>추천 제목 (클릭 시 적용)</div>
                 {titleSugg.map(function(t2,i){return(
@@ -3420,7 +3632,7 @@ hospital equipment`
             </div>}
 
             {/* ══════ 설정 패널 (토글) ══════ */}
-            {showSettings && (
+            {false && showSettings && (
               <div className="bl-settings-panel" style={{maxWidth:720,margin:"16px auto 0",background:cardBg,border:`1px solid ${border}`,borderRadius:20,padding:"20px 22px",boxShadow:isDark?"0 4px 20px rgba(0,0,0,0.3)":"0 4px 20px rgba(0,0,0,0.06)"}}>
                 {/* 글쓰기 모드 설정 */}
                 {mode==="write" && (<>
@@ -3569,6 +3781,7 @@ hospital equipment`
                 <UnifiedCanvasEditorLazy
                   slides={designSlides}
                   width={1440} height={1920} mode="cardnews"
+                  sourceText={(fields.keyword || "") + (designRef ? "\n\n" + designRef : "")}
                   onSave={()=>{}} onClose={()=>setDesignStep("input")}
                   inline
                 />
