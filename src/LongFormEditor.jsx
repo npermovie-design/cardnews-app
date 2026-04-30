@@ -1921,7 +1921,7 @@ JSON 배열로만 응답:
                           window.addEventListener("mousemove", mv); window.addEventListener("mouseup", up);
                         }}
                         style={{ position: "absolute", left, top: 2, width, height: TRACK_H - 4, background: sel ? "rgba(236,72,153,0.5)" : "rgba(236,72,153,0.15)", border: sel ? "2px solid #ec4899" : "1px solid rgba(236,72,153,0.35)", borderRadius: 6, cursor: "grab", display: "flex", alignItems: "center", gap: 3, padding: "0 3px", overflow: "hidden", zIndex: sel ? 5 : 1 }}>
-                        {o.type !== "text" && o.src && <img src={o.src} alt="" style={{ width: TRACK_H - 10, height: TRACK_H - 10, objectFit: "cover", borderRadius: 4, flexShrink: 0, pointerEvents: "none" }} />}
+                        {o.type !== "text" && o.src && <img src={o.src} alt="" loading="lazy" decoding="async" style={{ width: TRACK_H - 10, height: TRACK_H - 10, objectFit: "cover", borderRadius: 4, flexShrink: 0, pointerEvents: "none", contentVisibility: "auto" }} />}
                         <span style={{ fontSize: 8, color: sel ? "#fff" : "#f9a8d4", fontWeight: 600, pointerEvents: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{o.type === "text" ? o.text : `${oi + 1}`}</span>
                         <div data-handle="left" style={{ position: "absolute", left: 0, top: 0, width: 5, height: "100%", cursor: "ew-resize", background: sel ? "#ec4899" : "transparent", borderRadius: "4px 0 0 4px", opacity: 0.7 }}
                           onMouseDown={e => { e.stopPropagation(); e.preventDefault(); const sx2 = e.clientX; const os = o.start;
