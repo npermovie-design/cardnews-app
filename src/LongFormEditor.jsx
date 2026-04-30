@@ -885,6 +885,12 @@ JSON 배열로만 응답:
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
       detail: { action: "register", task: { id: "longform_gen", type: "longform_make", message: "롱폼 영상 편집 중..." } }
     }));
+    // 2분 타임아웃 — 응답 없으면 자동 복귀
+    const genTimeout = setTimeout(() => {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      setError("서버 응답 시간 초과 (2분). 서버가 준비되지 않았거나 영상 파일이 만료되었을 수 있습니다. 영상을 다시 불러온 후 시도해주세요.");
+      setStep("edit");
+    }, 120000);
     try {
       const d = await apiCall("/generate-async", {
         method: "POST",
@@ -900,28 +906,46 @@ JSON 배열로만 응답:
           caption_style: captionStyle,
           longform: true,
         }),
+        timeout: 90000,
       });
       setJobId(d.job_id);
       if (pollRef.current) clearInterval(pollRef.current);
+      let pollFails = 0;
       pollRef.current = setInterval(async () => {
         try {
-          const j = await apiCall(`/jobs/${d.job_id}`);
+          const j = await apiCall(`/jobs/${d.job_id}`, { timeout: 15000 });
+          pollFails = 0;
           setJobStatus(j);
           window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
             detail: { action: "update", task: { id: "longform_gen", message: `편집 중... ${j.progress || 0}%`, progress: j.progress || 0 } }
           }));
           if (j.status === "complete") {
+            clearTimeout(genTimeout);
             clearInterval(pollRef.current); pollRef.current = null;
             const done = (j.results || []).find(r => r.type === "done");
             if (done) setResultUrl(`${API}/outputs/${fileId}/${done.filename}`);
             window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
               detail: { action: "complete", task: { id: "longform_gen", message: "롱폼 편집 완료!" } }
             }));
+          } else if (j.status === "error" || j.status === "failed") {
+            clearTimeout(genTimeout);
+            clearInterval(pollRef.current); pollRef.current = null;
+            setError("서버에서 생성 실패: " + (j.error || "알 수 없는 오류"));
+            setStep("edit");
           }
-        } catch {}
+        } catch {
+          pollFails++;
+          if (pollFails >= 5) {
+            clearTimeout(genTimeout);
+            clearInterval(pollRef.current); pollRef.current = null;
+            setError("서버 연결 끊김. 영상을 다시 불러온 후 시도해주세요.");
+            setStep("edit");
+          }
+        }
       }, 3000);
     } catch (e) {
-      setError("생성 실패: " + e.message);
+      clearTimeout(genTimeout);
+      setError("생성 실패: " + e.message + "\n\n서버가 준비되지 않았거나 영상 파일이 만료되었을 수 있습니다.");
       setStep("edit");
       window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
         detail: { action: "complete", task: { id: "longform_gen", message: "생성 실패" } }
