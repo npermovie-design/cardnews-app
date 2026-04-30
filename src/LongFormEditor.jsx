@@ -269,6 +269,16 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
 
   // AI 자동 미디어 삽입
   const [autoMediaLoading, setAutoMediaLoading] = useState(false);
+  const autoMediaTriggered = useRef(false);
+
+  // 편집 진입 시 자막이 있으면 자동 삽입 실행
+  useEffect(() => {
+    if (step !== "edit" || autoMediaTriggered.current || autoMediaLoading) return;
+    if (subtitles.length > 0 && subtitlesEnabled && overlays.length === 0) {
+      autoMediaTriggered.current = true;
+      setTimeout(() => autoInsertMedia(), 800);
+    }
+  }, [step, subtitles.length]);
 
   const autoInsertMedia = async () => {
     if (subtitles.length === 0) return;

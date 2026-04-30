@@ -824,7 +824,18 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
   // ── AI 자동 미디어 삽입 (자막 분석 → GIF/영상 자동 배치) ─────────────────
   const [autoMediaLoading, setAutoMediaLoading] = useState(false);
-  const [autoMediaResults, setAutoMediaResults] = useState([]); // [{subIdx, keyword, url, type, start, end}]
+  const [autoMediaResults, setAutoMediaResults] = useState([]);
+  const autoMediaTriggered = useRef(false);
+
+  // 편집 진입 시 자막이 있으면 자동 삽입 실행
+  useEffect(() => {
+    if (step !== "edit" || autoMediaTriggered.current || autoMediaLoading) return;
+    const subs = curClip?.subtitles || [];
+    if (subs.length > 0 && subtitlesEnabled && overlays.length === 0) {
+      autoMediaTriggered.current = true;
+      setTimeout(() => autoInsertMedia(), 500);
+    }
+  }, [step, editIdx]);
 
   const autoInsertMedia = async () => {
     const subs = curClip?.subtitles || [];
