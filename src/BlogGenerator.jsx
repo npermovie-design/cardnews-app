@@ -2812,6 +2812,7 @@ hospital equipment`
         </div>
         <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
           {[
+            {id:"none",label:"없음"},
             {id:"따옴표",label:"따옴표"},
             {id:"vertical",label:"버티컬 라인"},
             {id:"underline",label:"라인&따옴표"},
