@@ -28,6 +28,7 @@ const CasePage = lazy(() => import("./CasePage.jsx"));
 const AnalyzerPage = lazy(() => import("./AnalyzerPage.jsx"));
 const ProgramsPage = lazy(() => import("./ProgramsPage.jsx"));
 const NoticePage = lazy(() => import("./NoticePage.jsx"));
+const ClassPage = lazy(() => import("./ClassPage.jsx"));
 const InfographicVideoPage = lazy(() => import("./InfographicVideo.jsx"));
 
 // 로딩 폴백
@@ -605,7 +606,7 @@ export default function App() {
     // SEO: 다국어 동적 타이틀
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
     const titleMap = {
-      ko: { home:"SNS메이킷 - AI SNS 콘텐츠 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자동화", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
+      ko: { home:"SNS메이킷 - AI SNS 콘텐츠 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자동화", class:"클래스", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
       en: { home:"SNS Makeit - AI Social Content Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", notice:"Notices", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy" },
       ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", programs:"プログラムストア", notice:"お知らせ", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約" },
     };
@@ -799,6 +800,7 @@ export default function App() {
     if (page === "event")    return <EventPage C={C} navigate={navigate} />;
     if (page === "programs") return <ProgramsPage C={C} navigate={navigate} user={user} onLogin={() => navigate("login")} initialProductId={programId} onProductIdChange={setProgramId} />;
     if (page === "notice") return <NoticePage C={C} navigate={navigate} user={user} />;
+    if (page === "class") return <ClassPage C={C} navigate={navigate} user={user} theme={theme} />;
     if (page === "snsnews")  { navigate("community"); return null; }
     if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} user={user} />;
     if (page === "intro-video") return <InfographicVideoPage />;
@@ -1084,6 +1086,7 @@ export default function App() {
           <NavBtn id="ai" label="AI 스튜디오" />
           <NavBtn id="programs" label="자동화" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
+          <NavBtn id="class" label="클래스" />
           {/* 커뮤니티 */}
           <div style={{ position: "relative" }}>
             <DropBtn label={t("community")} open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
@@ -1312,6 +1315,7 @@ export default function App() {
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
             { id: "ai",       label: "AI 스튜디오",    onClick: () => { navigate("ai"); setMobileOpen(false); },       active: page==="ai"||page==="analyzer" },
             { id: "programs", label: "자동화", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
+            { id: "class",    label: "클래스", onClick: () => { navigate("class"); setMobileOpen(false); }, active: page==="class" },
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
           ].map(m => (
             <button key={m.id} onClick={m.onClick} style={{

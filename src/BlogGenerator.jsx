@@ -2873,7 +2873,7 @@ hospital equipment`
         </button>
         <button onClick={handleGenerateClick} disabled={loading||fileLoading||!fields.keyword?.trim()}
           style={{padding:"10px 24px",borderRadius:14,border:"none",background:fields.keyword?.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":(isDark?"rgba(99,102,241,0.2)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,cursor:loading||fileLoading||!fields.keyword?.trim()?"not-allowed":"pointer",opacity:loading||fileLoading||!fields.keyword?.trim()?0.5:1,fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
-          {loading ? <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</> : <>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>30P</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>}
+          {loading ? <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</> : <>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>1회</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>}
         </button>
       </div>
     </div>
@@ -3137,7 +3137,7 @@ hospital equipment`
                       {designLoading ? (
                         <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
                       ) : (
-                        <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>30P</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
+                        <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/></svg>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>1회</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
                       )}
                     </button>
                   </div>
@@ -3600,7 +3600,7 @@ hospital equipment`
                   {loading ? (
                     <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
                   ) : (
-                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>{mode==="write"&&writeStep==="input"?"다음":"생성"}{!(mode==="write"&&writeStep==="input")&&user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>30P</span>}{!(mode==="write"&&writeStep==="input")&&!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
+                    <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>{mode==="write"&&writeStep==="input"?"다음":"생성"}{!(mode==="write"&&writeStep==="input")&&user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>1회</span>}{!(mode==="write"&&writeStep==="input")&&!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
                   )}
                 </button>
               </div>
@@ -3742,7 +3742,7 @@ hospital equipment`
                   </div>
                   <div style={{fontSize:14,color:muted,lineHeight:1.7,marginBottom:24}}>
                     {_getUsageState().isGuest
-                      ? <>비회원은 <b style={{color:accent}}>5회 무료</b>로 이용 가능합니다.<br/>로그인하면 <b style={{color:accent}}>150P 보너스</b> + 포인트로 계속 이용 가능해요!</>
+                      ? <>비회원은 <b style={{color:accent}}>5회 무료</b>로 이용 가능합니다.<br/>로그인하면 <b style={{color:accent}}>5회 추가</b> 지급됩니다!</>
                       : <>영상 편집에는 <b style={{color:accent}}>1회</b>가 필요합니다.<br/>잔여 횟수: <b style={{color:"#f59e0b"}}>{Math.floor((_getUsageState().points||0)/30)}회</b></>}
                   </div>
                   <div style={{display:"flex",gap:10,justifyContent:"center"}}>
