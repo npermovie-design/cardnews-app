@@ -822,9 +822,9 @@ export default function AdminPage({ C, user: adminUser }) {
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
                         <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{m.nick}</span>
                         <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 5, fontWeight: 700,
-                          background: m.role === "admin" ? "rgba(251,191,36,0.12)" : "rgba(99,102,241,0.1)",
-                          color: m.role === "admin" ? "#fbbf24" : C.purpleL }}>
-                          {m.role === "admin" ? "👑 관리자" : "일반회원"}
+                          background: m.role === "admin" ? "rgba(251,191,36,0.12)" : m.role === "instructor" ? "rgba(34,197,94,0.12)" : "rgba(99,102,241,0.1)",
+                          color: m.role === "admin" ? "#fbbf24" : m.role === "instructor" ? "#22c55e" : C.purpleL }}>
+                          {m.role === "admin" ? "관리자" : m.role === "instructor" ? "강사" : "일반회원"}
                         </span>
                       </div>
                       <div style={{ fontSize: 12, color: C.muted }}>{m.email}</div>
@@ -881,7 +881,23 @@ export default function AdminPage({ C, user: adminUser }) {
                   <button onClick={() => resetPoints(uid)} style={{ padding: "5px 10px", borderRadius: 7, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", color: "#f59e0b", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>초기화</button>
                   <button onClick={() => resetMemberUsage(uid)} style={{ padding: "5px 10px", borderRadius: 7, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.06)", color: C.purpleL, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>AI초기화</button>
                   {m.role !== "admin" && (
-                    <button onClick={() => deleteMember(uid, m.nick)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)", color: "#ef4444", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                    <button onClick={async () => {
+                      const newRole = m.role === "instructor" ? "member" : "instructor";
+                      const label = newRole === "instructor" ? "강사 권한을 부여" : "강사 권한을 해제";
+                      if (!window.confirm(`${m.nick}님에게 ${label}할까요?`)) return;
+                      try {
+                        await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&role=${newRole}`);
+                        await supabase.from("users").update({ role: newRole }).eq("uid", uid);
+                        setMembers2(prev => prev.map(x => x.uid === uid ? { ...x, role: newRole } : x));
+                        showToast(`${m.nick} → ${newRole === "instructor" ? "강사" : "일반회원"} 변경 완료`);
+                      } catch(e) { showToast("오류: " + e.message); }
+                    }}
+                      style={{ padding: "5px 10px", borderRadius: 7, border: m.role === "instructor" ? "1px solid rgba(34,197,94,0.3)" : "1px solid rgba(99,102,241,0.3)", background: m.role === "instructor" ? "rgba(34,197,94,0.08)" : "rgba(99,102,241,0.06)", color: m.role === "instructor" ? "#22c55e" : C.purpleL, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                      {m.role === "instructor" ? "강사 해제" : "강사 부여"}
+                    </button>
+                  )}
+                  {m.role !== "admin" && (
+                    <button onClick={() => deleteMember(uid, m.nick)} style={{ padding: "5px 10px", borderRadius: 7, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)", color: "#ef4444", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
                       회원 탈퇴
                     </button>
                   )}
