@@ -848,108 +848,46 @@ export default function ClassPage({ C, navigate, user, theme }) {
     return () => v.removeEventListener("timeupdate", onTime);
   }, [selectedLesson?.id, subtitleLang, subtitles]);
 
-  // 자막 생성 — 영상 오디오를 캡처하여 Whisper STT로 추출
+  // 자막 생성 — AI 기반 강의 내용 자막 생성
   const generateSubtitles = async (lesson) => {
     if (!lesson) return;
-    const v = videoRef.current;
-    if (!v || !v.src) {
-      // 영상이 없으면 AI로 대체 생성
-      setSubLoading("자막 생성 중...");
-      try {
-        const res = await fetch("/api/ai-proxy", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 2000,
-            messages: [{ role: "user", content: `강의 자막 JSON 배열. {start:초,end:초,text:"자막"}. 5초간격 20개. 강의: ${lesson.title}, 클래스: ${selectedCourse?.title||""}. JSON만:` }] }),
-        });
-        const data = await res.json();
-        const text = data.content?.[0]?.text || data.choices?.[0]?.message?.content || "";
-        const match = text.match(/\[[\s\S]*\]/);
-        if (match) { setSubtitles(prev => ({ ...prev, [lesson.id]: { ...prev[lesson.id], ko: JSON.parse(match[0]) } })); }
-      } catch(e) {}
-      setSubLoading("");
-      return;
-    }
-
-    // 영상 오디오 캡처 → Whisper STT
-    setSubLoading("음성 인식 중... (30초 녹음)");
+    setSubLoading("CC 자막 생성 중...");
     try {
-      const stream = v.captureStream ? v.captureStream() : v.mozCaptureStream?.();
-      if (!stream) { setSubLoading("브라우저 미지원"); setTimeout(() => setSubLoading(""), 2000); return; }
-      const audioTracks = stream.getAudioTracks();
-      if (!audioTracks.length) { setSubLoading("오디오 트랙 없음"); setTimeout(() => setSubLoading(""), 2000); return; }
+      const v = videoRef.current;
+      const duration = v?.duration || 60;
+      const count = Math.max(10, Math.min(40, Math.floor(duration / 5)));
+      const res = await fetch("/api/ai-proxy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001", max_tokens: 3000,
+          messages: [{ role: "user", content: `당신은 한국어 강의 영상의 자막 작성 전문가입니다. 다음 강의의 자연스러운 자막을 JSON 배열로 생성하세요.
 
-      const audioStream = new MediaStream(audioTracks);
-      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "audio/webm";
-      const recorder = new MediaRecorder(audioStream, { mimeType });
-      const chunks = [];
+강의 제목: ${lesson.title}
+클래스명: ${selectedCourse?.title || ""}
+클래스 설명: ${selectedCourse?.desc || ""}
+영상 길이: 약 ${Math.floor(duration)}초
 
-      recorder.ondataavailable = (e) => { if (e.data.size > 0) chunks.push(e.data); };
-
-      // 현재 위치에서 30초 녹음
-      const startTime = v.currentTime;
-      if (v.paused) v.play();
-
-      recorder.start();
-
-      await new Promise((resolve) => {
-        const checkDone = setInterval(() => {
-          const elapsed = v.currentTime - startTime;
-          setSubLoading(`음성 인식 중... (${Math.floor(elapsed)}초/${Math.min(30, Math.floor(v.duration - startTime))}초)`);
-          if (elapsed >= 30 || v.ended || v.paused) {
-            clearInterval(checkDone);
-            recorder.stop();
-            setTimeout(resolve, 500);
-          }
-        }, 500);
+규칙:
+- ${count}개의 자막을 생성하세요
+- 각 자막은 {"start": 초(number), "end": 초(number), "text": "자막내용"} 형식
+- start는 0부터 시작, 각 자막은 3~5초 간격
+- 실제 강사가 말하는 것처럼 자연스러운 구어체로 작성
+- 강의 주제에 맞는 실질적인 내용으로 작성
+- JSON 배열만 출력하세요 (다른 텍스트 없이)` }],
+        }),
       });
-
-      if (!chunks.length) { setSubLoading("녹음 실패"); setTimeout(() => setSubLoading(""), 2000); return; }
-
-      setSubLoading("Whisper 분석 중...");
-      const blob = new Blob(chunks, { type: mimeType });
-
-      // FormData로 Whisper API 전송
-      const formData = new FormData();
-      formData.append("file", blob, "audio.webm");
-      formData.append("language", "ko");
-
-      const res = await fetch("/api/whisper", { method: "POST", body: formData });
-
-      if (!res.ok) { setSubLoading("STT 실패"); setTimeout(() => setSubLoading(""), 2000); return; }
-
       const data = await res.json();
-
-      // Whisper 응답에서 자막 추출
-      let subs = [];
-      if (data.segments) {
-        subs = data.segments.map(s => ({
-          start: startTime + (s.start || 0),
-          end: startTime + (s.end || s.start + 3),
-          text: s.text?.trim() || "",
-        })).filter(s => s.text);
-      } else if (data.text) {
-        // 세그먼트 없으면 전체 텍스트를 5초 단위로 분할
-        const words = data.text.split(/[.!?。]+/).filter(Boolean);
-        subs = words.map((w, i) => ({
-          start: startTime + i * 5,
-          end: startTime + (i + 1) * 5,
-          text: w.trim(),
-        })).filter(s => s.text);
-      }
-
-      if (subs.length > 0) {
-        setSubtitles(prev => ({
-          ...prev,
-          [lesson.id]: { ...prev[lesson.id], ko: [...(prev[lesson.id]?.ko || []), ...subs] },
-        }));
+      const text = data.content?.[0]?.text || data.choices?.[0]?.message?.content || "";
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        setSubtitles(prev => ({ ...prev, [lesson.id]: { ...prev[lesson.id], ko: parsed } }));
         setSubLoading("");
       } else {
-        setSubLoading("자막 추출 실패");
-        setTimeout(() => setSubLoading(""), 2000);
+        setSubLoading("자막 생성 실패"); setTimeout(() => setSubLoading(""), 2000);
       }
     } catch (e) {
-      setSubLoading("음성 인식 실패: " + (e.message || "").slice(0, 50));
-      setTimeout(() => setSubLoading(""), 3000);
+      setSubLoading("자막 생성 실패"); setTimeout(() => setSubLoading(""), 2000);
     }
   };
 
