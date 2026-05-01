@@ -233,6 +233,9 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
         letterSpacing: 0,
         boxSizing: "border-box",
       };
+      if (quoteStyle === "none") {
+        return <p key={key} style={{...base,padding:0,margin:"8px 0",border:"none",background:"transparent"}}>{inlineFormat(quote, pointColor, pointKeywords)}</p>;
+      }
       if (quoteStyle === "따옴표" || quoteStyle === "quotemark") {
         return <div key={key} style={{...base,textAlign:"center",padding:"18px 20px",color:mutedColor}}>
           <div style={{fontSize:26,lineHeight:1,color:isDark?"rgba(255,255,255,0.25)":"#c8c8cf"}}>"</div>
