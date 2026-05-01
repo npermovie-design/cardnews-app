@@ -1486,7 +1486,7 @@ ${emojiRule}
     }
   };
 
-  const handleSubtype = id => { setSubtype(id); setFields({}); setResult(""); setHtmlResult(""); setError(""); };
+  const handleSubtype = id => { setSubtype(id); setFields(p => ({ keyword: p.keyword || "" })); setResult(""); setHtmlResult(""); setError(""); };
   const setField = (k,v) => setFields(p => {
     const next = {...p, [k]: v};
     try { sessionStorage.setItem(_ssFieldsKey, JSON.stringify(next)); } catch {}
