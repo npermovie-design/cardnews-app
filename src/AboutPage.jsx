@@ -244,12 +244,10 @@ export function HowToPage({ navigate, C }) {
   ];
 
   const POINT_INFO = [
-    { label: p("howtoPtGuest"), val: p("howtoPtGuestVal"), color: "#888", bg: "rgba(0,0,0,0.04)" },
-    { label: p("howtoPtSignup"), val: p("howtoPtSignupVal"), color: "#10b981", bg: "rgba(16,185,129,0.06)" },
-    { label: p("howtoPtLogin"), val: "+3P", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
-    { label: p("howtoPtPost"), val: p("howtoPtPostVal"), color: "#10b981", bg: "rgba(16,185,129,0.06)" },
-    { label: p("howtoPtComment"), val: p("howtoPtCommentVal"), color: "#888", bg: "rgba(0,0,0,0.04)" },
-    { label: p("howtoPtAiWrite"), val: "-30P", color: "#ef4444", bg: "rgba(239,68,68,0.05)" },
+    { label: "비회원", val: "5회 무료", color: "#888", bg: "rgba(0,0,0,0.04)" },
+    { label: "회원가입", val: "+5회 지급", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
+    { label: "매일 로그인", val: "+1회", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
+    { label: "AI 글쓰기", val: "-1회", color: "#ef4444", bg: "rgba(239,68,68,0.05)" },
   ];
 
   const FAQ = [

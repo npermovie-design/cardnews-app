@@ -1226,7 +1226,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     blog_news:    { icon:"/icons3d/news.png", label:tt("newsBlog"), parent:"blog_write" },
     blog_yt_blog: { icon:"/icon-youtube.png", label:tt("ytBlog"), parent:"blog_write" },
     // 콘텐츠 제작
-    detail_simple:   { icon:"/icons3d/memo.png", label:tt("toolDetailPage"), parent:"content_create" },
+    // detail_simple 제거됨
     // 비즈니스 문서
     prompt_studio_make: { icon:"/icons3d/report.png", label:tt("bizDoc"), parent:"prompt_studio" },
     // 직접 디자인
@@ -1244,7 +1244,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     yt_analyzer:   { badge: tt2("toolYtBadge"), title: tt2("toolYtTitle"), desc: tt2("toolYtDesc") },
   });
   // 자체 헤더가 있는 도구는 ToolHeader 건너뜀
-  const SELF_HEADER_TOOLS = ["detail_simple", "detail_simple_img"];
+  const SELF_HEADER_TOOLS = [];
   function ToolHeader({ menuId }) {
     if (SELF_HEADER_TOOLS.includes(menuId)) return null;
     const h = TOOL_HEADERS[menuId] || TOOL_HEADERS[menuId?.replace("_make","")];
@@ -1429,9 +1429,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   const TOOL_ICONS = {
     blog_write: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
     blog_link: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
-    // cardnews_simple 아이콘 제거됨
-    detail_simple: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
-    // thumbnail_gen 아이콘 제거됨
+    // cardnews_simple, detail_simple, thumbnail_gen 제거됨
     shorts_make: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
     repurpose: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
   };
@@ -1557,75 +1555,8 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // 보관함에서 심플 카드뉴스 열기
-
-  // 보관함에서 심플 상세페이지 열기
-  if (aiMenu === "detail_simple_open") {
-    return (
-      <div key="detail_simple_open" style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} openFromLibrary  onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} />
-      </div>
-    );
-  }
-
-  // ── 콘텐츠 제작: 하위 도구 직접 진입 ──
-  if (aiMenu === "cardnews_simple" || aiMenu === "cardnews_simple_make") {
-    return (
-      <ToolWrap menuId="cardnews_simple">
-        <CardNewsApp embedded theme={theme} user={user} initialSubPage={aiMenu === "cardnews_simple_make" ? "make" : "home"} />
-      </ToolWrap>
-    );
-  }
-  if (aiMenu === "detail_simple" || aiMenu === "detail_simple_make") {
-    return <ToolWrap menuId="detail_simple"><DetailPageStudio isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} C={C} /></ToolWrap>;
-  }
-  if (aiMenu === "detail_simple_img") {
-    return <ToolWrap menuId="detail_simple_img"><SimpleDetailPageGenerator isDark={isDark} user={user} theme={theme} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} imageMode /></ToolWrap>;
-  }
-  // thumbnail_gen, ppt_gen 렌더링 제거됨
-
-  // ── 보관함에서 템플릿 열기 ──
-  if (aiMenu === "cardnews_simple_open") {
-    let openData = null;
-    try { openData = JSON.parse(localStorage.getItem("nper_open_card") || "null"); } catch {}
-    const UnifiedCanvasEditorLazy = React.lazy(() => import("./UnifiedCanvasEditor"));
-    return (
-      <ToolWrap menuId="cardnews_simple">
-        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>Loading...</div>}>
-          <UnifiedCanvasEditorLazy
-            slides={openData?.slides || [{ title:"", body:"", bgColor:"#ffffff", textColor:"#111827", fontSize:42, fontFamily:"Pretendard", image:null }]}
-            width={1080} height={1080} mode="cardnews"
-            presetKey={openData?.gs?.key} presetLabel={openData?.gs?.label}
-            onSave={() => {}} onClose={() => setAiMenu("home")}
-            inline
-          />
-        </React.Suspense>
-      </ToolWrap>
-    );
-  }
-
-  // ── 콘텐츠 제작: 직접 디자인 (빈 캔버스 바로 진입) ──
-  if (aiMenu.startsWith("canvas_direct_")) {
-    const m = aiMenu.replace("canvas_direct_","").split("x");
-    const cw = parseInt(m[0])||1080, ch = parseInt(m[1])||1080;
-    const UnifiedCanvasEditorLazy = React.lazy(() => import("./UnifiedCanvasEditor"));
-    return (
-      <ToolWrap menuId="cardnews_simple">
-        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:"#888"}}>Loading...</div>}>
-          <UnifiedCanvasEditorLazy
-            slides={[{ title:"", body:"", bgColor:"#ffffff", textColor:"#111827", fontSize:42, fontFamily:"Pretendard", image:null }]}
-            width={cw} height={ch} mode="cardnews"
-            onSave={() => {}} onClose={() => setAiMenu("content_create")}
-            inline
-          />
-        </React.Suspense>
-      </ToolWrap>
-    );
-  }
-
-  // ── 콘텐츠 제작: 선택 화면 (미리캔버스 스타일 - 탭+접이식) ──
-  // 상세페이지 리뉴얼 전 비활성화 — content_create 접근 시 홈으로
-  if (aiMenu === "content_create") {
+  // ── 제거된 기능 (상세페이지/카드뉴스/이미지) — 홈으로 리다이렉트 ──
+  if (["detail_simple_open","cardnews_simple","cardnews_simple_make","detail_simple","detail_simple_make","detail_simple_img","cardnews_simple_open","content_create"].includes(aiMenu) || aiMenu.startsWith("canvas_direct_")) {
     setAiMenu("home"); return null;
   }
 

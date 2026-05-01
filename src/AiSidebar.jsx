@@ -87,7 +87,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
   // 메뉴 정의
   const menuItems = [
     { id:"video_guide", label:t("howto"), icon:"/icons3d/sns-share.png", ids:["video_guide"] },
-    { id:"home", label:t("home"), icon:"/icons3d/sns-heart.png", ids:["home","blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link","blog_write"] },
+    { id:"home", label:"AI도구", icon:"/icons3d/sns-heart.png", ids:["home","blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link","blog_write"] },
     { id:"today_keywords", label:t("sideKeywords"), icon:"/icons3d/sns-app.png", ids:["today_keywords"] },
     { id:"sns_consulting", label:t("sideConsulting"), icon:"/icons3d/sns-content.png", ids:["sns_consulting"] },
     { id:"social_analyzer", label:t("sideAnalyzer"), icon:"/icons3d/search-book.png", ids:["social_analyzer"] },
@@ -193,11 +193,9 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 // ── 사이드바 프로필 카드 컴포넌트 ──────────────────────────────────────────────
 function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate, onLogout, onlineCount, usageText, usageBar, t }) {
   const [open, setOpen] = useState(false);
-  const ptLeft = Math.max(0, (freeLimit - info.used) * 10) + (user.points || 0);
-  const ptTotal = freeLimit * 10 + (user.points || 0);
-  const ptPct = Math.min((ptLeft / Math.max(ptTotal, 1)) * 100, 100);
-  const isLow = ptLeft > 0 && ptLeft <= 20; // 1~2회 생성 가능(10~20P) 시 경고
-  const isEmpty = ptLeft <= 0;
+  const usesLeft = Math.floor((user.points || 0) / 30);
+  const isLow = usesLeft > 0 && usesLeft <= 2;
+  const isEmpty = usesLeft <= 0;
   const ptColor = isEmpty || isLow ? "#f87171" : "#a5b4fc";
   const nick = user.nick || user.email?.split("@")[0] || "사용자";
   const initial = nick[0]?.toUpperCase() || "U";
@@ -249,24 +247,23 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
             </div>
           </div>
 
-          {/* 포인트 현황 */}
+          {/* 잔여 횟수 */}
           <div style={{ padding:"12px 16px", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.06)":"rgba(124,106,255,0.08)"}` }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-              <span style={{ fontSize:11, color:muted }}>{t?.("sidePoints")||"Points"}</span>
+              <span style={{ fontSize:11, color:muted }}>잔여 횟수</span>
               <span style={{ fontSize:14, fontWeight:900,
                 color: isEmpty?"#f87171":isLow?"#f59e0b":"#a5b4fc" }}>
-                {ptLeft.toLocaleString()}P
+                {usesLeft}회
               </span>
             </div>
-            {/* 포인트 바 */}
             <div style={{ height:4, borderRadius:4, background:isDark?"rgba(255,255,255,0.08)":"rgba(99,102,241,0.1)", overflow:"hidden", marginBottom:6 }}>
               <div style={{ height:"100%", borderRadius:4,
                 background: isEmpty?"#f87171":isLow?"linear-gradient(90deg,#f59e0b,#fbbf24)":"linear-gradient(90deg,#7c6aff,#a5b4fc)",
-                width: `${Math.min((ptLeft/200)*100,100)}%`, transition:"width 0.3s" }}/>
+                width: `${Math.min((usesLeft/10)*100,100)}%`, transition:"width 0.3s" }}/>
             </div>
             {(isEmpty||isLow) && (
               <div style={{ fontSize:10, color:isEmpty?"#f87171":"#f59e0b", fontWeight:700 }}>
-                {isEmpty?(t?.("sidePointsEmpty")||"Points depleted"):(t?.("sidePointsLow")||"Low points")}
+                {isEmpty?"횟수를 모두 사용했어요":"횟수가 부족해요"}
               </div>
             )}
           </div>
@@ -274,7 +271,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
           {/* 메뉴 */}
           <div style={{ padding:"6px 8px" }}>
             {[
-              { label:t?.("pointCharge")||"Buy Points", sub:t?.("sidePointsSub")||"More AI generations", onClick:()=>{ navigate("pricing"); setOpen(false); },
+              { label:"플랜 업그레이드", sub:"더 많은 AI 생성", onClick:()=>{ navigate("pricing"); setOpen(false); },
                 accent:true },
               { label:t?.("library")||"My Library", sub:t?.("sideLibrarySub")||"Saved content", onClick:()=>{ navigate("library"); setOpen(false); } },
             ].map((item,i) => (

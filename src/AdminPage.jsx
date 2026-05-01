@@ -272,36 +272,51 @@ export default function AdminPage({ C, user: adminUser }) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
-  // ── 포인트 지급 (API 경유)
-  const grantPoints = async (uid, pts) => {
-    if (!pts || isNaN(pts)) { showToast("포인트를 입력하세요"); return; }
+  // ── 횟수 지급 (1회 = 30P, API 경유)
+  const grantPoints = async (uid, count) => {
+    if (!count || isNaN(count)) { showToast("횟수를 입력하세요"); return; }
     try {
       const member = members.find(m => m.uid === uid);
-      const next = (member?.points || 0) + Number(pts);
+      const next = (member?.points || 0) + Number(count) * 30;
       await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&points=${next}`);
       setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: next } : m));
-      showToast("+" + pts + "P 지급 완료!");
+      showToast("+" + count + "회 지급 완료!");
       setPtInputs(p => ({ ...p, [uid]: "" }));
     } catch(e) { showToast("오류: " + e.message); }
   };
 
-  // ── 포인트 초기화 (API 경유)
-  const resetPoints = async (uid) => {
-    if (!window.confirm("이 회원의 포인트를 0으로 초기화할까요?")) return;
+  // ── 횟수 차감 (1회 = 30P, API 경유)
+  const deductPoints = async (uid, count) => {
+    if (!count || isNaN(count)) { showToast("횟수를 입력하세요"); return; }
+    const member = members.find(m => m.uid === uid);
+    const cur = member?.points || 0;
+    const next = Math.max(0, cur - Number(count) * 30);
     try {
-      await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&points=0`);
-      setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: 0 } : m));
-      showToast("포인트 초기화 완료");
+      await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&points=${next}`);
+      setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: next } : m));
+      showToast("-" + count + "회 차감 완료!");
+      setPtInputs(p => ({ ...p, [uid]: "" }));
     } catch(e) { showToast("오류: " + e.message); }
   };
 
-  // ── 포인트 직접 설정 (API 경유)
-  const setPoints = async (uid, pts) => {
-    if (!pts || isNaN(pts)) return;
+  // ── 횟수 초기화 (API 경유)
+  const resetPoints = async (uid) => {
+    if (!window.confirm("이 회원의 잔여 횟수를 0으로 초기화할까요?")) return;
     try {
-      await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&points=${Number(pts)}`);
-      setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: Number(pts) } : m));
-      showToast(pts + "P 설정 완료!");
+      await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&points=0`);
+      setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: 0 } : m));
+      showToast("횟수 초기화 완료");
+    } catch(e) { showToast("오류: " + e.message); }
+  };
+
+  // ── 횟수 직접 설정 (API 경유)
+  const setPoints = async (uid, count) => {
+    if (!count || isNaN(count)) return;
+    try {
+      const pts = Number(count) * 30;
+      await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&points=${pts}`);
+      setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: pts } : m));
+      showToast(count + "회로 설정 완료!");
       setPtInputs(p => ({ ...p, [uid]: "" }));
     } catch(e) { showToast("오류: " + e.message); }
   };
@@ -396,12 +411,12 @@ export default function AdminPage({ C, user: adminUser }) {
   const panelBorder = isDark ? "rgba(255,255,255,0.08)" : "#e6e8f0";
   const subtleBg = isDark ? "rgba(255,255,255,0.035)" : "#f8f9fc";
   const activeBg = isDark ? "rgba(124,106,255,0.18)" : "rgba(124,106,255,0.08)";
-  const adminTitle = {stats:"통계 대시보드", visitors:"접속 분석", members:"회원 관리", pointHistory:"포인트 내역", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백"}[tab] || tab;
+  const adminTitle = {stats:"통계 대시보드", visitors:"접속 분석", members:"회원 관리", pointHistory:"횟수 내역", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백"}[tab] || tab;
   const adminDesc = {
     stats: "회원, 게시글, AI 사용량을 한 화면에서 확인합니다.",
     visitors: "유입 경로와 접속 데이터를 점검합니다.",
-    members: "회원 정보, 포인트, 위험 작업을 관리합니다.",
-    pointHistory: "포인트 지급과 사용 내역을 추적합니다.",
+    members: "회원 정보, 잔여 횟수, 위험 작업을 관리합니다.",
+    pointHistory: "횟수 지급과 사용 내역을 추적합니다.",
     guest: "비회원 AI 사용량을 관리합니다.",
     posts: "커뮤니티 게시글을 검수하고 정리합니다.",
     board: "게시판 카테고리와 태그를 관리합니다.",
@@ -463,7 +478,7 @@ export default function AdminPage({ C, user: adminUser }) {
         {/* 메뉴 그룹 */}
         {[
           { group: "대시보드", items: [["stats", "통계"], ["visitors", "접속 분석"]] },
-          { group: "회원", items: [["members", "회원 관리"], ["pointHistory", "포인트 내역"], ["guest", "비회원 관리"]] },
+          { group: "회원", items: [["members", "회원 관리"], ["pointHistory", "횟수 내역"], ["guest", "비회원 관리"]] },
           { group: "콘텐츠", items: [["posts", "게시글 관리"], ["board", "게시판 관리"]] },
           { group: "고객", items: [["inquiries", "문의 관리"], ["appFeedback", "앱 피드백"]] },
         ].map(({ group, items }) => (
@@ -674,8 +689,8 @@ export default function AdminPage({ C, user: adminUser }) {
             {[
               { label: "비회원 무료 횟수", value: FREE_GUEST + "회", color: "#4ade80" },
               { label: "회원 무료 횟수",   value: FREE_MEMBER + "회", color: "#a5b4fc" },
-              { label: "AI 1회 비용",      value: "10P", color: "#f59e0b" },
-              { label: "글쓰기 적립",      value: "1P", color: "#34d399" },
+              { label: "AI 1회 기준",      value: "1회 차감", color: "#f59e0b" },
+              { label: "출석 적립",        value: "+1회", color: "#34d399" },
             ].map(r => (
               <div key={r.label} style={{ padding:"18px 20px", borderRadius:14, background:isDark?"rgba(255,255,255,0.04)":"#fff", border:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}` }}>
                 <div style={{ fontSize:22, fontWeight:900, color:r.color, marginBottom:4 }}>{r.value}</div>
@@ -745,7 +760,7 @@ export default function AdminPage({ C, user: adminUser }) {
                       <tr style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, position:"sticky", top:0, background:isDark?"#1a1730":"#fff" }}>
                         <th style={{ padding:"6px 8px", textAlign:"left", color:C.muted, fontWeight:600 }}>사용자</th>
                         <th style={{ padding:"6px 8px", textAlign:"left", color:C.muted, fontWeight:600 }}>기능</th>
-                        <th style={{ padding:"6px 8px", textAlign:"right", color:C.muted, fontWeight:600 }}>포인트</th>
+                        <th style={{ padding:"6px 8px", textAlign:"right", color:C.muted, fontWeight:600 }}>잔여횟수</th>
                         <th style={{ padding:"6px 8px", textAlign:"right", color:C.muted, fontWeight:600 }}>잔여</th>
                         <th style={{ padding:"6px 8px", textAlign:"left", color:C.muted, fontWeight:600 }}>일시</th>
                       </tr>
@@ -757,8 +772,8 @@ export default function AdminPage({ C, user: adminUser }) {
                           <tr key={i} style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.04)":"#f3f4f6"}` }}>
                             <td style={{ padding:"6px 8px", fontWeight:600, color:C.text }}>{nick}</td>
                             <td style={{ padding:"6px 8px", color:C.muted }}>{l.reason||"-"}</td>
-                            <td style={{ padding:"6px 8px", textAlign:"right", fontWeight:700, color:l.delta>0?"#22c55e":"#ef4444" }}>{l.delta>0?"+":""}{l.delta}P</td>
-                            <td style={{ padding:"6px 8px", textAlign:"right", color:C.text }}>{l.balance?.toLocaleString()||"-"}P</td>
+                            <td style={{ padding:"6px 8px", textAlign:"right", fontWeight:700, color:l.delta>0?"#22c55e":"#ef4444" }}>{l.delta>0?"+":""}{Math.round(l.delta/30)}회</td>
+                            <td style={{ padding:"6px 8px", textAlign:"right", color:C.text }}>{Math.floor((l.balance||0)/30)}회</td>
                             <td style={{ padding:"6px 8px", color:C.muted, fontSize:10 }}>{l.created_at ? new Date(l.created_at).toLocaleString("ko-KR") : "-"}</td>
                           </tr>
                         );
@@ -796,7 +811,7 @@ export default function AdminPage({ C, user: adminUser }) {
             const mUsed = usage["member_" + uid] || 0;
             const ptVal = ptInputs[uid] || "";
             return (
-              <div key={m.uid||m.id} style={{ background: panelBg, border: "1px solid " + panelBorder, borderRadius: 12, padding: "18px 20px", marginBottom: 10, boxShadow: isDark ? "none" : "0 10px 24px rgba(15,23,42,0.035)" }}>
+              <div key={m.uid||m.id} style={{ background: panelBg, border: "1px solid " + panelBorder, borderRadius: 12, padding: "14px 16px", marginBottom: 8, boxShadow: isDark ? "none" : "0 4px 12px rgba(15,23,42,0.03)" }}>
                 {/* 회원 기본 정보 */}
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -818,44 +833,53 @@ export default function AdminPage({ C, user: adminUser }) {
                       </div>
                     </div>
                   </div>
-                  {/* 포인트 뱃지 */}
+                  {/* 잔여 횟수 */}
                   <div style={{ textAlign: "right", padding: "8px 12px", borderRadius: 10, background: subtleBg, border: `1px solid ${panelBorder}` }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: C.purpleL }}>{(m.points||0).toLocaleString()}P</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>보유 포인트</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: C.purpleL }}>{Math.floor((m.points||0)/30)}회</div>
+                    <div style={{ fontSize: 11, color: C.muted }}>잔여 횟수</div>
                   </div>
                 </div>
 
-                {/* 포인트 관리 */}
-                <div style={{ background: subtleBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "14px 16px", marginBottom: 10 }}>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: C.muted, marginBottom: 10 }}>포인트 관리</div>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                    {/* 빠른 지급 버튼 */}
-                    {[50, 100, 200, 500, 1000].map(pts => (
-                      <button key={pts} onClick={() => grantPoints(uid, pts)} style={{
-                        padding: "6px 12px", borderRadius: 8, fontSize: 12, cursor: "pointer", fontWeight: 700,
-                        border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: C.purpleL }}>
-                        +{pts}P
-                      </button>
-                    ))}
-                    {/* 직접 입력 지급 */}
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <input value={ptVal} type="number" placeholder="직접 입력"
-                        onChange={e => setPtInputs(p => ({ ...p, [uid]: e.target.value }))}
-                        style={{ width: 90, padding: "6px 10px", borderRadius: 8, border: "1px solid " + bdr, background: inputBg, color: C.text, fontSize: 12, outline: "none" }} />
-                      <button onClick={() => grantPoints(uid, ptVal)} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: C.purpleL, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>지급</button>
-                      <button onClick={() => setPoints(uid, ptVal)} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 12, cursor: "pointer" }}>설정</button>
+                {/* 횟수 관리 — 컴팩트 */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                  {/* 지급 */}
+                  <div style={{ background: subtleBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, marginBottom: 6 }}>지급</div>
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                      {[5, 10, 20, 50].map(n => (
+                        <button key={n} onClick={() => grantPoints(uid, n)} style={{
+                          padding: "4px 8px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 700,
+                          border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.08)", color: C.purpleL }}>
+                          +{n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  {/* 차감 */}
+                  <div style={{ background: subtleBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: "#ef4444", marginBottom: 6 }}>차감</div>
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                      {[5, 10, 20, 50].map(n => (
+                        <button key={n} onClick={() => deductPoints(uid, n)} style={{
+                          padding: "4px 8px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 700,
+                          border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#ef4444" }}>
+                          -{n}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 </div>
-
-                {/* 액션 버튼 */}
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button onClick={() => resetPoints(uid)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", color: "#f59e0b", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                    포인트 초기화
-                  </button>
-                  <button onClick={() => resetMemberUsage(uid)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.06)", color: C.purpleL, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
-                    AI 횟수 초기화
-                  </button>
+                {/* 직접 입력 + 액션 */}
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                  <input value={ptVal} type="number" placeholder="횟수"
+                    onChange={e => setPtInputs(p => ({ ...p, [uid]: e.target.value }))}
+                    style={{ width: 70, padding: "5px 8px", borderRadius: 7, border: "1px solid " + bdr, background: inputBg, color: C.text, fontSize: 11, outline: "none" }} />
+                  <button onClick={() => grantPoints(uid, ptVal)} style={{ padding: "5px 10px", borderRadius: 7, border: "none", background: C.purpleL, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>지급</button>
+                  <button onClick={() => deductPoints(uid, ptVal)} style={{ padding: "5px 10px", borderRadius: 7, border: "none", background: "#ef4444", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>차감</button>
+                  <button onClick={() => setPoints(uid, ptVal)} style={{ padding: "5px 10px", borderRadius: 7, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 11, cursor: "pointer" }}>설정</button>
+                  <div style={{ width: 1, height: 16, background: bdr, margin: "0 2px" }} />
+                  <button onClick={() => resetPoints(uid)} style={{ padding: "5px 10px", borderRadius: 7, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", color: "#f59e0b", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>초기화</button>
+                  <button onClick={() => resetMemberUsage(uid)} style={{ padding: "5px 10px", borderRadius: 7, border: "1px solid rgba(99,102,241,0.3)", background: "rgba(99,102,241,0.06)", color: C.purpleL, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>AI초기화</button>
                   {m.role !== "admin" && (
                     <button onClick={() => deleteMember(uid, m.nick)} style={{ padding: "7px 14px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)", color: "#ef4444", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
                       회원 탈퇴
@@ -1359,7 +1383,7 @@ function PointHistoryTab({ C, isDark, members = [] }) {
   return (
     <div>
       <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
-        <div style={{ fontSize:15, fontWeight:800, color:C.text }}>포인트 사용 내역 ({filtered.length}건)</div>
+        <div style={{ fontSize:15, fontWeight:800, color:C.text }}>횟수 사용 내역 ({filtered.length}건)</div>
         <input value={filterUid} onChange={e => setFilterUid(e.target.value)} placeholder="닉네임 또는 사유 검색"
           style={{ padding:"8px 12px", borderRadius:8, border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:"transparent", color:C.text, fontSize:12, outline:"none", width:200 }} />
       </div>

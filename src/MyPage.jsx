@@ -28,7 +28,7 @@ const HISTORY_ICON = {
   "목업 생성":           { icon:"-", color:"#f87171" },
   "커뮤니티 글 작성":    { icon:"+", color:"#a78bfa" },
   "관리자 지급":        { icon:"+", color:"#fbbf24" },
-  "포인트 초기화":      { icon:"R", color:"#94a3b8" },
+  "횟수 초기화":        { icon:"R", color:"#94a3b8" },
 };
 
 function getHistIcon(reason) {
@@ -266,16 +266,16 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
           {/* 오른쪽: 크레딧 */}
           <div style={{ flexShrink:0, textAlign:"right" }}>
-            <div style={{ fontSize:22, fontWeight:900, color:"#a5b4fc" }}>{(userData?.points||0).toLocaleString()}P</div>
-            <div style={{ fontSize:10, color:muted }}>{ko?"보유 포인트":"Points"}</div>
+            <div style={{ fontSize:22, fontWeight:900, color:"#a5b4fc" }}>{Math.floor((userData?.points||0)/30)}회</div>
+            <div style={{ fontSize:10, color:muted }}>{ko?"잔여 횟수":"Credits"}</div>
           </div>
         </div>
 
         {/* 적립/사용 배지 + 닉네임 변경 버튼 */}
         <div style={{ display:"flex", gap:8, marginTop:14, alignItems:"center", flexWrap:"wrap" }}>
           <div style={{ display:"flex", gap:6 }}>
-            <div style={{ padding:"5px 12px", borderRadius:8, background:"rgba(74,222,128,0.12)", border:"1px solid rgba(74,222,128,0.25)", fontSize:12, fontWeight:700, color:"#4ade80" }}>+{earned.toLocaleString()}P {ko?"적립":"earned"}</div>
-            <div style={{ padding:"5px 12px", borderRadius:8, background:"rgba(248,113,113,0.12)", border:"1px solid rgba(248,113,113,0.25)", fontSize:12, fontWeight:700, color:"#f87171" }}>{used.toLocaleString()}P {ko?"사용":"used"}</div>
+            <div style={{ padding:"5px 12px", borderRadius:8, background:"rgba(74,222,128,0.12)", border:"1px solid rgba(74,222,128,0.25)", fontSize:12, fontWeight:700, color:"#4ade80" }}>+{Math.floor(earned/30)}{ko?"회 적립":" earned"}</div>
+            <div style={{ padding:"5px 12px", borderRadius:8, background:"rgba(248,113,113,0.12)", border:"1px solid rgba(248,113,113,0.25)", fontSize:12, fontWeight:700, color:"#f87171" }}>{Math.floor(used/30)}{ko?"회 사용":" used"}</div>
           </div>
           <button onClick={()=>{ setNickEdit(e=>!e); setNewNick(userData?.nick||""); setNickMsg(""); }}
             style={{ marginLeft:"auto", padding:"5px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, cursor:"pointer", fontWeight:600, whiteSpace:"nowrap" }}>
@@ -305,7 +305,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
       {/* ── 탭 ── */}
       <div style={{ display:"flex", gap:4, marginBottom:14, background:isDark?"rgba(255,255,255,0.04)":"#f3f4f6", borderRadius:12, padding:4 }}>
-        {[["info",ko?"계정 정보":"Account"],["history",ko?"포인트 내역":"Points"],["brand",ko?"브랜드 키트":"Brand Kit"]].map(([t,l])=>(
+        {[["info",ko?"계정 정보":"Account"],["history",ko?"이용 내역":"History"],["brand",ko?"브랜드 키트":"Brand Kit"]].map(([t,l])=>(
           <button key={t} className="myp-tab" onClick={()=>setTab(t)} style={{ flex:1, padding:"9px 16px", borderRadius:9, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
             background:tab===t?cardBg:"transparent", color:tab===t?"#a5b4fc":muted,
             boxShadow:tab===t?"0 1px 4px rgba(0,0,0,0.1)":"none", transition:"all 0.15s" }}>
@@ -321,8 +321,8 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
           {!histLoading && history.length === 0 && (
             <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
               <div style={{ fontSize:14, color:"#94a3b8", marginBottom:12, fontWeight:600 }}>{ko?"내역 없음":"No history"}</div>
-              <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:6 }}>{ko?"포인트 내역이 없어요":"No point history yet"}</div>
-              <div style={{ fontSize:12 }}>{ko?"AI 생성이나 게시글 작성으로 포인트를 적립해보세요!":"Earn points by creating AI content or writing posts!"}</div>
+              <div style={{ fontSize:14, fontWeight:700, color:text, marginBottom:6 }}>{ko?"이용 내역이 없어요":"No history yet"}</div>
+              <div style={{ fontSize:12 }}>{ko?"AI 도구를 사용하면 내역이 표시됩니다.":"Use AI tools to see your history."}</div>
             </div>
           )}
           {!histLoading && history.length > 0 && (
@@ -337,7 +337,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
                       {icon}
                     </div>
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{h.reason || (ko?"포인트 변경":"Point change")}</div>
+                      <div style={{ fontSize:13, fontWeight:700, color:text, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{h.reason || (ko?"횟수 변경":"Credit change")}</div>
                       <div style={{ fontSize:11, color:muted }}>
                         {h.at ? new Date(h.at).toLocaleString("ko-KR",{month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}) : "-"}
                       </div>
@@ -460,7 +460,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, flexWrap:"wrap", marginBottom:10 }}>
                 <div>
                   <div style={{ fontSize:14, fontWeight:900, color:text }}>{ko?"내 추천코드":"My Referral Code"}</div>
-                  <div style={{ fontSize:12, color:muted, marginTop:3 }}>{ko?"친구가 이 코드로 가입하면 친구는 100P, 나는 200P를 받아요.":"A friend gets 100P and you get 200P when they sign up with this code."}</div>
+                  <div style={{ fontSize:12, color:muted, marginTop:3 }}>{ko?"친구가 이 코드로 가입하면 서로 추가 횟수를 받아요.":"You and your friend both get bonus credits when they sign up with this code."}</div>
                 </div>
                 <button onClick={copyReferral} style={{ padding:"9px 14px", borderRadius:9, border:"none", background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:12, fontWeight:800, cursor:"pointer" }}>
                   {ko?"링크 복사":"Copy Link"}
@@ -475,7 +475,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
           <div className="myp-quick-grid" style={{ marginTop:8, display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10 }}>
             {[
-              { icon:"P", label:ko?"포인트 충전":"Buy Points", sub:ko?"AI 생성 포인트 충전":"Recharge AI points", action:()=>navigate("pricing"), color:"#a5b4fc" },
+              { icon:"P", label:ko?"플랜 업그레이드":"Upgrade Plan", sub:ko?"더 많은 AI 생성":"More AI generations", action:()=>navigate("pricing"), color:"#a5b4fc" },
               { icon:"L", label:ko?"내 보관함":"My Library",   sub:ko?"카드뉴스·상세페이지":"Card news & pages", action:()=>navigate("ai"), color:"#4ade80" },
               { icon:"Q", label:ko?"문의하기":"Contact",    sub:ko?"1:1 문의":"1:1 Support", action:()=>navigate("contact"), color:"#f59e0b" },
             ].map(({icon,label,sub,action,color})=>(

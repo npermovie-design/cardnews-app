@@ -255,7 +255,7 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
               boxShadow: loading ? "none" : `0 6px 24px ${accent}40`,
               opacity: loading ? 0.7 : 1, transition: "all 0.2s",
             }}>
-            {loading ? t("at_converting") : `${t("at_convert_btn")} (${selectedCount}${t("at_format_unit")} · 35P)`}
+            {loading ? t("at_converting") : `${t("at_convert_btn")} (${selectedCount}${t("at_format_unit")} · 1회)`}
           </button>
 
           {/* 결과 영역 */}

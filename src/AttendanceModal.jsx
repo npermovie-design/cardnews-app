@@ -270,7 +270,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
               );
             })}
             <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, background: D ? "rgba(255,255,255,0.04)" : "#f0f0f8", fontSize: 11, color: muted }}>
-              📅 이달 개근 달성 시 <b style={{ color: ACC }}>+30P 보너스</b> ({daysInMonth - monthDates.length}일 남음)
+              이달 개근 달성 시 <b style={{ color: ACC }}>+10회 보너스</b> ({daysInMonth - monthDates.length}일 남음)
             </div>
           </div>
 
@@ -279,7 +279,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
             <div style={{ marginBottom: 14, padding: "14px 16px", borderRadius: 12,
               background: "linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.1))",
               border: `1px solid ${ACC}40`, textAlign: "center" }}>
-              <div style={{ fontSize: 26, fontWeight: 900, color: ACC, marginBottom: 4 }}>+{result.pts}P 지급!</div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: ACC, marginBottom: 4 }}>+{Math.max(1, Math.floor(result.pts/3))}회 적립!</div>
               {result.bonuses.map((b, i) => (
                 <div key={i} style={{ fontSize: 12, color: "#a5b4fc", fontWeight: 700 }}>🎉 {b}</div>
               ))}
@@ -290,7 +290,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
           {checkedToday ? (
             <div style={{ padding: "14px", borderRadius: 14, background: `${ACC}12`, border: `1px solid ${ACC}30`,
               textAlign: "center", fontSize: 14, fontWeight: 800, color: ACC }}>
-              오늘 출석 완료! (+3P)
+              오늘 출석 완료! (+1회 적립)
             </div>
           ) : (
             <button onClick={doCheckIn} disabled={checking}

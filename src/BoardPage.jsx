@@ -410,7 +410,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     if(search.trim()){ const q=search.toLowerCase(); list=list.filter(p=>p.title.toLowerCase().includes(q)||(p.nick||"").toLowerCase().includes(q)); }
     return sort==="views"?[...list].sort((a,b)=>(b.views||0)-(a.views||0))
           :sort==="likes"?[...list].sort((a,b)=>(b.likes||0)-(a.likes||0))
-          :[...list].sort((a,b)=>b.id-a.id);
+          :[...list].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
   },[posts,subCat,search,sort,filterTag]);
 
   const hotPosts = useMemo(()=>
@@ -437,7 +437,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     if(search.trim()){const q=search.toLowerCase();list=list.filter(p=>p.title.toLowerCase().includes(q)||(p.nick||"").toLowerCase().includes(q));}
     return sort==="views"?[...list].sort((a,b)=>(b.views||0)-(a.views||0))
           :sort==="likes"?[...list].sort((a,b)=>(b.likes||0)-(a.likes||0))
-          :[...list].sort((a,b)=>b.id-a.id);
+          :[...list].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
   },[posts,search,sort,filterTag]);
 
   const isArchivePostsView = false; // 자료실도 일반 게시판 리스트로 표시
@@ -449,8 +449,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const submitPost = async ({title, body, subCat: formCat, tag, images, priceType, price}) => {
     if(!user){if(onLoginRequest)onLoginRequest();return;}
     const cat = formCat || subCat;
+    const now = new Date();
     const p={id:Date.now(),cat,subCat:cat,tag:tag||"",nick:user.nick,title,body,
-             date:new Date().toLocaleDateString("ko-KR"),comments:[],views:0,likes:0,likedBy:[],
+             created_at:now.toISOString(),
+             date:((d)=>`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`)(now),comments:[],views:0,likes:0,likedBy:[],
              images: Array.isArray(images) ? images : [],
              ...(priceType?{priceType,price:price||""}:{})};
     const nextPosts = [p, ...posts];
@@ -466,15 +468,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     } catch(e) {
       /* Supabase save failed, localStorage only */
     }
-    // 1P 지급
-    if(user.uid){
-      try {
-        const newPts = await changePoints(user.uid, 1, "커뮤니티 글 작성");
-        if(onUserUpdate) onUserUpdate({...user, points: newPts});
-        showToast("글이 등록됐어요! +1P 포인트가 지급됐습니다","success");
-      } catch(e) {
-        showToast("글이 등록됐어요!","success");
-      }
+    showToast("글이 등록됐어요!","success");
+    if(false){
     } else {
       showToast("글이 등록됐어요!","success");
     }
@@ -550,7 +545,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const addComment = async postId => {
     if(!user){if(onLoginRequest)onLoginRequest();return;}
     if(!comment.trim())return;
-    const newComment = {id:Date.now(),nick:user.nick,text:comment,date:new Date().toLocaleDateString("ko-KR")};
+    const newComment = {id:Date.now(),nick:user.nick,text:comment,date:((d)=>`${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`)(new Date())};
     const next = posts.map(p=>p.id===postId?{...p,comments:[...(p.comments||[]),newComment]}:p);
     const updated = next.find(p=>p.id===postId);
     syncLocal(next); setView(updated); setComment("");
@@ -1033,8 +1028,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           </div>
           <span style={{fontSize:14,color:isDark?"#86efac":"#166534",lineHeight:1.7}}>
-            <b>포인트 적립 안내</b> · 게시글 작성 시 <b style={{color:"#22c55e"}}>+1P</b> 적립 (하루 최대 10회).
-            댓글에는 포인트가 지급되지 않으며, 매일 로그인 시 <b style={{color:"#22c55e"}}>+3P</b>가 추가로 적립됩니다.
+            <b>커뮤니티 안내</b> · 자유롭게 정보를 공유하고 소통하세요.
+            매일 로그인 출석 체크 시 AI 글쓰기 횟수가 추가 적립됩니다.
           </span>
         </div>
 
@@ -1774,7 +1769,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <div style={{padding:"14px 16px",borderBottom:"1px solid "+bdr}}>
                 <span style={{fontSize:13,fontWeight:800,color:C.text}}>포인트 적립</span>
               </div>
-              {[["글 작성","+1P"],["AI 글쓰기","-30P"],["가입 즉시","+150P"],["매일 로그인","+3P"]].map(([a,p])=>(
+              {[["AI 글쓰기","-1회"],["가입 즉시","+5회"],["매일 로그인","+1회"]].map(([a,p])=>(
                 <div key={a} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid "+bdr,fontSize:13}}>
                   <span style={{color:C.muted}}>{a}</span>
                   <span style={{fontWeight:700,color:p.startsWith("+")?"#4ade80":"#f87171"}}>{p}</span>

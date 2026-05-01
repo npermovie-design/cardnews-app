@@ -473,7 +473,7 @@ const T = {
     bg_copyWithImg: "복사 (이미지 포함)", bg_copying: "복사 중",
     bg_editPlaceholder: "수정할 내용을 입력하세요 (예: 사례를 더 추가해줘, 초보자 눈높이로 바꿔줘)",
     bg_editing: "수정 중...", bg_apply: "적용", bg_taskWriting: "글 작성 중...", bg_taskWriteDone: "글 작성 완료!",
-    bg_tabWrite: "글쓰기", bg_tabVideo: "영상 생성", bg_tabDesign: "디자인", bg_designDesc: "글 내용을 카드뉴스로 자동 변환합니다", bg_designSlideCount: "슬라이드 수", bg_designFromLibrary: "보관함에서 불러오기", bg_designGenerating: "카드뉴스 생성 중...", bg_designPlaceholder: "카드뉴스로 만들 내용을 입력하세요", bg_fetchingUrl: "불러오는 중...", bg_fetchBtn: "불러오기",
+    bg_tabWrite: "글쓰기", bg_tabVideo: "영상편집", bg_tabDesign: "디자인", bg_designDesc: "글 내용을 카드뉴스로 자동 변환합니다", bg_designSlideCount: "슬라이드 수", bg_designFromLibrary: "보관함에서 불러오기", bg_designGenerating: "카드뉴스 생성 중...", bg_designPlaceholder: "카드뉴스로 만들 내용을 입력하세요", bg_fetchingUrl: "불러오는 중...", bg_fetchBtn: "불러오기",
     bg_ytLinkDetected: "유튜브 링크가 감지되었습니다", bg_linkDetected: "링크가 감지되었습니다",
     bg_ytAnalyzed: "유튜브", bg_newsAnalyzed: "뉴스", bg_webAnalyzed: "웹페이지", bg_analyzeComplete: "분석 완료",
     bg_fileAttach: "파일 첨부", bg_linkPaste: "링크 붙여넣기", bg_postSettingsBtn: "글 설정",
