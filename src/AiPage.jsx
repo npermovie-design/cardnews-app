@@ -1868,19 +1868,17 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   const [guardModal, setGuardModal] = useState(null);
   const [pointConfirm, setPointConfirm] = useState(null); // { cost, onConfirm, onCancel }
 
-  // 포인트 차감 확인 — 팝업으로 사용자 확인 후 진행
+  // 횟수 차감 확인 — 횟수 충분하면 바로 진행, 부족하면 안내
   const showPointConfirm = (cost) => {
     return new Promise(resolve => {
       if (!user) { resolve(true); return; }
       const pts = user.points ?? 0;
-      // 회원은 항상 포인트 차감 (무료 횟수 없음)
-      // 포인트 부족 시 팝업
       if (pts < cost) {
         setPointConfirm({ cost, onConfirm: () => { setPointConfirm(null); resolve(false); }, onCancel: () => { setPointConfirm(null); resolve(false); } });
         return;
       }
-      // 충분하면 확인 팝업
-      setPointConfirm({ cost, onConfirm: () => { setPointConfirm(null); resolve(true); }, onCancel: () => { setPointConfirm(null); resolve(false); } });
+      // 충분하면 팝업 없이 바로 진행
+      resolve(true);
     });
   };
 
