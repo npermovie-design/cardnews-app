@@ -149,7 +149,7 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
       if (!data.image) throw new Error("이미지를 생성하지 못했습니다. 다시 시도해주세요.");
       setResult(data.image);
       setStep(5);
-      if (user?.uid) { try { const { changePoints } = await import("./storage"); const np = await changePoints(user.uid, -50, "모델 이미지 생성"); if (onUserUpdate && np !== null) onUserUpdate({ ...user, points: np }); } catch {} }
+      if (user?.uid) { try { const { changePoints } = await import("./storage"); const np = await changePoints(user.uid, -1, "모델 이미지 생성"); if (onUserUpdate && np !== null) onUserUpdate({ ...user, points: np }); } catch {} }
     } catch(e) { setErr(e.message||"생성 실패. 다시 시도해주세요."); setStep(3); }
     finally { window.__isGenerating = false; window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "gen_model" } } })); }
   };
@@ -410,7 +410,7 @@ This is a RETOUCH task, not a regeneration. The output must look like the SAME p
       if (data.error) throw new Error(data.error);
       if (!data.image) throw new Error("이미지를 생성하지 못했습니다.");
       setResult(data.image); setStep(4);
-      if (user?.uid) { try { const { changePoints } = await import("./storage"); const np = await changePoints(user.uid, -50, "피부 보정"); if (onUserUpdate && np !== null) onUserUpdate({ ...user, points: np }); } catch {} }
+      if (user?.uid) { try { const { changePoints } = await import("./storage"); const np = await changePoints(user.uid, -1, "피부 보정"); if (onUserUpdate && np !== null) onUserUpdate({ ...user, points: np }); } catch {} }
     } catch (e) { setErr(e.message || "보정 실패"); setStep(2); }
     finally { window.__isGenerating = false; window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "gen_skinretouch" } } })); }
   };
@@ -538,7 +538,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest, showPoi
       if (data.error) throw new Error(data.error);
       if (!data.image) throw new Error("이미지를 생성하지 못했습니다.");
       setResult(data.image); setStep(4);
-      if (user?.uid) { try { const { changePoints } = await import("./storage"); const np = await changePoints(user.uid, -50, "얼굴 교체"); if (onUserUpdate && np !== null) onUserUpdate({ ...user, points: np }); } catch {} }
+      if (user?.uid) { try { const { changePoints } = await import("./storage"); const np = await changePoints(user.uid, -1, "얼굴 교체"); if (onUserUpdate && np !== null) onUserUpdate({ ...user, points: np }); } catch {} }
     } catch(e) { setErr(e.message||"생성 실패"); setStep(2); }
     finally { window.__isGenerating = false; window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "gen_faceswap" } } })); }
   };
@@ -656,7 +656,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest, showP
       if (data.error) throw new Error(data.error);
       if (!data.image) throw new Error("이미지를 생성하지 못했습니다.");
       setResult(data.image);
-      if (user?.uid) { try { const { changePoints } = await import("./storage"); const np = await changePoints(user.uid, -50, "의상 교체"); if (onUserUpdate && np !== null) onUserUpdate({ ...user, points: np }); } catch {} }
+      if (user?.uid) { try { const { changePoints } = await import("./storage"); const np = await changePoints(user.uid, -1, "의상 교체"); if (onUserUpdate && np !== null) onUserUpdate({ ...user, points: np }); } catch {} }
     } catch(e) { setErr(e.message||"생성 실패"); }
     finally { setGenerating(false); window.__isGenerating = false; window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "gen_outfitswap" } } })); }
   };
@@ -826,7 +826,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest, showPoi
       if (data.error) throw new Error(data.error);
       if (!data.image) throw new Error("이미지를 생성하지 못했습니다.");
       setResult(data.image); setStep(4);
-      if (user?.uid) { try { const { changePoints } = await import("./storage"); const np = await changePoints(user.uid, -50, "여백 늘리기"); if (onUserUpdate && np !== null) onUserUpdate({ ...user, points: np }); } catch {} }
+      if (user?.uid) { try { const { changePoints } = await import("./storage"); const np = await changePoints(user.uid, -1, "여백 늘리기"); if (onUserUpdate && np !== null) onUserUpdate({ ...user, points: np }); } catch {} }
     } catch(e) { setErr(e.message||"생성 실패"); setStep(2); }
     finally { window.__isGenerating = false; window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "complete", task: { id: "gen_outpaint" } } })); }
   };

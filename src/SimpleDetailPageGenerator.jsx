@@ -426,7 +426,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
       if (imageMode && slidesData.length > 0) {
         setTimeout(() => { autoDownloadRef.current = true; }, 300);
       }
-      if (user?.uid) changePoints(user.uid, -60, "심플 상세페이지 생성").then(newPts => { if (onUserUpdate) onUserUpdate({...user, points: newPts}); }).catch(()=>{});
+      if (user?.uid) changePoints(user.uid, -1, "심플 상세페이지 생성").then(newPts => { if (onUserUpdate) onUserUpdate({...user, points: newPts}); }).catch(()=>{});
       // 프리셋 저장
       try {
         const KEY = "nper_simpledetail_saves_v1";

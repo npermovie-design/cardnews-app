@@ -132,7 +132,7 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
       if (user && onUserUpdate) {
         try {
           const { changePoints } = await import("./storage");
-          const newPts = await changePoints(user.uid, -30, "기획 생성");
+          const newPts = await changePoints(user.uid, -1, "기획 생성");
           if (newPts !== null) onUserUpdate({ ...user, points: newPts });
         } catch {}
       }

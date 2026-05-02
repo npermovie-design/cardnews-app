@@ -30,7 +30,8 @@ export function useGeneratingGuard(generating, costPerUse = 10, featureType = ""
 
     // 탭 닫기 / 새로고침
     const handleBeforeUnload = (e) => {
-      const msg = `생성 중에 페이지를 나가면 결과물이 저장되지 않으며, ${costPerUse}P 포인트도 소진됩니다.`;
+      const uses = Math.max(1, Math.max(1, Number(costPerUse) || 1));
+      const msg = `생성 중에 페이지를 나가면 결과물이 저장되지 않으며, ${uses}회도 차감됩니다.`;
       e.preventDefault();
       e.returnValue = msg;
       return msg;

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken } from "./storage";
+import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken, pointDeltaToUses } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import StepBar from "./StepBar.jsx";
 import { THEMES, isDarkTheme } from "./theme";
@@ -226,7 +226,7 @@ export default function MockupGenerator({ isDark, user , onUserUpdate, showPoint
     }
     setCurGen(null);
     if (successCount > 0 && user?.uid) {
-      changePoints(user.uid, -(successCount * 10), `목업 생성 (${successCount}종)`).then(newPts => {
+      changePoints(user.uid, -1, `목업 생성 (${successCount}종)`).then(newPts => {
         if (onUserUpdate) onUserUpdate({...user, points: newPts});
       }).catch(() => {});
     }
@@ -351,12 +351,12 @@ export default function MockupGenerator({ isDark, user , onUserUpdate, showPoint
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <div style={{ fontSize:12, color:muted }}>
             {selTypes.length > 0
-              ? <><b style={{ color:ACC }}>{selTypes.length}가지</b> 목업 · <b style={{ color:ACC }}>{selTypes.length * 10}P</b> 차감</>
+              ? <><b style={{ color:ACC }}>{selTypes.length}가지</b> 목업 · <b style={{ color:ACC }}>1회</b> 차감</>
               : "목업 종류를 선택해주세요"}
           </div>
           <button onClick={generate} disabled={!canGenerate}
             style={{ padding:"13px 40px", borderRadius:12, border:"none", cursor:canGenerate?"pointer":"not-allowed", background:canGenerate?`linear-gradient(135deg,${ACC},#6d28d9)`:"rgba(124,58,237,0.3)", color:"#fff", fontSize:14, fontWeight:900, opacity:canGenerate?1:0.6 }}>
-            {user ? `🎨 목업 생성하기 → ${selTypes.length * 10}P` : "✦ 1회 생성하기"}
+            {user ? "🎨 목업 생성하기 → 1회" : "✦ 1회 생성하기"}
           </button>
         </div>
       </div>

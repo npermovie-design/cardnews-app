@@ -44,7 +44,7 @@ function transcriptToText(items) {
    메인 컴포넌트
 ══════════════════════════════════════════════════════════ */
 
-// ── 포인트 소진 화면 ──────────────────────────────────────────────────────────
+// ── 횟수 소진 화면 ──────────────────────────────────────────────────────────
 function PointsExhausted({ isDark, isGuest, title }) {
   const { t } = useI18n();
   const bg = isDark ? "linear-gradient(160deg,#0f0c29,#1a1740)" : "#f4f4f8";
@@ -62,8 +62,8 @@ function PointsExhausted({ isDark, isGuest, title }) {
         </div>
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
-            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>150P 보너스</b>를 받으세요!</>
-            : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
+            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>5회 보너스</b>를 받으세요!</>
+            : <><b style={{color:text}}>{title}</b> 생성에 이용 횟수가 필요해요.<br/>횟수를 충전하거나 관리자에게 문의해주세요.</>
           }
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -288,7 +288,7 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate, 
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "blog_gen_yt", type: "blog_write", message: "유튜브 블로그 작성 중..." } } }));
     // 포인트 즉시 차감
     if (user && user.uid) {
-      changePoints(user.uid, -30, "유튜브 블로그 생성").then(newPts => {
+      changePoints(user.uid, -1, "유튜브 블로그 생성").then(newPts => {
         if (onUserUpdate) onUserUpdate({...user, points: newPts});
       }).catch(()=>{});
     }

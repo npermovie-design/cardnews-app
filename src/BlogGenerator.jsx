@@ -1270,7 +1270,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     const _pts = user ? (user.points || 0) : 0;
     const isGuest = !user;
     // 비회원: 5회 초과 시 차단 / 회원: 포인트 부족 시 차단
-    const exhausted = isGuest ? (_used >= _lim) : (_pts < 30);
+    const exhausted = isGuest ? (_used >= _lim) : (_pts < 1);
     return { used: _used, limit: _lim, points: _pts, exhausted, isGuest };
   };
   // ── 카드뉴스 생성 함수 ──
@@ -1309,7 +1309,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       return;
     }
     if (user && showPointConfirm) {
-      const ok = await showPointConfirm(30);
+      const ok = await showPointConfirm(1);
       if (!ok) return;
     }
     setDesignLoading(true); setDesignSlides(null); setDesignStep("input"); setError("");
@@ -1656,12 +1656,12 @@ ${emojiRule}
     const _aiUsed = _aiUsage[_aiKey] || 0;
     const _aiPoints = user ? (user.points || 0) : 0;
     // 회원: 포인트 부족 시 차단
-    if (user && _aiPoints < 30) {
+    if (user && _aiPoints < 1) {
       setError(t("bg_pointsLow"));
       return;
     }
     // 회원: 포인트 차감 확인
-    if (showPointConfirm && user && !(await showPointConfirm(30))) return;
+    if (showPointConfirm && user && !(await showPointConfirm(1))) return;
     setError(""); setLoading(true); setResult_raw(""); try{sessionStorage.removeItem(_ssKey);sessionStorage.removeItem(_ssSavedFullKey);}catch(e){} setHtmlResult(""); setCopied(false);
     abortRef.current = false;
     // elapsed-time 기반 step progression을 위해 시작 시각 기록
@@ -1674,7 +1674,7 @@ ${emojiRule}
 
     // 회원: 항상 30P 즉시 차감
     if (user && user.uid) {
-      changePoints(user.uid, -30, "블로그 글 생성").then(newPts => {
+      changePoints(user.uid, -1, "블로그 글 생성").then(newPts => {
         if (onUserUpdate) onUserUpdate({...user, points: newPts});
       }).catch(()=>{});
     }
@@ -1837,7 +1837,7 @@ ${emojiRule}
 
       if (imgUrl) {
         setImageResult(imgUrl);
-        changePoints(user.uid, -50, "AI 이미지 생성").then(newPts => {
+        changePoints(user.uid, -1, "AI 이미지 생성").then(newPts => {
           if (onUserUpdate) onUserUpdate({...user, points: newPts});
         });
       } else {
@@ -3932,7 +3932,7 @@ hospital equipment`
                   <div style={{fontSize:14,color:muted,lineHeight:1.7,marginBottom:24}}>
                     {_getUsageState().isGuest
                       ? <>비회원은 <b style={{color:accent}}>5회 무료</b>로 이용 가능합니다.<br/>로그인하면 <b style={{color:accent}}>5회 추가</b> 지급됩니다!</>
-                      : <>영상 편집에는 <b style={{color:accent}}>1회</b>가 필요합니다.<br/>잔여 횟수: <b style={{color:"#f59e0b"}}>{Math.floor((_getUsageState().points||0)/30)}회</b></>}
+                      : <>영상 편집에는 <b style={{color:accent}}>1회</b>가 필요합니다.<br/>잔여 횟수: <b style={{color:"#f59e0b"}}>{(_getUsageState().points||0)}회</b></>}
                   </div>
                   <div style={{display:"flex",gap:10,justifyContent:"center"}}>
                     <button onClick={()=>{setShortsMode(false);}} style={{padding:"12px 24px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",color:text,fontSize:14,fontWeight:700,cursor:"pointer"}}>돌아가기</button>

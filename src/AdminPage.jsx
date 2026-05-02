@@ -272,12 +272,12 @@ export default function AdminPage({ C, user: adminUser }) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
-  // ── 횟수 지급 (1회 = 30P, API 경유)
+  // ── 횟수 지급 (1회 = 1, API 경유)
   const grantPoints = async (uid, count) => {
     if (!count || isNaN(count)) { showToast("횟수를 입력하세요"); return; }
     try {
       const member = members.find(m => m.uid === uid);
-      const next = (member?.points || 0) + Number(count) * 30;
+      const next = (member?.points || 0) + Number(count);
       await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&points=${next}`);
       setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: next } : m));
       showToast("+" + count + "회 지급 완료!");
@@ -772,8 +772,8 @@ export default function AdminPage({ C, user: adminUser }) {
                           <tr key={i} style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.04)":"#f3f4f6"}` }}>
                             <td style={{ padding:"6px 8px", fontWeight:600, color:C.text }}>{nick}</td>
                             <td style={{ padding:"6px 8px", color:C.muted }}>{l.reason||"-"}</td>
-                            <td style={{ padding:"6px 8px", textAlign:"right", fontWeight:700, color:l.delta>0?"#22c55e":"#ef4444" }}>{l.delta>0?"+":""}{Math.round(l.delta/30)}회</td>
-                            <td style={{ padding:"6px 8px", textAlign:"right", color:C.text }}>{Math.floor((l.balance||0)/30)}회</td>
+                            <td style={{ padding:"6px 8px", textAlign:"right", fontWeight:700, color:l.delta>0?"#22c55e":"#ef4444" }}>{l.delta>0?"+":""}{Math.round(l.delta)}회</td>
+                            <td style={{ padding:"6px 8px", textAlign:"right", color:C.text }}>{Math.floor((l.balance||0))}회</td>
                             <td style={{ padding:"6px 8px", color:C.muted, fontSize:10 }}>{l.created_at ? new Date(l.created_at).toLocaleString("ko-KR") : "-"}</td>
                           </tr>
                         );
@@ -835,7 +835,7 @@ export default function AdminPage({ C, user: adminUser }) {
                   </div>
                   {/* 잔여 횟수 */}
                   <div style={{ textAlign: "right", padding: "8px 12px", borderRadius: 10, background: subtleBg, border: `1px solid ${panelBorder}` }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: C.purpleL }}>{Math.floor((m.points||0)/30)}회</div>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: C.purpleL }}>{Math.floor((m.points||0))}회</div>
                     <div style={{ fontSize: 11, color: C.muted }}>잔여 횟수</div>
                   </div>
                 </div>
@@ -1242,7 +1242,7 @@ export default function AdminPage({ C, user: adminUser }) {
       {tab === "inquiries" && <InquiryManager C={C} isDark={isDark} />}
     {/* 나머지 탭들은 pointHistory 등 아래에서 계속... → 1340줄 부근 */}
 
-      {/* ── 포인트 내역 ── */}
+      {/* ── 횟수 내역 ── */}
       {tab === "pointHistory" && <PointHistoryTab C={C} isDark={isDark} members={members} />}
 
       {/* ── 앱 피드백 ── */}

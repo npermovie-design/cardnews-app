@@ -150,7 +150,7 @@ function cleanBlogText(text) {
 
 
 
-// ── 포인트 소진 화면 ──────────────────────────────────────────────────────────
+// ── 횟수 소진 화면 ──────────────────────────────────────────────────────────
 function PointsExhausted({ isDark, isGuest, title }) {
   const bg = isDark ? "linear-gradient(160deg,#0f0c29,#1a1740)" : "#f4f4f8";
   const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
@@ -163,12 +163,12 @@ function PointsExhausted({ isDark, isGuest, title }) {
       <div style={{ maxWidth:420, width:"100%" }}>
         <div style={{ fontSize:64, marginBottom:16 }}>💎</div>
         <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:8 }}>
-          {isGuest ? "무료 이용권을 모두 사용했어요" : "포인트가 모두 소진됐어요"}
+          {isGuest ? "무료 이용권을 모두 사용했어요" : "횟수가 모두 소진됐어요"}
         </div>
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
-            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>150P 보너스</b>를 받으세요!</>
-            : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
+            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>5회 보너스</b>를 받으세요!</>
+            : <><b style={{color:text}}>{title}</b> 생성에 이용 횟수가 필요해요.<br/>횟수를 충전하거나 관리자에게 문의해주세요.</>
           }
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -182,7 +182,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
             <button onClick={() => { window.location.hash = "#pricing"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800 }}>
-              💎 포인트 충전하기
+              💎 횟수 충전하기
             </button>
           )}
           <button onClick={() => window.open("https://open.kakao.com/o/gIw9vTFg", "_blank")}
@@ -368,7 +368,7 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "blog_gen_news", type: "blog_write", message: "뉴스 블로그 작성 중..." } } }));
     // 포인트 즉시 차감
     if (user && user.uid) {
-      changePoints(user.uid, -30, "뉴스 블로그 생성").then(newPts => {
+      changePoints(user.uid, -1, "뉴스 블로그 생성").then(newPts => {
         if (onUserUpdate) onUserUpdate({...user, points: newPts});
       }).catch(()=>{});
     }

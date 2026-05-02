@@ -76,7 +76,7 @@ function RepurposePage({ isDark, user, onLoginRequest, onUserUpdate, showPointCo
       const freeLimit = user ? FREE_MEMBER : FREE_GUEST;
       if (info.used >= freeLimit) {
         const { changePoints } = await import("./storage");
-        const newPts = await changePoints(user.uid, -60, "콘텐츠 리퍼포징");
+        const newPts = await changePoints(user.uid, -1, "콘텐츠 리퍼포징");
         if (onUserUpdate) onUserUpdate({ ...user, points: newPts });
       }
 
@@ -509,7 +509,7 @@ ${fileContent.slice(0, 4000)}
       if (user?.uid) {
         try {
           const { changePoints } = await import("./storage");
-          await changePoints(user.uid, -30, "파일 글 변환");
+          await changePoints(user.uid, -1, "파일 글 변환");
         } catch {}
       }
     } catch (err) {

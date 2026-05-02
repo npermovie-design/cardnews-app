@@ -34,42 +34,40 @@ export async function getAuthToken() {
   } catch { return null; }
 }
 
-// DB 컬럼명은 기존 호환을 위해 points를 유지한다.
-// 서비스 화면과 정책은 30 internal units = 1회로 환산해 운영한다.
-export const USE_UNIT = 30;
-export const usesToPoints = (uses = 0) => Math.round((Number(uses) || 0) * USE_UNIT);
-export const pointsToUses = (points = 0) => Math.floor((Number(points) || 0) / USE_UNIT);
+// DB 컬럼 points = 실제 이용 횟수 (1:1 매핑)
+// 이전 30배 내부 단위를 제거하고 1회 = 1로 통일한다.
+export const USE_UNIT = 1;
+export const usesToPoints = (uses = 0) => Math.round(Number(uses) || 0);
+export const pointsToUses = (points = 0) => Math.floor(Number(points) || 0);
 export const pointDeltaToUses = (delta = 0) => {
   const n = Number(delta) || 0;
-  if (n === 0) return 0;
-  const sign = n < 0 ? -1 : 1;
-  return sign * Math.ceil(Math.abs(n) / USE_UNIT);
+  return n;
 };
 
 // ── 이용 횟수 상수 (내부 저장 단위는 points 컬럼) ──────────────────────────
 export const POINTS = {
-  SIGNUP:      150,    // 회원가입 보너스 (글쓰기 5회 분량)
-  DAILY_LOGIN: 30,     // 일일 로그인 1회
-  REFERRAL_SIGNUP: 150, // 추천코드 가입자 보상 5회
-  REFERRAL_REFERRER: 300, // 추천한 회원 보상 10회
-  POST_WRITE:  30,     // 게시글 작성 1회 (하루 10회 제한)
+  SIGNUP:      5,      // 회원가입 보너스 5회
+  DAILY_LOGIN: 1,      // 일일 로그인 1회
+  REFERRAL_SIGNUP: 5,  // 추천코드 가입자 보상 5회
+  REFERRAL_REFERRER: 10, // 추천한 회원 보상 10회
+  POST_WRITE:  1,      // 게시글 작성 1회 (하루 10회 제한)
   COMMENT:     0,      // 댓글 작성
-  // ── AI 생성 (글쓰기 30P 기준) ──────────────────────────
-  AI_USE:      -30,    // Haiku 텍스트
-  AI_SONNET:   -120,   // Sonnet 텍스트
-  IMAGE_GEN:   -250,   // 이미지 생성
-  PPT_GEN:     -60,    // PPT/상세페이지 생성
-  VIDEO_ANALYZE: -80,  // 영상 분석
-  VIDEO_GEN:   -50,    // 영상 15초
-  VIDEO_GEN_30: -75,   // 영상 30초
-  VIDEO_GEN_60: -100,  // 영상 60초
+  // ── AI 생성 (모두 1회 = 1 차감) ────────────────────────
+  AI_USE:      -1,     // 텍스트 생성
+  AI_SONNET:   -1,     // Sonnet 텍스트
+  IMAGE_GEN:   -1,     // 이미지 생성
+  PPT_GEN:     -1,     // PPT/상세페이지 생성
+  VIDEO_ANALYZE: -1,   // 영상 분석
+  VIDEO_GEN:   -1,     // 영상 15초
+  VIDEO_GEN_30: -1,    // 영상 30초
+  VIDEO_GEN_60: -1,    // 영상 60초
   // ── AI 채팅 ──────────────────────────────────────────
-  CHAT_HAIKU:    -15,  // Haiku 채팅
-  CHAT_SONNET:  -60,   // Sonnet 채팅
-  CHAT_GPT4O_MINI: -15, // GPT-4o Mini
-  CHAT_GPT4O:   -80,   // GPT-4o
-  CHAT_GEMINI_FLASH: -10, // Gemini Flash
-  CHAT_GEMINI_PRO: -60, // Gemini Pro
+  CHAT_HAIKU:    -1,   // Haiku 채팅
+  CHAT_SONNET:  -1,    // Sonnet 채팅
+  CHAT_GPT4O_MINI: -1, // GPT-4o Mini
+  CHAT_GPT4O:   -1,    // GPT-4o
+  CHAT_GEMINI_FLASH: -1, // Gemini Flash
+  CHAT_GEMINI_PRO: -1, // Gemini Pro
 };
 
 // 채팅 모델 → 내부 차감 단위 매핑
@@ -82,7 +80,7 @@ export const CHAT_COST = {
   "gemini-2.5-pro": POINTS.CHAT_GEMINI_PRO,
 };
 
-// 단건 충전 플랜 (내부 저장 단위는 points 컬럼)
+// 단건 충전 플랜 (1 point = 1회)
 export const PLANS = [
   {
     id: "free",
@@ -99,10 +97,10 @@ export const PLANS = [
     id: "pack1",
     name: "Starter",
     price: 5.9,
-    points: 600,
+    points: 20,
     label: "$5.90",
     color: "#4ade80",
-    features: ["20회 지급", "글쓰기 약 20회", "유효기간 없음", "모든 기능 이용 가능"],
+    features: ["20회 지급", "모든 기능 이용 가능", "유효기간 없음"],
     btnLabel: "시작하기",
     highlight: false,
     badge: "입문",
@@ -111,10 +109,10 @@ export const PLANS = [
     id: "pack3",
     name: "Standard",
     price: 19.9,
-    points: 2400,
+    points: 80,
     label: "$19.90",
     color: "#7c6aff",
-    features: ["80회 지급", "글쓰기 약 80회 · 이미지 약 9회", "모든 기능 이용 가능", "SNS 자동 발행"],
+    features: ["80회 지급", "모든 기능 이용 가능", "SNS 자동 발행"],
     btnLabel: "시작하기",
     highlight: true,
     badge: "추천",
@@ -123,10 +121,10 @@ export const PLANS = [
     id: "pack5",
     name: "Pro",
     price: 49.9,
-    points: 6500,
+    points: 216,
     label: "$49.90",
     color: "#f59e0b",
-    features: ["216회 지급", "글쓰기 약 216회 · 이미지 약 26회", "모든 기능 이용 가능", "우선 고객지원"],
+    features: ["216회 지급", "모든 기능 이용 가능", "우선 고객지원"],
     btnLabel: "시작하기",
     highlight: false,
     badge: "전문가용",

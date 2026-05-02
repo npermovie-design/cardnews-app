@@ -8,9 +8,9 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY
 );
 
-const USE_UNIT = 30;
-const usesToPoints = (uses = 0) => Math.round((Number(uses) || 0) * USE_UNIT);
-const pointsToUses = (points = 0) => Math.floor((Number(points) || 0) / USE_UNIT);
+const USE_UNIT = 1;
+const usesToPoints = (uses = 0) => Math.round(Number(uses) || 0);
+const pointsToUses = (points = 0) => Math.floor(Number(points) || 0);
 
 // ── Google 토큰 갱신 ────────────────────────────────────────────
 async function refreshGoogleToken(conn) {
@@ -1195,22 +1195,22 @@ JSON배열:
 // ACTION: webhook-lemonsqueezy — LemonSqueezy 결제 웹훅
 // ══════════════════════════════════════════════════════════════════
 
-// 일회 충전 팩: product_name → 내부 저장 단위 (30 = 1회)
+// 일회 충전 팩: product_name → 지급 횟수 (1:1)
 const ONE_OFF_POINTS = {
-  "Starter":  usesToPoints(20),
-  "Basic":    usesToPoints(50),
-  "Standard": usesToPoints(80),
-  "Plus":     usesToPoints(126),
-  "Pro":      usesToPoints(216),
+  "Starter":  20,
+  "Basic":    50,
+  "Standard": 80,
+  "Plus":     126,
+  "Pro":      216,
 };
 
-// 구독 tier: product_name → { monthly, yearly } 내부 저장 단위 (가격 페이지 기준)
+// 구독 tier: product_name → { monthly, yearly } 지급 횟수 (구독자는 monthly_used 리셋 방식이므로 하위 호환용)
 const SUB_TIERS = {
-  "Basic":    { monthly: usesToPoints(50),  yearly: usesToPoints(600) },
-  "Pro":      { monthly: usesToPoints(200), yearly: usesToPoints(2400) },
-  "Premium":  { monthly: usesToPoints(350), yearly: usesToPoints(4200) },
-  "Business": { monthly: usesToPoints(500), yearly: usesToPoints(6000) },
-  "Agency":   { monthly: usesToPoints(500), yearly: usesToPoints(6000) },
+  "Basic":    { monthly: 50,   yearly: 600 },
+  "Pro":      { monthly: 200,  yearly: 2400 },
+  "Premium":  { monthly: 350,  yearly: 4200 },
+  "Business": { monthly: 500,  yearly: 6000 },
+  "Agency":   { monthly: 500,  yearly: 6000 },
 };
 
 function detectInterval(attrs) {

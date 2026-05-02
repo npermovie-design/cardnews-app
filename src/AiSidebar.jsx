@@ -196,7 +196,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
   const sub = user._subscription;
   const usesLeft = (sub && sub._monthlyWriteLimit > 0)
     ? Math.max(0, sub._monthlyWriteLimit - (user.monthly_used || 0))
-    : Math.floor((user.points || 0) / 30);
+    : Math.floor((user.points || 0) / 1);
   const isLow = usesLeft > 0 && usesLeft <= 2;
   const isEmpty = usesLeft <= 0;
   const ptColor = isEmpty || isLow ? "#f87171" : "#a5b4fc";

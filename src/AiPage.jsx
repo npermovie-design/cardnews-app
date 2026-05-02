@@ -3,7 +3,7 @@ import { Badge, Btn } from "./UI";
 import { useI18n } from "./i18n.jsx";
 import { useOnlineCount, AiSidebar } from "./AiSidebar.jsx";
 import BackgroundTaskIndicator from "./BackgroundTaskIndicator";
-import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken, syncLocalLibrary } from "./storage";
+import { getAiLeft, FREE_MEMBER, FREE_GUEST, getAiUsage, setAiUsage, getAuthToken, syncLocalLibrary, pointsToUses, pointDeltaToUses } from "./storage";
 
 // ── Lazy-loaded: 메뉴별 도구 (code-split) ──
 const LibraryPage = React.lazy(() => import("./AiLibrary.jsx").then(m => ({ default: m.LibraryPage })));
@@ -205,7 +205,7 @@ function MiniStats({ isDark, homeText, homeMuted, cardBdr, _s: _sProp }) {
     try { return JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]"); } catch { return []; }
   }, []);
   const totalCount = saves.length;
-  const usedPoints = totalCount * 10;
+  const usedUses = totalCount;
   const weekCount = React.useMemo(() => {
     const now = Date.now();
     const weekMs = 7 * 24 * 60 * 60 * 1000;
@@ -217,7 +217,7 @@ function MiniStats({ isDark, homeText, homeMuted, cardBdr, _s: _sProp }) {
   const accent = "#7c6aff";
   const stats = [
     { label: _s("totalContent"), value: totalCount, icon: "📝", color: accent },
-    { label: _s("usedPoints"), value: usedPoints + "P", icon: "💎", color: "#f59e0b" },
+    { label: _s("usedPoints"), value: usedUses + "회", icon: "💎", color: "#f59e0b" },
     { label: _s("thisWeek"), value: weekCount, icon: "📅", color: "#10b981" },
   ];
   return (
@@ -1659,12 +1659,12 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
               {user.role==="admin" ? tt("roleAdmin") : tt("roleNormal")}
             </div>
           </div>
-          {/* 포인트 */}
+          {/* 잔여 횟수 */}
           <div style={{ borderRadius:14, border:`1px solid #7c6aff20`, background:"rgba(99,102,241,0.06)", padding:"18px 20px", marginBottom:12 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
               <div>
                 <div style={{ fontSize:12, color:isDark?"rgba(255,255,255,0.5)":"#888", marginBottom:2 }}>{tt("heldCredits")}</div>
-                <div style={{ fontSize:28, fontWeight:900, color:"#a5b4fc" }}>{pts.toLocaleString()} <span style={{ fontSize:14 }}>P</span></div>
+                <div style={{ fontSize:28, fontWeight:900, color:"#a5b4fc" }}>{pointsToUses(pts).toLocaleString()}<span style={{ fontSize:14 }}>회</span></div>
               </div>
               <button onClick={() => navigate("pricing")}
                 style={{ padding:"10px 20px", borderRadius:10, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:800 }}>
@@ -1828,12 +1828,12 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
       if (e.data.action === 'deduct-points' && user) {
         try {
           const { changePoints, setLocalUser } = await import('./storage.js');
-          const cost = Math.abs(e.data.cost || 30);
+          const cost = Math.abs(e.data.cost || 1);
           const newPts = await changePoints(user.uid, -cost, e.data.reason || "숏폼 영상 생성");
           const newUser = { ...user, points: newPts };
           setLocalUser(newUser);
           if (onUserUpdate) onUserUpdate(newUser);
-        } catch(err) { console.error("포인트 차감 실패:", err); }
+        } catch(err) { console.error("이용 횟수 차감 실패:", err); }
       }
     };
     window.addEventListener('message', handler);
@@ -1886,7 +1886,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
     // 생성 중 다른 메뉴 클릭 차단 - 커스텀 모달
     // 블로그 영속 레이어가 활성화된 상태에서는 가드 스킵 (백그라운드에서 계속 생성됨)
     if (window.__isGenerating) {
-      const cost = window.__generatingCost || 30;
+      const cost = window.__generatingCost || 1;
       const ok = await new Promise(resolve => {
         setGuardModal({
           cost,
@@ -1919,7 +1919,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         <div style={{ fontSize:14, color:C.muted, lineHeight:1.8, marginBottom:24 }}>
           {tt("leaveWarning")}<br/>
           <span style={{ color:"#f87171", fontWeight:700 }}>{tt("resultNotSaved")}</span><br/>
-          <span style={{ color:"#f59e0b", fontWeight:700 }}>{guardModal.cost}P {tt("pointsConsumed")}</span>{tt("reallyLeave")}
+          <span style={{ color:"#f59e0b", fontWeight:700 }}>{Math.abs(pointDeltaToUses(guardModal.cost))}회 {tt("pointsConsumed")}</span>{tt("reallyLeave")}
         </div>
         <div style={{ display:"flex", gap:10 }}>
           <button onClick={guardModal.onCancel}
@@ -1955,7 +1955,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
     }}>
       {GuardModalInline}
 
-      {/* ── 포인트 차감 확인 모달 ── */}
+      {/* ── 이용 횟수 차감 확인 모달 ── */}
       {pointConfirm && (() => {
         const userPts = user?.points || 0;
         const insufficient = userPts < pointConfirm.cost;
@@ -1965,15 +1965,15 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
               <div style={{ width:52, height:52, borderRadius:14, background: insufficient ? "rgba(239,68,68,0.1)" : "rgba(124,106,255,0.1)", margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center" }}>
                 <span style={{ fontSize:24 }}>{insufficient ? "\u26A0\uFE0F" : "\uD83D\uDC8E"}</span>
               </div>
-              <div style={{ fontSize:18, fontWeight:900, color: isDark ? "#fff" : "#1a1a2e", marginBottom:8 }}>{insufficient ? "\uD3EC\uC778\uD2B8\uAC00 \uBD80\uC871\uD569\uB2C8\uB2E4" : "\uD3EC\uC778\uD2B8 \uCC28\uAC10 \uC548\uB0B4"}</div>
+              <div style={{ fontSize:18, fontWeight:900, color: isDark ? "#fff" : "#1a1a2e", marginBottom:8 }}>{insufficient ? "이용 횟수가 부족합니다" : "이용 횟수 차감 안내"}</div>
               <div style={{ fontSize:14, lineHeight:1.8, color: isDark ? "rgba(255,255,255,0.6)" : "#666", marginBottom:6 }}>
                 {insufficient
-                  ? <span>{"\uC774 \uC791\uC5C5\uC5D0\uB294 "}<span style={{ color:"#f59e0b", fontWeight:700 }}>{pointConfirm.cost}P</span>{"\uAC00 \uD544\uC694\uD569\uB2C8\uB2E4."}</span>
-                  : <span>{"\uC774 \uC791\uC5C5\uC744 \uC9C4\uD589\uD558\uBA74 "}<span style={{ color:"#f59e0b", fontWeight:700 }}>{pointConfirm.cost}P</span>{"\uAC00 \uCC28\uAC10\uB429\uB2C8\uB2E4."}<br/>{"\uC9C4\uD589\uD558\uC2DC\uACA0\uC2B5\uB2C8\uAE4C?"}</span>
+                  ? <span>이 작업에는 <span style={{ color:"#f59e0b", fontWeight:700 }}>{Math.abs(pointDeltaToUses(pointConfirm.cost))}회</span>가 필요합니다.</span>
+                  : <span>이 작업을 진행하면 <span style={{ color:"#f59e0b", fontWeight:700 }}>{Math.abs(pointDeltaToUses(pointConfirm.cost))}회</span>가 차감됩니다.<br/>진행하시겠습니까?</span>
                 }
               </div>
               <div style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"6px 14px", borderRadius:20, marginBottom:20, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(99,102,241,0.06)", fontSize:13, fontWeight:600, color: insufficient ? "#f87171" : isDark ? "#a5b4fc" : "#6366f1" }}>
-                {"\uBCF4\uC720 \uD3EC\uC778\uD2B8: "}{userPts.toLocaleString()}P
+                잔여 횟수: {pointsToUses(userPts).toLocaleString()}회
               </div>
               <div style={{ display:"flex", gap:10 }}>
                 <button onClick={pointConfirm.onCancel} style={{ flex:1, padding:"13px", borderRadius:12, border: "1px solid " + (isDark ? "rgba(255,255,255,0.12)" : "#ddd"), background:"transparent", color: isDark ? "rgba(255,255,255,0.6)" : "#888", fontSize:14, fontWeight:700, cursor:"pointer" }}>{"\uCDE8\uC18C"}</button>
