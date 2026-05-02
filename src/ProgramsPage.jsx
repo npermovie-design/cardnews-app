@@ -1139,8 +1139,8 @@ export default function ProgramsPage({ C }) {
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   useEffect(() => {
-    document.title = "자료실 - SNS메이킷";
-    updateMeta("og:title", "자료실 - SNS메이킷");
+    document.title = "SNS 자동화봇 - SNS메이킷";
+    updateMeta("og:title", "SNS 자동화봇 - SNS메이킷");
     updateMeta("og:description", "네이버 블로그 글 생성, 에디터 입력, 이미지 삽입, 카테고리 선택, 발행 설정까지 반복 운영 업무를 줄이는 Windows용 자동화 프로그램입니다.");
     updateMeta("og:url", "https://snsmakeit.com/programs");
     updateMeta("og:image", "https://snsmakeit.com/og-default.png");
