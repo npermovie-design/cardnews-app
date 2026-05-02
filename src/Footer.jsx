@@ -68,19 +68,19 @@ export default function Footer({ C, navigateBoard, navigateAi, navigate }) {
             <div style={{ fontSize: 11, color: C.muted, opacity: 0.5 }}>{`© 2025-${new Date().getFullYear()} SNS메이킷 · All rights reserved.`}</div>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               <a href="https://blog.naver.com/npermovie" target="_blank" rel="noopener noreferrer" title="네이버 블로그"
-                style={{ width: 44, height: 44, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
+                style={{ width: 36, height: 36, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "opacity 0.15s" }}
                 onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-                <span style={{fontSize:10,fontWeight:800,color:C.muted}}>B</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill={C.muted}><path d="M16.27 8.24c-.46-.56-1.25-.84-2.37-.84H9.9c-.1 0-.18.08-.18.18v8.84c0 .1.08.18.18.18h1.63c.1 0 .18-.08.18-.18v-3.26h1.92c1.12 0 1.91-.28 2.37-.84.46-.56.69-1.2.69-1.94s-.23-1.38-.42-1.94v-.2zm-1.81 3.06c-.21.24-.57.36-1.08.36h-1.67V9.47h1.67c.51 0 .87.12 1.08.36.21.24.32.56.32.96 0 .4-.11.74-.32.96v.55z"/></svg>
               </a>
               <a href="https://www.instagram.com/snsmakeit" target="_blank" rel="noopener noreferrer" title="인스타그램"
-                style={{ width: 44, height: 44, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
+                style={{ width: 36, height: 36, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "opacity 0.15s" }}
                 onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-                <span style={{fontSize:10,fontWeight:800,color:C.muted}}>IG</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill={C.muted} stroke="none"/></svg>
               </a>
               <a href="https://www.youtube.com/@snsmakeit" target="_blank" rel="noopener noreferrer" title="유튜브"
-                style={{ width: 44, height: 44, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", fontSize: 14, transition: "opacity 0.15s" }}
+                style={{ width: 36, height: 36, borderRadius: "50%", background: C.muted + "15", display: "flex", alignItems: "center", justifyContent: "center", textDecoration: "none", transition: "opacity 0.15s" }}
                 onMouseEnter={e=>e.currentTarget.style.opacity="0.7"} onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-                <span style={{fontSize:10,fontWeight:800,color:C.muted}}>YT</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill={C.muted}><path d="M23.5 6.19a3.02 3.02 0 00-2.12-2.14C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.38.55A3.02 3.02 0 00.5 6.19 31.6 31.6 0 000 12a31.6 31.6 0 00.5 5.81 3.02 3.02 0 002.12 2.14c1.88.55 9.38.55 9.38.55s7.5 0 9.38-.55a3.02 3.02 0 002.12-2.14A31.6 31.6 0 0024 12a31.6 31.6 0 00-.5-5.81zM9.75 15.02V8.98L15.5 12l-5.75 3.02z"/></svg>
               </a>
             </div>
           </div>

@@ -297,11 +297,8 @@ export default function App() {
   const [showAttendance, setShowAttendance] = useState(false);
   const attendancePromptKey = useRef("");
   const [showWelcome, setShowWelcome] = useState(false);
-  const [showDownloadPopup, setShowDownloadPopup] = useState(() => {
-    const dismissed = localStorage.getItem("nper_download_popup_dismissed");
-    if (dismissed && Date.now() - Number(dismissed) < 24 * 60 * 60 * 1000) return false;
-    return true;
-  });
+  // 다운로드 팝업 비활성화 — 홈페이지 하단 배너로 대체
+  const [showDownloadPopup, setShowDownloadPopup] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
   const { t, lang, setLang } = useI18n();

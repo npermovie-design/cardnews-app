@@ -23,11 +23,13 @@ function useInView(threshold = 0.15) {
 /* ── 페이드인 래퍼 ── */
 function FadeIn({ children, delay = 0, style = {} }) {
   const [ref, inView] = useInView();
+  const noIO = typeof IntersectionObserver === "undefined";
+  const show = noIO || inView;
   return (
     <div ref={ref} style={{
-      opacity: inView ? 1 : 0,
-      transform: inView ? "translateY(0)" : "translateY(24px)",
-      transition: `opacity 0.65s ease ${delay}s, transform 0.65s ease ${delay}s`,
+      opacity: show ? 1 : 0,
+      transform: show ? "translateY(0)" : "translateY(24px)",
+      transition: noIO ? "none" : `opacity 0.65s ease ${delay}s, transform 0.65s ease ${delay}s`,
       ...style,
     }}>
       {children}
@@ -758,7 +760,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
         </div>
       </section>
 
-      {/* ══ 포인트 적립 시스템 ══ */}
+      {/* ══ 이용 횟수 적립 시스템 ══ */}
       <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 40, alignItems: "center" }}>
@@ -793,13 +795,13 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
         </div>
       </section>
 
-      {/* ══ 포인트/요금 안내 ══ */}
+      {/* ══ 이용 횟수/요금 안내 ══ */}
       <SecWrap C={C}>
         <SecTitle C={C} badge={p("priceBadge")} title={p("priceTitle")} sub={p("priceSub")} />
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14 }}>
           {[
             { icon: "FREE", title: lang==="ko"?"비회원 무료":"Guest Free", point: lang==="ko"?"5회":"5x", desc: lang==="ko"?"로그인 없이 AI 생성기 5회 무료 체험":"5 free AI uses without login", color: "#888", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
-            { icon: "+5회", title: lang==="ko"?"회원 가입":"Sign up", point: "5회", desc: lang==="ko"?"가입 즉시 5회 지급 + 매일 출석 적립":"5 credits on signup + daily check-in", color: "#22c55e", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
+            { icon: "+5회", title: lang==="ko"?"회원 가입":"Sign up", point: "5회", desc: lang==="ko"?"가입 즉시 5회 지급 + 매일 출석 적립":"5 uses on signup + daily check-in", color: "#22c55e", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
             { icon: "$9.9", title: lang==="ko"?"Basic":"Basic", point: "50회/월", desc: lang==="ko"?"매일 꾸준히 콘텐츠 제작":"Daily content creation", color: "#7c6aff", btnText: lang==="ko"?"요금 알아보기":"View pricing", onClick: () => navigate("pricing") },
             { icon: "$19.9", title: lang==="ko"?"Pro":"Pro", point: "200회/월", desc: lang==="ko"?"대량 콘텐츠 + NaverBot 자동발행":"Bulk content + NaverBot", color: "#ec4899", btnText: lang==="ko"?"요금 알아보기":"View pricing", onClick: () => navigate("pricing"), highlight: true },
           ].map((p, i) => (
