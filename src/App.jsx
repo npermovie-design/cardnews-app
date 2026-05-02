@@ -797,7 +797,10 @@ export default function App() {
     if (page === "event")    return <EventPage C={C} navigate={navigate} />;
     if (page === "programs") return <ProgramsPage C={C} navigate={navigate} user={user} onLogin={() => navigate("login")} initialProductId={programId} onProductIdChange={setProgramId} />;
     if (page === "notice") return <NoticePage C={C} navigate={navigate} user={user} />;
-    if (page === "class") return <ClassPage C={C} navigate={navigate} user={user} theme={theme} />;
+    if (page === "class") {
+      if (user?.role !== "admin" && user?.role !== "instructor") { navigate("home"); return null; }
+      return <ClassPage C={C} navigate={navigate} user={user} theme={theme} />;
+    }
     if (page === "snsnews")  { navigate("community"); return null; }
     if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} user={user} />;
     if (page === "intro-video") return <InfographicVideoPage />;
@@ -1083,8 +1086,9 @@ export default function App() {
           <NavBtn id="ai" label="AI 스튜디오" />
           <NavBtn id="programs" label="자동화" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
-          <NavBtn id="class" label="클래스" onClick={user?.role === "admin" ? undefined : () => {}} />
-          <span style={{ fontSize: 9, color: "#f59e0b", fontWeight: 700, marginLeft: -8, alignSelf: "flex-start", marginTop: 6, background: "rgba(249,115,22,0.1)", padding: "1px 5px", borderRadius: 4 }}>준비중</span>
+          {(user?.role === "admin" || user?.role === "instructor") && (
+            <NavBtn id="class" label="클래스" />
+          )}
           {/* 커뮤니티 */}
           <div style={{ position: "relative" }}>
             <DropBtn label={t("community")} open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
@@ -1313,7 +1317,7 @@ export default function App() {
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
             { id: "ai",       label: "AI 스튜디오",    onClick: () => { navigate("ai"); setMobileOpen(false); },       active: page==="ai"||page==="analyzer" },
             { id: "programs", label: "자동화", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
-            { id: "class",    label: "클래스 (준비중)", onClick: () => { if (user?.role === "admin") { navigate("class"); } setMobileOpen(false); }, active: page==="class" },
+            ...((user?.role === "admin" || user?.role === "instructor") ? [{ id: "class", label: "클래스", onClick: () => { navigate("class"); setMobileOpen(false); }, active: page==="class" }] : []),
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
           ].map(m => (
             <button key={m.id} onClick={m.onClick} style={{
