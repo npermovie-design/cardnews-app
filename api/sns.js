@@ -8,6 +8,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY
 );
 
+const USE_UNIT = 30;
+const usesToPoints = (uses = 0) => Math.round((Number(uses) || 0) * USE_UNIT);
+const pointsToUses = (points = 0) => Math.floor((Number(points) || 0) / USE_UNIT);
+
 // ── Google 토큰 갱신 ────────────────────────────────────────────
 async function refreshGoogleToken(conn) {
   if (!conn.refresh_token) return conn.access_token;
@@ -1191,22 +1195,22 @@ JSON배열:
 // ACTION: webhook-lemonsqueezy — LemonSqueezy 결제 웹훅
 // ══════════════════════════════════════════════════════════════════
 
-// 일회 충전 팩: product_name → points (가격 페이지 기준)
+// 일회 충전 팩: product_name → 내부 저장 단위 (30 = 1회)
 const ONE_OFF_POINTS = {
-  "Starter":  600,
-  "Basic":    1300,
-  "Standard": 2400,
-  "Plus":     3800,
-  "Pro":      6500,
+  "Starter":  usesToPoints(20),
+  "Basic":    usesToPoints(50),
+  "Standard": usesToPoints(80),
+  "Plus":     usesToPoints(126),
+  "Pro":      usesToPoints(216),
 };
 
-// 구독 tier: product_name → { monthly, yearly } (가격 페이지 기준)
+// 구독 tier: product_name → { monthly, yearly } 내부 저장 단위 (가격 페이지 기준)
 const SUB_TIERS = {
-  "Basic":    { monthly: 1200,  yearly: 14400 },
-  "Pro":      { monthly: 2800,  yearly: 33600 },
-  "Premium":  { monthly: 5500,  yearly: 66000 },
-  "Business": { monthly: 0,     yearly: 0 },     // 무제한 — 포인트 지급 없음
-  "Agency":   { monthly: 0,     yearly: 0 },     // 무제한 — 포인트 지급 없음
+  "Basic":    { monthly: usesToPoints(50),  yearly: usesToPoints(600) },
+  "Pro":      { monthly: usesToPoints(200), yearly: usesToPoints(2400) },
+  "Premium":  { monthly: usesToPoints(350), yearly: usesToPoints(4200) },
+  "Business": { monthly: usesToPoints(500), yearly: usesToPoints(6000) },
+  "Agency":   { monthly: usesToPoints(500), yearly: usesToPoints(6000) },
 };
 
 function detectInterval(attrs) {
@@ -1218,7 +1222,7 @@ function detectInterval(attrs) {
 }
 
 async function addPoints(uid, points, reason) {
-  // 원자적 포인트 적립 (FOR UPDATE 행 잠금으로 레이스컨디션 방지)
+  // 원자적 이용 횟수 적립 (FOR UPDATE 행 잠금으로 레이스컨디션 방지)
   const { data: newPoints, error } = await supabase.rpc("change_points_atomic", {
     p_uid: uid, p_delta: points, p_reason: reason || "",
   });
@@ -1226,13 +1230,20 @@ async function addPoints(uid, points, reason) {
   return newPoints;
 }
 
+// 플랜별 월간 글쓰기 한도
+const PLAN_MONTHLY_LIMITS = {
+  "Basic": 50, "Pro": 200, "Premium": 350, "Business": 500, "Agency": 99999,
+};
+
 async function saveSubscription(subId, uid, productName, interval, status, attrs = {}) {
+  const monthlyLimit = PLAN_MONTHLY_LIMITS[productName] || 0;
   const { error } = await supabase.from("subscriptions").upsert({
     subscription_id: String(subId),
     uid,
     product_name: productName,
     interval,
     status,
+    monthly_limit: monthlyLimit,
     renews_at: attrs.renews_at || null,
     ends_at: attrs.ends_at || null,
     customer_portal_url: attrs.urls?.customer_portal || null,
@@ -1281,10 +1292,14 @@ async function handleWebhookLemonsqueezy(req, res) {
       case "order_created": {
         if (!userId || attrs.status !== "paid") break;
         const productName = attrs.first_order_item?.product_name;
+        if (SUB_TIERS[productName]) {
+          console.log(`[LS] Subscription order skipped in order_created: "${productName}"`);
+          break;
+        }
         const pts = ONE_OFF_POINTS[productName];
         if (pts) {
-          const n = await addPoints(userId, pts, `포인트 충전 (${productName})`);
-          console.log(`[LS] +${pts}P (one-off) → ${n}`);
+          const n = await addPoints(userId, pts, `이용 횟수 충전 (${productName}) +${pointsToUses(pts)}회`);
+          console.log(`[LS] +${pointsToUses(pts)} uses (one-off) → ${n}`);
         } else {
           console.warn(`[LS] Unknown pack product: "${productName}"`);
         }
@@ -1298,13 +1313,19 @@ async function handleWebhookLemonsqueezy(req, res) {
         if (!tier) { console.warn(`[LS] Unknown sub product: "${productName}"`); break; }
 
         const interval = detectInterval(attrs);
-        const pts = interval === "yearly" ? tier.yearly : tier.monthly;
         const label = interval === "yearly" ? "연간" : "월간";
 
         await saveSubscription(data.id, userId, productName, interval, attrs.status || "active", attrs);
 
-        const n = await addPoints(userId, pts, `구독 시작 (${productName} ${label})`);
-        console.log(`[LS] +${pts}P (${label} start) → ${n}`);
+        // 월간 사용량 리셋 (구독 시작)
+        try {
+          await supabase.rpc("reset_monthly_usage", { p_uid: userId, p_reason: `구독 시작 (${productName} ${label})` });
+        } catch (e) { console.warn("[LS] reset_monthly_usage failed:", e.message); }
+
+        // 하위 호환: 포인트도 보너스로 소량 적립 (비구독 상태 전환 대비)
+        const bonusPts = usesToPoints(5);
+        const n = await addPoints(userId, bonusPts, `구독 시작 보너스 (${productName})`);
+        console.log(`[LS] Subscription ${productName} ${label} started, monthly reset, bonus +5 uses → ${n}`);
         break;
       }
 
@@ -1323,10 +1344,14 @@ async function handleWebhookLemonsqueezy(req, res) {
         const tier = SUB_TIERS[sub.product_name];
         if (!tier) { console.warn(`[LS] Unknown sub tier: ${sub.product_name}`); break; }
 
-        const pts = sub.interval === "yearly" ? tier.yearly : tier.monthly;
         const label = sub.interval === "yearly" ? "연간 갱신" : "월간 갱신";
-        const n = await addPoints(sub.uid, pts, `구독 갱신 (${sub.product_name} ${label})`);
-        console.log(`[LS] +${pts}P (${label}) → ${n}`);
+
+        // 월간 사용량 리셋 (구독 갱신)
+        try {
+          await supabase.rpc("reset_monthly_usage", { p_uid: sub.uid, p_reason: `구독 갱신 (${sub.product_name} ${label})` });
+        } catch (e) { console.warn("[LS] reset_monthly_usage failed:", e.message); }
+
+        console.log(`[LS] Subscription ${sub.product_name} ${label} renewed, monthly usage reset`);
         break;
       }
 
@@ -1428,7 +1453,7 @@ async function handleAdmin(req, res) {
 
     if (action === "update_points") {
       const { uid: targetUid, points } = req.query;
-      if (!targetUid || points === undefined) return res.status(400).json({ error: "uid, points 필요" });
+      if (!targetUid || points === undefined) return res.status(400).json({ error: "uid, 이용 횟수 값 필요" });
       const { error } = await sb.from("users").update({ points: Number(points) }).eq("uid", targetUid);
       if (error) throw error;
       return res.status(200).json({ success: true });
@@ -1589,8 +1614,8 @@ async function handleReferralSignup(req, res) {
       .single();
     if (userErr || !joinedUser) return res.status(404).json({ error: "가입자 정보를 찾을 수 없습니다" });
 
-    const joinedReward = 100;
-    const referrerReward = 200;
+    const joinedReward = usesToPoints(5);
+    const referrerReward = usesToPoints(10);
     const joinedPoints = Number(joinedUser.points || 0) + joinedReward;
     const referrerPoints = Number(referrer.points || 0) + referrerReward;
     const now = new Date().toISOString();

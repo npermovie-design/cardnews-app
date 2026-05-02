@@ -132,6 +132,30 @@
 - 생성 시 브리프를 `[글감 브리프]` 블록으로 합쳐 AEO 질문, 핵심 정보 박스, 본문 섹션에 우선 반영하도록 연결
 - 검증: `npm run build`
 
+## 2026-05-02 3차 반영 완료
+
+### 웹 글쓰기 (SNS메이킷)
+- `BlogGenerator.jsx`: 카테고리별 브리프 필드 조건부 표시 (여행/쇼핑/경제/사회/IT/건강별 다른 필드)
+- `BlogGenerator.jsx`: AEO Q&A / 장단점·추천 포함 여부 체크박스 토글 추가
+- `BlogGenerator.jsx`: 카테고리→글유형 자동연동, 작성시점 기본값, 브리프 접기/펼치기, 모바일 반응형
+- `BlogGenerator.jsx`: 자동발행 모달에 이미지 8장 초과 경고
+- `BlogUtils.jsx`: renderMarkdown에 [TABLE] 정보 박스, Q./A. AEO 카드, 장단점/추천 태그, 해시태그 칩 렌더링 추가
+- `BlogUtils.jsx`: cleanBlogText에서 [TABLE]/Q./A. 마커 잔여 제거
+- `BlogUtils.jsx`: flowRule에서 [TABLE] 마커 통일 + 장단점/추천 출력 형식 명확화
+- `prompts.js`: NAVER_QUALITY_RULE 장단점/추천 형식 구체화 + 참고 글 모드 AEO/TABLE 삽입 지시
+- `naverbot.js`: includeAEO/includeProsCons 파라미터 수신 + 프롬프트 반영
+
+### 자동화 프로그램 (NaverBot SaaS)
+- `index.html`: 글 구조 옵션(AEO/장단점 토글) + 콘텐츠 분야(여행/쇼핑/경제/사회/IT/건강) 칩 UI 추가
+- `app.js`: includeAEO, includeProsCons, briefCategory state + 토글 이벤트 + 프리셋 저장/로드 + config 전달
+- `runner.py`: 자동운영/빠른시작 두 경로에 AEO/장단점 토글 반영 + 콘텐츠 분야별 힌트 자동 주입
+- `runner.py`: _build_seo_prompt TABLE/장단점/추천 출력 형식 명확화
+
+### 검증
+- `npm run build` 통과
+- `node --check prompts.js`, `node --check naverbot.js` 통과
+- `python -m py_compile runner.py` 통과
+
 ## 주의점
 
 - 출처 없는 수치, 기관명, 통계는 만들지 않도록 유지해야 한다.

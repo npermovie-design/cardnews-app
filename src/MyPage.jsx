@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import { supabase, changePoints, getBrandKit, ensureReferralCode } from "./storage";
+import { supabase, getBrandKit, ensureReferralCode, pointsToUses, pointDeltaToUses } from "./storage";
 import SnsConnectionManager from "./SnsConnectionManager";
 import { useI18n } from "./i18n.jsx";
 
 /* ═══════════════════════════════════════════════
    MyPage.jsx  ·  회원 전용 마이페이지
-   - 크레딧 사용/적립 내역
+   - 이용 횟수 사용/적립 내역
    - 닉네임 변경 (월 1회)
 ═══════════════════════════════════════════════ */
 
@@ -35,7 +35,7 @@ function getHistIcon(reason) {
   for (const [key, val] of Object.entries(HISTORY_ICON)) {
     if (reason?.includes(key)) return val;
   }
-  return { icon:"P", color:"#a5b4fc" };
+  return { icon:"+", color:"#a5b4fc" };
 }
 
 export default function MyPage({ user, setUser, C, navigate, theme }) {
@@ -55,7 +55,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
   const [userData, setUserData] = useState(user);
   const [subscription, setSubscription] = useState(null);
 
-  // user prop 변경 시 즉시 반영 (포인트 차감 등)
+  // user prop 변경 시 즉시 반영 (이용 횟수 차감 등)
   useEffect(() => {
     if (user) setUserData(u => ({ ...u, ...user }));
   }, [user?.points, user?.nick, user?.referral_code]);
@@ -85,12 +85,12 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(""), 3000); };
 
-  // 포인트 내역 로드
+  // 이용 내역 로드
   useEffect(() => {
     if (!user?.uid) return;
     setHistLoading(true);
 
-    // 포인트 내역 (타임아웃 8초)
+    // 이용 내역 (타임아웃 8초)
     // point_history 로드 - RPC 함수 사용으로 속도 개선
     (async () => {
       try {
@@ -109,7 +109,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
         setHistLoading(false);
       }
 
-      // 최신 포인트 조회
+      // 최신 잔여 횟수 조회
       try {
         let { data, error } = await supabase
           .from("users")
@@ -266,16 +266,28 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
           {/* 오른쪽: 크레딧 */}
           <div style={{ flexShrink:0, textAlign:"right" }}>
-            <div style={{ fontSize:22, fontWeight:900, color:"#a5b4fc" }}>{Math.floor((userData?.points||0)/30)}회</div>
-            <div style={{ fontSize:10, color:muted }}>{ko?"잔여 횟수":"Credits"}</div>
+            {userData?._subscription && userData._subscription._monthlyWriteLimit > 0 ? (
+              <>
+                <div style={{ fontSize:22, fontWeight:900, color:"#a5b4fc" }}>
+                  {Math.max(0, (userData._subscription._monthlyWriteLimit || 0) - (userData.monthly_used || 0))}회
+                </div>
+                <div style={{ fontSize:10, color:muted }}>{userData._subscription.product_name} {ko?"월간 잔여":"monthly left"}</div>
+                <div style={{ fontSize:9, color:muted, marginTop:2 }}>{userData.monthly_used || 0}/{userData._subscription._monthlyWriteLimit}{ko?"회 사용":" used"}</div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontSize:22, fontWeight:900, color:"#a5b4fc" }}>{pointsToUses(userData?.points||0)}회</div>
+                <div style={{ fontSize:10, color:muted }}>{ko?"잔여 횟수":"Credits"}</div>
+              </>
+            )}
           </div>
         </div>
 
         {/* 적립/사용 배지 + 닉네임 변경 버튼 */}
         <div style={{ display:"flex", gap:8, marginTop:14, alignItems:"center", flexWrap:"wrap" }}>
           <div style={{ display:"flex", gap:6 }}>
-            <div style={{ padding:"5px 12px", borderRadius:8, background:"rgba(74,222,128,0.12)", border:"1px solid rgba(74,222,128,0.25)", fontSize:12, fontWeight:700, color:"#4ade80" }}>+{Math.floor(earned/30)}{ko?"회 적립":" earned"}</div>
-            <div style={{ padding:"5px 12px", borderRadius:8, background:"rgba(248,113,113,0.12)", border:"1px solid rgba(248,113,113,0.25)", fontSize:12, fontWeight:700, color:"#f87171" }}>{Math.floor(used/30)}{ko?"회 사용":" used"}</div>
+            <div style={{ padding:"5px 12px", borderRadius:8, background:"rgba(74,222,128,0.12)", border:"1px solid rgba(74,222,128,0.25)", fontSize:12, fontWeight:700, color:"#4ade80" }}>+{pointDeltaToUses(earned)}{ko?"회 적립":" earned"}</div>
+            <div style={{ padding:"5px 12px", borderRadius:8, background:"rgba(248,113,113,0.12)", border:"1px solid rgba(248,113,113,0.25)", fontSize:12, fontWeight:700, color:"#f87171" }}>{Math.abs(pointDeltaToUses(used))}{ko?"회 사용":" used"}</div>
           </div>
           <button onClick={()=>{ setNickEdit(e=>!e); setNewNick(userData?.nick||""); setNickMsg(""); }}
             style={{ marginLeft:"auto", padding:"5px 12px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:muted, fontSize:11, cursor:"pointer", fontWeight:600, whiteSpace:"nowrap" }}>
@@ -331,6 +343,8 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
                 const { icon, color } = getHistIcon(h.reason);
                 const isEarn = h.delta > 0;
                 const isZero = h.delta === 0;
+                const deltaUses = pointDeltaToUses(h.delta);
+                const balanceUses = pointsToUses(h.balance || 0);
                 return (
                   <div key={i} className="myp-hist-item" style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:12, padding:"13px 16px", display:"flex", alignItems:"center", gap:12 }}>
                     <div style={{ width:36, height:36, borderRadius:9, background:`${color}18`, border:`1px solid ${color}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>
@@ -343,9 +357,9 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
                       </div>
                     </div>
                     <div style={{ textAlign:"right", flexShrink:0 }}>
-                      {!isZero && <div style={{ fontSize:15, fontWeight:900, color:isEarn?"#4ade80":"#f87171" }}>{isEarn?"+":""}{h.delta?.toLocaleString()}P</div>}
+                      {!isZero && <div style={{ fontSize:15, fontWeight:900, color:isEarn?"#4ade80":"#f87171" }}>{isEarn?"+":"-"}{Math.abs(deltaUses).toLocaleString()}회</div>}
                       {isZero && <div style={{ fontSize:11, color:muted }}>-</div>}
-                      <div style={{ fontSize:10, color:muted }}>{ko?"잔액":"Bal."} {(h.balance||0).toLocaleString()}P</div>
+                      <div style={{ fontSize:10, color:muted }}>{ko?"잔여":"Bal."} {balanceUses.toLocaleString()}회</div>
                     </div>
                   </div>
                 );
@@ -475,7 +489,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
           <div className="myp-quick-grid" style={{ marginTop:8, display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10 }}>
             {[
-              { icon:"P", label:ko?"플랜 업그레이드":"Upgrade Plan", sub:ko?"더 많은 AI 생성":"More AI generations", action:()=>navigate("pricing"), color:"#a5b4fc" },
+              { icon:"+", label:ko?"플랜 업그레이드":"Upgrade Plan", sub:ko?"더 많은 AI 생성":"More AI generations", action:()=>navigate("pricing"), color:"#a5b4fc" },
               { icon:"L", label:ko?"내 보관함":"My Library",   sub:ko?"카드뉴스·상세페이지":"Card news & pages", action:()=>navigate("ai"), color:"#4ade80" },
               { icon:"Q", label:ko?"문의하기":"Contact",    sub:ko?"1:1 문의":"1:1 Support", action:()=>navigate("contact"), color:"#f59e0b" },
             ].map(({icon,label,sub,action,color})=>(

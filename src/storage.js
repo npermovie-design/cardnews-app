@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════
-   storage.js  ·  Supabase DB + Auth + 포인트 시스템
+   storage.js  ·  Supabase DB + Auth + 이용 횟수 시스템
    ═══════════════════════════════════════════════════════════ */
 
 import { createClient } from "@supabase/supabase-js";
@@ -34,13 +34,25 @@ export async function getAuthToken() {
   } catch { return null; }
 }
 
-// ── 포인트 상수 (API 실비용 × 200%+ 마진 반영) ──────────────────────────
+// DB 컬럼명은 기존 호환을 위해 points를 유지한다.
+// 서비스 화면과 정책은 30 internal units = 1회로 환산해 운영한다.
+export const USE_UNIT = 30;
+export const usesToPoints = (uses = 0) => Math.round((Number(uses) || 0) * USE_UNIT);
+export const pointsToUses = (points = 0) => Math.floor((Number(points) || 0) / USE_UNIT);
+export const pointDeltaToUses = (delta = 0) => {
+  const n = Number(delta) || 0;
+  if (n === 0) return 0;
+  const sign = n < 0 ? -1 : 1;
+  return sign * Math.ceil(Math.abs(n) / USE_UNIT);
+};
+
+// ── 이용 횟수 상수 (내부 저장 단위는 points 컬럼) ──────────────────────────
 export const POINTS = {
   SIGNUP:      150,    // 회원가입 보너스 (글쓰기 5회 분량)
-  DAILY_LOGIN: 3,      // 일일 로그인
-  REFERRAL_SIGNUP: 100, // 추천코드 가입자 보상
-  REFERRAL_REFERRER: 200, // 추천한 회원 보상
-  POST_WRITE:  1,      // 게시글 작성 (하루 10회 제한)
+  DAILY_LOGIN: 30,     // 일일 로그인 1회
+  REFERRAL_SIGNUP: 150, // 추천코드 가입자 보상 5회
+  REFERRAL_REFERRER: 300, // 추천한 회원 보상 10회
+  POST_WRITE:  30,     // 게시글 작성 1회 (하루 10회 제한)
   COMMENT:     0,      // 댓글 작성
   // ── AI 생성 (글쓰기 30P 기준) ──────────────────────────
   AI_USE:      -30,    // Haiku 텍스트
@@ -60,7 +72,7 @@ export const POINTS = {
   CHAT_GEMINI_PRO: -60, // Gemini Pro
 };
 
-// 채팅 모델 → 포인트 매핑
+// 채팅 모델 → 내부 차감 단위 매핑
 export const CHAT_COST = {
   "claude-haiku-4-5": POINTS.CHAT_HAIKU,
   "claude-sonnet-4-5": POINTS.CHAT_SONNET,
@@ -70,7 +82,7 @@ export const CHAT_COST = {
   "gemini-2.5-pro": POINTS.CHAT_GEMINI_PRO,
 };
 
-// 단건 충전 플랜 (PricingPage.jsx의 ONE_OFF_PLANS과 동기화)
+// 단건 충전 플랜 (내부 저장 단위는 points 컬럼)
 export const PLANS = [
   {
     id: "free",
@@ -79,7 +91,7 @@ export const PLANS = [
     points: 0,
     label: "무료",
     color: "#888",
-    features: ["가입 시 150P 지급", "비회원 5회 무료 체험", "매일 출석 +3P", "포인트 소진 시 구독 필요"],
+    features: ["가입 시 5회 지급", "비회원 5회 무료 체험", "매일 출석 +1회", "이용 횟수 소진 시 구독 필요"],
     btnLabel: "무료 체험",
     highlight: false,
   },
@@ -90,7 +102,7 @@ export const PLANS = [
     points: 600,
     label: "$5.90",
     color: "#4ade80",
-    features: ["600P 지급", "글쓰기 약 20회", "유효기간 없음", "모든 기능 이용 가능"],
+    features: ["20회 지급", "글쓰기 약 20회", "유효기간 없음", "모든 기능 이용 가능"],
     btnLabel: "시작하기",
     highlight: false,
     badge: "입문",
@@ -102,7 +114,7 @@ export const PLANS = [
     points: 2400,
     label: "$19.90",
     color: "#7c6aff",
-    features: ["2,400P 지급", "글쓰기 약 80회 · 이미지 약 9회", "모든 기능 이용 가능", "SNS 자동 발행"],
+    features: ["80회 지급", "글쓰기 약 80회 · 이미지 약 9회", "모든 기능 이용 가능", "SNS 자동 발행"],
     btnLabel: "시작하기",
     highlight: true,
     badge: "추천",
@@ -114,7 +126,7 @@ export const PLANS = [
     points: 6500,
     label: "$49.90",
     color: "#f59e0b",
-    features: ["6,500P 지급", "글쓰기 약 216회 · 이미지 약 26회", "모든 기능 이용 가능", "우선 고객지원"],
+    features: ["216회 지급", "글쓰기 약 216회 · 이미지 약 26회", "모든 기능 이용 가능", "우선 고객지원"],
     btnLabel: "시작하기",
     highlight: false,
     badge: "전문가용",
@@ -184,7 +196,7 @@ async function _fetchUserRow(uid) {
   return data;
 }
 
-// ── 내부 헬퍼: 일일 로그인 포인트 처리 (fire-and-forget) ─────────────────
+// ── 내부 헬퍼: 일일 로그인 이용 횟수 처리 (fire-and-forget) ─────────────────
 function _handleDailyLogin(userData) {
   try {
     const today = new Date().toLocaleDateString("ko-KR");
@@ -200,7 +212,7 @@ function _handleDailyLogin(userData) {
           }).eq("uid", userData.uid);
           if (!error) {
             await supabase.from("point_history").insert({
-              uid: userData.uid, delta: POINTS.DAILY_LOGIN, reason: "일일 로그인",
+              uid: userData.uid, delta: POINTS.DAILY_LOGIN, reason: "일일 로그인 +1회",
               balance: newPoints, created_at: new Date().toISOString(),
             });
           }
@@ -440,40 +452,78 @@ export async function fbLogout() {
 
 // ── DB: 유저 데이터 가져오기 ─────────────────────────────────────────────
 export async function fetchUser(uid) {
-  return await _fetchUserRow(uid);
+  const user = await _fetchUserRow(uid);
+  if (user && uid) {
+    // 구독 정보 자동 첨부
+    try {
+      const sub = await getUserSubscription(uid);
+      if (sub) user._subscription = sub;
+    } catch {}
+  }
+  return user;
 }
 
 // ── 무제한 플랜 체크 ────────────────────────────────────────────
-const UNLIMITED_PLANS = ["Business", "Agency"];
-let _cachedPlan = null;
-let _cachedPlanUid = null;
-let _cachedPlanTime = 0;
+// 현재 공개 요금제는 모두 횟수제로 운영한다. 과거 Agency 구독자만 무제한 호환 유지.
+const UNLIMITED_PLANS = ["Agency"];
 
-export async function getUserPlan(uid) {
+// 구독 플랜별 월간 한도 (PricingPage 기준)
+export const PLAN_LIMITS = {
+  "Basic":    { write: 50,  video: 5,  naver: 0 },
+  "Pro":      { write: 200, video: 20, naver: 3 },
+  "Premium":  { write: 350, video: 35, naver: 5 },
+  "Business": { write: 500, video: 50, naver: 10 },
+  "Agency":   { write: 99999, video: 99999, naver: 99999 },
+};
+
+// 구독 정보 캐시
+let _cachedSub = null;
+let _cachedSubUid = null;
+let _cachedSubTime = 0;
+
+// 구독 상세 정보 반환 (플랜명, 한도, 상태, 갱신일 등)
+export async function getUserSubscription(uid) {
   if (!uid) return null;
-  // 5분 캐시
-  if (_cachedPlanUid === uid && Date.now() - _cachedPlanTime < 5 * 60 * 1000) return _cachedPlan;
+  if (_cachedSubUid === uid && _cachedSub && Date.now() - _cachedSubTime < 60_000) return _cachedSub;
   try {
     const { data } = await supabase
       .from("subscriptions")
-      .select("product_name, status, ends_at")
+      .select("product_name, status, ends_at, renews_at, monthly_limit, interval, customer_portal_url")
       .eq("uid", uid)
       .in("status", ["active", "on_trial"])
       .order("updated_at", { ascending: false })
       .limit(1);
-    const sub = data?.[0];
-    _cachedPlan = sub?.product_name || null;
-    _cachedPlanUid = uid;
-    _cachedPlanTime = Date.now();
-    return _cachedPlan;
+    const sub = data?.[0] || null;
+    if (sub) {
+      const limits = PLAN_LIMITS[sub.product_name] || null;
+      sub._limits = limits;
+      sub._monthlyWriteLimit = sub.monthly_limit || limits?.write || 0;
+    }
+    _cachedSub = sub;
+    _cachedSubUid = uid;
+    _cachedSubTime = Date.now();
+    return sub;
   } catch { return null; }
+}
+
+// 기존 호환: 플랜 이름만 반환
+export async function getUserPlan(uid) {
+  const sub = await getUserSubscription(uid);
+  return sub?.product_name || null;
 }
 
 export function isUnlimitedPlan(planName) {
   return UNLIMITED_PLANS.includes(planName);
 }
 
-// ── DB: 포인트 변경 (무제한 플랜은 차감 스킵, 원자적 RPC 사용) ───
+// 구독 캐시 무효화 (결제 완료 등)
+export function invalidateSubCache() {
+  _cachedSub = null;
+  _cachedSubUid = null;
+  _cachedSubTime = 0;
+}
+
+// ── DB: 이용 횟수 변경 (무제한 플랜은 차감 스킵, 원자적 RPC 사용) ───
 export async function changePoints(uid, delta, reason) {
   if (!uid) { return 0; }
   try {
@@ -490,14 +540,14 @@ export async function changePoints(uid, delta, reason) {
       }
     }
 
-    // 원자적 포인트 변경 (FOR UPDATE 행 잠금으로 레이스컨디션 방지)
+    // 원자적 잔액 변경 (FOR UPDATE 행 잠금으로 레이스컨디션 방지)
     const { data: newPoints, error } = await supabase.rpc("change_points_atomic", {
       p_uid: uid, p_delta: delta, p_reason: reason || "",
     });
 
     if (error) {
       console.error("changePoints RPC 오류:", error.message);
-      // RPC 실패 시 현재 포인트 조회하여 반환
+      // RPC 실패 시 현재 잔여 횟수 원천값 조회하여 반환
       const { data: row } = await supabase.from("users").select("points").eq("uid", uid).single();
       return row?.points || 0;
     }
@@ -693,15 +743,59 @@ export function getAiLeft(user, cost = Math.abs(POINTS.AI_USE)) {
   const limit  = user ? FREE_MEMBER : FREE_GUEST;
   const points = user ? (user.points || 0) : 0;
   const extraFromPoints = Math.floor(points / cost);
+
+  // 구독자인 경우: 월간 한도 기반
+  const sub = user?._subscription;
+  if (sub && sub._monthlyWriteLimit > 0) {
+    const monthlyUsed = user.monthly_used || 0;
+    const monthlyLimit = sub._monthlyWriteLimit;
+    const monthlyLeft = Math.max(0, monthlyLimit - monthlyUsed);
+    return {
+      used: monthlyUsed, limit: monthlyLimit, points,
+      left: monthlyLeft,
+      canUse: monthlyLeft > 0,
+      isSubscriber: true,
+      planName: sub.product_name,
+    };
+  }
+
   return {
     used, limit, points,
     left:   Math.max(0, limit - used) + extraFromPoints,
     canUse: (limit - used > 0) || (points >= cost),
+    isSubscriber: false,
   };
 }
 
 export async function useAiOnce(user, setUserState, cost = POINTS.AI_USE, reason = "AI 생성 사용") {
   const absCost = Math.abs(cost);
+
+  // 구독자: 월간 한도에서 차감 (RPC)
+  const sub = user?._subscription;
+  if (sub && sub._monthlyWriteLimit > 0 && user?.uid) {
+    try {
+      const { data, error } = await supabase.rpc("use_monthly_quota", {
+        p_uid: user.uid,
+        p_cost: 1,
+        p_reason: reason,
+      });
+      if (error) throw error;
+      const result = typeof data === "string" ? JSON.parse(data) : data;
+      if (result?.ok) {
+        const newUser = { ...user, monthly_used: result.monthly_used };
+        setLocalUser(newUser);
+        setUserState(newUser);
+        return true;
+      }
+      // monthly_exceeded → 한도 초과
+      if (result?.error === "monthly_exceeded") return false;
+      // no_subscription / no_limit_set → 포인트 방식 폴백
+    } catch (e) {
+      console.warn("useAiOnce subscription RPC failed, fallback to points:", e.message);
+    }
+  }
+
+  // 비구독자 / 폴백: 기존 무료 횟수 + 포인트 방식
   const usage = getAiUsage();
   const key   = user ? "member_" + user.uid : "guest";
   const used  = usage[key] || 0;
@@ -722,10 +816,10 @@ export async function useAiOnce(user, setUserState, cost = POINTS.AI_USE, reason
   return false;
 }
 
-// ── 게시글 작성 / 댓글 포인트 ────────────────────────────────────────────
+// ── 게시글 작성 / 댓글 이용 횟수 ────────────────────────────────────────────
 export async function awardPostPoints(user, setUserState) {
   if (!user?.uid) return;
-  // 하루 10회 포인트 제한 (도배 방지)
+  // 하루 10회 적립 제한 (도배 방지)
   const today = new Date().toISOString().slice(0, 10);
   const key = `nper_post_pts_${user.uid}_${today}`;
   const count = parseInt(localStorage.getItem(key) || "0", 10);

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useI18n } from "./i18n.jsx";
-import { getAiLeft, FREE_MEMBER, FREE_GUEST } from "./storage";
+import { getAiLeft, FREE_MEMBER, FREE_GUEST, pointsToUses } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
    AiSidebar + SidebarProfile + useOnlineCount
@@ -193,7 +193,10 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 // ── 사이드바 프로필 카드 컴포넌트 ──────────────────────────────────────────────
 function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate, onLogout, onlineCount, usageText, usageBar, t }) {
   const [open, setOpen] = useState(false);
-  const usesLeft = Math.floor((user.points || 0) / 30);
+  const sub = user._subscription;
+  const usesLeft = (sub && sub._monthlyWriteLimit > 0)
+    ? Math.max(0, sub._monthlyWriteLimit - (user.monthly_used || 0))
+    : Math.floor((user.points || 0) / 30);
   const isLow = usesLeft > 0 && usesLeft <= 2;
   const isEmpty = usesLeft <= 0;
   const ptColor = isEmpty || isLow ? "#f87171" : "#a5b4fc";
@@ -239,7 +242,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
                   <span style={{ fontSize:9, padding:"1px 5px", borderRadius:4, fontWeight:700,
                     background: user.role==="admin"?"rgba(251,191,36,0.15)":"rgba(99,102,241,0.12)",
                     color: user.role==="admin"?"#fbbf24":"#a5b4fc", flexShrink:0 }}>
-                    {user.role==="admin"?(t?.("admin")||"Admin"):(t?.("sideProfileMember")||"Member")}
+                    {user.role==="admin"?(t?.("admin")||"Admin"):sub?.product_name||((t?.("sideProfileMember"))||"Member")}
                   </span>
                 </div>
                 <div style={{ fontSize:10, color:muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.email}</div>
@@ -259,7 +262,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
             <div style={{ height:4, borderRadius:4, background:isDark?"rgba(255,255,255,0.08)":"rgba(99,102,241,0.1)", overflow:"hidden", marginBottom:6 }}>
               <div style={{ height:"100%", borderRadius:4,
                 background: isEmpty?"#f87171":isLow?"linear-gradient(90deg,#f59e0b,#fbbf24)":"linear-gradient(90deg,#7c6aff,#a5b4fc)",
-                width: `${Math.min((usesLeft/10)*100,100)}%`, transition:"width 0.3s" }}/>
+                width: `${Math.min((usesLeft / Math.max((sub?._monthlyWriteLimit || 10), 1)) * 100, 100)}%`, transition:"width 0.3s" }}/>
             </div>
             {(isEmpty||isLow) && (
               <div style={{ fontSize:10, color:isEmpty?"#f87171":"#f59e0b", fontWeight:700 }}>
@@ -284,7 +287,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
                 <div style={{ width:28, height:28, borderRadius:8, flexShrink:0,
                   background: item.accent?"linear-gradient(135deg,#7c6aff,#7c6aff)":isDark?"rgba(255,255,255,0.06)":"rgba(99,102,241,0.08)",
                   display:"flex", alignItems:"center", justifyContent:"center", fontSize:13 }}>
-                  {item.accent?"P":"L"}
+                  {item.accent?"+":"L"}
                 </div>
                 <div>
                   <div style={{ fontSize:13, fontWeight:600, color:item.accent?"#a5b4fc":text }}>{item.label}</div>
@@ -337,7 +340,7 @@ function SidebarProfile({ user, info, freeLimit, pct, isDark, sideBdr, navigate,
             overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nick}</div>
           <div style={{ fontSize:10, fontWeight: isLow||isEmpty?700:400,
             color: isEmpty?"#f87171":isLow?"#f59e0b":muted }}>
-            {isEmpty?(t?.("sidePointsEmpty")||"Points depleted"):isLow?`${ptLeft}P`:`${ptLeft.toLocaleString()}P`}
+            {isEmpty?(t?.("sidePointsEmpty")||"Uses depleted"):isLow?`${pointsToUses(ptLeft)}회`:`${pointsToUses(ptLeft).toLocaleString()}회`}
           </div>
         </div>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2.5"
