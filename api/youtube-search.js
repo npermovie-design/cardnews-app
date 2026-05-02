@@ -1,12 +1,27 @@
 // api/youtube-search.js — YouTube Data API v3 검색 대시보드
+
+// IP rate limiting (10분에 30회)
+const _ipCalls = new Map();
+function _checkRate(req) {
+  const ip = (req.headers?.["x-forwarded-for"] || "").split(",")[0]?.trim() || "unknown";
+  const now = Date.now();
+  const e = _ipCalls.get(ip);
+  if (!e || now > e.r) { _ipCalls.set(ip, { c: 1, r: now + 600000 }); return null; }
+  if (++e.c > 30) return "요청 한도 초과. 잠시 후 다시 시도해주세요.";
+  return null;
+}
+
 export default async function handler(req, res) {
   const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
   if (req.method === "OPTIONS") return res.status(200).end();
 
+  const rateErr = _checkRate(req);
+  if (rateErr) return res.status(429).json({ error: rateErr });
+
   const { action } = req.query;
 
-  // API 키: 환경변수 또는 클라이언트 전달
-  const apiKey = req.query.key || req.body?.key || process.env.YOUTUBE_DATA_API_KEY || process.env.GEMINI_API_KEY || "";
+  // API 키: 환경변수 우선 (클라이언트 키 전달 제거)
+  const apiKey = process.env.YOUTUBE_DATA_API_KEY || process.env.GEMINI_API_KEY || "";
   if (!apiKey) return res.status(400).json({ error: "YouTube Data API 키가 필요합니다" });
 
   const BASE = "https://www.googleapis.com/youtube/v3";

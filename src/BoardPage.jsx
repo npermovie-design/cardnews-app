@@ -3,6 +3,7 @@ import { getPosts, setPosts, changePoints, getPostsFromDB, getPostByIdFromDB, sa
 import { useI18n } from "./i18n.jsx";
 import { KlipyButton } from "./KlipyPicker";
 import ShareButton, { ShareRow } from "./ShareButton";
+import DOMPurify from "dompurify";
 import { buildSources, MediaCard, FreeMediaSearch, RichEditor, RichBody, WriteForm, extractThumb, extractText, toThumb, isVideoUrl, isImageUrl, safeName, ARCHIVE_CAT, fetchBoardCats, saveBoardCat, deleteBoardCat, fetchTagsByCat, fetchAllTags, saveTag, deleteTag } from "./BoardComponents.jsx";
 
 /* ─── 기본 카테고리 (Supabase에 데이터 없을 때 폴백) ────────── */
@@ -598,7 +599,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     doc.title = post.title;
     doc.querySelector("h1").textContent = post.title;
     doc.querySelector(".meta").textContent = `${post.nick} \xb7 ${post.date} \xb7 조회 ${post.views||0}`;
-    doc.getElementById("content").innerHTML = post.body;
+    doc.getElementById("content").innerHTML = DOMPurify.sanitize(post.body);
     w.focus(); w.print();
   };
 
@@ -1021,7 +1022,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       </div>}
 
       {!loading && <div style={{maxWidth:1100,margin:"0 auto",padding:"0 20px"}}>
-        {/* 포인트 안내 배너 */}
+        {/* 횟수 안내 배너 */}
         <div style={{display:"flex",alignItems:"center",gap:14,padding:"14px 20px",margin:"18px 0 0",borderRadius:12,
           background:isDark?"rgba(34,197,94,0.06)":"rgba(34,197,94,0.05)",border:"1px solid rgba(34,197,94,0.18)"}}>
           <div style={{width:36,height:36,borderRadius:10,background:"rgba(34,197,94,0.15)",color:"#22c55e",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -1767,7 +1768,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
             )}
             <div style={{background:C.card,border:"1px solid "+bdr,borderRadius:14,overflow:"hidden"}}>
               <div style={{padding:"14px 16px",borderBottom:"1px solid "+bdr}}>
-                <span style={{fontSize:13,fontWeight:800,color:C.text}}>포인트 적립</span>
+                <span style={{fontSize:13,fontWeight:800,color:C.text}}>횟수 적립</span>
               </div>
               {[["AI 글쓰기","-1회"],["가입 즉시","+5회"],["매일 로그인","+1회"]].map(([a,p])=>(
                 <div key={a} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid "+bdr,fontSize:13}}>
