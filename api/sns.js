@@ -1,7 +1,25 @@
 // api/sns.js — SNS 통합 API (publish, connections, auth-meta, auth-tistory, threads-media, feed)
 import { createClient } from "@supabase/supabase-js";
+import crypto from "crypto";
 
 export const config = { maxDuration: 60 };
+
+// OAuth state 서명 (위조 방지)
+const STATE_SECRET = process.env.SUPABASE_SERVICE_KEY?.slice(-16) || "fallback_secret";
+function signState(uid, extra = "") {
+  const payload = `${uid}${extra ? ":" + extra : ""}`;
+  const sig = crypto.createHmac("sha256", STATE_SECRET).update(payload).digest("hex").slice(0, 8);
+  return `${payload}.${sig}`;
+}
+function verifyState(state) {
+  if (!state || !state.includes(".")) return null;
+  const dotIdx = state.lastIndexOf(".");
+  const payload = state.slice(0, dotIdx);
+  const sig = state.slice(dotIdx + 1);
+  const expected = crypto.createHmac("sha256", STATE_SECRET).update(payload).digest("hex").slice(0, 8);
+  if (sig !== expected) return null;
+  return payload; // "uid" or "uid:platform"
+}
 
 const supabase = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
@@ -747,8 +765,9 @@ async function handleAuthMeta(req, res) {
 
     // 콜백 처리
     if (code) {
-      const [uid, platform] = (state || "").split(":");
-      if (!uid) return res.redirect(302, "/ai/blog_write?sns_error=" + encodeURIComponent("사용자 정보 없음"));
+      const verified = verifyState(state);
+      const [uid, platform] = (verified || "").split(":");
+      if (!uid) return res.redirect(302, "/ai/blog_write?sns_error=" + encodeURIComponent("인증 상태 검증 실패"));
 
       try {
         let accessToken = "";
@@ -848,8 +867,8 @@ async function handleAuthMeta(req, res) {
       ? "threads_basic,threads_content_publish"
       : "instagram_business_basic,instagram_business_content_publish,instagram_business_manage_messages,instagram_business_manage_comments";
     const authUrl = platform === "threads"
-      ? `https://threads.net/oauth/authorize?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${uid}:${platform}`
-      : `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${IG_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${uid}:${platform}`;
+      ? `https://threads.net/oauth/authorize?client_id=${APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${signState(uid, platform)}`
+      : `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${IG_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=${scopes}&response_type=code&state=${signState(uid, platform)}`;
     return res.status(200).json({ authUrl });
   }
 
@@ -869,8 +888,8 @@ async function handleAuthGoogle(req, res) {
 
     // 콜백 처리 (code가 있으면 토큰 교환)
     if (code) {
-      const uid = state;
-      if (!uid) return res.redirect(302, "/ai/blog_write?sns_error=" + encodeURIComponent("사용자 정보 없음"));
+      const uid = verifyState(state);
+      if (!uid) return res.redirect(302, "/ai/blog_write?sns_error=" + encodeURIComponent("인증 상태 검증 실패"));
 
       try {
         // 1) Authorization code → Access Token 교환
@@ -1058,9 +1077,9 @@ async function handleAuthTistory(req, res) {
         const blogData = await blogRes.json();
         const blog = blogData?.tistory?.item?.blogs?.[0];
 
-        // state에서 uid 추출
-        const uid = state;
-        if (!uid) throw new Error("사용자 정보 없음");
+        // state에서 uid 추출 (서명 검증)
+        const uid = verifyState(state);
+        if (!uid) throw new Error("인증 상태 검증 실패");
 
         // Supabase에 저장
         await supabase.from("sns_connections").upsert({

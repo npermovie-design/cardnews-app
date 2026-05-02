@@ -46,6 +46,36 @@
       ]
     },
     {
+      "source": "/login",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
+    {
+      "source": "/auth/:path*",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
+    {
+      "source": "/profile/:path*",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
+    {
+      "source": "/xk9m2p4q7/:path*",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
+    {
+      "source": "/payment/:path*",
+      "headers": [
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    },
+    {
       "source": "/(.*)",
       "headers": [
         { "key": "X-Frame-Options", "value": "SAMEORIGIN" },
@@ -124,6 +154,8 @@
     { "source": "/api/gemini-generate", "destination": "/api/ai-proxy?target=gemini" },
     { "source": "/api/tts", "destination": "/api/ai-proxy?target=tts" },
     { "source": "/api/whisper", "destination": "/api/ai-proxy?target=whisper" },
+    { "source": "/api/whisper-url", "destination": "/api/ai-proxy?target=whisper-url" },
+    { "source": "/api/prepare-lesson", "destination": "/api/ai-proxy?target=prepare-lesson" },
 
     { "source": "/api/naverbot/account-verify", "destination": "/api/naverbot?action=account-verify" },
     { "source": "/api/naverbot/license-verify", "destination": "/api/naverbot?action=license-verify" },

@@ -940,6 +940,58 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [pointColor, setPointColor] = useState("#2DB400");
   const [includeAEO, setIncludeAEO] = useState(true);
   const [includeProsCons, setIncludeProsCons] = useState(true);
+
+  // ── 로컬 Draft 자동 저장/복원 ──
+  const _draftKey = `_bg_draft_${initialType || "blog"}`;
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+  const _draftChecked = useRef(false);
+
+  // 생성 결과가 변경될 때 localStorage에 draft 저장
+  useEffect(() => {
+    if (!result || result.length < 50) return;
+    try {
+      localStorage.setItem(_draftKey, JSON.stringify({
+        result, fields, subtype, tone, speechStyle, wordCount, platformId, quoteStyle, pointColor,
+        savedAt: Date.now(),
+      }));
+    } catch {}
+  }, [result]);
+
+  // 첫 마운트 시 draft 확인
+  useEffect(() => {
+    if (_draftChecked.current) return;
+    _draftChecked.current = true;
+    try {
+      const raw = localStorage.getItem(_draftKey);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      // 24시간 이내 draft만 복원 제안
+      if (draft.savedAt && Date.now() - draft.savedAt < 24 * 60 * 60 * 1000 && draft.result?.length > 50) {
+        setShowDraftBanner(true);
+      }
+    } catch {}
+  }, []);
+
+  const restoreDraft = () => {
+    try {
+      const draft = JSON.parse(localStorage.getItem(_draftKey));
+      if (draft.result) setResult(draft.result);
+      if (draft.fields) setFields(draft.fields);
+      if (draft.subtype) setSubtype(draft.subtype);
+      if (draft.tone) setTone(draft.tone);
+      if (draft.speechStyle) setSpeechStyle(draft.speechStyle);
+      if (draft.wordCount) setWordCount(draft.wordCount);
+      if (draft.quoteStyle) setQuoteStyle(draft.quoteStyle);
+      if (draft.pointColor) setPointColor(draft.pointColor);
+      setWriteStep("result");
+      setGenStep(5);
+    } catch {}
+    setShowDraftBanner(false);
+  };
+  const dismissDraft = () => {
+    try { localStorage.removeItem(_draftKey); } catch {}
+    setShowDraftBanner(false);
+  };
   // 플랫폼 변경 시 설정 리셋
   useEffect(() => {
     const newCfg = PLATFORMS[platformId] || PLATFORMS.blog_naver;
@@ -3617,6 +3669,19 @@ hospital equipment`
               renderWriteSettingsPage()
             ) : (
             <>
+            {/* 이전 작업 복원 배너 */}
+            {showDraftBanner && mode === "write" && !result && (
+              <div style={{margin:"0 auto 16px",maxWidth:720,padding:"14px 18px",borderRadius:14,background:isDark?"rgba(124,106,255,0.08)":"#f0f0ff",border:`1.5px solid ${isDark?"rgba(124,106,255,0.2)":"#d4d0ff"}`,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
+                <div>
+                  <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:2}}>이전에 작성하던 글이 있어요</div>
+                  <div style={{fontSize:11,color:muted}}>이어서 작업하시겠습니까?</div>
+                </div>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <button onClick={restoreDraft} style={{padding:"8px 16px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>복원</button>
+                  <button onClick={dismissDraft} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:600,cursor:"pointer"}}>새로 시작</button>
+                </div>
+              </div>
+            )}
             {/* 현재 선택된 플랫폼 표시 (글쓰기 모드에서만) */}
             {mode==="write" && (
             <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:14}}>
