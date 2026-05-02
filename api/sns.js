@@ -77,12 +77,31 @@ async function refreshTiktokToken(conn) {
 }
 
 // ── 공통 CORS 처리 ──────────────────────────────────────────────
-const ALLOWED_ORIGINS = "*";
+const ALLOWED_ORIGINS = [
+  "https://snsmakeit.com",
+  "https://www.snsmakeit.com",
+  "http://localhost:5173",
+  "http://localhost:3000",
+];
 
-function setCors(res) {
-  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGINS);
+function setCors(res, req) {
+  const origin = req?.headers?.origin || "";
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  res.setHeader("Access-Control-Allow-Origin", allowed);
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Admin-Uid");
+  res.setHeader("Vary", "Origin");
+}
+
+// ── 공통 인증 헬퍼: Bearer token에서 uid 확인 ──────────────────
+async function verifyUid(req) {
+  const authHeader = req.headers?.authorization || "";
+  if (!authHeader.startsWith("Bearer ")) return null;
+  try {
+    const anonClient = createClient(process.env.SUPABASE_URL, process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || "");
+    const { data: { user } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    return user?.id || null;
+  } catch { return null; }
 }
 
 // ── 마크다운 → HTML 변환 (티스토리용) ────────────────────────────
@@ -644,6 +663,9 @@ async function handlePublishHistory(req, res) {
 
   const uid = req.query.uid;
   if (!uid) return res.status(400).json({ error: "uid 필수" });
+  // Bearer token uid 검증
+  const authUid = await verifyUid(req);
+  if (authUid && authUid !== uid) return res.status(403).json({ error: "권한 없음" });
 
   const limit = parseInt(req.query.limit) || 50;
   const offset = parseInt(req.query.offset) || 0;
@@ -681,6 +703,8 @@ async function handlePublishHistory(req, res) {
 async function handleConnections(req, res) {
   const uid = req.query.uid || req.body?.uid;
   if (!uid) return res.status(400).json({ error: "uid 필수" });
+  const authUid = await verifyUid(req);
+  if (authUid && authUid !== uid) return res.status(403).json({ error: "권한 없음" });
 
   // GET: 연결된 플랫폼 목록
   if (req.method === "GET") {
@@ -1424,10 +1448,9 @@ async function handleAdmin(req, res) {
     const { data: { user } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
     if (user) authUid = user.id;
   }
-  if (!authUid && process.env.NODE_ENV !== "production") {
+  if (!authUid && process.env.VERCEL !== "1") {
     const origin = req.headers.origin || req.headers.referer || "";
-    const isTrusted = origin.includes("snsmakeit.com") || origin.includes("localhost");
-    if (isTrusted) authUid = req.query.admin_uid || req.headers["x-admin-uid"] || "";
+    if (origin.includes("localhost")) authUid = req.query.admin_uid || req.headers["x-admin-uid"] || "";
   }
   if (!authUid) return res.status(403).json({ error: "관리자 인증 필요" });
   const { data: adminCheck } = await sb.from("users").select("role").eq("uid", authUid).single();
@@ -1655,7 +1678,7 @@ const ACTION_MAP = {
 };
 
 export default async function handler(req, res) {
-  setCors(res);
+  setCors(res, req);
   if (req.method === "OPTIONS") return res.status(200).end();
 
   const action = req.query.action;

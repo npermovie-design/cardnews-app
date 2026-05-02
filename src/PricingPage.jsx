@@ -121,15 +121,26 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
   const handleCheckoutSuccess = async (planName, receiptUrl) => {
     if (!user?.uid) return;
-    setSuccessModal({ planName, receiptUrl, done: false });
-    for (let i = 0; i < 15; i++) {
-      await new Promise(r => setTimeout(r, 1000));
+    const beforePts = user.points || 0;
+    setSuccessModal({ planName, receiptUrl, done: false, confirmed: false });
+    for (let i = 0; i < 20; i++) {
+      await new Promise(r => setTimeout(r, 1500));
       try {
-        const { data } = await supabase.from("users").select("points").eq("uid", user.uid).single();
-        if (data) { setSuccessModal(s => s ? { ...s, done: true } : null); return; }
+        const { data } = await supabase.from("users").select("points,monthly_used").eq("uid", user.uid).single();
+        if (data && data.points !== beforePts) {
+          setSuccessModal(s => s ? { ...s, done: true, confirmed: true } : null);
+          return;
+        }
+        // 구독의 경우 monthly_used가 리셋되었는지 확인
+        const { data: subData } = await supabase.from("subscriptions").select("product_name").eq("uid", user.uid).in("status", ["active","on_trial"]).limit(1);
+        if (subData?.length) {
+          setSuccessModal(s => s ? { ...s, done: true, confirmed: true } : null);
+          return;
+        }
       } catch(e) {}
     }
-    setSuccessModal(s => s ? { ...s, done: true } : null);
+    // 30초 경과해도 미확인 → 안내 메시지와 함께 완료 처리
+    setSuccessModal(s => s ? { ...s, done: true, confirmed: false } : null);
   };
 
   const openCheckout = (lsId) => {
@@ -174,6 +185,11 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             </div>
             {!successModal.done && (
               <div style={{ marginBottom: 20, fontSize: 12, color: C.muted }}>플랜 적용 중...</div>
+            )}
+            {successModal.done && !successModal.confirmed && (
+              <div style={{ marginBottom: 20, padding: "12px 16px", borderRadius: 10, background: isDark ? "rgba(245,158,11,0.1)" : "#fffbeb", border: "1px solid rgba(245,158,11,0.3)", fontSize: 12, color: "#92400e", lineHeight: 1.6 }}>
+                결제는 완료되었지만 시스템 반영에 시간이 걸리고 있습니다. 1~2분 후 새로고침하면 적용됩니다. 문제가 지속되면 고객센터로 문의해주세요.
+              </div>
             )}
             <button onClick={() => { setSuccessModal(null); navigate("ai"); }}
               style={{ width: "100%", padding: "13px", borderRadius: 11, border: "none", background: GRAD, color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", marginBottom: 8 }}>
@@ -371,7 +387,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             { label: "SNS를 처음 시작하는 분", plan: "Free", desc: "무료로 AI 글쓰기를 체험하고, 커뮤니티에서 정보를 얻어보세요.", color: C.muted },
             { label: "개인 블로거 / 크리에이터", plan: "Basic", desc: "매일 1~2개씩 꾸준히 콘텐츠를 만들고 싶은 분에게 딱 맞습니다.", color: isDark ? "#c4b5fd" : "#7c6aff" },
             { label: "마케터 / 소상공인", plan: "Pro", desc: "대량 콘텐츠 + NaverBot 자동발행으로 마케팅을 자동화하세요.", color: "#ec4899", badge: "추천" },
-            { label: "에이전시 / 기업", plan: "Business", desc: "무제한 글쓰기와 대량 자동발행으로 팀 전체 콘텐츠를 관리하세요.", color: isDark ? "#c4b5fd" : "#7c6aff" },
+            { label: "에이전시 / 기업", plan: "Business", desc: "월 500회 글쓰기와 대량 자동발행으로 팀 전체 콘텐츠를 관리하세요.", color: isDark ? "#c4b5fd" : "#7c6aff" },
           ].map((seg, i) => (
             <div key={i} style={{ position: "relative", background: C.card, border: seg.badge ? "2px solid #ec4899" : "1px solid " + C.border, borderRadius: 16, padding: "24px 20px", textAlign: "center", boxShadow: seg.badge ? "0 0 20px rgba(236,72,153,0.12)" : C.shadow }}>
               {seg.badge && (
