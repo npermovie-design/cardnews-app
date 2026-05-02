@@ -772,8 +772,8 @@ export default function AdminPage({ C, user: adminUser }) {
                           <tr key={i} style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.04)":"#f3f4f6"}` }}>
                             <td style={{ padding:"6px 8px", fontWeight:600, color:C.text }}>{nick}</td>
                             <td style={{ padding:"6px 8px", color:C.muted }}>{l.reason||"-"}</td>
-                            <td style={{ padding:"6px 8px", textAlign:"right", fontWeight:700, color:l.delta>0?"#22c55e":"#ef4444" }}>{l.delta>0?"+":""}{Math.round(l.delta)}회</td>
-                            <td style={{ padding:"6px 8px", textAlign:"right", color:C.text }}>{Math.floor((l.balance||0))}회</td>
+                            <td style={{ padding:"6px 8px", textAlign:"right", fontWeight:700, color:l.delta>0?"#22c55e":"#ef4444" }}>{l.delta>0?"+":""}{l.created_at&&l.created_at<"2026-05-03"?Math.round((l.delta||0)/30):Math.round(l.delta)}회</td>
+                            <td style={{ padding:"6px 8px", textAlign:"right", color:C.text }}>{l.created_at&&l.created_at<"2026-05-03"?Math.floor((l.balance||0)/30):Math.floor(l.balance||0)}회</td>
                             <td style={{ padding:"6px 8px", color:C.muted, fontSize:10 }}>{l.created_at ? new Date(l.created_at).toLocaleString("ko-KR") : "-"}</td>
                           </tr>
                         );

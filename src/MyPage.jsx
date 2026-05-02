@@ -206,8 +206,10 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
     );
   }
 
-  const earned = history.filter(h=>h.delta>0).reduce((s,h)=>s+h.delta,0);
-  const used   = history.filter(h=>h.delta<0).reduce((s,h)=>s+h.delta,0);
+  // 2026-05-02 이전 기록은 30배 보정
+  const normDelta = (h) => (h.at && h.at < "2026-05-03") ? Math.round((h.delta||0)/30) : (h.delta||0);
+  const earned = history.filter(h=>h.delta>0).reduce((s,h)=>s+normDelta(h),0);
+  const used   = history.filter(h=>h.delta<0).reduce((s,h)=>s+normDelta(h),0);
   const referralCode = userData?.referral_code || "";
   const referralLink = referralCode ? `${window.location.origin}/login?ref=${encodeURIComponent(referralCode)}` : "";
   const copyReferral = async () => {
@@ -343,8 +345,10 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
                 const { icon, color } = getHistIcon(h.reason);
                 const isEarn = h.delta > 0;
                 const isZero = h.delta === 0;
-                const deltaUses = pointDeltaToUses(h.delta);
-                const balanceUses = pointsToUses(h.balance || 0);
+                // 2026-05-02 이전 기록은 30배 내부단위이므로 보정
+                const isBefore = h.at && h.at < "2026-05-03";
+                const deltaUses = isBefore ? Math.round((h.delta||0)/30) : pointDeltaToUses(h.delta);
+                const balanceUses = isBefore ? Math.floor((h.balance||0)/30) : pointsToUses(h.balance || 0);
                 return (
                   <div key={i} className="myp-hist-item" style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:12, padding:"13px 16px", display:"flex", alignItems:"center", gap:12 }}>
                     <div style={{ width:36, height:36, borderRadius:9, background:`${color}18`, border:`1px solid ${color}30`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16, flexShrink:0 }}>
