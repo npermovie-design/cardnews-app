@@ -457,13 +457,20 @@ async function handleContentGenerate(req, res) {
 
   const useGif = !!req.body.use_gif;
 
+  // AEO / 장단점 토글 (클라이언트에서 전달, 기본값 true)
+  const includeAEO = req.body.includeAEO !== false;
+  const includeProsCons = req.body.includeProsCons !== false;
+  let structureOverride = "";
+  if (!includeAEO) structureOverride += "\n\n[AEO 질문-답변 제외] 도입부 직후 Q./A. 형식의 AEO 질문-답변 블록과 [TABLE] 핵심 정보 박스를 넣지 마세요.";
+  if (!includeProsCons) structureOverride += "\n\n[장단점·추천 제외] 장점/단점 목록과 추천 대상/비추천 대상 섹션을 넣지 마세요.";
+
   const { system, user } = buildBlogPrompt({
     subtype,
     tone,
     speech,
     wordCount: word_count,
     fields,
-    userPrompt: user_prompt,
+    userPrompt: user_prompt + structureOverride,
     trendsText,
     useGif,
   });

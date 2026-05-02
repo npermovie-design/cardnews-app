@@ -8,6 +8,10 @@ function cleanBlogText(text) {
   if (!text) return text;
   return text
     .replace(/\[(?:image|이미지):\s*[^\]]+\]/gi, '')  // [image: keyword] 태그 제거
+    .replace(/^\[(?:TABLE|표)\].*$/gm, '')             // [TABLE] 마커 제거 (내용은 유지)
+    .replace(/^\[표:\s*[^\]]+\]$/gm, '')               // [표: 핵심 정보] 마커 제거
+    .replace(/^Q\d*[\.\)]\s*/gm, 'Q. ')                // Q. 접두어 정리
+    .replace(/^A\d*[\.\)]\s*/gm, 'A. ')                // A. 접두어 정리
     .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{1FA00}-\u{1FA9F}\u{200D}\u{FE0F}]/gu, '')
     .replace(/^#{1,6}\s*/gm, '')
     .replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1$2')
@@ -339,6 +343,85 @@ function renderMarkdown(text, isDark, textColor, mutedColor, accentColor, imageP
       continue; // 태그 라인은 텍스트로 출력 안 함
     }
 
+    // [TABLE] 핵심 정보 박스 마커 → 다음 빈 줄까지의 내용을 박스로 렌더링
+    if (/^\[(?:TABLE|표)\]/.test(trimmed) || /^\[표:\s*.+\]$/.test(trimmed)) {
+      const tableTitle = trimmed.replace(/^\[(?:TABLE|표)\]\s*/, "").replace(/^\[표:\s*/, "").replace(/\]$/, "").trim() || "핵심 정보";
+      const tableLines = [];
+      let j = i + 1;
+      while (j < lines.length && lines[j].trim()) {
+        tableLines.push(lines[j].trim());
+        j++;
+      }
+      elements.push(
+        <div key={`table${i}`} style={{margin:"18px 0",padding:"18px 20px",borderRadius:14,border:`1.5px solid ${pointColor}30`,background:isDark?"rgba(255,255,255,0.03)":"#f8fafb"}}>
+          <div style={{fontSize:14,fontWeight:900,color:pointColor,marginBottom:10}}>{tableTitle}</div>
+          {tableLines.map((tl, ti) => {
+            const parts = tl.split(/[:：]\s*/);
+            return <div key={`tl${i}-${ti}`} style={{display:"flex",gap:8,padding:"5px 0",borderBottom:ti<tableLines.length-1?`1px solid ${isDark?"rgba(255,255,255,0.06)":"#eef0f2"}`:"none",fontSize:13,lineHeight:1.7}}>
+              {parts.length >= 2
+                ? <><span style={{fontWeight:800,color:textColor,minWidth:80,flexShrink:0}}>{parts[0]}</span><span style={{color:textColor}}>{parts.slice(1).join(": ")}</span></>
+                : <span style={{color:textColor}}>{tl}</span>}
+            </div>;
+          })}
+        </div>
+      );
+      i = j - 1; // 루프가 i++로 넘어가므로 마지막 소비 줄의 직전
+      continue;
+    }
+
+    // Q. / A. AEO 질문-답변 렌더링
+    const qaMatch = trimmed.match(/^Q\d*[\.\)]\s*(.+)$/);
+    if (qaMatch) {
+      const question = qaMatch[1].trim();
+      let answer = "";
+      if (i + 1 < lines.length && /^A\d*[\.\)]\s*/.test(lines[i + 1].trim())) {
+        answer = lines[i + 1].trim().replace(/^A\d*[\.\)]\s*/, "").trim();
+        i++; // A. 줄 소비
+      }
+      elements.push(
+        <div key={`qa${i}`} style={{margin:"12px 0",padding:"14px 18px",borderRadius:12,borderLeft:`4px solid ${pointColor}`,background:isDark?"rgba(255,255,255,0.025)":"#fafbfd"}}>
+          <div style={{fontSize:14,fontWeight:800,color:pointColor,marginBottom:answer?6:0}}>Q. {inlineFormat(question, pointColor, pointKeywords)}</div>
+          {answer && <div style={{fontSize:13,color:textColor,lineHeight:1.8}}>A. {inlineFormat(answer, pointColor, pointKeywords)}</div>}
+        </div>
+      );
+      continue;
+    }
+
+    // 장점/단점/추천/비추천/긍정/우려 라인 시각 구분
+    const prosConsMatch = trimmed.match(/^(장점|단점|긍정|우려|추천 대상|비추천 대상)\s*[:：]\s*(.+)$/);
+    if (prosConsMatch) {
+      const label = prosConsMatch[1];
+      const content = prosConsMatch[2].trim();
+      const isPositive = ["장점","긍정","추천 대상"].includes(label);
+      const tagColor = isPositive ? "#10b981" : "#ef4444";
+      const tagBg = isPositive
+        ? (isDark ? "rgba(16,185,129,0.08)" : "#f0fdf4")
+        : (isDark ? "rgba(239,68,68,0.08)" : "#fef2f2");
+      elements.push(
+        <div key={`pc${i}`} style={{display:"flex",gap:10,alignItems:"flex-start",margin:"6px 0",padding:"10px 14px",borderRadius:10,background:tagBg}}>
+          <span style={{fontSize:12,fontWeight:900,color:tagColor,whiteSpace:"nowrap",minWidth:70}}>{label}</span>
+          <span style={{fontSize:13,color:textColor,lineHeight:1.8}}>{inlineFormat(content, pointColor, pointKeywords)}</span>
+        </div>
+      );
+      continue;
+    }
+
+    // 해시태그 라인 (#키워드 형태가 2개 이상 연속) → 구분선 + 태그 스타일
+    if (/^#[가-힣a-zA-Z\w]/.test(trimmed) && (trimmed.match(/#/g) || []).length >= 2) {
+      const tags = trimmed.split(/\s+/).filter(t => t.startsWith("#"));
+      elements.push(
+        <div key={`tags${i}`}>
+          <hr style={{border:"none",borderTop:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e5f0"}`,margin:"24px 0 12px"}}/>
+          <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
+            {tags.map((tag, ti) => (
+              <span key={ti} style={{padding:"4px 10px",borderRadius:20,background:isDark?"rgba(255,255,255,0.06)":"#f0f1f3",color:mutedColor,fontSize:12,fontWeight:600}}>{tag}</span>
+            ))}
+          </div>
+        </div>
+      );
+      continue;
+    }
+
     // 소제목 감지: 짧은 줄(3~50자) + 앞에 빈 줄
     const prevEmpty = i === 0 || !lines[i-1]?.trim();
     const isHeading = trimmed.length >= 3 && trimmed.length <= 50 && prevEmpty && !trimmed.startsWith("-") && !trimmed.startsWith("#") && !/^\d+\./.test(trimmed);
@@ -445,15 +528,16 @@ const PLATFORMS = {
     buildPrompt(sub, f, tone, wc, speech) {
       const w={short:"1,000~1,500자",medium:"2,000~3,000자",long:"4,000자 이상"}[wc];
       const t={friendly:"친근하고 유용한 정보 전달체",diary:"일기처럼 자연스럽고 솔직한",review:"객관적이고 구체적인 리뷰체",professional:"전문적이고 신뢰감 있는"}[tone];
-      const imgRule = `\n\n[글 구조 필수 규칙]\n1. 큰 소제목 → [image: 영문 키워드] → 본문 설명 순서로 반복\n2. [image: keyword] 형태로 각 소제목마다 1개씩 이미지 삽입\n3. 키워드는 반드시 영문 2~3단어로, 사진 검색 시 정확히 해당 사물/장면이 나올 만큼 구체적으로 작성\n   좋은 예시: [image: glucose meter finger], [image: vegetable salad plate], [image: morning jogging park], [image: cafe latte art], [image: laptop home desk]\n   나쁜 예시: [image: health], [image: food], [image: nature], [image: technology]\n4. 해당 문단에서 설명하는 구체적 사물, 음식, 장소, 행동을 영어로 묘사할 것\n5. 소제목은 3~5개 정도`;
+      const imgRule = `\n\n[글 구조 필수 규칙]\n1. 큰 소제목 → [image: 영문 키워드] → 본문 설명 순서로 반복\n2. [image: keyword] 형태로 각 소제목마다 1개씩 이미지 삽입\n3. 키워드는 반드시 영문 2~3단어로, 사진 검색 시 정확히 해당 사물/장면이 나올 만큼 구체적으로 작성\n   좋은 예시: [image: glucose meter finger], [image: vegetable salad plate], [image: morning jogging park], [image: cafe latte art], [image: laptop home desk]\n   나쁜 예시: [image: health], [image: food], [image: nature], [image: technology]\n4. 해당 문단에서 설명하는 구체적 사물, 음식, 장소, 행동을 영어로 묘사할 것\n5. 소제목은 5~7개 정도, 이미지는 4~8개 배치`;
       const speechRule = speech ? `\n\n[말투/문체] ${(SPEECH_STYLES.find(s=>s.id===speech)||{}).prompt||""}` : "";
       const noEnding = `\n\n[마무리 금지] "마치며", "끝으로", "마무리하며", "글을 마치며", "정리하면" 같은 진부한 마무리 표현 절대 사용 금지. 마지막 문단도 자연스럽게 본문처럼 이어서 끝낼 것`;
       const quoteRule = `\n\n[인용구 필수]\n1. 각 큰 소제목마다 핵심 메시지를 요약하는 한 줄 인용구를 1개씩 넣으세요.\n2. 인용구는 반드시 독립된 한 줄로 [quote]문장[/quote] 형식만 사용하세요.\n3. 인용구는 18~42자 정도로 짧고 단정하게, 독자가 캡처하거나 기억하기 쉬운 문장으로 작성하세요.\n4. 인용구는 소제목 직후 또는 해당 소제목 본문 첫 문단 뒤에 자연스럽게 배치하세요.\n5. 따옴표, >, ## 표시는 쓰지 말고 [quote] 태그만 사용하세요.`;
-      const flowRule = `\n\n[원하는 글감 흐름]\n- 첫 문단은 문제 제기나 독자의 상황 공감으로 짧게 시작\n- 정보만 나열하지 말고 관찰, 이유, 예시, 실천 팁 순서로 이어가기\n- 문단은 2~4문장 단위로 짧게 끊기\n- 소제목은 딱딱한 명사형보다 궁금증이나 결론이 보이는 문장형으로 작성`;
+      const flowRule = `\n\n[원하는 글감 흐름]\n- 첫 문단은 문제 제기나 독자의 상황 공감으로 짧게 시작\n- 도입부 직후 Q. / A. 형식의 AEO 질문-답변 3개를 작성. FAQ, 자주 묻는 질문이라는 라벨은 쓰지 않기\n- 질문은 정의형 1개, 방법형 1개, 가격·비교·이유형 1개로 구성하고 답변은 60~120자 안에서 결론부터 작성\n- AEO 블록 다음에는 [TABLE] 한 줄을 넣고, 바로 아래에 카테고리에 맞는 5~7개 핵심 항목을 "항목: 값" 형식으로 한 줄씩 정리\n- 정보만 나열하지 말고 관찰, 이유, 예시, 실천 팁 순서로 이어가기\n- 문단은 2~4문장 단위로 짧게 끊기\n- 소제목은 딱딱한 명사형보다 궁금증이나 결론이 보이는 문장형으로 작성\n- 마지막에는 반드시 아래 형식으로 장단점과 추천 대상을 작성:\n  장점: (3가지를 쉼표로 구분)\n  단점: (2가지를 쉼표로 구분)\n  추천 대상: (구체적 대상)\n  비추천 대상: (구체적 대상)`;
       const emphasisRule = `\n\n[포인트 강조 필수]\n- 핵심 단어, 숫자, 결론 문구는 **강조 문구** 형식으로 감싸세요.\n- 한 문단에 1개 정도만 사용하고, 짧은 구문에만 적용하세요.\n- 강조할 문구는 실제 독자가 기억해야 할 핵심 표현으로 고르세요.`;
       const noSpecial = `\n\n[절대 금지]\n##, ~~, 이모티콘, 이모지, 특수기호(★●■▶♥☆→), HTML/CSS, 색상 태그 사용 금지. 단, [image: english keyword], [quote]문장[/quote], **포인트 문구** 형식은 예외로 반드시 사용. 소제목은 그냥 별도 줄에 작성.\n\n[필수 규칙]\n1. 이미지 삽입용 [image: english keyword] 태그 사용: 각 소제목 바로 아래에 [image: 구체적 영어 키워드 2~3단어] 형식으로 1줄씩 삽입. 예) [image: puppy playing park]\n2. 글 마지막에는 반드시 # 기호로 시작하는 해시태그 10개를 작성. 예) #강아지키우기 #반려견관리 #강아지건강 (띄어쓰기로 구분, 한 줄 또는 두 줄로)\n3. 본문 중간에는 # 기호를 사용하지 마세요. 해시태그는 오직 글 맨 마지막에만.`;
+      const categoryRule = `\n\n[카테고리별 정보 반영]\n- 여행/방문: 위치, 방문 시기, 교통, 비용, 추천 대상, 비추천 대상\n- 쇼핑/제품: 제품명, 가격, 구매처, 사용 기간, 비교 대상, 장단점\n- 경제: 대상, 한도, 금리·수익률·세율, 신청 기한, 주의점. 출처 없는 수치 생성 금지\n- 사회/뉴스: 발생 시점, 관련 주체, 핵심 쟁점, 공식 발표와 일반 해석 구분\n- IT/건강/기타: 핵심 수치, 적용 조건, 주의사항, 확인된 정보와 일반 설명 구분`;
       const custom = f.extra ? `\n\n[사용자 맞춤 요청] ${f.extra}` : "";
-      const tail = speechRule + quoteRule + emphasisRule + flowRule + noEnding + noSpecial;
+      const tail = speechRule + quoteRule + emphasisRule + flowRule + categoryRule + noEnding + noSpecial;
       if(sub==="info")    return `네이버 블로그 정보성 글 (${w}, ${t})\n키워드: ${f.keyword}\n대상: ${f.target||"일반 독자"}${custom}${imgRule}\n- 키워드를 본문과 소제목에 자연스럽게 반영\n- 실용적 팁/정보 위주${tail}`;
       if(sub==="visit")   return `네이버 블로그 체험·방문후기 (${w}, ${t})\n장소: ${f.keyword} / 위치: ${f.location||""} / 날짜: ${f.visitDate||"최근"} / 평점: ${f.rating||"4.5"}/5${custom}${imgRule}\n- 방문 전 기대→방문 과정→솔직 총평\n- 장단점 명확히, 재방문 의사 포함${tail}`;
       if(sub==="travel")  return `네이버 블로그 여행후기 (${w}, ${t})\n여행지: ${f.keyword} / 장소: ${f.location||""} / 기간: ${f.duration||"당일"} / 예산: ${f.budget||""}\n${custom}${imgRule}\n- 일정별 구조화, 맛집/명소/교통 포함\n- 실제 여행자 감성, 예산 팁 포함${tail}`;

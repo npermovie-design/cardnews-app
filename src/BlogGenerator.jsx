@@ -249,6 +249,16 @@ if __name__ == "__main__":
           <button onClick={onClose} style={{ background:"none", border:"none", color:muted, fontSize:20, cursor:"pointer", padding:4 }}>x</button>
         </div>
 
+        {/* 이미지 8장 초과 경고 */}
+        {(() => {
+          const imgCount = (result.match(/\[image:[^\]]+\]/g) || []).length;
+          return imgCount > 8 ? (
+            <div style={{ padding:"10px 14px", borderRadius:10, background:"#fef3c7", border:"1px solid #f59e0b33", marginBottom:14, fontSize:12, color:"#92400e", lineHeight:1.6 }}>
+              이미지가 {imgCount}장 포함되어 있습니다. 자동발행 안정성을 위해 8장 이하를 권장합니다.
+            </div>
+          ) : null;
+        })()}
+
         {!downloaded ? (
           <>
             {/* 네이버 계정 입력 */}
@@ -928,6 +938,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [writeStep, setWriteStep] = useState("input");
   const [quoteStyle, setQuoteStyle] = useState("underline");
   const [pointColor, setPointColor] = useState("#2DB400");
+  const [includeAEO, setIncludeAEO] = useState(true);
+  const [includeProsCons, setIncludeProsCons] = useState(true);
   // 플랫폼 변경 시 설정 리셋
   useEffect(() => {
     const newCfg = PLATFORMS[platformId] || PLATFORMS.blog_naver;
@@ -1486,7 +1498,8 @@ ${emojiRule}
     }
   };
 
-  const handleSubtype = id => { setSubtype(id); setFields(p => ({ keyword: p.keyword || "" })); setResult(""); setHtmlResult(""); setError(""); };
+  const _defaultWritingDate = (() => { const d = new Date(); return `${d.getFullYear()}년 ${d.getMonth()+1}월`; })();
+  const handleSubtype = id => { setSubtype(id); setFields(p => ({ keyword: p.keyword || "", writingDate: p.writingDate || _defaultWritingDate })); setResult(""); setHtmlResult(""); setError(""); };
   const setField = (k,v) => setFields(p => {
     const next = {...p, [k]: v};
     try { sessionStorage.setItem(_ssFieldsKey, JSON.stringify(next)); } catch {}
@@ -1496,6 +1509,48 @@ ${emojiRule}
   const examples = cfg.examples?.[subtype] || [];
   const isTistory = initialType === "blog_tistory";
   const accentRaw = cfg.accentColor || "#7c6aff";
+  const isNaverBlog = platformId === "blog_naver";
+  const naverBriefCategories = ["경제","사회","여행","세계여행","국내여행","쇼핑","IT","건강","기타"];
+  const naverBriefPurposes = ["정보","후기","비교","가이드","분석"];
+  const naverExperienceTypes = ["직접 경험","조사 기반","혼합"];
+
+  const currentMonthLabel = () => {
+    const d = new Date();
+    return `${d.getFullYear()}년 ${d.getMonth() + 1}월`;
+  };
+
+  const buildNaverBriefPrompt = () => {
+    if (!isNaverBlog) return "";
+    const lines = [];
+    const add = (label, value) => {
+      const clean = String(value || "").trim();
+      if (clean) lines.push(`- ${label}: ${clean}`);
+    };
+    add("카테고리", fields.blogCategory);
+    add("글 목적", fields.blogPurpose);
+    add("타겟 독자", fields.target);
+    add("경험 기반 여부", fields.experienceType);
+    add("작성 시점", fields.writingDate || currentMonthLabel());
+    add("핵심 검색 키워드", fields.searchKeywords);
+    add("장소·시설·지역", fields.location);
+    add("방문 시기", fields.visitDate);
+    add("교통·가는 방법", fields.transport);
+    add("1인 비용·예산", fields.budget);
+    add("제품명·모델", fields.productName);
+    add("구매처", fields.purchasePlace);
+    add("가격·결제가", fields.price);
+    add("사용 기간", fields.usagePeriod);
+    add("비교 대상", fields.compareTarget);
+    add("제도·상품·이슈", fields.issueName);
+    add("공식 출처·자료명", fields.sourceName);
+    add("대상·자격", fields.eligibility);
+    add("핵심 수치", fields.keyNumbers);
+    add("핵심 장점", fields.pros);
+    add("핵심 단점", fields.cons);
+    add("주의사항", fields.cautions);
+    if (!lines.length) return "";
+    return `\n\n[글감 브리프]\n${lines.join("\n")}\n\n[브리프 반영 규칙]\n- 위 항목을 우선 반영해 AEO 질문, 핵심 정보 박스, 본문 섹션을 구성하세요.\n- 비어 있는 항목은 억지로 만들지 말고 일반 설명으로 보완하세요.\n- 공식 출처·자료명이 없으면 통계, 금리, 세율, 기관명, 인용문을 임의로 만들지 마세요.`;
+  };
 
   // ── 테마 변수 ──
   const text    = isDark ? "#fff"                      : "#1a1a2e";
@@ -1636,10 +1691,15 @@ ${emojiRule}
     const basePrompt = cfg.buildPrompt(subtype, fields, tone, wordCount, speechStyle);
     const quoteRule = quoteStyle === "none" ? "\n- 인용구([quote]...[/quote])를 사용하지 마세요. 소제목 아래에 바로 본문을 작성하세요." : "\n- 각 큰 소제목마다 [quote]짧은 핵심 문장[/quote] 인용구를 1개씩 넣으세요.";
     const formatPromptExtra = `\n\n[AEO/GEO/SEO 노출 최적화 규칙]\n- SEO: 핵심 키워드와 롱테일 키워드를 도입부, 소제목, 본문, 해시태그에 자연스럽게 분산하세요. 키워드 반복은 과하지 않게 문맥 안에서만 사용하세요.\n- AEO: 검색자가 바로 답을 얻을 수 있게 각 소제목 첫 문단에 짧은 결론부터 제시하고, 질문형 소제목과 실천 답변을 포함하세요.\n- GEO: AI 검색/생성형 검색에 인용되기 좋게 정의, 절차, 체크리스트, 비교, 주의사항을 명확한 문장으로 정리하세요.\n- E-E-A-T: 경험 기반 관찰, 구체적 상황, 검증 가능한 기준, 독자가 바로 적용할 행동을 포함하세요.\n\n[화면 표시용 서식 규칙]${quoteRule}\n- 포인트로 강조할 핵심 키워드, 숫자, 결론 문구는 반드시 **강조 문구** 형식으로 감싸세요.\n- 한 문단마다 0~1개만 강조하고, 전체 글에는 8~14개의 **강조 문구**를 넣으세요.\n- 색상 이름이나 HTML/CSS는 출력하지 마세요. 선택한 포인트 색상은 화면에서 자동 적용됩니다.`;
+    const briefPromptExtra = buildNaverBriefPrompt();
     const sourcePromptExtra = fields.extra || urlResult || (fields._files && fields._files.length)
       ? `\n\n[제공된 정보/출처 활용 규칙]\n- 사용자가 입력한 URL, 참고 파일, 추가 지시사항이 있으면 그 내용을 우선 근거로 사용하세요.\n- 뉴스 기사 URL은 제목/메타 설명보다 추출된 원문 내용을 우선 기준으로 삼고, 원문에 없는 발언/수치/기관명은 만들지 마세요.\n- SNS 링크는 본문 추출이 제한될 수 있으므로 추출된 텍스트, 메타 설명, 사용자가 입력한 설명 범위 안에서만 재구성하세요.\n- 제공된 정보에 없는 세율, 법 조항, 금액, 기한, 기관명, 통계는 임의로 만들지 마세요.\n- 출처가 분명한 내용과 일반 설명을 구분해서 쓰고, 불확실한 내용은 상황에 따라 달라질 수 있다고 표현하세요.\n- 글 안에 출처를 넣어야 할 때는 사용자가 제공한 URL/자료명만 사용하세요.`
       : "";
-    const prompt = basePrompt + formatPromptExtra + sourcePromptExtra + (advPromptExtra ? advPromptExtra : "");
+    // AEO Q&A / 장단점·추천 토글 반영
+    let structureOverride = "";
+    if (isNaverBlog && !includeAEO) structureOverride += "\n\n[AEO 질문-답변 제외] 도입부 직후 Q./A. 형식의 AEO 질문-답변 블록과 [TABLE] 핵심 정보 박스를 넣지 마세요. 도입부 다음 바로 본문 섹션으로 진행하세요.";
+    if (isNaverBlog && !includeProsCons) structureOverride += "\n\n[장단점·추천 제외] 장점/단점 목록과 추천 대상/비추천 대상 섹션을 넣지 마세요. 자연스러운 결론으로 마무리하세요.";
+    const prompt = basePrompt + briefPromptExtra + formatPromptExtra + structureOverride + sourcePromptExtra + (advPromptExtra ? advPromptExtra : "");
     // 분량에 따른 max_tokens 설정 (여유 있게)
     const tokenMap = { short: 3000, medium: 5500, long: 8000, xlong: 10000 };
     const maxTok = tokenMap[wordCount] || 5500;
@@ -2759,6 +2819,103 @@ hospital equipment`
   // 현재 선택된 플랫폼 정보
   const currentPlatform = SNS_OPTIONS.find(p => p.id === platformId) || SNS_OPTIONS[0];
 
+  // 카테고리별로 보여줄 브리프 필드 정의
+  const BRIEF_FIELDS_BY_CATEGORY = {
+    "여행":       ["target","writingDate","searchKeywords","location","visitDate","transport","budget","compareTarget","cautions"],
+    "세계여행":   ["target","writingDate","searchKeywords","location","visitDate","transport","budget","compareTarget","cautions"],
+    "국내여행":   ["target","writingDate","searchKeywords","location","visitDate","transport","budget","compareTarget","cautions"],
+    "쇼핑":       ["target","writingDate","searchKeywords","productName","purchasePlace","price","usagePeriod","compareTarget","cautions"],
+    "경제":       ["target","writingDate","searchKeywords","issueName","sourceName","eligibility","keyNumbers","cautions"],
+    "사회":       ["target","writingDate","searchKeywords","issueName","sourceName","keyNumbers","cautions"],
+    "IT":         ["target","writingDate","searchKeywords","sourceName","keyNumbers","compareTarget","cautions"],
+    "건강":       ["target","writingDate","searchKeywords","sourceName","keyNumbers","eligibility","cautions"],
+    "기타":       ["target","writingDate","searchKeywords","sourceName","issueName","keyNumbers","compareTarget","cautions"],
+  };
+  const BRIEF_FIELD_META = {
+    target:        "타겟 독자 예: 사회초년생, 첫 방콕 여행자",
+    writingDate:   `작성 시점 예: ${(() => { const d = new Date(); return `${d.getFullYear()}년 ${d.getMonth()+1}월`; })()}`,
+    searchKeywords:"핵심 검색 키워드 1~2개",
+    location:      "장소·시설·지역",
+    visitDate:     "방문 시기",
+    transport:     "교통·가는 방법",
+    budget:        "1인 비용·예산",
+    productName:   "제품명·모델",
+    purchasePlace: "구매처",
+    price:         "가격·결제가",
+    usagePeriod:   "사용 기간",
+    compareTarget: "비교 대상",
+    issueName:     "제도·상품·이슈명",
+    sourceName:    "공식 출처·자료명",
+    eligibility:   "대상·자격",
+    keyNumbers:    "핵심 수치 예: 금리, 한도, 비용",
+    cautions:      "주의사항",
+  };
+
+  const renderNaverBriefFields = ({ compact = false } = {}) => {
+    if (!isNaverBlog) return null;
+    const chipButton = (active, onClick, label) => (
+      <button key={label} onClick={onClick}
+        style={{padding:compact?"6px 10px":"7px 12px",borderRadius:10,border:`1.5px solid ${active?accent:border}`,background:active?accentBg:"transparent",color:active?accent:text,fontSize:compact?11:12,fontWeight:active?800:600,cursor:"pointer",fontFamily:"inherit"}}>
+        {label}
+      </button>
+    );
+    const textInput = (key, placeholder, wide = false) => (
+      <input key={key} value={fields[key]||""} onChange={e=>setField(key,e.target.value)} placeholder={placeholder}
+        style={{width:"100%",padding:compact?"8px 11px":"9px 12px",borderRadius:10,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:12,fontFamily:"inherit",outline:"none",boxSizing:"border-box",gridColumn:wide?"1 / -1":undefined}}/>
+    );
+    const category = fields.blogCategory || "";
+    const purpose = fields.blogPurpose || "";
+    const experience = fields.experienceType || "";
+
+    // 카테고리에 따라 보여줄 필드 결정 (미선택 시 공통 3개만)
+    const visibleFields = category
+      ? (BRIEF_FIELDS_BY_CATEGORY[category] || BRIEF_FIELDS_BY_CATEGORY["기타"])
+      : ["target","writingDate","searchKeywords"];
+
+    return (
+      <div style={{marginBottom:compact?16:20,padding:compact?"12px":"14px",borderRadius:14,border:`1px solid ${border}`,background:isDark?"rgba(255,255,255,0.025)":"#fafafa"}}>
+        <div style={{fontSize:13,fontWeight:900,color:text,marginBottom:6}}>글감 브리프</div>
+        <div style={{fontSize:11,color:muted,lineHeight:1.6,marginBottom:12}}>카테고리를 선택하면 해당 분야에 필요한 입력 항목이 나타납니다.</div>
+
+        <div style={{display:"grid",gridTemplateColumns:compact?"1fr":"repeat(auto-fill, minmax(240px, 1fr))",gap:12}}>
+          <div style={{gridColumn:"1 / -1"}}>
+            <div style={{fontSize:11,fontWeight:800,color:text,marginBottom:7}}>카테고리</div>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+              {naverBriefCategories.map(c=>chipButton(category===c,()=>{
+                const newCat = category===c ? "" : c;
+                setField("blogCategory", newCat);
+                // 카테고리 → 글 유형 자동 연동
+                const catToSubtype = {"여행":"travel","세계여행":"travel","국내여행":"travel","쇼핑":"product","경제":"info","사회":"article","IT":"info","건강":"info","기타":"info"};
+                if (newCat && catToSubtype[newCat]) setSubtype(catToSubtype[newCat]);
+              },c))}
+            </div>
+          </div>
+
+          {category && <>
+            <div>
+              <div style={{fontSize:11,fontWeight:800,color:text,marginBottom:7}}>글 목적</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {naverBriefPurposes.map(c=>chipButton(purpose===c,()=>setField("blogPurpose",c),c))}
+              </div>
+            </div>
+
+            <div>
+              <div style={{fontSize:11,fontWeight:800,color:text,marginBottom:7}}>경험 기반</div>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                {naverExperienceTypes.map(c=>chipButton(experience===c,()=>setField("experienceType",c),c))}
+              </div>
+            </div>
+
+            {visibleFields.map(key => {
+              const isWide = key === "cautions";
+              return textInput(key, BRIEF_FIELD_META[key] || key, isWide);
+            })}
+          </>}
+        </div>
+      </div>
+    );
+  };
+
   const renderWriteSettingsPage = () => (
     <div className="bl-settings-panel" style={{maxWidth:720,margin:"0 auto",background:cardBg,border:`1px solid ${border}`,borderRadius:20,padding:"22px",boxShadow:isDark?"0 4px 20px rgba(0,0,0,0.3)":"0 4px 20px rgba(0,0,0,0.06)"}}>
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12,marginBottom:20}}>
@@ -2786,6 +2943,8 @@ hospital equipment`
         </div>
       </div>
 
+      {renderNaverBriefFields()}
+
       <div style={{marginBottom:20}}>
         <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -2805,6 +2964,32 @@ hospital equipment`
           {SPEECH_STYLES.map(s=>{const isA=speechStyle===s.id;return<button key={s.id} onClick={()=>setSpeechStyle(s.id)} title={s.desc} style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${isA?accent:border}`,background:isA?accentBg:"transparent",color:isA?accent:text,fontSize:12,fontWeight:isA?800:600,cursor:"pointer",fontFamily:"inherit"}}>{s.label}</button>;})}
         </div>
       </div>
+
+      {isNaverBlog && (
+        <div style={{marginBottom:20}}>
+          <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+            글 구조 옵션
+          </div>
+          <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
+            <label style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",padding:"8px 14px",borderRadius:12,border:`1.5px solid ${includeAEO?accent:border}`,background:includeAEO?accentBg:"transparent",fontSize:12,fontWeight:includeAEO?800:600,color:includeAEO?accent:text}}>
+              <input type="checkbox" checked={includeAEO} onChange={e=>setIncludeAEO(e.target.checked)} style={{display:"none"}}/>
+              <span style={{width:16,height:16,borderRadius:4,border:`2px solid ${includeAEO?accent:border}`,background:includeAEO?accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                {includeAEO && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+              </span>
+              AEO 질문-답변 (Q&A 3개)
+            </label>
+            <label style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",padding:"8px 14px",borderRadius:12,border:`1.5px solid ${includeProsCons?accent:border}`,background:includeProsCons?accentBg:"transparent",fontSize:12,fontWeight:includeProsCons?800:600,color:includeProsCons?accent:text}}>
+              <input type="checkbox" checked={includeProsCons} onChange={e=>setIncludeProsCons(e.target.checked)} style={{display:"none"}}/>
+              <span style={{width:16,height:16,borderRadius:4,border:`2px solid ${includeProsCons?accent:border}`,background:includeProsCons?accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
+                {includeProsCons && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
+              </span>
+              장단점 / 추천·비추천
+            </label>
+          </div>
+          <div style={{fontSize:11,color:muted,marginTop:7,lineHeight:1.6}}>체크 해제 시 해당 구조 없이 일반 블로그 글로 생성됩니다.</div>
+        </div>
+      )}
 
       <div style={{marginBottom:20}}>
         <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:10,display:"flex",alignItems:"center",gap:6}}>
@@ -3654,6 +3839,8 @@ hospital equipment`
                     })}
                   </div>
                 </div>
+
+                {renderNaverBriefFields({ compact: true })}
 
                 {/* 톤 */}
                 <div style={{marginBottom:20}}>
