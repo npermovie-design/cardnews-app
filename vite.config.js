@@ -25,9 +25,13 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'fabric': ['fabric'],
-          'vendor': ['react', 'react-dom'],
+        manualChunks(id) {
+          if (id.includes('fabric')) return 'fabric';
+          if (id.includes('node_modules/react-dom')) return 'vendor';
+          if (id.includes('node_modules/react/')) return 'vendor';
+          if (id.includes('leaflet')) return 'leaflet';
+          if (id.includes('i18n.jsx') || id.includes('i18n-pages.js')) return 'i18n';
+          if (id.includes('dompurify')) return 'purify';
         },
       },
     },

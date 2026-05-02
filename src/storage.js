@@ -734,7 +734,7 @@ export function setAiUsage(u){
 export const FREE_GUEST  = 5;     // 비회원 무료
 export const FREE_MEMBER = 5;     // 회원 무료 5회
 
-export function getAiLeft(user, cost = Math.abs(POINTS.AI_USE)) {
+export function getAiLeft(user, cost = Math.abs(POINTS.AI_USE), feature = "write") {
   const usage  = getAiUsage();
   const key    = user ? "member_" + user.uid : "guest";
   const used   = usage[key] || 0;
@@ -742,19 +742,22 @@ export function getAiLeft(user, cost = Math.abs(POINTS.AI_USE)) {
   const points = user ? (user.points || 0) : 0;
   const extraFromPoints = Math.floor(points / cost);
 
-  // 구독자인 경우: 월간 한도 기반
+  // 구독자인 경우: feature별 월간 한도
   const sub = user?._subscription;
-  if (sub && sub._monthlyWriteLimit > 0) {
-    const monthlyUsed = user.monthly_used || 0;
-    const monthlyLimit = sub._monthlyWriteLimit;
-    const monthlyLeft = Math.max(0, monthlyLimit - monthlyUsed);
-    return {
-      used: monthlyUsed, limit: monthlyLimit, points,
-      left: monthlyLeft,
-      canUse: monthlyLeft > 0,
-      isSubscriber: true,
-      planName: sub.product_name,
-    };
+  if (sub && sub._limits) {
+    const featureLimit = feature === "video" ? (sub._limits.video || 0) : (sub._monthlyWriteLimit || 0);
+    const featureUsed = feature === "video" ? (user.monthly_used_video || 0) : (user.monthly_used_write || user.monthly_used || 0);
+    if (featureLimit > 0) {
+      const monthlyLeft = Math.max(0, featureLimit - featureUsed);
+      return {
+        used: featureUsed, limit: featureLimit, points,
+        left: monthlyLeft,
+        canUse: monthlyLeft > 0,
+        isSubscriber: true,
+        planName: sub.product_name,
+        feature,
+      };
+    }
   }
 
   return {
@@ -765,29 +768,30 @@ export function getAiLeft(user, cost = Math.abs(POINTS.AI_USE)) {
   };
 }
 
-export async function useAiOnce(user, setUserState, cost = POINTS.AI_USE, reason = "AI 생성 사용") {
+export async function useAiOnce(user, setUserState, cost = POINTS.AI_USE, reason = "AI 생성 사용", feature = "write") {
   const absCost = Math.abs(cost);
 
-  // 구독자: 월간 한도에서 차감 (RPC)
+  // 구독자: 월간 한도에서 차감 (RPC) — feature별 분리
   const sub = user?._subscription;
-  if (sub && sub._monthlyWriteLimit > 0 && user?.uid) {
+  const featureLimit = feature === "video" ? sub?._limits?.video : sub?._monthlyWriteLimit;
+  if (sub && featureLimit > 0 && user?.uid) {
     try {
       const { data, error } = await supabase.rpc("use_monthly_quota", {
         p_uid: user.uid,
         p_cost: 1,
         p_reason: reason,
+        p_feature: feature,
       });
       if (error) throw error;
       const result = typeof data === "string" ? JSON.parse(data) : data;
       if (result?.ok) {
-        const newUser = { ...user, monthly_used: result.monthly_used };
+        const usedKey = feature === "video" ? "monthly_used_video" : "monthly_used_write";
+        const newUser = { ...user, [usedKey]: result.monthly_used };
         setLocalUser(newUser);
         setUserState(newUser);
         return true;
       }
-      // monthly_exceeded → 한도 초과
       if (result?.error === "monthly_exceeded") return false;
-      // no_subscription / no_limit_set → 포인트 방식 폴백
     } catch (e) {
       console.warn("useAiOnce subscription RPC failed, fallback to points:", e.message);
     }

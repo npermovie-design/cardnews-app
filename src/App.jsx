@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
-import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAuthUser, FREE_GUEST, fetchAttendance, processReferralSignup, ensureReferralCode } from "./storage";
+import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAuthUser, FREE_GUEST, fetchAttendance, processReferralSignup, ensureReferralCode, pointsToUses } from "./storage";
 import { useI18n, LANGUAGES } from "./i18n.jsx";
 
 // 핵심 컴포넌트 (즉시 로드)
-import HomePage from "./HomePage";
+const HomePage = lazy(() => import("./HomePage"));
 import AuthModal from "./AuthModal";
 import AuthPage from "./AuthPage";
 import Footer from "./Footer.jsx";
@@ -128,7 +128,7 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
           {ko ? "SNS 콘텐츠 제작의 모든 것, 지금 바로 시작해보세요" : "All your SNS content creation starts now"}
         </div>
 
-        {/* 150P 카드 */}
+        {/* 5회 카드 */}
         <div style={{
           background: "linear-gradient(135deg, rgba(124,106,255,0.15), rgba(236,72,153,0.1))",
           border: "1px solid rgba(124,106,255,0.35)",
@@ -138,19 +138,19 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
             {ko ? "가입 축하 보너스" : "Signup bonus"}
           </div>
           <div style={{ fontSize: 36, fontWeight: 900, background: "linear-gradient(135deg,#a5b4fc,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6 }}>
-            +150 P
+            +5회
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
-            {ko ? "AI 글쓰기 약 5회 분량" : "~5 AI writes"}
+            {ko ? "AI 글쓰기 5회 분량" : "5 AI writes"}
           </div>
         </div>
 
         {/* 혜택 리스트 */}
         <div style={{ textAlign: "left", marginBottom: 24 }}>
           {[
-            { icon: "1", text: ko ? "AI 글쓰기 30P · 이미지 250P부터" : "AI writing from 30P · Images from 250P" },
-            { icon: "2", text: ko ? "게시글 작성 시 +1P 자동 적립 (하루 10회)" : "Earn +1P per post (up to 10/day)" },
-            { icon: "3", text: ko ? "매일 로그인 +3P 적립" : "Daily login earns +3P" },
+            { icon: "1", text: ko ? "AI 글쓰기 1회 차감" : "AI writing uses 1 credit" },
+            { icon: "2", text: ko ? "게시글 작성 시 +1회 자동 적립 (하루 10회)" : "Earn +1 credit per post (up to 10/day)" },
+            { icon: "3", text: ko ? "매일 로그인 +1회 적립" : "Daily login earns +1 credit" },
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
               <div style={{
@@ -354,7 +354,7 @@ export default function App() {
     };
     const descMap = {
       ko: {
-        home: "키워드만 입력하면 AI가 블로그, 인스타그램, 쇼츠 콘텐츠 초안을 자동 생성합니다. 비회원 5회 무료, 가입 시 150P 지급.",
+        home: "키워드만 입력하면 AI가 블로그, 인스타그램, 쇼츠 콘텐츠 초안을 자동 생성합니다. 비회원 5회 무료, 가입 시 5회 지급.",
         about: "SNS메이킷은 블로그, 인스타그램, 쇼츠, 이미지 제작을 AI로 자동화하는 SNS 콘텐츠 올인원 플랫폼입니다.",
         howto: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 카드뉴스, 상세페이지, 숏폼 편집까지 단계별로 안내합니다.",
         faq: "SNS메이킷의 AI 콘텐츠 생성, 요금제, 저작권, 계정 관련 자주 묻는 질문을 확인하세요.",
@@ -368,12 +368,12 @@ export default function App() {
         legal: "SNS메이킷 이용약관, 개인정보처리방침, 환불정책을 확인하세요.",
       },
       en: {
-        home: "Enter a keyword and AI creates drafts for blogs, Instagram, and shorts. 5 guest uses and 150P on signup.",
+        home: "Enter a keyword and AI creates drafts for blogs, Instagram, and shorts. 5 guest uses and 5 credits on signup.",
         about: "SNS Makeit is an all-in-one AI platform for blogs, Instagram, shorts, and image content creation.",
         howto: "Learn how to use SNS Makeit for AI writing, image generation, card news, detail pages, and shorts editing.",
-        faq: "Find answers about SNS Makeit AI content generation, points, pricing, copyright, and accounts.",
+        faq: "Find answers about SNS Makeit AI content generation, credits, pricing, copyright, and accounts.",
         ai: "Generate blog posts, Instagram captions, card news, product images, logos, and shorts videos with AI.",
-        pricing: "SNS Makeit pricing. 150P on signup, AI writing 30P, image generation 250P, shorts video 100P, one-off point packs.",
+        pricing: "SNS Makeit pricing. 5 credits on signup, simple monthly usage counts, and plan upgrades.",
         contact: "Contact SNS Makeit for billing, features, bugs, or partnership inquiries.",
         community: "SNS Makeit Community for AI content creation, marketing tips, and Q&A.",
         programs: "Download automation tools, templates, free photos, and video resources for SNS operations.",
@@ -403,7 +403,7 @@ export default function App() {
     } catch {}
   }, []);
 
-  // 포인트 소진 이벤트 수신
+  // 이용 횟수 소진 이벤트 수신
   useEffect(() => {
     const handler = () => setShowPointsModal(true);
     window.addEventListener("pointsExhausted", handler);
@@ -478,7 +478,7 @@ export default function App() {
             } catch(e) {}
           }, 0);
         }
-        // TOKEN_REFRESHED: 세션만 갱신, 포인트 state 덮어쓰기 금지
+        // TOKEN_REFRESHED: 세션만 갱신, 이용 횟수 state 덮어쓰기 금지
       }
     );
     return () => subscription.unsubscribe();
@@ -613,7 +613,7 @@ export default function App() {
     // 페이지별 meta description (SEO 최적화)
     const descMap = {
       ko: {
-        home: "키워드만 입력하면 AI가 블로그, 인스타그램, 쇼츠 콘텐츠 초안을 자동 생성합니다. 비회원 5회 무료, 가입 시 150P 지급.",
+        home: "키워드만 입력하면 AI가 블로그, 인스타그램, 쇼츠 콘텐츠 초안을 자동 생성합니다. 비회원 5회 무료, 가입 시 5회 지급.",
         pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 AI 글쓰기와 영상 편집을 이용하세요.",
         about: "SNS메이킷은 AI로 SNS 콘텐츠 제작 전 과정을 자동화하는 올인원 플랫폼입니다.",
         howto: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 숏폼 편집까지 단계별로 안내합니다.",
@@ -623,8 +623,8 @@ export default function App() {
         programs: "SNS 자동화봇으로 네이버 블로그 글 생성, 드라이브 자료 기반 발행, 자동 운영 흐름을 확인하세요.",
       },
       en: {
-        home: "Enter a keyword and AI creates drafts for blogs, Instagram, and shorts. 5 guest uses and 150P on signup.",
-        pricing: "SNS Makeit pricing. 150P on signup, AI writing 30P, image generation 250P, shorts video 100P, one-off point packs.",
+        home: "Enter a keyword and AI creates drafts for blogs, Instagram, and shorts. 5 guest uses and 5 credits on signup.",
+        pricing: "SNS Makeit pricing. 5 credits on signup, simple monthly usage counts, and plan upgrades.",
         about: "SNS Makeit is an all-in-one platform automating SNS content creation with AI.",
         howto: "SNS Makeit user guide. Step-by-step for AI writing, image generation, and shorts editing.",
         ai: "Generate blogs, card news, detail pages, images, and shorts videos with AI. 5 free uses for guests.",
@@ -997,7 +997,7 @@ export default function App() {
       {showPointsModal && (
         <div onClick={() => setShowPointsModal(false)} style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 22, padding: "clamp(20px,5vw,36px) clamp(16px,4vw,28px)", maxWidth: 380, width: "90%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.15)" }}>
-            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(124,106,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24, fontWeight: 900, color: "#7c6aff" }}>P</div>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(124,106,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24, fontWeight: 900, color: "#7c6aff" }}>5</div>
             <div style={{ fontSize: "clamp(16px,4vw,19px)", fontWeight: 900, color: "#1a1730", marginBottom: 10 }}>무료 사용 횟수를 모두 사용했어요</div>
             <div style={{ fontSize: 13, color: "rgba(26,23,48,0.55)", lineHeight: 1.9, marginBottom: 26 }}>
               비회원은 AI 기능을 <b style={{ color: "#7c6aff" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
@@ -1156,7 +1156,7 @@ export default function App() {
                   {(user.nick||"U")[0].toUpperCase()}
                 </div>
                 <span style={{ fontSize: 13, color: C.text, fontWeight: 600, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.nick}</span>
-                <span style={{ fontSize: 11, color: C.purpleL, fontWeight: 700 }}>{Math.floor((user.points||0)/30)}회</span>
+                <span style={{ fontSize: 11, color: C.purpleL, fontWeight: 700 }}>{pointsToUses(user.points||0)}회</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" style={{ flexShrink:0, transform: profileOpen?"rotate(180deg)":"none", transition:"transform 0.2s" }}><polyline points="18 15 12 9 6 15"/></svg>
               </button>
 
@@ -1186,20 +1186,20 @@ export default function App() {
                     <div style={{ background: theme==="dark"?"rgba(255,255,255,0.05)":"#f5f5f8", borderRadius: 10, padding: "10px 12px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
                         <span style={{ color: C.muted }}>잔여 횟수</span>
-                        <span style={{ fontWeight: 800, color: C.purpleL }}>{Math.floor((user.points||0)/30)}회</span>
+                        <span style={{ fontWeight: 800, color: C.purpleL }}>{pointsToUses(user.points||0)}회</span>
                       </div>
                       <div style={{ height: 4, borderRadius: 4, background: theme==="dark"?"rgba(255,255,255,0.08)":"#e0e0eb", overflow: "hidden" }}>
                         <div style={{ height: "100%", borderRadius: 4, width: Math.min(((user.points||0)/500)*100,100)+"%",
                           background: "linear-gradient(90deg,#7c6aff,#8b5cf6)" }} />
                       </div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 글쓰기 1회당 사용</div>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 글쓰기 기준 {pointsToUses(user.points||0)}회 가능</div>
                     </div>
                   </div>
                   {/* 메뉴 */}
                   <div style={{ padding: "8px" }}>
                     {[
                       { icon: "L", label: "출석체크", sub: "매일 로그인 +1회", action: () => { setShowAttendance(true); setProfileOpen(false); } },
-                      { icon: "P", label: "플랜 업그레이드", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
+                      { icon: "+", label: "플랜 업그레이드", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
                       { icon: "F", label: "내 보관함", sub: "생성한 글 보관", action: () => { navigate("ai"); setAiMenu("library"); setProfileOpen(false); } },
                       { icon: "U", label: "회원정보", sub: "프로필·이용 내역 확인", action: () => { navigate("mypage"); setProfileOpen(false); } },
                       ...(user.role==="admin" ? [{ icon: "A", label: "관리자 페이지", sub: "회원·플랜 관리", action: () => { navigate("xk9m2p4q7"); setProfileOpen(false); } }] : []),
@@ -1358,7 +1358,7 @@ export default function App() {
                     </div>
                     <div>
                       <div style={{ fontSize: 14, color: C.text, fontWeight: 700 }}>{user.nick}</div>
-                      <div style={{ fontSize: 12, color: C.purpleL, marginTop: 1 }}>잔여 {Math.floor((user.points||0)/30)}회</div>
+                      <div style={{ fontSize: 12, color: C.purpleL, marginTop: 1 }}>잔여 {pointsToUses(user.points||0)}회</div>
                     </div>
                   </div>
                   <button onClick={logout} style={{ padding: "7px 14px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12 }}>{t("logout")}</button>
