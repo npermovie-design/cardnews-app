@@ -290,7 +290,7 @@ export default function AdminPage({ C, user: adminUser }) {
     if (!count || isNaN(count)) { showToast("횟수를 입력하세요"); return; }
     const member = members.find(m => m.uid === uid);
     const cur = member?.points || 0;
-    const next = Math.max(0, cur - Number(count) * 30);
+    const next = Math.max(0, cur - Number(count));
     try {
       await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&points=${next}`);
       setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: next } : m));
@@ -313,7 +313,7 @@ export default function AdminPage({ C, user: adminUser }) {
   const setPoints = async (uid, count) => {
     if (!count || isNaN(count)) return;
     try {
-      const pts = Number(count) * 30;
+      const pts = Number(count);
       await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&points=${pts}`);
       setMembers2(prev => prev.map(m => m.uid === uid ? { ...m, points: pts } : m));
       showToast(count + "회로 설정 완료!");
