@@ -18,8 +18,88 @@ const ACC = "#7c6aff";
 const dateStr = (d) => { const dt = new Date(d); return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,"0")}.${String(dt.getDate()).padStart(2,"0")}`; };
 const isSameDay = (a, b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
 
-// ── 더미 데이터 (추후 Supabase 연동) ──
-const DEMO_COURSES = []; // 실데이터는 관리자가 등록
+// ── Supabase DB ↔ 프론트 변환 ──
+const dbToFront = (row, lessons = [], schedules = []) => ({
+  id: row.id, title: row.title, desc: row.desc, type: row.type,
+  pricing: row.pricing, price: row.price,
+  freePreviewCount: row.free_preview_count, memberVisibleCount: row.member_visible_count,
+  tags: row.tags || [], thumbnail: row.thumbnail,
+  introHtml: row.intro_html, targetAudience: row.target_audience,
+  process: row.process, notes: row.notes, instructorBio: row.instructor_bio,
+  instructor: row.instructor, instructorUid: row.instructor_uid,
+  difficulty: row.difficulty || "입문", durationInfo: row.duration_info || "무제한",
+  createdAt: row.created_at,
+  lessons: lessons.map(l => ({
+    id: l.id, title: l.title, duration: l.duration, videoSrc: l.video_src,
+    isFreePreview: l.is_free_preview, assignmentRequired: l.assignment_required,
+    assignmentDesc: l.assignment_desc, order: l.order,
+  })),
+  liveSchedules: schedules.map(s => ({
+    id: s.id, date: s.date, title: s.title, duration: s.duration,
+    maxSeats: s.max_seats, enrolled: s.enrolled,
+  })),
+});
+
+const frontToDb = (c) => ({
+  id: c.id, title: c.title, desc: c.desc, type: c.type,
+  pricing: c.pricing, price: c.price || 0,
+  free_preview_count: c.freePreviewCount || 2,
+  member_visible_count: c.memberVisibleCount || 5,
+  tags: c.tags || [], thumbnail: c.thumbnail || '',
+  intro_html: c.introHtml || '', target_audience: c.targetAudience || '',
+  process: c.process || '', notes: c.notes || '',
+  instructor_bio: c.instructorBio || '',
+  instructor: c.instructor || '', instructor_uid: c.instructorUid || '',
+  difficulty: c.difficulty || '입문', duration_info: c.durationInfo || '무제한',
+  updated_at: new Date().toISOString(),
+});
+
+const lessonToDb = (l, classId) => ({
+  id: l.id, class_id: classId, title: l.title, duration: l.duration || '',
+  video_src: l.videoSrc || '', is_free_preview: !!l.isFreePreview,
+  assignment_required: !!l.assignmentRequired, assignment_desc: l.assignmentDesc || '',
+  order: l.order || 0,
+});
+
+const scheduleToDb = (s, classId) => ({
+  id: s.id, class_id: classId, date: s.date, title: s.title || '',
+  duration: s.duration || '60분', max_seats: s.maxSeats || 30, enrolled: s.enrolled || 0,
+});
+
+// ── Supabase CRUD ──
+async function loadAllCourses() {
+  const { data: rows } = await supabase.from("classes").select("*").order("created_at", { ascending: false });
+  if (!rows?.length) return [];
+  const ids = rows.map(r => r.id);
+  const [{ data: lessons }, { data: schedules }] = await Promise.all([
+    supabase.from("class_lessons").select("*").in("class_id", ids).order("order"),
+    supabase.from("class_live_schedules").select("*").in("class_id", ids),
+  ]);
+  return rows.map(r => dbToFront(
+    r,
+    (lessons || []).filter(l => l.class_id === r.id),
+    (schedules || []).filter(s => s.class_id === r.id),
+  ));
+}
+
+async function saveCourseToDb(course) {
+  const row = frontToDb(course);
+  await supabase.from("classes").upsert(row, { onConflict: "id" });
+  // 레슨: 기존 삭제 후 재삽입
+  await supabase.from("class_lessons").delete().eq("class_id", course.id);
+  if (course.lessons?.length) {
+    await supabase.from("class_lessons").insert(course.lessons.map(l => lessonToDb(l, course.id)));
+  }
+  // 라이브 일정
+  await supabase.from("class_live_schedules").delete().eq("class_id", course.id);
+  if (course.liveSchedules?.length) {
+    await supabase.from("class_live_schedules").insert(course.liveSchedules.map(s => scheduleToDb(s, course.id)));
+  }
+}
+
+async function deleteCourseFromDb(courseId) {
+  await supabase.from("classes").delete().eq("id", courseId);
+}
 
 // ── 캘린더 (큰 사이즈) ──
 function ClassCalendar({ schedules, C, isDark, onSelectDate }) {
@@ -126,19 +206,27 @@ function ClassSlideshow({ courses, C, isDark, onSelect }) {
 }
 
 // ── 과제 제출 모달 ──
-function AssignmentModal({ lesson, C, isDark, onClose, onSubmit }) {
+function AssignmentModal({ lesson, C, isDark, onClose, onSubmit, user, classId }) {
   const [file, setFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
 
   const handleSubmit = async () => {
-    if (!file) return;
+    if (!file || !user?.uid) return;
     setSubmitting(true);
-    // 실제로는 Supabase Storage에 업로드
-    await new Promise(r => setTimeout(r, 1500));
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `assignments/${classId}/${lesson.id}_${user.uid}_${Date.now()}.${ext}`;
+      await supabase.storage.from("public-assets").upload(path, file, { contentType: file.type, upsert: true });
+      const { data: urlData } = supabase.storage.from("public-assets").getPublicUrl(path);
+      await supabase.from("class_progress").upsert({
+        class_id: classId, lesson_id: lesson.id, uid: user.uid,
+        assignment_submitted: true, assignment_file: urlData.publicUrl, updated_at: new Date().toISOString(),
+      }, { onConflict: "lesson_id,uid" });
+      setDone(true);
+      onSubmit?.(lesson.id);
+    } catch (e) {}
     setSubmitting(false);
-    setDone(true);
-    onSubmit?.(lesson.id, file);
   };
 
   return (
@@ -269,6 +357,7 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
     freePreviewCount: 2, memberVisibleCount: 5, tags: [],
     thumbnail: null, lessons: [], liveSchedules: [],
     introHtml: "", targetAudience: "", process: "", notes: "", instructorBio: "",
+    difficulty: "입문", durationInfo: "무제한",
   });
   const [thumbPreview, setThumbPreview] = useState(course?.thumbnail || "");
   const [tagInput, setTagInput] = useState("");
@@ -738,6 +827,21 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
             )}
           </div>
           <div style={section}>
+            <div style={sectionTitle}>강의 정보</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+              <div>
+                <span style={lbl}>난이도</span>
+                <select value={form.difficulty||"입문"} onChange={e => setForm(p => ({ ...p, difficulty: e.target.value }))} style={inp}>
+                  <option value="입문">입문</option><option value="초급">초급</option><option value="중급">중급</option><option value="고급">고급</option><option value="입문~중급">입문~중급</option><option value="중급~고급">중급~고급</option>
+                </select>
+              </div>
+              <div>
+                <span style={lbl}>수강 기간</span>
+                <input value={form.durationInfo||"무제한"} onChange={e => setForm(p => ({ ...p, durationInfo: e.target.value }))} placeholder="무제한" style={inp} />
+              </div>
+            </div>
+          </div>
+          <div style={section}>
             <div style={sectionTitle}>공개 범위</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
@@ -802,22 +906,11 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
 // ═══════════════════════════════════════════════════════════
 export default function ClassPage({ C, navigate, user, theme }) {
   const isDark = theme === "dark";
-  const [courses, setCourses] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("nper_classes") || "null");
-      if (Array.isArray(saved) && saved.length > 0) return saved;
-    } catch {}
-    return DEMO_COURSES;
-  });
+  const [courses, setCourses] = useState([]);
+  const [dbLoading, setDbLoading] = useState(true);
   useEffect(() => {
-    try {
-      const serializable = courses.map(c => ({
-        ...c, thumbnail: typeof c.thumbnail === "string" ? c.thumbnail : null,
-        lessons: (c.lessons||[]).map(l => ({ ...l, videoFile: null })),
-      }));
-      localStorage.setItem("nper_classes", JSON.stringify(serializable));
-    } catch {}
-  }, [courses]);
+    loadAllCourses().then(data => { setCourses(data); setDbLoading(false); }).catch(() => setDbLoading(false));
+  }, []);
   const [filter, setFilter] = useState("all"); // all | vod | zoom | offline
   const [pricingFilter, setPricingFilter] = useState("all"); // all | free | paid
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -832,6 +925,54 @@ export default function ClassPage({ C, navigate, user, theme }) {
   const [currentSubtitle, setCurrentSubtitle] = useState("");
   const [subLoading, setSubLoading] = useState("");
   const [dubbingAudio, setDubbingAudio] = useState(null);
+  const [audioMode, setAudioMode] = useState("original"); // original | subtitle | dubbing
+  const [prepareProgress, setPrepareProgress] = useState(""); // 사전 생성 진행 상태
+  // 수강 후기
+  const [reviews, setReviews] = useState([]);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewRating, setReviewRating] = useState(5);
+  // 진도율
+  const [progress, setProgress] = useState({}); // { lessonId: { watched, assignment_submitted } }
+  // Q&A 댓글
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("");
+  const [detailCommentText, setDetailCommentText] = useState("");
+  const STORAGE_BASE = "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/classes/";
+
+  // 코스 선택 시 후기/진도/댓글 로드
+  useEffect(() => {
+    if (!selectedCourse?.id) return;
+    supabase.from("class_reviews").select("*").eq("class_id", selectedCourse.id).order("created_at", { ascending: false })
+      .then(({ data }) => setReviews(data || []));
+    supabase.from("class_comments").select("*").eq("class_id", selectedCourse.id).order("created_at", { ascending: true })
+      .then(({ data }) => setComments(data || []));
+    if (user?.uid) {
+      supabase.from("class_progress").select("*").eq("class_id", selectedCourse.id).eq("uid", user.uid)
+        .then(({ data }) => {
+          const map = {};
+          (data || []).forEach(p => { map[p.lesson_id] = p; });
+          setProgress(map);
+        });
+    }
+  }, [selectedCourse?.id, user?.uid]);
+
+  // 레슨 선택 시 DB에서 자막 로드 + 더빙 모드 초기화
+  useEffect(() => {
+    if (!selectedLesson?.id) return;
+    setAudioMode("original");
+    setDubbingAudio(null);
+    setSubtitleLang("ko");
+    setVoiceLang("ko");
+    if (subtitles[selectedLesson.id]) return;
+    supabase.from("class_subtitles").select("lang, subtitles").eq("lesson_id", selectedLesson.id)
+      .then(({ data }) => {
+        if (data?.length) {
+          const langMap = {};
+          data.forEach(r => { langMap[r.lang] = r.subtitles; });
+          setSubtitles(prev => ({ ...prev, [selectedLesson.id]: langMap }));
+        }
+      });
+  }, [selectedLesson?.id]);
 
   // 자막 시간 추적
   useEffect(() => {
@@ -848,43 +989,31 @@ export default function ClassPage({ C, navigate, user, theme }) {
     return () => v.removeEventListener("timeupdate", onTime);
   }, [selectedLesson?.id, subtitleLang, subtitles]);
 
-  // 자막 생성 — AI 기반 강의 내용 자막 생성
+  // 자막 생성 — 실제 음성 Whisper STT
   const generateSubtitles = async (lesson) => {
     if (!lesson) return;
-    setSubLoading("CC 자막 생성 중...");
+    const videoUrl = lesson.videoSrc;
+    if (!videoUrl) {
+      setSubLoading("영상 URL이 없습니다"); setTimeout(() => setSubLoading(""), 2000);
+      return;
+    }
+    setSubLoading("음성 분석 중... (Whisper STT)");
     try {
-      const v = videoRef.current;
-      const duration = v?.duration || 60;
-      const count = Math.max(10, Math.min(40, Math.floor(duration / 5)));
-      const res = await fetch("/api/ai-proxy", {
+      const res = await fetch("/api/whisper-url", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-haiku-4-5-20251001", max_tokens: 3000,
-          messages: [{ role: "user", content: `당신은 한국어 강의 영상의 자막 작성 전문가입니다. 다음 강의의 자연스러운 자막을 JSON 배열로 생성하세요.
-
-강의 제목: ${lesson.title}
-클래스명: ${selectedCourse?.title || ""}
-클래스 설명: ${selectedCourse?.desc || ""}
-영상 길이: 약 ${Math.floor(duration)}초
-
-규칙:
-- ${count}개의 자막을 생성하세요
-- 각 자막은 {"start": 초(number), "end": 초(number), "text": "자막내용"} 형식
-- start는 0부터 시작, 각 자막은 3~5초 간격
-- 실제 강사가 말하는 것처럼 자연스러운 구어체로 작성
-- 강의 주제에 맞는 실질적인 내용으로 작성
-- JSON 배열만 출력하세요 (다른 텍스트 없이)` }],
-        }),
+        body: JSON.stringify({ video_url: videoUrl, lang: "ko" }),
       });
       const data = await res.json();
-      const text = data.content?.[0]?.text || data.choices?.[0]?.message?.content || "";
-      const match = text.match(/\[[\s\S]*\]/);
-      if (match) {
-        const parsed = JSON.parse(match[0]);
-        setSubtitles(prev => ({ ...prev, [lesson.id]: { ...prev[lesson.id], ko: parsed } }));
+      if (!res.ok) {
+        setSubLoading(data.error || "자막 생성 실패"); setTimeout(() => setSubLoading(""), 3000);
+        return;
+      }
+      if (data.subtitles?.length) {
+        setSubtitles(prev => ({ ...prev, [lesson.id]: { ...prev[lesson.id], ko: data.subtitles } }));
+        supabase.from("class_subtitles").upsert({ lesson_id: lesson.id, lang: "ko", subtitles: data.subtitles }, { onConflict: "lesson_id,lang" }).then(() => {});
         setSubLoading("");
       } else {
-        setSubLoading("자막 생성 실패"); setTimeout(() => setSubLoading(""), 2000);
+        setSubLoading("음성이 감지되지 않았습니다"); setTimeout(() => setSubLoading(""), 2000);
       }
     } catch (e) {
       setSubLoading("자막 생성 실패"); setTimeout(() => setSubLoading(""), 2000);
@@ -917,6 +1046,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
         ...prev,
         [lesson.id]: { ...prev[lesson.id], [targetLang]: translatedSubs },
       }));
+      supabase.from("class_subtitles").upsert({ lesson_id: lesson.id, lang: targetLang, subtitles: translatedSubs }, { onConflict: "lesson_id,lang" }).then(() => {});
       setSubLoading("");
     } catch (e) {
       setSubLoading("번역 실패");
@@ -924,10 +1054,21 @@ export default function ClassPage({ C, navigate, user, theme }) {
     }
   };
 
-  // 음성 더빙 생성 (Gemini TTS)
+  // 음성 더빙 로드 (Storage 우선, 없으면 실시간 생성)
   const voiceMap = { ko: "Kore", en: "Puck", ja: "Kore", zh: "Kore", es: "Puck", vi: "Kore" };
-  const generateDubbing = async (lesson, targetLang) => {
+  const loadDubbing = async (lesson, targetLang) => {
     if (!lesson || targetLang === "ko") { setDubbingAudio(null); if (videoRef.current) videoRef.current.muted = false; return; }
+    // Storage에 미리 생성된 더빙 확인
+    const dubUrl = `${STORAGE_BASE}dub_${lesson.id}_${targetLang}.wav`;
+    try {
+      const check = await fetch(dubUrl, { method: "HEAD" });
+      if (check.ok) {
+        setDubbingAudio(dubUrl);
+        if (videoRef.current) videoRef.current.muted = true;
+        return;
+      }
+    } catch {}
+    // 없으면 실시간 생성
     const subs = subtitles[lesson.id]?.[targetLang] || subtitles[lesson.id]?.ko;
     if (!subs) return;
     const langName = LANGS.find(l => l.code === targetLang)?.label || targetLang;
@@ -952,58 +1093,59 @@ export default function ClassPage({ C, navigate, user, theme }) {
     }
   };
 
-  // 원클릭 더빙: 자막 생성 → 번역 → 더빙 자동 파이프라인
-  const startDubbing = async (lesson, targetLang) => {
+  // 언어 + 모드 변경 핸들러
+  const switchLang = async (lesson, langCode, mode) => {
     if (!lesson) return;
-    if (targetLang === "ko") {
-      setVoiceLang("ko"); setSubtitleLang("ko"); setDubbingAudio(null);
+    if (langCode === "ko") {
+      setSubtitleLang("ko"); setVoiceLang("ko"); setDubbingAudio(null); setAudioMode("original");
       if (videoRef.current) { videoRef.current.muted = false; videoRef.current.volume = 1; }
-      if (!subtitles[lesson.id]?.ko) await generateSubtitles(lesson);
       return;
     }
-    setVoiceLang(targetLang);
-    setSubtitleLang(targetLang);
+    setSubtitleLang(langCode);
 
-    // 1. 한국어 자막 생성
-    if (!subtitles[lesson.id]?.ko) {
-      await generateSubtitles(lesson);
-      await new Promise(r => setTimeout(r, 1000)); // state 반영 대기
+    if (mode === "dubbing") {
+      setAudioMode("dubbing");
+      setVoiceLang(langCode);
+      // 자막 없으면 로드 시도 (DB에서 이미 로드됐을 수 있음)
+      if (!subtitles[lesson.id]?.[langCode]) {
+        if (!subtitles[lesson.id]?.ko) await generateSubtitles(lesson);
+        await translateSubtitles(lesson, langCode);
+      }
+      await loadDubbing(lesson, langCode);
+    } else {
+      // subtitle 모드: 자막만 표시, 원본 음성 유지
+      setAudioMode("subtitle");
+      setVoiceLang("ko"); setDubbingAudio(null);
+      if (videoRef.current) { videoRef.current.muted = false; videoRef.current.volume = 1; }
+      if (!subtitles[lesson.id]?.[langCode]) {
+        if (!subtitles[lesson.id]?.ko) await generateSubtitles(lesson);
+        await translateSubtitles(lesson, langCode);
+      }
     }
-
-    // 2. 번역 (generateSubtitles가 완료된 후 최신 state를 참조하기 위해 직접 호출)
-    await translateSubtitles(lesson, targetLang);
-    await new Promise(r => setTimeout(r, 500));
-
-    // 3. 더빙 음성 생성
-    await generateDubbing(lesson, targetLang);
   };
 
-  // CC 자막 언어 변경 → 실시간 번역
-  useEffect(() => {
-    if (!selectedLesson || subtitleLang === "off") return;
-    // 한국어 자막이 없으면 먼저 생성
-    if (!subtitles[selectedLesson.id]?.ko) {
-      generateSubtitles(selectedLesson);
-      return;
-    }
-    // 다른 언어면 번역
-    if (subtitleLang !== "ko") {
-      translateSubtitles(selectedLesson, subtitleLang);
-    }
-  }, [subtitleLang, selectedLesson?.id, subtitles[selectedLesson?.id]?.ko]);
-
-  // 음성 언어 변경 → 더빙 생성
-  useEffect(() => {
-    if (!selectedLesson) return;
-    if (voiceLang !== "ko") {
-      // 먼저 해당 언어 자막이 있어야 더빙 가능
-      if (subtitles[selectedLesson.id]?.[voiceLang] || subtitles[selectedLesson.id]?.ko) {
-        generateDubbing(selectedLesson, voiceLang);
+  // 사전 생성 (관리자용) — 모든 레슨 자막+번역+더빙 생성
+  const prepareAllLessons = async (course) => {
+    if (!course?.lessons?.length) return;
+    const lessons = course.lessons.filter(l => l.videoSrc);
+    for (let i = 0; i < lessons.length; i++) {
+      const l = lessons[i];
+      for (const step of ["stt", "translate", "tts"]) {
+        const stepLabel = { stt: "자막 추출", translate: "번역", tts: "더빙 생성" }[step];
+        setPrepareProgress(`${i + 1}/${lessons.length} ${l.title} — ${stepLabel}...`);
+        try {
+          await fetch("/api/prepare-lesson", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lesson_id: l.id, video_url: l.videoSrc, step }),
+          });
+        } catch {}
       }
-    } else {
-      setDubbingAudio(null);
     }
-  }, [voiceLang, selectedLesson?.id]);
+    setPrepareProgress("모든 레슨 준비 완료!");
+    setTimeout(() => setPrepareProgress(""), 3000);
+  };
+
+  // (자막/더빙 전환은 switchLang 함수에서 처리)
 
   // 플레이어 키보드 단축키
   useEffect(() => {
@@ -1064,25 +1206,32 @@ export default function ClassPage({ C, navigate, user, theme }) {
     // 과제 잠금: 이전 강의에 과제가 있고 미제출이면 잠금
     for (let i = 0; i < index; i++) {
       const prev = course.lessons[i];
-      if (prev.assignmentRequired && !completedAssignments[prev.id]) return true;
+      if (prev.assignmentRequired && !completedAssignments[prev.id] && !progress[prev.id]?.assignment_submitted) return true;
     }
     return false;
   };
 
-  const handleSaveCourse = (form) => {
+  const handleSaveCourse = async (form) => {
+    let course;
     if (form.id && courses.some(c => c.id === form.id)) {
-      // 수정
+      course = { ...form };
       setCourses(prev => prev.map(c => c.id === form.id ? { ...c, ...form } : c));
       setSelectedCourse({ ...selectedCourse, ...form });
     } else {
-      // 신규
-      const newCourse = { ...form, id: "c_" + Date.now(), instructor: user?.nick || "강사", instructorRole: user?.role, createdAt: new Date().toISOString() };
-      setCourses(prev => [newCourse, ...prev]);
+      course = { ...form, id: "c_" + Date.now(), instructor: user?.nick || "강사", instructorUid: user?.uid || "", createdAt: new Date().toISOString() };
+      setCourses(prev => [course, ...prev]);
+    }
+    await saveCourseToDb(course);
+    // 백그라운드로 자막/번역/더빙 사전 생성
+    const videoLessons = (course.lessons || []).filter(l => l.videoSrc);
+    if (videoLessons.length) {
+      prepareAllLessons(course);
     }
   };
 
   const handleAssignmentSubmit = (lessonId) => {
     setCompletedAssignments(prev => ({ ...prev, [lessonId]: true }));
+    setProgress(prev => ({ ...prev, [lessonId]: { ...prev[lessonId], assignment_submitted: true } }));
   };
 
   const LANGS = [
@@ -1142,7 +1291,9 @@ export default function ClassPage({ C, navigate, user, theme }) {
             돌아가기
           </button>
           <span style={{ fontSize: 14, fontWeight: 800, color: "#fff", flex: 1, textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", padding: "0 16px" }}>{course.title}</span>
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", flexShrink: 0 }}>{curIdx + 1} / {lessons.length}</span>
+          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", flexShrink: 0 }}>
+            {(() => { const watched = lessons.filter(l => progress[l.id]?.watched).length; return `${watched}/${lessons.length} 완료`; })()}
+          </span>
         </div>
 
         {/* 메인 영역 */}
@@ -1155,7 +1306,13 @@ export default function ClassPage({ C, navigate, user, theme }) {
                 <video ref={videoRef} src={selectedLesson.videoSrc || videoUrlRef.current} style={{ width: "100%", height: "100%", objectFit: "contain" }}
                   onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} controls
                   controlsList="nodownload noremoteplayback" disablePictureInPicture
-                  onContextMenu={e => e.preventDefault()} />
+                  onContextMenu={e => e.preventDefault()}
+                  onEnded={() => {
+                    if (user?.uid && selectedCourse?.id) {
+                      setProgress(prev => ({ ...prev, [selectedLesson.id]: { ...prev[selectedLesson.id], watched: true } }));
+                      supabase.from("class_progress").upsert({ class_id: selectedCourse.id, lesson_id: selectedLesson.id, uid: user.uid, watched: true, updated_at: new Date().toISOString() }, { onConflict: "lesson_id,uid" }).then(() => {});
+                    }
+                  }} />
                 {/* 우클릭/드래그 차단 오버레이 */}
                 <div onContextMenu={e => e.preventDefault()} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 50, zIndex: 1 }}
                   onClick={togglePlay} />
@@ -1230,23 +1387,35 @@ export default function ClassPage({ C, navigate, user, theme }) {
               )}
             </div>
 
-            {/* 하단: 강의 제목 + 자막/더빙 */}
+            {/* 하단: 강의 제목 + 언어/모드 선택 */}
             <div style={{ padding: "10px 16px", background: "#0d0d18", borderTop: "1px solid rgba(255,255,255,0.1)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               {/* 왼쪽: 제목 */}
-              <div style={{ fontSize: 14, fontWeight: 800, color: "#fff", flexShrink: 0 }}>#{selectedLesson.order} {selectedLesson.title}</div>
-              {/* 가운데: 자막/더빙 버튼 */}
-              <div style={{ display: "flex", gap: 4, alignItems: "center", flex: 1, justifyContent: "center" }}>
-                <span style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", marginRight: 4 }}>자막/더빙</span>
+              <div style={{ fontSize: 14, fontWeight: 800, color: "#fff", flexShrink: 0, maxWidth: "30%" }}>#{selectedLesson.order} {selectedLesson.title}</div>
+              {/* 가운데: 언어 선택 + 모드 토글 */}
+              <div style={{ display: "flex", gap: 4, alignItems: "center", flex: 1, justifyContent: "center", flexWrap: "wrap" }}>
+                {/* 언어 버튼 */}
                 {LANGS.map(l => {
-                  const isDubActive = voiceLang === l.code && voiceLang !== "ko";
-                  const isSubActive = subtitleLang === l.code;
+                  const isActive = subtitleLang === l.code;
                   return (
-                    <button key={l.code} onClick={() => startDubbing(selectedLesson, l.code)}
-                      style={{ padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: (isSubActive || isDubActive) ? 800 : 500, cursor: "pointer", fontFamily: "inherit", border: isDubActive ? `2px solid ${ACC}` : "1px solid rgba(255,255,255,0.1)", background: isDubActive ? `${ACC}20` : "transparent", color: isDubActive ? ACC : isSubActive ? "#fff" : "rgba(255,255,255,0.4)", transition: "all 0.12s" }}>
+                    <button key={l.code} onClick={() => switchLang(selectedLesson, l.code, l.code === "ko" ? "original" : audioMode === "dubbing" ? "dubbing" : "subtitle")}
+                      style={{ padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: isActive ? 800 : 500, cursor: "pointer", fontFamily: "inherit", border: isActive ? `2px solid ${ACC}` : "1px solid rgba(255,255,255,0.1)", background: isActive ? `${ACC}20` : "transparent", color: isActive ? ACC : "rgba(255,255,255,0.4)", transition: "all 0.12s" }}>
                       {l.label}
                     </button>
                   );
                 })}
+                {/* 모드 토글: 자막/더빙 (한국어가 아닐 때만 표시) */}
+                {subtitleLang !== "ko" && subtitleLang !== "off" && (
+                  <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", border: "1px solid rgba(255,255,255,0.15)", marginLeft: 8 }}>
+                    <button onClick={() => switchLang(selectedLesson, subtitleLang, "subtitle")}
+                      style={{ padding: "5px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", border: "none", background: audioMode === "subtitle" ? ACC : "transparent", color: audioMode === "subtitle" ? "#fff" : "rgba(255,255,255,0.5)", transition: "all 0.15s" }}>
+                      CC 자막
+                    </button>
+                    <button onClick={() => switchLang(selectedLesson, subtitleLang, "dubbing")}
+                      style={{ padding: "5px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", border: "none", borderLeft: "1px solid rgba(255,255,255,0.1)", background: audioMode === "dubbing" ? "#ec4899" : "transparent", color: audioMode === "dubbing" ? "#fff" : "rgba(255,255,255,0.5)", transition: "all 0.15s" }}>
+                      AI 더빙
+                    </button>
+                  </div>
+                )}
                 {subLoading && (
                   <span style={{ fontSize: 10, color: ACC, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, marginLeft: 6 }}>
                     <div style={{ width: 8, height: 8, border: "2px solid " + ACC, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
@@ -1273,11 +1442,34 @@ export default function ClassPage({ C, navigate, user, theme }) {
               ))}
             </div>
             {detailTab === "community" ? (
-              <div style={{ flex: 1, padding: "16px", color: "rgba(255,255,255,0.5)", fontSize: 13 }}>
-                <div style={{ marginBottom: 12 }}>
-                  <input placeholder="질문이나 의견을 남겨보세요" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+              <div style={{ flex: 1, padding: "16px", color: "rgba(255,255,255,0.5)", fontSize: 13, display: "flex", flexDirection: "column" }}>
+                {user && (
+                  <div style={{ marginBottom: 12 }}>
+                    <input value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="질문이나 의견을 남겨보세요"
+                      style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)", color: "#fff", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}
+                      onKeyDown={async e => {
+                        if (e.key === "Enter" && commentText.trim()) {
+                          const row = { class_id: course.id, lesson_id: selectedLesson.id, uid: user.uid, nick: user.nick || "익명", role: user.role || "member", content: commentText.trim() };
+                          const { data } = await supabase.from("class_comments").insert(row).select().single();
+                          if (data) { setComments(prev => [...prev, data]); setCommentText(""); }
+                        }
+                      }} />
+                  </div>
+                )}
+                <div style={{ flex: 1, overflowY: "auto" }}>
+                  {comments.filter(c => c.lesson_id === selectedLesson.id).length === 0 && <div style={{ textAlign: "center", padding: "32px 0", color: "rgba(255,255,255,0.3)" }}>아직 댓글이 없습니다</div>}
+                  {comments.filter(c => c.lesson_id === selectedLesson.id).map(c => (
+                    <div key={c.id} style={{ padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: "#e5e7eb" }}>{c.nick}</span>
+                        {(c.role === "admin" || c.role === "instructor") && <span style={{ fontSize: 8, fontWeight: 800, padding: "1px 5px", borderRadius: 3, background: c.role === "admin" ? "rgba(251,191,36,0.2)" : "rgba(34,197,94,0.2)", color: c.role === "admin" ? "#fbbf24" : "#22c55e" }}>{c.role === "admin" ? "관리자" : "강사"}</span>}
+                        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", marginLeft: "auto" }}>{new Date(c.created_at).toLocaleDateString("ko-KR")}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.5 }}>{c.content}</div>
+                      {c.uid === user?.uid && <button onClick={async () => { await supabase.from("class_comments").delete().eq("id", c.id); setComments(prev => prev.filter(x => x.id !== c.id)); }} style={{ marginTop: 3, fontSize: 10, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: 0 }}>삭제</button>}
+                    </div>
+                  ))}
                 </div>
-                <div style={{ textAlign: "center", padding: "32px 0", color: "rgba(255,255,255,0.3)" }}>아직 댓글이 없습니다</div>
               </div>
             ) : lessons.map((l, i) => {
               const locked = isLessonLocked(course, l, i);
@@ -1285,17 +1477,20 @@ export default function ClassPage({ C, navigate, user, theme }) {
               return (
                 <div key={l.id} onClick={() => !locked && setSelectedLesson(l)}
                   style={{ padding: "12px 14px", cursor: locked ? "default" : "pointer", opacity: locked ? 0.35 : 1, background: active ? `${ACC}18` : "transparent", borderLeft: active ? `3px solid ${ACC}` : "3px solid transparent", transition: "all 0.12s" }}>
-                  <div style={{ fontSize: 13, fontWeight: active ? 800 : 600, color: active ? ACC : "#e5e7eb" }}>#{l.order} {l.title}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {progress[l.id]?.watched && <span style={{ color: "#22c55e", fontSize: 12, flexShrink: 0 }}>&#10003;</span>}
+                    <span style={{ fontSize: 13, fontWeight: active ? 800 : 600, color: active ? ACC : "#e5e7eb" }}>#{l.order} {l.title}</span>
+                  </div>
                   <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)", marginTop: 3, display: "flex", gap: 8, alignItems: "center" }}>
-                    <span>VOD</span>
-                    {l.assignmentRequired && <span style={{ color: completedAssignments[l.id] ? "#22c55e" : "#f59e0b" }}>{completedAssignments[l.id] ? "완료" : "과제"}</span>}
+                    {l.duration && <span>{l.duration}</span>}
+                    {l.assignmentRequired && <span style={{ color: completedAssignments[l.id] || progress[l.id]?.assignment_submitted ? "#22c55e" : "#f59e0b" }}>{completedAssignments[l.id] || progress[l.id]?.assignment_submitted ? "완료" : "과제"}</span>}
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
-        {showAssignment && <AssignmentModal lesson={showAssignment} C={C} isDark={isDark} onClose={() => setShowAssignment(null)} onSubmit={handleAssignmentSubmit} />}
+        {showAssignment && <AssignmentModal lesson={showAssignment} C={C} isDark={isDark} onClose={() => setShowAssignment(null)} onSubmit={handleAssignmentSubmit} user={user} classId={selectedCourse?.id} />}
       </div>
     );
   }
@@ -1404,11 +1599,35 @@ export default function ClassPage({ C, navigate, user, theme }) {
                 {/* Q&A */}
                 <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "24px" }}>
                   <h3 style={{ fontSize: 17, fontWeight: 800, color: C.text, margin: "0 0 14px" }}>질문 답변</h3>
-                  <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb", flexShrink: 0 }} />
-                    <input placeholder="수업과 관련한 질문을 남겨보세요" style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "1px solid " + C.border, background: "transparent", color: C.text, fontSize: 13, outline: "none", fontFamily: "inherit" }} />
-                  </div>
-                  <div style={{ textAlign: "center", padding: "20px", color: C.muted, fontSize: 13 }}>아직 질문이 없습니다.</div>
+                  {user && (
+                    <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: "50%", background: GRAD, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14, fontWeight: 800, flexShrink: 0 }}>{(user.nick||"?")[0]}</div>
+                      <input value={detailCommentText} onChange={e => setDetailCommentText(e.target.value)} placeholder="수업과 관련한 질문을 남겨보세요"
+                        style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "1px solid " + C.border, background: "transparent", color: C.text, fontSize: 13, outline: "none", fontFamily: "inherit" }}
+                        onKeyDown={async e => {
+                          if (e.key === "Enter" && detailCommentText.trim()) {
+                            const row = { class_id: course.id, lesson_id: "", uid: user.uid, nick: user.nick || "익명", role: user.role || "member", content: detailCommentText.trim() };
+                            const { data } = await supabase.from("class_comments").insert(row).select().single();
+                            if (data) { setComments(prev => [...prev, data]); setDetailCommentText(""); }
+                          }
+                        }} />
+                    </div>
+                  )}
+                  {comments.filter(c => !c.lesson_id).length === 0 && <div style={{ textAlign: "center", padding: "20px", color: C.muted, fontSize: 13 }}>아직 질문이 없습니다.</div>}
+                  {comments.filter(c => !c.lesson_id).map(c => (
+                    <div key={c.id} style={{ padding: "12px 0", borderTop: "1px solid " + C.border, display: "flex", gap: 10 }}>
+                      <div style={{ width: 32, height: 32, borderRadius: "50%", background: c.role === "admin" || c.role === "instructor" ? GRAD : (isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb"), display: "flex", alignItems: "center", justifyContent: "center", color: c.role === "admin" || c.role === "instructor" ? "#fff" : C.muted, fontSize: 12, fontWeight: 800, flexShrink: 0 }}>{(c.nick||"?")[0]}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{c.nick}</span>
+                          {(c.role === "admin" || c.role === "instructor") && <span style={{ fontSize: 9, fontWeight: 800, padding: "2px 6px", borderRadius: 4, background: c.role === "admin" ? "rgba(251,191,36,0.15)" : "rgba(34,197,94,0.15)", color: c.role === "admin" ? "#fbbf24" : "#22c55e" }}>{c.role === "admin" ? "관리자" : "강사"}</span>}
+                          <span style={{ fontSize: 11, color: C.muted, marginLeft: "auto" }}>{new Date(c.created_at).toLocaleDateString("ko-KR")}</span>
+                        </div>
+                        <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6 }}>{c.content}</div>
+                        {c.uid === user?.uid && <button onClick={async () => { await supabase.from("class_comments").delete().eq("id", c.id); setComments(prev => prev.filter(x => x.id !== c.id)); }} style={{ marginTop: 4, fontSize: 11, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: 0 }}>삭제</button>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -1453,14 +1672,65 @@ export default function ClassPage({ C, navigate, user, theme }) {
             )}
 
             {/* 수강 후기 */}
-            {detailTab === "reviews" && (
-              <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "32px", textAlign: "center" }}>
-                <div style={{ fontSize: 36, fontWeight: 900, color: C.text, marginBottom: 4 }}>5.0</div>
-                <div style={{ fontSize: 14, color: "#f59e0b", marginBottom: 8 }}>{"★".repeat(5)}</div>
-                <div style={{ fontSize: 13, color: C.muted, marginBottom: 24 }}>수강평 0개</div>
-                <div style={{ fontSize: 14, color: C.muted }}>첫 번째 수강 후기를 남겨주세요.</div>
-              </div>
-            )}
+            {detailTab === "reviews" && (() => {
+              const avgRating = reviews.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : "0.0";
+              const myReview = reviews.find(r => r.uid === user?.uid);
+              const submitReview = async () => {
+                if (!user || !reviewText.trim()) return;
+                const row = { class_id: course.id, uid: user.uid, nick: user.nick || "익명", rating: reviewRating, content: reviewText.trim() };
+                const { data } = await supabase.from("class_reviews").upsert(row, { onConflict: "class_id,uid" }).select().single();
+                if (data) { setReviews(prev => [data, ...prev.filter(r => r.uid !== user.uid)]); setReviewText(""); }
+              };
+              const deleteReview = async (id) => {
+                await supabase.from("class_reviews").delete().eq("id", id);
+                setReviews(prev => prev.filter(r => r.id !== id));
+              };
+              return (
+                <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "28px" }}>
+                  {/* 평균 평점 */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+                    <div style={{ fontSize: 42, fontWeight: 900, color: C.text }}>{avgRating}</div>
+                    <div>
+                      <div style={{ fontSize: 18, color: "#f59e0b", marginBottom: 4 }}>{"★".repeat(Math.round(parseFloat(avgRating)))}{"☆".repeat(5 - Math.round(parseFloat(avgRating)))}</div>
+                      <div style={{ fontSize: 13, color: C.muted }}>수강평 {reviews.length}개</div>
+                    </div>
+                  </div>
+                  {/* 후기 작성 */}
+                  {user && !myReview && (
+                    <div style={{ padding: "18px", borderRadius: 14, border: "1px solid " + C.border, marginBottom: 20, background: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)" }}>
+                      <div style={{ marginBottom: 10 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginRight: 10 }}>별점</span>
+                        {[1,2,3,4,5].map(n => (
+                          <span key={n} onClick={() => setReviewRating(n)} style={{ cursor: "pointer", fontSize: 22, color: n <= reviewRating ? "#f59e0b" : C.border }}>{n <= reviewRating ? "★" : "☆"}</span>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input value={reviewText} onChange={e => setReviewText(e.target.value)} placeholder="수강 후기를 남겨주세요"
+                          style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "1px solid " + C.border, background: "transparent", color: C.text, fontSize: 13, outline: "none", fontFamily: "inherit" }}
+                          onKeyDown={e => e.key === "Enter" && submitReview()} />
+                        <button onClick={submitReview} style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: GRAD, color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>등록</button>
+                      </div>
+                    </div>
+                  )}
+                  {/* 후기 목록 */}
+                  {reviews.length === 0 && <div style={{ textAlign: "center", padding: "20px", color: C.muted, fontSize: 13 }}>첫 번째 수강 후기를 남겨주세요.</div>}
+                  {reviews.map(r => (
+                    <div key={r.id} style={{ padding: "14px 0", borderTop: "1px solid " + C.border, display: "flex", gap: 12 }}>
+                      <div style={{ width: 36, height: 36, borderRadius: "50%", background: GRAD, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 14, fontWeight: 800, flexShrink: 0 }}>{(r.nick||"?")[0]}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{r.nick}</span>
+                          <span style={{ fontSize: 12, color: "#f59e0b" }}>{"★".repeat(r.rating)}</span>
+                          <span style={{ fontSize: 11, color: C.muted, marginLeft: "auto" }}>{new Date(r.created_at).toLocaleDateString("ko-KR")}</span>
+                        </div>
+                        <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6 }}>{r.content}</div>
+                        {r.uid === user?.uid && <button onClick={() => deleteReview(r.id)} style={{ marginTop: 6, fontSize: 11, color: "#ef4444", background: "none", border: "none", cursor: "pointer", padding: 0 }}>삭제</button>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
 
           {/* 우측 사이드바 (sticky) */}
@@ -1498,7 +1768,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
               </div>
               {/* 정보 */}
               <div style={{ padding: "0 20px 16px", fontSize: 12, color: C.muted }}>
-                {[["강의 수",`${totalLessons}개`],["수강 기간","무제한"],["난이도","입문~중급"]].map(([k,v]) => (
+                {[["강의 수",`${totalLessons}개`],["수강 기간",course.durationInfo||"무제한"],["난이도",course.difficulty||"입문"]].map(([k,v]) => (
                   <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderTop: "1px solid " + C.border }}>
                     <span>{k}</span><span style={{ fontWeight: 700, color: C.text }}>{v}</span>
                   </div>
@@ -1512,9 +1782,15 @@ export default function ClassPage({ C, navigate, user, theme }) {
                 <div style={{ fontSize: 11, fontWeight: 800, color: C.muted, marginBottom: 8 }}>관리</div>
                 <div style={{ display: "flex", gap: 6 }}>
                   <button onClick={() => setEditingCourse(course)} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", background: ACC, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>수정</button>
-                  <button onClick={() => { if (window.confirm("정말 이 클래스를 삭제할까요?")) { setCourses(prev => prev.filter(c => c.id !== course.id)); setSelectedCourse(null); }}}
+                  <button onClick={async () => { if (window.confirm("정말 이 클래스를 삭제할까요?")) { await deleteCourseFromDb(course.id); setCourses(prev => prev.filter(c => c.id !== course.id)); setSelectedCourse(null); }}}
                     style={{ flex: 1, padding: "8px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: "transparent", color: "#ef4444", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>삭제</button>
                 </div>
+                {prepareProgress && (
+                  <div style={{ marginTop: 6, fontSize: 10, color: ACC, fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+                    <div style={{ width: 8, height: 8, border: "2px solid " + ACC, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                    {prepareProgress}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -1627,10 +1903,22 @@ export default function ClassPage({ C, navigate, user, theme }) {
         ))}
       </div>
 
-      {filtered.length === 0 && (
+      {dbLoading && (
         <div style={{ textAlign: "center", padding: "60px 0", color: C.muted }}>
-          <div style={{ fontSize: 16, fontWeight: 700, marginBottom: 6 }}>등록된 강의가 없어요</div>
-          <div style={{ fontSize: 13 }}>곧 새로운 강의가 추가될 예정입니다.</div>
+          <div style={{ fontSize: 14, fontWeight: 600 }}>강의 불러오는 중...</div>
+        </div>
+      )}
+      {!dbLoading && filtered.length === 0 && (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted }}>
+          <div style={{ fontSize: 40, marginBottom: 16, opacity: 0.3 }}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 8 }}>클래스 준비 중입니다</div>
+          <div style={{ fontSize: 13, lineHeight: 1.7, marginBottom: 24 }}>SNS 마케팅 전문가의 실전 강의가 곧 오픈됩니다.<br/>먼저 AI 도구로 콘텐츠를 만들어 보세요!</div>
+          <button onClick={() => navigate("ai")}
+            style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+            AI 도구 체험하기
+          </button>
         </div>
       )}
 

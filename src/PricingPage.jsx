@@ -246,6 +246,13 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         </div>
       </div>
 
+      {/* 무료 체험 안내 (모바일 상단) */}
+      <div className="pricing-free-banner" style={{ display: "none", background: isDark ? "rgba(16,185,129,0.08)" : "#f0fdf4", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 14, padding: "16px 20px", marginBottom: 24, textAlign: "center" }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: isDark ? "#6ee7b7" : "#059669", marginBottom: 4 }}>무료로 시작할 수 있어요</div>
+        <div style={{ fontSize: 12, color: C.muted }}>가입 즉시 5회 지급 · 매일 출석 +1회 · 카드 등록 없음</div>
+      </div>
+      <style>{`.pricing-free-banner { display: none !important; } @media(max-width:768px) { .pricing-free-banner { display: block !important; } }`}</style>
+
       {/* 플랜 카드 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 16, marginBottom: 56 }}>
         {PLANS.map(plan => {
