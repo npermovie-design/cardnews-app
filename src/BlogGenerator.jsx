@@ -941,57 +941,10 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [includeAEO, setIncludeAEO] = useState(true);
   const [includeProsCons, setIncludeProsCons] = useState(true);
 
-  // ── 로컬 Draft 자동 저장/복원 ──
+  // ── 로컬 Draft 자동 저장/복원 (result 선언 뒤에서 초기화) ──
   const _draftKey = `_bg_draft_${initialType || "blog"}`;
   const [showDraftBanner, setShowDraftBanner] = useState(false);
   const _draftChecked = useRef(false);
-
-  // 생성 결과가 변경될 때 localStorage에 draft 저장
-  useEffect(() => {
-    if (!result || result.length < 50) return;
-    try {
-      localStorage.setItem(_draftKey, JSON.stringify({
-        result, fields, subtype, tone, speechStyle, wordCount, platformId, quoteStyle, pointColor,
-        savedAt: Date.now(),
-      }));
-    } catch {}
-  }, [result]);
-
-  // 첫 마운트 시 draft 확인
-  useEffect(() => {
-    if (_draftChecked.current) return;
-    _draftChecked.current = true;
-    try {
-      const raw = localStorage.getItem(_draftKey);
-      if (!raw) return;
-      const draft = JSON.parse(raw);
-      // 24시간 이내 draft만 복원 제안
-      if (draft.savedAt && Date.now() - draft.savedAt < 24 * 60 * 60 * 1000 && draft.result?.length > 50) {
-        setShowDraftBanner(true);
-      }
-    } catch {}
-  }, []);
-
-  const restoreDraft = () => {
-    try {
-      const draft = JSON.parse(localStorage.getItem(_draftKey));
-      if (draft.result) setResult(draft.result);
-      if (draft.fields) setFields(draft.fields);
-      if (draft.subtype) setSubtype(draft.subtype);
-      if (draft.tone) setTone(draft.tone);
-      if (draft.speechStyle) setSpeechStyle(draft.speechStyle);
-      if (draft.wordCount) setWordCount(draft.wordCount);
-      if (draft.quoteStyle) setQuoteStyle(draft.quoteStyle);
-      if (draft.pointColor) setPointColor(draft.pointColor);
-      setWriteStep("result");
-      setGenStep(5);
-    } catch {}
-    setShowDraftBanner(false);
-  };
-  const dismissDraft = () => {
-    try { localStorage.removeItem(_draftKey); } catch {}
-    setShowDraftBanner(false);
-  };
   // 플랫폼 변경 시 설정 리셋
   useEffect(() => {
     const newCfg = PLATFORMS[platformId] || PLATFORMS.blog_naver;
@@ -1018,6 +971,51 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
       // sessionStorage 삭제하지 않음 — 결과 보존
     };
   }, []);
+  // ── Draft 자동 저장 (result 선언 이후) ──
+  useEffect(() => {
+    if (!result || result.length < 50) return;
+    try {
+      localStorage.setItem(_draftKey, JSON.stringify({
+        result, fields, subtype, tone, speechStyle, wordCount, platformId, quoteStyle, pointColor,
+        savedAt: Date.now(),
+      }));
+    } catch {}
+  }, [result]);
+
+  useEffect(() => {
+    if (_draftChecked.current) return;
+    _draftChecked.current = true;
+    try {
+      const raw = localStorage.getItem(_draftKey);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (draft.savedAt && Date.now() - draft.savedAt < 24 * 60 * 60 * 1000 && draft.result?.length > 50) {
+        setShowDraftBanner(true);
+      }
+    } catch {}
+  }, []);
+
+  const restoreDraft = () => {
+    try {
+      const draft = JSON.parse(localStorage.getItem(_draftKey));
+      if (draft.result) setResult(draft.result);
+      if (draft.fields) setFields(draft.fields);
+      if (draft.subtype) setSubtype(draft.subtype);
+      if (draft.tone) setTone(draft.tone);
+      if (draft.speechStyle) setSpeechStyle(draft.speechStyle);
+      if (draft.wordCount) setWordCount(draft.wordCount);
+      if (draft.quoteStyle) setQuoteStyle(draft.quoteStyle);
+      if (draft.pointColor) setPointColor(draft.pointColor);
+      setWriteStep("result");
+      setGenStep(5);
+    } catch {}
+    setShowDraftBanner(false);
+  };
+  const dismissDraft = () => {
+    try { localStorage.removeItem(_draftKey); } catch {}
+    setShowDraftBanner(false);
+  };
+
   const [htmlResult, setHtmlResult] = useState("");
   const [viewMode,   setViewMode]   = useState("text");
   // loading은 항상 false로 시작 (sessionStorage 복원 안 함 — 메뉴 이동 시 깨짐 방지)
