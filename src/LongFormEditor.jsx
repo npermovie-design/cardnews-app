@@ -911,6 +911,7 @@ JSON 배열로만 응답:
       setStep("edit");
     }, 120000);
     try {
+      console.log("[LongFormEditor] 내보내기 요청 시작:", { fileId, videoDuration, subsCount: subtitles?.length, segsCount: videoSegs?.length });
       const d = await apiCall("/generate-async", {
         method: "POST",
         body: JSON.stringify({
@@ -927,6 +928,10 @@ JSON 배열로만 응답:
         }),
         timeout: 90000,
       });
+      console.log("[LongFormEditor] generate-async 응답:", d);
+      if (!d || !d.job_id) {
+        throw new Error("서버에서 작업 ID를 반환하지 않았습니다: " + JSON.stringify(d));
+      }
       setJobId(d.job_id);
       if (pollRef.current) clearInterval(pollRef.current);
       let pollFails = 0;
@@ -963,8 +968,9 @@ JSON 배열로만 응답:
         }
       }, 3000);
     } catch (e) {
+      console.error("[LongFormEditor] 내보내기 실패:", e);
       clearTimeout(genTimeoutRef.current);
-      setError("생성 실패: " + e.message + "\n\n서버가 준비되지 않았거나 영상 파일이 만료되었을 수 있습니다.");
+      setError("생성 실패: " + (e.message || e) + "\n\n서버가 준비되지 않았거나 영상 파일이 만료되었을 수 있습니다.\n영상을 다시 업로드 후 시도해주세요.");
       setStep("edit");
       window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
         detail: { action: "complete", task: { id: "longform_gen", message: "생성 실패" } }
