@@ -4119,11 +4119,11 @@ hospital equipment`
             </div>
             {videoSubMode === "shortform" ? (
               <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>로딩 중...</div>}>
-                <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} />
+                <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} initialVideoFile={videoFile} initialVideoLink={videoLink} />
               </Suspense>
             ) : (
               <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>로딩 중...</div>}>
-                <LongFormEditor isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} />
+                <LongFormEditor isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} initialVideoFile={videoFile} initialVideoLink={videoLink} />
               </Suspense>
             )}
           </div>

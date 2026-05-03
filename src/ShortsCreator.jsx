@@ -184,7 +184,7 @@ const LENGTHS = [
   { id: "s90", labelKey: "sc_len_90", descKey: "sc_len_90_desc" },
 ];
 
-export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, onStatusChange, showPointConfirm }) {
+export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, onStatusChange, showPointConfirm, initialVideoFile, initialVideoLink }) {
   const { t, lang } = useI18n();
   const D = isDark;
   const text = D ? "#fff" : "#1a1a2e";
@@ -199,10 +199,10 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
 
   // ── 상태 ─────────────────────────
   const [step, setStep] = useState("upload"); // upload, loading, analysis, edit, generate, result
-  const [inputMode, setInputMode] = useState("youtube"); // youtube, file
-  const [ytUrl, setYtUrl] = useState("");
+  const [inputMode, setInputMode] = useState(initialVideoLink ? "youtube" : "file"); // youtube, file
+  const [ytUrl, setYtUrl] = useState(initialVideoLink || "");
   const [ytParsed, setYtParsed] = useState(null); // { id, url } or null
-  const [videoFile, setVideoFile] = useState(null);
+  const [videoFile, setVideoFile] = useState(initialVideoFile || null);
   const [downloadHelper, setDownloadHelper] = useState(null); // { id, url, title, thumbnail } when Render download fails
   const [subFile, setSubFile] = useState(null);
   const [logoFile, setLogoFile] = useState(null);
@@ -438,6 +438,19 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   useEffect(() => {
     setYtParsed(parseYoutubeUrl(ytUrl));
   }, [ytUrl]);
+
+  // ── 초기 영상 파일/링크가 전달된 경우 자동 처리 ──
+  const _initDone = useRef(false);
+  useEffect(() => {
+    if (_initDone.current) return;
+    if (initialVideoFile) {
+      _initDone.current = true;
+      setTimeout(() => handleUpload(), 300);
+    } else if (initialVideoLink && parseYoutubeUrl(initialVideoLink)) {
+      _initDone.current = true;
+      setTimeout(() => handleYoutube(), 300);
+    }
+  }, [initialVideoFile, initialVideoLink]);
 
   // ── 상태 변경 알림 ─────────────────────
   useEffect(() => {

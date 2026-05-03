@@ -188,7 +188,7 @@ function extractFullSubtitles(sttResult, videoDuration) {
   return subs;
 }
 
-export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, onStatusChange, showPointConfirm }) {
+export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, onStatusChange, showPointConfirm, initialVideoFile, initialVideoLink }) {
   const D = isDark;
   const text = D ? "#fff" : "#1a1a2e";
   const muted = D ? "rgba(255,255,255,0.45)" : "#888";
@@ -199,10 +199,10 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
 
   // ── 상태 ──
   const [step, setStep] = useState("upload"); // upload | loading | edit | generate | result
-  const [inputMode, setInputMode] = useState("file");
-  const [ytUrl, setYtUrl] = useState("");
+  const [inputMode, setInputMode] = useState(initialVideoLink ? "youtube" : "file");
+  const [ytUrl, setYtUrl] = useState(initialVideoLink || "");
   const [ytParsed, setYtParsed] = useState(null);
-  const [videoFile, setVideoFile] = useState(null);
+  const [videoFile, setVideoFile] = useState(initialVideoFile || null);
   const [downloadHelper, setDownloadHelper] = useState(null);
   const [fileId, setFileId] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -462,6 +462,19 @@ JSON 배열로만 응답:
 
   // ── YouTube URL 파싱 ──
   useEffect(() => { setYtParsed(parseYoutubeUrl(ytUrl)); }, [ytUrl]);
+
+  // ── 초기 영상 파일/링크가 전달된 경우 자동 처리 ──
+  const _initDone = useRef(false);
+  useEffect(() => {
+    if (_initDone.current) return;
+    if (initialVideoFile) {
+      _initDone.current = true;
+      setTimeout(() => handleUpload(), 300);
+    } else if (initialVideoLink && parseYoutubeUrl(initialVideoLink)) {
+      _initDone.current = true;
+      setTimeout(() => handleYoutube(), 300);
+    }
+  }, [initialVideoFile, initialVideoLink]);
 
   // ── 상태 변경 알림 ──
   useEffect(() => { if (onStatusChange) onStatusChange(step); }, [step]);
