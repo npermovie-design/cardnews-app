@@ -5,19 +5,19 @@ const SB_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SB_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY;
 const SITE_URL = "https://snsmakeit.com";
 const DEFAULT_TITLE = "SNS메이킷 - AI SNS 콘텐츠 자동 생성";
-const DEFAULT_DESCRIPTION = "키워드만 입력하면 AI가 블로그, 인스타그램, 쇼츠 콘텐츠 초안을 자동 생성합니다. 비회원 5회 무료, 가입 시 150P 지급.";
+const DEFAULT_DESCRIPTION = "키워드만 입력하면 AI가 블로그, 인스타그램, 쇼츠 콘텐츠 초안을 자동 생성합니다. 비회원 5회 무료, 가입 시 5회 지급.";
 const DEFAULT_KEYWORDS = "SNS 콘텐츠 자동 생성, AI 블로그 글쓰기, 인스타그램 캡션 생성, 쇼츠 자동 제작, 네이버 블로그 자동생성, SNS 자동 발행, AI 콘텐츠 제작, 카드뉴스 만들기, AI 이미지 생성, 상세페이지 제작";
 
 const PAGE_META = {
   community: { title: "커뮤니티 - SNS메이킷", description: "SNS메이킷 커뮤니티. SNS 운영, AI 콘텐츠 제작, 마케팅 정보와 질문답변을 공유하세요." },
   programs: { title: "자료실 - SNS메이킷", description: "SNS 운영에 필요한 자동화 도구, 템플릿, 무료 사진, 무료 영상 자료를 확인하세요." },
   newsletter: { title: "뉴스레터 - SNS메이킷", description: "SNS 마케팅 최신 트렌드와 인사이트를 매주 받아보세요." },
-  pricing: { title: "가격정책 - SNS메이킷", description: "SNS메이킷 가격정책. 가입 시 150P 지급, AI 글쓰기 30P, 이미지 생성 250P, 쇼츠 영상 100P. Standard 2,400P, Pro 6,500P 단건 충전." },
+  pricing: { title: "가격정책 - SNS메이킷", description: "SNS메이킷 가격정책. 가입 시 5회 지급, Basic 월 50회, Pro 월 200회, Business 월 500회 제공." },
   about: { title: "소개 - SNS메이킷", description: "SNS메이킷은 블로그, 인스타그램, 쇼츠, 이미지 제작을 AI로 자동화하는 SNS 콘텐츠 올인원 플랫폼입니다." },
   ai: { title: "AI 생성기 - SNS메이킷", description: "AI로 블로그 글, 인스타그램 캡션, 카드뉴스, 상세페이지, 제품컷, 로고, 쇼츠 영상을 자동 생성하세요." },
   contact: { title: "문의하기 - SNS메이킷", description: "SNS메이킷 문의하기. 결제, 기능, 오류, 제휴 문의를 남겨주시면 빠르게 답변드립니다." },
   howto: { title: "이용방법 - SNS메이킷", description: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 카드뉴스, 상세페이지, 숏폼 편집까지 단계별로 안내합니다." },
-  faq: { title: "자주 묻는 질문 - SNS메이킷", description: "SNS메이킷의 AI 콘텐츠 생성, 포인트, 요금제, 저작권, 계정 관련 자주 묻는 질문을 확인하세요." },
+  faq: { title: "자주 묻는 질문 - SNS메이킷", description: "SNS메이킷의 AI 콘텐츠 생성, 이용 횟수, 요금제, 저작권, 계정 관련 자주 묻는 질문을 확인하세요." },
   event: { title: "이벤트 - SNS메이킷", description: "SNS메이킷 이벤트와 혜택을 확인하세요." },
   cases: { title: "고객사례 - SNS메이킷", description: "SNS메이킷을 활용한 고객사례와 AI 콘텐츠 제작 성공 사례를 확인하세요." },
   legal: { title: "약관·정책 - SNS메이킷", description: "SNS메이킷 이용약관, 개인정보처리방침, 환불정책을 확인하세요." },

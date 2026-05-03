@@ -15,24 +15,24 @@ export default function EventPage({ C, navigate }) {
       color: "#7c6aff",
       period: "2026.01.01 ~ " + (ko ? "상시 모집" : "Always Open"),
       desc: ko
-        ? "블로거, 유튜버, 인스타그래머 등 SNS를 운영하고 있는 분이라면 누구나 가능합니다!\n\nSNS메이킷 홈페이지를 이용하고 후기만 남겨주세요.\n4,500 포인트(약 만원 상당)를 지급해드립니다!"
-        : "Anyone who runs social media — bloggers, YouTubers, Instagrammers — can participate!\n\nJust use SNS MakeIt and leave a review.\nWe'll reward you with 4,500 points (approx. $8)!",
+        ? "블로거, 유튜버, 인스타그래머 등 SNS를 운영하고 있는 분이라면 누구나 가능합니다!\n\nSNS메이킷 홈페이지를 이용하고 후기만 남겨주세요.\nAI 이용권을 지급해드립니다!"
+        : "Anyone who runs social media — bloggers, YouTubers, Instagrammers — can participate!\n\nJust use SNS MakeIt and leave a review.\nWe'll reward you with AI credits!",
       details: ko
         ? [
             "대상: SNS(블로그, 유튜브, 인스타그램 등)를 운영하는 모든 분",
             "방법: SNS메이킷을 이용한 후 본인 SNS 채널에 후기 작성",
-            "보상: 후기 작성 확인 시 4,500P 지급 (약 만원 상당)",
+            "보상: 후기 작성 확인 시 AI 이용권 지급",
             "후기 작성 후 문의하기에서 후기 링크와 함께 신청해주세요",
           ]
         : [
             "Who: Anyone running social media (blog, YouTube, Instagram, etc.)",
             "How: Use SNS MakeIt, then post a review on your channel",
-            "Reward: 4,500P upon review verification (approx. $8)",
+            "Reward: AI credits upon review verification",
             "After posting, submit your review link via Contact Us",
           ],
       howTo: ko
-        ? "1. SNS메이킷 회원가입\n2. AI 기능 이용 (블로그, 상세페이지, 이미지 등)\n3. 본인 SNS에 이용 후기 작성\n4. 문의하기에서 후기 링크 제출\n5. 확인 후 4,500P 지급!"
-        : "1. Sign up for SNS MakeIt\n2. Use AI features (blog, detail pages, images, etc.)\n3. Post a review on your social media\n4. Submit review link via Contact Us\n5. Get 4,500P after verification!",
+        ? "1. SNS메이킷 회원가입\n2. AI 기능 이용 (블로그, 상세페이지, 이미지 등)\n3. 본인 SNS에 이용 후기 작성\n4. 문의하기에서 후기 링크 제출\n5. 확인 후 AI 이용권 지급!"
+        : "1. Sign up for SNS MakeIt\n2. Use AI features (blog, detail pages, images, etc.)\n3. Post a review on your social media\n4. Submit review link via Contact Us\n5. Get AI credits after verification!",
     },
     {
       id: 2,
@@ -43,11 +43,11 @@ export default function EventPage({ C, navigate }) {
       color: "#7c6aff",
       period: "2026.01.01 ~ " + (ko ? "상시 진행" : "Ongoing"),
       desc: ko
-        ? "SNS메이킷 오픈을 기념하여 가입 즉시 추가 포인트를 지급하는 이벤트입니다."
-        : "Celebrate the launch of SNS MakeIt — get bonus points instantly upon sign-up!",
+        ? "SNS메이킷 오픈을 기념하여 가입 즉시 추가 횟수를 지급하는 이벤트입니다."
+        : "Celebrate the launch of SNS MakeIt — get bonus credits instantly upon sign-up!",
       details: ko
-        ? ["가입 즉시 추가 300P 보너스 지급"]
-        : ["Instant 300P bonus upon registration"],
+        ? ["가입 즉시 추가 10회 보너스 지급"]
+        : ["Instant 10-credit bonus upon registration"],
     },
   ];
 

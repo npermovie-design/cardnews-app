@@ -254,7 +254,7 @@ export default function AuthPage({ C, onAuth, navigate }) {
                 <input value={form.referral} onChange={f("referral")} placeholder="추천코드 (선택)"
                   style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1.5px solid #e5e7eb", fontSize: 14, outline: "none", boxSizing: "border-box" }}
                   onFocus={e => e.target.style.borderColor = accent} onBlur={e => e.target.style.borderColor = "#e5e7eb"} />
-                <div style={{ fontSize: 11, color: "#888", marginTop: 6 }}>추천코드 입력 시 가입자는 100P, 추천한 회원은 200P를 받습니다.</div>
+                <div style={{ fontSize: 11, color: "#888", marginTop: 6 }}>추천코드 입력 시 가입자는 5회, 추천한 회원은 10회를 받습니다.</div>
               </div>
               <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 20, cursor: "pointer" }}>
                 <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)} style={{ width: 16, height: 16 }} />

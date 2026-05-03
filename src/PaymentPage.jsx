@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { supabase } from "./storage";
+import { supabase, pointsToUses } from "./storage";
 import { useI18n } from "./i18n.jsx";
 
 /* ── 결제 완료 페이지 (Lemon Squeezy Checkout 후 리다이렉트) ── */
@@ -9,7 +9,7 @@ export function PaymentSuccessPage({ C, navigate }) {
   const [points, setPoints] = useState(0);
 
   useEffect(() => {
-    // Webhook이 포인트를 처리하므로 잠시 대기 후 최신 포인트 조회
+    // Webhook이 이용 횟수를 처리하므로 잠시 대기 후 최신 잔여 횟수 조회
     const check = async () => {
       try {
         const stored = JSON.parse(localStorage.getItem("nper_user") || "{}");
@@ -54,7 +54,7 @@ export function PaymentSuccessPage({ C, navigate }) {
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
             <div style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 8 }}>{t("pay_done")}</div>
-            {points > 0 && <div style={{ fontSize: 28, fontWeight: 900, color: "#7c6aff", marginBottom: 12 }}>+{points.toLocaleString()} P</div>}
+            {points > 0 && <div style={{ fontSize: 28, fontWeight: 900, color: "#7c6aff", marginBottom: 12 }}>+{pointsToUses(points).toLocaleString()}회</div>}
             <div style={{ fontSize: 14, color: C.muted }}>{t("pay_redirect")}</div>
           </>
         )}

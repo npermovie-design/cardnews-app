@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken } from "./storage";
+import { changePoints, guestLimitExceeded, incrementGuestUsage, getAuthToken, pointsToUses } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import StepBar from "./StepBar.jsx";
 import { THEMES, isDarkTheme } from "./theme";
@@ -654,8 +654,8 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate, showP
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, flexWrap:"wrap" }}>
           {user && (
             <div style={{ fontSize:12, color:muted }}>
-              예상 차감: <b style={{ color:accent }}>10P</b>
-              <span style={{ marginLeft:8 }}>· 보유 {(user.points||0).toLocaleString()} P</span>
+              예상 차감: <b style={{ color:accent }}>1회</b>
+              <span style={{ marginLeft:8 }}>· 보유 {pointsToUses(user.points||0).toLocaleString()}회</span>
             </div>
           )}
           <button onClick={handleGenerate}

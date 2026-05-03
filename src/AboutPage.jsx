@@ -300,7 +300,7 @@ export function HowToPage({ navigate, C }) {
           ))}
         </div>
 
-        {/* 포인트 안내 */}
+        {/* 횟수 안내 */}
         <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "36px 32px", marginBottom: 28, boxShadow: C.shadow }}>
           <h3 style={{ fontSize: 20, fontWeight: 900, color: C.text, marginBottom: 20, letterSpacing: -0.5 }}>{p("howtoPointsTitle")}</h3>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 10 }}>

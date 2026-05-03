@@ -313,7 +313,7 @@ function SceneBlog03({ lang }) {
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
-            생성 30P
+            생성 1회
           </div>
         </div>
       </div>

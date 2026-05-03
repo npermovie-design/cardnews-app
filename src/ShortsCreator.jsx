@@ -1951,7 +1951,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
                 </div>
               </div>
 
-              <button onClick={handleGenerate} style={{ ...btnStyle, marginTop: 4 }}>{t("sc_generate_video")} <span style={{ opacity: 0.7, fontSize: 12 }}>(100P)</span></button>
+              <button onClick={handleGenerate} style={{ ...btnStyle, marginTop: 4 }}>{t("sc_generate_video")} <span style={{ opacity: 0.7, fontSize: 12 }}>(4회)</span></button>
             </>) : (<>
               {/* 오버레이 탭 */}
               <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10 }}>

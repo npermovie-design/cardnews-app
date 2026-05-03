@@ -628,6 +628,20 @@ async function handleTokenRefresh(req, res) {
 // 라우터
 // ══════════════════════════════════════════════════════════
 
+// ══════════════════════════════════════════════════════════
+// ACTION: update — 앱 업데이트 확인
+// ══════════════════════════════════════════════════════════
+function handleUpdate(req, res) {
+  if (req.method !== "GET") return res.status(405).json({ ok: false, error: "GET only" });
+  return res.status(200).json({
+    ok: true,
+    version: process.env.NAVERBOT_LATEST_VERSION || "0.1.8",
+    download_url: process.env.NAVERBOT_DOWNLOAD_URL || "https://snsmakeit.com/pricing",
+    notes: process.env.NAVERBOT_UPDATE_NOTES || "새 버전이 준비되었습니다. 최신 설치 파일을 다운로드해 업데이트하세요.",
+    required: String(process.env.NAVERBOT_UPDATE_REQUIRED || "").toLowerCase() === "true",
+  });
+}
+
 const ACTION_MAP = {
   "account-verify": handleAccountVerify,
   "license-verify": handleLicenseVerify,
@@ -635,6 +649,7 @@ const ACTION_MAP = {
   "content-generate": handleContentGenerate,
   "login-page": handleLoginPage,
   "token-refresh": handleTokenRefresh,
+  "update": handleUpdate,
 };
 
 export default async function handler(req, res) {

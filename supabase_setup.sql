@@ -437,5 +437,141 @@ DROP POLICY IF EXISTS "sns_news_delete_all" ON sns_news;
 CREATE POLICY "sns_news_delete_all"
   ON sns_news FOR DELETE USING (true);
 
+-- ── 클래스(강의) 테이블 ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS classes (
+  id            TEXT PRIMARY KEY,
+  title         TEXT NOT NULL DEFAULT '',
+  "desc"        TEXT DEFAULT '',
+  type          TEXT DEFAULT 'vod',          -- vod | zoom | offline
+  pricing       TEXT DEFAULT 'free',         -- free | paid
+  price         INTEGER DEFAULT 0,
+  free_preview_count   INTEGER DEFAULT 2,
+  member_visible_count INTEGER DEFAULT 5,
+  tags          JSONB DEFAULT '[]',
+  thumbnail     TEXT DEFAULT '',
+  intro_html    TEXT DEFAULT '',
+  target_audience TEXT DEFAULT '',
+  process       TEXT DEFAULT '',
+  notes         TEXT DEFAULT '',
+  instructor_bio TEXT DEFAULT '',
+  instructor    TEXT DEFAULT '',
+  instructor_uid TEXT DEFAULT '',
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  updated_at    TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE classes ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "classes_select_all" ON classes;
+CREATE POLICY "classes_select_all" ON classes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "classes_write_all" ON classes;
+CREATE POLICY "classes_write_all" ON classes FOR ALL USING (true);
+
+-- ── 강의 레슨(영상) 테이블 ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS class_lessons (
+  id            TEXT PRIMARY KEY,
+  class_id      TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+  title         TEXT NOT NULL DEFAULT '',
+  duration      TEXT DEFAULT '',
+  video_src     TEXT DEFAULT '',
+  is_free_preview    BOOLEAN DEFAULT false,
+  assignment_required BOOLEAN DEFAULT false,
+  assignment_desc    TEXT DEFAULT '',
+  "order"       INTEGER DEFAULT 0,
+  created_at    TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE class_lessons ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "class_lessons_select_all" ON class_lessons;
+CREATE POLICY "class_lessons_select_all" ON class_lessons FOR SELECT USING (true);
+DROP POLICY IF EXISTS "class_lessons_write_all" ON class_lessons;
+CREATE POLICY "class_lessons_write_all" ON class_lessons FOR ALL USING (true);
+
+-- ── 라이브 일정 테이블 ──────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS class_live_schedules (
+  id            TEXT PRIMARY KEY,
+  class_id      TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+  date          TIMESTAMPTZ,
+  title         TEXT DEFAULT '',
+  duration      TEXT DEFAULT '60분',
+  max_seats     INTEGER DEFAULT 30,
+  enrolled      INTEGER DEFAULT 0,
+  created_at    TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE class_live_schedules ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "class_live_select_all" ON class_live_schedules;
+CREATE POLICY "class_live_select_all" ON class_live_schedules FOR SELECT USING (true);
+DROP POLICY IF EXISTS "class_live_write_all" ON class_live_schedules;
+CREATE POLICY "class_live_write_all" ON class_live_schedules FOR ALL USING (true);
+
+-- ── 자막 테이블 ─────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS class_subtitles (
+  id            BIGSERIAL PRIMARY KEY,
+  lesson_id     TEXT NOT NULL REFERENCES class_lessons(id) ON DELETE CASCADE,
+  lang          TEXT NOT NULL DEFAULT 'ko',
+  subtitles     JSONB NOT NULL DEFAULT '[]',  -- [{start, end, text}]
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(lesson_id, lang)
+);
+
+ALTER TABLE class_subtitles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "class_subtitles_select_all" ON class_subtitles;
+CREATE POLICY "class_subtitles_select_all" ON class_subtitles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "class_subtitles_write_all" ON class_subtitles;
+CREATE POLICY "class_subtitles_write_all" ON class_subtitles FOR ALL USING (true);
+
+-- ── 수강 후기 테이블 ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS class_reviews (
+  id            BIGSERIAL PRIMARY KEY,
+  class_id      TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+  uid           TEXT NOT NULL,
+  nick          TEXT DEFAULT '',
+  rating        INTEGER NOT NULL DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
+  content       TEXT DEFAULT '',
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(class_id, uid)
+);
+ALTER TABLE class_reviews ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "class_reviews_select_all" ON class_reviews FOR SELECT USING (true);
+CREATE POLICY "class_reviews_write_all" ON class_reviews FOR ALL USING (true);
+
+-- ── 수강 진도 테이블 ─────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS class_progress (
+  id            BIGSERIAL PRIMARY KEY,
+  class_id      TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+  lesson_id     TEXT NOT NULL REFERENCES class_lessons(id) ON DELETE CASCADE,
+  uid           TEXT NOT NULL,
+  watched       BOOLEAN DEFAULT false,
+  watch_seconds REAL DEFAULT 0,
+  assignment_submitted BOOLEAN DEFAULT false,
+  assignment_file TEXT DEFAULT '',
+  created_at    TIMESTAMPTZ DEFAULT now(),
+  updated_at    TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(lesson_id, uid)
+);
+ALTER TABLE class_progress ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "class_progress_select_all" ON class_progress FOR SELECT USING (true);
+CREATE POLICY "class_progress_write_all" ON class_progress FOR ALL USING (true);
+
+-- ── 강의 Q&A 댓글 테이블 ────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS class_comments (
+  id            BIGSERIAL PRIMARY KEY,
+  class_id      TEXT NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+  lesson_id     TEXT DEFAULT '',
+  uid           TEXT NOT NULL,
+  nick          TEXT DEFAULT '',
+  role          TEXT DEFAULT 'member',
+  content       TEXT NOT NULL DEFAULT '',
+  parent_id     BIGINT DEFAULT NULL,
+  created_at    TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE class_comments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "class_comments_select_all" ON class_comments FOR SELECT USING (true);
+CREATE POLICY "class_comments_write_all" ON class_comments FOR ALL USING (true);
+
+-- ── classes 테이블에 난이도/수강기간 컬럼 추가 ──────────────────
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS difficulty TEXT DEFAULT '입문';
+ALTER TABLE classes ADD COLUMN IF NOT EXISTS duration_info TEXT DEFAULT '무제한';
+
 -- ── 완료 ────────────────────────────────────────────────────────
 -- 위 SQL 실행 후 사이트를 새로고침하면 적용됩니다.
