@@ -4069,7 +4069,8 @@ hospital equipment`
                             {["AI 추출","9:16","자막"].map(t=><span key={t} style={{padding:"3px 9px",borderRadius:12,background:`${accent}08`,fontSize:10,color:accent,fontWeight:600}}>{t}</span>)}
                           </div>
                         </div>
-                        <div onClick={()=>setAiMenu&&setAiMenu("longform_edit")} className="hover-lift" style={{position:"relative",padding:"32px 16px",borderRadius:20,border:`1.5px solid ${border}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",textAlign:"center",cursor:"pointer",transition:"all 0.2s"}}>
+                        <div onClick={()=>setVideoSubMode("longform")} className="hover-lift" style={{position:"relative",padding:"32px 16px",borderRadius:20,border:`1.5px solid ${border}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",textAlign:"center",cursor:"pointer",transition:"all 0.2s"}}
+                          onMouseEnter={e=>e.currentTarget.style.borderColor=accent} onMouseLeave={e=>e.currentTarget.style.borderColor=border}>
                           <div style={{width:110,height:110,borderRadius:26,background:`${accent}08`,margin:"0 auto 18px",display:"flex",alignItems:"center",justifyContent:"center"}}>
                             <svg width="56" height="56" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke={accent} strokeWidth="1.5"/><path d="M8 4v16M16 4v16" stroke={accent} strokeWidth="0.8" opacity="0.4"/><path d="M2 12h20" stroke={accent} strokeWidth="0.8" opacity="0.4"/></svg>
                           </div>
