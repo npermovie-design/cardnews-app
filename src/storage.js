@@ -156,16 +156,11 @@ export async function ensureReferralCode(userData) {
   if (!userData?.uid) return userData;
   if (userData.referral_code) return userData;
   const referralCode = makeReferralCode(userData.uid);
+  // DB 컬럼 없을 수 있으므로 update 시도만 하고 실패해도 무시
   try {
-    const { error } = await supabase
-      .from("users")
-      .update({ referral_code: referralCode })
-      .eq("uid", userData.uid);
-    if (error) throw error;
-    return { ...userData, referral_code: referralCode };
-  } catch {
-    return { ...userData, referral_code: referralCode };
-  }
+    await supabase.from("users").update({ referral_code: referralCode }).eq("uid", userData.uid);
+  } catch {}
+  return { ...userData, referral_code: referralCode };
 }
 
 async function insertUserWithReferralFallback(userData) {
@@ -203,11 +198,7 @@ function _handleDailyLogin(userData) {
       // 비동기로 처리, 로그인을 블로킹하지 않음
       (async () => {
         try {
-          // points만 업데이트 (다른 컬럼 없으면 400 발생 방지)
-          const updatePayload = { points: newPoints };
-          try { updatePayload.last_login = new Date().toISOString(); } catch {}
-          const { error } = await supabase.from("users").update(updatePayload).eq("uid", userData.uid);
-          if (error) console.warn("[dailyLogin] update 실패 (무시):", error.message);
+          const { error } = await supabase.from("users").update({ points: newPoints }).eq("uid", userData.uid);
           if (!error) {
             await supabase.from("point_history").insert({
               uid: userData.uid, delta: POINTS.DAILY_LOGIN, reason: "일일 로그인 +1회",

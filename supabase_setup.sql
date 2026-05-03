@@ -45,8 +45,12 @@ CREATE POLICY "insta_dm_log_all" ON insta_dm_log FOR ALL USING (true);
 -- dm_sent_count 컬럼 추가 (기존 테이블에 없을 경우)
 ALTER TABLE insta_dm_campaigns ADD COLUMN IF NOT EXISTS dm_sent_count INTEGER DEFAULT 0;
 
--- ── 1. users 테이블에 nick_changed_at 컬럼 추가 ──────────────────
+-- ── 1. users 테이블 누락 컬럼 추가 ──────────────────
 ALTER TABLE users ADD COLUMN IF NOT EXISTS nick_changed_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_date TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS brand_kit JSONB;
 
 -- users 테이블 RLS: 본인만 자신의 닉네임 변경 가능
 DROP POLICY IF EXISTS "users_update_own" ON users;
