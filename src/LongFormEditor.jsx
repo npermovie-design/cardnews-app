@@ -906,9 +906,9 @@ JSON 배열로만 응답:
     if (genTimeoutRef.current) clearTimeout(genTimeoutRef.current);
     genTimeoutRef.current = setTimeout(() => {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-      setError("서버 응답 시간 초과 (2분). 서버가 준비되지 않았거나 영상 파일이 만료되었을 수 있습니다. 영상을 다시 불러온 후 시도해주세요.");
+      setError("서버 응답 시간 초과 (10분). 영상이 너무 길거나 서버가 과부하 상태일 수 있습니다. 영상을 다시 불러온 후 시도해주세요.");
       setStep("edit");
-    }, 120000);
+    }, 600000);
     try {
       console.log("[LongFormEditor] 내보내기 요청 시작:", { fileId, videoDuration, subsCount: subtitles?.length, segsCount: videoSegs?.length });
       const d = await apiCall("/generate-async", {
@@ -961,7 +961,7 @@ JSON 배열로만 응답:
         } catch (pollErr) {
           console.warn("[LongFormEditor] polling 실패:", pollFails + 1, pollErr?.message || pollErr);
           pollFails++;
-          if (pollFails >= 5) {
+          if (pollFails >= 15) {
             clearTimeout(genTimeoutRef.current);
             clearInterval(pollRef.current); pollRef.current = null;
             setError("서버 연결 끊김. 영상을 다시 불러온 후 시도해주세요.");
@@ -1241,7 +1241,7 @@ JSON 배열로만 응답:
               <div style={{ position: "absolute", inset: 0, borderRadius: "50%", border: `3px solid ${bdr}`, borderTopColor: acc, animation: "lf-spin 1.5s linear infinite" }} />
             </div>
             <div style={{ fontSize: 18, fontWeight: 900, color: text, marginBottom: 8 }}>영상 생성 중...</div>
-            <div style={{ fontSize: 13, color: muted, marginBottom: 16 }}>{jobStatus?.progress ? `${jobStatus.progress}%` : "서버에 요청 중..."}</div>
+            <div style={{ fontSize: 13, color: muted, marginBottom: 16 }}>{jobStatus?.progress ? `${jobStatus.progress}%` : (jobStatus?.status === "processing" ? "렌더링 중... (영상 길이에 따라 1~10분 소요)" : "서버에 요청 중...")}</div>
             {/* 진행 바 */}
             <div style={{ width: 200, height: 6, borderRadius: 3, background: `${bdr}`, margin: "0 auto 16px", overflow: "hidden" }}>
               <div style={{ height: "100%", borderRadius: 3, background: `linear-gradient(90deg,${acc},#ec4899)`, width: jobStatus?.progress ? `${jobStatus.progress}%` : "15%", transition: "width 0.5s", animation: jobStatus?.progress ? "none" : "lf-pulse 2s ease-in-out infinite" }} />
