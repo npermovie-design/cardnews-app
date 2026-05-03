@@ -934,10 +934,12 @@ JSON 배열로만 응답:
       setJobId(d.job_id);
       if (pollRef.current) clearInterval(pollRef.current);
       let pollFails = 0;
+      console.log("[LongFormEditor] polling 시작, job_id:", d.job_id);
       pollRef.current = setInterval(async () => {
         try {
           const j = await apiCall(`/jobs/${d.job_id}`, { timeout: 15000 });
           pollFails = 0;
+          console.log("[LongFormEditor] job 상태:", j.status, j.progress || 0, "%", j.error || "");
           setJobStatus(j);
           window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
             detail: { action: "update", task: { id: "longform_gen", message: `편집 중... ${j.progress || 0}%`, progress: j.progress || 0 } }
@@ -956,7 +958,8 @@ JSON 배열로만 응답:
             setError("서버에서 생성 실패: " + (j.error || "알 수 없는 오류"));
             setStep("edit");
           }
-        } catch {
+        } catch (pollErr) {
+          console.warn("[LongFormEditor] polling 실패:", pollFails + 1, pollErr?.message || pollErr);
           pollFails++;
           if (pollFails >= 5) {
             clearTimeout(genTimeoutRef.current);
