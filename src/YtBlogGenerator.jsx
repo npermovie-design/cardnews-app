@@ -274,7 +274,7 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate, 
     /* ── 블로그 글 생성 ── */
   const generate = async () => {
     if (!videoInfo) { setGenErr("먼저 유튜브 URL을 입력해주세요."); return; }
-    if (showPointConfirm && user && !(await showPointConfirm(30))) return;
+    if (showPointConfirm && user && !(await showPointConfirm(1))) return;
     const _aiUsage = (() => { try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch(e) { return {}; } })();
     const _aiKey = user ? ("member_" + (user.uid || "u")) : "guest";
     const _aiUsed = _aiUsage[_aiKey] || 0;

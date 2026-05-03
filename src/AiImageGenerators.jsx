@@ -135,7 +135,7 @@ function ModelGenerator({ isDark, user, onUserUpdate, onLoginRequest, setAiMenuF
 
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
-    if (showPointConfirm && !(await showPointConfirm(50))) return;
+    if (showPointConfirm && !(await showPointConfirm(1))) return;
     setStep(4); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_model", type: "product_shot", message: "모델 이미지 생성 중..." } } }));
@@ -371,7 +371,7 @@ function SkinRetouchGenerator({ isDark, user, onUserUpdate, onLoginRequest, show
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!srcImg) { setErr("사진을 업로드해주세요."); return; }
-    if (showPointConfirm && !(await showPointConfirm(50))) return;
+    if (showPointConfirm && !(await showPointConfirm(1))) return;
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_skinretouch", type: "product_shot", message: "피부 보정 중..." } } }));
@@ -497,7 +497,7 @@ This is a RETOUCH task, not a regeneration. The output must look like the SAME p
             background: srcImg ? `linear-gradient(135deg,${ACC},#ec4899)` : (isDark ? "rgba(255,255,255,0.06)" : "#eee"),
             color: srcImg ? "#fff" : muted, fontSize: 16, fontWeight: 900,
             boxShadow: srcImg ? "0 8px 28px rgba(124,106,255,0.25)" : "none" }}>
-          ✨ 피부 보정 시작 (50P)
+          ✨ 피부 보정 시작 (1회)
         </button>
       </div>
     </div>
@@ -523,7 +523,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest, showPoi
   const generate = async () => {
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!srcImg || !refImg) { setErr("두 이미지를 모두 업로드해주세요."); return; }
-    if (showPointConfirm && !(await showPointConfirm(50))) return;
+    if (showPointConfirm && !(await showPointConfirm(1))) return;
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_faceswap", type: "product_shot", message: "얼굴 교체 중..." } } }));
@@ -601,7 +601,7 @@ function FaceSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest, showPoi
           style={{ width:"100%", padding:"15px", borderRadius:12, border:"none", cursor:srcImg&&refImg?"pointer":"not-allowed",
             background: srcImg&&refImg?`linear-gradient(135deg,${ACC},#8b5cf6)`:"rgba(128,128,128,0.2)",
             color:"#fff", fontSize:15, fontWeight:900, opacity:srcImg&&refImg?1:0.6 }}>
-          얼굴 교체 생성하기 (50P)
+          얼굴 교체 생성하기 (1회)
         </button>
       </div>
     </div>
@@ -639,7 +639,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest, showP
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
     if (!srcImg) { setErr("원본 이미지를 업로드해주세요."); return; }
     if (outfitMode === "ref" && !refImg) { setErr("참고 의상 이미지를 업로드해주세요."); return; }
-    if (showPointConfirm && !(await showPointConfirm(50))) return;
+    if (showPointConfirm && !(await showPointConfirm(1))) return;
     setGenerating(true); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_outfitswap", type: "product_shot", message: "의상 교체 중..." } } }));
@@ -747,7 +747,7 @@ function OutfitSwapGenerator({ isDark, user, onUserUpdate, onLoginRequest, showP
           style={{ width:"100%", padding:"15px", borderRadius:12, border:"none", cursor:srcImg?"pointer":"not-allowed",
             background: srcImg?`linear-gradient(135deg,${OUTFIT_ACC},#8b5cf6)`:"rgba(128,128,128,0.2)",
             color:"#fff", fontSize:15, fontWeight:900, opacity:srcImg?1:0.6 }}>
-          의상 교체 생성하기 (50P)
+          의상 교체 생성하기 (1회)
         </button>
       </div>
     </div>
@@ -812,7 +812,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest, showPoi
     if (sizeMode === "manual" && expLeft===0 && expRight===0 && expTop===0 && expBottom===0) {
       setErr("최소 한 방향의 여백 크기를 0보다 크게 설정해주세요."); return;
     }
-    if (showPointConfirm && !(await showPointConfirm(50))) return;
+    if (showPointConfirm && !(await showPointConfirm(1))) return;
     setStep(3); setErr("");
     window.__isGenerating = true; window.__generatingCost = 10;
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_outpaint", type: "product_shot", message: "이미지 확장 중..." } } }));
@@ -1070,7 +1070,7 @@ function OutpaintGenerator({ isDark, user, onUserUpdate, onLoginRequest, showPoi
             <div style={{ display:"flex", gap:10 }}>
               <button onClick={() => setStep(1)} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>← 이전</button>
               <button onClick={generate} style={{ flex:2, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:`linear-gradient(135deg,${ACC},#8b5cf6)`, color:"#fff", fontSize:15, fontWeight:900, boxShadow:`0 6px 20px ${ACC}40` }}>
-                여백 늘리기 (50P)
+                여백 늘리기 (1회)
               </button>
             </div>
           </div>

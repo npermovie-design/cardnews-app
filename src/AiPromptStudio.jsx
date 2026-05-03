@@ -87,7 +87,7 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
   const generate = async () => {
     if (!input.trim()) { setErr("어떤 문서를 만들지 입력해주세요."); return; }
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
-    if (!(await showPointConfirm(30))) return;
+    if (!(await showPointConfirm(1))) return;
     setStep("loading"); setErr(""); setResult("");
     window.__isGenerating = true; window.__generatingCost = 30;
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", { detail: { action: "register", task: { id: "gen_prompt_studio", type: "blog_write", message: "문서 생성 중..." } } }));
@@ -273,7 +273,7 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
           style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", cursor:input.trim()?"pointer":"not-allowed",
             background:input.trim()?accent:"rgba(128,128,128,0.2)",
             color:"#fff", fontSize:16, fontWeight:900, opacity:input.trim()?1:0.5 }}>
-          AI 생성 (10P)
+          AI 생성 (1회)
         </button>
 
         {/* 저장된 기획 */}
@@ -371,7 +371,7 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
         {/* 하단 액션 */}
         <div style={{ display:"flex", gap:10 }}>
           <button onClick={()=>{setResult("");setStep("input");}} style={{ flex:1, padding:"13px", borderRadius:12, border:`1px solid ${bdr}`, background:"transparent", color:text, fontSize:14, fontWeight:700, cursor:"pointer" }}>새로 기획</button>
-          <button onClick={generate} style={{ flex:1, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:accent, color:"#fff", fontSize:14, fontWeight:800 }}>다시 생성 (10P)</button>
+          <button onClick={generate} style={{ flex:1, padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:accent, color:"#fff", fontSize:14, fontWeight:800 }}>다시 생성 (1회)</button>
         </div>
       </div>
       {renderFooter && renderFooter()}

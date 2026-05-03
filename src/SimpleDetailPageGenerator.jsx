@@ -391,7 +391,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
   // Step3→Step4: 슬라이드 텍스트 생성 후 편집 모드로
   const generate = async () => {
     if (!user && guestLimitExceeded()) return;
-    if (showPointConfirm && user && !(await showPointConfirm(60))) return;
+    if (showPointConfirm && user && !(await showPointConfirm(1))) return;
     if (!user) incrementGuestUsage();
     setLoading(true);
     try {

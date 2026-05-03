@@ -66,7 +66,7 @@ function RepurposePage({ isDark, user, onLoginRequest, onUserUpdate, showPointCo
     if (!sourceText.trim()) { setError("원본 콘텐츠를 입력해주세요."); return; }
     if (selectedCount === 0) { setError("최소 1개 이상의 형식을 선택해주세요."); return; }
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
-    if (!(await showPointConfirm(60))) return;
+    if (!(await showPointConfirm(1))) return;
 
     setError(""); setLoading(true); setResults(null);
 
@@ -473,7 +473,7 @@ function FileTranscriber({ isDark, user, onLoginRequest, onUserUpdate, showPoint
   const generateFromTemplate = async (tmpl) => {
     if (!fileContent.trim()) { setError("파일 내용이 없습니다."); return; }
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
-    if (showPointConfirm && !(await showPointConfirm(30))) return;
+    if (showPointConfirm && !(await showPointConfirm(1))) return;
     setSelectedTemplate(tmpl);
     setGenerating(true);
     setResult("");

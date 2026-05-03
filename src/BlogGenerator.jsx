@@ -1856,7 +1856,7 @@ ${emojiRule}
   const generateImage = async () => {
     if (!fields.keyword?.trim()) { setError(t("bg_promptRequired")); return; }
     if (!user) { if (onLoginRequest) onLoginRequest(); return; }
-    if (showPointConfirm && !(await showPointConfirm(50))) return;
+    if (showPointConfirm && !(await showPointConfirm(1))) return;
 
     const _aiPoints = user ? (user.points || 0) : 0;
     if (_aiPoints < 50) { setError(t("bg_pointsLowCharge")); return; }

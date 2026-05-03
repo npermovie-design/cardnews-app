@@ -190,7 +190,7 @@ export default function ProductShotGenerator({ isDark, user, onUserUpdate, showP
       if (guestLimitExceeded()) { setError(t("ps_guest_limit")); return; }
       incrementGuestUsage();
     } else {
-      if (showPointConfirm && !(await showPointConfirm(cost))) return;
+      if (showPointConfirm && !(await showPointConfirm(1))) return;
     }
 
     setError(""); setResults([]); setGenProgress(0); setStep(2);
