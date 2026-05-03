@@ -47,3 +47,16 @@ shorts-factory/*.pyc
 preview_section_*.html
 메이킷_자료실/
 public/downloads/*.exe
+
+# NaverBot Desktop
+naverbot-desktop/electron/node_modules/
+naverbot-desktop/electron/dist/
+naverbot-desktop/electron/python-runtime/
+naverbot-desktop/electron/screenshots/
+naverbot-desktop/publish-server/node_modules/
+naverbot-desktop/publish-server/profiles/
+naverbot-desktop/python/__pycache__/
+naverbot-desktop/python/*.pyc
+naverbot-desktop/python/debug/
+naverbot-desktop/*.png
+naverbot-desktop/server-original/

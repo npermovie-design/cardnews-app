@@ -1,0 +1,20 @@
+{
+  "name": "makeit-publish-server",
+  "version": "2.0.0",
+  "description": "메이킷 SNS 자동 발행 서버 (Playwright)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "install-browser": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "cors": "^2.8.0",
+    "playwright-extra": "^4.3.0",
+    "puppeteer-extra-plugin-stealth": "^2.11.0",
+    "playwright": "^1.40.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

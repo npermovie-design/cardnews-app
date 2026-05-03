@@ -1,0 +1,31 @@
+name: Build Windows
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install
+        working-directory: naverbot-desktop/electron
+
+      - run: npm run build:win
+        working-directory: naverbot-desktop/electron
+
+      # Setup exe만 zip으로 감싸기
+      - name: Zip installer
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem "naverbot-desktop/electron/dist/*.exe" -Exclude "*.blockmap" | Select-Object -First 1
+          Compress-Archive -Path $exe.FullName -DestinationPath "naverbot-desktop/electron/dist/makeit-sns-setup-win.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: win-build
+          path: naverbot-desktop/electron/dist/makeit-sns-setup-win.zip

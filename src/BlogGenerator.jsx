@@ -938,7 +938,7 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
   const [writeStep, setWriteStep] = useState("input");
   const [quoteStyle, setQuoteStyle] = useState("underline");
   const [pointColor, setPointColor] = useState("#2DB400");
-  const [includeAEO, setIncludeAEO] = useState(true);
+  const [aeoPosition, setAeoPosition] = useState("top");
   const [includeProsCons, setIncludeProsCons] = useState(true);
 
   // ── 로컬 Draft 자동 저장/복원 (result 선언 뒤에서 초기화) ──
@@ -1745,9 +1745,9 @@ ${emojiRule}
     const sourcePromptExtra = fields.extra || urlResult || (fields._files && fields._files.length)
       ? `\n\n[제공된 정보/출처 활용 규칙]\n- 사용자가 입력한 URL, 참고 파일, 추가 지시사항이 있으면 그 내용을 우선 근거로 사용하세요.\n- 뉴스 기사 URL은 제목/메타 설명보다 추출된 원문 내용을 우선 기준으로 삼고, 원문에 없는 발언/수치/기관명은 만들지 마세요.\n- SNS 링크는 본문 추출이 제한될 수 있으므로 추출된 텍스트, 메타 설명, 사용자가 입력한 설명 범위 안에서만 재구성하세요.\n- 제공된 정보에 없는 세율, 법 조항, 금액, 기한, 기관명, 통계는 임의로 만들지 마세요.\n- 출처가 분명한 내용과 일반 설명을 구분해서 쓰고, 불확실한 내용은 상황에 따라 달라질 수 있다고 표현하세요.\n- 글 안에 출처를 넣어야 할 때는 사용자가 제공한 URL/자료명만 사용하세요.`
       : "";
-    // AEO Q&A / 장단점·추천 토글 반영
+    // AEO Q&A 위치 / 장단점·추천 토글 반영
     let structureOverride = "";
-    if (isNaverBlog && !includeAEO) structureOverride += "\n\n[AEO 질문-답변 제외] 도입부 직후 Q./A. 형식의 AEO 질문-답변 블록과 [TABLE] 핵심 정보 박스를 넣지 마세요. 도입부 다음 바로 본문 섹션으로 진행하세요.";
+    if (isNaverBlog && aeoPosition === "none") structureOverride += "\n\n[AEO 질문-답변 제외] Q./A. 형식의 AEO 질문-답변 블록과 [TABLE] 핵심 정보 박스를 넣지 마세요. 도입부 다음 바로 본문 섹션으로 진행하세요.";
     if (isNaverBlog && !includeProsCons) structureOverride += "\n\n[장단점·추천 제외] 장점/단점 목록과 추천 대상/비추천 대상 섹션을 넣지 마세요. 자연스러운 결론으로 마무리하세요.";
     const prompt = basePrompt + briefPromptExtra + formatPromptExtra + structureOverride + sourcePromptExtra + (advPromptExtra ? advPromptExtra : "");
     // 분량에 따른 max_tokens 설정 (여유 있게)
@@ -3021,14 +3021,16 @@ hospital equipment`
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
             글 구조 옵션
           </div>
-          <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
-            <label style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",padding:"8px 14px",borderRadius:12,border:`1.5px solid ${includeAEO?accent:border}`,background:includeAEO?accentBg:"transparent",fontSize:12,fontWeight:includeAEO?800:600,color:includeAEO?accent:text}}>
-              <input type="checkbox" checked={includeAEO} onChange={e=>setIncludeAEO(e.target.checked)} style={{display:"none"}}/>
-              <span style={{width:16,height:16,borderRadius:4,border:`2px solid ${includeAEO?accent:border}`,background:includeAEO?accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
-                {includeAEO && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>}
-              </span>
-              AEO 질문-답변 (Q&A 3개)
-            </label>
+          <div style={{display:"flex",flexWrap:"wrap",gap:10,alignItems:"center"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,fontSize:12,fontWeight:600,color:text}}>
+              Q&A (AEO) 위치
+              <select value={aeoPosition} onChange={e=>setAeoPosition(e.target.value)} style={{padding:"6px 10px",borderRadius:8,border:`1.5px solid ${border}`,background:"transparent",color:text,fontSize:12,fontWeight:600,cursor:"pointer"}}>
+                <option value="top">상단 (도입부 뒤)</option>
+                <option value="middle">중앙</option>
+                <option value="bottom">하단 (마무리 앞)</option>
+                <option value="none">사용 안함</option>
+              </select>
+            </div>
             <label style={{display:"flex",alignItems:"center",gap:7,cursor:"pointer",padding:"8px 14px",borderRadius:12,border:`1.5px solid ${includeProsCons?accent:border}`,background:includeProsCons?accentBg:"transparent",fontSize:12,fontWeight:includeProsCons?800:600,color:includeProsCons?accent:text}}>
               <input type="checkbox" checked={includeProsCons} onChange={e=>setIncludeProsCons(e.target.checked)} style={{display:"none"}}/>
               <span style={{width:16,height:16,borderRadius:4,border:`2px solid ${includeProsCons?accent:border}`,background:includeProsCons?accent:"transparent",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -4067,8 +4069,7 @@ hospital equipment`
                             {["AI 추출","9:16","자막"].map(t=><span key={t} style={{padding:"3px 9px",borderRadius:12,background:`${accent}08`,fontSize:10,color:accent,fontWeight:600}}>{t}</span>)}
                           </div>
                         </div>
-                        <div style={{position:"relative",padding:"32px 16px",borderRadius:20,border:`1.5px solid ${border}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",textAlign:"center",opacity:0.5,cursor:"default"}}>
-                          <div style={{position:"absolute",top:12,right:12,padding:"3px 10px",borderRadius:12,background:"rgba(249,115,22,0.12)",border:"1px solid rgba(249,115,22,0.3)",fontSize:10,fontWeight:800,color:"#f59e0b"}}>개발중</div>
+                        <div onClick={()=>setAiMenu&&setAiMenu("longform_edit")} className="hover-lift" style={{position:"relative",padding:"32px 16px",borderRadius:20,border:`1.5px solid ${border}`,background:isDark?"rgba(255,255,255,0.04)":"#fff",textAlign:"center",cursor:"pointer",transition:"all 0.2s"}}>
                           <div style={{width:110,height:110,borderRadius:26,background:`${accent}08`,margin:"0 auto 18px",display:"flex",alignItems:"center",justifyContent:"center"}}>
                             <svg width="56" height="56" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke={accent} strokeWidth="1.5"/><path d="M8 4v16M16 4v16" stroke={accent} strokeWidth="0.8" opacity="0.4"/><path d="M2 12h20" stroke={accent} strokeWidth="0.8" opacity="0.4"/></svg>
                           </div>

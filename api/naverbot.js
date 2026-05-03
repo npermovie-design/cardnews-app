@@ -457,11 +457,10 @@ async function handleContentGenerate(req, res) {
 
   const useGif = !!req.body.use_gif;
 
-  // AEO / 장단점 토글 (클라이언트에서 전달, 기본값 true)
-  const includeAEO = req.body.includeAEO !== false;
+  // AEO 위치 (top/middle/bottom/none) + 장단점 토글
+  const aeoPosition = req.body.aeoPosition || "top";
   const includeProsCons = req.body.includeProsCons !== false;
   let structureOverride = "";
-  if (!includeAEO) structureOverride += "\n\n[AEO 질문-답변 제외] 도입부 직후 Q./A. 형식의 AEO 질문-답변 블록과 [TABLE] 핵심 정보 박스를 넣지 마세요.";
   if (!includeProsCons) structureOverride += "\n\n[장단점·추천 제외] 장점/단점 목록과 추천 대상/비추천 대상 섹션을 넣지 마세요.";
 
   const { system, user } = buildBlogPrompt({
@@ -473,6 +472,7 @@ async function handleContentGenerate(req, res) {
     userPrompt: user_prompt + structureOverride,
     trendsText,
     useGif,
+    aeoPosition,
   });
 
   let aiText = "";
@@ -514,6 +514,8 @@ async function handleContentGenerate(req, res) {
       const photo = await searchImage(blk.keyword);
       if (photo) {
         blocks.push({ type: "image", url: photo.url, alt: photo.alt, keyword: blk.keyword });
+      } else {
+        console.warn(`[naverbot] 이미지 검색 실패 (키워드: ${blk.keyword}) — PEXELS_KEY 확인 필요`);
       }
     } else if (blk.type === "gif" && useGif) {
       const gif = await searchGif(blk.keyword);

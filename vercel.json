@@ -164,6 +164,9 @@
     { "source": "/api/naverbot/login-page", "destination": "/api/naverbot?action=login-page" },
     { "source": "/naverbot-auth.html", "destination": "/api/naverbot?action=login-page" },
     { "source": "/naverbot-callback", "destination": "/index.html" },
+    { "source": "/api/naverbot/drive", "destination": "/api/naverbot/drive" },
+    { "source": "/api/naverbot/drive-image", "destination": "/api/naverbot/drive-image" },
+    { "source": "/api/naverbot/update", "destination": "/api/naverbot/update" },
 
     { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|_vercel|naver[0-9a-f]+\\.html|naverbot-auth\\.html|naverbot-callback|index\\.html).*)", "destination": "/api/render" }
   ],

@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
-import { addAttendance, changePoints, fetchAttendance } from "./storage";
+import { addAttendance, changePoints, fetchAttendance, usesToPoints } from "./storage";
 
-/* ── 출석체크 포인트 구조 ──────────────────────────────
-   매일 출석       : +3P
-   7일 연속 달성   : +10P 보너스 (총 13P)
-   14일 연속 달성  : +20P 보너스 (총 23P)
-   30일 연속 달성  : +50P 보너스 (총 53P)
-   이달 개근 달성  : +30P 보너스 (월말 자동)
+/* ── 출석체크 이용 횟수 구조 (강화) ─────────────────────
+   매일 출석         : 3일 연속부터 +1회 (1~2일은 0회)
+   5일 연속 달성     : +1회 보너스
+   10일 연속 달성    : +2회 보너스
+   20일 연속 달성    : +5회 보너스
+   30일 연속 달성    : +10회 보너스
+   이달 개근 달성    : +5회 보너스 (월말 자동)
 ──────────────────────────────────────────────────────── */
 
 const STORAGE_KEY = "nper_attendance_v2";
@@ -58,7 +59,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
 
   const [data, setData] = useState(null);
   const [checking, setChecking] = useState(false);
-  const [result, setResult] = useState(null); // { pts, bonuses[] }
+  const [result, setResult] = useState(null); // { uses, bonuses[] }
   const [dbReady, setDbReady] = useState(false);
 
   useEffect(() => {
@@ -105,21 +106,26 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
     const newStreak = calcStreak(newDates);
     const newData = { ...data, dates: newDates, streak: newStreak };
 
-    // 포인트 계산
-    let totalPts = 3;
+    // 이용 횟수 계산 (강화: 3일 연속부터 +1회, 그 전은 출석만 기록)
+    let totalUses = newStreak >= 3 ? 1 : 0;
     const bonuses = [];
     const lastBonus = { ...data.lastBonus };
 
-    // 연속 보너스 체크
+    if (newStreak < 3) {
+      bonuses.push(`연속 ${newStreak}일째 (3일부터 적립 시작)`);
+    }
+
+    // 연속 보너스 체크 (조건 강화)
     const streakBonuses = [
-      { days: 7,  pts: 10, label: "7일 연속 출석" },
-      { days: 14, pts: 20, label: "14일 연속 출석" },
-      { days: 30, pts: 50, label: "30일 연속 출석" },
+      { days: 5,  uses: 1, label: "5일 연속 출석" },
+      { days: 10, uses: 2, label: "10일 연속 출석" },
+      { days: 20, uses: 5, label: "20일 연속 출석" },
+      { days: 30, uses: 10, label: "30일 연속 출석" },
     ];
     for (const sb of streakBonuses) {
       if (newStreak === sb.days && lastBonus[`streak_${sb.days}`] !== todayStr.slice(0,7)+"-"+newStreak) {
-        totalPts += sb.pts;
-        bonuses.push(`${sb.label} 보너스 +${sb.pts}P`);
+        totalUses += sb.uses;
+        bonuses.push(`${sb.label} 보너스 +${sb.uses}회`);
         lastBonus[`streak_${sb.days}`] = todayStr.slice(0,7)+"-"+newStreak;
       }
     }
@@ -128,14 +134,15 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
     if (todayNum === daysInMonth) {
       const newMonthDates = newDates.filter(d => d.startsWith(thisMonth()));
       if (newMonthDates.length === daysInMonth && lastBonus.month !== thisMonth()) {
-        totalPts += 30;
-        bonuses.push(`이달 개근 보너스 +30P`);
+        totalUses += 5;
+        bonuses.push(`이달 개근 보너스 +5회`);
         lastBonus.month = thisMonth();
       }
     }
 
     try {
-      const reason = `출석체크 +3P${bonuses.length ? ` + 보너스 ${bonuses.join(", ")}` : ""}`;
+      const totalPts = usesToPoints(totalUses);
+      const reason = `출석체크 +1회${bonuses.length ? ` + 보너스 ${bonuses.join(", ")}` : ""}`;
       let newPts;
       if (dbReady) {
         const r = await addAttendance(user.uid, todayStr, totalPts, reason);
@@ -144,7 +151,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
           const synced = { ...data, dates: remoteDates || data.dates, streak: calcStreak(remoteDates || data.dates) };
           saveData(user.uid, synced);
           setData(synced);
-          setResult({ pts: 0, bonuses: ["이미 오늘 출석 처리됨"] });
+          setResult({ uses: 0, bonuses: ["이미 오늘 출석 처리됨"] });
           setChecking(false);
           checkingRef.current = false;
           return;
@@ -158,7 +165,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
       saveData(user.uid, newData);
       setData(newData);
       if (onUserUpdate) onUserUpdate({ ...user, points: newPts });
-      setResult({ pts: totalPts, bonuses });
+      setResult({ uses: totalUses, bonuses });
     } catch {}
     setChecking(false);
     checkingRef.current = false;
@@ -248,10 +255,11 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
           <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 12, background: card, border: `1px solid ${bdr}` }}>
             <div style={{ fontSize: 11, fontWeight: 800, color: text, marginBottom: 10 }}>🎯 연속 출석 보너스</div>
             {[
-              { days: 7,  pts: 10, label: "7일 연속" },
-              { days: 14, pts: 20, label: "14일 연속" },
-              { days: 30, pts: 50, label: "30일 연속" },
-            ].map(({ days, pts, label }) => {
+              { days: 5,  uses: 1, label: "5일 연속" },
+              { days: 10, uses: 2, label: "10일 연속" },
+              { days: 20, uses: 5, label: "20일 연속" },
+              { days: 30, uses: 10, label: "30일 연속" },
+            ].map(({ days, uses, label }) => {
               const reached = streak >= days;
               const pct = Math.min((streak / days) * 100, 100);
               return (
@@ -260,7 +268,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
                     <span style={{ fontSize: 11, color: reached ? ACC : text, fontWeight: reached ? 800 : 500 }}>
                       {reached ? "✓ " : ""}{label}
                     </span>
-                    <span style={{ fontSize: 11, fontWeight: 800, color: ACC }}>+{pts}P 보너스</span>
+                    <span style={{ fontSize: 11, fontWeight: 800, color: ACC }}>+{uses}회 보너스</span>
                   </div>
                   <div style={{ height: 5, borderRadius: 3, background: D ? "rgba(255,255,255,0.08)" : "#e5e5f0", overflow: "hidden" }}>
                     <div style={{ height: "100%", borderRadius: 3, background: `linear-gradient(90deg,${ACC},#8b5cf6)`, width: `${pct}%`, transition: "width 0.5s" }} />
@@ -270,7 +278,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
               );
             })}
             <div style={{ marginTop: 8, padding: "8px 10px", borderRadius: 8, background: D ? "rgba(255,255,255,0.04)" : "#f0f0f8", fontSize: 11, color: muted }}>
-              이달 개근 달성 시 <b style={{ color: ACC }}>+10회 보너스</b> ({daysInMonth - monthDates.length}일 남음)
+              이달 개근 달성 시 <b style={{ color: ACC }}>+5회 보너스</b> ({daysInMonth - monthDates.length}일 남음)
             </div>
           </div>
 
@@ -279,7 +287,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
             <div style={{ marginBottom: 14, padding: "14px 16px", borderRadius: 12,
               background: "linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.1))",
               border: `1px solid ${ACC}40`, textAlign: "center" }}>
-              <div style={{ fontSize: 26, fontWeight: 900, color: ACC, marginBottom: 4 }}>+{Math.max(1, Math.floor(result.pts/3))}회 적립!</div>
+              <div style={{ fontSize: 26, fontWeight: 900, color: ACC, marginBottom: 4 }}>+{result.uses}회 적립!</div>
               {result.bonuses.map((b, i) => (
                 <div key={i} style={{ fontSize: 12, color: "#a5b4fc", fontWeight: 700 }}>🎉 {b}</div>
               ))}
@@ -300,12 +308,12 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
                 color: "#fff", fontSize: 15, fontWeight: 900,
                 boxShadow: `0 6px 20px ${ACC}40`,
                 opacity: checking ? 0.7 : 1 }}>
-              {checking ? "처리 중..." : "🔴 출석체크 (+3P)"}
+              {checking ? "처리 중..." : "🔴 출석체크 (+1회)"}
             </button>
           )}
 
           <div style={{ textAlign: "center", fontSize: 11, color: muted, marginTop: 10 }}>
-            매일 출석 +3P · 7일 연속 +10P · 14일 +20P · 30일 +50P · 이달 개근 +30P
+            3일 연속부터 +1회 · 5일 +1 · 10일 +2 · 20일 +5 · 30일 +10 · 개근 +5
           </div>
         </div>
 
