@@ -1871,14 +1871,13 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   // 횟수 차감 확인 — 횟수 충분하면 바로 진행, 부족하면 안내
   const showPointConfirm = (cost) => {
     return new Promise(resolve => {
+      // 횟수제 전환: 포인트 대신 남은 횟수 확인
+      // 비로그인 또는 횟수 충분하면 바로 진행
       if (!user) { resolve(true); return; }
-      const pts = user.points ?? 0;
-      if (pts < cost) {
-        setPointConfirm({ cost, onConfirm: () => { setPointConfirm(null); resolve(false); }, onCancel: () => { setPointConfirm(null); resolve(false); } });
-        return;
-      }
-      // 충분하면 팝업 없이 바로 진행
-      resolve(true);
+      const pts = user.points ?? 999;
+      if (pts >= cost) { resolve(true); return; }
+      // 횟수 부족 시 안내 팝업
+      setPointConfirm({ cost, onConfirm: () => { setPointConfirm(null); resolve(true); }, onCancel: () => { setPointConfirm(null); resolve(false); } });
     });
   };
 

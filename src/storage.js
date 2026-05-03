@@ -203,11 +203,11 @@ function _handleDailyLogin(userData) {
       // 비동기로 처리, 로그인을 블로킹하지 않음
       (async () => {
         try {
-          const { error } = await supabase.from("users").update({
-            points: newPoints,
-            last_login_date: today,
-            last_login: new Date().toISOString(),
-          }).eq("uid", userData.uid);
+          // points만 업데이트 (다른 컬럼 없으면 400 발생 방지)
+          const updatePayload = { points: newPoints };
+          try { updatePayload.last_login = new Date().toISOString(); } catch {}
+          const { error } = await supabase.from("users").update(updatePayload).eq("uid", userData.uid);
+          if (error) console.warn("[dailyLogin] update 실패 (무시):", error.message);
           if (!error) {
             await supabase.from("point_history").insert({
               uid: userData.uid, delta: POINTS.DAILY_LOGIN, reason: "일일 로그인 +1회",
