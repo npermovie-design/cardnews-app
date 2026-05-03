@@ -1135,7 +1135,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
 
   // 생성
   const handleGenerate = async () => {
-    if (showPointConfirm && user && !(await showPointConfirm(100))) return;
+    if (showPointConfirm && user && !(await showPointConfirm(1))) return;
     setStep("generate"); setResults([]); setPreviewIdx(0);
 
     // 백그라운드 인디케이터 등록
@@ -1289,7 +1289,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
                 <div><div style={{ fontSize: 12, fontWeight: 700, color: acc }}>{t("sc_video_detected")}</div><div style={{ fontSize: 11, color: muted }}>ID: {ytParsed.id}</div></div>
               </div>
             )}
-            <button onClick={handleYoutube} style={{ ...btnStyle, opacity: !ytParsed ? 0.4 : 1 }} disabled={!ytParsed}>{t("sc_convert_btn")} <span style={{ opacity: 0.7, fontSize: 12 }}>(35P)</span></button>
+            <button onClick={handleYoutube} style={{ ...btnStyle, opacity: !ytParsed ? 0.4 : 1 }} disabled={!ytParsed}>{t("sc_convert_btn")} <span style={{ opacity: 0.7, fontSize: 12 }}>(1회)</span></button>
           </div>
         ) : (
           <div>
@@ -1325,7 +1325,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
                 {!subFile && <span style={{ fontSize: 11, color: muted }}>{t("sc_no_subtitle")}</span>}
               </div>
             )}
-            <button onClick={handleUpload} style={{ ...btnStyle, opacity: !videoFile ? 0.4 : 1 }} disabled={!videoFile}>{t("sc_create_btn")} <span style={{ opacity: 0.7, fontSize: 12 }}>(35P)</span></button>
+            <button onClick={handleUpload} style={{ ...btnStyle, opacity: !videoFile ? 0.4 : 1 }} disabled={!videoFile}>{t("sc_create_btn")} <span style={{ opacity: 0.7, fontSize: 12 }}>(1회)</span></button>
           </div>
         )}
 
