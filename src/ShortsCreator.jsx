@@ -443,12 +443,15 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const _initDone = useRef(false);
   useEffect(() => {
     if (_initDone.current) return;
+    if (step === "generate" || step === "result") setStep("upload");
     if (initialVideoFile) {
       _initDone.current = true;
-      setTimeout(() => handleUpload(), 300);
+      setStep("upload");
+      setTimeout(() => handleUpload(), 500);
     } else if (initialVideoLink && parseYoutubeUrl(initialVideoLink)) {
       _initDone.current = true;
-      setTimeout(() => handleYoutube(), 300);
+      setStep("upload");
+      setTimeout(() => handleYoutube(), 500);
     }
   }, [initialVideoFile, initialVideoLink]);
 

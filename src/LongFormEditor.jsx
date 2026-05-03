@@ -468,12 +468,18 @@ JSON 배열로만 응답:
   const _initDone = useRef(false);
   useEffect(() => {
     if (_initDone.current) return;
+    // generate/result 상태 잔류 방지 - 초기 진입 시 리셋
+    if (step === "generate" || step === "result") {
+      setStep("upload");
+    }
     if (initialVideoFile) {
       _initDone.current = true;
-      setTimeout(() => handleUpload(), 300);
+      setStep("upload"); // 강제 리셋
+      setTimeout(() => handleUpload(), 500);
     } else if (initialVideoLink && parseYoutubeUrl(initialVideoLink)) {
       _initDone.current = true;
-      setTimeout(() => handleYoutube(), 300);
+      setStep("upload");
+      setTimeout(() => handleYoutube(), 500);
     }
   }, [initialVideoFile, initialVideoLink]);
 
@@ -806,7 +812,6 @@ JSON 배열로만 응답:
   // ── 파일 업로드 + 분석 ──
   const handleUpload = async () => {
     if (!videoFile) return;
-    if (showPointConfirm && user && !(await showPointConfirm(1))) return;
     setStep("loading"); setLoadingMsg("업로드 중..."); setError("");
     try {
       // 1. 오디오 파형 분석 (로컬)
@@ -870,7 +875,6 @@ JSON 배열로만 응답:
   const handleYoutube = async () => {
     const parsed = parseYoutubeUrl(ytUrl);
     if (!parsed) { setError("올바른 유튜브 링크를 입력해주세요"); return; }
-    if (showPointConfirm && user && !(await showPointConfirm(1))) return;
     setStep("loading"); setLoadingMsg("영상 다운로드 중..."); setError("");
     try {
       const d = await apiCall("/youtube-download", { method: "POST", body: JSON.stringify({ url: parsed.url }), timeout: 120000 });
