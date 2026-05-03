@@ -1138,7 +1138,6 @@ JSON 배열로만 응답 (다른 텍스트 없이):
 
   // 생성
   const handleGenerate = async () => {
-    if (showPointConfirm && user && !(await showPointConfirm(1))) return;
     setStep("generate"); setResults([]); setPreviewIdx(0);
 
     // 백그라운드 인디케이터 등록

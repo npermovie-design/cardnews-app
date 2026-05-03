@@ -898,7 +898,6 @@ JSON 배열로만 응답:
 
   // ── 생성 (내보내기) ──
   const handleExport = async () => {
-    if (showPointConfirm && user && !(await showPointConfirm(1))) return;
     setStep("generate"); setResultUrl(null);
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
       detail: { action: "register", task: { id: "longform_gen", type: "longform_make", message: "롱폼 영상 편집 중..." } }
