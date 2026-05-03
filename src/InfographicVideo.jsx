@@ -13,11 +13,11 @@ import { T } from "./infographic-i18n.js";
 // ═══════════════════════════════════════════════
 
 const K = {
-  purple: "#7c6aff", pink: "#ec4899",
+  purple: "#168EEA", pink: "#ec4899",
   dark: "#1a1730", white: "#ffffff",
-  bg: "#0d0b1a", bgCard: "rgba(124,106,255,0.08)",
+  bg: "#0d0b1a", bgCard: "rgba(0,0,0,0.06)",
   muted: "rgba(255,255,255,0.5)",
-  grad: "linear-gradient(135deg,#7c6aff,#ec4899)",
+  grad: "#168EEA",
   gradBg: "linear-gradient(165deg,#0d0b1a 0%,#1a1040 50%,#0d0b1a 100%)",
 };
 
@@ -213,7 +213,7 @@ function GridBg({ opacity = 0.04 }) {
       <svg width="100%" height="120%" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#7c6aff" strokeWidth="0.5" />
+            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#168EEA" strokeWidth="0.5" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#grid)" />
@@ -249,7 +249,7 @@ function NarrationText({ text, frame, fps, delay = 0 }) {
       <div style={{
         display: "inline-block", background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)",
         borderRadius: 14, padding: "14px 32px",
-        border: "1px solid rgba(124,106,255,0.15)",
+        border: "1px solid rgba(0,0,0,0.06)",
       }}>
         <span style={{ fontSize: 20, color: "rgba(255,255,255,0.9)", fontWeight: 600, lineHeight: 1.6 }}>
           {text}
@@ -361,7 +361,7 @@ function Scene02_Intro({ lang = "ko" }) {
       {/* 펄스 링 */}
       <div style={{
         position: "absolute", width: 400, height: 400,
-        borderRadius: "50%", border: "2px solid rgba(124,106,255,0.3)",
+        borderRadius: "50%", border: "2px solid rgba(0,0,0,0.06)",
         transform: `scale(${ringScale})`, opacity: ringOp,
       }} />
 
@@ -618,7 +618,7 @@ function Scene05_AITools({ lang = "ko" }) {
         <div style={{ ...fadeSlide(frame, fps, "right", 0.4), flex: 1 }}>
           {/* AI 입력창 모의 */}
           <div style={{
-            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(124,106,255,0.2)",
+            background: "rgba(255,255,255,0.03)", border: "1px solid rgba(0,0,0,0.06)",
             borderRadius: 20, padding: 28, marginBottom: 20,
           }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
@@ -813,7 +813,7 @@ function Scene07_Community({ lang = "ko" }) {
         {/* 오른쪽: 게시판 목업 */}
         <div style={{
           ...fadeSlide(frame, fps, "right", 0.6), flex: 1,
-          background: "rgba(255,255,255,0.02)", border: "1px solid rgba(124,106,255,0.15)",
+          background: "rgba(255,255,255,0.02)", border: "1px solid rgba(0,0,0,0.06)",
           borderRadius: 20, overflow: "hidden",
         }}>
           {/* 헤더 */}
@@ -868,7 +868,7 @@ function Scene08_Resources({ lang = "ko" }) {
   return (
     <AbsoluteFill style={{ background: K.gradBg, justifyContent: "center", alignItems: "center" }}>
       <GridBg />
-      <WaveBg color="#7c6aff" speed={0.04} yOffset={860} />
+      <WaveBg color="#168EEA" speed={0.04} yOffset={860} />
       <GlowOrb x="40%" y="40%" color={K.purple} size={450} />
       <ParticleBg />
 
@@ -1033,7 +1033,7 @@ function Scene10_CTA({ lang = "ko" }) {
             display: "inline-block", background: K.grad,
             borderRadius: 18, padding: "22px 64px",
             fontSize: 30, fontWeight: 800, color: K.white,
-            boxShadow: "0 8px 40px rgba(124,106,255,0.4)",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.06)",
           }}>
             {T("s10_cta", lang)}
           </div>
@@ -1088,7 +1088,7 @@ function CCOverlay({ lang = "ko", secondLang = null, show = true }) {
           display: "inline-block",
           background: "rgba(0,0,0,0.75)", backdropFilter: "blur(12px)",
           borderRadius: 14, padding: "14px 36px",
-          border: "1px solid rgba(124,106,255,0.12)",
+          border: "1px solid rgba(0,0,0,0.06)",
         }}>
           <div style={{
             fontSize: 24, fontWeight: 700, color: "#fff",
@@ -1172,9 +1172,9 @@ function CCControls({ lang, setLang, secondLang, setSecondLang, showCC, setShowC
         onClick={() => setShowCC(!showCC)}
         style={{
           padding: "8px 16px", borderRadius: 10, cursor: "pointer",
-          background: showCC ? "rgba(124,106,255,0.15)" : "rgba(255,255,255,0.05)",
-          border: showCC ? "1px solid rgba(124,106,255,0.4)" : "1px solid rgba(255,255,255,0.1)",
-          color: showCC ? "#7c6aff" : "rgba(255,255,255,0.4)",
+          background: showCC ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)",
+          border: showCC ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.1)",
+          color: showCC ? "#168EEA" : "rgba(255,255,255,0.4)",
           fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6,
         }}
       >
@@ -1207,7 +1207,7 @@ function CCControls({ lang, setLang, secondLang, setSecondLang, showCC, setShowC
             <div style={{
               position: "absolute", bottom: "110%", left: 0, zIndex: 100,
               background: "rgba(20,18,36,0.95)", backdropFilter: "blur(12px)",
-              border: "1px solid rgba(124,106,255,0.2)", borderRadius: 14,
+              border: "1px solid rgba(0,0,0,0.06)", borderRadius: 14,
               padding: 8, minWidth: 200, boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
             }}>
               <div style={{ padding: "6px 12px", fontSize: 11, color: "rgba(255,255,255,0.3)", fontWeight: 700, letterSpacing: 1 }}>
@@ -1220,8 +1220,8 @@ function CCControls({ lang, setLang, secondLang, setSecondLang, showCC, setShowC
                   style={{
                     display: "flex", alignItems: "center", gap: 10, width: "100%",
                     padding: "10px 14px", borderRadius: 8, border: "none", cursor: "pointer",
-                    background: code === lang ? "rgba(124,106,255,0.15)" : "transparent",
-                    color: code === lang ? "#7c6aff" : "#fff", fontSize: 14, fontWeight: 600,
+                    background: code === lang ? "rgba(0,0,0,0.06)" : "transparent",
+                    color: code === lang ? "#168EEA" : "#fff", fontSize: 14, fontWeight: 600,
                     textAlign: "left",
                   }}
                 >
@@ -1350,8 +1350,8 @@ export default function InfographicVideoPage() {
       {/* 영상 플레이어 */}
       <div style={{
         borderRadius: 20, overflow: "hidden",
-        boxShadow: "0 8px 48px rgba(124,106,255,0.25)",
-        border: "1px solid rgba(124,106,255,0.2)",
+        boxShadow: "0 8px 48px rgba(0,0,0,0.06)",
+        border: "1px solid rgba(0,0,0,0.06)",
       }}>
         <Player
           component={InfographicComposition}
@@ -1405,9 +1405,9 @@ export default function InfographicVideoPage() {
             onClick={() => setLang(code)}
             style={{
               padding: "6px 14px", borderRadius: 8, cursor: "pointer",
-              background: code === lang ? "rgba(124,106,255,0.12)" : "transparent",
-              border: code === lang ? "1px solid rgba(124,106,255,0.3)" : "1px solid rgba(255,255,255,0.06)",
-              color: code === lang ? "#7c6aff" : "rgba(255,255,255,0.35)",
+              background: code === lang ? "rgba(0,0,0,0.06)" : "transparent",
+              border: code === lang ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.06)",
+              color: code === lang ? "#168EEA" : "rgba(255,255,255,0.35)",
               fontSize: 12, fontWeight: 600,
             }}
           >

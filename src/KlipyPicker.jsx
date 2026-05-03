@@ -30,7 +30,7 @@ const TABS = [
 
 export default function KlipyPicker({ onSelect, isDark = true, defaultTab = "gif", compact = false, onClose, style }) {
   const D = isDark;
-  const accent = "#7c6aff";
+  const accent = "#168EEA";
   const text  = D ? "#fff" : "#1a1a2e";
   const muted = D ? "rgba(255,255,255,0.45)" : "#888";
   const bdr   = D ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
@@ -120,7 +120,7 @@ export default function KlipyPicker({ onSelect, isDark = true, defaultTab = "gif
               style={{
                 flex: 1, padding: compact ? "5px 4px" : "6px 8px", borderRadius: 6, border: "none", cursor: "pointer",
                 fontSize: compact ? 10 : 11, fontWeight: tab === t.id ? 700 : 500,
-                background: tab === t.id ? (D ? "rgba(124,106,255,0.3)" : "#fff") : "transparent",
+                background: tab === t.id ? (D ? "rgba(0,0,0,0.06)" : "#fff") : "transparent",
                 color: tab === t.id ? (D ? "#fff" : accent) : muted,
                 boxShadow: tab === t.id ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
               }}>
@@ -238,9 +238,9 @@ export function KlipyButton({ onSelect, isDark, compact, style, buttonStyle }) {
       <button onClick={() => setOpen(p => !p)}
         style={{
           padding: compact ? "6px 10px" : "8px 14px", borderRadius: 8,
-          border: `1px solid ${isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.2)"}`,
-          background: open ? `${isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.08)"}` : "transparent",
-          color: "#7c6aff", fontSize: compact ? 11 : 12, fontWeight: 700, cursor: "pointer",
+          border: `1px solid ${isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)"}`,
+          background: open ? `${isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)"}` : "transparent",
+          color: "#168EEA", fontSize: compact ? 11 : 12, fontWeight: 700, cursor: "pointer",
           display: "flex", alignItems: "center", gap: 5,
           ...buttonStyle,
         }}>

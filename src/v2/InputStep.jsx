@@ -53,7 +53,7 @@ export default function InputStep({ state, dispatch, C, isMobile }) {
             padding: state.images.length > 0 ? 12 : "40px 20px",
             textAlign: "center",
             cursor: "pointer",
-            background: C.purpleBg || "rgba(124,106,255,0.04)",
+            background: C.purpleBg || "rgba(0,0,0,0.06)",
             transition: "border-color 0.2s, background 0.2s",
           }}
         >
@@ -124,7 +124,7 @@ export default function InputStep({ state, dispatch, C, isMobile }) {
             <button key={lang.id} onClick={() => dispatch({ type: "SET_FIELD", field: "language", value: lang.id })}
               style={{
                 padding: "8px 20px", borderRadius: 8, border: `1px solid ${state.language === lang.id ? C.purple : (C.border || "rgba(0,0,0,0.1)")}`,
-                background: state.language === lang.id ? (C.purpleBg || "rgba(124,106,255,0.1)") : "transparent",
+                background: state.language === lang.id ? (C.purpleBg || "rgba(0,0,0,0.06)") : "transparent",
                 color: state.language === lang.id ? C.purple : C.text, fontSize: 13, fontWeight: 500, cursor: "pointer",
               }}>
               {lang.label}
@@ -191,7 +191,7 @@ export default function InputStep({ state, dispatch, C, isMobile }) {
         onClick={() => dispatch({ type: "SET_STEP", step: 2 })}
         style={{
           width: "100%", padding: "14px 0", borderRadius: 12, border: "none",
-          background: canProceed ? "linear-gradient(135deg, #7c6aff, #ec4899)" : (C.border || "#ddd"),
+          background: canProceed ? "#168EEA" : (C.border || "#ddd"),
           color: canProceed ? "#fff" : C.muted, fontSize: 16, fontWeight: 700,
           cursor: canProceed ? "pointer" : "not-allowed",
           transition: "opacity 0.2s",

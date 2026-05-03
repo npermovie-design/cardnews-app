@@ -42,7 +42,7 @@ export function PaymentSuccessPage({ C, navigate }) {
       <div style={{ textAlign: "center", maxWidth: 400 }}>
         {status === "processing" && (
           <>
-            <div style={{ width:48, height:48, borderRadius:"50%", border:"4px solid rgba(124,106,255,0.2)", borderTopColor:"#7c6aff", margin:"0 auto 16px", animation:"spin 1s linear infinite" }} />
+            <div style={{ width:48, height:48, borderRadius:"50%", border:"4px solid rgba(0,0,0,0.06)", borderTopColor:"#168EEA", margin:"0 auto 16px", animation:"spin 1s linear infinite" }} />
             <div style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 8 }}>{t("pay_processing")}</div>
             <div style={{ fontSize: 14, color: C.muted }}>{t("pay_wait")}</div>
             <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
@@ -50,11 +50,11 @@ export function PaymentSuccessPage({ C, navigate }) {
         )}
         {status === "success" && (
           <>
-            <div style={{ width:64, height:64, borderRadius:"50%", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <div style={{ width:64, height:64, borderRadius:"50%", background:"#168EEA", margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center" }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
             </div>
             <div style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 8 }}>{t("pay_done")}</div>
-            {points > 0 && <div style={{ fontSize: 28, fontWeight: 900, color: "#7c6aff", marginBottom: 12 }}>+{pointsToUses(points).toLocaleString()}회</div>}
+            {points > 0 && <div style={{ fontSize: 28, fontWeight: 900, color: "#168EEA", marginBottom: 12 }}>+{pointsToUses(points).toLocaleString()}회</div>}
             <div style={{ fontSize: 14, color: C.muted }}>{t("pay_redirect")}</div>
           </>
         )}
@@ -77,7 +77,7 @@ export function PaymentFailPage({ C, navigate }) {
         </div>
         <div style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 8 }}>{t("pay_fail_title")}</div>
         <div style={{ fontSize: 14, color: C.muted, marginBottom: 24 }}>{message}</div>
-        <button onClick={() => navigate("pricing")} style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+        <button onClick={() => navigate("pricing")} style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: "#168EEA", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
           {t("pay_retry")}
         </button>
       </div>

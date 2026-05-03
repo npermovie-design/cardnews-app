@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SNS 자동화 컬러 팔레트</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', -apple-system, sans-serif;
+    background: #F8F5F1;
+    color: #1A1A2E;
+    padding: 40px 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  h1 {
+    font-size: 32px;
+    color: #168EEA;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: #666;
+    font-size: 15px;
+    margin-bottom: 48px;
+  }
+
+  /* 팔레트 섹션 */
+  .section-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    color: #1A1A2E;
+  }
+  .section-title span {
+    font-size: 13px;
+    font-weight: 400;
+    color: #888;
+    margin-left: 8px;
+  }
+
+  /* 컬러 카드 그리드 */
+  .color-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .color-card {
+    border-radius: 16px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+  .color-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  }
+  .color-swatch {
+    height: 140px;
+    display: flex;
+    align-items: flex-end;
+    padding: 12px 16px;
+  }
+  .color-swatch .label-on-swatch {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+    backdrop-filter: blur(4px);
+  }
+  .color-info {
+    padding: 16px;
+  }
+  .color-name {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .color-role {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 10px;
+  }
+  .color-codes {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .color-hex {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    background: #f0f0f0;
+    padding: 4px 10px;
+    border-radius: 6px;
+    color: #333;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .color-hex:hover {
+    background: #168EEA;
+    color: #fff;
+  }
+  .copied-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #1A1A2E;
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 100;
+  }
+  .copied-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  /* 비교 섹션 */
+  .compare-section {
+    margin-bottom: 48px;
+  }
+  .compare-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .compare-box {
+    flex: 1;
+    min-width: 280px;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .compare-header {
+    padding: 14px 20px;
+    font-weight: 700;
+    font-size: 14px;
+  }
+  .compare-body {
+    padding: 24px 20px;
+    min-height: 120px;
+  }
+  .compare-body h3 {
+    font-size: 18px;
+    margin-bottom: 8px;
+  }
+  .compare-body p {
+    font-size: 14px;
+    line-height: 1.6;
+    opacity: 0.85;
+  }
+  .compare-body .btn {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+  .compare-body .btn:hover { opacity: 0.85; }
+
+  /* UI 미리보기 */
+  .preview-section {
+    margin-bottom: 48px;
+  }
+  .preview-card {
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    overflow: hidden;
+  }
+  .preview-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid #eee;
+  }
+  .preview-logo {
+    font-size: 18px;
+    font-weight: 800;
+    color: #168EEA;
+  }
+  .preview-nav-links {
+    display: flex;
+    gap: 20px;
+    list-style: none;
+  }
+  .preview-nav-links li {
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .preview-nav-links li:hover { color: #168EEA; }
+  .preview-nav-links li.active { color: #168EEA; font-weight: 600; }
+  .preview-content {
+    padding: 40px 24px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .preview-left {
+    flex: 1.5;
+    min-width: 300px;
+  }
+  .preview-left h2 {
+    font-size: 26px;
+    color: #1A1A2E;
+    margin-bottom: 12px;
+    line-height: 1.3;
+  }
+  .preview-left p {
+    color: #666;
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 20px;
+  }
+  .preview-btn-group { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn-primary {
+    background: #168EEA;
+    color: #fff;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-primary:hover { background: #1280d4; }
+  .btn-secondary {
+    background: transparent;
+    color: #168EEA;
+    border: 2px solid #168EEA;
+    padding: 10px 28px;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { background: #168EEA; color: #fff; }
+  .preview-right {
+    flex: 1;
+    min-width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .stat-card {
+    padding: 20px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .stat-card .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 800;
+  }
+  .stat-card .stat-text .num {
+    font-size: 22px;
+    font-weight: 800;
+  }
+  .stat-card .stat-text .desc {
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  .badge-success {
+    display: inline-block;
+    background: #34C759;
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge-blue {
+    display: inline-block;
+    background: #168EEA;
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  /* 접근성 체크 */
+  .a11y-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .a11y-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .a11y-pair {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .a11y-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+  .a11y-sample {
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .a11y-ratio {
+    font-size: 13px;
+    color: #888;
+  }
+  .a11y-pass { color: #34C759; font-weight: 600; }
+  .a11y-fail { color: #E74C3C; font-weight: 600; }
+
+  /* 아이콘 스타일 섹션 */
+  .icon-styles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+  .icon-style-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px 16px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .icon-style-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  }
+  .icon-style-card svg {
+    margin-bottom: 14px;
+  }
+  .icon-style-card .style-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1A1A2E;
+    margin-bottom: 4px;
+  }
+  .icon-style-card .style-desc {
+    font-size: 11px;
+    color: #888;
+  }
+
+  /* 아이콘 기능 그리드 */
+  .icon-feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 14px;
+    margin-bottom: 48px;
+  }
+  .icon-feature-item {
+    background: #fff;
+    border-radius: 14px;
+    padding: 20px 12px;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: transform 0.2s;
+  }
+  .icon-feature-item:hover { transform: translateY(-3px); }
+  .icon-feature-item .icon-wrap {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+  }
+  .icon-feature-item .feat-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #1A1A2E;
+  }
+
+  /* 사이드바 미리보기 */
+  .sidebar-preview {
+    display: flex;
+    gap: 0;
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+    margin-bottom: 48px;
+    min-height: 420px;
+  }
+  .sidebar-nav {
+    width: 240px;
+    background: #1A1A2E;
+    padding: 24px 0;
+    flex-shrink: 0;
+  }
+  .sidebar-logo {
+    color: #fff;
+    font-size: 16px;
+    font-weight: 800;
+    padding: 0 20px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    color: rgba(255,255,255,0.5);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+  }
+  .sidebar-item:hover {
+    color: rgba(255,255,255,0.8);
+    background: rgba(255,255,255,0.04);
+  }
+  .sidebar-item.active {
+    color: #fff;
+    background: rgba(22,142,234,0.15);
+    border-left-color: #168EEA;
+  }
+  .sidebar-item svg { flex-shrink: 0; }
+  .sidebar-main {
+    flex: 1;
+    padding: 28px;
+    background: #F8F5F1;
+  }
+  .sidebar-main h3 {
+    font-size: 20px;
+    color: #1A1A2E;
+    margin-bottom: 20px;
+  }
+  .dash-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .dash-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .dash-card .d-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .dash-card .d-val {
+    font-size: 20px;
+    font-weight: 800;
+  }
+  .dash-card .d-label {
+    font-size: 11px;
+    color: #888;
+    margin-top: 2px;
+  }
+  .channel-list {
+    background: #fff;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .channel-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid #f0ede9;
+    font-size: 14px;
+    color: #1A1A2E;
+  }
+  .channel-row:last-child { border-bottom: none; }
+  .channel-row .ch-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .channel-row .ch-name { flex: 1; font-weight: 600; }
+  .channel-row .ch-status {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+
+  /* 버튼 with 아이콘 */
+  .icon-btn-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+  }
+  .icon-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .icon-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+
+  @media (max-width: 768px) {
+    .sidebar-preview { flex-direction: column; }
+    .sidebar-nav { width: 100%; padding: 16px 0; }
+    .sidebar-item { padding: 10px 16px; }
+    .dash-cards { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) {
+    body { padding: 24px 16px; }
+    h1 { font-size: 24px; }
+    .color-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .color-swatch { height: 100px; }
+    .preview-content { flex-direction: column; }
+    .icon-styles-grid { grid-template-columns: 1fr 1fr; }
+    .icon-feature-grid { grid-template-columns: 1fr 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<h1>SNS 자동화 컬러 팔레트</h1>
+<p class="subtitle">Buffer 스타일 기반 — 신뢰 + 활력 조합 (기존 vs 개선안)</p>
+
+<!-- 기존 팔레트 -->
+<div class="section-title">기존 조합 <span>Buffer 원본 색상</span></div>
+<div class="color-grid">
+  <div class="color-card">
+    <div class="color-swatch" style="background:#168EEA;">
+      <span class="label-on-swatch" style="background:rgba(255,255,255,0.25);color:#fff;">Primary</span>
+    </div>
+    <div class="color-info">
+      <div class="color-name">Curious Blue</div>
+      <div class="color-role">Primary — 메인 브랜드 컬러</div>
+      <div class="color-codes">
+        <span class="color-hex" onclick="copyColor('#168EEA')">#168EEA</span>
+        <span class="color-hex" onclick="copyColor('rgb(22,142,234)')">RGB 22,142,234</span>
+      </div>
+    </div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#B0EC9C;">
+      <span class="label-on-swatch" style="background:rgba(0,0,0,0.15);color:#333;">Accent</span>
+    </div>
+    <div class="color-info">
+      <div class="color-name">Madang</div>
+      <div class="color-role">Accent — 강조/포인트 (채도 부족)</div>
+      <div class="color-codes">
+        <span class="color-hex" onclick="copyColor('#B0EC9C')">#B0EC9C</span>
+        <span class="color-hex" onclick="copyColor('rgb(176,236,156)')">RGB 176,236,156</span>
+      </div>
+    </div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#F8F5F1; border: 1px solid #e8e4e0;">
+      <span class="label-on-swatch" style="background:rgba(0,0,0,0.08);color:#666;">Background</span>
+    </div>
+    <div class="color-info">
+      <div class="color-name">Warm White</div>
+      <div class="color-role">Background — 배경색</div>
+      <div class="color-codes">
+        <span class="color-hex" onclick="copyColor('#F8F5F1')">#F8F5F1</span>
+        <span class="color-hex" onclick="copyColor('rgb(248,245,241)')">RGB 248,245,241</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 개선 팔레트 -->
+<div class="section-title">개선 조합 <span>채도 보정 + 텍스트 컬러 추가</span></div>
+<div class="color-grid">
+  <div class="color-card">
+    <div class="color-swatch" style="background:#168EEA;">
+      <span class="label-on-swatch" style="background:rgba(255,255,255,0.25);color:#fff;">Primary</span>
+    </div>
+    <div class="color-info">
+      <div class="color-name">Curious Blue</div>
+      <div class="color-role">Primary — 유지</div>
+      <div class="color-codes">
+        <span class="color-hex" onclick="copyColor('#168EEA')">#168EEA</span>
+      </div>
+    </div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#34C759;">
+      <span class="label-on-swatch" style="background:rgba(255,255,255,0.25);color:#fff;">Accent</span>
+    </div>
+    <div class="color-info">
+      <div class="color-name">Apple Green</div>
+      <div class="color-role">Accent — 채도 UP, CTA/성공 상태</div>
+      <div class="color-codes">
+        <span class="color-hex" onclick="copyColor('#34C759')">#34C759</span>
+        <span class="color-hex" onclick="copyColor('rgb(52,199,89)')">RGB 52,199,89</span>
+      </div>
+    </div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#2ECC71;">
+      <span class="label-on-swatch" style="background:rgba(255,255,255,0.25);color:#fff;">Accent Alt</span>
+    </div>
+    <div class="color-info">
+      <div class="color-name">Emerald</div>
+      <div class="color-role">대안 Accent — Flat UI 스타일</div>
+      <div class="color-codes">
+        <span class="color-hex" onclick="copyColor('#2ECC71')">#2ECC71</span>
+        <span class="color-hex" onclick="copyColor('rgb(46,204,113)')">RGB 46,204,113</span>
+      </div>
+    </div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#F8F5F1; border: 1px solid #e8e4e0;">
+      <span class="label-on-swatch" style="background:rgba(0,0,0,0.08);color:#666;">Background</span>
+    </div>
+    <div class="color-info">
+      <div class="color-name">Warm White</div>
+      <div class="color-role">Background — 유지</div>
+      <div class="color-codes">
+        <span class="color-hex" onclick="copyColor('#F8F5F1')">#F8F5F1</span>
+      </div>
+    </div>
+  </div>
+  <div class="color-card">
+    <div class="color-swatch" style="background:#1A1A2E;">
+      <span class="label-on-swatch" style="background:rgba(255,255,255,0.15);color:#fff;">Text</span>
+    </div>
+    <div class="color-info">
+      <div class="color-name">Dark Navy</div>
+      <div class="color-role">Text — 본문/제목 텍스트</div>
+      <div class="color-codes">
+        <span class="color-hex" onclick="copyColor('#1A1A2E')">#1A1A2E</span>
+        <span class="color-hex" onclick="copyColor('rgb(26,26,46)')">RGB 26,26,46</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 기존 vs 개선 비교 -->
+<div class="section-title">기존 vs 개선 비교</div>
+<div class="compare-section">
+  <div class="compare-row">
+    <!-- 기존 -->
+    <div class="compare-box">
+      <div class="compare-header" style="background:#168EEA; color:#fff;">기존 — #B0EC9C 액센트</div>
+      <div class="compare-body" style="background:#F8F5F1;">
+        <h3 style="color:#1A1A2E;">SNS 자동화 시작하기</h3>
+        <p style="color:#555;">클릭 한 번으로 모든 SNS 채널에 자동 포스팅하세요.</p>
+        <a class="btn" style="background:#B0EC9C; color:#333;" href="#">무료 체험</a>
+        <span style="display:inline-block; margin-left:8px; color:#c44; font-size:12px; font-weight:600;">대비 부족</span>
+      </div>
+    </div>
+    <!-- 개선 -->
+    <div class="compare-box">
+      <div class="compare-header" style="background:#168EEA; color:#fff;">개선 — #34C759 액센트</div>
+      <div class="compare-body" style="background:#F8F5F1;">
+        <h3 style="color:#1A1A2E;">SNS 자동화 시작하기</h3>
+        <p style="color:#555;">클릭 한 번으로 모든 SNS 채널에 자동 포스팅하세요.</p>
+        <a class="btn" style="background:#34C759; color:#fff;" href="#">무료 체험</a>
+        <span style="display:inline-block; margin-left:8px; color:#34C759; font-size:12px; font-weight:600;">대비 충분</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- UI 미리보기 -->
+<div class="section-title">UI 미리보기 <span>개선 팔레트 적용</span></div>
+<div class="preview-section">
+  <div class="preview-card">
+    <div class="preview-nav">
+      <div class="preview-logo">SNS 자동화</div>
+      <ul class="preview-nav-links">
+        <li class="active">대시보드</li>
+        <li>예약 발행</li>
+        <li>분석</li>
+        <li>설정</li>
+      </ul>
+    </div>
+    <div class="preview-content">
+      <div class="preview-left">
+        <h2>모든 채널을 한 곳에서<br>자동으로 관리하세요</h2>
+        <p>블로그, 인스타그램, 페이스북, 네이버까지.<br>AI가 최적의 시간에 자동 발행합니다.</p>
+        <div class="preview-btn-group">
+          <button class="btn-primary">시작하기</button>
+          <button class="btn-secondary">데모 보기</button>
+        </div>
+        <div style="margin-top:16px; display:flex; gap:8px;">
+          <span class="badge-success">자동 발행 ON</span>
+          <span class="badge-blue">AI 분석</span>
+        </div>
+      </div>
+      <div class="preview-right">
+        <div class="stat-card" style="background:#EBF5FF;">
+          <div class="stat-icon" style="background:#168EEA; color:#fff;">P</div>
+          <div class="stat-text">
+            <div class="num" style="color:#168EEA;">1,284</div>
+            <div class="desc">이번 달 발행 수</div>
+          </div>
+        </div>
+        <div class="stat-card" style="background:#E8FBF0;">
+          <div class="stat-icon" style="background:#34C759; color:#fff;">+</div>
+          <div class="stat-text">
+            <div class="num" style="color:#34C759;">+23.5%</div>
+            <div class="desc">도달률 증가</div>
+          </div>
+        </div>
+        <div class="stat-card" style="background:#F0EEFB;">
+          <div class="stat-icon" style="background:#1A1A2E; color:#fff;">A</div>
+          <div class="stat-text">
+            <div class="num" style="color:#1A1A2E;">5개</div>
+            <div class="desc">연결된 채널</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 접근성 체크 -->
+<div class="section-title">접근성 대비 체크 <span>WCAG 2.1 AA 기준</span></div>
+<div class="a11y-grid">
+  <div class="a11y-card">
+    <div class="a11y-pair">
+      <div class="a11y-dot" style="background:#168EEA;"></div>
+      <div>
+        <strong>#168EEA on #F8F5F1</strong>
+        <div class="a11y-ratio">대비율 약 3.8:1</div>
+      </div>
+    </div>
+    <div class="a11y-sample" style="background:#F8F5F1; color:#168EEA;">큰 텍스트 OK / 본문은 주의</div>
+    <div><span class="a11y-pass">AA Large Pass</span></div>
+  </div>
+  <div class="a11y-card">
+    <div class="a11y-pair">
+      <div class="a11y-dot" style="background:#34C759;"></div>
+      <div>
+        <strong>#FFFFFF on #34C759</strong>
+        <div class="a11y-ratio">대비율 약 3.2:1</div>
+      </div>
+    </div>
+    <div class="a11y-sample" style="background:#34C759; color:#fff;">버튼 텍스트 (Large OK)</div>
+    <div><span class="a11y-pass">AA Large Pass</span></div>
+  </div>
+  <div class="a11y-card">
+    <div class="a11y-pair">
+      <div class="a11y-dot" style="background:#1A1A2E;"></div>
+      <div>
+        <strong>#1A1A2E on #F8F5F1</strong>
+        <div class="a11y-ratio">대비율 약 14.5:1</div>
+      </div>
+    </div>
+    <div class="a11y-sample" style="background:#F8F5F1; color:#1A1A2E;">본문 텍스트 최적</div>
+    <div><span class="a11y-pass">AAA Pass</span></div>
+  </div>
+  <div class="a11y-card">
+    <div class="a11y-pair">
+      <div class="a11y-dot" style="background:#B0EC9C;"></div>
+      <div>
+        <strong>#333 on #B0EC9C</strong>
+        <div class="a11y-ratio">대비율 약 2.1:1 (기존)</div>
+      </div>
+    </div>
+    <div class="a11y-sample" style="background:#B0EC9C; color:#333;">기존 액센트 — 대비 부족</div>
+    <div><span class="a11y-fail">AA Fail</span></div>
+  </div>
+</div>
+
+<!-- ===================== 아이콘 디자인 적용 ===================== -->
+
+<!-- 1. 아이콘 스타일 비교 -->
+<div class="section-title">아이콘 스타일 비교 <span>같은 아이콘, 다른 표현 방식</span></div>
+<div class="icon-styles-grid">
+
+  <!-- Filled -->
+  <div class="icon-style-card">
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="14" fill="#168EEA"/>
+      <path d="M16 20l4-4h8l4 4v10a2 2 0 01-2 2H18a2 2 0 01-2-2V20z" fill="#fff"/>
+      <circle cx="24" cy="25" r="3" fill="#168EEA"/>
+      <path d="M21 16h6v4h-6z" fill="#fff" opacity="0.5"/>
+    </svg>
+    <div class="style-name">Filled</div>
+    <div class="style-desc">사이드바, 활성 상태</div>
+  </div>
+
+  <!-- Outlined -->
+  <div class="icon-style-card">
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="14" fill="#EBF5FF"/>
+      <path d="M16 20l4-4h8l4 4v10a2 2 0 01-2 2H18a2 2 0 01-2-2V20z" stroke="#168EEA" stroke-width="2" fill="none"/>
+      <circle cx="24" cy="25" r="3" stroke="#168EEA" stroke-width="2" fill="none"/>
+      <path d="M21 16h6v4h-6z" stroke="#168EEA" stroke-width="1.5" fill="none"/>
+    </svg>
+    <div class="style-name">Outlined</div>
+    <div class="style-desc">비활성, 네비게이션</div>
+  </div>
+
+  <!-- Duotone -->
+  <div class="icon-style-card">
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="14" fill="#F8F5F1"/>
+      <path d="M16 20l4-4h8l4 4v10a2 2 0 01-2 2H18a2 2 0 01-2-2V20z" fill="#168EEA" opacity="0.15"/>
+      <path d="M16 20l4-4h8l4 4v10a2 2 0 01-2 2H18a2 2 0 01-2-2V20z" stroke="#168EEA" stroke-width="2" fill="none"/>
+      <circle cx="24" cy="25" r="3" fill="#168EEA"/>
+    </svg>
+    <div class="style-name">Duotone</div>
+    <div class="style-desc">카드, 피처 섹션</div>
+  </div>
+
+  <!-- Glass -->
+  <div class="icon-style-card" style="background:linear-gradient(135deg, #168EEA, #0d6ebd);">
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="14" fill="white" fill-opacity="0.15"/>
+      <path d="M16 20l4-4h8l4 4v10a2 2 0 01-2 2H18a2 2 0 01-2-2V20z" stroke="white" stroke-width="2" fill="white" fill-opacity="0.1"/>
+      <circle cx="24" cy="25" r="3" fill="white"/>
+    </svg>
+    <div class="style-name" style="color:#fff;">Glass</div>
+    <div class="style-desc" style="color:rgba(255,255,255,0.7);">히어로, 다크 배경</div>
+  </div>
+
+  <!-- Green Accent -->
+  <div class="icon-style-card">
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+      <rect width="48" height="48" rx="14" fill="#E8FBF0"/>
+      <path d="M15 25l6 6 12-14" stroke="#34C759" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    </svg>
+    <div class="style-name">Success</div>
+    <div class="style-desc">완료, 성공 상태</div>
+  </div>
+
+  <!-- Badge Icon -->
+  <div class="icon-style-card">
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+      <circle cx="24" cy="24" r="22" fill="#168EEA" opacity="0.1"/>
+      <circle cx="24" cy="24" r="15" fill="#168EEA" opacity="0.2"/>
+      <circle cx="24" cy="24" r="9" fill="#168EEA"/>
+      <path d="M21 24l2 2 4-4" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="style-name">Pulse Badge</div>
+    <div class="style-desc">알림, 상태 표시</div>
+  </div>
+</div>
+
+<!-- 2. 기능별 아이콘 세트 -->
+<div class="section-title">기능별 아이콘 세트 <span>SNS 자동화 핵심 기능</span></div>
+<div class="icon-feature-grid">
+
+  <div class="icon-feature-item">
+    <div class="icon-wrap" style="background:#EBF5FF;">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <rect x="4" y="6" width="20" height="16" rx="3" stroke="#168EEA" stroke-width="2"/>
+        <path d="M4 11h20" stroke="#168EEA" stroke-width="2"/>
+        <circle cx="8" cy="8.5" r="1" fill="#168EEA"/>
+        <circle cx="11" cy="8.5" r="1" fill="#168EEA"/>
+        <rect x="8" y="15" width="12" height="2" rx="1" fill="#168EEA" opacity="0.4"/>
+        <rect x="8" y="19" width="8" height="2" rx="1" fill="#168EEA" opacity="0.25"/>
+      </svg>
+    </div>
+    <div class="feat-name">대시보드</div>
+  </div>
+
+  <div class="icon-feature-item">
+    <div class="icon-wrap" style="background:#EBF5FF;">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="10" stroke="#168EEA" stroke-width="2"/>
+        <path d="M14 8v6l4 3" stroke="#168EEA" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="feat-name">예약 발행</div>
+  </div>
+
+  <div class="icon-feature-item">
+    <div class="icon-wrap" style="background:#E8FBF0;">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M6 22V12l4-4 4 6 4-8 4 10v6" stroke="#34C759" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="22" cy="16" r="2" fill="#34C759"/>
+      </svg>
+    </div>
+    <div class="feat-name">성과 분석</div>
+  </div>
+
+  <div class="icon-feature-item">
+    <div class="icon-wrap" style="background:#EBF5FF;">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M7 14a7 7 0 0114 0" stroke="#168EEA" stroke-width="2" stroke-linecap="round"/>
+        <path d="M14 7v2M7 14h2M21 14h-2" stroke="#168EEA" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="14" cy="14" r="2" fill="#168EEA"/>
+        <path d="M14 16v5" stroke="#168EEA" stroke-width="2" stroke-linecap="round"/>
+        <path d="M10 21h8" stroke="#168EEA" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="feat-name">AI 최적화</div>
+  </div>
+
+  <div class="icon-feature-item">
+    <div class="icon-wrap" style="background:#E8FBF0;">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <rect x="5" y="5" width="8" height="8" rx="2" fill="#34C759" opacity="0.3" stroke="#34C759" stroke-width="1.5"/>
+        <rect x="15" y="5" width="8" height="8" rx="2" fill="#168EEA" opacity="0.3" stroke="#168EEA" stroke-width="1.5"/>
+        <rect x="5" y="15" width="8" height="8" rx="2" fill="#168EEA" opacity="0.3" stroke="#168EEA" stroke-width="1.5"/>
+        <rect x="15" y="15" width="8" height="8" rx="2" fill="#34C759" opacity="0.3" stroke="#34C759" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="feat-name">멀티 채널</div>
+  </div>
+
+  <div class="icon-feature-item">
+    <div class="icon-wrap" style="background:#FFF4E6;">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M14 6l2 5h5l-4 3.5 1.5 5L14 17l-4.5 2.5L11 14.5 7 11h5z" fill="#FFBD0A" stroke="#E6A800" stroke-width="1"/>
+      </svg>
+    </div>
+    <div class="feat-name">인기 콘텐츠</div>
+  </div>
+
+  <div class="icon-feature-item">
+    <div class="icon-wrap" style="background:#EBF5FF;">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M20 8l-8 8-4-4" stroke="#168EEA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 8h8v8" stroke="#168EEA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="feat-name">자동 공유</div>
+  </div>
+
+  <div class="icon-feature-item">
+    <div class="icon-wrap" style="background:#F0EEFB;">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="10" r="4" stroke="#1A1A2E" stroke-width="2"/>
+        <path d="M7 22c0-4 3-7 7-7s7 3 7 7" stroke="#1A1A2E" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="feat-name">계정 관리</div>
+  </div>
+</div>
+
+<!-- 3. 아이콘 + 버튼 조합 -->
+<div class="section-title">아이콘 + 버튼 조합 <span>CTA 및 액션 버튼</span></div>
+<div class="icon-btn-row">
+  <button class="icon-btn" style="background:#168EEA; color:#fff;">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 3v12M3 9h12" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>
+    새 포스트
+  </button>
+  <button class="icon-btn" style="background:#34C759; color:#fff;">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 9l4 4 6-8" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    발행하기
+  </button>
+  <button class="icon-btn" style="background:#1A1A2E; color:#fff;">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6" stroke="#fff" stroke-width="2"/><path d="M9 6v3l2 1.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>
+    예약 설정
+  </button>
+  <button class="icon-btn" style="background:#fff; color:#168EEA; border:2px solid #168EEA;">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 6l3-3h6l3 3v7a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 013 13V6z" stroke="#168EEA" stroke-width="2"/><circle cx="9" cy="10" r="2" stroke="#168EEA" stroke-width="1.5"/></svg>
+    미리보기
+  </button>
+  <button class="icon-btn" style="background:#FFF4E6; color:#E6A800;">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 3l1.5 3.5H14l-3 2.5 1 3.5L9 10.5 5.5 12.5l1-3.5-3-2.5h3.5z" fill="#FFBD0A"/></svg>
+    즐겨찾기
+  </button>
+</div>
+
+<!-- 4. 사이드바 + 대시보드 미리보기 -->
+<div class="section-title">실제 UI 적용 <span>사이드바 네비게이션 + 대시보드</span></div>
+<div class="sidebar-preview">
+  <div class="sidebar-nav">
+    <div class="sidebar-logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="8" fill="#168EEA"/>
+        <path d="M8 14l4 4 8-9" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      SNS 자동화
+    </div>
+
+    <div class="sidebar-item active">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect x="2" y="2" width="7" height="7" rx="2" fill="#168EEA"/>
+        <rect x="11" y="2" width="7" height="7" rx="2" fill="#168EEA" opacity="0.4"/>
+        <rect x="2" y="11" width="7" height="7" rx="2" fill="#168EEA" opacity="0.4"/>
+        <rect x="11" y="11" width="7" height="7" rx="2" fill="#168EEA" opacity="0.4"/>
+      </svg>
+      대시보드
+    </div>
+    <div class="sidebar-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      예약 발행
+    </div>
+    <div class="sidebar-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M3 16l3-5 4 3 4-7 3 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      분석 리포트
+    </div>
+    <div class="sidebar-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <rect x="3" y="4" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M3 8h14" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M7 12h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      콘텐츠 관리
+    </div>
+    <div class="sidebar-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M4 17c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      계정
+    </div>
+    <div class="sidebar-item">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M10 3v1.5M10 15.5V17M17 10h-1.5M4.5 10H3M15 5l-1 1M6 14l-1 1M15 15l-1-1M6 6L5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      설정
+    </div>
+  </div>
+
+  <div class="sidebar-main">
+    <h3>대시보드</h3>
+    <div class="dash-cards">
+      <div class="dash-card">
+        <div class="d-icon" style="background:#EBF5FF;">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M4 18V10l3-3 3 5 3-7 3 8v5" stroke="#168EEA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="d-val" style="color:#168EEA;">1,284</div>
+          <div class="d-label">총 발행</div>
+        </div>
+      </div>
+      <div class="dash-card">
+        <div class="d-icon" style="background:#E8FBF0;">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M5 11l4 4 8-9" stroke="#34C759" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div class="d-val" style="color:#34C759;">+23.5%</div>
+          <div class="d-label">도달률</div>
+        </div>
+      </div>
+      <div class="dash-card">
+        <div class="d-icon" style="background:#FFF4E6;">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+            <path d="M11 4l1.5 4H17l-3.5 3 1.2 4L11 12.5 7.3 15l1.2-4L5 8h4.5z" fill="#FFBD0A"/>
+          </svg>
+        </div>
+        <div>
+          <div class="d-val" style="color:#E6A800;">48</div>
+          <div class="d-label">인기 글</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="channel-list">
+      <div class="channel-row" style="background:#fafaf8; font-weight:700; font-size:13px; color:#888;">
+        <div style="width:36px;"></div>
+        <div class="ch-name">채널</div>
+        <div style="width:80px; text-align:center;">상태</div>
+      </div>
+      <div class="channel-row">
+        <div class="ch-icon" style="background:#E8FBF0;">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="3" stroke="#34C759" stroke-width="1.5"/><path d="M6 9l2 2 4-4" stroke="#34C759" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="ch-name">네이버 블로그</div>
+        <div class="ch-status" style="background:#E8FBF0; color:#34C759;">연결됨</div>
+      </div>
+      <div class="channel-row">
+        <div class="ch-icon" style="background:#E8FBF0;">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="3" stroke="#34C759" stroke-width="1.5"/><path d="M6 9l2 2 4-4" stroke="#34C759" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="ch-name">인스타그램</div>
+        <div class="ch-status" style="background:#E8FBF0; color:#34C759;">연결됨</div>
+      </div>
+      <div class="channel-row">
+        <div class="ch-icon" style="background:#EBF5FF;">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6" stroke="#168EEA" stroke-width="1.5" stroke-dasharray="3 2"/></svg>
+        </div>
+        <div class="ch-name">페이스북</div>
+        <div class="ch-status" style="background:#EBF5FF; color:#168EEA;">대기중</div>
+      </div>
+      <div class="channel-row">
+        <div class="ch-icon" style="background:#FEF2F2;">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="6" stroke="#E74C3C" stroke-width="1.5"/><path d="M7 7l4 4M11 7l-4 4" stroke="#E74C3C" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </div>
+        <div class="ch-name">유튜브</div>
+        <div class="ch-status" style="background:#FEF2F2; color:#E74C3C;">미연결</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="copied-toast">복사 완료!</div>
+
+<script>
+function copyColor(color) {
+  navigator.clipboard.writeText(color).then(() => {
+    const toast = document.getElementById('toast');
+    toast.textContent = color + ' 복사 완료!';
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1500);
+  });
+}
+</script>
+
+</body>
+</html>

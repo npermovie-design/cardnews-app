@@ -150,12 +150,12 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
   return (
     <div onClick={embedded ? undefined : onClose} style={embedded ? {} : { position: "fixed", inset: 0, zIndex: 9999, background: "rgba(26,23,48,0.45)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(8px)" }}>
       <style>{".nper-auth-input::placeholder{color:rgba(255,255,255,0.35)!important}"}</style>
-      <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.98)", border: "1px solid rgba(124,106,255,0.25)", borderRadius: 22, padding: "clamp(24px,5vw,36px) clamp(18px,4vw,30px)", width: "100%", maxWidth: 420, position: "relative", boxShadow: embedded ? "0 8px 32px rgba(0,0,0,0.2)" : "0 24px 64px rgba(0,0,0,0.3)", margin: "0 auto" }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "rgba(18,16,58,0.98)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 22, padding: "clamp(24px,5vw,36px) clamp(18px,4vw,30px)", width: "100%", maxWidth: 420, position: "relative", boxShadow: embedded ? "0 8px 32px rgba(0,0,0,0.2)" : "0 24px 64px rgba(0,0,0,0.3)", margin: "0 auto" }}>
 
         <button onClick={onClose} style={{ position: "absolute", top: 14, right: 14, background: "rgba(255,255,255,0.08)", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: embedded ? 12 : 16, height: 36, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", padding: embedded ? "0 12px" : "0 10px" }}>{embedded ? "홈으로" : "✕"}</button>
 
         <div style={{ textAlign: "center", marginBottom: 24 }}>
-          <div style={{ width: 44, height: 44, borderRadius: 13, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>N</div>
+          <div style={{ width: 44, height: 44, borderRadius: 13, background: "#168EEA", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>N</div>
           <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>{ko ? "SNS메이킷" : "SNS MakeIt"}</div>
           <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{ko ? "가입 즉시 5회 지급 · AI 생성 비회원 5회 무료" : "Get 5 credits on signup · 5 free AI generations for guests"}</div>
         </div>
@@ -186,7 +186,7 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
                 </div>
               </div>
             )}
-            <button onClick={login} disabled={loading} style={{ padding: "13px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700, minHeight: 44 }}>
+            <button onClick={login} disabled={loading} style={{ padding: "13px", borderRadius: 12, border: "none", cursor: loading ? "not-allowed" : "pointer", background: loading ? "rgba(0,0,0,0.06)" : "#168EEA", color: "#fff", fontSize: 14, fontWeight: 700, minHeight: 44 }}>
               {loading ? (ko ? "로그인 중..." : "Logging in...") : (ko ? "로그인하기" : "Login")}
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 0" }}>
@@ -234,12 +234,12 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
 
             <label style={{ display: "flex", alignItems: "flex-start", gap: 8, cursor: "pointer", padding: "4px 0" }}>
               <input type="checkbox" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)}
-                style={{ marginTop: 2, accentColor: "#7c6aff", width: 16, height: 16, flexShrink: 0, cursor: "pointer" }} />
+                style={{ marginTop: 2, accentColor: "#168EEA", width: 16, height: 16, flexShrink: 0, cursor: "pointer" }} />
               <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>
                 {ko ? <><a href="/legal" target="_blank" rel="noopener noreferrer" style={{ color: "#a5b4fc", textDecoration: "underline" }}>이용약관 및 개인정보처리방침</a>에 동의합니다</> : <>I agree to the <a href="/legal" target="_blank" rel="noopener noreferrer" style={{ color: "#a5b4fc", textDecoration: "underline" }}>Terms and Privacy Policy</a></>}
               </span>
             </label>
-            <button onClick={register} disabled={loading || !agreedToTerms} style={{ padding: "13px", borderRadius: 12, border: "none", cursor: (loading || !agreedToTerms) ? "not-allowed" : "pointer", background: (loading || !agreedToTerms) ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700, opacity: !agreedToTerms ? 0.5 : 1, minHeight: 44 }}>
+            <button onClick={register} disabled={loading || !agreedToTerms} style={{ padding: "13px", borderRadius: 12, border: "none", cursor: (loading || !agreedToTerms) ? "not-allowed" : "pointer", background: (loading || !agreedToTerms) ? "rgba(0,0,0,0.06)" : "#168EEA", color: "#fff", fontSize: 14, fontWeight: 700, opacity: !agreedToTerms ? 0.5 : 1, minHeight: 44 }}>
               {loading ? (ko ? "가입 중..." : "Signing up...") : (ko ? "회원가입하기" : "Sign up")}
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "4px 0" }}>
@@ -252,12 +252,11 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
               <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
               {ko ? "Google로 시작하기" : "Sign up with Google"}
             </button>
-            <div style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 10, padding: "10px 14px" }}>
+            <div style={{ background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 10, padding: "10px 14px" }}>
               <div style={{ fontSize: 11, color: C.purpleL, fontWeight: 700, marginBottom: 6 }}>{ko ? "가입 혜택" : "Signup Benefits"}</div>
               <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.8 }}>
                 {ko ? <>
                   · 가입 즉시 <b style={{ color: C.text }}>5회</b> 지급<br/>
-                  · 게시글 작성 시 <b style={{ color: C.text }}>+1회</b> (하루 10회)<br/>
                   · 매일 로그인 시 <b style={{ color: C.text }}>+1회</b><br/>
                   · 플랜 업그레이드로 더 많은 AI 생성
                 </> : <>
@@ -275,7 +274,7 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
         {tab === "register" && regStep === 2 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 14, textAlign: "center" }}>
             {/* 아이콘 */}
-            <div style={{ fontSize: 18, fontWeight: 700, color: "#7c6aff", margin: "8px 0 4px" }}>{ko ? "이메일 인증" : "Email Verification"}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: "#168EEA", margin: "8px 0 4px" }}>{ko ? "이메일 인증" : "Email Verification"}</div>
             <div style={{ fontSize: 17, fontWeight: 900, color: "#fff" }}>{ko ? "이메일 인증을 완료해주세요" : "Please verify your email"}</div>
             <div style={{ fontSize: 13, color: "rgba(255,255,255,0.55)", lineHeight: 1.9 }}>
               {ko ? <>
@@ -290,7 +289,7 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
             </div>
 
             {/* 안내 박스 */}
-            <div style={{ background: "rgba(99,102,241,0.08)", border: "1px solid rgba(99,102,241,0.25)", borderRadius: 12, padding: "12px 14px", textAlign: "left" }}>
+            <div style={{ background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 12, padding: "12px 14px", textAlign: "left" }}>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", lineHeight: 1.8 }}>
                 {ko ? <>
                   메일이 보이지 않으면 <b style={{ color: "#fff" }}>스팸함</b>을 확인해주세요<br/>
@@ -306,7 +305,7 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
 
             {/* 인증 완료 확인 버튼 */}
             <button onClick={checkVerification} disabled={verifyLoading}
-              style={{ padding: "13px", borderRadius: 12, border: "none", cursor: verifyLoading ? "not-allowed" : "pointer", background: verifyLoading ? "rgba(124,106,255,0.3)" : "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 800 }}>
+              style={{ padding: "13px", borderRadius: 12, border: "none", cursor: verifyLoading ? "not-allowed" : "pointer", background: verifyLoading ? "rgba(0,0,0,0.06)" : "#168EEA", color: "#fff", fontSize: 14, fontWeight: 800 }}>
               {verifyLoading ? (ko ? "확인 중..." : "Checking...") : (ko ? "인증 완료 확인" : "Confirm Verification")}
             </button>
 

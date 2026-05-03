@@ -10,7 +10,7 @@ import { useI18n } from "./i18n.jsx";
 ═══════════════════════════════════════════════════════════ */
 
 const ATMOSPHERES = [
-  { id:"studio",   label:"스튜디오",       icon:"🎬", desc:"깔끔한 배경·전문 조명",    color:"#7c6aff" },
+  { id:"studio",   label:"스튜디오",       icon:"🎬", desc:"깔끔한 배경·전문 조명",    color:"#168EEA" },
   { id:"nature",   label:"자연·아웃도어",  icon:"🌿", desc:"자연광·그린 배경",          color:"#10b981" },
   { id:"cafe",     label:"카페·라이프스타일",icon:"☕",desc:"따뜻한 인테리어 공간",      color:"#f59e0b" },
   { id:"city",     label:"도시·스트리트",  icon:"🏙", desc:"도시적·트렌디",             color:"#64748b" },

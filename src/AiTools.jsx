@@ -32,7 +32,7 @@ function RepurposePage({ isDark, user, onLoginRequest, onUserUpdate, showPointCo
   const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
-  const accent = "#7c6aff";
+  const accent = "#168EEA";
 
   const FORMAT_LIST = [
     { id: "insta",    label: t("at_insta_caption"), desc: t("at_insta_desc") },
@@ -172,7 +172,7 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
                 <button key={t.id} onClick={() => setSourceType(t.id)}
                   style={{
                     padding: "7px 16px", borderRadius: 8, border: `1px solid ${sourceType === t.id ? accent : bdr}`,
-                    background: sourceType === t.id ? (isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.08)") : "transparent",
+                    background: sourceType === t.id ? (isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)") : "transparent",
                     color: sourceType === t.id ? accent : muted, fontSize: 12, fontWeight: 600, cursor: "pointer",
                   }}>
                   {t.label}
@@ -222,7 +222,7 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
                     style={{
                       display: "flex", alignItems: "center", gap: 10, padding: "12px 14px",
                       borderRadius: 10, border: `1px solid ${checked ? accent + "60" : bdr}`,
-                      background: checked ? (isDark ? "rgba(124,106,255,0.1)" : "rgba(124,106,255,0.04)") : cardBg,
+                      background: checked ? (isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)") : cardBg,
                       cursor: "pointer", transition: "all 0.15s",
                     }}>
                     <input type="checkbox" checked={checked}
@@ -250,7 +250,7 @@ ${selectedFormats.map(f => `====${f.id}====\n(${f.label} 내용)`).join("\n\n")}
           <button onClick={handleGenerate} disabled={loading}
             style={{
               width: "100%", padding: "14px", borderRadius: 12, border: "none", cursor: loading ? "default" : "pointer",
-              background: loading ? (isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.4)") : `linear-gradient(135deg,${accent},#8b5cf6)`,
+              background: loading ? (isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)") : `linear-gradient(135deg,${accent},#8b5cf6)`,
               color: "#fff", fontSize: 15, fontWeight: 800, marginBottom: 28,
               boxShadow: loading ? "none" : `0 6px 24px ${accent}40`,
               opacity: loading ? 0.7 : 1, transition: "all 0.2s",
@@ -398,10 +398,10 @@ function FileTranscriber({ isDark, user, onLoginRequest, onUserUpdate, showPoint
   const text = D ? "#e8eaed" : "#1a1a2e";
   const muted = D ? "rgba(255,255,255,0.5)" : "#888";
   const bdr = D ? "rgba(255,255,255,0.08)" : "#e5e7eb";
-  const accent = "#7c6aff";
+  const accent = "#168EEA";
   const ibg = D ? "rgba(255,255,255,0.06)" : "#f9f9fc";
   const card = D ? "rgba(255,255,255,0.05)" : "#fff";
-  const accentBg = D ? "rgba(124,106,255,0.12)" : "rgba(124,106,255,0.06)";
+  const accentBg = D ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)";
 
   const [file, setFile] = useState(null);
   const [fileContent, setFileContent] = useState("");

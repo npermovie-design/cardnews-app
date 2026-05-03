@@ -11,8 +11,8 @@ import { supabase } from "./storage";
    - 캘린더 실시간 라이브 일정
 ═══════════════════════════════════════════════════════════ */
 
-const GRAD = "linear-gradient(135deg,#7c6aff,#ec4899)";
-const ACC = "#7c6aff";
+const GRAD = "#168EEA";
+const ACC = "#168EEA";
 
 // ── 유틸 ──
 const dateStr = (d) => { const dt = new Date(d); return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,"0")}.${String(dt.getDate()).padStart(2,"0")}`; };
@@ -182,7 +182,7 @@ function ClassSlideshow({ courses, C, isDark, onSelect }) {
       {/* 오버레이 */}
       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(transparent 40%, rgba(0,0,0,0.7))", display: "flex", flexDirection: "column", justifyContent: "flex-end", padding: "20px" }}>
         <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-          <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, color: "#fff", background: cur.type === "vod" ? "rgba(124,106,255,0.85)" : "rgba(236,72,153,0.85)", backdropFilter: "blur(4px)" }}>
+          <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, color: "#fff", background: cur.type === "vod" ? "rgba(0,0,0,0.06)" : "rgba(236,72,153,0.85)", backdropFilter: "blur(4px)" }}>
             {cur.type === "vod" ? "VOD" : cur.type === "zoom" ? "LIVE" : "오프라인"}
           </span>
           <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, color: "#fff", background: cur.pricing === "free" ? "rgba(34,197,94,0.85)" : "rgba(249,115,22,0.85)" }}>
@@ -262,7 +262,7 @@ function AssignmentModal({ lesson, C, isDark, onClose, onSubmit, user, classId }
             <div style={{ display: "flex", gap: 8 }}>
               <button onClick={onClose} style={{ flex: 1, padding: "12px", borderRadius: 12, border: `1px solid ${C.border}`, background: "transparent", color: C.muted, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>취소</button>
               <button onClick={handleSubmit} disabled={!file || submitting}
-                style={{ flex: 1, padding: "12px", borderRadius: 12, border: "none", background: !file ? "rgba(124,106,255,0.3)" : GRAD, color: "#fff", fontSize: 13, fontWeight: 700, cursor: !file ? "default" : "pointer" }}>
+                style={{ flex: 1, padding: "12px", borderRadius: 12, border: "none", background: !file ? "rgba(0,0,0,0.06)" : GRAD, color: "#fff", fontSize: 13, fontWeight: 700, cursor: !file ? "default" : "pointer" }}>
                 {submitting ? "제출 중..." : "제출하기"}
               </button>
             </div>
@@ -330,7 +330,7 @@ function RichEditor({ value, onChange, placeholder, C, isDark }) {
           style={{ padding: "3px 6px", borderRadius: 6, border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 11, outline: "none" }}>
           <option value="" disabled>색상</option>
           <option value="#000000">검정</option>
-          <option value="#7c6aff">보라</option>
+          <option value="#168EEA">보라</option>
           <option value="#ec4899">핑크</option>
           <option value="#ef4444">빨강</option>
           <option value="#22c55e">초록</option>
@@ -444,8 +444,8 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
     if (hasThumb || hasVideo) await new Promise(r => setTimeout(r, 2500));
     else await new Promise(r => setTimeout(r, 1500));
     let mediaNote = "";
-    if (hasThumb) mediaNote += `<p style="color:#7c6aff;font-size:12px;">* 썸네일 이미지가 분석되었습니다.</p>`;
-    if (hasVideo) mediaNote += `<p style="color:#7c6aff;font-size:12px;">* 영상 ${videoNames.length}개 분석 완료: ${videoNames.join(", ")}</p>`;
+    if (hasThumb) mediaNote += `<p style="color:#168EEA;font-size:12px;">* 썸네일 이미지가 분석되었습니다.</p>`;
+    if (hasVideo) mediaNote += `<p style="color:#168EEA;font-size:12px;">* 영상 ${videoNames.length}개 분석 완료: ${videoNames.join(", ")}</p>`;
     const lessonList = form.lessons?.length > 0
       ? `<h3>커리큘럼 미리보기</h3><ol>${form.lessons.map(l => `<li><b>${l.title}</b> (${l.duration || "시간 미정"})</li>`).join("")}</ol>`
       : "";
@@ -528,7 +528,7 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
           </div>
         </div>
         <button onClick={() => { onSave?.(form); onClose(); }} disabled={!form.title}
-          style={{ padding: "10px 24px", borderRadius: 12, border: "none", background: !form.title ? "rgba(124,106,255,0.3)" : GRAD, color: "#fff", fontSize: 14, fontWeight: 800, cursor: !form.title ? "default" : "pointer" }}>
+          style={{ padding: "10px 24px", borderRadius: 12, border: "none", background: !form.title ? "rgba(0,0,0,0.06)" : GRAD, color: "#fff", fontSize: 14, fontWeight: 800, cursor: !form.title ? "default" : "pointer" }}>
           {course ? "변경사항 저장하기" : "클래스 등록하기"}
         </button>
       </div>
@@ -550,7 +550,7 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
           {/* AI 자동채우기 */}
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
             <button onClick={generateInfo} disabled={aiGenerating || !form.title}
-              style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: (aiGenerating || !form.title) ? "rgba(124,106,255,0.3)" : GRAD, color: "#fff", fontSize: 12, fontWeight: 700, cursor: (aiGenerating || !form.title) ? "default" : "pointer" }}>
+              style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: (aiGenerating || !form.title) ? "rgba(0,0,0,0.06)" : GRAD, color: "#fff", fontSize: 12, fontWeight: 700, cursor: (aiGenerating || !form.title) ? "default" : "pointer" }}>
               {aiGenerating ? "AI 생성 중..." : "AI로 소개 + 태그 자동 생성"}
             </button>
           </div>
@@ -623,7 +623,7 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <div style={sectionTitle}>클래스 소개 페이지</div>
               <button onClick={generateIntro} disabled={aiGenerating}
-                style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: aiGenerating ? "rgba(124,106,255,0.3)" : GRAD, color: "#fff", fontSize: 12, fontWeight: 700, cursor: aiGenerating ? "default" : "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: aiGenerating ? "rgba(0,0,0,0.06)" : GRAD, color: "#fff", fontSize: 12, fontWeight: 700, cursor: aiGenerating ? "default" : "pointer", display: "flex", alignItems: "center", gap: 6 }}>
                 {aiGenerating ? (form.thumbnail || form.lessons?.some(l=>l.videoFile) ? "미디어 분석 + AI 생성 중..." : "AI 생성 중...") : "AI로 소개글 자동 작성"}
               </button>
             </div>
@@ -636,7 +636,7 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
           {/* AI 대상/진행방식/유의사항 한번에 */}
           <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
             <button onClick={generateDetails} disabled={aiGenerating}
-              style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: aiGenerating ? "rgba(124,106,255,0.3)" : GRAD, color: "#fff", fontSize: 12, fontWeight: 700, cursor: aiGenerating ? "default" : "pointer" }}>
+              style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: aiGenerating ? "rgba(0,0,0,0.06)" : GRAD, color: "#fff", fontSize: 12, fontWeight: 700, cursor: aiGenerating ? "default" : "pointer" }}>
               {aiGenerating ? "AI 생성 중..." : "AI로 아래 항목 자동 작성"}
             </button>
           </div>
@@ -670,7 +670,7 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
           {form.type === "vod" && form.lessons.length === 0 && (
             <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
               <button onClick={generateCurriculum} disabled={aiGenerating}
-                style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: aiGenerating ? "rgba(124,106,255,0.3)" : GRAD, color: "#fff", fontSize: 12, fontWeight: 700, cursor: aiGenerating ? "default" : "pointer" }}>
+                style={{ padding: "8px 16px", borderRadius: 10, border: "none", background: aiGenerating ? "rgba(0,0,0,0.06)" : GRAD, color: "#fff", fontSize: 12, fontWeight: 700, cursor: aiGenerating ? "default" : "pointer" }}>
                 {aiGenerating ? "AI 생성 중..." : "AI로 커리큘럼 자동 구성"}
               </button>
             </div>
@@ -717,7 +717,7 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
               ))}
 
               {/* 새 강의 추가 */}
-              <div style={{ background: isDark ? "rgba(124,106,255,0.04)" : "rgba(124,106,255,0.02)", border: `1px dashed ${ACC}40`, borderRadius: 14, padding: "20px", marginTop: 12 }}>
+              <div style={{ background: isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)", border: `1px dashed ${ACC}40`, borderRadius: 14, padding: "20px", marginTop: 12 }}>
                 <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 14 }}>강의 추가</div>
                 <div style={{ marginBottom: 12 }}>
                   <span style={lbl}>강의명 *</span>
@@ -770,7 +770,7 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
                 )}
                 {uploading && <div style={{ padding: "10px 14px", borderRadius: 10, background: `${ACC}10`, color: ACC, fontSize: 13, fontWeight: 700, marginBottom: 8, textAlign: "center" }}>{uploading}</div>}
                 <button onClick={addLesson} disabled={!lessonForm.title || !!uploading}
-                  style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: (!lessonForm.title || uploading) ? "rgba(124,106,255,0.3)" : ACC, color: "#fff", fontSize: 14, fontWeight: 800, cursor: (!lessonForm.title || uploading) ? "default" : "pointer" }}>
+                  style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: (!lessonForm.title || uploading) ? "rgba(0,0,0,0.06)" : ACC, color: "#fff", fontSize: 14, fontWeight: 800, cursor: (!lessonForm.title || uploading) ? "default" : "pointer" }}>
                   {uploading ? "업로드 중..." : "강의 추가"}
                 </button>
               </div>
@@ -787,7 +787,7 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
                   <button onClick={() => setForm(p => ({ ...p, liveSchedules: p.liveSchedules.filter(x => x.id !== s.id) }))} style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 16 }}>x</button>
                 </div>
               ))}
-              <div style={{ background: isDark ? "rgba(124,106,255,0.04)" : "rgba(124,106,255,0.02)", border: `1px dashed ${ACC}40`, borderRadius: 14, padding: "20px", marginTop: 12 }}>
+              <div style={{ background: isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)", border: `1px dashed ${ACC}40`, borderRadius: 14, padding: "20px", marginTop: 12 }}>
                 <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 14 }}>일정 추가</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <div><span style={lbl}>날짜/시간 *</span><input type="datetime-local" value={liveForm.date} onChange={e => setLiveForm(p => ({ ...p, date: e.target.value }))} style={inp} /></div>
@@ -798,7 +798,7 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
                   <div><span style={lbl}>정원</span><input type="number" value={liveForm.maxSeats} onChange={e => setLiveForm(p => ({ ...p, maxSeats: Number(e.target.value) }))} style={inp} /></div>
                 </div>
                 <button onClick={addLiveSchedule} disabled={!liveForm.date || !liveForm.title}
-                  style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: (!liveForm.date || !liveForm.title) ? "rgba(124,106,255,0.3)" : ACC, color: "#fff", fontSize: 14, fontWeight: 800, cursor: (!liveForm.date || !liveForm.title) ? "default" : "pointer" }}>
+                  style={{ width: "100%", padding: "13px", borderRadius: 12, border: "none", background: (!liveForm.date || !liveForm.title) ? "rgba(0,0,0,0.06)" : ACC, color: "#fff", fontSize: 14, fontWeight: 800, cursor: (!liveForm.date || !liveForm.title) ? "default" : "pointer" }}>
                   일정 추가
                 </button>
               </div>
@@ -1522,7 +1522,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
               {/* 정보 */}
               <div style={{ flex: 1, minWidth: 200 }}>
                 <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                  <span style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 800, color: "#fff", background: course.type==="vod"?"rgba(124,106,255,0.8)":course.type==="zoom"?"rgba(236,72,153,0.8)":"rgba(34,197,94,0.8)" }}>
+                  <span style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 800, color: "#fff", background: course.type==="vod"?"rgba(0,0,0,0.06)":course.type==="zoom"?"rgba(236,72,153,0.8)":"rgba(34,197,94,0.8)" }}>
                     {course.type==="vod"?"VOD":course.type==="zoom"?"LIVE":"오프라인"}
                   </span>
                   {course.tags?.slice(0,3).map(t => <span key={t} style={{ padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.6)", background: "rgba(255,255,255,0.08)" }}>{t}</span>)}
@@ -1757,11 +1757,11 @@ export default function ClassPage({ C, navigate, user, theme }) {
                 </div>
                 {lessons.length > 0 ? (
                   <button onClick={() => { const first = lessons.find((l,i) => !isLessonLocked(course,l,i)); if (first) setSelectedLesson(first); }}
-                    style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: GRAD, color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>
+                    style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: GRAD, color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
                     {user ? "수강 시작하기" : "로그인 후 수강"}
                   </button>
                 ) : schedules.length > 0 ? (
-                  <button style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: user ? GRAD : "rgba(124,106,255,0.3)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: user?"pointer":"default" }}>
+                  <button style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: user ? GRAD : "rgba(0,0,0,0.06)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: user?"pointer":"default" }}>
                     {user ? "라이브 신청" : "로그인 필요"}
                   </button>
                 ) : null}
@@ -1865,7 +1865,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
         {filtered.map(course => (
           <div key={course.id} onClick={() => setSelectedCourse(course)}
             style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s" }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(124,106,255,0.12)"; }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.06)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>
             {/* 썸네일 */}
             <div style={{ width: "100%", aspectRatio: "16/9", background: isDark ? `linear-gradient(135deg,#1a1a3a,#0f0f25)` : `linear-gradient(135deg,#f0f0ff,#e8e0ff)`, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
@@ -1876,7 +1876,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
               )}
               {/* 뱃지 */}
               <div style={{ position: "absolute", top: 10, left: 10, display: "flex", gap: 4 }}>
-                <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, color: "#fff", background: course.type === "vod" ? "rgba(124,106,255,0.85)" : course.type === "zoom" ? "rgba(236,72,153,0.85)" : "rgba(34,197,94,0.85)", backdropFilter: "blur(4px)" }}>
+                <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, color: "#fff", background: course.type === "vod" ? "rgba(0,0,0,0.06)" : course.type === "zoom" ? "rgba(236,72,153,0.85)" : "rgba(34,197,94,0.85)", backdropFilter: "blur(4px)" }}>
                   {course.type === "vod" ? "VOD" : course.type === "zoom" ? "LIVE" : "오프라인"}
                 </span>
               </div>
@@ -1916,7 +1916,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
           <div style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 8 }}>클래스 준비 중입니다</div>
           <div style={{ fontSize: 13, lineHeight: 1.7, marginBottom: 24 }}>SNS 마케팅 전문가의 실전 강의가 곧 오픈됩니다.<br/>먼저 AI 도구로 콘텐츠를 만들어 보세요!</div>
           <button onClick={() => navigate("ai")}
-            style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+            style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: "#168EEA", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
             AI 도구 체험하기
           </button>
         </div>

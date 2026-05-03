@@ -1,180 +1,70 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { SecWrap, SecTitle, Btn } from "./UI";
+import { useState, useEffect, useRef } from "react";
+import { Btn } from "./UI";
 import { useI18n } from "./i18n.jsx";
 import { getPageText } from "./i18n-pages.js";
 import { supabase } from "./storage";
 
-/* ── 스크롤 감지 훅 ── */
-function useInView(threshold = 0.15) {
+/* ── 팔레트 (Buffer 스타일) ── */
+const P = "#168EEA";
+const PBG = "#EBF5FF";
+const PBDR = "#c4e0f9";
+const ACC = "#34C759";
+const ACCBG = "#E8FBF0";
+const TEXT = "#1A1A2E";
+const SUB = "#555555";
+const MUTED = "#999999";
+const BDR = "#e8e4e0";
+const BG = "#ffffff";
+const BG2 = "#F8F5F1";
+const DARK = "#1A1A2E";
+const DARK2 = "#2a2a42";
+
+/* ── hooks ── */
+function useInView(threshold = 0.1) {
   const ref = useRef(null);
-  const [inView, setInView] = useState(false);
+  const [v, setV] = useState(false);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { setInView(true); obs.disconnect(); }
-    }, { threshold });
-    obs.observe(el);
-    return () => obs.disconnect();
+    const o = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setV(true); o.disconnect(); } }, { threshold });
+    o.observe(el);
+    return () => o.disconnect();
   }, []);
-  return [ref, inView];
+  return [ref, v];
 }
 
-/* ── 페이드인 래퍼 ── */
-function FadeIn({ children, delay = 0, style = {} }) {
-  const [ref, inView] = useInView();
-  const noIO = typeof IntersectionObserver === "undefined";
-  const show = noIO || inView;
-  return (
-    <div ref={ref} style={{
-      opacity: show ? 1 : 0,
-      transform: show ? "translateY(0)" : "translateY(24px)",
-      transition: noIO ? "none" : `opacity 0.65s ease ${delay}s, transform 0.65s ease ${delay}s`,
-      ...style,
-    }}>
-      {children}
-    </div>
-  );
+function Reveal({ children, delay = 0, style = {} }) {
+  const [ref, v] = useInView();
+  const n = typeof IntersectionObserver === "undefined";
+  const s = n || v;
+  return <div ref={ref} style={{ opacity: s ? 1 : 0, transform: s ? "none" : "translateY(20px)", transition: n ? "none" : `opacity .5s ease ${delay}s, transform .5s ease ${delay}s`, ...style }}>{children}</div>;
 }
 
-/* ── 숫자 카운트업 애니메이션 ── */
-function CountUp({ end, duration = 1.5, suffix = "", prefix = "" }) {
-  const [ref, inView] = useInView(0.3);
-  const [count, setCount] = useState(0);
+function Counter({ end, suffix = "" }) {
+  const [ref, v] = useInView();
+  const [val, setVal] = useState(0);
   useEffect(() => {
-    if (!inView) return;
-    const startTime = Date.now();
-    const timer = setInterval(() => {
-      const elapsed = (Date.now() - startTime) / (duration * 1000);
-      if (elapsed >= 1) { setCount(end); clearInterval(timer); return; }
-      const eased = 1 - Math.pow(1 - elapsed, 3);
-      setCount(Math.floor(eased * end));
-    }, 30);
-    return () => clearInterval(timer);
-  }, [inView, end, duration]);
-  return <span ref={ref}>{prefix}{count.toLocaleString()}{suffix}</span>;
+    if (!v) return;
+    const num = parseInt(end) || 0;
+    if (!num) { setVal(end); return; }
+    let c = 0;
+    const step = Math.ceil(num / 50);
+    const t = setInterval(() => { c += step; if (c >= num) { setVal(num); clearInterval(t); } else setVal(c); }, 20);
+    return () => clearInterval(t);
+  }, [v]);
+  return <span ref={ref}>{typeof val === "number" ? val : end}{suffix}</span>;
 }
 
-/* ── FAQ 아코디언 아이템 ── */
-function FaqItem({ q, a, C }) {
+function FaqItem({ q, a }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{
-      background: C.card, border: "1px solid " + C.border, borderRadius: 14,
-      marginBottom: 10, overflow: "hidden", transition: "all 0.2s",
-    }}>
-      <button onClick={() => setOpen(!open)} aria-expanded={open} style={{
-        width: "100%", padding: "18px 20px", display: "flex", justifyContent: "space-between",
-        alignItems: "center", background: "none", border: "none", cursor: "pointer",
-        fontSize: 15, fontWeight: 700, color: C.text, textAlign: "left", gap: 12,
-      }}>
+    <div style={{ borderBottom: "1px solid " + BDR }}>
+      <button onClick={() => setOpen(!open)} aria-expanded={open} style={{ width: "100%", padding: "20px 0", display: "flex", justifyContent: "space-between", alignItems: "center", background: "none", border: "none", cursor: "pointer", fontSize: 17, fontWeight: 600, color: TEXT, textAlign: "left", gap: 16, fontFamily: "inherit", lineHeight: 1.4 }}>
         <span>{q}</span>
-        <span style={{
-          fontSize: 18, color: C.muted, transition: "transform 0.25s", flexShrink: 0,
-          transform: open ? "rotate(45deg)" : "rotate(0deg)",
-        }}>+</span>
+        <svg width="20" height="20" viewBox="0 0 20 20" style={{ flexShrink: 0, transition: "transform .2s", transform: open ? "rotate(180deg)" : "rotate(0)" }}><path d="M5 7.5L10 12.5L15 7.5" stroke={MUTED} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
       </button>
-      <div style={{
-        maxHeight: open ? 300 : 0, overflow: "hidden", transition: "max-height 0.3s ease",
-      }}>
-        <div style={{ padding: "0 20px 18px", fontSize: 14, color: C.muted, lineHeight: 1.85 }}>
-          {a}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── 추상 SVG mockup: 실제 스크린샷 대용 (지금 서비스 형태 반영) ── */
-function MockupAiHome() { return null; }
-
-function MockupBlogWriter() {
-  // 실제 인터페이스와 유사한 글쓰기 목업
-  const platforms = [
-    { name: "네이버 블로그", color: "#03c75a", active: true },
-    { name: "네이버 카페", color: "#03c75a", active: false },
-    { name: "티스토리", color: "#eb5d00", active: false },
-    { name: "인스타그램", color: "#e4405f", active: false },
-    { name: "스레드", color: "#000", active: false },
-  ];
-  return (
-    <div style={{ background: "linear-gradient(180deg, #f8f7ff 0%, #fff 100%)", padding: "20px 16px 0" }}>
-      {/* 입력 필드 */}
-      <div style={{ background: "#fff", border: "1.5px solid #e5e7eb", borderRadius: 12, padding: "12px 16px", marginBottom: 12 }}>
-        <div style={{ fontSize: 13, color: "#bbb", fontWeight: 500 }}>핵심 키워드를 입력하세요</div>
-      </div>
-      {/* 옵션 버튼 행 */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 14, alignItems: "center" }}>
-        {["파일", "링크", "설정"].map(t => (
-          <span key={t} style={{ fontSize: 11, padding: "5px 12px", borderRadius: 8, border: "1px solid #e5e7eb", color: "#666", fontWeight: 600, background: "#fff" }}>{t}</span>
-        ))}
-        <span style={{ marginLeft: "auto", fontSize: 12, padding: "6px 18px", borderRadius: 10, background: "#7c6aff", color: "#fff", fontWeight: 700 }}>1회 차감</span>
-      </div>
-      {/* 플랫폼 탭 */}
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", paddingBottom: 16 }}>
-        {platforms.map(p => (
-          <span key={p.name} style={{
-            fontSize: 11, padding: "5px 12px", borderRadius: 8, fontWeight: 600,
-            background: p.active ? "#fff" : "transparent",
-            color: p.active ? p.color : "#999",
-            border: p.active ? `1.5px solid ${p.color}` : "1px solid #e5e7eb",
-          }}>{p.name}</span>
-        ))}
-        <span style={{ fontSize: 11, padding: "5px 10px", color: "#999", fontWeight: 500 }}>+15</span>
-      </div>
-    </div>
-  );
-}
-
-function MockupDetailPage() {
-  // 상세페이지 섹션 형태
-  return (
-    <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", display: "block" }}>
-      <defs>
-        <linearGradient id="dp-bg" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#fff5f8"/>
-          <stop offset="1" stopColor="#fff"/>
-        </linearGradient>
-        <linearGradient id="dp-hero" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#8b5cf6"/>
-          <stop offset="1" stopColor="#ec4899"/>
-        </linearGradient>
-      </defs>
-      <rect width="760" height="360" fill="url(#dp-bg)"/>
-      {/* 히어로 섹션 */}
-      <rect x="60" y="30" width="640" height="120" rx="14" fill="url(#dp-hero)"/>
-      <rect x="90" y="60" width="220" height="14" rx="3" fill="#fff" opacity="0.95"/>
-      <rect x="90" y="84" width="320" height="9" rx="2" fill="#fff" opacity="0.7"/>
-      <rect x="90" y="100" width="280" height="9" rx="2" fill="#fff" opacity="0.7"/>
-      <rect x="90" y="118" width="100" height="22" rx="11" fill="#fff"/>
-      {/* 콘텐츠 섹션 3개 */}
-      {[0, 1, 2].map(i => (
-        <g key={i}>
-          <rect x={60 + i * 220} y="170" width="200" height="160" rx="12" fill="#fff" stroke="#e5e7eb" strokeWidth="1.5"/>
-          <rect x={76 + i * 220} y="188" width="168" height="80" rx="8" fill="#8b5cf6" fillOpacity={0.08 + i * 0.04}/>
-          <circle cx={160 + i * 220} cy="228" r="20" fill="#8b5cf6" fillOpacity="0.4"/>
-          <rect x={76 + i * 220} y="282" width="120" height="10" rx="2" fill="#1a1a2e" opacity="0.75"/>
-          <rect x={76 + i * 220} y="300" width="160" height="7" rx="2" fill="#1a1a2e" opacity="0.35"/>
-          <rect x={76 + i * 220} y="312" width="100" height="7" rx="2" fill="#1a1a2e" opacity="0.35"/>
-        </g>
-      ))}
-    </svg>
-  );
-}
-
-/* ── Before/After 비교 카드 ── */
-function BeforeAfterCard({ before, after, C, lang }) {
-  return (
-    <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(280px, 100%), 1fr))", minHeight: 120 }}>
-        <div style={{ padding: "20px 18px", background: "rgba(239,68,68,0.04)", borderRight: "1px solid " + C.border }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: "#ef4444", letterSpacing: 1, marginBottom: 8 }}>BEFORE</div>
-          <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>{before}</div>
-        </div>
-        <div style={{ padding: "20px 18px", background: "rgba(34,197,94,0.04)" }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: "#22c55e", letterSpacing: 1, marginBottom: 8 }}>AFTER</div>
-          <div style={{ fontSize: 13, color: C.text, lineHeight: 1.7, fontWeight: 600 }}>{after}</div>
-        </div>
+      <div style={{ maxHeight: open ? 400 : 0, overflow: "hidden", transition: "max-height .3s ease" }}>
+        <div style={{ padding: "0 0 20px", fontSize: 16, color: SUB, lineHeight: 1.6 }}>{a}</div>
       </div>
     </div>
   );
@@ -183,742 +73,529 @@ function BeforeAfterCard({ before, after, C, lang }) {
 export default function HomePage({ navigate, C, theme, user, onLoginRequest, setAiMenu }) {
   const { lang } = useI18n();
   const p = (key) => getPageText(lang, key);
+  const ko = lang === "ko";
 
-  // 실시간 통계 (Supabase에서 posts 수 가져오기)
   const [statsCount, setStatsCount] = useState(0);
   useEffect(() => {
-    (async () => {
-      try {
-        const { count } = await supabase.from("posts").select("*", { count: "exact", head: true });
-        if (count != null) setStatsCount(count);
-      } catch {}
-    })();
+    (async () => { try { const { count } = await supabase.from("posts").select("*", { count: "exact", head: true }); if (count != null) setStatsCount(count); } catch {} })();
   }, []);
 
-  /* 배경 장식 */
+  const goAi = () => navigate("ai");
+  const goPrice = () => navigate("pricing");
 
   return (
-    <div>
+    <div style={{ fontFamily: "'Pretendard Variable','Pretendard',-apple-system,system-ui,sans-serif" }}>
       <style>{`
-        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
-        @keyframes kw-scroll { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-        .kw-scroll-wrap { overflow:hidden; }
-        .kw-scroll-inner { display:flex; gap:6px; animation:kw-scroll 20s linear infinite; width:max-content; }
-        .kw-scroll-inner:hover { animation-play-state:paused; }
-        .platform-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px; }
-        .platform-row img { width:22px; height:22px; border-radius:6px; opacity:0.85; transition:all 0.2s; }
-        .platform-row img:hover { opacity:1; transform:scale(1.15); }
-        .hero-shot { transition:transform 0.4s cubic-bezier(.25,.8,.25,1), box-shadow 0.4s; }
-        .hero-shot:hover { transform:rotate(0deg) scale(1.06) translateY(-10px) !important; box-shadow:0 28px 70px rgba(124,106,255,0.22), 0 0 0 2px rgba(124,106,255,0.35) !important; z-index:10 !important; }
-        .hero-gallery { overflow:visible; }
-        .mobile-only { display:none; }
+        @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+        .mq-wrap{overflow:hidden}.mq-inner{display:flex;gap:10px;animation:marquee 28s linear infinite;width:max-content}.mq-inner:hover{animation-play-state:paused}
+        @keyframes hp-float1{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-14px) rotate(2deg)}}
+        @keyframes hp-float2{0%,100%{transform:translateY(0) rotate(1deg)}50%{transform:translateY(-10px) rotate(-2deg)}}
+        @keyframes hp-float3{0%,100%{transform:translateY(0) rotate(2deg)}50%{transform:translateY(-18px) rotate(-1deg)}}
+        @keyframes hp-float4{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+        @keyframes hp-pulse{0%,100%{opacity:.3}50%{opacity:.5}}
+        .mobile-sticky-cta{display:none}
+        .hp-float-icon{position:absolute;pointer-events:none;z-index:1}
         @media(max-width:768px){
-          .hero-gallery { height:auto !important; position:relative !important; perspective:none !important; display:grid !important; grid-template-columns:1fr 1fr !important; gap:10px !important; padding:0 8px !important; }
-          .hero-shot { position:relative !important; left:auto !important; top:auto !important; width:100% !important; transform:rotate(0deg) !important; animation:none !important; }
-        }
-        @media(max-width:768px){
-          .hero-particle{display:none!important}
-          .tool-card:hover,.review-card:hover,.stat-card:hover,.hover-lift:hover{transform:none!important;box-shadow:none!important}
-          .pain-grid{grid-template-columns:1fr!important}
-          .compare-table{font-size:11px!important}
-          .compare-table th,.compare-table td{padding:10px 6px!important}
-          .point-grid{grid-template-columns:1fr 1fr!important}
-          .home-hero-section{padding:48px 16px 36px!important}
-          .home-hero-inner{gap:22px!important}
-          .home-hero-copy{text-align:left!important;flex-basis:100%!important}
-          .home-hero-copy h1{font-size:30px!important;line-height:1.18!important;letter-spacing:0!important;margin-bottom:12px!important}
-          .home-hero-sub{font-size:14px!important;line-height:1.65!important;margin-bottom:8px!important}
-          .home-hero-note{font-size:12px!important;margin-bottom:18px!important}
-          .home-hero-button{width:100%!important;min-height:52px!important}
-          .home-hero-visual{flex-basis:100%!important;min-width:0!important}
-          .home-hero-visual img:first-child{border-radius:12px!important}
-          .home-hero-visual img:last-child{right:8px!important;bottom:-10px!important;width:48%!important;border-radius:10px!important}
-          .mobile-priority-list > div:nth-child(n+5){display:none!important}
-          .desktop-compare{display:none!important}
-          .mobile-only{display:grid!important}
+          .hp-hero-inner{flex-direction:column!important;gap:36px!important;text-align:center!important}
+          .hp-hero-btns{justify-content:center!important}
+          .hp-hero-visual{max-width:420px!important;margin:0 auto!important}
+          .hp-float-icon{display:none!important}
+          .hp-row{flex-direction:column!important}
+          .hp-row-reverse{flex-direction:column!important}
+          .hp-row .hp-row-img,.hp-row-reverse .hp-row-img{max-width:100%!important;width:100%!important}
+          .hp-row .hp-row-text,.hp-row-reverse .hp-row-text{max-width:100%!important;width:100%!important}
+          .hp-g2{grid-template-columns:1fr!important}
+          .hp-g3{grid-template-columns:1fr!important}
+          .hp-g4{grid-template-columns:1fr 1fr!important}
+          .hp-stats{grid-template-columns:repeat(2,1fr)!important}
           .mobile-sticky-cta{display:flex!important}
+          .hp-sec{padding-left:20px!important;padding-right:20px!important}
         }
         @media(max-width:480px){
-          section{padding-left:12px!important;padding-right:12px!important}
-          h1{font-size:26px!important}
-          h2{font-size:20px!important}
-          .compare-table{font-size:11px!important;min-width:auto!important}
-          .compare-table th,.compare-table td{padding:8px 4px!important;font-size:11px!important}
-          .point-grid{grid-template-columns:1fr!important}
+          .hp-hero-inner h1{font-size:28px!important}
+          .hp-g4{grid-template-columns:1fr!important}
         }
-        .tool-card:hover { transform: translateY(-6px) !important; box-shadow: 0 16px 48px rgba(124,106,255,0.2) !important; }
-        .review-card:hover { transform: translateY(-4px) !important; }
-        .stat-card:hover { transform: scale(1.04) !important; }
-        .hover-lift { transition: all 0.25s; }
-        .hover-lift:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(124,106,255,0.12); }
       `}</style>
 
-      {/* ══ 히어로 (위노트 스타일 - 좌 텍스트 + 우 스크린샷) ══ */}
-      <section className="home-hero-section" style={{
-        padding: "clamp(80px,10vw,140px) clamp(16px,4vw,24px) clamp(60px,8vw,80px)",
-        background: C.heroBg,
-      }}>
-        <div className="home-hero-inner" style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", gap: "clamp(32px,5vw,60px)", flexWrap: "wrap" }}>
-          {/* 왼쪽: 텍스트 */}
-          <div className="home-hero-copy" style={{ flex: "1 1 400px", minWidth: 280 }}>
-            <h1 style={{ fontSize: "clamp(28px,4.5vw,44px)", fontWeight: 900, lineHeight: 1.25, letterSpacing: -1.5, color: C.text, margin: "0 0 16px" }}>
-              {lang === "ko" ? <>블로그·인스타·쇼츠,<br/><span style={{ color: "#7c6aff" }}>AI로 한 번에 제작</span></> : <>Blogs, Instagram, shorts,<br/><span style={{ color: "#7c6aff" }}>created with AI</span></>}
-            </h1>
-            <p className="home-hero-sub" style={{ fontSize: 16, color: C.muted, lineHeight: 1.8, margin: "0 0 8px" }}>
-              {lang === "ko"
-                ? "키워드만 입력하면 SNS 콘텐츠 초안부터 발행 준비까지 빠르게 완성하세요."
-                : "Enter a keyword and prepare social content drafts for every channel."}
-            </p>
-            <p className="home-hero-note" style={{ fontSize: 13, color: C.muted, marginBottom: 28 }}>
-              {lang === "ko" ? "비회원 5회 무료 · 가입 시 5회 지급 · 카드 등록 불필요" : "5 guest trials · 5 credits on signup · no card needed"}
-            </p>
-            <Btn className="home-hero-button" C={C} onClick={() => navigate("ai")} style={{ fontSize: 16, padding: "14px 40px" }}>{lang === "ko" ? "무료로 시작하기" : "Start free"}</Btn>
+      {/* ══════ HERO ══════ */}
+      <section style={{ padding: "clamp(100px,15vw,160px) clamp(20px,5vw,40px) clamp(72px,10vw,120px)", background: DARK, color: "#fff", position: "relative", overflow: "hidden" }}>
+        {/* 우주/네트워크 배경 */}
+        <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} viewBox="0 0 1200 700" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <radialGradient id="hg1" cx="30%" cy="40%" r="60%"><stop offset="0%" stopColor="#168EEA" stopOpacity="0.08"/><stop offset="100%" stopColor="#168EEA" stopOpacity="0"/></radialGradient>
+            <radialGradient id="hg2" cx="75%" cy="60%" r="45%"><stop offset="0%" stopColor="#34C759" stopOpacity="0.05"/><stop offset="100%" stopColor="#34C759" stopOpacity="0"/></radialGradient>
+          </defs>
+          <rect width="1200" height="700" fill="url(#hg1)"/>
+          <rect width="1200" height="700" fill="url(#hg2)"/>
+          {/* 네트워크 라인 */}
+          <g stroke="#168EEA" fill="none" opacity=".12">
+            <line x1="100" y1="80" x2="300" y2="200" strokeWidth=".6"/>
+            <line x1="300" y1="200" x2="500" y2="120" strokeWidth=".6"/>
+            <line x1="500" y1="120" x2="700" y2="280" strokeWidth=".6"/>
+            <line x1="700" y1="280" x2="900" y2="150" strokeWidth=".6"/>
+            <line x1="900" y1="150" x2="1100" y2="250" strokeWidth=".6"/>
+            <line x1="200" y1="400" x2="450" y2="350" strokeWidth=".5"/>
+            <line x1="450" y1="350" x2="650" y2="500" strokeWidth=".5"/>
+            <line x1="650" y1="500" x2="850" y2="420" strokeWidth=".5"/>
+            <line x1="850" y1="420" x2="1050" y2="550" strokeWidth=".5"/>
+            <line x1="300" y1="200" x2="450" y2="350" strokeWidth=".4" opacity=".6"/>
+            <line x1="700" y1="280" x2="650" y2="500" strokeWidth=".4" opacity=".6"/>
+            <line x1="500" y1="120" x2="200" y2="400" strokeWidth=".3" opacity=".4"/>
+            <line x1="900" y1="150" x2="1050" y2="550" strokeWidth=".3" opacity=".4"/>
+          </g>
+          {/* 노드(별) */}
+          <g fill="#168EEA" opacity=".2">
+            <circle cx="100" cy="80" r="3"/><circle cx="300" cy="200" r="4"/>
+            <circle cx="500" cy="120" r="3"/><circle cx="700" cy="280" r="5"/>
+            <circle cx="900" cy="150" r="3"/><circle cx="1100" cy="250" r="3"/>
+            <circle cx="200" cy="400" r="2.5"/><circle cx="450" cy="350" r="3.5"/>
+            <circle cx="650" cy="500" r="3"/><circle cx="850" cy="420" r="4"/>
+            <circle cx="1050" cy="550" r="2.5"/>
+          </g>
+          {/* 은은한 별 */}
+          <g fill="#fff" opacity=".15">
+            <circle cx="80" cy="300" r="1"/><circle cx="180" cy="550" r="1.2"/>
+            <circle cx="400" cy="50" r="1"/><circle cx="600" cy="600" r="1.5"/>
+            <circle cx="750" cy="80" r="1"/><circle cx="950" cy="350" r="1.2"/>
+            <circle cx="1120" cy="100" r="1"/><circle cx="350" cy="650" r="1"/>
+          </g>
+        </svg>
+
+        {/* 플로팅 SNS 아이콘 — 히어로 이미지 주변에 모아서 배치 */}
+        <div className="hp-float-icon" style={{ top: "15%", right: "18%", animation: "hp-float1 5s ease-in-out infinite" }}>
+          <div style={{ padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <img src="/icon-instagram.webp" alt="" style={{ width: 22, height: 22, borderRadius: 5 }} />
           </div>
-          {/* 오른쪽: 서비스 스크린샷 */}
-          <div className="home-hero-visual" style={{ flex: "1 1 440px", minWidth: 280, position: "relative" }}>
-            <img src="/hero-writing.png" alt={lang === "ko" ? "AI 글쓰기" : "AI Writing"} loading="eager"
-              style={{ width: "100%", borderRadius: 16, boxShadow: "0 16px 60px rgba(0,0,0,0.1), 0 0 0 1px rgba(0,0,0,0.04)" }} />
-            <img src="/hero-generating.png" alt={lang === "ko" ? "AI 생성 중" : "AI Generating"} loading="eager"
-              style={{ position: "absolute", right: -20, bottom: -20, width: "55%", borderRadius: 14, boxShadow: "0 12px 40px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.04)" }} />
+        </div>
+        <div className="hp-float-icon" style={{ top: "8%", right: "28%", animation: "hp-float2 6s ease-in-out infinite 1s" }}>
+          <div style={{ padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <img src="/icon-youtube.png" alt="" style={{ width: 22, height: 22, borderRadius: 5 }} />
+          </div>
+        </div>
+        <div className="hp-float-icon" style={{ bottom: "18%", right: "22%", animation: "hp-float3 7s ease-in-out infinite .5s" }}>
+          <div style={{ padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <img src="/icon-naver-blog.png" alt="" style={{ width: 22, height: 22, borderRadius: 5 }} />
+          </div>
+        </div>
+        <div className="hp-float-icon" style={{ top: "40%", right: "14%", animation: "hp-float4 5.5s ease-in-out infinite 2s" }}>
+          <div style={{ padding: 10, borderRadius: 12, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <img src="/icon-threads.png" alt="" style={{ width: 22, height: 22, borderRadius: 5 }} />
+          </div>
+        </div>
+
+        <div className="hp-hero-inner" style={{ maxWidth: 1080, margin: "0 auto", display: "flex", alignItems: "center", gap: "clamp(48px,6vw,80px)", position: "relative", zIndex: 2 }}>
+          <div style={{ flex: "1 1 480px", minWidth: 280 }}>
+            <h1 style={{ fontSize: "clamp(32px,5.5vw,54px)", fontWeight: 700, lineHeight: 1.1, letterSpacing: -1.5, margin: "0 0 20px" }}>
+              {ko ? <>SNS 콘텐츠,<br/>키워드 하나면 끝</> : <>SNS content,<br/>one keyword is all</>}
+            </h1>
+            <p style={{ fontSize: "clamp(16px,1.6vw,18px)", color: "rgba(255,255,255,0.55)", lineHeight: 1.6, margin: "0 0 12px", maxWidth: 420 }}>
+              {ko ? "블로그, 인스타, 유튜브 쇼츠까지 AI가 한 번에 만들어 줍니다." : "AI creates blog, Instagram, and YouTube Shorts all at once."}
+            </p>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.25)", marginBottom: 36 }}>
+              {ko ? "비회원 5회 무료 / 가입 시 5회 / 카드 불필요" : "5 free / 5 on signup / no card"}
+            </p>
+            <div className="hp-hero-btns" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <button onClick={goAi} style={{ fontSize: 16, fontWeight: 600, padding: "14px 28px", borderRadius: 10, border: "none", background: P, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+                {ko ? "무료로 시작하기" : "Get started free"}
+              </button>
+              <button onClick={goPrice} style={{ fontSize: 15, fontWeight: 500, padding: "13px 24px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+                {ko ? "요금 알아보기" : "See pricing"}
+              </button>
+            </div>
+          </div>
+          <div className="hp-hero-visual" style={{ flex: "1 1 440px", minWidth: 280 }}>
+            <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <img src="/hero-writing.png" alt={ko ? "AI 글쓰기" : "AI Writing"} loading="eager" style={{ width: "100%", display: "block" }} />
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ══ 페인 포인트 섹션 ══ */}
-      <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg }}>
-        <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <FadeIn>
-            <div style={{ textAlign: "center", marginBottom: 48 }}>
-              <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: C.text, letterSpacing: -1.5, margin: "0 0 12px" }}>
-                {lang === "ko" ? "이런 고민, 하고 계시죠?" : "Sound familiar?"}
-              </h2>
-              <p style={{ fontSize: 15, color: C.muted }}>
-                {lang === "ko" ? "콘텐츠 제작에 지치신 분들을 위해 만들었습니다." : "Built for those tired of content creation."}
-              </p>
-            </div>
-          </FadeIn>
-          <div className="pain-grid mobile-priority-list" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+      {/* ══════ 실적 (liveklass 스타일 스탯 바) ══════ */}
+      <section style={{ padding: "40px clamp(20px,5vw,32px)", background: BG, borderBottom: "1px solid " + BDR }}>
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          <div className="hp-stats" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, textAlign: "center" }}>
             {[
-              { title: lang === "ko" ? "키워드 찾는 데만 1시간" : "1 hour just finding keywords", quote: lang === "ko" ? "뭘 써야 할지 몰라 매번 검색만 하다 시간이 다 가요" : "I spend all my time searching without knowing what to write" },
-              { title: lang === "ko" ? "블로그 글 하나에 반나절" : "Half a day for one blog post", quote: lang === "ko" ? "SEO 최적화까지 신경 쓰면 하루가 다 갑니다" : "Add SEO optimization and a whole day is gone" },
-              { title: lang === "ko" ? "SNS 채널마다 따로 제작" : "Separate content per channel", quote: lang === "ko" ? "같은 내용을 인스타, 블로그, 스레드에 각각 올리느라 지쳐요" : "Exhausted posting the same content separately" },
-              { title: lang === "ko" ? "매일 올리기가 너무 힘들어요" : "Posting daily is exhausting", quote: lang === "ko" ? "꾸준히 올려야 되는 건 알지만 매번 아이디어가 바닥나요" : "I know I need to post consistently but I run out of ideas" },
-              { title: lang === "ko" ? "영상 제작은 너무 복잡해요" : "Video creation is too complex", quote: lang === "ko" ? "촬영, 편집, 자막... 쇼츠 하나 만드는 데 반나절이 걸려요" : "Filming, editing, subtitles... half a day for one short" },
-            ].map((pain, i) => (
-              <FadeIn key={i} delay={i * 0.08}>
-                <div style={{
-                  background: C.card, border: "1px solid " + C.border, borderRadius: 14,
-                  padding: "24px 22px", height: "100%",
-                }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 8, lineHeight: 1.4 }}>{pain.title}</div>
-                  <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, margin: 0 }}>
-                    &ldquo;{pain.quote}&rdquo;
-                  </p>
+              { num: 92, suffix: "%", label: ko ? "시간 절약" : "Time saved" },
+              { num: 20, suffix: "+", label: ko ? "지원 플랫폼" : "Platforms" },
+              { num: 320, suffix: "+", label: ko ? "실시간 키워드" : "Keywords" },
+            ].map((s, i) => (
+              <div key={i}>
+                <div style={{ fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: TEXT, letterSpacing: -1 }}>
+                  <Counter end={s.num} suffix={s.suffix}/>
                 </div>
-              </FadeIn>
+                <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>{s.label}</div>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ══ 핵심 기능 벤토 그리드 ══ */}
-      <SecWrap C={C} bg={C.bg2} style={{ scrollMarginTop: 80 }} id="features-section">
-        <div style={{ textAlign: "center", marginBottom: 48 }}>
-          <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: C.text, letterSpacing: -1.5, margin: "0 0 12px" }}>
-            {lang === "ko" ? "시작부터 성장까지 쉬워집니다" : "Easy from start to growth"}
-          </h2>
-          <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7 }}>
-            {lang === "ko" ? "20가지 AI 도구로 SNS 콘텐츠 제작의 모든 과정을 자동화하세요." : "Automate every step of SNS content creation with 20+ AI tools."}
-          </p>
-        </div>
-
-        {/* AI 자동 영상 제작 + SNS 발행 - 2열 배너 */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(340px, 100%), 1fr))", gap: 16, marginBottom: 16 }}>
-          {/* 영상 제작 */}
-          <FadeIn>
-            <div onClick={() => navigate("ai")} className="hover-lift" style={{ background: "linear-gradient(135deg, #1a1030 0%, #2d1b69 50%, #1a1030 100%)", border: "1px solid rgba(124,106,255,0.3)", borderRadius: 16, overflow: "hidden", cursor: "pointer", display: "flex", flexWrap: "wrap", alignItems: "center", height: "100%" }}>
-              <div style={{ flex: "1 1 240px", padding: "28px 24px" }}>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg,#7c6aff,#ec4899)", padding: "3px 10px", borderRadius: 6 }}>NEW</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#a5b4fc" }}>{lang === "ko" ? "AI 자동 영상 제작" : "AI Auto Video"}</span>
-                </div>
-                <h3 style={{ fontSize: 22, fontWeight: 900, color: "#fff", margin: "0 0 10px", lineHeight: 1.3 }}>
-                  {lang === "ko" ? "유튜브 링크 하나로\n쇼츠 영상을 자동 제작" : "Auto-create shorts\nfrom a YouTube link"}
-                </h3>
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, margin: "0 0 14px" }}>
-                  {lang === "ko" ? "AI가 영상을 분석하고 자막과 함께 쇼츠를 자동으로 만들어줍니다." : "AI analyzes videos and auto-creates shorts with subtitles."}
-                </p>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {(lang === "ko" ? ["자동 구간 분석","자막 자동 생성","타임라인 편집"] : ["Auto analysis","Auto subtitles","Timeline editor"]).map(t => (
-                    <span key={t} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, background: "rgba(124,106,255,0.15)", color: "#a5b4fc", fontWeight: 600 }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-              <div style={{ flex: "0 0 140px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ width: 100, height: 160, borderRadius: 12, background: "#000", border: "2px solid rgba(124,106,255,0.4)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 32px rgba(124,106,255,0.3)" }}>
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" style={{ marginBottom: 6 }}><rect x="2" y="4" width="20" height="16" rx="3" stroke="#7c6aff" strokeWidth="1.5"/><polygon points="10,8 17,12 10,16" fill="#7c6aff"/></svg>
-                  <div style={{ fontSize: 9, color: "#a5b4fc", fontWeight: 700 }}>9:16 Shorts</div>
-                </div>
-              </div>
-            </div>
-          </FadeIn>
-
-          {/* SNS 다중 발행 */}
-          <FadeIn delay={0.1}>
-            <div onClick={() => { navigate("ai"); setAiMenu && setAiMenu("sns_publish"); }} className="hover-lift" style={{ background: "linear-gradient(135deg, #0c1a2e 0%, #1a3a5c 50%, #0c1a2e 100%)", border: "1px solid rgba(56,189,248,0.3)", borderRadius: 16, overflow: "hidden", cursor: "pointer", display: "flex", flexWrap: "wrap", alignItems: "center", height: "100%" }}>
-              <div style={{ flex: "1 1 240px", padding: "28px 24px" }}>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg,#38bdf8,#06b6d4)", padding: "3px 10px", borderRadius: 6 }}>NEW</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: "#7dd3fc" }}>{lang === "ko" ? "SNS 다중 발행" : "SNS Multi-Publish"}</span>
-                </div>
-                <h3 style={{ fontSize: 22, fontWeight: 900, color: "#fff", margin: "0 0 10px", lineHeight: 1.3 }}>
-                  {lang === "ko" ? "한 번에 여러 플랫폼에\n콘텐츠를 발행하세요" : "Publish content to\nmultiple platforms at once"}
-                </h3>
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.7, margin: "0 0 14px" }}>
-                  {lang === "ko" ? "YouTube, Instagram, Threads, TikTok에 동시 업로드" : "Upload simultaneously to YouTube, Instagram, Threads, TikTok"}
-                </p>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  {(lang === "ko" ? ["다중 플랫폼","미리보기","발행 히스토리"] : ["Multi-platform","Preview","Publish history"]).map(t => (
-                    <span key={t} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 6, background: "rgba(56,189,248,0.15)", color: "#7dd3fc", fontWeight: 600 }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-              <div style={{ flex: "0 0 140px", padding: "16px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                  {/* SNS 플랫폼 아이콘 그리드 */}
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                    {[
-                      { src: "/icon-youtube.png", alt: "YouTube" },
-                      { src: "/icon-instagram.webp", alt: "Instagram" },
-                      { src: "/icon-threads.png", alt: "Threads" },
-                      { src: null, alt: "TikTok", svg: true },
-                    ].map(p => (
-                      <div key={p.alt} style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(56,189,248,0.2)" }}>
-                        {p.svg ? (
-                          <svg width="22" height="22" viewBox="0 0 24 24" fill="#7dd3fc"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1v-3.51a6.37 6.37 0 0 0-.79-.05A6.34 6.34 0 0 0 3.15 15a6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.34-6.34V8.54a8.27 8.27 0 0 0 4.76 1.5V6.69h-1z"/></svg>
-                        ) : (
-                          <img src={p.src} alt={p.alt} style={{ width: 22, height: 22, objectFit: "contain" }} />
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7dd3fc" strokeWidth="2" strokeLinecap="round" style={{ marginTop: 2 }}>
-                    <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </FadeIn>
-        </div>
-
-        {/* 벤토 그리드 - Cutback 스타일 */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 16 }}>
-          {/* 글쓰기 - 대형 카드 */}
-          <FadeIn style={{ gridColumn: "span 1" }}>
-            <div onClick={() => navigate("ai")} className="hover-lift" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", cursor: "pointer", height: "100%" }}>
-              <div style={{ padding: "28px 24px 0" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#22c55e", marginBottom: 8 }}>{lang === "ko" ? "SNS 글쓰기" : "SNS Writing"}</div>
-                <h3 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: "0 0 8px", lineHeight: 1.3 }}>
-                  {lang === "ko" ? "키워드만 입력하면\nAI가 글을 완성해요" : "Just enter keywords,\nAI completes the article"}
-                </h3>
-                <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, margin: 0 }}>
-                  {lang === "ko" ? "네이버 블로그, 인스타, 유튜브 대본까지 20개+ 플랫폼 지원" : "Supports 20+ platforms including Naver Blog, Instagram, YouTube"}
-                </p>
-                <div className="platform-row">
-                  {[{src:"/icon-naver-blog.png",alt:"네이버"},{src:"/icon-naver-cafe.webp",alt:"카페"},{src:"/icon-tistory.png",alt:"티스토리"},{src:"/icon-instagram.webp",alt:"인스타"},{src:"/icon-threads.png",alt:"스레드"},{src:"/icon-youtube.png",alt:"유튜브"}].map(p => (
-                    <img key={p.alt} src={p.src} alt={p.alt} title={p.alt} />
-                  ))}
-                  <span style={{ fontSize: 11, color: C.muted, fontWeight: 600 }}>+14</span>
-                </div>
-              </div>
-              <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 16px 16px" }}>
-                <div style={{ borderRadius: "12px 12px 0 0", overflow: "hidden", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)" }}>
-                  <MockupBlogWriter />
-                </div>
-              </div>
-            </div>
-          </FadeIn>
-
-          {/* 오늘의 추천 키워드 */}
-          <FadeIn delay={0.1} style={{ gridColumn: "span 1" }}>
-            <div onClick={() => navigate("ai")} className="hover-lift" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", cursor: "pointer", height: "100%" }}>
-              <div style={{ padding: "28px 24px 0" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", marginBottom: 8 }}>{lang === "ko" ? "추천 키워드" : "Trending Keywords"}</div>
-                <h3 style={{ fontSize: 22, fontWeight: 800, color: C.text, margin: "0 0 8px", lineHeight: 1.3 }}>
-                  {lang === "ko" ? "오늘 뜨는 키워드로\n바로 글쓰기 시작" : "Start writing with\ntoday's hot keywords"}
-                </h3>
-                <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, margin: 0 }}>
-                  {lang === "ko" ? "네이버·구글 실시간 트렌드 320개+ 키워드, 클릭 한 번으로 글쓰기" : "320+ real-time trending keywords from Naver & Google, one-click writing"}
-                </p>
-              </div>
-              <div style={{ padding: "16px 12px 0", overflow: "hidden", borderRadius: "0 0 16px 16px" }}>
-                <div style={{ borderRadius: "12px 12px 0 0", overflow: "hidden", boxShadow: "0 -4px 20px rgba(0,0,0,0.08)", background: theme === "dark" ? "rgba(255,255,255,0.03)" : "#f8f7ff", padding: "16px 14px" }}>
-                  <div className="kw-scroll-wrap">
-                    <div className="kw-scroll-inner">
-                      {["AI 도구","블로그","유튜브","인스타","틱톡","마케팅","이커머스","트렌드","뷰티","건강","부업","재테크","자기계발","여행","AI 도구","블로그","유튜브","인스타","틱톡","마케팅","이커머스","트렌드","뷰티","건강","부업","재테크","자기계발","여행"].map((t, i) => (
-                        <span key={i} style={{ fontSize: 11, padding: "4px 10px", borderRadius: 20, whiteSpace: "nowrap", background: i % 14 === 0 ? "#7c6aff" : theme === "dark" ? "rgba(255,255,255,0.06)" : "#f0eeff", color: i % 14 === 0 ? "#fff" : theme === "dark" ? "rgba(255,255,255,0.6)" : "#6b5ce7", fontWeight: 600, border: `1px solid ${i % 14 === 0 ? "#7c6aff" : theme === "dark" ? "rgba(255,255,255,0.08)" : "rgba(124,106,255,0.15)"}` }}>{t}</span>
-                      ))}
-                    </div>
-                  </div>
-                  <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-                    {["AI 마케팅 자동화","숏폼 콘텐츠 전략","네이버 SEO 최적화","인스타 릴스 트렌드"].map(k => (
-                      <div key={k} style={{ fontSize: 11, padding: "6px 10px", borderRadius: 8, background: theme === "dark" ? "rgba(255,255,255,0.04)" : "#fff", color: C.text, fontWeight: 600, border: `1px solid ${theme === "dark" ? "rgba(255,255,255,0.06)" : "#eee"}`, transition: "all 0.2s", cursor: "pointer" }}
-                        onMouseEnter={e => { e.currentTarget.style.borderColor = "#7c6aff"; e.currentTarget.style.background = "rgba(124,106,255,0.06)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.borderColor = theme === "dark" ? "rgba(255,255,255,0.06)" : "#eee"; e.currentTarget.style.background = theme === "dark" ? "rgba(255,255,255,0.04)" : "#fff"; }}
-                      >{k}</div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </FadeIn>
-        </div>
-
-        {/* 하단 4열 소형 카드 */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(200px, 100%), 1fr))", gap: 14, marginTop: 16 }}>
-          {[
-            { title: lang === "ko" ? "20개+ 플랫폼" : "20+ Platforms", desc: lang === "ko" ? "네이버·카페·티스토리·인스타·스레드·유튜브·X·페이스북·LinkedIn·Medium 등" : "Naver, Cafe, Tistory, Instagram, Threads, YouTube, X, Facebook, LinkedIn, Medium & more", nav: "ai" },
-            { title: lang === "ko" ? "무료 자료실" : "Free Resources", desc: lang === "ko" ? "프리미어프로 자동편집, SNS 자동화 등 무료 프로그램 다운로드" : "Free downloads: Premiere auto-edit, SNS automation tools", nav: "programs" },
-            { title: lang === "ko" ? "정보공유 커뮤니티" : "Community", desc: lang === "ko" ? "마케팅·AI 뉴스, 키워드 추천, 노하우 가이드가 매일 자동 업데이트" : "Daily auto-updated marketing & AI news, keyword tips, guides", nav: "community/info" },
-            { title: lang === "ko" ? "SNS 자동 발행" : "Auto Publish", desc: lang === "ko" ? "스레드·네이버 블로그·티스토리 계정 연동 후 원클릭 발행" : "One-click publish to Threads, Naver Blog, Tistory after linking", nav: "ai" },
-          ].map((f, i) => (
-            <FadeIn key={f.title} delay={i * 0.08}>
-              <div onClick={() => navigate(f.nav)} className="hover-lift" style={{
-                background: C.card, border: "1px solid " + C.border, borderRadius: 14,
-                padding: "22px 18px", cursor: "pointer", height: "100%",
-              }}>
-                <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 6 }}>{f.title}</div>
-                <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7 }}>{f.desc}</div>
-              </div>
-            </FadeIn>
-          ))}
-        </div>
-
-      </SecWrap>
-
-      {/* ══ 경쟁사 비교표 ══ */}
-      <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg }}>
+      {/* ══════ 기능 소개 — 이미지+텍스트 교차 (liveklass 스타일) ══════ */}
+      <section className="hp-sec" style={{ padding: "clamp(80px,12vw,112px) clamp(20px,5vw,32px)", background: BG }}>
         <div style={{ maxWidth: 1000, margin: "0 auto" }}>
-          <FadeIn>
-            <div style={{ textAlign: "center", marginBottom: 48 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#7c6aff", letterSpacing: 2, marginBottom: 14, textTransform: "uppercase" }}>Comparison</div>
-              <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: C.text, letterSpacing: -1.5, margin: "0 0 12px" }}>
-                {lang === "ko" ? "왜 SNS메이킷인가요?" : "Why SNS Makeit?"}
+          <Reveal>
+            <div style={{ textAlign: "center", marginBottom: 64 }}>
+              <span style={{ display: "inline-block", fontSize: 13, fontWeight: 600, color: P, background: PBG, padding: "4px 14px", borderRadius: 20, marginBottom: 16 }}>
+                {ko ? "주요 기능" : "Key Features"}
+              </span>
+              <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 700, color: TEXT, letterSpacing: -0.5, margin: "0 0 12px", lineHeight: 1.2 }}>
+                {ko ? <>나만의 SNS 콘텐츠를<br/>더 쉽게, 더 빠르게</> : <>Your SNS content,<br/>easier and faster</>}
               </h2>
-              <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7 }}>
-                {lang === "ko" ? "주요 서비스와 비교해보세요. SNS메이킷만의 차별점을 확인하세요." : "Compare with major services. See what makes SNS Makeit different."}
+              <p style={{ fontSize: 16, color: SUB, lineHeight: 1.6, maxWidth: 440, margin: "0 auto" }}>
+                {ko ? "복잡한 도구 없이, 키워드 하나로 모든 채널 콘텐츠를 완성하세요." : "Complete all channel content with one keyword."}
               </p>
             </div>
-          </FadeIn>
-          <FadeIn delay={0.1}>
-            <div className="mobile-only" style={{ gridTemplateColumns: "1fr", gap: 10, display: "none", marginBottom: 18 }}>
-              {(lang === "ko" ? [
-                { title: "콘텐츠 제작 시간", desc: "여러 채널용 초안을 한 번에 만들고 수정 시간을 줄입니다." },
-                { title: "한국 SNS 최적화", desc: "네이버 블로그, 인스타, 스레드, 티스토리 흐름에 맞춰 작성합니다." },
-                { title: "자동 발행 준비", desc: "계정 연동 후 발행까지 이어지는 작업 흐름을 제공합니다." },
-                { title: "카드 없이 무료 체험", desc: "비회원 5회 무료, 가입 시 5회 추가로 바로 테스트할 수 있습니다." },
-              ] : [
-                { title: "Less production time", desc: "Create drafts for multiple channels and reduce editing work." },
-                { title: "Korean SNS optimized", desc: "Built around Naver Blog, Instagram, Threads, and Tistory workflows." },
-                { title: "Publishing workflow", desc: "Prepare content and publish after connecting accounts." },
-                { title: "Free trial, no card", desc: "Try 5 times as a guest and get 5 more credits on signup." },
-              ]).map((item, i) => (
-                <div key={item.title} style={{
-                  background: i === 0 ? "rgba(124,106,255,0.06)" : C.card,
-                  border: "1px solid " + (i === 0 ? "rgba(124,106,255,0.22)" : C.border),
-                  borderRadius: 12, padding: "16px 15px",
-                }}>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 5 }}>{item.title}</div>
-                  <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.65 }}>{item.desc}</div>
+          </Reveal>
+
+          {/* Feature 1: AI 글쓰기 — 왼쪽 이미지 + 오른쪽 텍스트 */}
+          <Reveal>
+            <div className="hp-row" style={{ display: "flex", gap: 48, alignItems: "center", marginBottom: 80 }}>
+              <div className="hp-row-img" style={{ flex: "1 1 50%", minWidth: 0 }}>
+                <div style={{ borderRadius: 16, overflow: "hidden", background: BG2, border: "1px solid " + BDR, aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <img src="/hero-writing.png" alt="" style={{ width: "100%", display: "block" }} loading="lazy" />
+                </div>
+              </div>
+              <div className="hp-row-text" style={{ flex: "1 1 50%", minWidth: 0 }}>
+                <span style={{ display: "inline-block", fontSize: 12, fontWeight: 700, color: "#fff", background: P, padding: "3px 10px", borderRadius: 6, marginBottom: 16 }}>HOT</span>
+                <h3 style={{ fontSize: "clamp(22px,3vw,30px)", fontWeight: 700, color: TEXT, margin: "0 0 14px", lineHeight: 1.3 }}>
+                  {ko ? <>블로그, SNS 글을<br/>한 번에 완성</> : <>Create blog & SNS<br/>posts together</>}
+                </h3>
+                <p style={{ fontSize: 16, color: SUB, lineHeight: 1.65, margin: "0 0 24px" }}>
+                  {ko ? "키워드 하나만 입력하면 네이버 블로그, 인스타그램, 스레드, 유튜브 대본까지 채널별 톤에 맞춰 AI가 자동으로 초안을 만들어 줍니다." : "Enter one keyword and AI creates drafts for Naver blog, Instagram, Threads, and YouTube scripts with the right tone for each channel."}
+                </p>
+                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 20 }}>
+                  {["/icon-naver-blog.png","/icon-instagram.webp","/icon-threads.png","/icon-youtube.png","/icon-tistory.png"].map((src,j) => (
+                    <img key={j} src={src} alt="" style={{ width: 24, height: 24, borderRadius: 6, border: "1px solid " + BDR }} />
+                  ))}
+                  <span style={{ fontSize: 13, color: MUTED, fontWeight: 600, marginLeft: 4 }}>+15</span>
+                </div>
+                <button onClick={goAi} style={{ fontSize: 15, fontWeight: 600, padding: "12px 24px", borderRadius: 10, border: "none", background: DARK, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+                  {ko ? "AI 글쓰기 시작" : "Start AI writing"}
+                </button>
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Feature 2: 쇼츠/영상 — 오른쪽 이미지 + 왼쪽 텍스트 */}
+          <Reveal>
+            <div className="hp-row-reverse" style={{ display: "flex", flexDirection: "row-reverse", gap: 48, alignItems: "center", marginBottom: 80 }}>
+              <div className="hp-row-img" style={{ flex: "1 1 50%", minWidth: 0 }}>
+                <div style={{ borderRadius: 16, overflow: "hidden", background: DARK, border: "1px solid " + DARK2, aspectRatio: "4/3", display: "flex", alignItems: "center", justifyContent: "center", padding: 32 }}>
+                  <div style={{ textAlign: "center", color: "#fff" }}>
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ marginBottom: 12 }}><rect x="3" y="5" width="18" height="14" rx="4" stroke="#fff" strokeWidth="1.5"/><polygon points="10,8.5 15,12 10,15.5" fill="#fff"/></svg>
+                    <div style={{ fontSize: 16, fontWeight: 600 }}>{ko ? "유튜브 링크 -> 쇼츠 자동 생성" : "YouTube link -> Auto Shorts"}</div>
+                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 6 }}>{ko ? "편집 없이 바로 발행 가능" : "Publish without editing"}</div>
+                  </div>
+                </div>
+              </div>
+              <div className="hp-row-text" style={{ flex: "1 1 50%", minWidth: 0 }}>
+                <span style={{ display: "inline-block", fontSize: 12, fontWeight: 700, color: "#fff", background: P, padding: "3px 10px", borderRadius: 6, marginBottom: 16 }}>NEW</span>
+                <h3 style={{ fontSize: "clamp(22px,3vw,30px)", fontWeight: 700, color: TEXT, margin: "0 0 14px", lineHeight: 1.3 }}>
+                  {ko ? <>쇼츠 제작부터<br/>자동 발행까지</> : <>From Shorts creation<br/>to auto-publishing</>}
+                </h3>
+                <p style={{ fontSize: 16, color: SUB, lineHeight: 1.65, margin: "0 0 24px" }}>
+                  {ko ? "유튜브 링크 하나로 쇼츠를 자동 생성하고, YouTube, Instagram, TikTok에 원클릭으로 발행하세요. 편집 경험이 없어도 괜찮습니다." : "Create shorts from a YouTube link and publish to YouTube, Instagram, TikTok with one click."}
+                </p>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 20 }}>
+                  {(ko ? ["쇼츠 제작","다중 플랫폼","자동 발행"] : ["Shorts","Multi-platform","Auto publish"]).map(t => (
+                    <span key={t} style={{ fontSize: 13, padding: "4px 12px", borderRadius: 8, background: PBG, color: P, fontWeight: 600 }}>{t}</span>
+                  ))}
+                </div>
+                <button onClick={() => { goAi(); setAiMenu && setAiMenu("sns_publish"); }} style={{ fontSize: 15, fontWeight: 600, padding: "12px 24px", borderRadius: 10, border: "none", background: DARK, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+                  {ko ? "쇼츠 만들기" : "Create Shorts"}
+                </button>
+              </div>
+            </div>
+          </Reveal>
+
+          {/* Feature 3: 키워드 분석 — 왼쪽 이미지 + 오른쪽 텍스트 */}
+          <Reveal>
+            <div className="hp-row" style={{ display: "flex", gap: 48, alignItems: "center" }}>
+              <div className="hp-row-img" style={{ flex: "1 1 50%", minWidth: 0 }}>
+                <div style={{ borderRadius: 16, overflow: "hidden", background: PBG, border: "1px solid " + PBDR, padding: 24 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: P, marginBottom: 12 }}>{ko ? "실시간 트렌드 키워드" : "Real-time trending"}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {(ko ? ["AI 마케팅","블로그 수익화","인스타 릴스","유튜브 쇼츠","챗GPT 활용","SNS 자동화","네이버 상위노출","부업 추천","건강 루틴","뷰티 트렌드","재테크 방법","여행 브이로그"]
+                         : ["AI Marketing","Blog Monetize","Insta Reels","YouTube Shorts","ChatGPT Tips","SNS Automation","SEO Tips","Side Hustle","Health","Beauty","Finance","Travel Vlog"]).map((t, i) => (
+                      <span key={i} style={{ fontSize: 13, padding: "6px 14px", borderRadius: 8, background: i < 2 ? P : "#fff", color: i < 2 ? "#fff" : TEXT, fontWeight: 600, border: i < 2 ? "none" : "1px solid " + BDR }}>{t}</span>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 16, fontSize: 13, color: SUB }}>{ko ? "네이버 + 구글 실시간 320개+ 키워드" : "320+ keywords from Naver + Google"}</div>
+                </div>
+              </div>
+              <div className="hp-row-text" style={{ flex: "1 1 50%", minWidth: 0 }}>
+                <h3 style={{ fontSize: "clamp(22px,3vw,30px)", fontWeight: 700, color: TEXT, margin: "0 0 14px", lineHeight: 1.3 }}>
+                  {ko ? <>오늘 뜨는 키워드로<br/>바로 글쓰기 시작</> : <>Start writing with<br/>today's trending keywords</>}
+                </h3>
+                <p style={{ fontSize: 16, color: SUB, lineHeight: 1.65, margin: "0 0 24px" }}>
+                  {ko ? "네이버와 구글에서 실시간으로 수집한 320개 이상의 트렌드 키워드를 확인하고, 클릭 한 번으로 바로 콘텐츠 제작을 시작하세요." : "Check 320+ trending keywords from Naver and Google, then start creating content with one click."}
+                </p>
+                <button onClick={goAi} style={{ fontSize: 15, fontWeight: 600, padding: "12px 24px", borderRadius: 10, border: "none", background: DARK, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+                  {ko ? "키워드 확인하기" : "Check keywords"}
+                </button>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ══════ All-in-one 플랫폼 (liveklass의 4칸 기능) ══════ */}
+      <section className="hp-sec" style={{ padding: "clamp(80px,12vw,112px) clamp(20px,5vw,32px)", background: BG2 }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <Reveal>
+            <div style={{ textAlign: "center", marginBottom: 48 }}>
+              <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 700, color: TEXT, letterSpacing: -0.5, margin: "0 0 12px", lineHeight: 1.2 }}>
+                {ko ? <>SNS 운영에 필요한<br/>모든 도구를 한곳에</> : <>All the tools for SNS<br/>in one place</>}
+              </h2>
+            </div>
+          </Reveal>
+          <div className="hp-g2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            {[
+              { title: ko ? "AI 글쓰기" : "AI Writing", desc: ko ? "20개+ 플랫폼에 맞는 글을 AI가 자동 생성합니다. 네이버 블로그, 인스타, 유튜브 대본까지." : "AI generates content for 20+ platforms.", icon: <><rect x="4" y="4" width="16" height="16" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5"/><line x1="8" y1="9" x2="16" y2="9" stroke="currentColor" strokeWidth="1.5"/><line x1="8" y1="13" x2="14" y2="13" stroke="currentColor" strokeWidth="1.5"/></> },
+              { title: ko ? "쇼츠 영상 제작" : "Shorts Creator", desc: ko ? "유튜브 링크만으로 쇼츠 영상을 자동 생성합니다. 편집 경험이 필요 없어요." : "Auto-create shorts from a YouTube link.", icon: <><rect x="6" y="2" width="12" height="20" rx="3" fill="none" stroke="currentColor" strokeWidth="1.5"/><polygon points="10,8 15,12 10,16" fill="currentColor"/></> },
+              { title: ko ? "추천 키워드" : "Trending Keywords", desc: ko ? "네이버, 구글 실시간 트렌드 320개+ 키워드를 확인하고 바로 제작을 시작하세요." : "320+ real-time keywords from Naver & Google.", icon: <><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" strokeWidth="1.5"/><line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" strokeWidth="1.5"/></> },
+              { title: ko ? "SNS 자동 발행" : "Auto Publishing", desc: ko ? "YouTube, Instagram, TikTok, 네이버 블로그 등 연동된 채널에 원클릭으로 발행합니다." : "One-click publish to linked channels.", icon: <><path d="M22 2L11 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M22 2L15 22L11 13L2 9L22 2Z" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></> },
+              { title: ko ? "카드뉴스" : "Card News", desc: ko ? "텍스트를 입력하면 디자인된 카드뉴스 이미지를 자동으로 생성합니다." : "Auto-generate designed card news images.", icon: <><rect x="3" y="3" width="18" height="18" rx="3" fill="none" stroke="currentColor" strokeWidth="1.5"/><circle cx="8.5" cy="8.5" r="2" fill="none" stroke="currentColor" strokeWidth="1.5"/><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></> },
+              { title: ko ? "커뮤니티 / 자료실" : "Community", desc: ko ? "마케팅 뉴스, 키워드 가이드, 프리미어프로 자동편집 도구를 무료로 제공합니다." : "Free marketing news, guides and tools.", icon: <><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" fill="none" stroke="currentColor" strokeWidth="1.5"/><circle cx="9" cy="7" r="4" fill="none" stroke="currentColor" strokeWidth="1.5"/><path d="M23 21v-2a4 4 0 00-3-3.87" fill="none" stroke="currentColor" strokeWidth="1.5"/><path d="M16 3.13a4 4 0 010 7.75" fill="none" stroke="currentColor" strokeWidth="1.5"/></> },
+            ].map((f, i) => (
+              <Reveal key={i} delay={i * 0.04}>
+                <div onClick={goAi} style={{ background: BG, borderRadius: 16, padding: "28px 24px", cursor: "pointer", border: "1px solid " + BDR, transition: "border-color .2s", height: "100%" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = PBDR}
+                  onMouseLeave={e => e.currentTarget.style.borderColor = BDR}>
+                  <div style={{ width: 40, height: 40, borderRadius: 10, background: PBG, display: "flex", alignItems: "center", justifyContent: "center", color: P, marginBottom: 16 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">{f.icon}</svg>
+                  </div>
+                  <div style={{ fontSize: 17, fontWeight: 700, color: TEXT, marginBottom: 8 }}>{f.title}</div>
+                  <p style={{ fontSize: 14, color: SUB, lineHeight: 1.55, margin: 0 }}>{f.desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════ Before / After ══════ */}
+      <section className="hp-sec" style={{ padding: "clamp(80px,12vw,112px) clamp(20px,5vw,32px)", background: BG }}>
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          <Reveal>
+            <div style={{ textAlign: "center", marginBottom: 48 }}>
+              <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 700, color: TEXT, letterSpacing: -0.5, margin: "0 0 12px", lineHeight: 1.2 }}>
+                {ko ? <>생산성은 올리고,<br/>사용하는 툴은 줄이고</> : <>Boost productivity,<br/>fewer tools needed</>}
+              </h2>
+              <p style={{ fontSize: 16, color: SUB }}>
+                {ko ? "매일 2시간 걸리던 작업, 이제 10분이면 끝" : "2 hours daily -> done in 10 minutes"}
+              </p>
+            </div>
+          </Reveal>
+          <Reveal>
+            <div className="hp-g2" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div style={{ padding: "32px 28px", borderRadius: 16, background: "#fef2f2", border: "1px solid #fecaca" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#ef4444", letterSpacing: 1, marginBottom: 16, textTransform: "uppercase" }}>{ko ? "기존 방식" : "Before"}</div>
+                {(ko ? ["키워드 조사 30분+","블로그 1시간 + SEO 별도","채널마다 따로 작성","쇼츠 편집 반나절"] : ["30min+ keyword research","1hr blog + separate SEO","Write per channel","Half-day shorts editing"]).map((t, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <svg width="14" height="14" viewBox="0 0 14 14"><path d="M4 4l6 6M10 4l-6 6" stroke="#ef4444" strokeWidth="2" strokeLinecap="round"/></svg>
+                    <span style={{ fontSize: 15, color: TEXT }}>{t}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ padding: "32px 28px", borderRadius: 16, background: PBG, border: "1px solid " + PBDR }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: P, letterSpacing: 1, marginBottom: 16, textTransform: "uppercase" }}>SNS Makeit</div>
+                {(ko ? ["AI 추천 키워드로 즉시 시작","SEO 최적화 글 3분 완성","20개+ 플랫폼 동시 생성","유튜브 링크로 쇼츠 자동"] : ["Start with AI keywords","SEO blog in 3 min","20+ platforms at once","Auto shorts from YouTube"]).map((t, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                    <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3.5 7l2.5 2.5 4.5-4.5" stroke={P} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+                    <span style={{ fontSize: 15, color: TEXT, fontWeight: 500 }}>{t}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Reveal>
+          <div style={{ textAlign: "center", marginTop: 40 }}>
+            <button onClick={goAi} style={{ fontSize: 15, fontWeight: 600, padding: "12px 28px", borderRadius: 12, border: "none", background: P, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+              {ko ? "무료로 시작하기" : "Start free"}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════ 후기 (다크 배경 — liveklass 스타일) ══════ */}
+      <section className="hp-sec" style={{ padding: "clamp(80px,12vw,112px) clamp(20px,5vw,32px)", background: DARK, color: "#fff" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <Reveal>
+            <div style={{ textAlign: "center", marginBottom: 48 }}>
+              <span style={{ display: "inline-block", fontSize: 13, fontWeight: 600, color: P, background: "rgba(22,142,234,0.15)", padding: "4px 14px", borderRadius: 20, marginBottom: 16 }}>
+                {ko ? "사용자 후기" : "Testimonials"}
+              </span>
+              <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 700, letterSpacing: -0.5, margin: 0, lineHeight: 1.2 }}>
+                {ko ? "결과로 말하는 사용자들" : "Users who speak with results"}
+              </h2>
+            </div>
+          </Reveal>
+          <div className="hp-g3" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16 }}>
+            {[
+              { initial: "K", name: ko ? "김** 대표님" : "Kim, CEO", role: ko ? "패션 쇼핑몰 | 3개월" : "Fashion | 3mo", text: ko ? "블로그 글 작성 시간이 2시간에서 5분으로 줄었어요. 외주비만 월 50만원 이상 절약하고 있습니다." : "Blog writing dropped from 2 hours to 5 minutes.", metric: ko ? "제작 시간 95% 단축" : "95% time saved" },
+              { initial: "P", name: ko ? "박** 팀장님" : "Park, Lead", role: ko ? "마케팅 대행사 | 2개월" : "Agency | 2mo", text: ko ? "10개 클라이언트의 블로그를 혼자 관리할 수 있게 됐습니다. SEO 키워드 자동 반영이 강력해요." : "I manage 10 clients' blogs alone.", metric: ko ? "업무 효율 3배 향상" : "3x efficiency" },
+              { initial: "L", name: ko ? "이** 크리에이터" : "Lee, Creator", role: ko ? "1인 크리에이터 | 1개월" : "Solo | 1mo", text: ko ? "인스타, 블로그, 스레드 콘텐츠를 한 번에 만들어서 매일 발행 중. 팔로워 3배 증가!" : "Content for all platforms at once.", metric: ko ? "발행량 5배 증가" : "5x output" },
+            ].map((r, i) => (
+              <Reveal key={i} delay={i * 0.06}>
+                <div style={{ background: DARK2, borderRadius: 16, padding: "28px 24px", border: "1px solid rgba(255,255,255,0.06)", height: "100%", display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 10, background: P, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{r.initial}</div>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700 }}>{r.name}</div>
+                      <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>{r.role}</div>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 15, color: "rgba(255,255,255,0.7)", lineHeight: 1.6, margin: 0, flex: 1 }}>"{r.text}"</p>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: P }}>{r.metric}</span>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════ 무료 횟수 + 요금 간략 ══════ */}
+      <section className="hp-sec" style={{ padding: "clamp(80px,12vw,112px) clamp(20px,5vw,32px)", background: BG }}>
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
+          <div className="hp-g2" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(360px,100%),1fr))", gap: 48, alignItems: "center" }}>
+            <Reveal>
+              <div>
+                <span style={{ display: "inline-block", fontSize: 13, fontWeight: 600, color: P, background: PBG, padding: "4px 14px", borderRadius: 20, marginBottom: 16 }}>
+                  {ko ? "무료 혜택" : "Free Benefits"}
+                </span>
+                <h2 style={{ fontSize: "clamp(26px,3.5vw,34px)", fontWeight: 700, color: TEXT, lineHeight: 1.25, margin: "0 0 14px" }}>
+                  {ko ? <>매일 무료 횟수를<br/>쌓을 수 있어요.</> : <>Earn free credits<br/>every day.</>}
+                </h2>
+                <p style={{ fontSize: 16, color: SUB, lineHeight: 1.6, margin: "0 0 28px", whiteSpace: "pre-line" }}>
+                  {ko ? "출석체크로 매일 AI 사용 횟수를 적립하세요.\n적립한 횟수로 AI 도구를 무료로 이용할 수 있어요." : "Earn credits through daily check-in.\nUse them for free AI tools."}
+                </p>
+                <button onClick={goAi} style={{ fontSize: 15, fontWeight: 600, padding: "12px 28px", borderRadius: 12, border: "none", background: P, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+                  {ko ? "무료로 시작하기" : "Start free"}
+                </button>
+              </div>
+            </Reveal>
+            <Reveal delay={0.06}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {[
+                  { title: ko ? "회원가입 보너스" : "Signup", point: "+5", unit: ko ? "회" : "x", desc: ko ? "가입 즉시" : "Instant" },
+                  { title: ko ? "매일 로그인" : "Daily", point: "+1", unit: ko ? "회" : "x", desc: ko ? "출석 체크" : "Check-in" },
+                  { title: ko ? "비회원 무료" : "Guest", point: "5", unit: ko ? "회" : "x", desc: ko ? "로그인 불필요" : "No login" },
+                ].map(item => (
+                  <div key={item.title} style={{ background: BG2, borderRadius: 14, padding: "24px 20px", textAlign: "center", border: "1px solid " + BDR }}>
+                    <div style={{ fontSize: 32, fontWeight: 700, color: P, marginBottom: 4 }}>{item.point}<span style={{ fontSize: 18 }}>{item.unit}</span></div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: TEXT, marginBottom: 2 }}>{item.title}</div>
+                    <div style={{ fontSize: 13, color: MUTED }}>{item.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════ 요금 ══════ */}
+      <section className="hp-sec" style={{ padding: "clamp(80px,12vw,112px) clamp(20px,5vw,32px)", background: BG2 }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <Reveal>
+            <div style={{ textAlign: "center", marginBottom: 48 }}>
+              <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 700, color: TEXT, letterSpacing: -0.5, margin: "0 0 12px" }}>{p("priceTitle")}</h2>
+              <p style={{ fontSize: 16, color: SUB, lineHeight: 1.6 }}>{p("priceSub")}</p>
+            </div>
+          </Reveal>
+          <div className="hp-g4" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
+            {[
+              { icon: "FREE", title: ko?"비회원":"Guest", point: ko?"5회":"5x", desc: ko?"로그인 없이":"No login", onClick: goAi, btnText: ko?"무료 시작":"Start" },
+              { icon: "+5", title: ko?"회원 가입":"Sign up", point: ko?"5회":"5x", desc: ko?"가입 즉시":"Instant", onClick: goAi, btnText: ko?"무료 시작":"Start" },
+              { icon: "$9.9", title: "Basic", point: "50"+(ko?"회/월":"/mo"), desc: ko?"매일 꾸준히":"Daily", onClick: goPrice, btnText: ko?"요금 보기":"View" },
+              { icon: "$19.9", title: "Pro", point: "200"+(ko?"회/월":"/mo"), desc: ko?"대량 + 자동":"Bulk", onClick: goPrice, btnText: ko?"요금 보기":"View", featured: true },
+            ].map((pp, i) => (
+              <Reveal key={pp.title} delay={i * 0.04}>
+                <div style={{ background: BG, borderRadius: 16, padding: "28px 20px", textAlign: "center", height: "100%", display: "flex", flexDirection: "column", border: pp.featured ? "2px solid " + P : "1px solid " + BDR, position: "relative" }}>
+                  {pp.featured && <div style={{ position: "absolute", top: -1, left: "50%", transform: "translateX(-50%)", fontSize: 12, fontWeight: 700, background: P, color: "#fff", padding: "3px 12px", borderRadius: 10 }}>{getPageText(lang,"recommend")}</div>}
+                  <div style={{ fontSize: 14, fontWeight: 700, color: pp.featured ? P : SUB, marginTop: pp.featured ? 14 : 0, marginBottom: 6 }}>{pp.icon}</div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: TEXT, marginBottom: 8 }}>{pp.title}</div>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: pp.featured ? P : TEXT, marginBottom: 8, letterSpacing: -1 }}>{pp.point}</div>
+                  <div style={{ fontSize: 14, color: SUB, marginBottom: 20, flex: 1 }}>{pp.desc}</div>
+                  <button onClick={pp.onClick} style={{ width: "100%", padding: "11px 16px", borderRadius: 10, border: "none", background: pp.featured ? P : DARK, color: "#fff", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{pp.btnText}</button>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════ FAQ ══════ */}
+      <section className="hp-sec" style={{ padding: "clamp(80px,12vw,112px) clamp(20px,5vw,32px)", background: BG }}>
+        <div style={{ maxWidth: 720, margin: "0 auto" }}>
+          <Reveal>
+            <div style={{ textAlign: "center", marginBottom: 40 }}>
+              <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 700, color: TEXT, letterSpacing: -0.5 }}>{ko ? "자주 묻는 질문" : "FAQ"}</h2>
+            </div>
+          </Reveal>
+          {(ko ? [
+            { q: "SNS메이킷은 어떤 서비스인가요?", a: "AI 기반 콘텐츠 자동 생성 플랫폼입니다. 블로그 글쓰기, 영상 편집, SNS 자동 발행까지 하나의 플랫폼에서 제공합니다." },
+            { q: "어떤 콘텐츠를 만들 수 있나요?", a: "네이버 블로그, 인스타그램 캡션, 유튜브 대본, 티스토리 글, 숏폼 영상 등 다양한 콘텐츠를 자동 생성합니다." },
+            { q: "무료로 사용할 수 있나요?", a: "네. 비회원 5회 무료, 가입 시 5회 지급, 매일 출석 체크로 추가 적립 가능합니다." },
+            { q: "콘텐츠 품질은 어떤가요?", a: "최신 AI 모델(Claude)로 높은 품질의 콘텐츠를 생성합니다. SEO 최적화도 자동 적용됩니다." },
+            { q: "어떤 플랫폼을 지원하나요?", a: "네이버 블로그, 티스토리, 인스타그램, 유튜브, 스레드, 네이버 카페 등 20개+ 플랫폼을 지원합니다." },
+            { q: "횟수는 어떻게 충전하나요?", a: "가입 시 5회 지급 + 매일 출석 적립. 유료 플랜으로 더 많은 횟수를 이용할 수 있습니다." },
+            { q: "상업적으로 사용 가능한가요?", a: "네, 모든 콘텐츠는 상업적으로 자유롭게 사용 가능합니다." },
+            { q: "개인정보는 안전한가요?", a: "Supabase 인프라 + 공식 OAuth 인증 + 암호화 저장으로 안전하게 관리됩니다." },
+          ] : [
+            { q: "What is SNS Makeit?", a: "AI-powered content platform for blog writing, video editing, and SNS auto-publishing." },
+            { q: "What content can I create?", a: "Naver blog, Instagram, YouTube scripts, Tistory, short-form videos, and more." },
+            { q: "Is it free?", a: "Yes. 5 guest uses, 5 on signup, +1 daily check-in." },
+            { q: "Content quality?", a: "Latest AI models (Claude) with automatic SEO optimization." },
+            { q: "Supported platforms?", a: "20+ including Naver, Tistory, Instagram, YouTube, Threads." },
+            { q: "How to get credits?", a: "5 on signup + daily check-in. Paid plans for more." },
+            { q: "Commercial use?", a: "Yes, all content is free for commercial use." },
+            { q: "Is my data safe?", a: "Supabase + OAuth + encrypted storage." },
+          ]).map((item, i) => (
+            <Reveal key={i} delay={i * 0.02}><FaqItem q={item.q} a={item.a}/></Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* ══════ CTA (다크) ══════ */}
+      <section className="hp-sec" style={{ padding: "clamp(80px,12vw,112px) clamp(20px,5vw,32px)", background: DARK, color: "#fff", textAlign: "center" }}>
+        <div style={{ maxWidth: 520, margin: "0 auto" }}>
+          <Reveal>
+            <h2 style={{ fontSize: "clamp(28px,4.5vw,44px)", fontWeight: 700, letterSpacing: -0.5, lineHeight: 1.15, margin: "0 0 14px" }}>
+              {ko ? "지금 바로 시작하세요." : "Start right now."}
+            </h2>
+            <p style={{ fontSize: 16, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, marginBottom: 32 }}>{p("ctaDesc")}</p>
+            <div style={{ display: "flex", gap: 28, justifyContent: "center", flexWrap: "wrap", marginBottom: 32 }}>
+              {[
+                { num: "+5"+(ko?"회":"x"), label: ko?"가입 즉시":"Signup" },
+                { num: "5"+(ko?"회":"x"), label: ko?"비회원 무료":"Guest" },
+                { num: ko?"0원":"$0", label: ko?"카드 불필요":"No card" },
+              ].map(s => (
+                <div key={s.label}>
+                  <div style={{ fontSize: 28, fontWeight: 700 }}>{s.num}</div>
+                  <div style={{ fontSize: 14, color: "rgba(255,255,255,0.4)", marginTop: 4 }}>{s.label}</div>
                 </div>
               ))}
             </div>
-            <div className="desktop-compare" style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-              <table className="compare-table" style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: "clamp(11px, 2.5vw, 13px)", color: C.text }}>
-                <thead>
-                  <tr>
-                    <th style={{ padding: "14px 16px", textAlign: "left", fontWeight: 700, color: C.muted, borderBottom: "2px solid " + C.border, fontSize: "clamp(10px, 2.2vw, 12px)" }}>
-                      {lang === "ko" ? "기능" : "Feature"}
-                    </th>
-                    {[
-                      { name: "SNS메이킷", highlight: true },
-                      { name: lang === "ko" ? "AI 챗봇" : "AI Chatbot", highlight: false },
-                      { name: lang === "ko" ? "디자인 도구" : "Design Tool", highlight: false },
-                      { name: lang === "ko" ? "개별 도구" : "Individual", highlight: false },
-                    ].map(col => (
-                      <th key={col.name} style={{
-                        padding: "14px 10px", textAlign: "center", fontWeight: 800, fontSize: "clamp(10px, 2.2vw, 12px)",
-                        color: col.highlight ? "#fff" : C.text,
-                        background: col.highlight ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : "transparent",
-                        borderBottom: col.highlight ? "none" : "2px solid " + C.border,
-                        borderRadius: col.highlight ? "12px 12px 0 0" : 0,
-                      }}>
-                        {col.name}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { feature: lang === "ko" ? "콘텐츠 제작 시간" : "Content creation time", vals: [lang === "ko" ? "3분" : "3min", lang === "ko" ? "30분+" : "30min+", lang === "ko" ? "20분+" : "20min+", lang === "ko" ? "2시간+" : "2hrs+"] },
-                    { feature: lang === "ko" ? "블로그+키워드+영상 통합" : "Detail+Blog+Video integrated", vals: ["check", "cross", "cross", "cross"] },
-                    { feature: lang === "ko" ? "SEO 최적화 글쓰기" : "SEO writing", vals: ["check", "cross", "cross", "cross"] },
-                    { feature: lang === "ko" ? "추천 키워드 320+" : "AI image gen/edit", vals: ["check", "cross", "partial", "partial"] },
-                    { feature: lang === "ko" ? "한국 SNS 최적화" : "Korean SNS", vals: ["check", "cross", "cross", "partial"] },
-                    { feature: lang === "ko" ? "SNS 자동 발행" : "Auto-publish", vals: ["check", "cross", "cross", "cross"] },
-                    { feature: lang === "ko" ? "무료 체험 (카드 불필요)" : "Free (no card)", vals: ["check", "partial", "partial", "partial"] },
-                  ].map((row, ri) => (
-                    <tr key={row.feature} style={{ background: ri % 2 === 0 ? ("rgba(124,106,255,0.02)") : "transparent" }}>
-                      <td style={{ padding: "clamp(10px, 2vw, 14px) clamp(6px, 1.5vw, 16px)", fontWeight: 600, borderBottom: "1px solid " + C.border, fontSize: "clamp(11px, 2.5vw, 13px)" }}>{row.feature}</td>
-                      {row.vals.map((v, ci) => (
-                        <td key={ci} style={{
-                          padding: "clamp(10px, 2vw, 14px) clamp(6px, 1.5vw, 12px)", textAlign: "center", borderBottom: "1px solid " + C.border,
-                          background: ci === 0 ? ("rgba(124,106,255,0.04)") : "transparent",
-                          fontWeight: ci === 0 ? 700 : 400,
-                          color: v === "check" ? "#22c55e" : v === "cross" ? (C.muted) : v === "partial" ? "#f59e0b" : (ci === 0 ? "#7c6aff" : C.text),
-                        }}>
-                          {v === "check" ? <svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="10" fill={ci === 0 ? "rgba(124,106,255,0.1)" : "rgba(34,197,94,0.1)"} stroke={ci === 0 ? "#7c6aff" : "#22c55e"} strokeWidth="1.5"/><path d="M7 11l3 3 5-5" stroke={ci === 0 ? "#7c6aff" : "#22c55e"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-                            : v === "cross" ? <svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="10" fill="rgba(239,68,68,0.06)" stroke="rgba(239,68,68,0.3)" strokeWidth="1.5"/><path d="M8 8l6 6M14 8l-6 6" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round" opacity="0.5"/></svg>
-                            : v === "partial" ? <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 600 }}>{lang === "ko" ? "일부" : "Partial"}</span>
-                            : <span style={{ fontWeight: 800, color: ci === 0 ? "#7c6aff" : C.text }}>{v}</span>}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+              <button onClick={goAi} style={{ fontSize: 16, fontWeight: 600, padding: "14px 32px", borderRadius: 12, border: "none", background: P, color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+                {ko ? "무료로 시작하기" : "Get started free"}
+              </button>
+              <button onClick={goPrice} style={{ fontSize: 15, fontWeight: 600, padding: "13px 24px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.15)", background: "transparent", color: "#fff", cursor: "pointer", fontFamily: "inherit" }}>
+                {ko ? "요금 알아보기" : "See pricing"}
+              </button>
             </div>
-            <div style={{ textAlign: "center", marginTop: 32 }}>
-              <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "무료로 시작하기" : "Start free"} →</Btn>
-            </div>
-          </FadeIn>
+          </Reveal>
         </div>
       </section>
 
-      {/* ══ 안전한 AI 강조 ══ */}
-      <section style={{ padding: "clamp(60px,8vw,80px) clamp(16px,4vw,24px)", background: C.bg }}>
-        <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <FadeIn>
-            <div style={{ background: "linear-gradient(180deg, rgba(34,197,94,0.04) 0%, rgba(124,106,255,0.04) 100%)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 24, padding: "clamp(32px,5vw,48px)", textAlign: "center" }}>
-              <div style={{ width: 56, height: 56, borderRadius: 16, background: "rgba(34,197,94,0.1)", color: "#22c55e", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              </div>
-              <h3 style={{ fontSize: "clamp(20px,3.5vw,28px)", fontWeight: 800, color: C.text, margin: "0 0 12px", letterSpacing: -0.5 }}>
-                {lang === "ko" ? "AI가 만들고, 내가 결정하는 콘텐츠" : "AI creates, you decide"}
-              </h3>
-              <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.85, maxWidth: 600, margin: "0 auto 28px" }}>
-                {lang === "ko"
-                  ? "AI가 초안을 만들고, 직접 검토한 뒤 발행하세요. 콘텐츠의 품질과 톤을 완벽하게 컨트롤할 수 있습니다."
-                  : "AI drafts the content, you review and publish. Full control over quality and tone."}
-              </p>
-              <div style={{ display: "flex", gap: "clamp(12px,3vw,24px)", justifyContent: "center", flexWrap: "wrap" }}>
-                {[
-                  lang === "ko" ? "AI 초안 → 내가 검토" : "AI draft → You review",
-                  lang === "ko" ? "톤·스타일 완벽 제어" : "Full tone control",
-                  lang === "ko" ? "원클릭 발행 또는 수정" : "One-click publish or edit",
-                ].map(text => (
-                  <div key={text} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "clamp(12px,2.5vw,14px)", fontWeight: 600 }}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    <span style={{ color: C.text }}>{text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </FadeIn>
-        </div>
-      </section>
-
-      {/* ══ 콘텐츠 제작 시간 92% 단축 (위노트 스타일 비포/애프터) ══ */}
-      <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg2 }}>
-        <div style={{ maxWidth: 900, margin: "0 auto" }}>
-          <FadeIn>
-            <div style={{ textAlign: "center", marginBottom: 48 }}>
-              <h2 style={{ fontSize: "clamp(26px,4.5vw,44px)", fontWeight: 900, color: C.text, letterSpacing: -1.5, margin: "0 0 12px" }}>
-                {lang === "ko" ? <>콘텐츠 제작 시간 <span style={{ color: "#7c6aff" }}>92% 단축</span></> : <>Content creation time <span style={{ color: "#7c6aff" }}>92% reduced</span></>}
-              </h2>
-              <p style={{ fontSize: 15, color: C.muted }}>
-                {lang === "ko" ? "매일 2시간 걸리던 작업, SNS메이킷으로 10분이면 끝" : "2 hours daily → done in 10 minutes with SNS Makeit"}
-              </p>
-            </div>
-          </FadeIn>
-
-          {/* 2컬럼 시간 비교 카드 */}
-          <FadeIn delay={0.1}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 40 }} className="pain-grid">
-              {/* 기존 방식 */}
-              <div style={{ padding: "32px 28px", borderRadius: 20, background: C.card, border: "1px solid " + C.border }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: "#ef4444", letterSpacing: 1, marginBottom: 8 }}>{lang === "ko" ? "기존 방식" : "Before"}</div>
-                <div style={{ fontSize: "clamp(36px,6vw,52px)", fontWeight: 900, color: "#ef4444", marginBottom: 4 }}>2{lang === "ko" ? "시간" : "hrs"}</div>
-                <div style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>{lang === "ko" ? "일 평균 소요 시간" : "Avg. daily time"}</div>
-                {(lang === "ko"
-                  ? ["키워드 조사에 매번 30분 이상 소요", "블로그 글 하나에 1시간, SEO 별도 조사", "인스타·블로그·스레드 각각 따로 작성", "쇼츠 영상 촬영·편집·자막 반나절", "콘텐츠 아이디어 고갈로 매번 고민"]
-                  : ["30+ min keyword research each time", "1 hour per blog post + SEO", "Write separately for each platform", "Half day for short video editing", "Content idea exhaustion"]
-                ).map((t, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
-                    <svg width="18" height="18" viewBox="0 0 20 20" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="10" cy="10" r="9" fill="rgba(239,68,68,0.1)" stroke="#ef4444" strokeWidth="1.5"/><path d="M7 7l6 6M13 7l-6 6" stroke="#ef4444" strokeWidth="1.8" strokeLinecap="round"/></svg>
-                    <span style={{ fontSize: 13, color: C.muted, lineHeight: 1.6 }}>{t}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* SNS메이킷 사용 */}
-              <div style={{ padding: "32px 28px", borderRadius: 20, background: theme === "dark" ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.03)", border: "2px solid rgba(124,106,255,0.2)" }}>
-                <div style={{ fontSize: 12, fontWeight: 800, color: "#7c6aff", letterSpacing: 1, marginBottom: 8 }}>SNS메이킷</div>
-                <div style={{ fontSize: "clamp(36px,6vw,52px)", fontWeight: 900, color: "#7c6aff", marginBottom: 4 }}>10{lang === "ko" ? "분" : "min"}</div>
-                <div style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>{lang === "ko" ? "일 평균 소요 시간" : "Avg. daily time"}</div>
-                {(lang === "ko"
-                  ? ["AI 추천 키워드 320개로 바로 글쓰기 시작", "SEO 최적화 블로그 글 3분 완성", "한 번에 20개+ 플랫폼용 콘텐츠 동시 생성", "유튜브 링크 하나로 60초 쇼츠 자동 제작", "오늘의 키워드로 매일 새로운 아이디어"]
-                  : ["Start writing with 320 AI-recommended keywords", "SEO-optimized blog in 3 minutes", "Generate for 20+ platforms at once", "Auto 60-sec shorts from YouTube link", "Fresh ideas daily with trending keywords"]
-                ).map((t, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 10 }}>
-                    <svg width="18" height="18" viewBox="0 0 20 20" style={{ flexShrink: 0, marginTop: 2 }}><circle cx="10" cy="10" r="9" fill="rgba(124,106,255,0.1)" stroke="#7c6aff" strokeWidth="1.5"/><path d="M6 10l3 3 5-5" stroke="#7c6aff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-                    <span style={{ fontSize: 13, color: C.text, lineHeight: 1.6, fontWeight: 500 }}>{t}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </FadeIn>
-
-          <div style={{ textAlign: "center" }}>
-            <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "무료로 시작하기" : "Start for free"} →</Btn>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ 실사용 후기 ══ */}
-      <SecWrap C={C} bg={C.bg}>
-        <SecTitle C={C} badge={lang === "ko" ? "후기" : "Reviews"} title={lang === "ko" ? "실제 사용자의 이야기" : "Real user stories"} sub={lang === "ko" ? "SNS메이킷으로 콘텐츠 제작을 혁신한 분들의 후기입니다." : "Stories from those who transformed their content creation."} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 20 }}>
-          {[
-            {
-              initial: "K", color: "#7c6aff",
-              name: lang === "ko" ? "김** 대표님" : "Kim, CEO",
-              industry: lang === "ko" ? "패션 쇼핑몰 운영 | 사용 3개월" : "Fashion e-commerce | 3 months",
-              text: lang === "ko" ? "블로그 글 작성 시간이 2시간에서 5분으로 줄었어요. 외주비만 월 50만원 이상 절약하고 있습니다. 디자이너 없이도 프로급 결과물이 나옵니다." : "Detail page creation went from 2 hours to 5 minutes. Saving over 500K KRW monthly in outsourcing costs.",
-              metric: lang === "ko" ? "제작 시간 95% 단축" : "95% time reduction",
-              stars: 5,
-            },
-            {
-              initial: "P", color: "#ec4899",
-              name: lang === "ko" ? "박** 팀장님" : "Park, Team Lead",
-              industry: lang === "ko" ? "마케팅 대행사 | 사용 2개월" : "Marketing agency | 2 months",
-              text: lang === "ko" ? "10개 클라이언트의 블로그를 혼자 관리할 수 있게 됐습니다. 특히 SEO 키워드 자동 반영 기능이 정말 강력해요. 검색 유입이 눈에 띄게 늘었습니다." : "I can now manage 10 clients' blogs by myself. The SEO keyword feature is powerful.",
-              metric: lang === "ko" ? "업무 효율 3배 향상" : "3x efficiency gain",
-              stars: 5,
-            },
-            {
-              initial: "L", color: "#22c55e",
-              name: lang === "ko" ? "이** 크리에이터" : "Lee, Creator",
-              industry: lang === "ko" ? "1인 크리에이터 | 사용 1개월" : "Solo creator | 1 month",
-              text: lang === "ko" ? "인스타, 블로그, 스레드 콘텐츠를 한 번에 만들어서 매일 발행하고 있어요. 팔로워 증가 속도가 3배 빨라졌습니다." : "I create content for all platforms at once and publish daily. Follower growth tripled.",
-              metric: lang === "ko" ? "발행량 5배 증가" : "5x content output",
-              stars: 5,
-            },
-          ].map((r, i) => (
-            <FadeIn key={r.initial} delay={i * 0.08}>
-              <div className="review-card" style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "28px 24px", display: "flex", flexDirection: "column", gap: 14, boxShadow: C.shadow, transition: "all 0.25s" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg,${r.color},${r.color}cc)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 800, color: "#fff", flexShrink: 0 }}>{r.initial}</div>
-                  <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{r.name}</div>
-                    <div style={{ fontSize: 12, color: C.muted }}>{r.industry}</div>
-                  </div>
-                </div>
-                <div style={{ color: "#f59e0b", fontSize: 14, letterSpacing: 2 }}>{"★".repeat(r.stars)}</div>
-                <p style={{ fontSize: 14, color: C.text, lineHeight: 1.8, margin: 0, flex: 1 }}>
-                  &ldquo;{r.text}&rdquo;
-                </p>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "#7c6aff", background: "rgba(124,106,255,0.08)", borderRadius: 10, padding: "8px 16px", textAlign: "center" }}>
-                  {r.metric}
-                </div>
-              </div>
-            </FadeIn>
-          ))}
-        </div>
-      </SecWrap>
-
-      {/* ══ 이런 분들이 사용 중 ══ */}
-      <section style={{ padding: "clamp(40px,6vw,60px) clamp(16px,4vw,24px)", background: C.bg }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", textAlign: "center" }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: C.muted, marginBottom: 24, letterSpacing: 2, textTransform: "uppercase" }}>
-            {lang === "ko" ? "다양한 분야에서 활용 중" : "Used across industries"}
-          </div>
-          <div style={{ display: "flex", gap: "clamp(10px,2vw,18px)", justifyContent: "center", flexWrap: "wrap" }}>
-            {(lang === "ko"
-              ? ["쇼핑몰 운영자", "마케팅 대행사", "1인 크리에이터", "스타트업", "블로거", "프리랜서"]
-              : ["E-commerce", "Agencies", "Creators", "Startups", "Bloggers", "Freelancers"]
-            ).map(label => (
-              <div key={label} style={{
-                padding: "10px 18px", borderRadius: 999,
-                border: "1px solid " + C.border, background: C.card,
-                fontSize: 13, fontWeight: 600, color: C.text,
-              }}>
-                {label}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══ 이용 횟수 적립 시스템 ══ */}
-      <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(300px, 100%), 1fr))", gap: 40, alignItems: "center" }}>
-            <FadeIn>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#7c6aff", letterSpacing: 1, marginBottom: 10 }}>FREE CREDITS</div>
-                <h2 style={{ fontSize: "clamp(24px,3.5vw,36px)", fontWeight: 800, color: C.text, lineHeight: 1.3, margin: "0 0 16px" }}>
-                  {lang === "ko" ? "매일 무료 횟수를\n쌓을 수 있어요" : "Earn free credits\nevery day"}
-                </h2>
-                <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.85, margin: "0 0 28px", whiteSpace: "pre-line" }}>
-                  {lang === "ko" ? "출석체크로 매일 AI 사용 횟수를 적립하세요.\n적립한 횟수로 AI 도구를 무료로 이용할 수 있어요." : "Earn credits through daily check-in.\nUse earned credits to access AI tools for free."}
-                </p>
-                <Btn C={C} onClick={() => navigate("ai")}>{lang === "ko" ? "무료로 시작하기" : "Start free"}</Btn>
-              </div>
-            </FadeIn>
-            <FadeIn delay={0.1}>
-              <div className="point-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                {[
-                  { title: lang === "ko" ? "회원가입 보너스" : "Sign-up bonus", point: "+5회", desc: lang === "ko" ? "가입 즉시 지급" : "Instant upon sign-up", color: "#ec4899" },
-                  { title: lang === "ko" ? "매일 로그인" : "Daily login", point: "+1회", desc: lang === "ko" ? "하루 한 번 출석 체크" : "Check in once a day", color: "#7c6aff" },
-                  { title: lang === "ko" ? "비회원 무료" : "Guest free trial", point: "5" + (lang === "ko" ? "회" : "x"), desc: lang === "ko" ? "로그인 없이 체험" : "Try without login", color: "#f59e0b" },
-                ].map(item => (
-                  <div key={item.title} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "20px 18px", textAlign: "center" }}>
-                    <div style={{ fontSize: 24, fontWeight: 800, color: item.color, marginBottom: 6 }}>{item.point}</div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 4 }}>{item.title}</div>
-                    <div style={{ fontSize: 12, color: C.muted }}>{item.desc}</div>
-                  </div>
-                ))}
-              </div>
-            </FadeIn>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ 이용 횟수/요금 안내 ══ */}
-      <SecWrap C={C}>
-        <SecTitle C={C} badge={p("priceBadge")} title={p("priceTitle")} sub={p("priceSub")} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(200px,100%),1fr))", gap: 14 }}>
-          {[
-            { icon: "FREE", title: lang==="ko"?"비회원 무료":"Guest Free", point: lang==="ko"?"5회":"5x", desc: lang==="ko"?"로그인 없이 AI 생성기 5회 무료 체험":"5 free AI uses without login", color: "#888", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
-            { icon: "+5회", title: lang==="ko"?"회원 가입":"Sign up", point: "5회", desc: lang==="ko"?"가입 즉시 5회 지급 + 매일 출석 적립":"5 uses on signup + daily check-in", color: "#22c55e", btnText: lang==="ko"?"무료로 시작하기":"Start free", onClick: () => navigate("ai") },
-            { icon: "$9.9", title: lang==="ko"?"Basic":"Basic", point: "50회/월", desc: lang==="ko"?"매일 꾸준히 콘텐츠 제작":"Daily content creation", color: "#7c6aff", btnText: lang==="ko"?"요금 알아보기":"View pricing", onClick: () => navigate("pricing") },
-            { icon: "$19.9", title: lang==="ko"?"Pro":"Pro", point: "200회/월", desc: lang==="ko"?"대량 콘텐츠 + NaverBot 자동발행":"Bulk content + NaverBot", color: "#ec4899", btnText: lang==="ko"?"요금 알아보기":"View pricing", onClick: () => navigate("pricing"), highlight: true },
-          ].map((p, i) => (
-            <FadeIn key={p.title} delay={i * 0.1}>
-              <div className="stat-card" style={{
-                background: p.highlight ? "linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08))" : C.card,
-                border: p.highlight ? "2px solid rgba(99,102,241,0.4)" : "1px solid " + C.border,
-                borderRadius: 16, padding: "26px 20px", textAlign: "center",
-                boxShadow: p.highlight ? "0 8px 32px rgba(99,102,241,0.15)" : C.shadow,
-                transition: "all 0.2s", cursor: "default",
-                position: "relative", overflow: "hidden",
-              }}>
-                {p.highlight && <div style={{ position: "absolute", top: -1, left: "50%", transform: "translateX(-50%)", fontSize: 9, fontWeight: 800, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", padding: "3px 12px", borderRadius: "0 0 8px 8px" }}>{getPageText(lang,"recommend")}</div>}
-                <div style={{ fontSize: 14, fontWeight: 900, color: p.color, marginBottom: 10, letterSpacing: -0.5 }}>{p.icon}</div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 6 }}>{p.title}</div>
-                <div style={{ fontSize: 22, fontWeight: 900, color: p.color, marginBottom: 8 }}>{p.point}</div>
-                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7, marginBottom: 16 }}>{p.desc}</div>
-                <button onClick={p.onClick} style={{ width: "100%", padding: "12px 0", borderRadius: 10, border: "none", background: p.highlight ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : "rgba(124,106,255,0.1)", color: p.highlight ? "#fff" : C.purpleL, fontSize: 13, fontWeight: 700, cursor: "pointer", minHeight: 44 }}>
-                  {p.btnText}
-                </button>
-              </div>
-            </FadeIn>
-          ))}
-        </div>
-      </SecWrap>
-
-      {/* ══ FAQ ══ */}
-      <section style={{ padding: "clamp(60px,10vw,100px) clamp(16px,4vw,24px)", background: C.bg }}>
-        <div style={{ maxWidth: 760, margin: "0 auto" }}>
-          <FadeIn>
-            <div style={{ textAlign: "center", marginBottom: 48 }}>
-              <div style={{ fontSize: 12, fontWeight: 800, color: "#7c6aff", letterSpacing: 2, marginBottom: 14, textTransform: "uppercase" }}>FAQ</div>
-              <h2 style={{ fontSize: "clamp(24px,4vw,40px)", fontWeight: 800, color: C.text, letterSpacing: -1.5, margin: "0 0 12px" }}>
-                {lang === "ko" ? "자주 묻는 질문" : "Frequently Asked Questions"}
-              </h2>
-            </div>
-          </FadeIn>
-          {(lang === "ko" ? [
-            { q: "SNS메이킷은 어떤 서비스인가요?", a: "SNS메이킷은 AI 기반 콘텐츠 자동 생성 플랫폼입니다. 블로그 글쓰기, 영상 편집, SNS 자동 발행까지 SNS 운영에 필요한 AI 도구를 하나의 플랫폼에서 제공합니다." },
-            { q: "어떤 콘텐츠를 만들 수 있나요?", a: "네이버 블로그, 인스타그램 캡션, 유튜브 대본, 티스토리 글, 숏폼 영상 등 SNS 마케팅에 필요한 콘텐츠를 AI로 자동 생성할 수 있습니다." },
-            { q: "무료로 사용할 수 있나요?", a: "네. 비회원도 로그인 없이 5회까지 무료로 체험할 수 있습니다. 회원가입 시 글쓰기 5회가 즉시 지급되며, 매일 로그인 출석 체크로 추가 횟수를 적립할 수 있어요." },
-            { q: "생성된 콘텐츠의 품질은 어떤가요?", a: "최신 AI 모델(Claude 계열)을 사용하여 사람이 작성한 것과 구분하기 어려운 높은 품질의 콘텐츠를 생성합니다. SEO 최적화까지 자동으로 적용되어 검색 노출에도 유리합니다." },
-            { q: "어떤 플랫폼을 지원하나요?", a: "네이버 블로그, 티스토리, 인스타그램, 유튜브, 스레드, 네이버 카페 등 주요 SNS 플랫폼을 지원합니다. 스레드, 네이버 블로그, 티스토리는 원클릭 자동 발행 기능도 제공합니다." },
-            { q: "횟수는 어떻게 충전하나요?", a: "회원가입 시 글쓰기 5회가 즉시 지급됩니다. 이후 매일 로그인 출석 체크로 추가 횟수를 적립할 수 있어요. 더 많은 횟수가 필요하면 합리적인 가격의 유료 플랜을 이용하실 수 있습니다." },
-            { q: "생성된 콘텐츠를 상업적으로 사용할 수 있나요?", a: "네, SNS메이킷으로 생성한 모든 콘텐츠는 상업적 용도로 자유롭게 사용할 수 있습니다. 별도의 라이선스 비용 없이 블로그, SNS 등에 바로 활용하세요." },
-            { q: "개인정보는 안전하게 보호되나요?", a: "SNS메이킷은 Supabase 인프라를 사용하여 데이터를 안전하게 관리합니다. 소셜 로그인(Google, Kakao)은 각 플랫폼의 공식 OAuth 인증을 통해 처리되며, 비밀번호는 암호화되어 저장됩니다." },
-          ] : [
-            { q: "What is SNS Makeit?", a: "SNS Makeit is an AI-powered content auto-generation platform. It provides AI tools for blog writing, video editing, and SNS auto-publishing in one place." },
-            { q: "What content can I create?", a: "You can create Naver blog posts, Instagram captions, YouTube scripts, short-form videos, and more." },
-            { q: "Can I use it for free?", a: "Yes. Guests can try 5 times without login. Sign up to get 5 credits instantly, plus earn more through daily check-in." },
-            { q: "What is the quality of generated content?", a: "We use the latest AI models (Claude family) to produce high-quality content that is virtually indistinguishable from human-written text, with automatic SEO optimization." },
-            { q: "Which platforms are supported?", a: "We support Naver Blog, Tistory, Instagram, YouTube, Threads, and Naver Cafe. Auto-publishing is available for Threads, Naver Blog, and Tistory." },
-            { q: "How do I earn credits?", a: "Get 5 credits on sign-up. Earn +1 credit daily through check-in. Upgrade to a plan for more monthly credits." },
-            { q: "Can I use generated content commercially?", a: "Yes. All content created with SNS Makeit can be freely used for commercial purposes without any additional licensing fees." },
-            { q: "Is my data safe?", a: "SNS Makeit uses Supabase infrastructure for secure data management. Social logins (Google, Kakao) are processed through official OAuth authentication, and passwords are encrypted." },
-          ]).map((item, i) => (
-            <FadeIn key={i} delay={i * 0.05}>
-              <FaqItem q={item.q} a={item.a} C={C} />
-            </FadeIn>
-          ))}
-        </div>
-      </section>
-
-      {/* ══ CTA ══ */}
-      <section style={{ padding: "clamp(60px,10vw,120px) clamp(16px,4vw,24px)", textAlign: "center", position: "relative", overflow: "hidden", background: C.bg2 }}>
-        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", width: "min(500px, 70vw)", height: "min(500px, 70vw)", borderRadius: "50%", background: "rgba(124,106,255,0.05)", filter: "blur(100px)", pointerEvents: "none" }} />
-        <div style={{ position: "relative", zIndex: 1, maxWidth: 640, margin: "0 auto" }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: C.purpleL, letterSpacing: 1.5, marginBottom: 14, textTransform: "uppercase" }}>{lang === "ko" ? "지금 바로 시작하세요" : "Start right now"}</div>
-          <h2 style={{ fontSize: "clamp(24px,4.5vw,44px)", fontWeight: 800, color: C.text, letterSpacing: -1.5, lineHeight: 1.2, margin: "0 0 20px" }}>
-            {p("ctaTitle1")}<br/>
-            <span style={{ background: "linear-gradient(135deg,#7c6aff,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              {p("ctaHighlight")}
-            </span>
-          </h2>
-          <p style={{ fontSize: "clamp(14px,1.6vw,17px)", color: C.muted, lineHeight: 1.9, marginBottom: 24, whiteSpace: "pre-line" }}>
-            {p("ctaDesc")}
-          </p>
-          {/* 핵심 수치 강조 */}
-          <div style={{ display: "flex", gap: 32, justifyContent: "center", flexWrap: "wrap", marginBottom: 36 }}>
-            {[
-              { num: "+5회", label: lang === "ko" ? "가입 즉시 지급" : "Signup bonus" },
-              { num: lang === "ko" ? "5회" : "5x", label: lang === "ko" ? "비회원 무료" : "Guest free" },
-              { num: lang === "ko" ? "0원" : "$0", label: lang === "ko" ? "카드 등록 불필요" : "No card needed" },
-            ].map(s => (
-              <div key={s.label} style={{ textAlign: "center" }}>
-                <div style={{ fontSize: 22, fontWeight: 800, color: "#7c6aff" }}>{s.num}</div>
-                <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-          <div className="cta-row" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-            <Btn C={C} onClick={() => navigate("ai")} style={{ fontSize: 16, padding: "14px 40px" }}>{lang === "ko" ? "무료로 시작하기" : "Start free"} →</Btn>
-            <Btn C={C} onClick={() => navigate("pricing")} ghost>{lang === "ko" ? "요금 알아보기" : "See pricing"}</Btn>
-          </div>
-        </div>
-      </section>
-      <div className="mobile-sticky-cta" style={{
-        display: "none", position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 900,
-        alignItems: "center", gap: 10, padding: "10px 10px 10px 14px", borderRadius: 14,
-        background: "rgba(255,255,255,0.96)", border: "1px solid rgba(124,106,255,0.18)",
-        boxShadow: "0 12px 40px rgba(26,23,48,0.16)", backdropFilter: "blur(14px)",
-      }}>
+      {/* 모바일 하단 CTA */}
+      <div className="mobile-sticky-cta" style={{ display: "none", position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 900, alignItems: "center", gap: 10, padding: "14px 16px", borderRadius: 14, background: "rgba(255,255,255,0.95)", border: "1px solid " + BDR, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", backdropFilter: "blur(16px)" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {lang === "ko" ? "AI 무료 체험 가능" : "Free AI trial available"}
-          </div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
-            {lang === "ko" ? "비회원 5회 · 가입 시 5회 추가" : "5 guest uses · 5 more on signup"}
-          </div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{ko ? "AI 무료 체험" : "Free AI trial"}</div>
+          <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>{ko ? "비회원 5회 / 가입 +5회" : "5 guest + 5 signup"}</div>
         </div>
-        <button onClick={() => navigate("ai")} style={{
-          flex: "0 0 auto", minHeight: 44, padding: "0 16px", borderRadius: 11, border: "none",
-          background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff",
-          fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit",
-        }}>
-          {lang === "ko" ? "시작" : "Start"}
-        </button>
+        <button onClick={goAi} style={{ flex: "0 0 auto", minHeight: 44, padding: "0 20px", borderRadius: 10, border: "none", background: P, color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{ko ? "시작" : "Start"}</button>
       </div>
     </div>
   );

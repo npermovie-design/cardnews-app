@@ -130,7 +130,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
   const bdr   = cardBdr;
   const bg    = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5";
-  const accent = "#7c6aff";
+  const accent = "#168EEA";
 
   const filteredBlog = blogList.filter(x =>
     x.type !== "shorts" && (!search || x.title.toLowerCase().includes(search.toLowerCase()) || (x.type||"").includes(search))
@@ -147,7 +147,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
   };
   const typeColor = {
     blog_naver:"#4ade80", blog_tistory:"#f97316", blog_insta:"#ec4899",
-    blog_youtube:"#ef4444", blog_thread:"#7c6aff", blog_news:"#6366f1",
+    blog_youtube:"#ef4444", blog_thread:"#168EEA", blog_news:"#6366f1",
     blog_yt_blog:"#6366f1", blog_link:"#6366f1"
   };
 
@@ -175,7 +175,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
         ].map(([id, label, cnt]) => (
           <button key={id} onClick={()=>{ setTab(id); setSelectedBlog(null); setSelectedDoc(null); setSelectedConsult(null); }}
             style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:"pointer", fontSize:12, fontWeight:700,
-              background: tab===id ? (isDark?"rgba(99,102,241,0.5)":"#fff") : "transparent",
+              background: tab===id ? (isDark?"rgba(0,0,0,0.06)":"#fff") : "transparent",
               color: tab===id ? (isDark?"#fff":accent) : muted,
               boxShadow: tab===id ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>
             {label}
@@ -215,14 +215,14 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
         <>
           {filteredBlog.length === 0 ? (
             <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
-              <div style={{ width:48, height:48, borderRadius:12, background:"rgba(99,102,241,0.1)", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
+              <div style={{ width:48, height:48, borderRadius:12, background:"rgba(0,0,0,0.06)", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
               </div>
               <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 글이 없어요</div>
               <div style={{ fontSize:13, lineHeight:1.8 }}>글 생성 후 자동으로 여기 저장됩니다</div>
               <button onClick={()=>setAiMenu("blog_naver")}
                 style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
+                  background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700 }}>
                 블로그 글 작성하기 →
               </button>
             </div>
@@ -237,7 +237,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
               <div style={{ background:bg, border:`1px solid ${bdr}`, borderRadius:16, padding:"24px 28px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
                   <span style={{ fontSize:11, fontWeight:700, padding:"3px 9px", borderRadius:6,
-                    background: isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.08)", color:typeColor[selectedBlog.type]||accent }}>
+                    background: isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)", color:typeColor[selectedBlog.type]||accent }}>
                     {typeLabel[selectedBlog.type]||"블로그"}
                   </span>
                   <span style={{ fontSize:11, color:muted }}>{selectedBlog.date}</span>
@@ -306,14 +306,14 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
         <>
           {(filteredCard.length + imgCardList.length) === 0 ? (
             <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
-              <div style={{ width:48, height:48, borderRadius:12, background:"rgba(99,102,241,0.1)", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
+              <div style={{ width:48, height:48, borderRadius:12, background:"rgba(0,0,0,0.06)", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2"><rect x="3" y="3" width="28" height="28" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
               </div>
               <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 저장된 카드뉴스가 없어요</div>
               <div style={{ fontSize:13, lineHeight:1.8 }}>카드뉴스 편집 화면에서 저장하면 여기 표시됩니다</div>
               <button onClick={()=>setAiMenu("cardnews_simple")}
                 style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
+                  background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700 }}>
                 카드뉴스 만들기 →
               </button>
             </div>
@@ -327,7 +327,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
                     <img src={item.thumb} alt={item.topic}
                       style={{ width:"100%", aspectRatio:"1", objectFit:"cover", display:"block" }} />
                   ) : (
-                    <div style={{ width:"100%", aspectRatio:"1", background: isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.06)",
+                    <div style={{ width:"100%", aspectRatio:"1", background: isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)",
                       display:"flex", alignItems:"center", justifyContent:"center" }}>
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={isDark?"rgba(255,255,255,0.3)":"rgba(0,0,0,0.2)"} strokeWidth="1.5"><rect x="3" y="3" width="28" height="28" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
                     </div>
@@ -364,7 +364,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
                   {(item.thumb||item.thumbnail) ? (
                     <img src={item.thumb||item.thumbnail} alt={item.topic} style={{ width:"100%", aspectRatio:"1", objectFit:"cover", display:"block" }} />
                   ) : (
-                    <div style={{ width:"100%", aspectRatio:"1", background: isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.06)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <div style={{ width:"100%", aspectRatio:"1", background: isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center" }}>
                       <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={isDark?"rgba(255,255,255,0.3)":"rgba(0,0,0,0.2)"} strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
                     </div>
                   )}
@@ -437,7 +437,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
                       ? <img src={item.thumb||item.thumbnail} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}/>
                       : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"#888", fontWeight:700 }}>이미지</div>}
                     <div style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:10, fontWeight:700, padding:"3px 7px", borderRadius:5 }}>{item.count||item.slides?.length||0}장</div>
-                    <div style={{ position:"absolute", top:8, left:8, background:"rgba(99,102,241,0.8)", color:"#fff", fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4 }}>이미지</div>
+                    <div style={{ position:"absolute", top:8, left:8, background:"rgba(0,0,0,0.06)", color:"#fff", fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4 }}>이미지</div>
                   </div>
                   <div style={{ padding:"12px 14px" }}>
                     <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.productName||item.topic||"제목 없음"}</div>
@@ -467,14 +467,14 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
         <>
           {pptList.length === 0 ? (
             <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
-              <div style={{ width:48, height:48, borderRadius:12, background:"rgba(99,102,241,0.1)", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
+              <div style={{ width:48, height:48, borderRadius:12, background:"rgba(0,0,0,0.06)", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
               </div>
               <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 생성한 PPT가 없어요</div>
               <div style={{ fontSize:13, lineHeight:1.8 }}>PPT 생성 후 자동으로 여기 저장됩니다</div>
               <button onClick={()=>setAiMenu("ppt")}
                 style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
+                  background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700 }}>
                 PPT 만들기 →
               </button>
             </div>
@@ -483,7 +483,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
               {pptList.map(item => (
                 <div key={item.id}
                   style={{ background:bg, border:`1px solid ${bdr}`, borderRadius:12, padding:"14px 18px", display:"flex", alignItems:"flex-start", gap:14 }}>
-                  <div style={{ width:40, height:40, borderRadius:10, background:"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <div style={{ width:40, height:40, borderRadius:10, background:"rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
@@ -506,14 +506,14 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
         <>
           {docList.length === 0 ? (
             <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
-              <div style={{ width:48, height:48, borderRadius:12, background:"rgba(99,102,241,0.1)", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
+              <div style={{ width:48, height:48, borderRadius:12, background:"rgba(0,0,0,0.06)", display:"inline-flex", alignItems:"center", justifyContent:"center", marginBottom:12 }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
               </div>
               <div style={{ fontSize:15, fontWeight:700, marginBottom:6, color:text }}>아직 생성한 문서가 없어요</div>
               <div style={{ fontSize:13, lineHeight:1.8 }}>비즈니스 문서 생성 후 자동으로 여기 저장됩니다</div>
               <button onClick={()=>setAiMenu("prompt_studio")}
                 style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
+                  background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700 }}>
                 문서 작성하기 →
               </button>
             </div>
@@ -527,7 +527,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
               <div style={{ background:bg, border:`1px solid ${bdr}`, borderRadius:16, padding:"24px 28px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
                   <span style={{ fontSize:11, fontWeight:700, padding:"3px 9px", borderRadius:6,
-                    background: isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.08)", color:accent }}>
+                    background: isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)", color:accent }}>
                     {selectedDoc.docType||"문서"}
                   </span>
                   <span style={{ fontSize:11, color:muted }}>{selectedDoc.date}</span>
@@ -559,7 +559,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
                   style={{ background:bg, border:`1px solid ${bdr}`, borderRadius:12, padding:"14px 18px", cursor:"pointer", display:"flex", alignItems:"flex-start", gap:14, transition:"opacity 0.1s" }}
                   onMouseEnter={e=>e.currentTarget.style.opacity="0.8"}
                   onMouseLeave={e=>e.currentTarget.style.opacity="1"}>
-                  <div style={{ width:40, height:40, borderRadius:10, background:"rgba(99,102,241,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                  <div style={{ width:40, height:40, borderRadius:10, background:"rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
                   </div>
                   <div style={{ flex:1, minWidth:0 }}>
@@ -598,7 +598,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
               <div style={{ fontSize:13, lineHeight:1.8 }}>카드뉴스·상세페이지 생성 후 자동으로 여기 저장됩니다</div>
               <button onClick={()=>setAiMenu("cardnews_simple")}
                 style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700 }}>
+                  background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700 }}>
                 카드뉴스 만들기 →
               </button>
             </div>
@@ -612,7 +612,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
                       ? <img src={item.thumbnail} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}/>
                       : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"#888", fontWeight:700 }}>카드뉴스</div>}
                     <div style={{ position:"absolute", top:8, right:8, background:"rgba(0,0,0,0.6)", color:"#fff", fontSize:10, fontWeight:700, padding:"3px 7px", borderRadius:5 }}>{item.count}장</div>
-                    <div style={{ position:"absolute", top:8, left:8, background:"rgba(99,102,241,0.8)", color:"#fff", fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4 }}>카드뉴스</div>
+                    <div style={{ position:"absolute", top:8, left:8, background:"rgba(0,0,0,0.06)", color:"#fff", fontSize:9, fontWeight:700, padding:"2px 6px", borderRadius:4 }}>카드뉴스</div>
                   </div>
                   <div style={{ padding:"12px 14px" }}>
                     <div style={{ fontSize:13, fontWeight:800, color:text, marginBottom:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.topic||"제목 없음"}</div>
@@ -839,7 +839,7 @@ function SharedTemplatesTab({ isDark, text, muted, bdr, bg, accent, setAiMenu })
   const TemplateCard = ({ tmpl, showUnshare }) => (
     <div style={{ background: bg, border: `1px solid ${bdr}`, borderRadius: 14, overflow: "hidden", display: "flex", flexDirection: "column" }}>
       {/* 미리보기 이미지 */}
-      <div style={{ width: "100%", aspectRatio: "1", background: isDark ? "rgba(99,102,241,0.15)" : "rgba(99,102,241,0.06)", overflow: "hidden", position: "relative" }}>
+      <div style={{ width: "100%", aspectRatio: "1", background: isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)", overflow: "hidden", position: "relative" }}>
         {tmpl.preview ? (
           <img src={tmpl.preview} alt={tmpl.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         ) : (
@@ -859,7 +859,7 @@ function SharedTemplatesTab({ isDark, text, muted, bdr, bg, accent, setAiMenu })
         <div style={{ marginTop: "auto", display: "flex", gap: 6 }}>
           <button onClick={() => handleUse(tmpl)}
             style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: "none", cursor: "pointer",
-              background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 11, fontWeight: 700 }}>
+              background: "#168EEA", color: "#fff", fontSize: 11, fontWeight: 700 }}>
             사용하기
           </button>
           {showUnshare && (
@@ -883,7 +883,7 @@ function SharedTemplatesTab({ isDark, text, muted, bdr, bg, accent, setAiMenu })
         {[["mine", "내 템플릿"], ["community", "커뮤니티"]].map(([id, label]) => (
           <button key={id} onClick={() => setSubTab(id)}
             style={{ padding: "6px 16px", borderRadius: 6, border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700,
-              background: subTab === id ? (isDark ? "rgba(99,102,241,0.5)" : "#fff") : "transparent",
+              background: subTab === id ? (isDark ? "rgba(0,0,0,0.06)" : "#fff") : "transparent",
               color: subTab === id ? (isDark ? "#fff" : accent) : muted,
               boxShadow: subTab === id ? "0 1px 4px rgba(0,0,0,0.1)" : "none" }}>
             {label}
@@ -893,12 +893,12 @@ function SharedTemplatesTab({ isDark, text, muted, bdr, bg, accent, setAiMenu })
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: muted }}>
-          <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid rgba(99,102,241,0.3)", borderTopColor: "#7c6aff", animation: "spin 1s linear infinite", margin: "0 auto 12px" }} />
+          <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid rgba(0,0,0,0.06)", borderTopColor: "#168EEA", animation: "spin 1s linear infinite", margin: "0 auto 12px" }} />
           <div style={{ fontSize: 13 }}>불러오는 중...</div>
         </div>
       ) : templates.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: muted }}>
-          <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(99,102,241,0.1)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12, fontSize: 20 }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(0,0,0,0.06)", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 12, fontSize: 20 }}>
             {subTab === "mine" ? "📤" : "🌍"}
           </div>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 6, color: text }}>
@@ -909,7 +909,7 @@ function SharedTemplatesTab({ isDark, text, muted, bdr, bg, accent, setAiMenu })
           </div>
           <button onClick={() => setAiMenu("cardnews_simple")}
             style={{ marginTop: 16, padding: "10px 24px", borderRadius: 10, border: "none", cursor: "pointer",
-              background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 13, fontWeight: 700 }}>
+              background: "#168EEA", color: "#fff", fontSize: 13, fontWeight: 700 }}>
             카드뉴스 만들기 →
           </button>
         </div>

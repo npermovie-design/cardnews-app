@@ -29,7 +29,7 @@ export const TEMPLATES = [
     name: "AI 자동 추천",
     category: "all",
     designMood: "auto",
-    thumbnail: { gradient: "linear-gradient(135deg, #7c6aff 0%, #ec4899 100%)", accent: "#fff" },
+    thumbnail: { gradient: "#168EEA", accent: "#fff" },
     colorScheme: null,
     sectionOrder: null,
     isAuto: true,

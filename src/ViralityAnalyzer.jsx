@@ -86,7 +86,7 @@ export default function ViralityAnalyzer({ isDark }) {
   const bdr = D ? "rgba(255,255,255,0.08)" : "#e5e7eb";
   const cardBg = D ? "rgba(255,255,255,0.04)" : "#fff";
   const inputBg = D ? "rgba(255,255,255,0.06)" : "#f5f5f5";
-  const accent = "#7c6aff";
+  const accent = "#168EEA";
 
   const [tab, setTab] = useState("feed");
   const [loading, setLoading] = useState(false);
@@ -475,7 +475,7 @@ JSON만.` }], 3000, `${platLabel} 마케팅 분석 전문가.`);
                     {v.hashtags && v.hashtags.length > 0 && (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 3, marginBottom: 4 }}>
                         {v.hashtags.slice(0, 3).map((tag, j) => (
-                          <span key={j} style={{ fontSize: 8, color: "#6366f1", background: D ? "rgba(99,102,241,0.1)" : "rgba(99,102,241,0.06)", padding: "1px 5px", borderRadius: 3 }}>#{tag.replace(/^#/,"")}</span>
+                          <span key={j} style={{ fontSize: 8, color: "#6366f1", background: D ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)", padding: "1px 5px", borderRadius: 3 }}>#{tag.replace(/^#/,"")}</span>
                         ))}
                       </div>
                     )}

@@ -40,7 +40,7 @@ function VideoCard({ video, C, onPlay }) {
         }}>
           <div style={{
             fontSize: 28, fontWeight: 900, textAlign: "center",
-            background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+            background: "#168EEA",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
             padding: "0 20px",
           }}>
@@ -56,10 +56,10 @@ function VideoCard({ video, C, onPlay }) {
         }}>
           <div style={{
             width: 56, height: 56, borderRadius: "50%",
-            background: "rgba(124,106,255,0.9)",
+            background: "rgba(0,0,0,0.06)",
             display: "flex", alignItems: "center", justifyContent: "center",
             opacity: hover ? 1 : 0.7, transition: "opacity 0.2s",
-            boxShadow: "0 4px 20px rgba(124,106,255,0.4)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
           }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff">
               <path d="M8 5v14l11-7z" />
@@ -88,8 +88,8 @@ function VideoCard({ video, C, onPlay }) {
           {video.languages.map(lang => (
             <span key={lang} style={{
               fontSize: 11, padding: "2px 8px", borderRadius: 6,
-              background: "rgba(124,106,255,0.08)", color: "#7c6aff",
-              fontWeight: 600, border: "1px solid rgba(124,106,255,0.15)",
+              background: "rgba(0,0,0,0.06)", color: "#168EEA",
+              fontWeight: 600, border: "1px solid rgba(0,0,0,0.06)",
             }}>
               {LANGUAGES[lang]?.flag} {LANGUAGES[lang]?.label}
             </span>
@@ -122,7 +122,7 @@ function CCOverlay({ lang = "ko", secondLang = null, show = true }) {
       <div style={{ opacity, transform: `translateY(${(1 - opacity) * 8}px)`, textAlign: "center", maxWidth: "88%" }}>
         <div style={{
           display: "inline-block", background: "rgba(0,0,0,0.75)", backdropFilter: "blur(12px)",
-          borderRadius: 14, padding: "12px 28px", border: "1px solid rgba(124,106,255,0.12)",
+          borderRadius: 14, padding: "12px 28px", border: "1px solid rgba(0,0,0,0.06)",
         }}>
           <div style={{ fontSize: 30, fontWeight: 700, color: "#fff", lineHeight: 1.55, wordBreak: "keep-all", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
             {mainText}
@@ -195,7 +195,7 @@ function VideoPlayerModal({ video, onClose, C }) {
       {/* 제목 */}
       <h2 style={{
         fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 16,
-        background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+        background: "#168EEA",
         WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
       }}>
         {video.title}
@@ -204,8 +204,8 @@ function VideoPlayerModal({ video, onClose, C }) {
       {/* 플레이어 */}
       <div style={{
         borderRadius: 16, overflow: "hidden",
-        boxShadow: "0 8px 48px rgba(124,106,255,0.25)",
-        border: "1px solid rgba(124,106,255,0.2)",
+        boxShadow: "0 8px 48px rgba(0,0,0,0.06)",
+        border: "1px solid rgba(0,0,0,0.06)",
         maxWidth: "100%",
       }}>
         <Player
@@ -230,9 +230,9 @@ function VideoPlayerModal({ video, onClose, C }) {
         {/* CC 토글 */}
         <button onClick={() => setShowCC(!showCC)} style={{
           padding: "7px 14px", borderRadius: 8, cursor: "pointer",
-          background: showCC ? "rgba(124,106,255,0.15)" : "rgba(255,255,255,0.05)",
-          border: showCC ? "1px solid rgba(124,106,255,0.4)" : "1px solid rgba(255,255,255,0.1)",
-          color: showCC ? "#7c6aff" : "rgba(255,255,255,0.4)",
+          background: showCC ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)",
+          border: showCC ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.1)",
+          color: showCC ? "#168EEA" : "rgba(255,255,255,0.4)",
           fontSize: 12, fontWeight: 700,
         }}>
           CC {showCC ? "ON" : "OFF"}
@@ -258,9 +258,9 @@ function VideoPlayerModal({ video, onClose, C }) {
             onClick={() => { setLang(code); if (secondLang === code) setSecondLang(null); }}
             style={{
               padding: "7px 14px", borderRadius: 8, cursor: "pointer",
-              background: code === lang ? "rgba(124,106,255,0.15)" : "rgba(255,255,255,0.03)",
-              border: code === lang ? "1px solid rgba(124,106,255,0.4)" : "1px solid rgba(255,255,255,0.06)",
-              color: code === lang ? "#7c6aff" : "rgba(255,255,255,0.4)",
+              background: code === lang ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.03)",
+              border: code === lang ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.06)",
+              color: code === lang ? "#168EEA" : "rgba(255,255,255,0.4)",
               fontSize: 12, fontWeight: 600,
             }}
           >
@@ -299,8 +299,8 @@ function VideoPlayerModal({ video, onClose, C }) {
             navigator.clipboard.writeText(url).then(() => alert("링크가 복사되었습니다"));
           }
         }} style={{
-          background: "rgba(124,106,255,0.12)", border: "1px solid rgba(124,106,255,0.25)",
-          borderRadius: 10, padding: "8px 18px", color: "#7c6aff", cursor: "pointer",
+          background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)",
+          borderRadius: 10, padding: "8px 18px", color: "#168EEA", cursor: "pointer",
           fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6,
         }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

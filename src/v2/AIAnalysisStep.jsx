@@ -150,7 +150,7 @@ export default function AIAnalysisStep({ state, dispatch, C, isMobile }) {
                 <div key={i} style={{
                   display: "flex", alignItems: "center", gap: 6,
                   padding: "6px 12px", borderRadius: 20,
-                  background: C.purpleBg || "rgba(124,106,255,0.08)",
+                  background: C.purpleBg || "rgba(0,0,0,0.06)",
                   border: `1px solid ${C.purple}30`,
                   fontSize: 13, color: C.text,
                 }}>
@@ -213,7 +213,7 @@ export default function AIAnalysisStep({ state, dispatch, C, isMobile }) {
                     style={{
                       padding: "14px 10px", borderRadius: 10, cursor: "pointer", textAlign: "center",
                       border: `2px solid ${sel ? C.purple : (C.border || "rgba(0,0,0,0.08)")}`,
-                      background: sel ? (C.purpleBg || "rgba(124,106,255,0.06)") : "transparent",
+                      background: sel ? (C.purpleBg || "rgba(0,0,0,0.06)") : "transparent",
                     }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: sel ? C.purple : C.text, marginBottom: 4 }}>{mood.label}</div>
                     <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.4 }}>{mood.desc}</div>
@@ -233,7 +233,7 @@ export default function AIAnalysisStep({ state, dispatch, C, isMobile }) {
                       style={{
                         padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 500, cursor: "pointer",
                         border: `1px solid ${sel ? C.purple : (C.border || "rgba(0,0,0,0.1)")}`,
-                        background: sel ? (C.purpleBg || "rgba(124,106,255,0.08)") : "transparent",
+                        background: sel ? (C.purpleBg || "rgba(0,0,0,0.06)") : "transparent",
                         color: sel ? C.purple : C.text,
                       }}>
                       {age}

@@ -1,11 +1,12 @@
-/* ── 공용 컴포넌트 (테마 C를 prop으로 받거나 외부에서 주입) ── */
+/* ── SNS메이킷 Brand UI Components ── */
+import { BRAND } from "./theme";
 
-export const Badge = ({ children, C }) => (
+export const Badge = ({ children, C, color }) => (
   <div style={{
     display: "inline-flex", alignItems: "center", gap: 6,
-    background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)",
-    borderRadius: 20, padding: "5px 14px", fontSize: 12, fontWeight: 700,
-    color: C.purpleL, marginBottom: 20,
+    background: BRAND.primaryBg, border: "none",
+    borderRadius: 20, padding: "4px 12px", fontSize: 13, fontWeight: 600,
+    color: BRAND.primary, marginBottom: 20,
   }}>
     {children}
   </div>
@@ -14,9 +15,9 @@ export const Badge = ({ children, C }) => (
 export const SecWrap = ({ children, bg, style = {}, C, id }) => (
   <section id={id} style={{
     position: "relative", overflow: "hidden",
-    padding: "clamp(48px,8vw,100px) clamp(16px,4vw,24px)", background: bg || "transparent", ...style,
+    padding: "clamp(48px,8vw,96px) clamp(16px,4vw,32px)", background: bg || "transparent", ...style,
   }}>
-    <div style={{ maxWidth: 1000, margin: "0 auto", position: "relative", zIndex: 1 }}>
+    <div style={{ maxWidth: 1080, margin: "0 auto", position: "relative", zIndex: 1 }}>
       {children}
     </div>
   </section>
@@ -26,12 +27,12 @@ export const SecTitle = ({ badge, title, sub, left, C }) => (
   <div style={{ textAlign: left ? "left" : "center", marginBottom: 56 }}>
     {badge && <Badge C={C}>{badge}</Badge>}
     <h2 style={{
-      fontSize: "clamp(28px,4vw,46px)", fontWeight: 900, color: C.text,
-      letterSpacing: -1, lineHeight: 1.15, marginBottom: 16,
+      fontSize: "clamp(28px,4vw,48px)", fontWeight: 700, color: C?.text || "#111827",
+      letterSpacing: -0.5, lineHeight: 1.15, marginBottom: 16,
     }}>{title}</h2>
     {sub && (
       <p style={{
-        fontSize: "clamp(13px,1.5vw,16px)", color: C.muted, lineHeight: 1.7, maxWidth: 600,
+        fontSize: "clamp(14px,1.5vw,17px)", color: C?.muted || "#6b7280", lineHeight: 1.6, maxWidth: 600,
         margin: left ? "0" : "0 auto",
       }}>{sub}</p>
     )}
@@ -40,18 +41,17 @@ export const SecTitle = ({ badge, title, sub, left, C }) => (
 
 export const Btn = ({ children, onClick, ghost, small, full, style = {}, C, ariaLabel, className }) => {
   const base = {
-    borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700,
-    transition: "all 0.2s", fontFamily: "inherit", ...style,
+    borderRadius: 12, border: "none", cursor: "pointer", fontWeight: 600,
+    transition: "all 0.15s ease", fontFamily: "inherit", ...style,
   };
   if (ghost) return (
     <button className={className} onClick={onClick} aria-label={ariaLabel} style={{
       ...base,
-      padding: small ? "5px 14px" : "11px 26px",
-      fontSize: small ? 12 : "clamp(13px,3.5vw,15px)",
-      background: C?.card || "transparent",
-      border: "1px solid rgba(124,106,255,0.35)",
-      color: C.purpleL,
-      boxShadow: "0 1px 4px rgba(124,106,255,0.1)",
+      padding: small ? "6px 16px" : "12px 24px",
+      fontSize: small ? 13 : 15,
+      background: "transparent",
+      border: "1px solid " + (C?.border || "#d1d5db"),
+      color: C?.text || "#111827",
       width: full ? "100%" : "auto",
     }}>
       {children}
@@ -60,11 +60,10 @@ export const Btn = ({ children, onClick, ghost, small, full, style = {}, C, aria
   return (
     <button className={className} onClick={onClick} aria-label={ariaLabel} style={{
       ...base,
-      padding: small ? "5px 14px" : "12px 28px",
-      fontSize: small ? 12 : "clamp(13px,3.5vw,15px)",
-      background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+      padding: small ? "6px 16px" : "12px 24px",
+      fontSize: small ? 13 : 15,
+      background: BRAND.primary,
       color: "#fff",
-      boxShadow: "0 4px 16px rgba(124,106,255,0.3)",
       width: full ? "100%" : "auto",
     }}>
       {children}
@@ -76,11 +75,11 @@ export const Inp = ({ style, C, "aria-label": ariaLabel, ...props }) => (
   <input
     style={{
       background: C.inputBg, border: "1px solid " + C.inputBorder,
-      borderRadius: 10, padding: "11px 14px", color: C.text, fontSize: 14,
+      borderRadius: 12, padding: "12px 16px", color: C.text, fontSize: 16,
       fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box",
-      transition: "border-color 0.2s", ...style,
+      transition: "border-color 0.15s", ...style,
     }}
-    onFocus={e => e.target.style.borderColor = C.purple}
+    onFocus={e => e.target.style.borderColor = BRAND.primary}
     onBlur={e  => e.target.style.borderColor = C.inputBorder}
     {...props}
   />
@@ -90,11 +89,11 @@ export const Textarea = ({ style, C, ...props }) => (
   <textarea
     style={{
       background: C.inputBg, border: "1px solid " + C.inputBorder,
-      borderRadius: 10, padding: "11px 14px", color: C.text, fontSize: 14,
+      borderRadius: 12, padding: "12px 16px", color: C.text, fontSize: 16,
       fontFamily: "inherit", outline: "none", width: "100%", boxSizing: "border-box",
-      resize: "vertical", ...style,
+      resize: "vertical", transition: "border-color 0.15s", ...style,
     }}
-    onFocus={e => e.target.style.borderColor = C.purple}
+    onFocus={e => e.target.style.borderColor = BRAND.primary}
     onBlur={e  => e.target.style.borderColor = C.inputBorder}
     {...props}
   />

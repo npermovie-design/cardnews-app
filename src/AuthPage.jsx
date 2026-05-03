@@ -33,11 +33,11 @@ function LoginRightPanel({ accent }) {
       ))}
 
       {/* 그라디언트 오버레이 */}
-      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(145deg, rgba(67,56,202,0.6), rgba(124,106,255,0.35), rgba(139,92,246,0.4))` }} />
+      <div style={{ position: "absolute", inset: 0, background: `linear-gradient(145deg, rgba(67,56,202,0.6), rgba(0,0,0,0.06), rgba(139,92,246,0.4))` }} />
 
       {/* 배경 장식 */}
       <div style={{ position: "absolute", top: -150, right: -100, width: 400, height: 400, borderRadius: "50%", background: "rgba(236,72,153,0.12)", filter: "blur(80px)" }} />
-      <div style={{ position: "absolute", bottom: -100, left: -80, width: 350, height: 350, borderRadius: "50%", background: "rgba(124,106,255,0.15)", filter: "blur(60px)" }} />
+      <div style={{ position: "absolute", bottom: -100, left: -80, width: 350, height: 350, borderRadius: "50%", background: "rgba(0,0,0,0.06)", filter: "blur(60px)" }} />
       <div style={{ position: "absolute", top: 40, left: 40, width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.3)" }} />
       <div style={{ position: "absolute", top: 120, right: 60, width: 6, height: 6, borderRadius: "50%", background: "rgba(255,255,255,0.2)" }} />
       <div style={{ position: "absolute", bottom: 200, left: 80, width: 10, height: 10, borderRadius: "50%", background: "rgba(255,255,255,0.15)" }} />
@@ -94,12 +94,12 @@ function LoginRightPanel({ accent }) {
 
       {/* 그라디언트 기하학적 도형 애니메이션 */}
       {/* 큰 원형 */}
-      <div style={{ position:"absolute", top:"-5%", right:"-8%", width:280, height:280, borderRadius:"50%", background:"linear-gradient(135deg, rgba(236,72,153,0.3), rgba(124,106,255,0.1))", animation:"geoFloat1 15s ease-in-out infinite", filter:"blur(1px)" }} />
-      <div style={{ position:"absolute", bottom:"-10%", left:"-5%", width:220, height:220, borderRadius:"50%", background:"linear-gradient(135deg, rgba(56,189,248,0.2), rgba(124,106,255,0.15))", animation:"geoFloat2 18s ease-in-out infinite" }} />
+      <div style={{ position:"absolute", top:"-5%", right:"-8%", width:280, height:280, borderRadius:"50%", background:"linear-gradient(135deg, rgba(236,72,153,0.3), rgba(0,0,0,0.06))", animation:"geoFloat1 15s ease-in-out infinite", filter:"blur(1px)" }} />
+      <div style={{ position:"absolute", bottom:"-10%", left:"-5%", width:220, height:220, borderRadius:"50%", background:"linear-gradient(135deg, rgba(56,189,248,0.2), rgba(0,0,0,0.06))", animation:"geoFloat2 18s ease-in-out infinite" }} />
       {/* 중간 도형 */}
       <div style={{ position:"absolute", top:"20%", left:"5%", width:80, height:80, borderRadius:20, background:"linear-gradient(135deg, rgba(251,191,36,0.2), rgba(236,72,153,0.15))", animation:"geoFloat3 12s ease-in-out infinite", transform:"rotate(45deg)" }} />
       <div style={{ position:"absolute", top:"55%", right:"8%", width:100, height:100, borderRadius:"50%", border:"2px solid rgba(255,255,255,0.08)", animation:"geoFloat1 20s ease-in-out infinite 3s" }} />
-      <div style={{ position:"absolute", bottom:"20%", right:"15%", width:60, height:60, borderRadius:16, background:"linear-gradient(135deg, rgba(124,106,255,0.2), rgba(56,189,248,0.15))", animation:"geoFloat3 14s ease-in-out infinite 2s", transform:"rotate(30deg)" }} />
+      <div style={{ position:"absolute", bottom:"20%", right:"15%", width:60, height:60, borderRadius:16, background:"linear-gradient(135deg, rgba(0,0,0,0.06), rgba(56,189,248,0.15))", animation:"geoFloat3 14s ease-in-out infinite 2s", transform:"rotate(30deg)" }} />
       {/* 작은 도형 */}
       <div style={{ position:"absolute", top:"12%", left:"40%", width:20, height:20, borderRadius:"50%", background:"rgba(255,255,255,0.15)", animation:"geoFloat2 8s ease-in-out infinite" }} />
       <div style={{ position:"absolute", top:"40%", left:"12%", width:14, height:14, borderRadius:4, background:"rgba(251,191,36,0.2)", animation:"geoFloat1 10s ease-in-out infinite 1s", transform:"rotate(45deg)" }} />
@@ -174,7 +174,7 @@ export default function AuthPage({ C, onAuth, navigate }) {
     await fbGoogleLogin();
   };
 
-  const accent = "#7c6aff";
+  const accent = "#168EEA";
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
 
   return (

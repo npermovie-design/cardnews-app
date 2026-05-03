@@ -46,7 +46,7 @@ const VISIBILITY_OPTIONS = [
 ];
 
 // ── 토글 스위치 ──
-function Toggle({ on, onChange, color = "#7c6aff" }) {
+function Toggle({ on, onChange, color = "#168EEA" }) {
   return (
     <button onClick={() => onChange(!on)} style={{
       width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
@@ -66,7 +66,7 @@ function Toggle({ on, onChange, color = "#7c6aff" }) {
 function FileDropZone({ file, onFileSelect, onRemove, contentType, isDark }) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
-  const acc = "#7c6aff";
+  const acc = "#168EEA";
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
 
   const accept = contentType === "video" ? "video/*" : contentType === "image" ? "image/*" : undefined;
@@ -91,7 +91,7 @@ function FileDropZone({ file, onFileSelect, onRemove, contentType, isDark }) {
           <img src={file._preview} alt="" style={{ width: 48, height: 48, borderRadius: 8, objectFit: "cover" }} />
         )}
         {isVideo && (
-          <div style={{ width: 48, height: 48, borderRadius: 8, background: "rgba(124,106,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 48, height: 48, borderRadius: 8, background: "rgba(0,0,0,0.06)", display: "flex", alignItems: "center", justifyContent: "center" }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth="2"><polygon points="5 3 19 12 5 21" /></svg>
           </div>
         )}
@@ -116,7 +116,7 @@ function FileDropZone({ file, onFileSelect, onRemove, contentType, isDark }) {
       style={{
         padding: "40px 20px", borderRadius: 12, cursor: "pointer",
         border: `2px dashed ${dragOver ? acc : bdr}`,
-        background: dragOver ? (isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.04)") : (isDark ? "rgba(255,255,255,0.02)" : "#fafafa"),
+        background: dragOver ? (isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)") : (isDark ? "rgba(255,255,255,0.02)" : "#fafafa"),
         textAlign: "center", transition: "all 0.2s",
       }}>
       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={isDark ? "rgba(255,255,255,0.3)" : "#ccc"} strokeWidth="1.5" style={{ marginBottom: 10 }}>
@@ -227,7 +227,7 @@ function PreviewPanel({ contentType, file, title, description, enabledPlatforms,
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
   const [previewTab, setPreviewTab] = useState(null);
-  const acc = "#7c6aff";
+  const acc = "#168EEA";
 
   const tabs = enabledPlatforms.length > 0 ? enabledPlatforms : [];
 
@@ -261,7 +261,7 @@ function PreviewPanel({ contentType, file, title, description, enabledPlatforms,
         {tabs.map(p => (
           <button key={p.id} onClick={() => setPreviewTab(p.id)} style={{
             padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer",
-            background: previewTab === p.id ? "rgba(124,106,255,0.12)" : "transparent",
+            background: previewTab === p.id ? "rgba(0,0,0,0.06)" : "transparent",
             color: previewTab === p.id ? acc : muted,
             fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 6,
             transition: "all 0.15s",
@@ -327,9 +327,9 @@ function PublishHistory({ history, isDark, onRefresh }) {
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
-  const acc = "#7c6aff";
+  const acc = "#168EEA";
   const chipBg = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5";
-  const chipActiveBg = isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.08)";
+  const chipActiveBg = isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)";
 
   // 필터 적용
   const filtered = history.filter(item => {
@@ -484,7 +484,7 @@ export default function SnsPublisher({ isDark, user, onLoginRequest }) {
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#fff";
-  const acc = "#7c6aff";
+  const acc = "#168EEA";
 
   // SNS 연결 상태 조회
   useEffect(() => {
@@ -602,7 +602,7 @@ export default function SnsPublisher({ isDark, user, onLoginRequest }) {
       }}>
         <div style={{
           width: 80, height: 80, borderRadius: 20,
-          background: "linear-gradient(135deg, rgba(56,189,248,0.1), rgba(124,106,255,0.1))",
+          background: "linear-gradient(135deg, rgba(56,189,248,0.1), rgba(0,0,0,0.06))",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth="1.5" strokeLinecap="round">
@@ -697,7 +697,7 @@ export default function SnsPublisher({ isDark, user, onLoginRequest }) {
                       <button key={ct.id} onClick={() => { setContentType(ct.id); setFile(null); }} style={{
                         flex: 1, padding: "18px 16px", borderRadius: 12, cursor: "pointer",
                         border: `2px solid ${contentType === ct.id ? acc : bdr}`,
-                        background: contentType === ct.id ? (isDark ? "rgba(124,106,255,0.1)" : "rgba(124,106,255,0.04)") : "transparent",
+                        background: contentType === ct.id ? (isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)") : "transparent",
                         display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
                         transition: "all 0.2s", color: contentType === ct.id ? acc : muted,
                       }}>
@@ -822,7 +822,7 @@ export default function SnsPublisher({ isDark, user, onLoginRequest }) {
                   style={{
                     width: "100%", padding: "16px", borderRadius: 12, border: "none",
                     cursor: publishing || enabledPlatforms.length === 0 ? "not-allowed" : "pointer",
-                    background: enabledPlatforms.length === 0 ? (isDark ? "rgba(255,255,255,0.06)" : "#e5e5e5") : "linear-gradient(135deg, #7c6aff 0%, #ec4899 100%)",
+                    background: enabledPlatforms.length === 0 ? (isDark ? "rgba(255,255,255,0.06)" : "#e5e5e5") : "#168EEA",
                     color: enabledPlatforms.length === 0 ? muted : "#fff",
                     fontSize: 16, fontWeight: 800, letterSpacing: -0.3,
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 8,

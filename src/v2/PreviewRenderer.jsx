@@ -3,7 +3,7 @@ import React, { useRef, useEffect, useCallback } from "react";
 // ─── 섹션별 고퀄리티 HTML 생성기 ─────────────────────────────────
 
 function renderSectionHTML(sec, colorScheme, productImages, idx, totalSections) {
-  const cs = colorScheme || { primary: "#1a1a2e", secondary: "#888", background: "#ffffff", text: "#1a1a1a", accent: "#7c6aff" };
+  const cs = colorScheme || { primary: "#1a1a2e", secondary: "#888", background: "#ffffff", text: "#1a1a1a", accent: "#168EEA" };
   const d = sec.data || {};
   const img = productImages[idx % Math.max(productImages.length, 1)]?.preview || "";
   const img2 = productImages[(idx + 1) % Math.max(productImages.length, 1)]?.preview || img;
@@ -367,9 +367,9 @@ html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
 body{font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic',sans-serif;max-width:680px;margin:0 auto;overflow-x:hidden;background:#fff;}
 img{display:block;max-width:100%;}
 [data-element]{transition:outline 0.15s,background 0.15s;}
-[data-element]:hover{outline:2px solid rgba(124,106,255,0.3);outline-offset:2px;cursor:pointer;}
-[data-element].sel{outline:2px solid #7c6aff;outline-offset:2px;background:rgba(124,106,255,0.03);}
-[data-section].sel{box-shadow:inset 0 0 0 2px rgba(124,106,255,0.15);}
+[data-element]:hover{outline:2px solid rgba(0,0,0,0.06);outline-offset:2px;cursor:pointer;}
+[data-element].sel{outline:2px solid #168EEA;outline-offset:2px;background:rgba(0,0,0,0.06);}
+[data-section].sel{box-shadow:inset 0 0 0 2px rgba(0,0,0,0.06);}
 </style>
 </head><body>
 ${sectionsHtml}

@@ -114,7 +114,7 @@ function inlineFormat(text, accentColor) {
     } else if (raw.startsWith("*")) {
       parts.push(<em key={m.index} style={{fontStyle:"italic"}}>{raw.slice(1,-1)}</em>);
     } else if (raw.startsWith("`")) {
-      parts.push(<code key={m.index} style={{background:"rgba(99,102,241,0.12)",color:accentColor,padding:"1px 6px",borderRadius:4,fontSize:"0.9em",fontFamily:"monospace"}}>{raw.slice(1,-1)}</code>);
+      parts.push(<code key={m.index} style={{background:"rgba(0,0,0,0.06)",color:accentColor,padding:"1px 6px",borderRadius:4,fontSize:"0.9em",fontFamily:"monospace"}}>{raw.slice(1,-1)}</code>);
     }
     last = m.index + raw.length;
   }
@@ -175,13 +175,13 @@ function PointsExhausted({ isDark, isGuest, title }) {
           {isGuest ? (
             <button onClick={() => { if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); else window.location.hash="#home"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:15, fontWeight:800 }}>
+                background:"#168EEA", color:"#fff", fontSize:15, fontWeight:800 }}>
               🚀 회원가입 / 로그인하기
             </button>
           ) : (
             <button onClick={() => { window.location.hash = "#pricing"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800 }}>
+                background:"#168EEA", color:"#fff", fontSize:15, fontWeight:800 }}>
               💎 횟수 충전하기
             </button>
           )}
@@ -207,7 +207,7 @@ export default function NewsBlogGenerator({ theme, embedded, user, onLoginReques
   const cardBg  = isDark ? "rgba(255,255,255,0.04)" : "#f8f9fa";
   const resultBg= isDark ? "rgba(0,0,0,0.15)"       : "#f8f9fa";
   const accent  = isDark ? "#a5b4fc"                : "#4f46e5";
-  const accentRaw="#7c6aff";
+  const accentRaw="#168EEA";
   const headerBg= isDark ? "rgba(0,0,0,0.20)"       : "#fff";
 
   const [url,        setUrl]        = useState("");
@@ -576,7 +576,7 @@ ${articleSection}
         @keyframes ns-progress{from{width:0%}to{width:92%}}
         @keyframes ns-blink{0%,100%{opacity:1}50%{opacity:0}}
         @keyframes ns-fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        .ns-input:focus{border-color:${accentRaw}!important;box-shadow:0 0 0 3px rgba(99,102,241,0.15)}
+        .ns-input:focus{border-color:${accentRaw}!important;box-shadow:0 0 0 3px rgba(0,0,0,0.06)}
         .ns-type:hover{border-color:${accentRaw}!important;transform:translateY(-2px)}
       `}</style>
 
@@ -667,7 +667,7 @@ ${articleSection}
                   ? ["인스타그램","X(트위터)","스레드","페이스북","링크드인"]
                   : ["네이버뉴스","다음뉴스","조선일보","중앙일보","동아일보","한겨레","연합뉴스","KBS","MBC","SBS","매일경제","한국경제"]
                 ).map(n=>(
-                  <span key={n} style={{fontSize:11,padding:"3px 9px",borderRadius:12,background:isDark?"rgba(255,255,255,0.06)":"rgba(99,102,241,0.06)",color:muted}}>
+                  <span key={n} style={{fontSize:11,padding:"3px 9px",borderRadius:12,background:isDark?"rgba(255,255,255,0.06)":"rgba(0,0,0,0.06)",color:muted}}>
                     {n}
                   </span>
                 ))}
@@ -685,7 +685,7 @@ ${articleSection}
                   return (
                     <button key={bt.id} className="ns-type" onClick={()=>setBlogType(bt.id)}
                       style={{padding:"14px 12px",borderRadius:12,border:`2px solid ${isA?accentRaw:border}`,
-                        background:isA?"rgba(99,102,241,0.12)":inputBg,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
+                        background:isA?"rgba(0,0,0,0.06)":inputBg,cursor:"pointer",textAlign:"left",transition:"all 0.2s"}}>
                       <div style={{fontSize:22,marginBottom:6}}>{bt.icon}</div>
                       <div style={{fontSize:13,fontWeight:700,color:isA?accent:text}}>{bt.label}</div>
                       <div style={{fontSize:11,color:muted,marginTop:2}}>{bt.desc}</div>
@@ -705,7 +705,7 @@ ${articleSection}
                   const isA=tone===t.id;
                   return <button key={t.id} onClick={()=>setTone(t.id)}
                     style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${isA?accentRaw:border}`,
-                      background:isA?"rgba(99,102,241,0.12)":"transparent",color:isA?accent:muted,
+                      background:isA?"rgba(0,0,0,0.06)":"transparent",color:isA?accent:muted,
                       fontSize:13,fontWeight:isA?700:400,cursor:"pointer",transition:"all 0.15s"}}>
                     {t.label}
                   </button>;
@@ -724,7 +724,7 @@ ${articleSection}
                   return <button key={l.id} onClick={()=>setLength(l.id)}
                     style={{flex:1,padding:"10px 8px",borderRadius:10,
                       border:`1.5px solid ${isA?accentRaw:border}`,
-                      background:isA?"rgba(99,102,241,0.12)":"transparent",
+                      background:isA?"rgba(0,0,0,0.06)":"transparent",
                       cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
                     <div style={{fontSize:14,fontWeight:isA?700:500,color:isA?accent:text}}>{l.label}</div>
                     <div style={{fontSize:10,color:muted,marginTop:2}}>{l.desc}</div>
@@ -750,7 +750,7 @@ ${articleSection}
             <button onClick={generate} disabled={generating}
               style={{width:"100%",padding:"15px",borderRadius:12,border:"none",marginTop:16,
                 cursor:generating?"not-allowed":"pointer",
-                background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",
+                background:"#168EEA",
                 color:"#fff",fontSize:15,fontWeight:800,
                 display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
               {generating

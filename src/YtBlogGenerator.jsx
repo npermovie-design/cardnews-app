@@ -70,13 +70,13 @@ function PointsExhausted({ isDark, isGuest, title }) {
           {isGuest ? (
             <button onClick={() => { if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); else window.location.hash="#home"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:15, fontWeight:800 }}>
+                background:"#168EEA", color:"#fff", fontSize:15, fontWeight:800 }}>
               {t("yt_signup")}
             </button>
           ) : (
             <button onClick={() => { window.location.hash = "#pricing"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:800 }}>
+                background:"#168EEA", color:"#fff", fontSize:15, fontWeight:800 }}>
               {t("yt_charge")}
             </button>
           )}
@@ -140,7 +140,7 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate, 
   const cardBg  = isDark ? "rgba(255,255,255,0.04)"  : "#f8f9fa";
   const resultBg= isDark ? "rgba(0,0,0,0.15)"        : "#f8f9fa";
   const accent  = isDark ? "#a5b4fc"                 : "#4f46e5";
-  const accentRaw= "#7c6aff";
+  const accentRaw= "#168EEA";
   const headerBg= isDark ? "rgba(0,0,0,0.20)"        : "#fff";
 
   /* 상태 */
@@ -555,7 +555,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
         @keyframes yt-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes yt-blink{0%,100%{opacity:1}50%{opacity:0}}
         @keyframes yt-fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-        .yt-input:focus{border-color:${accentRaw}!important;box-shadow:0 0 0 3px rgba(99,102,241,0.15)}
+        .yt-input:focus{border-color:${accentRaw}!important;box-shadow:0 0 0 3px rgba(0,0,0,0.06)}
         .yt-type-card:hover{border-color:${accentRaw}!important;transform:translateY(-2px)}
       `}</style>
 
@@ -668,7 +668,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
                       onClick={()=>setBlogType(bt.id)}
                       style={{
                         padding:"14px 12px", borderRadius:12, border:`2px solid ${isA?accentRaw:border}`,
-                        background:isA?"rgba(99,102,241,0.12)":inputBg,
+                        background:isA?"rgba(0,0,0,0.06)":inputBg,
                         cursor:"pointer", textAlign:"left", transition:"all 0.2s",
                       }}>
                       <div style={{fontSize:22,marginBottom:6}}>{bt.icon}</div>
@@ -689,7 +689,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
                 {[{id:"info",label:"정보성"},{id:"casual",label:"친근한"},{id:"pro",label:"전문적"},{id:"engaging",label:"흥미로운"}].map(t=>{
                   const isA=tone===t.id;
                   return <button key={t.id} onClick={()=>setTone(t.id)}
-                    style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${isA?accentRaw:border}`,background:isA?"rgba(99,102,241,0.12)":"transparent",color:isA?accent:muted,fontSize:13,fontWeight:isA?700:400,cursor:"pointer",transition:"all 0.15s"}}>
+                    style={{padding:"8px 16px",borderRadius:20,border:`1.5px solid ${isA?accentRaw:border}`,background:isA?"rgba(0,0,0,0.06)":"transparent",color:isA?accent:muted,fontSize:13,fontWeight:isA?700:400,cursor:"pointer",transition:"all 0.15s"}}>
                     {t.label}
                   </button>;
                 })}
@@ -705,7 +705,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
                 {[{id:"short",label:"짧게",desc:"~800자"},{id:"medium",label:"보통",desc:"~2,000자"},{id:"long",label:"길게",desc:"~4,000자"}].map(l=>{
                   const isA=length===l.id;
                   return <button key={l.id} onClick={()=>setLength(l.id)}
-                    style={{flex:1,padding:"10px 8px",borderRadius:10,border:`1.5px solid ${isA?accentRaw:border}`,background:isA?"rgba(99,102,241,0.12)":"transparent",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
+                    style={{flex:1,padding:"10px 8px",borderRadius:10,border:`1.5px solid ${isA?accentRaw:border}`,background:isA?"rgba(0,0,0,0.06)":"transparent",cursor:"pointer",textAlign:"center",transition:"all 0.15s"}}>
                     <div style={{fontSize:14,fontWeight:isA?700:500,color:isA?accent:text}}>{l.label}</div>
                     <div style={{fontSize:10,color:muted,marginTop:2}}>{l.desc}</div>
                   </button>;
@@ -730,7 +730,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
               style={{
                 width:"100%", padding:"15px", borderRadius:12, border:"none", marginTop:16,
                 cursor:generating?"not-allowed":"pointer",
-                background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",
+                background:"#168EEA",
                 color:"#fff", fontSize:15, fontWeight:800,
                 display:"flex", alignItems:"center", justifyContent:"center", gap:8,
               }}>

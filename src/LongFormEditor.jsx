@@ -195,7 +195,7 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
   const bdr = D ? "rgba(255,255,255,0.09)" : "#e5e5f0";
   const card = D ? "rgba(255,255,255,0.05)" : "#fff";
   const ibg = D ? "rgba(255,255,255,0.06)" : "#f9f9fc";
-  const acc = "#7c6aff";
+  const acc = "#168EEA";
 
   // ── 상태 ──
   const [step, setStep] = useState("upload"); // upload | loading | edit | generate | result
@@ -1143,7 +1143,7 @@ JSON 배열로만 응답:
         ) : (
           <div>
             {downloadHelper && (
-              <div style={{ ...cardStyle, background: D ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)", border: `1px solid ${acc}30` }}>
+              <div style={{ ...cardStyle, background: D ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)", border: `1px solid ${acc}30` }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
                   <img src={downloadHelper.thumbnail} alt="" style={{ width: 80, height: 45, objectFit: "cover", borderRadius: 8 }} onError={e => e.target.style.display = "none"} />
                   <div style={{ fontSize: 13, fontWeight: 700, color: text }}>{downloadHelper.title}</div>
@@ -1274,14 +1274,14 @@ JSON 배열로만 응답:
     const tlWidth = Math.max(clipDuration * pxPerSec, 800);
     const TRACK_H = 36;
     const sourceUrl = fileId ? `${API}/source/${fileId}` : null;
-    const subColors = ["#7c6aff", "#ff6a8a", "#6affb2", "#ffd76a", "#6ac4ff", "#ff9f6a", "#c46aff", "#6afff0"];
+    const subColors = ["#168EEA", "#ff6a8a", "#6affb2", "#ffd76a", "#6ac4ff", "#ff9f6a", "#c46aff", "#6afff0"];
 
     // 모바일 안내
     if (typeof window !== "undefined" && window.innerWidth < 768) {
       return (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#0f0f1a", padding: 40 }}>
           <div style={{ textAlign: "center", maxWidth: 320 }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#7c6aff" strokeWidth="1.5" style={{ margin: "0 auto 16px", display: "block", opacity: 0.4 }}><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#168EEA" strokeWidth="1.5" style={{ margin: "0 auto 16px", display: "block", opacity: 0.4 }}><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
             <div style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 8 }}>PC에서 편집해주세요</div>
             <div style={{ fontSize: 13, color: "#888", lineHeight: 1.7 }}>롱폼 편집기는 데스크탑 환경에서 최적으로 작동합니다.</div>
           </div>
@@ -1430,7 +1430,7 @@ JSON 배열로만 응답:
             <div style={{ display: "flex", borderBottom: "1px solid #2a2a4a" }}>
               {[["silence", "무음"], ["caption", "자막"], ["style", "스타일"], ["overlay", "소스"]].map(([id, label]) => (
                 <button key={id} onClick={() => setPropTab(id)}
-                  style={{ flex: 1, padding: "10px 0", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, background: propTab === id ? "rgba(124,106,255,0.15)" : "transparent", color: propTab === id ? "#a5b4fc" : "#666", borderBottom: propTab === id ? `2px solid ${acc}` : "2px solid transparent" }}>
+                  style={{ flex: 1, padding: "10px 0", border: "none", cursor: "pointer", fontSize: 11, fontWeight: 700, background: propTab === id ? "rgba(0,0,0,0.06)" : "transparent", color: propTab === id ? "#a5b4fc" : "#666", borderBottom: propTab === id ? `2px solid ${acc}` : "2px solid transparent" }}>
                   {label}
                 </button>
               ))}
@@ -1470,7 +1470,7 @@ JSON 배열로만 응답:
                   </div>
 
                   {silenceRegions.length > 0 && (
-                    <div style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(124,106,255,0.08)", border: "1px solid rgba(124,106,255,0.2)", marginBottom: 12 }}>
+                    <div style={{ padding: "10px 12px", borderRadius: 10, background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", marginBottom: 12 }}>
                       <div style={{ fontSize: 12, color: "#a5b4fc", fontWeight: 700 }}>
                         {silenceRegions.length}개 무음 구간 감지됨
                       </div>
@@ -1546,7 +1546,7 @@ JSON 배열로만 응답:
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 16 }}>
                     {CAPTION_ANIMATIONS.map(a => (
                       <button key={a.id} onClick={() => setCaptionAnimation(a.id)}
-                        style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${captionAnimation === a.id ? acc : "#2a2a4a"}`, background: captionAnimation === a.id ? "rgba(124,106,255,0.12)" : "transparent", color: captionAnimation === a.id ? "#a5b4fc" : "#888", fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
+                        style={{ padding: "8px", borderRadius: 8, border: `1.5px solid ${captionAnimation === a.id ? acc : "#2a2a4a"}`, background: captionAnimation === a.id ? "rgba(0,0,0,0.06)" : "transparent", color: captionAnimation === a.id ? "#a5b4fc" : "#888", fontSize: 11, fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
                         <div>{a.name}</div>
                         <div style={{ fontSize: 9, fontWeight: 400, marginTop: 2, opacity: 0.7 }}>{a.desc}</div>
                       </button>
@@ -1557,7 +1557,7 @@ JSON 배열로만 응답:
                   <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
                     {[["top","상단"],["center","중앙"],["bottom","하단"]].map(([k,l]) => (
                       <button key={k} onClick={() => setCaptionStyle(p => ({...p, position: k}))}
-                        style={{ flex: 1, padding: "8px", borderRadius: 8, border: `1.5px solid ${captionStyle.position === k ? acc : "#2a2a4a"}`, background: captionStyle.position === k ? "rgba(124,106,255,0.12)" : "transparent", color: captionStyle.position === k ? "#a5b4fc" : "#888", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                        style={{ flex: 1, padding: "8px", borderRadius: 8, border: `1.5px solid ${captionStyle.position === k ? acc : "#2a2a4a"}`, background: captionStyle.position === k ? "rgba(0,0,0,0.06)" : "transparent", color: captionStyle.position === k ? "#a5b4fc" : "#888", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                         {l}
                       </button>
                     ))}
@@ -1570,7 +1570,7 @@ JSON 배열로만 응답:
                   <div style={{ overflowY: "auto" }}>
                     {subtitles.map((s, i) => (
                       <div key={i} onClick={() => { setSelectedSubIdx(i); setPlayhead(absoluteToPlayhead(s.start)); }}
-                        style={{ padding: "8px 10px", borderRadius: 8, cursor: "pointer", marginBottom: 4, background: selectedSubIdx === i ? "rgba(124,106,255,0.15)" : "transparent", border: `1px solid ${selectedSubIdx === i ? acc : "transparent"}` }}>
+                        style={{ padding: "8px 10px", borderRadius: 8, cursor: "pointer", marginBottom: 4, background: selectedSubIdx === i ? "rgba(0,0,0,0.06)" : "transparent", border: `1px solid ${selectedSubIdx === i ? acc : "transparent"}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                           <span style={{ fontSize: 11, color: "#aaa", fontFamily: "monospace" }}>{fmtLong(s.start)}</span>
                           {selectedSubIdx === i && (
@@ -1585,7 +1585,7 @@ JSON 배열로만 응답:
 
                   {/* 선택된 자막 편집 */}
                   {selectedSubIdx >= 0 && subtitles[selectedSubIdx] && (
-                    <div style={{ marginTop: 12, padding: "12px", borderRadius: 10, background: "rgba(124,106,255,0.06)", border: "1px solid rgba(124,106,255,0.15)" }}>
+                    <div style={{ marginTop: 12, padding: "12px", borderRadius: 10, background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)" }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: acc, marginBottom: 8 }}>자막 편집</div>
                       <textarea value={subtitles[selectedSubIdx].text}
                         onChange={e => { const n = [...subtitles]; n[selectedSubIdx] = { ...n[selectedSubIdx], text: e.target.value }; setSubtitles(n); }}
@@ -1636,7 +1636,7 @@ JSON 배열로만 응답:
                   <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
                     {[["shadow","그림자"],["border","테두리"],["bgBox","배경박스"]].map(([k,l]) => (
                       <button key={k} onClick={() => setCaptionStyle(p => ({...p, [k]: !p[k]}))}
-                        style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${captionStyle[k] ? acc : "#2a2a4a"}`, background: captionStyle[k] ? "rgba(124,106,255,0.12)" : "transparent", color: captionStyle[k] ? "#a5b4fc" : "#666", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                        style={{ padding: "6px 12px", borderRadius: 6, border: `1px solid ${captionStyle[k] ? acc : "#2a2a4a"}`, background: captionStyle[k] ? "rgba(0,0,0,0.06)" : "transparent", color: captionStyle[k] ? "#a5b4fc" : "#666", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                         {l} {captionStyle[k] ? "ON" : "OFF"}
                       </button>
                     ))}
@@ -1712,7 +1712,7 @@ JSON 배열로만 응답:
                         <div style={{ display: "flex", gap: 0, marginBottom: 8, borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a" }}>
                           {[["photo","사진"],["gif","GIF"],["video","영상"]].map(([k,l]) => (
                             <button key={k} onClick={() => setSrcSearchCat(k)}
-                              style={{ flex: 1, padding: "5px 4px", border: "none", background: srcSearchCat === k ? "#7c6aff" : "#12122a", color: srcSearchCat === k ? "#fff" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
+                              style={{ flex: 1, padding: "5px 4px", border: "none", background: srcSearchCat === k ? "#168EEA" : "#12122a", color: srcSearchCat === k ? "#fff" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
                           ))}
                         </div>
                         <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
@@ -1720,7 +1720,7 @@ JSON 배열로만 응답:
                             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); doSearch(); } }}
                             placeholder="영어로 검색 (예: nature, fire)"
                             style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none" }} />
-                          <button onClick={doSearch} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>검색</button>
+                          <button onClick={doSearch} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#168EEA", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>검색</button>
                         </div>
                         {srcSearchLoading ? <div style={{ textAlign: "center", padding: 12, color: "#666", fontSize: 11 }}>검색 중...</div>
                           : srcSearchItems.length === 0 ? <div style={{ textAlign: "center", padding: 12, color: "#555", fontSize: 11 }}>검색어를 입력하고 Enter</div>
@@ -1732,7 +1732,7 @@ JSON 배열로만 응답:
                                 title={`[${it.src}] ${it.title}`}>
                                 <img src={it.url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} draggable={false} />
                                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(0,0,0,0.8))", padding: "4px 3px 1px", fontSize: 7, color: "#ddd" }}>
-                                  <span style={{ color: "#7c6aff", marginRight: 2 }}>{it.src}</span>
+                                  <span style={{ color: "#168EEA", marginRight: 2 }}>{it.src}</span>
                                 </div>
                               </div>
                             ))}
@@ -1823,7 +1823,7 @@ JSON 배열로만 응답:
                   const blob = new Blob([srt], {type:"text/plain;charset=utf-8"});
                   const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "subtitles.srt"; a.click(); URL.revokeObjectURL(a.href);
                 }}
-                  style={{ width: "100%", marginTop: 6, padding: "8px", borderRadius: 8, border: "1px solid #2a2a4a", background: "rgba(124,106,255,0.08)", color: "#a5b4fc", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ width: "100%", marginTop: 6, padding: "8px", borderRadius: 8, border: "1px solid #2a2a4a", background: "rgba(0,0,0,0.06)", color: "#a5b4fc", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                   자막 다운로드 (SRT)
                 </button>
               )}
@@ -1897,7 +1897,7 @@ JSON 배열로만 응답:
               {subtitles.length > 0 && (
                 <div style={{ position: "relative" }}>
                   <button onClick={() => setShowMediaRatioPopup(!showMediaRatioPopup)} disabled={autoMediaLoading}
-                    style={{ padding: "5px 10px", borderRadius: 6, border: autoMediaLoading ? "1px solid #7c6aff40" : "1px solid #c084fc40", background: autoMediaLoading ? "rgba(124,106,255,0.1)" : "linear-gradient(135deg,rgba(124,106,255,0.1),rgba(236,72,153,0.08))", color: autoMediaLoading ? "#7c6aff" : "#c084fc", cursor: autoMediaLoading ? "wait" : "pointer", fontSize: 11, fontWeight: 700 }}>
+                    style={{ padding: "5px 10px", borderRadius: 6, border: autoMediaLoading ? "1px solid #168EEA40" : "1px solid #c084fc40", background: autoMediaLoading ? "rgba(0,0,0,0.06)" : "rgba(22,142,234,0.06)", color: autoMediaLoading ? "#168EEA" : "#c084fc", cursor: autoMediaLoading ? "wait" : "pointer", fontSize: 11, fontWeight: 700 }}>
                     {autoMediaLoading ? "AI 삽입중..." : "AI 미디어"}
                   </button>
                   {showMediaRatioPopup && !autoMediaLoading && (
@@ -1915,23 +1915,23 @@ JSON 배열로만 응답:
                         {videoDuration > 0 ? `${Math.floor(videoDuration/60)}분 영상 중 약 ${Math.floor(videoDuration * mediaRatio / 100 / 60)}분 ${Math.floor(videoDuration * mediaRatio / 100 % 60)}초 구간에 짤 삽입` : "영상 로드 후 계산됩니다"}
                       </div>
                       <button onClick={() => { setShowMediaRatioPopup(false); autoInsertMedia(); }}
-                        style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+                        style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "#168EEA", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
                         삽입 시작
                       </button>
                     </div>
                   )}
                 </div>
               )}
-              <button onClick={doUndo} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: undoStack.current.length ? "#7c6aff" : "#444", cursor: "pointer", fontSize: 13 }} title="되돌리기 (Ctrl+Z)">↩</button>
-              <button onClick={doRedo} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: redoStack.current.length ? "#7c6aff" : "#444", cursor: "pointer", fontSize: 13 }} title="다시실행 (Ctrl+Y)">↪</button>
+              <button onClick={doUndo} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: undoStack.current.length ? "#168EEA" : "#444", cursor: "pointer", fontSize: 13 }} title="되돌리기 (Ctrl+Z)">↩</button>
+              <button onClick={doRedo} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: redoStack.current.length ? "#168EEA" : "#444", cursor: "pointer", fontSize: 13 }} title="다시실행 (Ctrl+Y)">↪</button>
               <div style={{ width: 1, height: 16, background: "#2a2a4a" }} />
-              <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+              <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#168EEA", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
                 처음
               </button>
-              <span style={{ fontSize: 11, color: "#7c6aff", fontFamily: "monospace", fontWeight: 600 }}>{fmtLong(playheadToAbsolute(playhead))} | {fmtLong(videoDuration)}</span>
+              <span style={{ fontSize: 11, color: "#168EEA", fontFamily: "monospace", fontWeight: 600 }}>{fmtLong(playheadToAbsolute(playhead))} | {fmtLong(videoDuration)}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                 <button onClick={() => setTimelineZoom(z => Math.max(0.25, z - 0.25))} style={{ width: 20, height: 20, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
-                <input type="range" min={25} max={800} value={timelineZoom * 100} onChange={e => setTimelineZoom(+e.target.value / 100)} style={{ width: 60, accentColor: "#7c6aff" }} />
+                <input type="range" min={25} max={800} value={timelineZoom * 100} onChange={e => setTimelineZoom(+e.target.value / 100)} style={{ width: 60, accentColor: "#168EEA" }} />
                 <button onClick={() => setTimelineZoom(z => Math.min(8, z + 0.25))} style={{ width: 20, height: 20, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
               </div>
             </div>

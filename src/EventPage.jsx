@@ -12,7 +12,7 @@ export default function EventPage({ C, navigate }) {
       badge: ko ? "진행중" : "Active",
       title: ko ? "메이킷 인플루언서 모집!" : "MakeIt Influencer Recruitment!",
       icon: "",
-      color: "#7c6aff",
+      color: "#168EEA",
       period: "2026.01.01 ~ " + (ko ? "상시 모집" : "Always Open"),
       desc: ko
         ? "블로거, 유튜버, 인스타그래머 등 SNS를 운영하고 있는 분이라면 누구나 가능합니다!\n\nSNS메이킷 홈페이지를 이용하고 후기만 남겨주세요.\nAI 이용권을 지급해드립니다!"
@@ -40,7 +40,7 @@ export default function EventPage({ C, navigate }) {
       badge: ko ? "진행중" : "Active",
       title: ko ? "오픈 기념 가입 보너스 이벤트" : "Launch Bonus Sign-up Event",
       icon: "",
-      color: "#7c6aff",
+      color: "#168EEA",
       period: "2026.01.01 ~ " + (ko ? "상시 진행" : "Ongoing"),
       desc: ko
         ? "SNS메이킷 오픈을 기념하여 가입 즉시 추가 횟수를 지급하는 이벤트입니다."
@@ -71,9 +71,9 @@ export default function EventPage({ C, navigate }) {
           {ko ? "← 이벤트 목록" : "← Event List"}
         </button>
         <div style={{ background: cardBg, border: "1px solid " + bdr, borderRadius: 20, overflow: "hidden" }}>
-          <div style={{ padding: "36px 32px", background: ev.status === "active" ? "linear-gradient(135deg,rgba(99,102,241,0.1),rgba(236,72,153,0.05))" : "transparent" }}>
+          <div style={{ padding: "36px 32px", background: ev.status === "active" ? "linear-gradient(135deg,rgba(0,0,0,0.06),rgba(236,72,153,0.05))" : "transparent" }}>
             <div style={{ display: "inline-block", padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 800,
-              background: ev.status === "active" ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : "#666", color: "#fff", marginBottom: 14 }}>
+              background: ev.status === "active" ? "#168EEA" : "#666", color: "#fff", marginBottom: 14 }}>
               {ev.badge}
             </div>
             {ev.icon && <div style={{ fontSize: 28, marginBottom: 10 }}>{ev.icon}</div>}
@@ -83,7 +83,7 @@ export default function EventPage({ C, navigate }) {
           <div style={{ padding: "28px 32px" }}>
             <div style={{ fontSize: 15, color: text, lineHeight: 2, whiteSpace: "pre-line", marginBottom: 28 }}>{ev.desc}</div>
             {ev.details && (
-              <div style={{ background: isDark ? "rgba(99,102,241,0.06)" : "rgba(99,102,241,0.04)", border: "1px solid rgba(99,102,241,0.15)", borderRadius: 14, padding: "20px 24px", marginBottom: 20 }}>
+              <div style={{ background: isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 14, padding: "20px 24px", marginBottom: 20 }}>
                 {ev.details.map((d, i) => (
                   <div key={i} style={{ fontSize: 14, color: text, lineHeight: 2 }}>{d}</div>
                 ))}
@@ -98,7 +98,7 @@ export default function EventPage({ C, navigate }) {
             {ev.status === "active" && (
               <button onClick={() => navigate?.("contact")}
                 style={{ marginTop: 24, padding: "14px 32px", borderRadius: 12, border: "none",
-                  background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
+                  background: "#168EEA", color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer" }}>
                 {ko ? "후기 제출하기 (문의하기)" : "Submit Review (Contact Us)"}
               </button>
             )}
@@ -111,7 +111,7 @@ export default function EventPage({ C, navigate }) {
   return (
     <div style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px 80px" }}>
       <div style={{ textAlign: "center", marginBottom: 32 }}>
-        <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>{ko ? "이벤트" : "Events"}</div>
+        <div style={{ display: "inline-block", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>{ko ? "이벤트" : "Events"}</div>
         <h2 style={{ fontSize: "clamp(24px,4vw,36px)", fontWeight: 900, color: text, margin: "0 0 8px" }}>{ko ? "진행중인 이벤트" : "Current Events"}</h2>
         <p style={{ fontSize: 14, color: muted }}>{ko ? "SNS메이킷의 다양한 이벤트에 참여하세요!" : "Join various events at SNS MakeIt!"}</p>
       </div>
@@ -122,8 +122,8 @@ export default function EventPage({ C, navigate }) {
           {[["active", ko ? "진행중" : "Active"], ["ended", ko ? "마감" : "Ended"]].map(([id, label]) => (
             <button key={id} onClick={() => setTab(id)}
               style={{ padding: "8px 24px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
-                background: tab === id ? (isDark ? "rgba(99,102,241,0.5)" : "#fff") : "transparent",
-                color: tab === id ? (isDark ? "#fff" : "#7c6aff") : muted }}>
+                background: tab === id ? (isDark ? "rgba(0,0,0,0.06)" : "#fff") : "transparent",
+                color: tab === id ? (isDark ? "#fff" : "#168EEA") : muted }}>
               {label}
             </button>
           ))}
@@ -147,7 +147,7 @@ export default function EventPage({ C, navigate }) {
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                   <span style={{ fontSize: 10, fontWeight: 800, padding: "2px 8px", borderRadius: 10,
-                    background: ev.status === "active" ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : (isDark ? "rgba(255,255,255,0.15)" : "#e5e7eb"),
+                    background: ev.status === "active" ? "#168EEA" : (isDark ? "rgba(255,255,255,0.15)" : "#e5e7eb"),
                     color: ev.status === "active" ? "#fff" : (isDark ? "rgba(255,255,255,0.6)" : "#666") }}>
                     {ev.badge}
                   </span>

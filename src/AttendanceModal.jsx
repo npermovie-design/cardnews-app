@@ -55,7 +55,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
   const muted  = D ? "rgba(255,255,255,0.5)" : "#888";
   const bdr    = D ? "rgba(255,255,255,0.1)" : "#e9ecef";
   const card   = D ? "rgba(255,255,255,0.05)" : "#f8f8f8";
-  const ACC    = "#7c6aff";
+  const ACC    = "#168EEA";
 
   const [data, setData] = useState(null);
   const [checking, setChecking] = useState(false);
@@ -285,7 +285,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
           {/* 결과 표시 */}
           {result && (
             <div style={{ marginBottom: 14, padding: "14px 16px", borderRadius: 12,
-              background: "linear-gradient(135deg,rgba(99,102,241,0.15),rgba(139,92,246,0.1))",
+              background: "linear-gradient(135deg,rgba(0,0,0,0.06),rgba(139,92,246,0.1))",
               border: `1px solid ${ACC}40`, textAlign: "center" }}>
               <div style={{ fontSize: 26, fontWeight: 900, color: ACC, marginBottom: 4 }}>+{result.uses}회 적립!</div>
               {result.bonuses.map((b, i) => (

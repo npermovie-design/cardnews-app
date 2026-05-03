@@ -158,7 +158,7 @@ export function LegalPage({ C, navigate, initialTab }) {
 
       {/* 헤더 */}
       <div style={{ textAlign: "center", marginBottom: 36 }}>
-        <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>⚖️ 법적 방침</div>
+        <div style={{ display: "inline-block", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>⚖️ 법적 방침</div>
         <h2 style={{ fontSize: "clamp(22px,4vw,32px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 8 }}>SNS메이킷 법적 방침</h2>
         <p style={{ fontSize: 14, color: C.muted }}>서비스 이용 전 아래 내용을 확인해주세요</p>
       </div>
@@ -168,9 +168,9 @@ export function LegalPage({ C, navigate, initialTab }) {
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             style={{ padding: "11px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, minHeight: 44,
-              background: tab === t.id ? "linear-gradient(135deg,#7c6aff,#ec4899)" : (isDark ? "rgba(255,255,255,0.06)" : "#f0f0f5"),
+              background: tab === t.id ? "#168EEA" : (isDark ? "rgba(255,255,255,0.06)" : "#f0f0f5"),
               color: tab === t.id ? "#fff" : C.muted,
-              boxShadow: tab === t.id ? "0 4px 16px rgba(124,106,255,0.3)" : "none" }}>
+              boxShadow: tab === t.id ? "0 4px 16px rgba(0,0,0,0.06)" : "none" }}>
             {t.label}
           </button>
         ))}
@@ -185,7 +185,7 @@ export function LegalPage({ C, navigate, initialTab }) {
       <LegalContent items={content} C={C} />
 
       {/* 문의 안내 */}
-      <div style={{ marginTop: 32, padding: "20px 24px", borderRadius: 14, background: isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.05)", border: "1px solid rgba(124,106,255,0.2)", textAlign: "center" }}>
+      <div style={{ marginTop: 32, padding: "20px 24px", borderRadius: 14, background: isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", textAlign: "center" }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 6 }}>📬 법적 방침 관련 문의</div>
         <div style={{ fontSize: 13, color: C.muted }}>npermovie@naver.com &nbsp;·&nbsp; 평일 09:00 ~ 18:00</div>
       </div>

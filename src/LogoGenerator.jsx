@@ -7,9 +7,9 @@ import { useI18n } from "./i18n.jsx";
 
 const LOGO_STYLES = [
   { id:"free",       label:"자유로운 로고",      desc:"창의적·독창적",       color:"#ec4899", bg:"rgba(236,72,153,0.15)" },
-  { id:"symbol_kr",  label:"한글 심볼 로고",     desc:"한글 타이포 중심",    color:"#7c6aff", bg:"rgba(99,102,241,0.15)" },
+  { id:"symbol_kr",  label:"한글 심볼 로고",     desc:"한글 타이포 중심",    color:"#168EEA", bg:"rgba(0,0,0,0.06)" },
   { id:"letter_en",  label:"영문 레터링·캐릭터", desc:"영문 + 캐릭터 혼합",  color:"#8b5cf6", bg:"rgba(139,92,246,0.15)" },
-  { id:"calli_en",   label:"영문 캘리그라피",    desc:"손글씨 스타일",       color:"#a78bfa", bg:"rgba(167,139,250,0.15)" },
+  { id:"calli_en",   label:"영문 캘리그라피",    desc:"손글씨 스타일",       color:"#4AABF2", bg:"rgba(167,139,250,0.15)" },
   { id:"simple_en",  label:"심플 영문 레터링",   desc:"깔끔한 영문",         color:"#06b6d4", bg:"rgba(6,182,212,0.15)" },
   { id:"illust",     label:"일러스트 심볼",      desc:"그림 + 심볼",         color:"#10b981", bg:"rgba(16,185,129,0.15)" },
   { id:"flat",       label:"플랫 심볼",          desc:"납작한 아이콘",       color:"#f59e0b", bg:"rgba(245,158,11,0.15)" },

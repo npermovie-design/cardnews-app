@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useI18n } from "./i18n.jsx";
 import { supabase } from "./storage";
 
-const GRAD = "linear-gradient(135deg,#7c6aff,#ec4899)";
+const GRAD = "#168EEA";
 
 const PLANS = [
   {
@@ -212,7 +212,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
       {/* 토스트 */}
       {toast && (
         <div style={{ position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)", zIndex: 9999,
-          background: isDark ? "#1e1c3a" : "#fff", border: "1px solid rgba(124,106,255,0.3)",
+          background: isDark ? "#1e1c3a" : "#fff", border: "1px solid rgba(0,0,0,0.06)",
           borderRadius: 14, padding: "14px 24px", fontSize: 14, fontWeight: 700,
           color: C.text, boxShadow: "0 8px 32px rgba(0,0,0,0.2)", whiteSpace: "nowrap" }}>
           {toast}
@@ -221,7 +221,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
       {/* 헤더 */}
       <div style={{ textAlign: "center", marginBottom: 40 }}>
-        <div style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "5px 16px", fontSize: 12, fontWeight: 700, marginBottom: 14, color: isDark ? "#c4b5fd" : "#7c6aff" }}>Pricing</div>
+        <div style={{ display: "inline-block", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 20, padding: "5px 16px", fontSize: 12, fontWeight: 700, marginBottom: 14, color: isDark ? "#c4b5fd" : "#168EEA" }}>Pricing</div>
         <h2 style={{ fontSize: "clamp(24px,4vw,36px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 10 }}>
           딱 필요한 만큼만, 심플하게
         </h2>
@@ -236,8 +236,8 @@ export function PricingPage({ navigate, C, user, onLogin }) {
           {[["monthly", "월간"], ["yearly", "연간 (17% 할인)"]].map(([id, label]) => (
             <button key={id} onClick={() => setBilling(id)}
               style={{ padding: "9px 24px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
-                background: billing === id ? (isDark ? "rgba(124,106,255,0.2)" : "#fff") : "transparent",
-                color: billing === id ? (isDark ? "#c4b5fd" : "#7c6aff") : C.muted,
+                background: billing === id ? (isDark ? "rgba(0,0,0,0.06)" : "#fff") : "transparent",
+                color: billing === id ? (isDark ? "#c4b5fd" : "#168EEA") : C.muted,
                 boxShadow: billing === id ? "0 2px 8px rgba(0,0,0,0.08)" : "none",
                 transition: "all 0.15s" }}>
               {label}
@@ -267,7 +267,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
               border: isHighlight ? "none" : "1px solid " + C.border,
               borderRadius: 20, padding: "28px 20px 24px",
               display: "flex", flexDirection: "column",
-              boxShadow: isHighlight ? "0 8px 40px rgba(124,106,255,0.3)" : C.shadow,
+              boxShadow: isHighlight ? "0 8px 40px rgba(0,0,0,0.06)" : C.shadow,
               transition: "transform 0.18s",
               color: isHighlight ? "#fff" : C.text,
             }}
@@ -278,7 +278,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                 <div style={{
                   position: "absolute", top: -11, left: "50%", transform: "translateX(-50%)",
                   background: isHighlight ? "#fff" : GRAD,
-                  color: isHighlight ? "#7c6aff" : "#fff",
+                  color: isHighlight ? "#168EEA" : "#fff",
                   fontSize: 11, fontWeight: 800, padding: "3px 14px", borderRadius: 20, whiteSpace: "nowrap",
                 }}>
                   {plan.badge}
@@ -313,7 +313,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
               <div style={{ flex: 1, marginBottom: 20 }}>
                 {plan.features.map((f, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 7, fontSize: 12, opacity: isHighlight ? 0.9 : 0.7 }}>
-                    <span style={{ flexShrink: 0, fontWeight: 700, color: isHighlight ? "#fff" : "#7c6aff" }}>✓</span>
+                    <span style={{ flexShrink: 0, fontWeight: 700, color: isHighlight ? "#fff" : "#168EEA" }}>✓</span>
                     <span>{f}</span>
                   </div>
                 ))}
@@ -327,7 +327,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                   padding: "13px", borderRadius: 12, border: "none", cursor: (plan.free && user) ? "default" : "pointer",
                   fontSize: 13, fontWeight: 800, width: "100%", minHeight: 44,
                   background: isHighlight ? "#fff" : GRAD,
-                  color: isHighlight ? "#7c6aff" : "#fff",
+                  color: isHighlight ? "#168EEA" : "#fff",
                   opacity: (plan.free && user) ? 0.5 : 1,
                   transition: "opacity 0.15s",
                 }}>
@@ -341,7 +341,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
       {/* 플랜 비교 테이블 */}
       <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "32px 24px", marginBottom: 40, overflowX: "auto" }}>
         <div style={{ textAlign: "center", marginBottom: 8 }}>
-          <span style={{ display: "inline-block", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.2)", borderRadius: 20, padding: "4px 14px", fontSize: 11, color: isDark ? "#c4b5fd" : "#7c6aff", fontWeight: 700, marginBottom: 10 }}>Compare</span>
+          <span style={{ display: "inline-block", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 20, padding: "4px 14px", fontSize: 11, color: isDark ? "#c4b5fd" : "#168EEA", fontWeight: 700, marginBottom: 10 }}>Compare</span>
         </div>
         <div style={{ fontSize: 20, fontWeight: 900, color: C.text, marginBottom: 6, textAlign: "center" }}>플랜 상세 비교</div>
         <div style={{ fontSize: 13, color: C.muted, marginBottom: 24, textAlign: "center" }}>내게 맞는 플랜을 찾아보세요</div>
@@ -351,9 +351,9 @@ export function PricingPage({ navigate, C, user, onLogin }) {
               <th style={{ textAlign: "left", padding: "14px 12px", fontSize: 13, fontWeight: 700, color: C.muted, borderBottom: "2px solid " + C.border, width: "28%" }}>기능</th>
               {[
                 { name: "Free", color: C.muted },
-                { name: "Basic", color: isDark ? "#c4b5fd" : "#7c6aff" },
+                { name: "Basic", color: isDark ? "#c4b5fd" : "#168EEA" },
                 { name: "Pro", color: "#ec4899" },
-                { name: "Business", color: isDark ? "#c4b5fd" : "#7c6aff" },
+                { name: "Business", color: isDark ? "#c4b5fd" : "#168EEA" },
               ].map(plan => (
                 <th key={plan.name} style={{ textAlign: "center", padding: "14px 8px", fontSize: 13, fontWeight: 800, color: plan.color, borderBottom: "2px solid " + C.border, width: "18%", position: "relative" }}>
                   {plan.name}
@@ -392,9 +392,9 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 14 }}>
           {[
             { label: "SNS를 처음 시작하는 분", plan: "Free", desc: "무료로 AI 글쓰기를 체험하고, 커뮤니티에서 정보를 얻어보세요.", color: C.muted },
-            { label: "개인 블로거 / 크리에이터", plan: "Basic", desc: "매일 1~2개씩 꾸준히 콘텐츠를 만들고 싶은 분에게 딱 맞습니다.", color: isDark ? "#c4b5fd" : "#7c6aff" },
+            { label: "개인 블로거 / 크리에이터", plan: "Basic", desc: "매일 1~2개씩 꾸준히 콘텐츠를 만들고 싶은 분에게 딱 맞습니다.", color: isDark ? "#c4b5fd" : "#168EEA" },
             { label: "마케터 / 소상공인", plan: "Pro", desc: "대량 콘텐츠 + NaverBot 자동발행으로 마케팅을 자동화하세요.", color: "#ec4899", badge: "추천" },
-            { label: "에이전시 / 기업", plan: "Business", desc: "월 500회 글쓰기와 대량 자동발행으로 팀 전체 콘텐츠를 관리하세요.", color: isDark ? "#c4b5fd" : "#7c6aff" },
+            { label: "에이전시 / 기업", plan: "Business", desc: "월 500회 글쓰기와 대량 자동발행으로 팀 전체 콘텐츠를 관리하세요.", color: isDark ? "#c4b5fd" : "#168EEA" },
           ].map((seg, i) => (
             <div key={i} style={{ position: "relative", background: C.card, border: seg.badge ? "2px solid #ec4899" : "1px solid " + C.border, borderRadius: 16, padding: "24px 20px", textAlign: "center", boxShadow: seg.badge ? "0 0 20px rgba(236,72,153,0.12)" : C.shadow }}>
               {seg.badge && (
@@ -409,12 +409,12 @@ export function PricingPage({ navigate, C, user, onLogin }) {
       </div>
 
       {/* 모든 플랜 공통 기능 */}
-      <div style={{ background: isDark ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.04)", border: "1px solid rgba(124,106,255,0.15)", borderRadius: 16, padding: "24px 28px", marginBottom: 40 }}>
+      <div style={{ background: isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 16, padding: "24px 28px", marginBottom: 40 }}>
         <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 16, textAlign: "center" }}>모든 플랜 공통 기능</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(240px,100%),1fr))", gap: "8px 24px" }}>
           {COMMON_FEATURES.map((f, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: C.muted }}>
-              <span style={{ color: "#7c6aff", fontWeight: 700, flexShrink: 0 }}>✓</span>{f}
+              <span style={{ color: "#168EEA", fontWeight: 700, flexShrink: 0 }}>✓</span>{f}
             </div>
           ))}
         </div>

@@ -227,8 +227,8 @@ function FreeMediaSearch({ C, isDark, bdr }) {
           <button key={t.id} onClick={()=>setTab(t.id)}
             style={{flex:1,padding:"10px 0",border:"none",cursor:"pointer",fontSize:14,fontWeight:tab===t.id?800:500,
               background:"transparent",
-              color:tab===t.id?(isDark?"#a5b4fc":"#7c6aff"):C.muted,
-              borderBottom:tab===t.id?"3px solid #7c6aff":"3px solid transparent",
+              color:tab===t.id?(isDark?"#a5b4fc":"#168EEA"):C.muted,
+              borderBottom:tab===t.id?"3px solid #168EEA":"3px solid transparent",
               transition:"all 0.15s"}}>
             {t.label}
           </button>
@@ -243,7 +243,7 @@ function FreeMediaSearch({ C, isDark, bdr }) {
             background:isDark?"rgba(255,255,255,0.05)":"#fff",color:C.text,fontSize:13,outline:"none"}}/>
         <button onClick={doSearch} disabled={loading}
           style={{padding:"10px 20px",borderRadius:10,border:"none",
-            background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:13,fontWeight:700,
+            background:"#168EEA",color:"#fff",fontSize:13,fontWeight:700,
             cursor:loading?"not-allowed":"pointer",opacity:loading?0.6:1,whiteSpace:"nowrap",flexShrink:0}}>
           {loading?t("board_searching"):t("board_searchBtn")}
         </button>
@@ -288,9 +288,9 @@ function FreeMediaSearch({ C, isDark, bdr }) {
 
       {/* 이용 가이드 */}
       <div style={{marginTop:16,padding:"14px 16px",borderRadius:12,
-        background:isDark?"rgba(99,102,241,0.06)":"rgba(99,102,241,0.04)",
-        border:"1px solid "+(isDark?"rgba(99,102,241,0.15)":"rgba(99,102,241,0.1)")}}>
-        <div style={{fontSize:13,fontWeight:800,color:isDark?"#a5b4fc":"#7c6aff",marginBottom:8}}>{t("board_guideTitle")}</div>
+        background:isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)",
+        border:"1px solid "+(isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)")}}>
+        <div style={{fontSize:13,fontWeight:800,color:isDark?"#a5b4fc":"#168EEA",marginBottom:8}}>{t("board_guideTitle")}</div>
         <div style={{fontSize:12,color:C.muted,lineHeight:2}}>
           <b style={{color:C.text}}>{t("board_guideSaveLabel")}</b> — {t("board_guideSave")}<br/>
           <b style={{color:C.text}}>{t("board_guideClickLabel")}</b> — {t("board_guideClick")}<br/>
@@ -418,7 +418,7 @@ function RichEditor({ value, onChange, isDark }) {
       const m = v.url?.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]+)/);
       if (m) exec("insertHTML", `<div style="margin:12px 0;border-radius:12px;overflow:hidden;max-width:560px"><iframe src="https://www.youtube.com/embed/${m[1]}" style="width:100%;height:315px;border:none" allowfullscreen></iframe></div>`);
     } else if (modal.type === "link") {
-      if (v.url) exec("insertHTML", `<a href="${DOMPurify.sanitize(v.url)}" target="_blank" rel="noopener noreferrer" style="color:#7c6aff">${DOMPurify.sanitize(v.text || v.url)}</a>`);
+      if (v.url) exec("insertHTML", `<a href="${DOMPurify.sanitize(v.url)}" target="_blank" rel="noopener noreferrer" style="color:#168EEA">${DOMPurify.sanitize(v.text || v.url)}</a>`);
     }
     closeModal();
   };
@@ -437,10 +437,10 @@ function RichEditor({ value, onChange, isDark }) {
 
   const ToolBtn = ({ onClick, title, children, active }) => (
     <button type="button" onMouseDown={e => { e.preventDefault(); onClick(); }} title={title}
-      style={{ padding:"5px 9px", border:"none", borderRadius:6, background: active?"rgba(99,102,241,0.25)":"transparent",
+      style={{ padding:"5px 9px", border:"none", borderRadius:6, background: active?"rgba(0,0,0,0.06)":"transparent",
         color:btnClr, cursor:"pointer", fontSize:13, fontWeight:600, display:"flex", alignItems:"center", justifyContent:"center", minWidth:28 }}
       onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.07)"}
-      onMouseLeave={e=>e.currentTarget.style.background=active?"rgba(99,102,241,0.25)":"transparent"}>
+      onMouseLeave={e=>e.currentTarget.style.background=active?"rgba(0,0,0,0.06)":"transparent"}>
       {children}
     </button>
   );
@@ -540,7 +540,7 @@ function RichEditor({ value, onChange, isDark }) {
               style={{flex:1,minWidth:120,padding:"8px 12px",borderRadius:8,border:`1px solid ${edBdr}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:edTxt,fontSize:13,outline:"none"}}/>
           ))}
           <button type="button" onClick={handleModalSubmit}
-            style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#7c6aff",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+            style={{padding:"8px 16px",borderRadius:8,border:"none",background:"#168EEA",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
             {t("board_insert")}
           </button>
           <button type="button" onClick={closeModal}
@@ -553,7 +553,7 @@ function RichEditor({ value, onChange, isDark }) {
       <style>{`
         [contenteditable]:empty:before { content: attr(data-placeholder); color: ${isDark?"rgba(255,255,255,0.25)":"rgba(0,0,0,0.3)"}; pointer-events:none; }
         [contenteditable] table td { border: 1px solid ${isDark?"#555":"#ccc"}; padding: 8px 12px; }
-        [contenteditable] a { color: #7c6aff; }
+        [contenteditable] a { color: #168EEA; }
         [contenteditable] img { max-width: 100%; border-radius: 8px; }
         [contenteditable] ul { padding-left: 20px; }
         [contenteditable] ol { padding-left: 20px; }
@@ -670,16 +670,16 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
             <div style={{display:"flex",flexWrap:"wrap",gap:6}}>
               <button type="button" onClick={()=>setPickedTag("")} style={{
                 padding:"5px 14px", borderRadius:16, fontSize:12, cursor:"pointer",
-                border:"1px solid "+(pickedTag==="" ? (sub?.color||"#7c6aff") : bdr),
-                background: pickedTag==="" ? (sub?.color||"#7c6aff")+"18" : "transparent",
-                color: pickedTag==="" ? (sub?.color||"#7c6aff") : C.muted, fontWeight: pickedTag===""?700:400,
+                border:"1px solid "+(pickedTag==="" ? (sub?.color||"#168EEA") : bdr),
+                background: pickedTag==="" ? (sub?.color||"#168EEA")+"18" : "transparent",
+                color: pickedTag==="" ? (sub?.color||"#168EEA") : C.muted, fontWeight: pickedTag===""?700:400,
               }}>{t("board_allTag")}</button>
               {tags.map(t=>(
                 <button key={t.id} type="button" onClick={()=>setPickedTag(t.label)} style={{
                   padding:"5px 14px", borderRadius:16, fontSize:12, cursor:"pointer",
-                  border:"1px solid "+(pickedTag===t.label ? (t.color||sub?.color||"#7c6aff") : bdr),
-                  background: pickedTag===t.label ? (t.color||sub?.color||"#7c6aff")+"18" : "transparent",
-                  color: pickedTag===t.label ? (t.color||sub?.color||"#7c6aff") : C.muted,
+                  border:"1px solid "+(pickedTag===t.label ? (t.color||sub?.color||"#168EEA") : bdr),
+                  background: pickedTag===t.label ? (t.color||sub?.color||"#168EEA")+"18" : "transparent",
+                  color: pickedTag===t.label ? (t.color||sub?.color||"#168EEA") : C.muted,
                   fontWeight: pickedTag===t.label ? 700 : 400,
                 }}>{t.label}</button>
               ))}
@@ -696,7 +696,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:uploadedFiles.length>0?12:0}}>
             <span style={{fontSize:13,fontWeight:700,color:C.muted}}>+ {t("board_fileAttach")} <span style={{fontWeight:400,fontSize:11}}>{t("board_fileAttachDesc")}</span></span>
             <button type="button" onClick={()=>fileInputRef.current?.click()} disabled={uploading}
-              style={{padding:"6px 14px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.purpleL||"#7c6aff",fontSize:12,fontWeight:700,cursor:uploading?"not-allowed":"pointer",opacity:uploading?0.6:1}}>
+              style={{padding:"6px 14px",borderRadius:8,border:"1px solid "+bdr,background:"transparent",color:C.purpleL||"#168EEA",fontSize:12,fontWeight:700,cursor:uploading?"not-allowed":"pointer",opacity:uploading?0.6:1}}>
               {uploading?t("board_uploading"):("+ "+t("board_addFile"))}
             </button>
             <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar,.hwp,.txt"
@@ -769,7 +769,7 @@ function WriteForm({ user, subCat, initial, onDone, onCancel, C, isDark, cats, a
             if(title.trim()&&body.replace(/<[^>]*>/g,"").trim()) onDone({title:title.trim(),body,subCat:pickedCat,tag:pickedTag,images:uploadedFiles.map(f=>f.url),
               ...(pickedCat==="archive"?{priceType,price:priceType==="paid"?price:""}:{})});
             else alert(t("board_titleBodyRequired"));
-          }} style={{padding:"11px 28px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c6aff,#8b5cf6)",color:"#fff",fontSize:14,cursor:"pointer",fontWeight:800}}>
+          }} style={{padding:"11px 28px",borderRadius:10,border:"none",background:"#168EEA",color:"#fff",fontSize:14,cursor:"pointer",fontWeight:800}}>
             {initial?t("board_editDone"):t("board_submit")}
           </button>
         </div>

@@ -309,7 +309,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
   const cardBg  = D ? "rgba(255,255,255,0.04)" : "#fff";
   const bdr     = D ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.09)";
   const inputBg = D ? "rgba(255,255,255,0.06)" : "#f8f8f8";
-  const accentColor = selCat ? (CATEGORIES.find(c=>c.key===selCat)?.accent||"#7c6aff") : "#7c6aff";
+  const accentColor = selCat ? (CATEGORIES.find(c=>c.key===selCat)?.accent||"#168EEA") : "#168EEA";
   const cat = CATEGORIES.find(c=>c.key===selCat) || CATEGORIES[0];
   const catKo = getCategories(true).find(c=>c.key===selCat) || getCategories(true)[0];
 
@@ -333,13 +333,13 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
                 onClick={()=>{ if(done&&step<wizStep) setWizStep(step); }}>
                 <div style={{ width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
                   fontSize:12, fontWeight:900, flexShrink:0,
-                  background:done||active?"#7c6aff":(D?"rgba(255,255,255,0.1)":"#e5e5e5"),
+                  background:done||active?"#168EEA":(D?"rgba(255,255,255,0.1)":"#e5e5e5"),
                   color:done||active?"#fff":(D?"rgba(255,255,255,0.3)":"#bbb") }}>
                   {done?"✓":n}
                 </div>
                 <span style={{ fontSize:13, fontWeight:active?800:500, color:active?text:muted, whiteSpace:"nowrap" }}>{label}</span>
               </div>
-              {i<3&&<div style={{ flex:1, height:2, background:done?"#7c6aff":(D?"rgba(255,255,255,0.1)":"#e5e5e5"), margin:"0 12px", minWidth:16 }}/>}
+              {i<3&&<div style={{ flex:1, height:2, background:done?"#168EEA":(D?"rgba(255,255,255,0.1)":"#e5e5e5"), margin:"0 12px", minWidth:16 }}/>}
             </div>
           );
         })}
@@ -518,12 +518,12 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
                 placeholder={ko?"https://... 상품 페이지 / 뉴스 / 유튜브 URL":"https://... product page / news / YouTube URL"}
                 style={{ flex:1, padding:"9px 13px", borderRadius:9, border:`1px solid ${bdr}`, background:D?"rgba(255,255,255,0.05)":"#f5f5f5", color:text, fontSize:12, fontFamily:"inherit", outline:"none" }}/>
               <button onClick={fetchFromUrl} disabled={urlLoading||!urlInput.trim()}
-                style={{ padding:"9px 18px", borderRadius:9, border:"none", cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer", background:"rgba(99,102,241,0.18)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading||!urlInput.trim()?0.5:1, flexShrink:0, whiteSpace:"nowrap" }}>
+                style={{ padding:"9px 18px", borderRadius:9, border:"none", cursor:urlLoading||!urlInput.trim()?"not-allowed":"pointer", background:"rgba(0,0,0,0.06)", color:"#a5b4fc", fontSize:12, fontWeight:800, opacity:urlLoading||!urlInput.trim()?0.5:1, flexShrink:0, whiteSpace:"nowrap" }}>
                 {urlLoading?(ko?"불러오는 중...":"Loading..."):(ko?"불러오기":"Import")}
               </button>
             </div>
             {urlResult && (
-              <div style={{ marginTop:10, padding:"10px 13px", borderRadius:8, background:D?"rgba(99,102,241,0.08)":"rgba(99,102,241,0.05)", border:"1px solid rgba(99,102,241,0.2)", display:"flex", gap:10, alignItems:"flex-start" }}>
+              <div style={{ marginTop:10, padding:"10px 13px", borderRadius:8, background:D?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)", border:"1px solid rgba(0,0,0,0.06)", display:"flex", gap:10, alignItems:"flex-start" }}>
                 {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{ width:56, height:40, objectFit:"cover", borderRadius:5, flexShrink:0 }} onError={e=>e.target.style.display="none"}/>}
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ fontSize:12, fontWeight:700, color:text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{urlResult.title}</div>
@@ -608,7 +608,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
               setWizStep(2);
               if(urlResult) setAutoSuggest(true);
             }} disabled={!canNext}
-              style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext?"pointer":"not-allowed", background:canNext?"#7c6aff":"rgba(99,102,241,0.3)", color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8 }}>
+              style={{ padding:"14px 40px", borderRadius:12, border:"none", cursor:canNext?"pointer":"not-allowed", background:canNext?"#168EEA":"rgba(0,0,0,0.06)", color:"#fff", fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8 }}>
               {ko?"다음 →":"Next →"} <span style={{ fontSize:12, opacity:0.8 }}>{ko?"슬라이드 기획":"Plan Slides"}</span>
             </button>
           </div>
@@ -628,14 +628,14 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
             <div style={{ fontSize:13, color:muted, lineHeight:1.7 }}>{ko?"각 슬라이드의 문구를 직접 입력하거나 AI 추천을 받으세요. 비워두면 AI가 자동으로 채워줘요.":"Enter text for each slide or use AI suggestions. Leave blank and AI will fill them in."}</div>
           </div>
           {urlResult && (
-            <div style={{ marginBottom:16, padding:"12px 16px", borderRadius:12, background:"rgba(99,102,241,0.08)", border:"1px solid rgba(99,102,241,0.25)", display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ marginBottom:16, padding:"12px 16px", borderRadius:12, background:"rgba(0,0,0,0.06)", border:"1px solid rgba(0,0,0,0.06)", display:"flex", alignItems:"center", gap:12 }}>
               {urlResult.thumbnail && <img src={urlResult.thumbnail} alt="" style={{ width:44, height:32, objectFit:"cover", borderRadius:6, flexShrink:0 }} onError={e=>e.target.style.display="none"}/>}
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:12, fontWeight:700, color:"#a5b4fc", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>🔗 {urlResult.title}</div>
                 <div style={{ fontSize:11, color:muted, marginTop:2 }}>{ko?"불러온 내용을 기반으로 슬라이드가 자동 구성돼요":"Slides will be auto-composed from imported content"}</div>
               </div>
               <button onClick={suggestAll} disabled={planLoading}
-                style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:planLoading?"wait":"pointer", background:"#7c6aff", color:"#fff", fontSize:11, fontWeight:800, flexShrink:0 }}>
+                style={{ padding:"7px 14px", borderRadius:8, border:"none", cursor:planLoading?"wait":"pointer", background:"#168EEA", color:"#fff", fontSize:11, fontWeight:800, flexShrink:0 }}>
                 {planLoading?(ko?"구성 중...":"Composing..."):(ko?"재구성":"Recompose")}
               </button>
             </div>
@@ -646,7 +646,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
               <div style={{ fontSize:11, color:muted, marginTop:2 }}>{ko?"모든 슬라이드 내용을 AI가 한 번에 추천":"AI suggests content for all slides at once"}</div>
             </div>
             <button onClick={suggestAll} disabled={planLoading}
-              style={{ padding:"9px 20px", borderRadius:9, border:"none", cursor:planLoading?"wait":"pointer", background:"#7c6aff", color:"#fff", fontSize:13, fontWeight:800, opacity:planLoading?0.6:1, flexShrink:0 }}>
+              style={{ padding:"9px 20px", borderRadius:9, border:"none", cursor:planLoading?"wait":"pointer", background:"#168EEA", color:"#fff", fontSize:13, fontWeight:800, opacity:planLoading?0.6:1, flexShrink:0 }}>
               {planLoading?(ko?"추천 중...":"Suggesting..."):(ko?"✨ 전체 자동 추천":"✨ Auto-suggest All")}
             </button>
           </div>
@@ -655,20 +655,20 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
               <div key={i} style={{ borderRadius:14, border:`1.5px solid ${bdr}`, background:cardBg, overflow:"hidden" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 16px", background:D?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.02)", borderBottom:`1px solid ${bdr}` }}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <div style={{ width:24, height:24, borderRadius:7, background:"rgba(99,102,241,0.2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, color:"#7c6aff" }}>{i+1}</div>
+                    <div style={{ width:24, height:24, borderRadius:7, background:"rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, color:"#168EEA" }}>{i+1}</div>
                     <span style={{ fontSize:13, fontWeight:800, color:text }}>{sc.label}</span>
-                    {sc.headline&&<span style={{ fontSize:11, color:"#7c6aff", fontWeight:600 }}>{ko?"✓ 입력됨":"✓ Filled"}</span>}
+                    {sc.headline&&<span style={{ fontSize:11, color:"#168EEA", fontWeight:600 }}>{ko?"✓ 입력됨":"✓ Filled"}</span>}
                   </div>
                   <button onClick={()=>suggestOne(i)} disabled={sc.aiLoading||planLoading}
-                    style={{ padding:"5px 12px", borderRadius:7, border:"1px solid rgba(99,102,241,0.4)", background:"rgba(99,102,241,0.1)", color:"#7c6aff", fontSize:11, fontWeight:700, cursor:sc.aiLoading||planLoading?"wait":"pointer", opacity:sc.aiLoading||planLoading?0.5:1, display:"flex", alignItems:"center", gap:5 }}>
-                    {sc.aiLoading?<><div style={{ width:10,height:10,borderRadius:"50%",border:"1.5px solid rgba(99,102,241,0.5)",borderTopColor:"#7c6aff",animation:"spin 0.8s linear infinite" }}/>{ko?"추천 중":"Suggesting"}</>:(ko?"✦ AI 추천":"✦ AI Suggest")}
+                    style={{ padding:"5px 12px", borderRadius:7, border:"1px solid rgba(0,0,0,0.06)", background:"rgba(0,0,0,0.06)", color:"#168EEA", fontSize:11, fontWeight:700, cursor:sc.aiLoading||planLoading?"wait":"pointer", opacity:sc.aiLoading||planLoading?0.5:1, display:"flex", alignItems:"center", gap:5 }}>
+                    {sc.aiLoading?<><div style={{ width:10,height:10,borderRadius:"50%",border:"1.5px solid rgba(0,0,0,0.06)",borderTopColor:"#168EEA",animation:"spin 0.8s linear infinite" }}/>{ko?"추천 중":"Suggesting"}</>:(ko?"✦ AI 추천":"✦ AI Suggest")}
                   </button>
                 </div>
                 <div style={{ padding:"14px 16px", display:"grid", gap:10 }}>
                   <div>
                     <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5 }}>{ko?"헤드라인":"Headline"} <span style={{ fontWeight:400 }}>{ko?"(14자 이내)":"(max 14 chars)"}</span></div>
                     <input value={sc.headline||""} onChange={e=>setSlideContents(prev=>prev.map((s,j)=>j===i?{...s,headline:e.target.value}:s))} placeholder={ko?"비워두면 AI가 자동 생성":"Leave blank for AI to generate"}
-                      style={{ width:"100%",padding:"8px 12px",borderRadius:8,border:`1px solid ${sc.headline?"rgba(99,102,241,0.5)":bdr}`,background:D?"rgba(255,255,255,0.05)":"#f5f5f5",color:text,fontSize:13,fontWeight:600,outline:"none",boxSizing:"border-box" }}/>
+                      style={{ width:"100%",padding:"8px 12px",borderRadius:8,border:`1px solid ${sc.headline?"rgba(0,0,0,0.06)":bdr}`,background:D?"rgba(255,255,255,0.05)":"#f5f5f5",color:text,fontSize:13,fontWeight:600,outline:"none",boxSizing:"border-box" }}/>
                   </div>
                   <div>
                     <div style={{ fontSize:11, fontWeight:700, color:muted, marginBottom:5 }}>{ko?"본문":"Body"} <span style={{ fontWeight:400 }}>{ko?"(50자 이내, 선택)":"(max 50 chars, optional)"}</span></div>
@@ -681,7 +681,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
           </div>
           <div style={{ display:"flex", justifyContent:"space-between", marginTop:24 }}>
             <button onClick={()=>setWizStep(1)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>{ko?"← 이전":"← Back"}</button>
-            <button onClick={()=>setWizStep(3)} style={{ padding:"14px 40px",borderRadius:12,border:"none",cursor:"pointer",background:"#7c6aff",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8 }}>
+            <button onClick={()=>setWizStep(3)} style={{ padding:"14px 40px",borderRadius:12,border:"none",cursor:"pointer",background:"#168EEA",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8 }}>
               {ko?"다음 →":"Next →"} <span style={{ fontSize:12,opacity:0.8 }}>{ko?"디자인 선택":"Design"}</span>
             </button>
           </div>
@@ -713,7 +713,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
                 const isSel=selPreset?.key===dp.key;
                 return (
                   <button key={dp.key} onClick={()=>setSelPreset(isSel?null:dp)}
-                    style={{ border:`2px solid ${isSel?"#7c6aff":"transparent"}`,borderRadius:12,overflow:"hidden",cursor:"pointer",padding:0,background:"transparent",transition:"all 0.15s",boxShadow:isSel?"0 0 0 3px rgba(99,102,241,0.3)":"0 2px 8px rgba(0,0,0,0.15)" }}>
+                    style={{ border:`2px solid ${isSel?"#168EEA":"transparent"}`,borderRadius:12,overflow:"hidden",cursor:"pointer",padding:0,background:"transparent",transition:"all 0.15s",boxShadow:isSel?"0 0 0 3px rgba(0,0,0,0.06)":"0 2px 8px rgba(0,0,0,0.15)" }}>
                     {/* 미리보기 박스 */}
                     <div style={{ width:"100%", paddingBottom:"130%", position:"relative", background:dp.bgColor }}>
                       <div style={{ position:"absolute",inset:0,padding:"8px 7px",display:"flex",flexDirection:"column",justifyContent:"flex-end" }}>
@@ -722,7 +722,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
                         <div style={{ height:3,borderRadius:1,background:dp.textColor,width:"80%",marginBottom:2,opacity:0.6 }}/>
                         <div style={{ height:7,borderRadius:3,background:dp.textColor,width:"100%",opacity:0.3 }}/>
                       </div>
-                      {isSel&&<div style={{ position:"absolute",top:6,right:6,width:18,height:18,borderRadius:"50%",background:"#7c6aff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",fontWeight:900 }}>✓</div>}
+                      {isSel&&<div style={{ position:"absolute",top:6,right:6,width:18,height:18,borderRadius:"50%",background:"#168EEA",display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:"#fff",fontWeight:900 }}>✓</div>}
                     </div>
                     <div style={{ padding:"6px 5px",background:D?"rgba(0,0,0,0.6)":"rgba(255,255,255,0.95)" }}>
                       <div style={{ fontSize:10,fontWeight:isSel?800:600,color:isSel?"#a5b4fc":text }}>{dp.label}</div>
@@ -732,7 +732,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
               })}
             </div>
             {selPreset&&(
-              <div style={{ marginTop:10,padding:"9px 14px",borderRadius:9,background:"rgba(99,102,241,0.1)",border:"1px solid rgba(99,102,241,0.3)" }}>
+              <div style={{ marginTop:10,padding:"9px 14px",borderRadius:9,background:"rgba(0,0,0,0.06)",border:"1px solid rgba(0,0,0,0.06)" }}>
                 <div style={{ fontSize:12,fontWeight:700,color:"#a5b4fc" }}>✓ {selPreset.label} {ko?"선택됨":"selected"}</div>
               </div>
             )}
@@ -742,12 +742,12 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
           <div style={{ padding:"16px 18px", borderRadius:12, border:`1px solid ${bdr}`, background:cardBg, marginBottom:20 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
               <div style={{ fontSize:13, fontWeight:700, color:text }}>{ko?"이미지 크기":"Image Size"}</div>
-              <div style={{ fontSize:14, fontWeight:900, color:"#7c6aff" }}>{imgW} × {imgH} px</div>
+              <div style={{ fontSize:14, fontWeight:900, color:"#168EEA" }}>{imgW} × {imgH} px</div>
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:6, marginBottom:12 }}>
               {SIZE_PRESETS.map((p,i)=>(
                 <button key={i} onClick={()=>setSelSize(i)}
-                  style={{ padding:"8px 4px",borderRadius:9,border:`1.5px solid ${selSize===i?"#7c6aff":bdr}`,background:selSize===i?"rgba(99,102,241,0.15)":"transparent",color:selSize===i?"#a5b4fc":(D?"rgba(255,255,255,0.65)":"#555"),fontSize:11,fontWeight:selSize===i?800:500,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
+                  style={{ padding:"8px 4px",borderRadius:9,border:`1.5px solid ${selSize===i?"#168EEA":bdr}`,background:selSize===i?"rgba(0,0,0,0.06)":"transparent",color:selSize===i?"#a5b4fc":(D?"rgba(255,255,255,0.65)":"#555"),fontSize:11,fontWeight:selSize===i?800:500,cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:3 }}>
                   <span style={{ fontSize:16 }}>{p.icon}</span>
                   <span>{p.label}</span>
                   {p.w&&<span style={{ fontSize:9,opacity:0.7 }}>{p.w}×{p.h}</span>}
@@ -770,7 +770,7 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
             {preset.w&&<div style={{ fontSize:11,color:muted,textAlign:"center",marginTop:4 }}>{preset.desc} · {preset.w}×{preset.h}px</div>}
             <div style={{ marginTop:12,display:"flex",alignItems:"center",gap:10 }}>
               <div style={{ fontSize:10,color:muted }}>{ko?"비율":"Ratio"}</div>
-              <div style={{ width:Math.min(56,56*imgRatio),height:Math.min(56,56/imgRatio),background:"rgba(99,102,241,0.25)",border:"1.5px solid rgba(99,102,241,0.5)",borderRadius:3 }}/>
+              <div style={{ width:Math.min(56,56*imgRatio),height:Math.min(56,56/imgRatio),background:"rgba(0,0,0,0.06)",border:"1.5px solid rgba(0,0,0,0.06)",borderRadius:3 }}/>
               <div style={{ fontSize:11,color:muted }}>{imgW>imgH?(ko?"가로형":"Horizontal"):imgW<imgH?(ko?"세로형":"Vertical"):(ko?"정사각형":"Square")} · {(imgW/imgH).toFixed(2)}:1</div>
             </div>
           </div>
@@ -778,9 +778,9 @@ export default function SimpleDetailPageGenerator({ isDark, user, theme, onUserU
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <button onClick={()=>setWizStep(2)} style={{ padding:"12px 28px",borderRadius:12,border:`1px solid ${bdr}`,background:"transparent",color:muted,fontSize:14,fontWeight:700,cursor:"pointer" }}>{ko?"← 이전":"← Back"}</button>
             <div style={{ textAlign:"right" }}>
-              {user && <div style={{ fontSize:12,color:muted,marginBottom:6 }}>{ko?"예상 차감:":"Est. cost:"} <b style={{ color:"#7c6aff" }}>10P</b></div>}
+              {user && <div style={{ fontSize:12,color:muted,marginBottom:6 }}>{ko?"예상 차감:":"Est. cost:"} <b style={{ color:"#168EEA" }}>10P</b></div>}
               <button onClick={generate} disabled={loading}
-                style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:loading?"wait":"pointer",background:"#7c6aff",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto",opacity:loading?0.7:1 }}>
+                style={{ padding:"14px 44px",borderRadius:12,border:"none",cursor:loading?"wait":"pointer",background:"#168EEA",color:"#fff",fontSize:15,fontWeight:900,display:"flex",alignItems:"center",gap:8,marginLeft:"auto",opacity:loading?0.7:1 }}>
                 {loading?<><div style={{ width:16,height:16,borderRadius:"50%",border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",animation:"spin 1s linear infinite" }}/>{ko?"생성 중...":"Generating..."}</>:user?(ko?"텍스트 생성하기 →":"Generate Text →"):(ko?"✦ 1회 생성하기":"✦ Generate Once")}
               </button>
             </div>

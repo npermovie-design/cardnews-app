@@ -17,7 +17,7 @@ import { useState, useRef, useEffect } from "react";
 ═══════════════════════════════════════════════════════════ */
 
 const PLATFORMS = [
-  { id:"native",   label:"공유하기",    icon:"📤", color:"#7c6aff", hasNative:true },
+  { id:"native",   label:"공유하기",    icon:"📤", color:"#168EEA", hasNative:true },
   { id:"x",        label:"X (트위터)",  icon:"𝕏",  color:"#000000" },
   { id:"facebook",  label:"페이스북",   icon:"f",  color:"#1877F2" },
   { id:"threads",   label:"스레드",     icon:"@",  color:"#000000" },
@@ -71,7 +71,7 @@ async function shareNative({ title, text, url, imageBlob }) {
 
 export default function ShareButton({ title, text, url, imageUrl, imageBlob, videoUrl, hashtags, isDark, compact, style }) {
   const D = isDark;
-  const accent = "#7c6aff";
+  const accent = "#168EEA";
   const bdr = D ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
   const bg = D ? "rgba(15,12,41,0.97)" : "rgba(255,255,255,0.97)";
   const textC = D ? "#fff" : "#1a1a2e";

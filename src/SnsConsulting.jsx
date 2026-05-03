@@ -53,7 +53,7 @@ const HOUR_OPTIONS = (() => {
 })();
 
 export default function SnsConsulting({ isDark, user }) {
-  const accent = "#7c6aff";
+  const accent = "#168EEA";
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const border = isDark ? "rgba(255,255,255,0.1)" : "#e5e5f0";
@@ -365,7 +365,7 @@ MBTI: ${mbti || "미입력"}
             width: "100%", padding: "16px", marginTop: 20, borderRadius: 14, border: "none",
             background: `linear-gradient(135deg, ${accent}, #8b5cf6)`, color: "#fff",
             fontSize: 16, fontWeight: 800, cursor: "pointer",
-            boxShadow: "0 4px 20px rgba(124,106,255,0.3)",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.06)",
             fontFamily: "inherit", transition: "transform 0.1s",
           }}
             onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
@@ -394,7 +394,7 @@ MBTI: ${mbti || "미입력"}
           i++;
         }
         const tblBdr = isDark ? "rgba(255,255,255,0.1)" : "#e5e5f0";
-        const tblHdBg = isDark ? "rgba(124,106,255,0.12)" : "rgba(124,106,255,0.06)";
+        const tblHdBg = isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)";
         let tbl = `<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:13px;border-radius:12px;overflow:hidden;border:1px solid ${tblBdr}">`;
         tbl += "<thead><tr>";
         headers.forEach(h => { tbl += `<th style="padding:10px 14px;text-align:left;font-weight:700;background:${tblHdBg};border-bottom:1px solid ${tblBdr}">${boldify(h)}</th>`; });

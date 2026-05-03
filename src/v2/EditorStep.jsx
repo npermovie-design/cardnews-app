@@ -11,7 +11,7 @@ export default function EditorStep({ state, dispatch, C, isMobile }) {
   const [rightOpen, setRightOpen] = useState(!isMobile);
 
   const sections = state.sections || [];
-  const colorScheme = state.template?.colorScheme || { primary: "#1a1a2e", secondary: "#555", background: "#ffffff", text: "#111", accent: "#7c6aff" };
+  const colorScheme = state.template?.colorScheme || { primary: "#1a1a2e", secondary: "#555", background: "#ffffff", text: "#111", accent: "#168EEA" };
   const selectedSec = sections.find(s => s.id === state.selectedSectionId);
   const selectedSecIdx = sections.findIndex(s => s.id === state.selectedSectionId);
 
@@ -123,7 +123,7 @@ ${context}
                 style={{
                   display: "flex", alignItems: "center", gap: 8, padding: "10px 12px",
                   borderRadius: 8, cursor: "pointer", marginBottom: 2,
-                  background: state.selectedSectionId === sec.id ? (C.purpleBg || "rgba(124,106,255,0.08)") : "transparent",
+                  background: state.selectedSectionId === sec.id ? (C.purpleBg || "rgba(0,0,0,0.06)") : "transparent",
                   border: state.selectedSectionId === sec.id ? `1px solid ${C.purple}30` : "1px solid transparent",
                   transition: "background 0.15s",
                 }}>
@@ -259,7 +259,7 @@ ${context}
               }}>
                 <div style={{
                   display: "inline-block", maxWidth: "85%", padding: "8px 14px", borderRadius: 12,
-                  background: msg.role === "user" ? C.purple : (C.purpleBg || "rgba(124,106,255,0.06)"),
+                  background: msg.role === "user" ? C.purple : (C.purpleBg || "rgba(0,0,0,0.06)"),
                   color: msg.role === "user" ? "#fff" : C.text,
                   fontSize: 13, lineHeight: 1.6,
                 }}>

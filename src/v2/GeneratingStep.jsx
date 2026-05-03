@@ -42,7 +42,7 @@ export default function GeneratingStep({ state, C, isMobile }) {
         }}>
           <div style={{
             height: "100%", borderRadius: 3, width: `${pct}%`,
-            background: "linear-gradient(90deg, #7c6aff, #ec4899)",
+            background: "#168EEA",
             transition: "width 0.8s ease",
           }} />
         </div>
@@ -57,7 +57,7 @@ export default function GeneratingStep({ state, C, isMobile }) {
             <div key={i} style={{
               display: "flex", alignItems: "flex-start", gap: 12, padding: "12px 14px",
               borderRadius: 10,
-              background: isCurrent ? (C.purpleBg || "rgba(124,106,255,0.06)") : "transparent",
+              background: isCurrent ? (C.purpleBg || "rgba(0,0,0,0.06)") : "transparent",
               opacity: !isDone && !isCurrent ? 0.4 : 1,
               transition: "opacity 0.3s, background 0.3s",
             }}>

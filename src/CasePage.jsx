@@ -65,7 +65,7 @@ export default function CasePage({ C, isDark, user }) {
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5";
-  const accent = "#7c6aff";
+  const accent = "#168EEA";
   const isAdmin = user?.role === "admin";
 
   const [cases, setCases] = useState(DEFAULT_CASES);
@@ -164,7 +164,7 @@ export default function CasePage({ C, isDark, user }) {
               </button>
             )}
             {/* 썸네일 */}
-            <div style={{ width: "100%", aspectRatio: "16/9", background: isDark ? "rgba(99,102,241,0.08)" : "rgba(99,102,241,0.04)",
+            <div style={{ width: "100%", aspectRatio: "16/9", background: isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)",
               display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
               {c.thumb
                 ? <img src={c.thumb} alt={c.brand} style={{ width: "100%", height: "100%", objectFit: "cover" }} />

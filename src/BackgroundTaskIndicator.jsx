@@ -9,18 +9,18 @@ import { useState, useEffect } from "react";
 
 // 기능별 설정
 const TASK_CONFIG = {
-  blog_write:    { label: "글 작성", color: "#7c6aff", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg> },
+  blog_write:    { label: "글 작성", color: "#168EEA", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg> },
   blog_naver:    { label: "네이버 블로그", color: "#03C75A", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg> },
   blog_tistory:  { label: "티스토리", color: "#FF6B35", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg> },
   blog_insta:    { label: "인스타그램", color: "#E1306C", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke={c} strokeWidth="2"/></svg> },
-  ppt_gen:       { label: "PPT 제작", color: "#7c6aff", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" stroke={c} strokeWidth="2"/><path d="M8 21h8M12 17v4" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg> },
+  ppt_gen:       { label: "PPT 제작", color: "#168EEA", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" stroke={c} strokeWidth="2"/><path d="M8 21h8M12 17v4" stroke={c} strokeWidth="2" strokeLinecap="round"/></svg> },
   product_shot:  { label: "이미지 생성", color: "#f59e0b", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke={c} strokeWidth="2"/><circle cx="8.5" cy="8.5" r="1.5" fill={c}/></svg> },
   logo_gen:      { label: "로고 생성", color: "#ec4899", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke={c} strokeWidth="2"/></svg> },
   mockup_gen:    { label: "목업 생성", color: "#06b6d4", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="5" y="2" width="14" height="20" rx="2" stroke={c} strokeWidth="2"/></svg> },
   video_create:  { label: "영상 제작", color: "#ef4444", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke={c} strokeWidth="2"/><polygon points="10,8 17,12 10,16" fill={c}/></svg> },
   shorts_make:   { label: "쇼츠 제작", color: "#ef4444", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="2" y="4" width="20" height="16" rx="3" stroke={c} strokeWidth="2"/><polygon points="10,8 17,12 10,16" fill={c}/></svg> },
   card_news:     { label: "카드뉴스", color: "#8b5cf6", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke={c} strokeWidth="2"/><path d="M3 9h18M9 21V9" stroke={c} strokeWidth="2"/></svg> },
-  default:       { label: "AI 작업", color: "#7c6aff", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={c} strokeWidth="2"/></svg> },
+  default:       { label: "AI 작업", color: "#168EEA", icon: (c) => <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke={c} strokeWidth="2"/></svg> },
 };
 
 export default function BackgroundTaskIndicator({ isDark, currentMenu, onNavigate }) {
@@ -90,7 +90,7 @@ export default function BackgroundTaskIndicator({ isDark, currentMenu, onNavigat
       <style>{`
         @keyframes bti-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes bti-fadein{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-        @keyframes bti-pulse{0%,100%{box-shadow:0 4px 20px rgba(0,0,0,0.3)}50%{box-shadow:0 4px 30px rgba(124,106,255,0.5)}}
+        @keyframes bti-pulse{0%,100%{box-shadow:0 4px 20px rgba(0,0,0,0.3)}50%{box-shadow:0 4px 30px rgba(0,0,0,0.06)}}
       `}</style>
       <div style={{
         position: "fixed", bottom: 20, right: 20, zIndex: 9999,

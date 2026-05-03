@@ -17,7 +17,7 @@ export default function KeywordInsightPanel({ keyword, isDark, onKeywordSelect }
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#f9f9fc";
-  const acc = "#7c6aff";
+  const acc = "#168EEA";
 
   // 키워드 변경 시 디바운스 분석
   useEffect(() => {
@@ -125,7 +125,7 @@ export default function KeywordInsightPanel({ keyword, isDark, onKeywordSelect }
                       <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
                         <div style={{
                           width: "100%", height: h, borderRadius: 4,
-                          background: isToday ? acc : isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.15)",
+                          background: isToday ? acc : isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)",
                           transition: "height 0.3s ease",
                         }} />
                         <span style={{ fontSize: 8, color: muted }}>{d.date?.slice(5)}</span>
@@ -177,7 +177,7 @@ export default function KeywordInsightPanel({ keyword, isDark, onKeywordSelect }
               {/* 트렌드 기반 팁 */}
               <div style={{
                 marginTop: 12, padding: "10px 12px", borderRadius: 10,
-                background: isDark ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.04)",
+                background: isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)",
                 border: `1px solid ${acc}20`,
               }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: acc, marginBottom: 4 }}>SEO 팁</div>

@@ -11,7 +11,7 @@ function TabHeader({ title, subtitle, tabs, activeTab, onTabChange, isDark }) {
   const text = isDark ? "#e8eaed" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
-  const accent = "#7c6aff";
+  const accent = "#168EEA";
   return (
     <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)" }}>
       <div style={{ maxWidth:720, margin:"0 auto", padding:"16px 24px 0" }}>
@@ -375,7 +375,7 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
 
               {/* 선택된 게시물 대댓글 설정 */}
               {selectedPost && (
-                <div style={{ marginTop: 12, padding: 20, borderRadius: 16, border: `1px solid ${accent}30`, background: D ? "rgba(124,106,255,0.04)" : "rgba(124,106,255,0.02)" }}>
+                <div style={{ marginTop: 12, padding: 20, borderRadius: 16, border: `1px solid ${accent}30`, background: D ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)" }}>
                   {/* 미리보기 */}
                   <div style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "center" }}>
                     <img src={selectedPost.thumbnail_url || selectedPost.media_url} alt=""
@@ -520,7 +520,7 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
       )}
 
       {/* 안내 */}
-      <div style={{ marginTop: 24, padding: 14, borderRadius: 12, border: `1px solid ${bdr}`, background: D ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)" }}>
+      <div style={{ marginTop: 24, padding: 14, borderRadius: 12, border: `1px solid ${bdr}`, background: D ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)" }}>
         <div style={{ fontSize: 12, fontWeight: 800, color: accent, marginBottom: 6 }}>📋 {t("ig_guide_title")}</div>
         <div style={{ fontSize: 11, color: muted, lineHeight: 1.8 }}>
           • {t("ig_guide_threads_1")}<br/>
@@ -1001,7 +1001,7 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
                   <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center", flexWrap: "wrap" }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: text }}>{t("ig_dm_message")}</div>
                     <button onClick={generateDM} disabled={generating}
-                      style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: generating ? "wait" : "pointer", opacity: generating ? 0.6 : 1, minHeight: 30 }}>
+                      style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#168EEA", color: "#fff", fontSize: 11, fontWeight: 700, cursor: generating ? "wait" : "pointer", opacity: generating ? 0.6 : 1, minHeight: 30 }}>
                       {generating ? t("ig_ai_generating") : t("ig_ai_generate_btn")}
                     </button>
                     <button onClick={() => applyDefaultTemplate(selectedTone)}
@@ -1139,8 +1139,8 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
       )}
 
       {/* 안내 */}
-      <div style={{ marginTop: 24, padding: 14, borderRadius: 12, border: `1px solid ${bdr}`, background: D ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)" }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: "#7c6aff", marginBottom: 6 }}>📋 {t("ig_guide_title")}</div>
+      <div style={{ marginTop: 24, padding: 14, borderRadius: 12, border: `1px solid ${bdr}`, background: D ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)" }}>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#168EEA", marginBottom: 6 }}>📋 {t("ig_guide_title")}</div>
         <div style={{ fontSize: 11, color: muted, lineHeight: 1.8 }}>
           • {t("ig_guide_dm_1")}<br/>
           • {t("ig_guide_dm_2")}<br/>

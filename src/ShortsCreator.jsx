@@ -127,7 +127,7 @@ function ArchiveGallery({ onSelect }) {
       <div style={{ display: "flex", gap: 0, marginBottom: 8, borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a" }}>
         {CATS.map(([k,l]) => (
           <button key={k} onClick={() => { setCat(k); setSearch(""); }}
-            style={{ flex: 1, padding: "5px 4px", border: "none", background: cat === k ? "#7c6aff" : "#12122a", color: cat === k ? "#fff" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700, transition: "all .15s" }}>{l}</button>
+            style={{ flex: 1, padding: "5px 4px", border: "none", background: cat === k ? "#168EEA" : "#12122a", color: cat === k ? "#fff" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700, transition: "all .15s" }}>{l}</button>
         ))}
       </div>
       {/* 검색창 */}
@@ -136,7 +136,7 @@ function ArchiveGallery({ onSelect }) {
           onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); doSearch(); } }}
           placeholder={cat === "archive" ? t("sc_archive_filter") : cat === "gif" ? t("sc_gif_search") : cat === "video" ? t("sc_video_search") : t("sc_photo_search")}
           style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none" }} />
-        {cat !== "archive" && <button onClick={() => doSearch()} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#7c6aff", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>{t("sc_search_btn")}</button>}
+        {cat !== "archive" && <button onClick={() => doSearch()} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#168EEA", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>{t("sc_search_btn")}</button>}
       </div>
       {loading ? (
         <div style={{ textAlign: "center", padding: 16, color: "#666", fontSize: 11 }}>{t("sc_archive_loading")}</div>
@@ -153,7 +153,7 @@ function ArchiveGallery({ onSelect }) {
               <img src={it.url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} draggable={false} />
               {it.isVideo && <div style={{ position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.7)", borderRadius: 3, padding: "1px 4px", fontSize: 8, color: "#4ade80", fontWeight: 700 }}>VIDEO</div>}
               <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(0,0,0,0.85))", padding: "8px 4px 2px", fontSize: 8, color: "#ddd", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                <span style={{ color: cat === "gif" ? "#ec4899" : cat === "video" ? "#4ade80" : "#7c6aff", marginRight: 3, fontSize: 7 }}>{it.src}</span>
+                <span style={{ color: cat === "gif" ? "#ec4899" : cat === "video" ? "#4ade80" : "#168EEA", marginRight: 3, fontSize: 7 }}>{it.src}</span>
                 {it.title}
               </div>
             </div>
@@ -192,7 +192,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   const bdr = D ? "rgba(255,255,255,0.09)" : "#e5e5f0";
   const card = D ? "rgba(255,255,255,0.05)" : "#fff";
   const ibg = D ? "rgba(255,255,255,0.06)" : "#f9f9fc";
-  const acc = "#7c6aff";
+  const acc = "#168EEA";
 
   // 프로 전환 예정 안내 (세션당 1회)
   const [showProNotice, setShowProNotice] = useState(() => !sessionStorage.getItem("shorts_pro_notice_seen"));
@@ -225,7 +225,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
   // 상단 제목 스타일
   const [titleStyle, setTitleStyle] = useState({ color: "#FFFFFF", fontSize: 28, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.75)", opacity: 100, font: "default", align: "center", bold: true, highlightColor: "#FFD700" });
   // 하단 제목 스타일
-  const [bottomTitleStyle, setBottomTitleStyle] = useState({ color: "#FFFFFF", fontSize: 22, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.7)", opacity: 100, font: "default", align: "center", bold: false, highlightColor: "#7c6aff" });
+  const [bottomTitleStyle, setBottomTitleStyle] = useState({ color: "#FFFFFF", fontSize: 22, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.7)", opacity: 100, font: "default", align: "center", bold: false, highlightColor: "#168EEA" });
   // 자막 스타일
   const [captionStyle, setCaptionStyle] = useState({ color: "#FFFFFF", fontSize: 15, shadow: true, border: false, borderColor: "#000", bgBox: true, bgColor: "rgba(0,0,0,0.7)", opacity: 100, font: "default", align: "center" });
   // 호환성
@@ -740,7 +740,7 @@ export default function ShortsCreator({ isDark, user, onUserUpdate, onLoginReque
     return playhead >= relStart && playhead < relEnd;
   });
 
-  const subColors = ["#7c6aff", "#ff6a8a", "#6affb2", "#ffd76a", "#6ac4ff", "#ff9f6a", "#c46aff", "#6afff0"];
+  const subColors = ["#168EEA", "#ff6a8a", "#6affb2", "#ffd76a", "#6ac4ff", "#ff9f6a", "#c46aff", "#6afff0"];
 
   // ── 자막 애니메이션 렌더러 ──
   const renderAnimatedCaption = (sub) => {
@@ -1296,7 +1296,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
         ) : (
           <div>
             {downloadHelper && (
-              <div style={{ ...cardStyle, background: D ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)", border: `1px solid ${acc}30`, marginBottom: 16 }}>
+              <div style={{ ...cardStyle, background: D ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)", border: `1px solid ${acc}30`, marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
                   <img src={downloadHelper.thumbnail} alt="" style={{ width: 80, height: 45, objectFit: "cover", borderRadius: 8 }} onError={e => e.target.style.display = "none"} />
                   <div style={{ fontSize: 13, fontWeight: 700, color: text }}>{downloadHelper.title}</div>
@@ -1474,7 +1474,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
           const hasTime = s.start_seconds != null;
           return (
             <div key={i} onClick={() => setSelectedSegs(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
-              style={{ ...cardStyle, cursor: "pointer", borderColor: selected ? acc : bdr, background: selected ? (D ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.04)") : card, transition: "all 0.15s" }}>
+              style={{ ...cardStyle, cursor: "pointer", borderColor: selected ? acc : bdr, background: selected ? (D ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)") : card, transition: "all 0.15s" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <div style={{ width: 28, height: 28, borderRadius: "50%", border: `2px solid ${selected ? acc : bdr}`, display: "flex", alignItems: "center", justifyContent: "center", background: selected ? acc : "transparent", flexShrink: 0 }}>
@@ -1551,11 +1551,11 @@ JSON 배열로만 응답 (다른 텍스트 없이):
               [t("sc_shortcut_zoom"), [["[  ]",t("sc_shortcut_zoom_inout")],["Slider",t("sc_shortcut_zoom_slider")]]],
             ].map(([group, items]) => (
               <div key={group} style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#7c6aff", marginBottom: 6, textTransform: "uppercase" }}>{group}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#168EEA", marginBottom: 6, textTransform: "uppercase" }}>{group}</div>
                 {items.map(([key, desc]) => (
                   <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: "1px solid #1a1a30" }}>
                     <span style={{ fontSize: 12, color: "#aaa" }}>{desc}</span>
-                    <kbd style={{ padding: "2px 8px", borderRadius: 4, background: "#0f0f1a", border: "1px solid #2a2a4a", color: "#7c6aff", fontSize: 11, fontFamily: "monospace", fontWeight: 600 }}>{key}</kbd>
+                    <kbd style={{ padding: "2px 8px", borderRadius: 4, background: "#0f0f1a", border: "1px solid #2a2a4a", color: "#168EEA", fontSize: 11, fontFamily: "monospace", fontWeight: 600 }}>{key}</kbd>
                   </div>
                 ))}
               </div>
@@ -1569,7 +1569,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#0f0f1a", padding: 40 }}>
           <div style={{ textAlign: "center", maxWidth: 320 }}>
             <div style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#7c6aff" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#168EEA" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
             </div>
             <div style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 8 }}>{t("sc_pc_only")}</div>
             <div style={{ fontSize: 13, color: "#888", lineHeight: 1.7 }}>{t("sc_pc_only_desc")}</div>
@@ -1593,9 +1593,9 @@ JSON 배열로만 응답 (다른 텍스트 없이):
           <div style={{ flex: 1, overflowY: "auto", padding: "0 8px 8px" }}>
             {editClips.map((c, i) => (
               <div key={i} onClick={() => { setEditIdx(i); setSelectedSubIdx(-1); setPlayhead(0); setIsPlaying(false); }}
-                style={{ padding: "10px 10px", borderRadius: 8, cursor: "pointer", marginBottom: 4, background: editIdx === i ? "rgba(124,106,255,0.18)" : "transparent", borderLeft: `3px solid ${editIdx === i ? "#7c6aff" : "transparent"}`, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 6 }}>
+                style={{ padding: "10px 10px", borderRadius: 8, cursor: "pointer", marginBottom: 4, background: editIdx === i ? "rgba(0,0,0,0.06)" : "transparent", borderLeft: `3px solid ${editIdx === i ? "#168EEA" : "transparent"}`, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: editIdx === i ? "#7c6aff" : "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title || c.hook || c.bottom_title || `Short ${i + 1}`}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: editIdx === i ? "#168EEA" : "#ccc", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title || c.hook || c.bottom_title || `Short ${i + 1}`}</div>
                   <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{fmt(c.start_seconds)} ~ {fmt(c.end_seconds)}</div>
                 </div>
                 {editClips.length > 1 && (
@@ -1619,7 +1619,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
           <div style={{ display: "flex", gap: 4, marginBottom: 8, flexShrink: 0 }}>
             {[["bars",t("sc_bars")],["full",t("sc_fullscreen")]].map(([k,l]) => (
               <button key={k} onClick={() => setLayoutMode(k)}
-                style={{ padding: "4px 12px", borderRadius: 6, border: layoutMode===k ? "1px solid #7c6aff" : "1px solid #2a2a4a", background: layoutMode===k ? "rgba(124,106,255,0.15)" : "#1a1a30", color: layoutMode===k ? "#a5b4fc" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
+                style={{ padding: "4px 12px", borderRadius: 6, border: layoutMode===k ? "1px solid #168EEA" : "1px solid #2a2a4a", background: layoutMode===k ? "rgba(0,0,0,0.06)" : "#1a1a30", color: layoutMode===k ? "#a5b4fc" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
             ))}
           </div>
 
@@ -1629,7 +1629,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
             {/* AI 미디어 삽입 진행 오버레이 */}
             {autoMediaLoading && (
               <div style={{ position: "absolute", inset: 0, zIndex: 50, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, borderRadius: 6 }}>
-                <div style={{ width: 48, height: 48, borderRadius: 16, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(124,106,255,0.4)" }}>
+                <div style={{ width: 48, height: 48, borderRadius: 16, background: "#168EEA", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
                   {autoMediaStep === "done"
                     ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>
                     : <div style={{ width: 22, height: 22, borderRadius: "50%", border: "3px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", animation: "spin 0.8s linear infinite" }} />}
@@ -1641,7 +1641,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
                     : "준비 중..."}
                 </div>
                 <div style={{ width: "70%", height: 6, borderRadius: 3, background: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
-                  <div style={{ height: "100%", borderRadius: 3, background: autoMediaStep === "done" ? "#4ade80" : "linear-gradient(90deg,#7c6aff,#ec4899)", width: `${autoMediaProgress}%`, transition: "width 0.3s ease" }} />
+                  <div style={{ height: "100%", borderRadius: 3, background: autoMediaStep === "done" ? "#4ade80" : "#168EEA", width: `${autoMediaProgress}%`, transition: "width 0.3s ease" }} />
                 </div>
                 <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>GIF, 영상, 사진을 자동으로 배치합니다</div>
               </div>
@@ -1672,7 +1672,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
 
             {/* 상단 제목 (드래그 가능) */}
             <div onMouseDown={e => handlePreviewMouseDown("title", e)}
-              style={{ position: "absolute", left: `${titlePos.x}%`, top: `${titlePos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 12, maxWidth: "90%", textAlign: titleStyle.align || "center", opacity: titleStyle.opacity / 100, border: dragging === "title" ? "2px solid #7c6aff" : "2px solid transparent", borderRadius: 8, padding: "2px" }}>
+              style={{ position: "absolute", left: `${titlePos.x}%`, top: `${titlePos.y}%`, transform: "translate(-50%,-50%)", cursor: "move", zIndex: 12, maxWidth: "90%", textAlign: titleStyle.align || "center", opacity: titleStyle.opacity / 100, border: dragging === "title" ? "2px solid #168EEA" : "2px solid transparent", borderRadius: 8, padding: "2px" }}>
               <span style={{
                 fontSize: titleStyle.fontSize, fontWeight: titleStyle.bold ? 900 : 400, color: titleStyle.color,
                 fontFamily: titleStyle.font === "default" ? "inherit" : titleStyle.font,
@@ -1763,8 +1763,8 @@ JSON 배열로만 응답 (다른 텍스트 없이):
 
             {/* 스냅 가이드라인 */}
             {snapGuide && (<>
-              {(snapGuide.axis === "x" || snapGuide.axis === "both") && <div style={{ position: "absolute", left: `${snapGuide.pos || 50}%`, top: 0, width: 1, height: "100%", background: "#7c6aff80", zIndex: 30, pointerEvents: "none" }} />}
-              {(snapGuide.axis === "y" || snapGuide.axis === "both") && <div style={{ position: "absolute", top: `${snapGuide.y || snapGuide.pos}%`, left: 0, width: "100%", height: 1, background: "#7c6aff80", zIndex: 30, pointerEvents: "none" }} />}
+              {(snapGuide.axis === "x" || snapGuide.axis === "both") && <div style={{ position: "absolute", left: `${snapGuide.pos || 50}%`, top: 0, width: 1, height: "100%", background: "#168EEA80", zIndex: 30, pointerEvents: "none" }} />}
+              {(snapGuide.axis === "y" || snapGuide.axis === "both") && <div style={{ position: "absolute", top: `${snapGuide.y || snapGuide.pos}%`, left: 0, width: "100%", height: 1, background: "#168EEA80", zIndex: 30, pointerEvents: "none" }} />}
             </>)}
 
             {/* 시간 표시 */}
@@ -1774,7 +1774,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
           {/* 재생 컨트롤 */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 10 }}>
             <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏮</button>
-            <button onClick={() => setIsPlaying(!isPlaying)} style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 12px rgba(124,106,255,0.4)" }}>
+            <button onClick={() => setIsPlaying(!isPlaying)} style={{ width: 40, height: 40, borderRadius: "50%", border: "none", background: "#168EEA", color: "#fff", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
               {isPlaying ? "⏸" : "▶"}
             </button>
             <button onClick={() => { setPlayhead(clipDuration); setIsPlaying(false); }} style={{ width: 30, height: 30, borderRadius: 6, border: "1px solid #2a2a4a", background: "#1e1e3a", color: "#aaa", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>⏭</button>
@@ -1794,7 +1794,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
           <div style={{ display: "flex", borderBottom: "1px solid #2a2a4a" }}>
             {[["style",t("sc_style_tab")],["overlay",t("sc_overlay_tab")]].map(([k,l]) => (
               <button key={k} onClick={() => setPropTab(k)}
-                style={{ flex: 1, padding: "10px 0", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: propTab === k ? "#1e1e3a" : "transparent", color: propTab === k ? "#7c6aff" : "#666", borderBottom: propTab === k ? "2px solid #7c6aff" : "2px solid transparent" }}>{l}</button>
+                style={{ flex: 1, padding: "10px 0", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 700, background: propTab === k ? "#1e1e3a" : "transparent", color: propTab === k ? "#168EEA" : "#666", borderBottom: propTab === k ? "2px solid #168EEA" : "2px solid transparent" }}>{l}</button>
             ))}
           </div>
 
@@ -1837,8 +1837,8 @@ JSON 배열로만 응답 (다른 텍스트 없이):
 
               {/* 선택된 자막 편집 */}
               {selectedSubIdx >= 0 && (curClip.subtitles || [])[selectedSubIdx] && (
-                <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: "1px solid #7c6aff40" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#7c6aff", marginBottom: 8 }}>{t("sc_subtitle_on")} #{selectedSubIdx + 1}</div>
+                <div style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: "1px solid #168EEA40" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#168EEA", marginBottom: 8 }}>{t("sc_subtitle_on")} #{selectedSubIdx + 1}</div>
                   <textarea value={(curClip.subtitles || [])[selectedSubIdx]?.text || ""} onChange={e => {
                     const subs = [...(curClip.subtitles || [])]; subs[selectedSubIdx] = { ...subs[selectedSubIdx], text: e.target.value }; updateClip("subtitles", subs);
                   }} rows={2} style={{ width: "100%", padding: "8px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 12, outline: "none", resize: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
@@ -1860,7 +1860,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
               )}
 
               {/* 텍스트 스타일 편집기 (상단제목 / 하단제목 / 자막) */}
-              {[["title","상단 제목 스타일",titleStyle,setTitleStyle,"#7c6aff"],["bottomTitle","하단 제목 스타일",bottomTitleStyle,setBottomTitleStyle,"#f59e0b"],["caption",t("sc_lower_caption"),captionStyle,setCaptionStyle,"#22d3ee"]].map(([key,label,st,setSt,ac]) => (
+              {[["title","상단 제목 스타일",titleStyle,setTitleStyle,"#168EEA"],["bottomTitle","하단 제목 스타일",bottomTitleStyle,setBottomTitleStyle,"#f59e0b"],["caption",t("sc_lower_caption"),captionStyle,setCaptionStyle,"#22d3ee"]].map(([key,label,st,setSt,ac]) => (
                 <div key={key} style={{ background: "#1e1e3a", borderRadius: 10, padding: 12, marginBottom: 10, border: `1px solid ${ac}25` }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: ac, marginBottom: 8 }}>{label}</div>
                   {/* 폰트 선택 */}
@@ -1958,9 +1958,9 @@ JSON 배열로만 응답 (다른 텍스트 없이):
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 4 }}>
                   {TEMPLATES.map(tpl => (
                     <div key={tpl.id} onClick={() => { setTemplate(tpl.id); setTitleStyle(p=>({...p,color:tpl.titleColor})); setCaptionStyle(p=>({...p,color:tpl.captionColor})); }}
-                      style={{ border: `2px solid ${template === tpl.id ? "#7c6aff" : "#2a2a4a"}`, borderRadius: 6, padding: 2, cursor: "pointer", textAlign: "center" }}>
+                      style={{ border: `2px solid ${template === tpl.id ? "#168EEA" : "#2a2a4a"}`, borderRadius: 6, padding: 2, cursor: "pointer", textAlign: "center" }}>
                       <div style={{ height: 24, borderRadius: 4, background: tpl.bg }} />
-                      <div style={{ fontSize: 7, fontWeight: 700, color: template === tpl.id ? "#7c6aff" : "#555", marginTop: 2 }}>{t(tpl.nameKey)}</div>
+                      <div style={{ fontSize: 7, fontWeight: 700, color: template === tpl.id ? "#168EEA" : "#555", marginTop: 2 }}>{t(tpl.nameKey)}</div>
                     </div>
                   ))}
                 </div>
@@ -2070,7 +2070,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
             <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "rgba(255,255,255,0.06)", color: "#aaa", cursor: "pointer", fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center" }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
             </button>
-            <button onClick={() => setIsPlaying(!isPlaying)} style={{ width: 44, height: 44, borderRadius: 22, border: "none", background: isPlaying ? "rgba(255,255,255,0.12)" : "#7c6aff", color: "#fff", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isPlaying ? "none" : "0 2px 12px rgba(124,106,255,0.4)" }}>
+            <button onClick={() => setIsPlaying(!isPlaying)} style={{ width: 44, height: 44, borderRadius: 22, border: "none", background: isPlaying ? "rgba(255,255,255,0.12)" : "#168EEA", color: "#fff", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: isPlaying ? "none" : "0 2px 12px rgba(0,0,0,0.06)" }}>
               {isPlaying
                 ? <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
                 : <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>}
@@ -2082,7 +2082,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: "4px 8px" }}>
               <button onClick={() => setTimelineZoom(z => Math.max(0.5, z - 0.25))} style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: "#888", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
-              <input type="range" min="50" max="400" value={timelineZoom * 100} onChange={e => setTimelineZoom(Number(e.target.value)/100)} style={{ width: 60, accentColor: "#7c6aff", height: 3 }} />
+              <input type="range" min="50" max="400" value={timelineZoom * 100} onChange={e => setTimelineZoom(Number(e.target.value)/100)} style={{ width: 60, accentColor: "#168EEA", height: 3 }} />
               <button onClick={() => setTimelineZoom(z => Math.min(4, z + 0.25))} style={{ width: 24, height: 24, borderRadius: 6, border: "none", background: "transparent", color: "#888", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
             </div>
             <button onClick={() => { saveProject(); alert(t("sc_project_saved")); }} style={{ width: 32, height: 32, borderRadius: 8, border: "none", background: "rgba(74,222,128,0.1)", color: "#4ade80", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }} title={t("sc_save_label")}>
@@ -2147,7 +2147,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
           {/* 볼륨 (200%까지 부스트) */}
           <div style={{ display: "flex", alignItems: "center", gap: 4, background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: "4px 10px" }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={volume > 100 ? "#f59e0b" : "#888"} strokeWidth="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
-            <input type="range" min="0" max="200" value={volume} onChange={e => setVolume(Number(e.target.value))} style={{ width: 60, accentColor: volume > 100 ? "#f59e0b" : "#7c6aff", height: 3 }} />
+            <input type="range" min="0" max="200" value={volume} onChange={e => setVolume(Number(e.target.value))} style={{ width: 60, accentColor: volume > 100 ? "#f59e0b" : "#168EEA", height: 3 }} />
             <span style={{ fontSize: 10, color: volume > 100 ? "#f59e0b" : "#666", fontWeight: 700, minWidth: 30 }}>{volume}%</span>
           </div>
 
@@ -2162,9 +2162,9 @@ JSON 배열로만 응답 (다른 텍스트 없이):
           {/* AI 자동 미디어 삽입 */}
           {subtitlesEnabled && (curClip?.subtitles || []).length > 0 && (
             <button onClick={autoInsertMedia} disabled={autoMediaLoading}
-              style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: autoMediaLoading ? "rgba(124,106,255,0.2)" : "linear-gradient(135deg,rgba(124,106,255,0.15),rgba(236,72,153,0.12))", color: autoMediaLoading ? "#7c6aff" : "#c084fc", cursor: autoMediaLoading ? "wait" : "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+              style={{ padding: "6px 14px", borderRadius: 8, border: "none", background: autoMediaLoading ? "rgba(0,0,0,0.06)" : "rgba(22,142,234,0.08)", color: autoMediaLoading ? "#168EEA" : "#c084fc", cursor: autoMediaLoading ? "wait" : "pointer", fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
               {autoMediaLoading
-                ? <><div style={{ width: 12, height: 12, borderRadius: "50%", border: "2px solid rgba(124,106,255,0.2)", borderTopColor: "#7c6aff", animation: "spin 0.8s linear infinite" }} /> AI 삽입 중...</>
+                ? <><div style={{ width: 12, height: 12, borderRadius: "50%", border: "2px solid rgba(0,0,0,0.06)", borderTopColor: "#168EEA", animation: "spin 0.8s linear infinite" }} /> AI 삽입 중...</>
                 : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> AI 미디어 자동삽입</>}
             </button>
           )}
@@ -2408,7 +2408,7 @@ JSON 배열로만 응답 (다른 텍스트 없이):
 
               {/* 범위 선택 하이라이트 */}
               {rangeSelecting && Math.abs(rangeSelecting.endPh - rangeSelecting.startPh) > 0.1 && (
-                <div style={{ position: "absolute", left: Math.min(rangeSelecting.startPh, rangeSelecting.endPh) * pxPerSec, top: 0, width: Math.abs(rangeSelecting.endPh - rangeSelecting.startPh) * pxPerSec, height: "100%", background: "rgba(124,106,255,0.1)", border: "1px solid rgba(124,106,255,0.3)", zIndex: 18, pointerEvents: "none", borderRadius: 4 }} />
+                <div style={{ position: "absolute", left: Math.min(rangeSelecting.startPh, rangeSelecting.endPh) * pxPerSec, top: 0, width: Math.abs(rangeSelecting.endPh - rangeSelecting.startPh) * pxPerSec, height: "100%", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", zIndex: 18, pointerEvents: "none", borderRadius: 4 }} />
               )}
 
               {/* 재생 헤드 */}

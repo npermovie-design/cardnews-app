@@ -35,7 +35,7 @@ const InfographicVideoPage = lazy(() => import("./InfographicVideo.jsx"));
 const PageLoader = () => (
   <div style={{ minHeight: "60vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
     <div style={{ textAlign: "center" }}>
-      <div style={{ width: 36, height: 36, border: "3px solid rgba(124,106,255,0.15)", borderTopColor: "#7c6aff", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
+      <div style={{ width: 36, height: 36, border: "3px solid rgba(22,142,234,0.15)", borderTopColor: "#168EEA", borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px" }} />
       <div style={{ fontSize: 13, color: "rgba(26,23,48,0.4)", fontWeight: 600 }}>Loading...</div>
     </div>
   </div>
@@ -98,11 +98,11 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()}
         style={{
-          background: "linear-gradient(180deg, #1a1a3a 0%, #0f0f25 100%)",
-          border: "1px solid rgba(124,106,255,0.3)",
+          background: "#111827",
+          border: "1px solid rgba(22,142,234,0.2)",
           borderRadius: 24, padding: "44px 32px 28px",
           maxWidth: 440, width: "100%", textAlign: "center",
-          position: "relative", boxShadow: "0 32px 80px rgba(0,0,0,0.6), 0 0 60px rgba(124,106,255,0.15)",
+          position: "relative", boxShadow: "0 16px 40px rgba(0,0,0,0.3)",
         }}>
         {/* 닫기 */}
         <button onClick={onClose}
@@ -112,11 +112,11 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
         {/* 축하 아이콘 */}
         <div style={{
           width: 84, height: 84, borderRadius: "50%",
-          background: "linear-gradient(135deg, #7c6aff, #ec4899)",
+          background: "#168EEA",
           margin: "0 auto 18px",
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 44, fontWeight: 900, color: "#fff",
-          boxShadow: "0 12px 32px rgba(124,106,255,0.4)",
+          boxShadow: "none",
         }}>
           ✨
         </div>
@@ -130,14 +130,14 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
 
         {/* 5회 카드 */}
         <div style={{
-          background: "linear-gradient(135deg, rgba(124,106,255,0.15), rgba(236,72,153,0.1))",
-          border: "1px solid rgba(124,106,255,0.35)",
+          background: "rgba(22,142,234,0.08)",
+          border: "1px solid rgba(22,142,234,0.35)",
           borderRadius: 16, padding: "18px 20px", marginBottom: 20,
         }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>
             {ko ? "가입 축하 보너스" : "Signup bonus"}
           </div>
-          <div style={{ fontSize: 36, fontWeight: 900, background: "linear-gradient(135deg,#a5b4fc,#ec4899)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", marginBottom: 6 }}>
+          <div style={{ fontSize: 36, fontWeight: 900, color: "#168EEA", marginBottom: 6 }}>
             +5회
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
@@ -149,16 +149,15 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
         <div style={{ textAlign: "left", marginBottom: 24 }}>
           {[
             { icon: "1", text: ko ? "AI 글쓰기 1회 차감" : "AI writing uses 1 credit" },
-            { icon: "2", text: ko ? "게시글 작성 시 +1회 자동 적립 (하루 10회)" : "Earn +1 credit per post (up to 10/day)" },
-            { icon: "3", text: ko ? "매일 로그인 +1회 적립" : "Daily login earns +1 credit" },
+            { icon: "2", text: ko ? "매일 로그인 +1회 적립" : "Daily login earns +1 credit" },
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
               <div style={{
                 width: 24, height: 24, borderRadius: 6,
-                background: "rgba(124,106,255,0.2)",
-                border: "1px solid rgba(124,106,255,0.35)",
+                background: "rgba(22,142,234,0.2)",
+                border: "1px solid rgba(22,142,234,0.35)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 11, fontWeight: 800, color: "#a5b4fc", flexShrink: 0,
+                fontSize: 11, fontWeight: 800, color: "#4AABF2", flexShrink: 0,
               }}>{item.icon}</div>
               <div style={{ fontSize: 12.5, color: "rgba(255,255,255,0.8)", lineHeight: 1.5 }}>{item.text}</div>
             </div>
@@ -169,10 +168,10 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
         <button onClick={onGoAi}
           style={{
             width: "100%", padding: "14px",
-            background: "linear-gradient(135deg, #7c6aff, #ec4899)",
+            background: "#168EEA",
             border: "none", borderRadius: 12,
             color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer",
-            marginBottom: 8, boxShadow: "0 8px 24px rgba(124,106,255,0.3)",
+            marginBottom: 8, boxShadow: "none",
           }}>
           {ko ? "AI 도구 시작하기 →" : "Start using AI tools →"}
         </button>
@@ -227,8 +226,8 @@ function GuardModal({ cost, onConfirm, onCancel, lang = "ko" }) {
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onCancel}
-            style={{ flex: 1, padding: "12px", borderRadius: 11, border: "1px solid rgba(124,106,255,0.2)",
-              background: "rgba(124,106,255,0.06)", color: "#7c6aff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+            style={{ flex: 1, padding: "12px", borderRadius: 11, border: "1px solid rgba(22,142,234,0.2)",
+              background: "rgba(22,142,234,0.06)", color: "#168EEA", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
             {ko ? "계속 생성하기" : "Keep generating"}
           </button>
           <button onClick={onConfirm}
@@ -736,18 +735,18 @@ export default function App() {
   /* ── 네비 버튼 컴포넌트 ── */
   const NavBtn = ({ id, label, active, onClick }) => (
     <button onClick={onClick || (() => navigate(id))} style={{
-      background: (active || page === id) ? "rgba(124,106,255,0.08)" : "transparent",
-      border: "none", cursor: "pointer", padding: "6px 12px", borderRadius: 8, fontSize: 13,
+      background: (active || page === id) ? "rgba(22,142,234,0.08)" : "transparent",
+      border: "none", cursor: "pointer", padding: "7px 12px", borderRadius: 8, fontSize: 13,
       fontWeight: (active || page === id) ? 700 : 500,
       color: (active || page === id) ? C.purpleL : C.muted,
       transition: "all 0.15s", whiteSpace: "nowrap",
     }}>{label}</button>
   );
 
-  const DropBtn = ({ label, open, onClick, active }) => (
+  const DropBtn = ({ id, label, open, onClick, active }) => (
     <button onClick={onClick} style={{
-      background: (active || open) ? "rgba(124,106,255,0.08)" : "transparent",
-      border: "none", cursor: "pointer", padding: "6px 12px", borderRadius: 8, fontSize: 13,
+      background: (active || open) ? "rgba(22,142,234,0.08)" : "transparent",
+      border: "none", cursor: "pointer", padding: "7px 12px", borderRadius: 8, fontSize: 13,
       fontWeight: (active || open) ? 700 : 500,
       color: (active || open) ? C.purpleL : C.muted,
       display: "flex", alignItems: "center", gap: 4, transition: "all 0.15s", whiteSpace: "nowrap",
@@ -767,17 +766,17 @@ export default function App() {
     }}>{children}</div>
   );
 
-  const DropItem = ({ id, icon, label, onClick }) => (
+  const DropItem = ({ id, label, onClick }) => (
     <button onClick={onClick || (() => navigate(id))} style={{
-      display: "flex", alignItems: "center", gap: icon ? 10 : 0, width: "100%",
+      display: "flex", alignItems: "center", width: "100%",
       padding: "10px 14px", borderRadius: 9, border: "none", cursor: "pointer",
-      background: page === id ? "rgba(124,106,255,0.08)" : "transparent",
+      background: page === id ? "rgba(22,142,234,0.08)" : "transparent",
       color: page === id ? C.purpleL : C.muted,
       fontSize: 13, fontWeight: 600, textAlign: "left", transition: "background 0.15s",
     }}
-      onMouseEnter={e => e.currentTarget.style.background = "rgba(124,106,255,0.06)"}
-      onMouseLeave={e => e.currentTarget.style.background = page === id ? "rgba(124,106,255,0.08)" : "transparent"}>
-      {icon && <span>{icon}</span>}{label}
+      onMouseEnter={e => e.currentTarget.style.background = "rgba(22,142,234,0.06)"}
+      onMouseLeave={e => e.currentTarget.style.background = page === id ? "rgba(22,142,234,0.08)" : "transparent"}>
+      {label}
     </button>
   );
 
@@ -820,7 +819,7 @@ export default function App() {
         <div style={{ fontSize: 28, fontWeight: 900, color: C.text, marginBottom: 8 }}>{lang === "ko" ? "페이지를 찾을 수 없습니다" : "Page not found"}</div>
         <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, marginBottom: 28 }}>{lang === "ko" ? "요청하신 페이지가 존재하지 않거나 이동되었어요." : "The page you requested doesn't exist or has moved."}</div>
         <button onClick={() => navigate("home")}
-          style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
+          style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "#168EEA", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
           {lang === "ko" ? "홈으로 돌아가기" : "Back to Home"}
         </button>
       </div>
@@ -839,14 +838,14 @@ export default function App() {
         html,body,#root{width:100%;min-height:100vh}
         ::-webkit-scrollbar{width:8px}
         ::-webkit-scrollbar-track{background:#f5f4ff}
-        ::-webkit-scrollbar-thumb{background:rgba(124,106,255,0.4);border-radius:4px}
-        ::-webkit-scrollbar-thumb:hover{background:rgba(124,106,255,0.4)}
+        ::-webkit-scrollbar-thumb{background:rgba(22,142,234,0.4);border-radius:4px}
+        ::-webkit-scrollbar-thumb:hover{background:rgba(22,142,234,0.4)}
         input::placeholder,textarea::placeholder{color:rgba(26,23,48,0.3)}
         input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;
           outline:none;background:rgba(0,0,0,0.1);width:100%}
         input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;
-          height:14px;border-radius:50%;background:#7c6aff;cursor:pointer}
-        input:focus,textarea:focus{border-color:#7c6aff!important;box-shadow:0 0 0 3px rgba(124,106,255,0.12)}
+          height:14px;border-radius:50%;background:#168EEA;cursor:pointer}
+        input:focus,textarea:focus{border-color:#168EEA!important;box-shadow:0 0 0 3px rgba(22,142,234,0.12)}
         @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
@@ -997,19 +996,19 @@ export default function App() {
       {showPointsModal && (
         <div onClick={() => setShowPointsModal(false)} style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 22, padding: "clamp(20px,5vw,36px) clamp(16px,4vw,28px)", maxWidth: 380, width: "90%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.15)" }}>
-            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(124,106,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24, fontWeight: 900, color: "#7c6aff" }}>5</div>
+            <div style={{ width: 52, height: 52, borderRadius: "50%", background: "rgba(22,142,234,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", fontSize: 24, fontWeight: 900, color: "#168EEA" }}>5</div>
             <div style={{ fontSize: "clamp(16px,4vw,19px)", fontWeight: 900, color: "#1a1730", marginBottom: 10 }}>무료 사용 횟수를 모두 사용했어요</div>
             <div style={{ fontSize: 13, color: "rgba(26,23,48,0.55)", lineHeight: 1.9, marginBottom: 26 }}>
-              비회원은 AI 기능을 <b style={{ color: "#7c6aff" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
-              로그인하면 <b style={{ color: "#7c6aff" }}>글쓰기 5회</b>가 즉시 지급됩니다!
+              비회원은 AI 기능을 <b style={{ color: "#168EEA" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
+              로그인하면 <b style={{ color: "#168EEA" }}>글쓰기 5회</b>가 즉시 지급됩니다!
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button onClick={() => { setShowPointsModal(false); navigate("login"); }}
-                style={{ padding: "13px", borderRadius: 12, border: "none", cursor: "pointer", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 800 }}>
+                style={{ padding: "13px", borderRadius: 12, border: "none", cursor: "pointer", background: "#168EEA", color: "#fff", fontSize: 14, fontWeight: 800 }}>
                 로그인 / 회원가입
               </button>
               <button onClick={() => { setShowPointsModal(false); navigate("pricing"); }}
-                style={{ padding: "12px", borderRadius: 12, border: "1px solid rgba(124,106,255,0.2)", cursor: "pointer", background: "rgba(124,106,255,0.06)", color: "#7c6aff", fontSize: 13, fontWeight: 700 }}>
+                style={{ padding: "12px", borderRadius: 12, border: "1px solid rgba(22,142,234,0.2)", cursor: "pointer", background: "rgba(22,142,234,0.06)", color: "#168EEA", fontSize: 13, fontWeight: 700 }}>
                 플랜 둘러보기
               </button>
               <button onClick={() => setShowPointsModal(false)}
@@ -1024,9 +1023,9 @@ export default function App() {
       {/* ── 다운로드 유도 팝업 ── */}
       {showDownloadPopup && (
         <div onClick={() => setShowDownloadPopup(false)} style={{ position: "fixed", inset: 0, zIndex: 99998, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)", animation: "fadeIn 0.2s ease" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 24, padding: "clamp(24px,5vw,40px) clamp(20px,4vw,32px)", maxWidth: 420, width: "90%", textAlign: "center", boxShadow: "0 24px 80px rgba(124,106,255,0.25)", position: "relative", animation: "fadeIn 0.25s ease" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 24, padding: "clamp(24px,5vw,40px) clamp(20px,4vw,32px)", maxWidth: 420, width: "90%", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.1)", position: "relative", animation: "fadeIn 0.25s ease" }}>
             <button onClick={() => setShowDownloadPopup(false)} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", fontSize: 20, color: "rgba(26,23,48,0.3)", cursor: "pointer", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8 }} aria-label="닫기">&times;</button>
-            <div style={{ width: 64, height: 64, borderRadius: 18, background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", fontSize: 28, color: "#fff", fontWeight: 900, boxShadow: "0 8px 24px rgba(124,106,255,0.3)" }}>
+            <div style={{ width: 64, height: 64, borderRadius: 18, background: "#168EEA", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", fontSize: 28, color: "#fff", fontWeight: 900, boxShadow: "none" }}>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </div>
             <div style={{ fontSize: "clamp(18px,4.5vw,22px)", fontWeight: 900, color: "#1a1730", marginBottom: 8 }}>
@@ -1037,10 +1036,10 @@ export default function App() {
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginBottom: 22 }}>
               {["AI 글 작성", "자동 발행", "SEO 최적화", "다중 테마"].map(t => (
-                <span key={t} style={{ padding: "6px 14px", borderRadius: 99, background: "rgba(124,106,255,0.08)", color: "#7c6aff", fontSize: 12, fontWeight: 700 }}>{t}</span>
+                <span key={t} style={{ padding: "6px 14px", borderRadius: 99, background: "rgba(22,142,234,0.08)", color: "#168EEA", fontSize: 12, fontWeight: 700 }}>{t}</span>
               ))}
             </div>
-            <div style={{ background: "rgba(124,106,255,0.04)", border: "1px solid rgba(124,106,255,0.1)", borderRadius: 14, padding: "14px 18px", marginBottom: 22, display: "flex", justifyContent: "space-around", fontSize: 12, color: "rgba(26,23,48,0.5)" }}>
+            <div style={{ background: "rgba(22,142,234,0.04)", border: "1px solid rgba(22,142,234,0.1)", borderRadius: 14, padding: "14px 18px", marginBottom: 22, display: "flex", justifyContent: "space-around", fontSize: 12, color: "rgba(26,23,48,0.5)" }}>
               <span>Windows 10/11</span>
               <span style={{ color: "rgba(26,23,48,0.15)" }}>|</span>
               <span>v0.1.8</span>
@@ -1049,7 +1048,7 @@ export default function App() {
             </div>
             <a href="https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.8.exe"
               onClick={() => setShowDownloadPopup(false)}
-              style={{ display: "block", padding: "15px 24px", borderRadius: 14, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", color: "#fff", fontSize: 16, fontWeight: 900, textDecoration: "none", boxShadow: "0 6px 20px rgba(124,106,255,0.3)", marginBottom: 12, transition: "transform 0.15s" }}>
+              style={{ display: "block", padding: "15px 24px", borderRadius: 14, background: "#168EEA", color: "#fff", fontSize: 16, fontWeight: 900, textDecoration: "none", boxShadow: "none", marginBottom: 12, transition: "transform 0.15s" }}>
               Windows 무료 다운로드
             </a>
             <div style={{ display: "flex", justifyContent: "center", gap: 16, fontSize: 12, color: "rgba(26,23,48,0.35)" }}>
@@ -1091,7 +1090,7 @@ export default function App() {
           )}
           {/* 커뮤니티 */}
           <div style={{ position: "relative" }}>
-            <DropBtn label={t("community")} open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
+            <DropBtn id="community" label={t("community")} open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
             {openMenu==="board" && (
               <DropMenu>
                 <DropItem id="community" label={t("info")}    onClick={() => { navigateBoard("info");    setOpenMenu(null); }} />
@@ -1101,7 +1100,7 @@ export default function App() {
           </div>
           {/* 고객센터 */}
           <div style={{ position: "relative" }}>
-            <DropBtn label="고객센터" open={openMenu==="support"} active={page==="notice"||page==="pricing"||page==="contact"} onClick={() => setOpenMenu(m => m==="support"?null:"support")} />
+            <DropBtn id="support" label="고객센터" open={openMenu==="support"} active={page==="notice"||page==="pricing"||page==="contact"} onClick={() => setOpenMenu(m => m==="support"?null:"support")} />
             {openMenu==="support" && (
               <DropMenu>
                 <DropItem id="notice" label="공지사항" onClick={() => { navigate("notice"); setOpenMenu(null); }} />
@@ -1130,10 +1129,10 @@ export default function App() {
                     <button key={l.code} onClick={() => { setLang(l.code); setLangOpen(false); }}
                       style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
                         borderRadius: 8, border: "none", cursor: "pointer",
-                        background: lang===l.code ? "rgba(99,102,241,0.12)" : "transparent",
-                        fontSize: 13, color: lang===l.code ? "#a5b4fc" : C.text, textAlign: "left",
+                        background: lang===l.code ? "rgba(22,142,234,0.12)" : "transparent",
+                        fontSize: 13, color: lang===l.code ? "#4AABF2" : C.text, textAlign: "left",
                         fontWeight: lang===l.code ? 700 : 400 }}
-                      onMouseEnter={e => { if(lang!==l.code) e.currentTarget.style.background = "rgba(99,102,241,0.06)"; }}
+                      onMouseEnter={e => { if(lang!==l.code) e.currentTarget.style.background = "rgba(22,142,234,0.06)"; }}
                       onMouseLeave={e => { if(lang!==l.code) e.currentTarget.style.background = "transparent"; }}>
                       <span style={{ fontSize: 16 }}>{l.flag}</span>
                       <span>{l.label}</span>
@@ -1152,7 +1151,7 @@ export default function App() {
                 style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 10px 5px 6px", borderRadius: 24,
                   border: "1px solid " + C.border, background: profileOpen ? (theme==="dark"?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.04)") : "transparent",
                   cursor: "pointer", transition: "all 0.15s" }}>
-                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#168EEA",
                   display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
                   {(user.nick||"U")[0].toUpperCase()}
                 </div>
@@ -1169,9 +1168,9 @@ export default function App() {
                   boxShadow: "0 16px 48px rgba(0,0,0,0.2)", overflow: "hidden" }}>
                   {/* 헤더 */}
                   <div style={{ padding: "18px 18px 14px", borderBottom: "1px solid " + C.border,
-                    background: theme==="dark" ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)" }}>
+                    background: theme==="dark" ? "rgba(22,142,234,0.06)" : "rgba(22,142,234,0.03)" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
-                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#168EEA",
                         display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
                         {(user.nick||"U")[0].toUpperCase()}
                       </div>
@@ -1191,7 +1190,7 @@ export default function App() {
                       </div>
                       <div style={{ height: 4, borderRadius: 4, background: theme==="dark"?"rgba(255,255,255,0.08)":"#e0e0eb", overflow: "hidden" }}>
                         <div style={{ height: "100%", borderRadius: 4, width: Math.min(((user.points||0)/500)*100,100)+"%",
-                          background: "linear-gradient(90deg,#7c6aff,#8b5cf6)" }} />
+                          background: "#168EEA" }} />
                       </div>
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 글쓰기 기준 {pointsToUses(user.points||0)}회 가능</div>
                     </div>
@@ -1239,15 +1238,15 @@ export default function App() {
                 return (
                   <div onClick={() => left === 0 && setShowPointsModal(true)}
                     style={{ padding: "4px 10px", borderRadius: 16, cursor: left === 0 ? "pointer" : "default",
-                      background: left > 0 ? "rgba(99,102,241,0.1)" : "rgba(239,68,68,0.1)",
-                      border: `1px solid ${left > 0 ? "rgba(99,102,241,0.3)" : "rgba(239,68,68,0.3)"}` }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: left > 0 ? "#a5b4fc" : "#f87171" }}>
+                      background: left > 0 ? "rgba(22,142,234,0.1)" : "rgba(239,68,68,0.1)",
+                      border: `1px solid ${left > 0 ? "rgba(22,142,234,0.3)" : "rgba(239,68,68,0.3)"}` }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: left > 0 ? "#4AABF2" : "#f87171" }}>
                       {left > 0 ? `AI 무료 ${left}회 남음` : "무료 소진 ⚡"}
                     </span>
                   </div>
                 );
               })()}
-              <button onClick={() => navigate("login")} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)", minHeight: 36 }}>로그인</button>
+              <button onClick={() => navigate("login")} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12, background: "#168EEA", color: "#fff", minHeight: 36 }}>로그인</button>
             </div>
           )}
         </div>
@@ -1271,8 +1270,8 @@ export default function App() {
                     <button key={l.code} onClick={() => { setLang(l.code); setLangOpen(false); }}
                       style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "8px 12px",
                         borderRadius: 8, border: "none", cursor: "pointer",
-                        background: lang===l.code ? "rgba(99,102,241,0.12)" : "transparent",
-                        fontSize: 13, color: lang===l.code ? "#a5b4fc" : C.text, fontWeight: lang===l.code ? 700 : 400 }}>
+                        background: lang===l.code ? "rgba(22,142,234,0.12)" : "transparent",
+                        fontSize: 13, color: lang===l.code ? "#4AABF2" : C.text, fontWeight: lang===l.code ? 700 : 400 }}>
                       <span style={{ fontSize: 15 }}>{l.flag}</span>{l.label}
                       {lang===l.code && <span style={{ marginLeft: "auto", fontSize: 11 }}>✓</span>}
                     </button>
@@ -1284,7 +1283,7 @@ export default function App() {
           {/* 유저 상태 */}
           {user ? (
             <button onClick={() => setMobileOpen(s => !s)} style={{ width: 36, height: 36, borderRadius: "50%",
-              background: "linear-gradient(135deg,#7c6aff,#ec4899)", display: "flex",
+              background: "#168EEA", display: "flex",
               alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900,
               color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }}>
               {(user.nick||"U")[0].toUpperCase()}
@@ -1292,7 +1291,7 @@ export default function App() {
           ) : (
             <button onClick={() => navigate("login")} style={{ padding: "6px 12px", borderRadius: 8, border: "none",
               cursor: "pointer", fontWeight: 700, fontSize: 12,
-              background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", flexShrink: 0, whiteSpace: "nowrap" }}>
+              background: "#168EEA", color: "#fff", flexShrink: 0, whiteSpace: "nowrap" }}>
               로그인
             </button>
           )}
@@ -1323,10 +1322,10 @@ export default function App() {
             <button key={m.id} onClick={m.onClick} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "14px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
-              background: m.active ? "rgba(124,106,255,0.08)" : "transparent",
+              background: m.active ? "rgba(22,142,234,0.08)" : "transparent",
               color: m.active ? C.purpleL : C.text,
               fontSize: 16, fontWeight: m.active ? 700 : 500,
-              borderLeft: m.active ? "3px solid #7c6aff" : "3px solid transparent",
+              borderLeft: m.active ? "3px solid #168EEA" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
 
@@ -1342,7 +1341,7 @@ export default function App() {
             <button key={m.id} onClick={m.onClick} style={{
               display: "block", width: "100%", textAlign: "left",
               padding: "11px 16px", borderRadius: 9, border: "none", cursor: "pointer", marginBottom: 2,
-              background: m.active ? "rgba(124,106,255,0.08)" : "transparent",
+              background: m.active ? "rgba(22,142,234,0.08)" : "transparent",
               color: m.active ? C.purpleL : C.muted,
               fontSize: 14, fontWeight: m.active ? 700 : 400,
             }}>{m.label}</button>
@@ -1353,7 +1352,7 @@ export default function App() {
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg,#7c6aff,#ec4899)",
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#168EEA",
                       display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 900, color: "#fff" }}>
                       {(user.nick||"U")[0].toUpperCase()}
                     </div>
@@ -1366,7 +1365,7 @@ export default function App() {
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={() => { setShowAttendance(true); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("attendance")}</button>
-                  <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>플랜 보기</button>
+                  <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none", background: "#168EEA", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>플랜 보기</button>
                 </div>
               </div>
             ) : (
@@ -1375,23 +1374,23 @@ export default function App() {
                   const left = Math.max(0, FREE_GUEST - guestUsageCount);
                   return (
                     <div style={{ marginBottom: 10, padding: "10px 14px", borderRadius: 10,
-                      background: left > 0 ? "rgba(99,102,241,0.08)" : "rgba(239,68,68,0.08)",
-                      border: `1px solid ${left > 0 ? "rgba(99,102,241,0.25)" : "rgba(239,68,68,0.25)"}` }}>
+                      background: left > 0 ? "rgba(22,142,234,0.08)" : "rgba(239,68,68,0.08)",
+                      border: `1px solid ${left > 0 ? "rgba(22,142,234,0.25)" : "rgba(239,68,68,0.25)"}` }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <span style={{ fontSize: 12, color: C.muted }}>{t("guestFree")}</span>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: left > 0 ? "#a5b4fc" : "#f87171" }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: left > 0 ? "#4AABF2" : "#f87171" }}>
                           {left > 0 ? `${left}회 남음` : "소진 ⚡"}
                         </span>
                       </div>
                       {left > 0 && (
-                        <div style={{ marginTop: 6, height: 4, borderRadius: 4, background: "rgba(99,102,241,0.15)", overflow: "hidden" }}>
-                          <div style={{ height: "100%", borderRadius: 4, width: (left/FREE_GUEST*100)+"%", background: "linear-gradient(90deg,#7c6aff,#ec4899)" }} />
+                        <div style={{ marginTop: 6, height: 4, borderRadius: 4, background: "rgba(22,142,234,0.15)", overflow: "hidden" }}>
+                          <div style={{ height: "100%", borderRadius: 4, width: (left/FREE_GUEST*100)+"%", background: "#168EEA" }} />
                         </div>
                       )}
                     </div>
                   );
                 })()}
-                <button onClick={() => { navigate("login"); setMobileOpen(false); }} style={{ width: "100%", padding: "12px 28px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", boxShadow: "0 4px 16px rgba(124,106,255,0.3)" }}>
+                <button onClick={() => { navigate("login"); setMobileOpen(false); }} style={{ width: "100%", padding: "12px 28px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 14, background: "#168EEA", color: "#fff" }}>
                   {t("login")}
                 </button>
               </div>
@@ -1427,10 +1426,10 @@ export default function App() {
           style={{
             position: "fixed", bottom: 32, right: 32, zIndex: 900,
             width: 44, height: 44, borderRadius: "50%",
-            background: "rgba(124,106,255,0.85)",
+            background: "rgba(22,142,234,0.85)",
             border: "none", cursor: "pointer",
             display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 4px 16px rgba(124,106,255,0.3)",
+            boxShadow: "none",
             transition: "all 0.2s",
           }}
           onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}

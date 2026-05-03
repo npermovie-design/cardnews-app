@@ -82,7 +82,7 @@ export default function AutoPublisher({ theme, user, onLoginRequest, embedded })
     );
   }
 
-  const accent = "#7c6aff";
+  const accent = "#168EEA";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const cardBdr = isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb";
   const textMain = isDark ? "#fff" : "#1a1a2e";
@@ -239,7 +239,7 @@ JSON 형식으로 응답:
                     style={{
                       flex: 1, padding: "16px 12px", borderRadius: 12,
                       border: `2px solid ${form.platform === p.id ? accent : cardBdr}`,
-                      background: form.platform === p.id ? (isDark ? "rgba(124,106,255,0.12)" : "rgba(124,106,255,0.06)") : cardBg,
+                      background: form.platform === p.id ? (isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)") : cardBg,
                       cursor: "pointer", textAlign: "center",
                     }}>
                     <img src={p.icon} alt="" style={{ width: 28, height: 28, objectFit: "contain", marginBottom: 6 }} />
@@ -305,7 +305,7 @@ JSON 형식으로 응답:
                       style={{
                         padding: "8px 16px", borderRadius: 20,
                         border: `1.5px solid ${form.schedule === s.id ? accent : cardBdr}`,
-                        background: form.schedule === s.id ? (isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.08)") : "transparent",
+                        background: form.schedule === s.id ? (isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)") : "transparent",
                         color: form.schedule === s.id ? accent : textSub,
                         fontSize: 13, fontWeight: 600, cursor: "pointer",
                       }}>{s.label}</button>
@@ -385,7 +385,7 @@ JSON 형식으로 응답:
                       style={{
                         padding: "8px 14px", borderRadius: 20,
                         border: `1.5px solid ${form.categories.includes(c.id) ? accent : cardBdr}`,
-                        background: form.categories.includes(c.id) ? (isDark ? "rgba(124,106,255,0.15)" : "rgba(124,106,255,0.08)") : "transparent",
+                        background: form.categories.includes(c.id) ? (isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)") : "transparent",
                         color: form.categories.includes(c.id) ? accent : textSub,
                         fontSize: 12, fontWeight: 600, cursor: "pointer",
                       }}>{c.label}</button>
@@ -470,7 +470,7 @@ JSON 형식으로 응답:
               color: accent, fontSize: 14, fontWeight: 700, cursor: "pointer",
               marginBottom: 20, transition: "all 0.15s",
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = isDark ? "rgba(124,106,255,0.06)" : "rgba(124,106,255,0.03)"; }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)"; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = cardBdr; e.currentTarget.style.background = "transparent"; }}>
             + 새 자동발행 설정 추가
           </button>
@@ -489,7 +489,7 @@ JSON 형식으로 응답:
                 return (
                   <div key={config.id} style={{
                     padding: 20, borderRadius: 14,
-                    border: `1.5px solid ${config.enabled ? (isDark ? "rgba(124,106,255,0.3)" : "rgba(124,106,255,0.2)") : cardBdr}`,
+                    border: `1.5px solid ${config.enabled ? (isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)") : cardBdr}`,
                     background: cardBg,
                   }}>
                     {/* 상단 */}
@@ -520,7 +520,7 @@ JSON 형식으로 응답:
                       {config.categories?.map(cid => {
                         const cat = CATEGORIES.find(c => c.id === cid);
                         return cat ? (
-                          <span key={cid} style={{ padding: "3px 10px", borderRadius: 12, background: isDark ? "rgba(124,106,255,0.12)" : "rgba(124,106,255,0.08)", color: accent, fontSize: 11, fontWeight: 600 }}>
+                          <span key={cid} style={{ padding: "3px 10px", borderRadius: 12, background: isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)", color: accent, fontSize: 11, fontWeight: 600 }}>
                             {cat.label}
                           </span>
                         ) : null;
@@ -538,7 +538,7 @@ JSON 형식으로 응답:
                         disabled={status === "testing"}
                         style={{
                           padding: "8px 16px", borderRadius: 8, border: "none", cursor: status === "testing" ? "wait" : "pointer",
-                          background: status === "success" ? "rgba(16,185,129,0.15)" : status === "error" ? "rgba(239,68,68,0.15)" : "rgba(124,106,255,0.12)",
+                          background: status === "success" ? "rgba(16,185,129,0.15)" : status === "error" ? "rgba(239,68,68,0.15)" : "rgba(0,0,0,0.06)",
                           color: status === "success" ? "#10b981" : status === "error" ? "#ef4444" : accent,
                           fontSize: 12, fontWeight: 700,
                         }}>

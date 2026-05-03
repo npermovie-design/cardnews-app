@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 // 기능별 SVG 아이콘 + 색상 매핑
 const FEATURE_ICONS = {
   // 글쓰기 계열
-  blog_write: { color: "#7c6aff", label: "글쓰기", svg: (c) => <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+  blog_write: { color: "#168EEA", label: "글쓰기", svg: (c) => <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
   blog_naver: { color: "#03C75A", label: "네이버 블로그", svg: (c) => <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
   blog_tistory: { color: "#FF6B35", label: "티스토리", svg: (c) => <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
   blog_insta: { color: "#E1306C", label: "인스타그램", svg: (c) => <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke={c} strokeWidth="1.8"/><circle cx="12" cy="12" r="5" stroke={c} strokeWidth="1.8"/><circle cx="17.5" cy="6.5" r="1.2" fill={c}/></svg> },
   // PPT
-  ppt_gen: { color: "#7c6aff", label: "PPT 제작", svg: (c) => <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" stroke={c} strokeWidth="1.8"/><path d="M8 21h8M12 17v4" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><path d="M7 8h4M7 11h6" stroke={c} strokeWidth="1.2" strokeLinecap="round" opacity="0.6"/></svg> },
+  ppt_gen: { color: "#168EEA", label: "PPT 제작", svg: (c) => <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><rect x="2" y="3" width="20" height="14" rx="2" stroke={c} strokeWidth="1.8"/><path d="M8 21h8M12 17v4" stroke={c} strokeWidth="1.8" strokeLinecap="round"/><path d="M7 8h4M7 11h6" stroke={c} strokeWidth="1.2" strokeLinecap="round" opacity="0.6"/></svg> },
   // 이미지 생성
   product_shot: { color: "#f59e0b", label: "이미지 생성", svg: (c) => <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke={c} strokeWidth="1.8"/><circle cx="8.5" cy="8.5" r="1.5" fill={c}/><path d="M21 15l-5-5L5 21" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
   logo_gen: { color: "#ec4899", label: "로고 생성", svg: (c) => <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5z" stroke={c} strokeWidth="1.8" strokeLinejoin="round"/><path d="M2 17l10 5 10-5" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 12l10 5 10-5" stroke={c} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> },
@@ -20,7 +20,7 @@ const FEATURE_ICONS = {
   // 카드뉴스
   card_news: { color: "#8b5cf6", label: "카드뉴스", svg: (c) => <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" stroke={c} strokeWidth="1.8"/><path d="M3 9h18M9 21V9" stroke={c} strokeWidth="1.8"/></svg> },
   // 기본
-  default: { color: "#7c6aff", label: "AI 작업", svg: (c) => <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke={c} strokeWidth="1.8" strokeLinecap="round"/></svg> },
+  default: { color: "#168EEA", label: "AI 작업", svg: (c) => <svg width="48" height="48" viewBox="0 0 24 24" fill="none"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" stroke={c} strokeWidth="1.8" strokeLinecap="round"/></svg> },
 };
 
 // 기능별 로딩 단계 매핑

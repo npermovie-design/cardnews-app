@@ -494,7 +494,7 @@ function PresetCanvas(props) {
   }, [dp.key]);
   return (
     <div onClick={props.onClick}
-      style={{cursor:"pointer", borderRadius:9, overflow:"hidden", border: isC ? "2.5px solid #7c6aff" : "2px solid rgba(255,255,255,0.1)", boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.3)" : "none", position:"relative", flexShrink:0}}>
+      style={{cursor:"pointer", borderRadius:9, overflow:"hidden", border: isC ? "2.5px solid #168EEA" : "2px solid rgba(255,255,255,0.1)", boxShadow: isC ? "0 0 0 3px rgba(0,0,0,0.06)" : "none", position:"relative", flexShrink:0}}>
       <canvas ref={cRef} width={size} height={size} style={{display:"block", width:size, height:size}}/>
       <div style={{position:"absolute", bottom:0, left:0, right:0, background:"linear-gradient(transparent,rgba(0,0,0,0.75))", padding:"12px 6px 5px", fontSize:9, fontWeight:700, color:"#fff", textAlign:"center"}}>
         {dpLabel}
@@ -511,7 +511,7 @@ function FieldLabel(props) {
 function Sep() { return <div style={{borderTop:"1px solid rgba(255,255,255,0.07)", margin:"9px 0"}}/>; }
 function SegBtn(props) {
   return (
-    <button onClick={props.onClick} style={{flex:1, padding:"7px 2px", borderRadius:7, border:"none", cursor:"pointer", fontSize:11, fontWeight:700, background:props.active ? "rgba(99,102,241,0.55)" : "rgba(255,255,255,0.06)", color:props.active ? "#fff" : "rgba(255,255,255,0.4)"}}>
+    <button onClick={props.onClick} style={{flex:1, padding:"7px 2px", borderRadius:7, border:"none", cursor:"pointer", fontSize:11, fontWeight:700, background:props.active ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.06)", color:props.active ? "#fff" : "rgba(255,255,255,0.4)"}}>
       {props.label}
     </button>
   );
@@ -576,7 +576,7 @@ function StyleTab(props) {
           let isC = (gs.ratio || "1:1") === r.key;
           return (
             <button key={r.key} onClick={function() { updGs("ratio", r.key); }}
-              style={{flex:1, padding:"6px 0", borderRadius:7, border:"none", cursor:"pointer", background: isC ? "rgba(99,102,241,0.5)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)", fontSize:11, fontWeight:700}}>
+              style={{flex:1, padding:"6px 0", borderRadius:7, border:"none", cursor:"pointer", background: isC ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)", fontSize:11, fontWeight:700}}>
               {r.key}
             </button>
           );
@@ -589,7 +589,7 @@ function StyleTab(props) {
           let isC = (gs.hlMode || "pill") === pr[1];
           return (
             <button key={pr[1]} onClick={function() { updGs("hlMode", pr[1]); }}
-              style={{flex:1, padding:"5px 2px", borderRadius:6, border:"none", cursor:"pointer", fontSize:10, background: isC ? "rgba(99,102,241,0.5)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)"}}>
+              style={{flex:1, padding:"5px 2px", borderRadius:6, border:"none", cursor:"pointer", fontSize:10, background: isC ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)"}}>
               {pr[0]}
             </button>
           );
@@ -612,7 +612,7 @@ function LayoutTab(props) {
           let isC = (gs.textAlign || "left") === pr[1];
           return (
             <button key={pr[1]} onClick={function() { updGs("textAlign", pr[1]); }}
-              style={{flex:1, padding:"6px 2px", borderRadius:7, border:"none", cursor:"pointer", fontSize:11, background: isC ? "rgba(99,102,241,0.5)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)"}}>
+              style={{flex:1, padding:"6px 2px", borderRadius:7, border:"none", cursor:"pointer", fontSize:11, background: isC ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)"}}>
               {pr[0]}
             </button>
           );
@@ -624,7 +624,7 @@ function LayoutTab(props) {
           let isC = (gs.textValign || "middle") === pr[1];
           return (
             <button key={pr[1]} onClick={function() { updGs("textValign", pr[1]); }}
-              style={{flex:1, padding:"6px 2px", borderRadius:7, border:"none", cursor:"pointer", fontSize:11, background: isC ? "rgba(99,102,241,0.5)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)"}}>
+              style={{flex:1, padding:"6px 2px", borderRadius:7, border:"none", cursor:"pointer", fontSize:11, background: isC ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)"}}>
               {pr[0]}
             </button>
           );
@@ -661,7 +661,7 @@ function TextTab(props) {
           let isC = (gs.fontFamily || "sans-serif") === f;
           return (
             <button key={f} onClick={function() { updGs("fontFamily", f); }}
-              style={{padding:"4px 9px", borderRadius:16, border:"1px solid rgba(255,255,255,0.12)", background: isC ? "rgba(99,102,241,0.4)" : "rgba(255,255,255,0.05)", color: isC ? "#fff" : "rgba(255,255,255,0.5)", fontSize:10, cursor:"pointer"}}>
+              style={{padding:"4px 9px", borderRadius:16, border:"1px solid rgba(255,255,255,0.12)", background: isC ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)", color: isC ? "#fff" : "rgba(255,255,255,0.5)", fontSize:10, cursor:"pointer"}}>
               {f}
             </button>
           );
@@ -673,7 +673,7 @@ function TextTab(props) {
           let isC = (gs.titleWeight || "800") === pr[1];
           return (
             <button key={pr[1]} onClick={function() { updGs("titleWeight", pr[1]); }}
-              style={{flex:1, padding:"5px 2px", borderRadius:6, border:"none", cursor:"pointer", fontSize:10, background: isC ? "rgba(99,102,241,0.5)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)"}}>
+              style={{flex:1, padding:"5px 2px", borderRadius:6, border:"none", cursor:"pointer", fontSize:10, background: isC ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)"}}>
               {pr[0]}
             </button>
           );
@@ -763,11 +763,11 @@ function PreviewPanel(props) {
 
         <div style={{display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center"}}>
           <button onClick={dlOne} disabled={dlSt.busy}
-            style={{padding:"8px 20px", borderRadius:8, border:"none", cursor: dlSt.busy ? "not-allowed" : "pointer", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
+            style={{padding:"8px 20px", borderRadius:8, border:"none", cursor: dlSt.busy ? "not-allowed" : "pointer", background:"#168EEA", color:"#fff", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
             {t("cn_saveCurrent")}
           </button>
           <button onClick={dlZip} disabled={dlSt.busy}
-            style={{padding:"8px 20px", borderRadius:8, cursor: dlSt.busy ? "not-allowed" : "pointer", border:"1px solid rgba(99,102,241,0.4)", background:"rgba(99,102,241,0.1)", color:"#a5b4fc", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
+            style={{padding:"8px 20px", borderRadius:8, cursor: dlSt.busy ? "not-allowed" : "pointer", border:"1px solid rgba(0,0,0,0.06)", background:"rgba(0,0,0,0.06)", color:"#a5b4fc", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
             {t("cn_zipAll")}
           </button>
           <button onClick={onSave}
@@ -787,7 +787,7 @@ function PreviewPanel(props) {
           <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, marginBottom:8}}>
             <div style={{fontSize:11, color:"rgba(255,255,255,0.45)", fontWeight:800}}>{t("cn_generatedCaption")}</div>
             <button onClick={copyCaption}
-              style={{padding:"5px 10px", borderRadius:6, border:"1px solid rgba(99,102,241,0.35)", background:"rgba(99,102,241,0.12)", color:"#a5b4fc", fontSize:11, fontWeight:700, cursor:"pointer"}}>
+              style={{padding:"5px 10px", borderRadius:6, border:"1px solid rgba(0,0,0,0.06)", background:"rgba(0,0,0,0.06)", color:"#a5b4fc", fontSize:11, fontWeight:700, cursor:"pointer"}}>
               {t("copy")}
             </button>
           </div>
@@ -803,7 +803,7 @@ function PreviewPanel(props) {
             let isC = i === idx;
             return (
               <div key={i} onClick={function() { setIdx(i); }}
-                style={{cursor:"pointer", borderRadius:7, overflow:"hidden", border: isC ? "2px solid #7c6aff" : "2px solid transparent", boxShadow: isC ? "0 0 0 2px rgba(99,102,241,0.35)" : "none", position:"relative"}}>
+                style={{cursor:"pointer", borderRadius:7, overflow:"hidden", border: isC ? "2px solid #168EEA" : "2px solid transparent", boxShadow: isC ? "0 0 0 2px rgba(0,0,0,0.06)" : "none", position:"relative"}}>
                 <SlideCanvas slide={sm} style={gs} bgUrl={bgIs[i] || null} width={70} thumb={true}/>
                 <div style={{position:"absolute", bottom:2, right:3, fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.85)", textShadow:"0 1px 3px rgba(0,0,0,0.9)"}}>
                   {i < 9 ? "0" + (i + 1) : "" + (i + 1)}
@@ -834,10 +834,10 @@ export function PlannerPanel(props) {
   let inputBdr  = isDark ? "rgba(255,255,255,0.12)"   : "#d8d6f0";
   let cardBg    = isDark ? "rgba(255,255,255,0.04)"   : "#f8f7ff";
   let cardBdr   = isDark ? "rgba(255,255,255,0.08)"   : "#e5e3f5";
-  let accentBg  = isDark ? "rgba(99,102,241,0.25)"    : "rgba(99,102,241,0.08)";
-  let accentBdr = isDark ? "rgba(99,102,241,0.5)"     : "rgba(99,102,241,0.3)";
+  let accentBg  = isDark ? "rgba(0,0,0,0.06)"    : "rgba(0,0,0,0.06)";
+  let accentBdr = isDark ? "rgba(0,0,0,0.06)"     : "rgba(0,0,0,0.06)";
   let tabBg     = isDark ? "rgba(255,255,255,0.07)"   : "#ede9fc";
-  let tabActive = isDark ? "rgba(99,102,241,0.5)"     : "#7c6aff";
+  let tabActive = isDark ? "rgba(0,0,0,0.06)"     : "#168EEA";
   let tabText   = isDark ? "rgba(255,255,255,0.45)"   : "#6c757d";
   let btnBg     = isDark ? "rgba(255,255,255,0.06)" : "#f0f0f8";
   let btnBdr    = isDark ? "rgba(255,255,255,0.12)"   : "#d8d6f0";
@@ -845,8 +845,8 @@ export function PlannerPanel(props) {
   let exBdr     = isDark ? "rgba(255,200,80,0.2)"     : "rgba(255,180,0,0.3)";
   let exText    = isDark ? "rgba(255,200,80,0.8)"     : "#b87800";
   let divider   = isDark ? inputBg   : "#e5e3f5";
-  let slideBg   = isDark ? "rgba(99,102,241,0.08)"    : "#f0f0fc";
-  let slideBdr  = isDark ? "rgba(99,102,241,0.2)"     : "#c7c4f0";
+  let slideBg   = isDark ? "rgba(0,0,0,0.06)"    : "#f0f0fc";
+  let slideBdr  = isDark ? "rgba(0,0,0,0.06)"     : "#c7c4f0";
   let hlBg      = isDark ? "rgba(255,255,255,0.04)"   : "#fafafa";
   let errColor  = isDark ? "#ff9090"                  : "#e03e3e";
   let accentClr = isDark ? "#a5b4fc"                  : "#4f46e5";
@@ -954,12 +954,12 @@ export function PlannerPanel(props) {
                   <div style={{display:"flex",gap:4}}>
                     {[4,5,6,7,8,10].map(function(n){
                       let isC = planCnt === n;
-                      return(<button key={n} onClick={function(){setPlanCnt(n);}} style={{width:28,height:28,borderRadius:6,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,background:isC?"#7c6aff":tabBg,color:isC?"#fff":textSub}}>{n}</button>);
+                      return(<button key={n} onClick={function(){setPlanCnt(n);}} style={{width:28,height:28,borderRadius:6,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,background:isC?"#168EEA":tabBg,color:isC?"#fff":textSub}}>{n}</button>);
                     })}
                   </div>
                 </div>
                 <button onClick={runUrlPlan} disabled={urlLoading || !urlInput.trim()}
-                  style={{width:"100%",padding:"11px",borderRadius:9,border:"none",cursor:(urlLoading||!urlInput.trim())?"not-allowed":"pointer",background:urlInput.trim()?"linear-gradient(135deg,#7c6aff,#8b5cf6)":"rgba(99,102,241,0.2)",color:urlInput.trim()?"#fff":"rgba(255,255,255,0.3)",fontSize:13,fontWeight:800,opacity:urlLoading?0.7:1}}>
+                  style={{width:"100%",padding:"11px",borderRadius:9,border:"none",cursor:(urlLoading||!urlInput.trim())?"not-allowed":"pointer",background:urlInput.trim()?"#168EEA":"rgba(0,0,0,0.06)",color:urlInput.trim()?"#fff":"rgba(255,255,255,0.3)",fontSize:13,fontWeight:800,opacity:urlLoading?0.7:1}}>
                   {urlLoading ? t("cn_analyzingUrl") : "🔗 " + t("cn_urlAnalyze")}
                 </button>
                 {urlErr && <div style={{fontSize:11,color:errColor,marginTop:8,textAlign:"center"}}>{urlErr}</div>}
@@ -1007,7 +1007,7 @@ export function PlannerPanel(props) {
                       let isC = planCnt === n;
                       return (
                         <button key={n} onClick={function() { setPlanCnt(n); }}
-                          style={{width:28, height:28, borderRadius:6, border:"none", cursor:"pointer", fontSize:11, fontWeight:700, background: isC ? "rgba(99,102,241,0.6)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)"}}>
+                          style={{width:28, height:28, borderRadius:6, border:"none", cursor:"pointer", fontSize:11, fontWeight:700, background: isC ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)", color: isC ? "#fff" : "rgba(255,255,255,0.4)"}}>
                           {n}
                         </button>
                       );
@@ -1015,7 +1015,7 @@ export function PlannerPanel(props) {
                   </div>
                 </div>
                 <button onClick={runPlan} disabled={planLoading || !planTopic.trim()}
-                  style={{width:"100%", padding:"11px", borderRadius:9, border:"none", cursor: (planLoading || !planTopic.trim()) ? "not-allowed" : "pointer", background: planTopic.trim() ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : "rgba(99,102,241,0.2)", color: planTopic.trim() ? "#fff" : "rgba(255,255,255,0.3)", fontSize:13, fontWeight:800, opacity: planLoading ? 0.7 : 1}}>
+                  style={{width:"100%", padding:"11px", borderRadius:9, border:"none", cursor: (planLoading || !planTopic.trim()) ? "not-allowed" : "pointer", background: planTopic.trim() ? "#168EEA" : "rgba(0,0,0,0.06)", color: planTopic.trim() ? "#fff" : "rgba(255,255,255,0.3)", fontSize:13, fontWeight:800, opacity: planLoading ? 0.7 : 1}}>
                   {planLoading ? t("cn_planning") : "✨ " + t("cn_startPlanning")}
                 </button>
                 {planErr && <div style={{fontSize:11, color:errColor, marginTop:8, textAlign:"center"}}>{planErr}</div>}
@@ -1044,7 +1044,7 @@ export function PlannerPanel(props) {
                 <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12}}>
                   <div style={{fontSize:13, fontWeight:800, color:accentClr}}>"{parsedPlan.topic}" · {(parsedPlan.slides || []).length}장</div>
                   <button onClick={function() { if (parsedPlan) { onApplySlides(parsedPlan); onClose(); } }}
-                    style={{padding:"8px 18px", borderRadius:8, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:12, fontWeight:800}}>
+                    style={{padding:"8px 18px", borderRadius:8, border:"none", cursor:"pointer", background:"#168EEA", color:"#fff", fontSize:12, fontWeight:800}}>
                     {t("cn_startEditing")}
                   </button>
                 </div>
@@ -1108,7 +1108,7 @@ function SavedWorksPanel(props) {
                 </div>
                 <div style={{display:"flex", gap:6}}>
                   <button onClick={function() { onLoad(w); }}
-                    style={{padding:"6px 12px", borderRadius:7, border:"none", cursor:"pointer", background:"rgba(99,102,241,0.5)", color:"#fff", fontSize:11, fontWeight:700}}>
+                    style={{padding:"6px 12px", borderRadius:7, border:"none", cursor:"pointer", background:"rgba(0,0,0,0.06)", color:"#fff", fontSize:11, fontWeight:700}}>
                     {t("cn_load")}
                   </button>
                   <button onClick={function() { onDelete(w.id); }}
@@ -1138,16 +1138,16 @@ function Sidebar(props) {
   let pct = Math.round(info.used * 100 / info.limit) + "%";
   let sideBg      = isDark ? "rgba(0,0,0,0.45)"        : "#f0f0f8";
   let sideBdr     = isDark ? "rgba(255,255,255,0.07)"  : "#e5e3f5";
-  let menuLabel   = isDark ? "rgba(255,255,255,0.2)"   : "rgba(99,102,241,0.45)";
+  let menuLabel   = isDark ? "rgba(255,255,255,0.2)"   : "rgba(0,0,0,0.06)";
   let itemText    = isDark ? "rgba(255,255,255,0.5)"   : "#6c757d";
-  let itemHover   = isDark ? "rgba(99,102,241,0.1)"    : "rgba(99,102,241,0.08)";
+  let itemHover   = isDark ? "rgba(0,0,0,0.06)"    : "rgba(0,0,0,0.06)";
   let itemActive  = isDark ? "#a5b4fc"                 : "#4f46e5";
-  let itemActiveBg= isDark ? "rgba(99,102,241,0.2)"   : "rgba(99,102,241,0.1)";
+  let itemActiveBg= isDark ? "rgba(0,0,0,0.06)"   : "rgba(0,0,0,0.06)";
   let brandText   = isDark ? "#fff"                    : "#1a1a2e";
-  let brandSub    = isDark ? "rgba(255,255,255,0.3)"   : "rgba(99,102,241,0.5)";
+  let brandSub    = isDark ? "rgba(255,255,255,0.3)"   : "rgba(0,0,0,0.06)";
   let comText     = isDark ? "rgba(255,255,255,0.45)"  : "#888";
   let usageText   = isDark ? "rgba(255,255,255,0.3)"   : "#aaa";
-  let usageBar    = isDark ? "rgba(255,255,255,0.08)"  : "rgba(99,102,241,0.12)";
+  let usageBar    = isDark ? "rgba(255,255,255,0.08)"  : "rgba(0,0,0,0.06)";
   let planLabel   = isDark ? "#a5b4fc"                 : "#4f46e5";
   return (
     <div style={{width:185, flexShrink:0, background:sideBg, borderRight:"1px solid "+sideBdr, display:"flex", flexDirection:"column", height:"100vh", position:"sticky", top:0}}>
@@ -1165,7 +1165,7 @@ function Sidebar(props) {
           let isA = page === item.id;
           return (
             <button key={item.id} onClick={function() { setPage(item.id); }}
-              style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background: isA ? itemActiveBg : "transparent", color: isA ? itemActive : itemText, fontSize:12, fontWeight: isA ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: isA ? "3px solid #7c6aff" : "3px solid transparent"}}>
+              style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background: isA ? itemActiveBg : "transparent", color: isA ? itemActive : itemText, fontSize:12, fontWeight: isA ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: isA ? "3px solid #168EEA" : "3px solid transparent"}}>
               {item.label}
             </button>
           );
@@ -1187,7 +1187,7 @@ function Sidebar(props) {
             {"🔗 " + t("cn_planByLinkMenu")}
           </button>
           <button onClick={function() { setPage("make"); }}
-            style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background: page === "make" ? itemActiveBg : "transparent", color: page === "make" ? itemActive : itemText, fontSize:11, fontWeight: page === "make" ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: page === "make" ? "3px solid #7c6aff" : "3px solid transparent"}}>
+            style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background: page === "make" ? itemActiveBg : "transparent", color: page === "make" ? itemActive : itemText, fontSize:11, fontWeight: page === "make" ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: page === "make" ? "3px solid #168EEA" : "3px solid transparent"}}>
             {"🃏 " + t("cn_makeDirectMenu")}
           </button>
         </div>
@@ -1224,7 +1224,7 @@ function Sidebar(props) {
           </div>
         </div>
         <div style={{height:3, background:usageBar, borderRadius:2, overflow:"hidden"}}>
-          <div style={{height:"100%", width:pct, background:"linear-gradient(90deg,#7c6aff,#8b5cf6)"}}/>
+          <div style={{height:"100%", width:pct, background:"#168EEA"}}/>
         </div>
       </div>
     </div>
@@ -1243,8 +1243,8 @@ function PageHome(props) {
   let muted = D ? "rgba(255,255,255,0.4)"    : "#888";
   let sub   = D ? "rgba(255,255,255,0.35)"   : "#aaa";
   let bdr   = D ? "rgba(255,255,255,0.08)"   : "#e5e3f5";
-  let cardA = D ? "rgba(99,102,241,0.25)"    : "rgba(99,102,241,0.08)";
-  let cardABdr = D ? "rgba(99,102,241,0.3)"  : "rgba(99,102,241,0.25)";
+  let cardA = D ? "rgba(0,0,0,0.06)"    : "rgba(0,0,0,0.06)";
+  let cardABdr = D ? "rgba(0,0,0,0.06)"  : "rgba(0,0,0,0.06)";
   let stepBg= D ? "rgba(255,255,255,0.02)"   : "#fff";
   let accentTxt = D ? "#a5b4fc"              : "#4f46e5";
   return (
@@ -1255,7 +1255,7 @@ function PageHome(props) {
       </div>
       <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(170px,1fr))", gap:10, marginBottom:26}}>
         <div onClick={function() { setPage("make"); setMakeStep(1); }}
-          style={{background: D ? "linear-gradient(135deg,rgba(99,102,241,0.28),rgba(139,92,246,0.18))" : "linear-gradient(135deg,rgba(99,102,241,0.1),rgba(139,92,246,0.06))", border:"1px solid "+cardABdr, borderRadius:12, padding:"18px 16px", cursor:"pointer"}}>
+          style={{background: D ? "linear-gradient(135deg,rgba(0,0,0,0.06),rgba(139,92,246,0.18))" : "linear-gradient(135deg,rgba(0,0,0,0.06),rgba(139,92,246,0.06))", border:"1px solid "+cardABdr, borderRadius:12, padding:"18px 16px", cursor:"pointer"}}>
           <div style={{fontSize:24, marginBottom:7}}>✨</div>
           <div style={{fontSize:13, fontWeight:800, marginBottom:3, color:text}}>{t("cn_makeCard")}</div>
           <div style={{fontSize:11, color:muted, lineHeight:1.5}}>{t("cn_makeCardFlow")}</div>
@@ -1296,7 +1296,7 @@ function PageHome(props) {
         ].map(function(g) {
           return (
             <div key={g.n} style={{background: D ? "rgba(255,255,255,0.02)" : "#fff", border:"1px solid "+bdr, borderRadius:10, padding:"12px"}}>
-              <div style={{width:22, height:22, borderRadius:6, background:"rgba(99,102,241,0.15)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:900, color:accentTxt, marginBottom:7}}>{g.n}</div>
+              <div style={{width:22, height:22, borderRadius:6, background:"rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontWeight:900, color:accentTxt, marginBottom:7}}>{g.n}</div>
               <div style={{fontSize:12, fontWeight:700, marginBottom:3, color:text}}>{g.tt}</div>
               <div style={{fontSize:10, color:muted, lineHeight:1.5}}>{g.d}</div>
             </div>
@@ -1343,13 +1343,13 @@ function PageMake(props) {
   let inputBdr= D ? "rgba(255,255,255,0.12)"   : "#d8d6f0";
   let sectionBg=D ? "rgba(255,255,255,0.03)"   : "#fff";
   let tagBg   = D ? "rgba(255,255,255,0.06)"   : "#ede9fc";
-  let tagClr  = D ? "rgba(255,255,255,0.6)"    : "#7c6aff";
-  let tagAbg  = D ? "rgba(99,102,241,0.4)"     : "#7c6aff";
+  let tagClr  = D ? "rgba(255,255,255,0.6)"    : "#168EEA";
+  let tagAbg  = D ? "rgba(0,0,0,0.06)"     : "#168EEA";
   let tagAClr = "#fff";
-  let stepDone= D ? "#7c6aff"                  : "#7c6aff";
-  let stepAct = D ? "rgba(99,102,241,0.5)"     : "rgba(99,102,241,0.15)";
+  let stepDone= D ? "#168EEA"                  : "#168EEA";
+  let stepAct = D ? "rgba(0,0,0,0.06)"     : "rgba(0,0,0,0.06)";
   let stepInact= D ? "rgba(255,255,255,0.1)"   : "#e5e3f5";
-  let stepActTxt= D ? "#fff"                   : "#7c6aff";
+  let stepActTxt= D ? "#fff"                   : "#168EEA";
   let stepInTxt = D ? "rgba(255,255,255,0.25)" : "#bbb";
   let stepLbl = D ? "rgba(255,255,255,0.5)"    : "#888";
   let accentTxt = D ? "#a5b4fc"               : "#4f46e5";
@@ -1384,12 +1384,12 @@ function PageMake(props) {
           <div style={{display:"flex", flexDirection:"column", gap:10}}>
             {!props.user ? (
               <button onClick={function(){ if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); else window.location.hash="#home"; }}
-                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#7c6aff,#ec4899)", color:"#fff", fontSize:14, fontWeight:800}}>
+                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"#168EEA", color:"#fff", fontSize:14, fontWeight:800}}>
                 🚀 회원가입 / 로그인하기
               </button>
             ) : (
               <button onClick={function(){ window.location.hash = "#pricing"; }}
-                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:14, fontWeight:800}}>
+                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"#168EEA", color:"#fff", fontSize:14, fontWeight:800}}>
                 플랜 업그레이드
               </button>
             )}
@@ -1414,7 +1414,7 @@ function PageMake(props) {
               <div style={{display:"flex", alignItems:"center", gap:8, cursor: done ? "pointer" : "default"}}
                 onClick={function() { if (done) { setMakeStep(st.n); } }}>
                 <div style={{width:28, height:28, borderRadius:"50%",
-                  background: done ? "#7c6aff" : (active ? "#7c6aff" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5")),
+                  background: done ? "#168EEA" : (active ? "#168EEA" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5")),
                   display:"flex", alignItems:"center", justifyContent:"center",
                   fontSize:12, fontWeight:900, flexShrink:0,
                   color: (done || active) ? "#fff" : (D ? "rgba(255,255,255,0.3)" : "#bbb")}}>
@@ -1423,7 +1423,7 @@ function PageMake(props) {
                 <span style={{fontSize:13, fontWeight: active ? 800 : 500,
                   color: active ? text : (D ? "rgba(255,255,255,0.4)" : "#888"), whiteSpace:"nowrap"}}>{st.l}</span>
               </div>
-              {si < 2 && <div style={{flex:1, height:2, background: done ? "#7c6aff" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5"), margin:"0 12px", minWidth:16}}/>}
+              {si < 2 && <div style={{flex:1, height:2, background: done ? "#168EEA" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5"), margin:"0 12px", minWidth:16}}/>}
             </div>
           );
         })}
@@ -1444,8 +1444,8 @@ function PageMake(props) {
                 let isC = topic === ex.text;
                 return (
                   <button key={ex.labelKey} onClick={function() { setTopic(ex.text); }}
-                    style={{padding:"5px 12px", borderRadius:16, border:"1px solid "+(isC?"#7c6aff":bdr),
-                      background: isC ? "rgba(99,102,241,0.15)" : tagBg,
+                    style={{padding:"5px 12px", borderRadius:16, border:"1px solid "+(isC?"#168EEA":bdr),
+                      background: isC ? "rgba(0,0,0,0.06)" : tagBg,
                       color: isC ? "#a5b4fc" : tagClr,
                       fontSize:12, cursor:"pointer", fontWeight: isC ? 700 : 400, transition:"all 0.12s"}}>
                     {t(ex.labelKey)}
@@ -1474,7 +1474,7 @@ function PageMake(props) {
           <div style={{padding:"14px 18px", borderRadius:12, border:"1px solid "+bdr, background:sectionBg, marginBottom:16}}>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10}}>
               <div style={{fontSize:13, fontWeight:700, color:text}}>{t("cn_slideCountLabel")}</div>
-              <div style={{fontSize:20, fontWeight:900, color:"#7c6aff"}}>{cnt}{t("cn_slideUnit")}</div>
+              <div style={{fontSize:20, fontWeight:900, color:"#168EEA"}}>{cnt}{t("cn_slideUnit")}</div>
             </div>
             <div style={{display:"flex", gap:5, flexWrap:"wrap"}}>
               {[3,4,5,6,7,8,10,12].map(function(n) {
@@ -1482,9 +1482,9 @@ function PageMake(props) {
                 return (
                   <button key={n} onClick={function() { setCnt(n); }}
                     style={{width:36, height:36, borderRadius:9,
-                      border:"1.5px solid "+(isC?"#7c6aff":bdr),
+                      border:"1.5px solid "+(isC?"#168EEA":bdr),
                       cursor:"pointer", fontSize:13, fontWeight:700,
-                      background: isC ? "rgba(99,102,241,0.15)" : "transparent",
+                      background: isC ? "rgba(0,0,0,0.06)" : "transparent",
                       color: isC ? "#a5b4fc" : (D ? "rgba(255,255,255,0.5)" : "#666")}}>
                     {n}
                   </button>
@@ -1497,7 +1497,7 @@ function PageMake(props) {
             <button onClick={function() { if (canGo) { setMakeStep(2); } }} disabled={!canGo}
               style={{padding:"14px 40px", borderRadius:12, border:"none",
                 cursor: canGo ? "pointer" : "not-allowed",
-                background: canGo ? "linear-gradient(135deg,#7c6aff,#8b5cf6)" : (D ? "rgba(99,102,241,0.2)" : "#e5e3f5"),
+                background: canGo ? "#168EEA" : (D ? "rgba(0,0,0,0.06)" : "#e5e3f5"),
                 color: canGo ? "#fff" : (D ? "rgba(255,255,255,0.3)" : "#bbb"),
                 fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8}}>
               {t("cn_nextDesign")} <span style={{fontSize:12, opacity:0.8}}>{t("cn_designSelect")}</span>
@@ -1520,8 +1520,8 @@ function PageMake(props) {
                   return (
                     <div key={dp.key} onClick={function() { setSelPreset(isC ? null : dp); }}
                       style={{borderRadius:12, overflow:"hidden", cursor:"pointer",
-                        border: isC ? "2px solid #7c6aff" : "2px solid transparent",
-                        boxShadow: isC ? "0 0 0 3px rgba(99,102,241,0.25)" : "0 2px 8px rgba(0,0,0,0.15)",
+                        border: isC ? "2px solid #168EEA" : "2px solid transparent",
+                        boxShadow: isC ? "0 0 0 3px rgba(0,0,0,0.06)" : "0 2px 8px rgba(0,0,0,0.15)",
                         transition:"all 0.15s"}}>
                       <PresetCanvas dp={dp} size={86} isC={isC} onClick={function() {}}/>
                     </div>
@@ -1529,7 +1529,7 @@ function PageMake(props) {
                 })}
               </div>
               {selPreset && (
-                <div style={{padding:"9px 14px", borderRadius:9, background:"rgba(99,102,241,0.1)", border:"1px solid rgba(99,102,241,0.3)", marginBottom:14}}>
+                <div style={{padding:"9px 14px", borderRadius:9, background:"rgba(0,0,0,0.06)", border:"1px solid rgba(0,0,0,0.06)", marginBottom:14}}>
                   <div style={{fontSize:12, fontWeight:700, color:"#a5b4fc", marginBottom:2}}>{"✓ " + t(selPreset.labelKey) + " " + t("cn_selected")}</div>
                   <button onClick={function(){setSelPreset(null);}} style={{fontSize:11,color:muted,background:"transparent",border:"none",cursor:"pointer",padding:0}}>{t("cn_deselect")}</button>
                 </div>
@@ -1543,10 +1543,10 @@ function PageMake(props) {
                     {t("cn_previous")}
                   </button>
                   <div style={{textAlign:"right"}}>
-                    {user && <div style={{fontSize:12, color:muted, marginBottom:6}}>{t("cn_expectedCost")}: <b style={{color:"#7c6aff"}}>10P</b></div>}
+                    {user && <div style={{fontSize:12, color:muted, marginBottom:6}}>{t("cn_expectedCost")}: <b style={{color:"#168EEA"}}>10P</b></div>}
                     <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
                       style={{padding:"14px 40px", borderRadius:12, border:"none", cursor:"pointer",
-                        background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:15, fontWeight:900,
+                        background:"#168EEA", color:"#fff", fontSize:15, fontWeight:900,
                         display:"flex", alignItems:"center", gap:8}}>
                       {loading ? t("cn_generating") : user ? <>{t("cn_generateCard")} 💎 10P</> : "✦ " + t("cn_generateOnce")}
                     </button>
@@ -1576,15 +1576,15 @@ function PageMake(props) {
         <div style={{flex:1, display:"flex", alignItems:"center", justifyContent:"center", padding:"40px 0", textAlign:"center"}}>
           {loading && (
             <div style={{width:"100%", maxWidth:520, borderRadius:16, overflow:"hidden",
-              border:"1px solid rgba(99,102,241,0.4)", background:D?"rgba(0,0,0,0.7)":"rgba(255,255,255,0.97)"}}>
-              <div style={{background:"linear-gradient(135deg,rgba(99,102,241,0.22),rgba(99,102,241,0.08))",
-                padding:"28px 24px 20px", textAlign:"center", borderBottom:"1px solid rgba(99,102,241,0.2)"}}>
+              border:"1px solid rgba(0,0,0,0.06)", background:D?"rgba(0,0,0,0.7)":"rgba(255,255,255,0.97)"}}>
+              <div style={{background:"linear-gradient(135deg,rgba(0,0,0,0.06),rgba(0,0,0,0.06))",
+                padding:"28px 24px 20px", textAlign:"center", borderBottom:"1px solid rgba(0,0,0,0.06)"}}>
                 <div style={{position:"relative", width:72, height:72, margin:"0 auto 16px"}}>
-                  <div style={{position:"absolute", inset:0, borderRadius:"50%", border:"3px solid rgba(99,102,241,0.2)"}}/>
+                  <div style={{position:"absolute", inset:0, borderRadius:"50%", border:"3px solid rgba(0,0,0,0.06)"}}/>
                   <div style={{position:"absolute", inset:0, borderRadius:"50%", border:"3px solid transparent",
-                    borderTopColor:"#7c6aff", animation:"cn-spin 1s linear infinite"}}/>
+                    borderTopColor:"#168EEA", animation:"cn-spin 1s linear infinite"}}/>
                   <div style={{position:"absolute", inset:8, borderRadius:"50%", border:"2px solid transparent",
-                    borderTopColor:"rgba(99,102,241,0.6)", animation:"cn-spin 1.5s linear infinite reverse"}}/>
+                    borderTopColor:"rgba(0,0,0,0.06)", animation:"cn-spin 1.5s linear infinite reverse"}}/>
                   <div style={{position:"absolute", inset:0, display:"flex", alignItems:"center",
                     justifyContent:"center", fontSize:24}}>🎨</div>
                 </div>
@@ -1594,7 +1594,7 @@ function PageMake(props) {
               <div style={{padding:"16px 24px"}}>
                 <div style={{height:8, borderRadius:4, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden"}}>
                   <div style={{height:"100%", borderRadius:4,
-                    background:"linear-gradient(90deg,#7c6aff,#8b5cf6,#ec4899)",
+                    background:"#168EEA",
                     animation:"cn-progress 8s ease-out forwards"}}/>
                 </div>
                 <div style={{fontSize:11, color:D?"rgba(255,255,255,0.35)":"#bbb", marginTop:10, textAlign:"center"}}>
@@ -1621,8 +1621,8 @@ function PageMake(props) {
               <div style={{fontSize:14, color:muted, marginBottom:24}}>{tname} · {slides.length}{t("cn_slideUnit")}</div>
               <button onClick={function() { setPage("edit"); }}
                 style={{padding:"14px 40px", borderRadius:14, border:"none", cursor:"pointer",
-                  background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff",
-                  fontSize:16, fontWeight:900, boxShadow:"0 10px 32px rgba(99,102,241,0.45)"}}>
+                  background:"#168EEA", color:"#fff",
+                  fontSize:16, fontWeight:900, boxShadow:"0 10px 32px rgba(0,0,0,0.06)"}}>
                 {"✏️ " + t("cn_goEdit")}
               </button>
             </div>
@@ -1856,10 +1856,10 @@ export function CardNewsApp(props) {
     "@keyframes cn-progress{from{width:0%}to{width:100%}}" +
     "@keyframes cn-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}" +
     "@keyframes cn-popin{from{opacity:0;transform:scale(0.82)}to{opacity:1;transform:scale(1)}}" +
-    "input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;outline:none;background:" + (isLight ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.15)") + ";width:100%}" +
-    "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#7c6aff;cursor:pointer}" +
+    "input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;outline:none;background:" + (isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)") + ";width:100%}" +
+    "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#168EEA;cursor:pointer}" +
     "::-webkit-scrollbar{width:4px;height:4px}" +
-    "::-webkit-scrollbar-thumb{background:" + (isLight ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.12)") + ";border-radius:4px}" +
+    "::-webkit-scrollbar-thumb{background:" + (isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.12)") + ";border-radius:4px}" +
     "a{text-decoration:none}button{font-family:inherit}";
 
   return (
@@ -1883,7 +1883,7 @@ export function CardNewsApp(props) {
             <span style={{fontSize:13, fontWeight:900, color:topText}}>SNS메이킷 카드뉴스</span>
             <div style={{display:"flex", gap:5}}>
               <button onClick={function() { setShowPlanner(true); }}
-                style={{padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", background:"rgba(99,102,241,0.25)", color:"#a5b4fc", fontSize:10, fontWeight:700}}>
+                style={{padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", background:"rgba(0,0,0,0.06)", color:"#a5b4fc", fontSize:10, fontWeight:700}}>
                 ✨기획AI
               </button>
               {[{id:"home",l:t("cn_home")},{id:"make",l:t("cn_make")},{id:"edit",l:t("cn_edit")}].map(function(it) {
@@ -1891,7 +1891,7 @@ export function CardNewsApp(props) {
                 let isA = page === it.id;
                 return (
                   <button key={it.id} onClick={function() { setPage(it.id); }}
-                    style={{padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", background: isA ? "rgba(99,102,241,0.5)" : "rgba(255,255,255,0.08)", color: isA ? "#fff" : "rgba(255,255,255,0.4)", fontSize:10, fontWeight:700}}>
+                    style={{padding:"4px 9px", borderRadius:6, border:"none", cursor:"pointer", background: isA ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.08)", color: isA ? "#fff" : "rgba(255,255,255,0.4)", fontSize:10, fontWeight:700}}>
                     {it.l}
                   </button>
                 );
@@ -1932,7 +1932,7 @@ export function CardNewsApp(props) {
               <div style={{fontSize:28}}>🎨</div>
               <div style={{fontSize:13, color:"rgba(255,255,255,0.4)"}}>아직 생성된 카드뉴스가 없어요</div>
               <button onClick={function() { setPage("make"); setMakeStep(1); }}
-                style={{padding:"9px 20px", borderRadius:8, border:"none", cursor:"pointer", background:"linear-gradient(135deg,#7c6aff,#8b5cf6)", color:"#fff", fontSize:13, fontWeight:700}}>
+                style={{padding:"9px 20px", borderRadius:8, border:"none", cursor:"pointer", background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700}}>
                 카드뉴스 만들기 →
               </button>
             </div>

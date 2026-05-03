@@ -51,9 +51,9 @@ const FPS = 30;
 const IMG = "/video-assets/blog-tutorial";
 
 const K = {
-  purple: "#7c6aff", pink: "#ec4899",
+  purple: "#168EEA", pink: "#ec4899",
   white: "#ffffff", muted: "rgba(255,255,255,0.5)",
-  grad: "linear-gradient(135deg,#7c6aff,#ec4899)",
+  grad: "#168EEA",
   gradBg: "linear-gradient(165deg,#0d0b1a 0%,#1a1040 50%,#0d0b1a 100%)",
   naver: "#03c75a",
 };
@@ -308,7 +308,7 @@ function SceneBlog03({ lang }) {
             display: "inline-flex", alignItems: "center", gap: 12,
             background: K.grad, borderRadius: 16, padding: "24px 56px",
             fontSize: 28, fontWeight: 800, color: K.white,
-            boxShadow: "0 8px 40px rgba(124,106,255,0.4)",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.06)",
           }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <path d="M5 12h14M12 5l7 7-7 7" />
@@ -371,7 +371,7 @@ function SceneBlog04({ lang }) {
             position: "absolute", top: 20, right: -30,
             width: 220, borderRadius: 14, overflow: "hidden",
             boxShadow: "0 8px 36px rgba(0,0,0,0.6)",
-            border: "2px solid rgba(124,106,255,0.3)",
+            border: "2px solid rgba(0,0,0,0.06)",
           }}>
             <Img src={`${IMG}/5.png`} style={{ width: "100%", display: "block" }} />
           </div>
@@ -465,7 +465,7 @@ function SceneBlog06({ lang }) {
             display: "inline-block", background: K.grad,
             borderRadius: 18, padding: "22px 64px",
             fontSize: 28, fontWeight: 800, color: K.white,
-            boxShadow: "0 8px 40px rgba(124,106,255,0.4)",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.06)",
           }}>
             {T("blog_cta_btn", lang)}
           </div>
@@ -574,7 +574,7 @@ function BlogCCOverlay({ lang = "ko", show = true }) {
       <div style={{ textAlign: "center", maxWidth: "92%" }}>
         <div style={{
           display: "inline-block", background: "rgba(0,0,0,0.75)", backdropFilter: "blur(12px)",
-          borderRadius: 14, padding: "14px 36px", border: "1px solid rgba(124,106,255,0.12)",
+          borderRadius: 14, padding: "14px 36px", border: "1px solid rgba(0,0,0,0.06)",
         }}>
           <div style={{ fontSize: 24, fontWeight: 700, color: "#fff", lineHeight: 1.5, wordBreak: "keep-all", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
             {current[lang] || current.ko}

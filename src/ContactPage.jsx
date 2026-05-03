@@ -58,16 +58,16 @@ export function ContactPage({ C }) {
           cursor: "pointer", display: "flex", alignItems: "center", gap: 14, fontFamily: "inherit",
           transition: "border-color 0.15s",
         }}
-        onMouseEnter={e => e.currentTarget.style.borderColor = "#7c6aff"}
+        onMouseEnter={e => e.currentTarget.style.borderColor = "#168EEA"}
         onMouseLeave={e => e.currentTarget.style.borderColor = C.border}>
-        <div style={{ width: 44, height: 44, borderRadius: 12, background: "linear-gradient(135deg,#7c6aff,#8b5cf6)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: "#168EEA", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </div>
         <div style={{ flex: 1, textAlign: "left" }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{p("contactChat")}</div>
           <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>{p("contactChatSub")}</div>
         </div>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "#7c6aff", flexShrink: 0 }}>{p("contactChatBtn")}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: "#168EEA", flexShrink: 0 }}>{p("contactChatBtn")}</span>
       </button>
 
       {/* 자주 묻는 질문 */}
@@ -120,7 +120,7 @@ export function ContactPage({ C }) {
             </div>
             {err && <div style={{ padding: "10px 14px", borderRadius: 10, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", color: "#ef4444", fontSize: 13 }}>{err}</div>}
             <button onClick={submit} disabled={submitting}
-              style={{ padding: "14px", borderRadius: 12, border: "none", cursor: submitting?"not-allowed":"pointer", background: "linear-gradient(135deg,#7c6aff,#ec4899)", color: "#fff", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 16px rgba(124,106,255,0.3)", opacity: submitting?0.7:1, minHeight: 44 }}>
+              style={{ padding: "14px", borderRadius: 12, border: "none", cursor: submitting?"not-allowed":"pointer", background: "#168EEA", color: "#fff", fontSize: 14, fontWeight: 700, boxShadow: "0 4px 16px rgba(0,0,0,0.06)", opacity: submitting?0.7:1, minHeight: 44 }}>
               {submitting ? p("contactSubmitting") : p("contactSubmit")}
             </button>
           </div>

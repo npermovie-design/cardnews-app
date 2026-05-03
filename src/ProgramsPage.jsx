@@ -32,11 +32,11 @@ function programPath(product) {
   return `/programs/${product.id}/${slugifyKo(product.title, "program")}`;
 }
 
-const BRAND = "#6d5dfc";
-const BRAND2 = "#f45aa2";
-const ACCENT = "#16bfa3";
-const INK = "#15172f";
-const GRAD = "linear-gradient(135deg, #6d5dfc 0%, #8b6dff 48%, #f45aa2 100%)";
+const BRAND = "#168EEA";
+const BRAND2 = "#34C759";
+const ACCENT = "#168EEA";
+const INK = "#1A1A2E";
+const GRAD = "#168EEA";
 
 function AutomationIcon({ type, color = BRAND, size = 28 }) {
   const common = { stroke: color, strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", fill: "none" };
@@ -816,7 +816,7 @@ function ProductDetail({ p, C, user, onLogin, onBack, isMobile, isAdmin, onUpdat
           padding: isMobile ? "24px 20px" : "40px 44px", borderRadius: 24,
           background: C.bg === "#fff"
             ? "linear-gradient(135deg, #f8f6ff 0%, #fdf2f8 50%, #f0f9ff 100%)"
-            : "linear-gradient(135deg, rgba(124,106,255,0.08) 0%, rgba(236,72,153,0.06) 50%, rgba(59,130,246,0.04) 100%)",
+            : "linear-gradient(135deg, rgba(0,0,0,0.06) 0%, rgba(236,72,153,0.06) 50%, rgba(59,130,246,0.04) 100%)",
           border: `1px solid ${C.border}`,
         }}>
           {/* 썸네일 */}
@@ -824,7 +824,7 @@ function ProductDetail({ p, C, user, onLogin, onBack, isMobile, isAdmin, onUpdat
             background: C.bg === "#fff" ? "rgba(255,255,255,0.7)" : "rgba(255,255,255,0.05)",
             borderRadius: 20, aspectRatio: isMobile ? "16/10" : "4/3",
             display: "flex", alignItems: "center", justifyContent: "center",
-            border: `1px solid ${C.bg === "#fff" ? "rgba(124,106,255,0.1)" : C.border}`,
+            border: `1px solid ${C.bg === "#fff" ? "rgba(0,0,0,0.06)" : C.border}`,
             position: "relative", overflow: "hidden",
           }}>
             {p.thumbnail ? (
@@ -857,7 +857,7 @@ function ProductDetail({ p, C, user, onLogin, onBack, isMobile, isAdmin, onUpdat
               {p.tags.map(t => (
                 <span key={t} style={{
                   padding: "4px 12px", borderRadius: 20, fontSize: 11, fontWeight: 600,
-                  background: C.bg === "#fff" ? "rgba(124,106,255,0.08)" : "rgba(124,106,255,0.15)",
+                  background: C.bg === "#fff" ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)",
                   color: BRAND,
                 }}>{t}</span>
               ))}
@@ -897,7 +897,7 @@ function ProductDetail({ p, C, user, onLogin, onBack, isMobile, isAdmin, onUpdat
                   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10,
                   padding: "15px 40px", borderRadius: 14, background: GRAD, color: "#fff",
                   fontWeight: 700, fontSize: 16, border: "none", cursor: "pointer",
-                  boxShadow: "0 4px 16px rgba(124,106,255,0.3)", flex: isMobile ? 1 : "unset",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.06)", flex: isMobile ? 1 : "unset",
                 }}>
                   <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   {p.price === 0 ? "무료 다운로드" : "구매하기"}
@@ -1075,7 +1075,7 @@ function ProductDetail({ p, C, user, onLogin, onBack, isMobile, isAdmin, onUpdat
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
           <div style={{
             borderRadius: 18, border: `1px solid ${BRAND}30`,
-            background: C.bg === "#fff" ? "linear-gradient(135deg,#f8f6ff,#ffffff)" : "rgba(124,106,255,0.08)",
+            background: C.bg === "#fff" ? "linear-gradient(135deg,#f8f6ff,#ffffff)" : "rgba(0,0,0,0.06)",
             padding: isMobile ? 22 : 28,
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
@@ -1096,7 +1096,7 @@ function ProductDetail({ p, C, user, onLogin, onBack, isMobile, isAdmin, onUpdat
               style={{
                 display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10,
                 padding: "14px 22px", borderRadius: 12, background: GRAD, color: "#fff",
-                fontSize: 15, fontWeight: 800, textDecoration: "none", boxShadow: "0 4px 16px rgba(124,106,255,0.24)",
+                fontSize: 15, fontWeight: 800, textDecoration: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.06)",
               }}
             >
               <svg width="17" height="17" viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -1151,7 +1151,7 @@ export default function ProgramsPage({ C }) {
     <div style={{ minHeight: "100vh", background: C.bg, color: C.text }}>
       <style>{`
         .makeit-focus-card { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
-        .makeit-focus-card:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(124,106,255,.12); border-color: rgba(124,106,255,.35) !important; }
+        .makeit-focus-card:hover { transform: translateY(-3px); box-shadow: 0 14px 34px rgba(0,0,0,0.06); border-color: rgba(0,0,0,0.06) !important; }
         .makeit-tab { transition: background .18s ease, color .18s ease, border-color .18s ease; }
         .makeit-icon-node { transition: transform .18s ease, box-shadow .18s ease; }
         .makeit-icon-node:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(21,23,47,.10); }
@@ -1174,7 +1174,7 @@ export default function ProgramsPage({ C }) {
         </p>
         <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 32 }}>
           <a href={AUTOMATION_DOWNLOAD.url} download={AUTOMATION_DOWNLOAD.fileName}
-            style={{ padding: "14px 28px", borderRadius: 14, background: GRAD, color: "#fff", fontSize: 16, fontWeight: 800, textDecoration: "none", boxShadow: "0 4px 20px rgba(124,106,255,0.25)", display: "inline-flex", alignItems: "center", gap: 8 }}>
+            style={{ padding: "14px 28px", borderRadius: 14, background: GRAD, color: "#fff", fontSize: 16, fontWeight: 800, textDecoration: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.06)", display: "inline-flex", alignItems: "center", gap: 8 }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             무료 다운로드
           </a>
@@ -1402,7 +1402,7 @@ export default function ProgramsPage({ C }) {
           <h2 style={{ fontSize: isMobile ? 28 : 36, fontWeight: 900, margin: 0, lineHeight: 1.25 }}>다운로드</h2>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16 }}>
-          <div style={{ borderRadius: 18, border: `1px solid ${BRAND}30`, background: C.bg === "#fff" ? "linear-gradient(135deg,#f8f6ff,#ffffff)" : "rgba(124,106,255,0.08)", padding: isMobile ? 22 : 28 }}>
+          <div style={{ borderRadius: 18, border: `1px solid ${BRAND}30`, background: C.bg === "#fff" ? "linear-gradient(135deg,#f8f6ff,#ffffff)" : "rgba(0,0,0,0.06)", padding: isMobile ? 22 : 28 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
               <div>
                 <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 6 }}>Windows용</div>
@@ -1417,7 +1417,7 @@ export default function ProgramsPage({ C }) {
               <div>버전: {AUTOMATION_DOWNLOAD.version} · 용량: {AUTOMATION_DOWNLOAD.size}</div>
             </div>
             {AUTOMATION_DOWNLOAD_READY ? (
-              <a href={AUTOMATION_DOWNLOAD.url} download={AUTOMATION_DOWNLOAD.fileName} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "14px 22px", borderRadius: 12, background: GRAD, color: "#fff", fontSize: 15, fontWeight: 900, textDecoration: "none", boxShadow: "0 4px 16px rgba(124,106,255,0.24)" }}>
+              <a href={AUTOMATION_DOWNLOAD.url} download={AUTOMATION_DOWNLOAD.fileName} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "14px 22px", borderRadius: 12, background: GRAD, color: "#fff", fontSize: 15, fontWeight: 900, textDecoration: "none", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
                 <svg width="17" height="17" viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 Windows 파일 받기
               </a>
