@@ -450,6 +450,7 @@ JSON 배열로만 응답:
   const timerRef = useRef(null);
   const audioCtxRef = useRef(null);
   const pollRef = useRef(null);
+  const genTimeoutRef = useRef(null);
 
   // ── 폴링 인터벌 정리 (언마운트 시) ──
   useEffect(() => {
@@ -899,7 +900,8 @@ JSON 배열로만 응답:
       detail: { action: "register", task: { id: "longform_gen", type: "longform_make", message: "롱폼 영상 편집 중..." } }
     }));
     // 2분 타임아웃 — 응답 없으면 자동 복귀
-    const genTimeout = setTimeout(() => {
+    if (genTimeoutRef.current) clearTimeout(genTimeoutRef.current);
+    genTimeoutRef.current = setTimeout(() => {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
       setError("서버 응답 시간 초과 (2분). 서버가 준비되지 않았거나 영상 파일이 만료되었을 수 있습니다. 영상을 다시 불러온 후 시도해주세요.");
       setStep("edit");
@@ -933,7 +935,7 @@ JSON 배열로만 응답:
             detail: { action: "update", task: { id: "longform_gen", message: `편집 중... ${j.progress || 0}%`, progress: j.progress || 0 } }
           }));
           if (j.status === "complete") {
-            clearTimeout(genTimeout);
+            clearTimeout(genTimeoutRef.current);
             clearInterval(pollRef.current); pollRef.current = null;
             const done = (j.results || []).find(r => r.type === "done");
             if (done) setResultUrl(`${API}/outputs/${fileId}/${done.filename}`);
@@ -941,7 +943,7 @@ JSON 배열로만 응답:
               detail: { action: "complete", task: { id: "longform_gen", message: "롱폼 편집 완료!" } }
             }));
           } else if (j.status === "error" || j.status === "failed") {
-            clearTimeout(genTimeout);
+            clearTimeout(genTimeoutRef.current);
             clearInterval(pollRef.current); pollRef.current = null;
             setError("서버에서 생성 실패: " + (j.error || "알 수 없는 오류"));
             setStep("edit");
@@ -949,7 +951,7 @@ JSON 배열로만 응답:
         } catch {
           pollFails++;
           if (pollFails >= 5) {
-            clearTimeout(genTimeout);
+            clearTimeout(genTimeoutRef.current);
             clearInterval(pollRef.current); pollRef.current = null;
             setError("서버 연결 끊김. 영상을 다시 불러온 후 시도해주세요.");
             setStep("edit");
@@ -957,7 +959,7 @@ JSON 배열로만 응답:
         }
       }, 3000);
     } catch (e) {
-      clearTimeout(genTimeout);
+      clearTimeout(genTimeoutRef.current);
       setError("생성 실패: " + e.message + "\n\n서버가 준비되지 않았거나 영상 파일이 만료되었을 수 있습니다.");
       setStep("edit");
       window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
@@ -1232,8 +1234,8 @@ JSON 배열로만 응답:
             <div style={{ width: 200, height: 6, borderRadius: 3, background: `${bdr}`, margin: "0 auto 16px", overflow: "hidden" }}>
               <div style={{ height: "100%", borderRadius: 3, background: `linear-gradient(90deg,${acc},#ec4899)`, width: jobStatus?.progress ? `${jobStatus.progress}%` : "15%", transition: "width 0.5s", animation: jobStatus?.progress ? "none" : "lf-pulse 2s ease-in-out infinite" }} />
             </div>
-            <button onClick={() => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } setStep("edit"); }}
-              style={{ padding: "8px 20px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>
+            <button onClick={() => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } if (genTimeoutRef.current) { clearTimeout(genTimeoutRef.current); genTimeoutRef.current = null; } setJobId(null); setJobStatus(null); setStep("edit"); }}
+              style={{ padding: "10px 24px", borderRadius: 10, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
               편집으로 돌아가기
             </button>
           </>
