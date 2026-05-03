@@ -195,7 +195,7 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
   const bdr = D ? "rgba(255,255,255,0.09)" : "#e5e5f0";
   const card = D ? "rgba(255,255,255,0.05)" : "#fff";
   const ibg = D ? "rgba(255,255,255,0.06)" : "#f9f9fc";
-  const acc = "#168EEA";
+  const acc = "#3b82f6";
 
   // ── 상태 ──
   const [step, setStep] = useState("upload"); // upload | loading | edit | generate | result
@@ -1274,14 +1274,14 @@ JSON 배열로만 응답:
     const tlWidth = Math.max(clipDuration * pxPerSec, 800);
     const TRACK_H = 36;
     const sourceUrl = fileId ? `${API}/source/${fileId}` : null;
-    const subColors = ["#168EEA", "#ff6a8a", "#6affb2", "#ffd76a", "#6ac4ff", "#ff9f6a", "#c46aff", "#6afff0"];
+    const subColors = ["#3b82f6", "#ff6a8a", "#6affb2", "#ffd76a", "#6ac4ff", "#ff9f6a", "#c46aff", "#6afff0"];
 
     // 모바일 안내
     if (typeof window !== "undefined" && window.innerWidth < 768) {
       return (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#0f0f1a", padding: 40 }}>
           <div style={{ textAlign: "center", maxWidth: 320 }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#168EEA" strokeWidth="1.5" style={{ margin: "0 auto 16px", display: "block", opacity: 0.4 }}><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="1.5" style={{ margin: "0 auto 16px", display: "block", opacity: 0.4 }}><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
             <div style={{ fontSize: 16, fontWeight: 800, color: "#fff", marginBottom: 8 }}>PC에서 편집해주세요</div>
             <div style={{ fontSize: 13, color: "#888", lineHeight: 1.7 }}>롱폼 편집기는 데스크탑 환경에서 최적으로 작동합니다.</div>
           </div>
@@ -1712,7 +1712,7 @@ JSON 배열로만 응답:
                         <div style={{ display: "flex", gap: 0, marginBottom: 8, borderRadius: 6, overflow: "hidden", border: "1px solid #2a2a4a" }}>
                           {[["photo","사진"],["gif","GIF"],["video","영상"]].map(([k,l]) => (
                             <button key={k} onClick={() => setSrcSearchCat(k)}
-                              style={{ flex: 1, padding: "5px 4px", border: "none", background: srcSearchCat === k ? "#168EEA" : "#12122a", color: srcSearchCat === k ? "#fff" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
+                              style={{ flex: 1, padding: "5px 4px", border: "none", background: srcSearchCat === k ? "#3b82f6" : "#12122a", color: srcSearchCat === k ? "#fff" : "#666", cursor: "pointer", fontSize: 10, fontWeight: 700 }}>{l}</button>
                           ))}
                         </div>
                         <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
@@ -1720,7 +1720,7 @@ JSON 배열로만 응답:
                             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); doSearch(); } }}
                             placeholder="영어로 검색 (예: nature, fire)"
                             style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#e0e0e0", fontSize: 11, outline: "none" }} />
-                          <button onClick={doSearch} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#168EEA", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>검색</button>
+                          <button onClick={doSearch} style={{ padding: "4px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#12122a", color: "#3b82f6", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>검색</button>
                         </div>
                         {srcSearchLoading ? <div style={{ textAlign: "center", padding: 12, color: "#666", fontSize: 11 }}>검색 중...</div>
                           : srcSearchItems.length === 0 ? <div style={{ textAlign: "center", padding: 12, color: "#555", fontSize: 11 }}>검색어를 입력하고 Enter</div>
@@ -1732,7 +1732,7 @@ JSON 배열로만 응답:
                                 title={`[${it.src}] ${it.title}`}>
                                 <img src={it.url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover" }} draggable={false} />
                                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent,rgba(0,0,0,0.8))", padding: "4px 3px 1px", fontSize: 7, color: "#ddd" }}>
-                                  <span style={{ color: "#168EEA", marginRight: 2 }}>{it.src}</span>
+                                  <span style={{ color: "#3b82f6", marginRight: 2 }}>{it.src}</span>
                                 </div>
                               </div>
                             ))}
@@ -1897,7 +1897,7 @@ JSON 배열로만 응답:
               {subtitles.length > 0 && (
                 <div style={{ position: "relative" }}>
                   <button onClick={() => setShowMediaRatioPopup(!showMediaRatioPopup)} disabled={autoMediaLoading}
-                    style={{ padding: "5px 10px", borderRadius: 6, border: autoMediaLoading ? "1px solid #168EEA40" : "1px solid #c084fc40", background: autoMediaLoading ? "rgba(0,0,0,0.06)" : "rgba(22,142,234,0.06)", color: autoMediaLoading ? "#168EEA" : "#c084fc", cursor: autoMediaLoading ? "wait" : "pointer", fontSize: 11, fontWeight: 700 }}>
+                    style={{ padding: "5px 10px", borderRadius: 6, border: autoMediaLoading ? "1px solid #3b82f640" : "1px solid #c084fc40", background: autoMediaLoading ? "rgba(0,0,0,0.06)" : "rgba(59,130,246,0.06)", color: autoMediaLoading ? "#3b82f6" : "#c084fc", cursor: autoMediaLoading ? "wait" : "pointer", fontSize: 11, fontWeight: 700 }}>
                     {autoMediaLoading ? "AI 삽입중..." : "AI 미디어"}
                   </button>
                   {showMediaRatioPopup && !autoMediaLoading && (
@@ -1915,23 +1915,23 @@ JSON 배열로만 응답:
                         {videoDuration > 0 ? `${Math.floor(videoDuration/60)}분 영상 중 약 ${Math.floor(videoDuration * mediaRatio / 100 / 60)}분 ${Math.floor(videoDuration * mediaRatio / 100 % 60)}초 구간에 짤 삽입` : "영상 로드 후 계산됩니다"}
                       </div>
                       <button onClick={() => { setShowMediaRatioPopup(false); autoInsertMedia(); }}
-                        style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "#168EEA", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+                        style={{ width: "100%", padding: "10px", borderRadius: 8, border: "none", background: "#3b82f6", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
                         삽입 시작
                       </button>
                     </div>
                   )}
                 </div>
               )}
-              <button onClick={doUndo} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: undoStack.current.length ? "#168EEA" : "#444", cursor: "pointer", fontSize: 13 }} title="되돌리기 (Ctrl+Z)">↩</button>
-              <button onClick={doRedo} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: redoStack.current.length ? "#168EEA" : "#444", cursor: "pointer", fontSize: 13 }} title="다시실행 (Ctrl+Y)">↪</button>
+              <button onClick={doUndo} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: undoStack.current.length ? "#3b82f6" : "#444", cursor: "pointer", fontSize: 13 }} title="되돌리기 (Ctrl+Z)">↩</button>
+              <button onClick={doRedo} style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: redoStack.current.length ? "#3b82f6" : "#444", cursor: "pointer", fontSize: 13 }} title="다시실행 (Ctrl+Y)">↪</button>
               <div style={{ width: 1, height: 16, background: "#2a2a4a" }} />
-              <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#168EEA", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
+              <button onClick={() => { setPlayhead(0); setIsPlaying(false); }} style={{ padding: "5px 10px", borderRadius: 6, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#3b82f6", cursor: "pointer", fontSize: 11, fontWeight: 700 }}>
                 처음
               </button>
-              <span style={{ fontSize: 11, color: "#168EEA", fontFamily: "monospace", fontWeight: 600 }}>{fmtLong(playheadToAbsolute(playhead))} | {fmtLong(videoDuration)}</span>
+              <span style={{ fontSize: 11, color: "#3b82f6", fontFamily: "monospace", fontWeight: 600 }}>{fmtLong(playheadToAbsolute(playhead))} | {fmtLong(videoDuration)}</span>
               <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
                 <button onClick={() => setTimelineZoom(z => Math.max(0.25, z - 0.25))} style={{ width: 20, height: 20, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>-</button>
-                <input type="range" min={25} max={800} value={timelineZoom * 100} onChange={e => setTimelineZoom(+e.target.value / 100)} style={{ width: 60, accentColor: "#168EEA" }} />
+                <input type="range" min={25} max={800} value={timelineZoom * 100} onChange={e => setTimelineZoom(+e.target.value / 100)} style={{ width: 60, accentColor: "#3b82f6" }} />
                 <button onClick={() => setTimelineZoom(z => Math.min(8, z + 0.25))} style={{ width: 20, height: 20, borderRadius: 4, border: "1px solid #2a2a4a", background: "#1a1a30", color: "#aaa", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>+</button>
               </div>
             </div>

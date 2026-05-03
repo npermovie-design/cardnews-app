@@ -49,7 +49,7 @@ export function AboutPage({ navigate, C }) {
         <Badge C={C}>{p("aboutBadge")}</Badge>
         <h2 style={{ fontSize: "clamp(28px,4vw,48px)", fontWeight: 900, color: C.text, letterSpacing: -1.5, margin: "0 0 12px", lineHeight: 1.15 }}>
           {p("aboutTitle1")}<br/>
-          <span style={{ background: "#168EEA", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{p("aboutTitle2")}</span>
+          <span style={{ background: "#3b82f6", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{p("aboutTitle2")}</span>
         </h2>
         <p style={{ fontSize: 17, color: C.muted, lineHeight: 1.9, marginBottom: 20, maxWidth: 620 }}>
           {p("aboutIntro")}
@@ -57,7 +57,7 @@ export function AboutPage({ navigate, C }) {
 
         {/* 미션 스테이트먼트 */}
         <div style={{ display: "inline-block", padding: "8px 20px", borderRadius: 24, background: "rgba(0,0,0,0.06)", marginBottom: 48 }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: "#168EEA" }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: "#3b82f6" }}>
             {p("aboutMission")}
           </span>
         </div>
@@ -90,7 +90,7 @@ export function AboutPage({ navigate, C }) {
           <p style={{ fontSize: 14, color: C.muted, marginBottom: 24, lineHeight: 1.8 }}>{p("aboutBrandSub")}</p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 16, marginBottom: 24 }}>
             {[
-              { word: "SNS", sub: "Social Network Service", desc: p("aboutBrandSns"), color: "#168EEA" },
+              { word: "SNS", sub: "Social Network Service", desc: p("aboutBrandSns"), color: "#3b82f6" },
               { word: "Make it", sub: p("aboutBrandMakeSub"), desc: p("aboutBrandMakeDesc"), color: "#ec4899" },
             ].map((item, i) => (
               <div key={i} style={{ background: C.card, borderRadius: 16, padding: "24px 22px", border: "1px solid " + C.border }}>
@@ -120,7 +120,7 @@ export function AboutPage({ navigate, C }) {
           ].map((stat, i) => (
             <div key={i} style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "24px 20px", textAlign: "center", boxShadow: C.shadow }}>
               <img src={stat.icon3d} alt="" style={{ width: 36, height: 36, objectFit: "contain", marginBottom: 8 }} />
-              <div style={{ fontSize: 22, fontWeight: 900, color: "#168EEA", marginBottom: 4 }}>{stat.value}</div>
+              <div style={{ fontSize: 22, fontWeight: 900, color: "#3b82f6", marginBottom: 4 }}>{stat.value}</div>
               <div style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>{stat.label}</div>
             </div>
           ))}
@@ -181,7 +181,7 @@ export function AboutPage({ navigate, C }) {
 
         {/* CTA */}
         <div style={{ background: "linear-gradient(135deg,rgba(0,0,0,0.06),rgba(236,72,153,0.06))", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 20, padding: "40px 32px", textAlign: "center" }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#168EEA", marginBottom: 12 }}>START</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#3b82f6", marginBottom: 12 }}>START</div>
           <h3 style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 10, letterSpacing: -0.5 }}>{p("aboutCtaTitle")}</h3>
           <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.9, margin: "0 auto 24px", maxWidth: 480 }}>
             {p("aboutCtaDesc")}
@@ -206,7 +206,7 @@ export function HowToPage({ navigate, C }) {
 
   const HOW_TO = [
     {
-      step: "01", icon: "", color: "#168EEA",
+      step: "01", icon: "", color: "#3b82f6",
       title: p("howtoS1"),
       desc: p("howtoS1d"),
       tips: [p("howtoTip1a"), p("howtoTip1b"), p("howtoTip1c")],
@@ -236,7 +236,7 @@ export function HowToPage({ navigate, C }) {
       tips: [p("howtoTip5a"), p("howtoTip5b"), p("howtoTip5c")],
     },
     {
-      step: "06", icon: "", color: "#168EEA",
+      step: "06", icon: "", color: "#3b82f6",
       title: p("howtoS6"),
       desc: p("howtoS6d"),
       tips: [p("howtoTip6a"), p("howtoTip6b"), p("howtoTip6c")],
@@ -333,7 +333,7 @@ export function HowToPage({ navigate, C }) {
 
         {/* CTA */}
         <div style={{ background: "linear-gradient(135deg,rgba(0,0,0,0.06),rgba(236,72,153,0.06))", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 20, padding: "40px 32px", textAlign: "center" }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#168EEA", marginBottom: 12 }}>START</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: "#3b82f6", marginBottom: 12 }}>START</div>
           <h3 style={{ fontSize: 22, fontWeight: 900, color: C.text, marginBottom: 10, letterSpacing: -0.5 }}>{p("howtoCtaTitle")}</h3>
           <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.9, margin: "0 auto 24px", maxWidth: 480 }}>
             {p("howtoCtaDesc")}

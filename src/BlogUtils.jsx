@@ -98,7 +98,7 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
 
   return (
     <div style={{margin:"12px 0",borderRadius:14,overflow:"hidden",boxShadow:"0 2px 12px rgba(0,0,0,0.08)",position:"relative",
-      outline: dragOver ? "3px dashed #168EEA" : "none", transition:"outline 0.15s"}}
+      outline: dragOver ? "3px dashed #3b82f6" : "none", transition:"outline 0.15s"}}
       onContextMenu={e => { e.preventDefault(); setShowMenu(!showMenu); }}
       onDragOver={e => { e.preventDefault(); setDragOver(true); }}
       onDragLeave={() => setDragOver(false)}
@@ -140,7 +140,7 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
             🎲 랜덤 이미지
           </button>
           <button onClick={() => { setShowSearch(true); setShowMenu(false); setSearchQuery(desc || ""); searchPhotos(desc || ""); }}
-            style={{width:"100%",padding:"8px 12px",border:"none",background:"transparent",cursor:"pointer",fontSize:12,fontWeight:600,color:"#168EEA",textAlign:"left",borderRadius:6,display:"flex",alignItems:"center",gap:6}}
+            style={{width:"100%",padding:"8px 12px",border:"none",background:"transparent",cursor:"pointer",fontSize:12,fontWeight:600,color:"#3b82f6",textAlign:"left",borderRadius:6,display:"flex",alignItems:"center",gap:6}}
             onMouseEnter={e=>e.currentTarget.style.background="#f0f0ff"} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
             🔍 무료 사진 검색
           </button>
@@ -161,7 +161,7 @@ function ReplaceableImage({ src, desc, isDark, mutedColor, fallbackSeed }) {
               placeholder="검색어 입력 (예: 건강, 음식, 여행)" autoFocus
               style={{flex:1,padding:"8px 12px",borderRadius:8,border:"1.5px solid #e5e7eb",fontSize:13,outline:"none"}} />
             <button onClick={() => searchPhotos(searchQuery)}
-              style={{padding:"8px 14px",borderRadius:8,border:"none",background:"#168EEA",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+              style={{padding:"8px 14px",borderRadius:8,border:"none",background:"#3b82f6",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
               {searching ? "..." : "검색"}
             </button>
             <button onClick={() => setShowSearch(false)}
@@ -1359,14 +1359,14 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
           {isGuest ? (
             <button onClick={() => { if(onLogin) onLogin(); }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                background:"#168EEA", color:"#fff", fontSize:15, fontWeight:800,
+                background:"#3b82f6", color:"#fff", fontSize:15, fontWeight:800,
                 boxShadow:"0 8px 24px rgba(0,0,0,0.06)" }}>
               🚀 회원가입 / 로그인하기
             </button>
           ) : (
             <button onClick={() => window.location.hash = "#pricing"}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                background:"#168EEA", color:"#fff", fontSize:15, fontWeight:800,
+                background:"#3b82f6", color:"#fff", fontSize:15, fontWeight:800,
                 boxShadow:"0 8px 24px rgba(0,0,0,0.06)" }}>
               💎 포인트 충전하기
             </button>

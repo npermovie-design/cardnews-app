@@ -27,45 +27,62 @@ export const SecTitle = ({ badge, title, sub, left, C }) => (
   <div style={{ textAlign: left ? "left" : "center", marginBottom: 56 }}>
     {badge && <Badge C={C}>{badge}</Badge>}
     <h2 style={{
-      fontSize: "clamp(28px,4vw,48px)", fontWeight: 700, color: C?.text || "#111827",
+      fontSize: "clamp(28px,4vw,48px)", fontWeight: 700, color: C?.text || "#1A1A2E",
       letterSpacing: -0.5, lineHeight: 1.15, marginBottom: 16,
     }}>{title}</h2>
     {sub && (
       <p style={{
-        fontSize: "clamp(14px,1.5vw,17px)", color: C?.muted || "#6b7280", lineHeight: 1.6, maxWidth: 600,
+        fontSize: "clamp(14px,1.5vw,17px)", color: C?.muted || "#666", lineHeight: 1.6, maxWidth: 600,
         margin: left ? "0" : "0 auto",
       }}>{sub}</p>
     )}
   </div>
 );
 
-export const Btn = ({ children, onClick, ghost, small, full, style = {}, C, ariaLabel, className }) => {
-  const base = {
-    borderRadius: 12, border: "none", cursor: "pointer", fontWeight: 600,
-    transition: "all 0.15s ease", fontFamily: "inherit", ...style,
-  };
+/* ── Neon Button (neon-button.tsx 변환) ── */
+export const Btn = ({ children, onClick, ghost, small, full, neon = true, style = {}, C, ariaLabel, className }) => {
+  const radius = 24;
+  const P = BRAND.primary;
+
   if (ghost) return (
     <button className={className} onClick={onClick} aria-label={ariaLabel} style={{
-      ...base,
+      position: "relative", overflow: "hidden",
+      borderRadius: radius, cursor: "pointer", fontWeight: 600,
+      transition: "all 0.2s ease", fontFamily: "inherit",
       padding: small ? "6px 16px" : "12px 24px",
       fontSize: small ? 13 : 15,
       background: "transparent",
-      border: "1px solid " + (C?.border || "#d1d5db"),
-      color: C?.text || "#111827",
+      border: "1px solid " + (C?.border || "#e8e4e0"),
+      color: C?.text || "#1A1A2E",
       width: full ? "100%" : "auto",
-    }}>
+      ...style,
+    }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = P + "40"; e.currentTarget.style.background = P + "08"; const g = e.currentTarget.querySelector(".neon-glow"); if (g) g.style.opacity = "1"; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = C?.border || "#e8e4e0"; e.currentTarget.style.background = "transparent"; const g = e.currentTarget.querySelector(".neon-glow"); if (g) g.style.opacity = "0"; }}
+    >
+      {neon && <span className="neon-glow" style={{ position: "absolute", height: 1, top: 0, left: "12.5%", right: "12.5%", background: `linear-gradient(90deg, transparent, ${P}, transparent)`, opacity: 0, transition: "opacity 0.4s ease", pointerEvents: "none" }}/>}
+      {neon && <span className="neon-glow" style={{ position: "absolute", height: 1, bottom: 0, left: "12.5%", right: "12.5%", background: `linear-gradient(90deg, transparent, ${P}, transparent)`, opacity: 0, transition: "opacity 0.4s ease", pointerEvents: "none" }}/>}
       {children}
     </button>
   );
+
   return (
     <button className={className} onClick={onClick} aria-label={ariaLabel} style={{
-      ...base,
+      position: "relative", overflow: "hidden",
+      borderRadius: radius, border: `1px solid ${P}30`, cursor: "pointer", fontWeight: 600,
+      transition: "all 0.2s ease", fontFamily: "inherit",
       padding: small ? "6px 16px" : "12px 24px",
       fontSize: small ? 13 : 15,
-      background: BRAND.primary,
+      background: P,
       color: "#fff",
       width: full ? "100%" : "auto",
-    }}>
+      ...style,
+    }}
+      onMouseEnter={e => { e.currentTarget.style.filter = "brightness(1.1)"; const g = e.currentTarget.querySelector(".neon-glow"); if (g) g.style.opacity = "1"; }}
+      onMouseLeave={e => { e.currentTarget.style.filter = "none"; const g = e.currentTarget.querySelector(".neon-glow"); if (g) g.style.opacity = "0"; }}
+    >
+      {neon && <span className="neon-glow" style={{ position: "absolute", height: 1, top: 0, left: "12.5%", right: "12.5%", background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent)", opacity: 0, transition: "opacity 0.4s ease", pointerEvents: "none" }}/>}
+      {neon && <span className="neon-glow" style={{ position: "absolute", height: 1, bottom: -1, left: "12.5%", right: "12.5%", background: `linear-gradient(90deg, transparent, ${P}80, transparent)`, opacity: 0, transition: "opacity 0.4s ease", pointerEvents: "none" }}/>}
       {children}
     </button>
   );

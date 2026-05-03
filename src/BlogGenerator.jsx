@@ -1558,7 +1558,7 @@ ${emojiRule}
   const currentFields = cfg.fields[subtype] || ["keyword","extra"];
   const examples = cfg.examples?.[subtype] || [];
   const isTistory = initialType === "blog_tistory";
-  const accentRaw = cfg.accentColor || "#168EEA";
+  const accentRaw = cfg.accentColor || "#3b82f6";
   const isNaverBlog = platformId === "blog_naver";
   const naverBriefCategories = ["경제","사회","여행","세계여행","국내여행","쇼핑","IT","건강","기타"];
   const naverBriefPurposes = ["정보","후기","비교","가이드","분석"];
@@ -2474,7 +2474,7 @@ hospital equipment`
                 }catch{}
                 setPromptLoading(false);setPromptText("");setShowPromptInput(false);
               }}
-                style={{padding:"10px 18px",borderRadius:10,border:"none",background:promptLoading?"#999":"#168EEA",color:"#fff",fontSize:13,fontWeight:700,cursor:promptLoading?"wait":"pointer",whiteSpace:"nowrap",minHeight:42,opacity:(!promptText.trim()||promptLoading)?0.5:1}}>
+                style={{padding:"10px 18px",borderRadius:10,border:"none",background:promptLoading?"#999":"#3b82f6",color:"#fff",fontSize:13,fontWeight:700,cursor:promptLoading?"wait":"pointer",whiteSpace:"nowrap",minHeight:42,opacity:(!promptText.trim()||promptLoading)?0.5:1}}>
                 {promptLoading?<><div style={{width:12,height:12,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite",display:"inline-block",marginRight:6}}/>{t("bg_editing")}</>:t("bg_apply")}
               </button>
             </div>
@@ -2507,7 +2507,7 @@ hospital equipment`
             contentEditable
             suppressContentEditableWarning
             onMouseUp={handleTextSelect}
-            onDragOver={e => { e.preventDefault(); e.currentTarget.style.outline = "2px dashed #168EEA"; }}
+            onDragOver={e => { e.preventDefault(); e.currentTarget.style.outline = "2px dashed #3b82f6"; }}
             onDragLeave={e => { e.currentTarget.style.outline = "none"; }}
             onDrop={e => {
               e.preventDefault();
@@ -2600,7 +2600,7 @@ hospital equipment`
                           transition: "opacity 0.15s", display: "flex", gap: 4,
                         }}>
                           {sectionReplacing?.index === si ? (
-                            <div style={{padding:"4px 12px",borderRadius:8,background:"#168EEA",color:"#fff",fontSize:10,fontWeight:700,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+                            <div style={{padding:"4px 12px",borderRadius:8,background:"#3b82f6",color:"#fff",fontSize:10,fontWeight:700,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
                               <div style={{width:10,height:10,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>
                               {sectionReplacing.label} 중...
                             </div>
@@ -2682,7 +2682,7 @@ hospital equipment`
                                       }catch{}
                                       setAiReplacing(false);setSectionReplacing(null);
                                     }}
-                                      style={{padding:"5px 14px",borderRadius:6,border:"none",background:"#168EEA",color:"#fff",fontSize:11,fontWeight:700,
+                                      style={{padding:"5px 14px",borderRadius:6,border:"none",background:"#3b82f6",color:"#fff",fontSize:11,fontWeight:700,
                                         cursor:"pointer",fontFamily:"inherit",opacity:sectionPrompt.text?.trim()?1:0.4}}>
                                       적용
                                     </button>
@@ -2709,7 +2709,7 @@ hospital equipment`
               display:"flex",gap:4,flexWrap:"wrap",justifyContent:"center",maxWidth:400}}
               onMouseDown={e => e.stopPropagation()}>
               {aiReplacing ? (
-                <div style={{padding:"8px 18px",borderRadius:8,background:"#168EEA",color:"#fff",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
+                <div style={{padding:"8px 18px",borderRadius:8,background:"#3b82f6",color:"#fff",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
                   <div style={{width:12,height:12,border:"2px solid rgba(255,255,255,0.3)",borderTopColor:"#fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>AI 변환 중...
                 </div>
               ) : <>
@@ -2768,7 +2768,7 @@ hospital equipment`
                 <div style={{textAlign:"center",padding:"12px 0"}}>
                   <div style={{fontSize:13,color:muted,marginBottom:10}}>스레드 계정을 먼저 연동해주세요</div>
                   <button onClick={()=>{if(!user){if(onLoginRequest)onLoginRequest()}else{try{window.location.href="/mypage"}catch{}}}}
-                    style={{padding:"10px 20px",borderRadius:10,border:"none",background:"#168EEA",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                    style={{padding:"10px 20px",borderRadius:10,border:"none",background:"#3b82f6",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>
                     {user?t("bg_goLinkAccount"):t("bg_loginThenLink")}
                   </button>
                 </div>
@@ -2779,7 +2779,7 @@ hospital equipment`
                       min={new Date(Date.now()+600000).toISOString().slice(0,16)}
                       style={{flex:1,padding:"10px 12px",borderRadius:10,border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#ddd"}`,background:isDark?"rgba(255,255,255,0.06)":"#fff",color:text,fontSize:13,minWidth:180}} />
                     <button onClick={()=>handlePublish("threads",scheduleTime)} disabled={!scheduleTime||publishing}
-                      style={{padding:"10px 20px",borderRadius:10,border:"none",background:"#168EEA",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",opacity:!scheduleTime||publishing?0.5:1,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
+                      style={{padding:"10px 20px",borderRadius:10,border:"none",background:"#3b82f6",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer",opacity:!scheduleTime||publishing?0.5:1,display:"flex",alignItems:"center",gap:5,whiteSpace:"nowrap"}}>
                       <img src="/icon-threads.png" alt="" style={{width:14,height:14,objectFit:"contain",borderRadius:2,filter:"brightness(10)"}} />
                       {publishing?t("bg_scheduling"):t("bg_schedulePublish")}
                     </button>
@@ -3073,7 +3073,7 @@ hospital equipment`
             ["#FF6B35","주황"],
             ["#4A90D9","파랑"],
             ["#E74C3C","빨강"],
-            ["#168EEA","보라"],
+            ["#3b82f6","보라"],
           ].map(c=>{const isA=pointColor.toLowerCase()===c[0].toLowerCase();return<button key={c[0]} onClick={()=>setPointColor(c[0])} style={{padding:"7px 12px",borderRadius:10,border:`1.5px solid ${isA?c[0]:border}`,background:c[0],color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",fontFamily:"inherit",boxShadow:isA?`0 0 0 3px ${c[0]}22`:"none"}}>{c[1]}</button>;})}
         </div>
         <div style={{fontSize:11,color:muted,marginTop:7,lineHeight:1.6}}>AI가 **강조**한 포인트 문구에 이 색상이 자동 적용됩니다.</div>
@@ -3111,7 +3111,7 @@ hospital equipment`
           이전
         </button>
         <button onClick={handleGenerateClick} disabled={loading||fileLoading||!fields.keyword?.trim()}
-          style={{padding:"10px 24px",borderRadius:14,border:"none",background:fields.keyword?.trim()?"#168EEA":(isDark?"rgba(0,0,0,0.06)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,cursor:loading||fileLoading||!fields.keyword?.trim()?"not-allowed":"pointer",opacity:loading||fileLoading||!fields.keyword?.trim()?0.5:1,fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
+          style={{padding:"10px 24px",borderRadius:14,border:"none",background:fields.keyword?.trim()?"#3b82f6":(isDark?"rgba(0,0,0,0.06)":"#e9ecef"),color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,cursor:loading||fileLoading||!fields.keyword?.trim()?"not-allowed":"pointer",opacity:loading||fileLoading||!fields.keyword?.trim()?0.5:1,fontFamily:"inherit",display:"flex",alignItems:"center",gap:6}}>
           {loading ? <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</> : <>생성{user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>1회</span>}{!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>}
         </button>
       </div>
@@ -3129,7 +3129,7 @@ hospital equipment`
         <div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(4px)"}}>
           <div style={{background:isDark?"rgba(18,16,58,0.98)":"#fff",border:"1px solid rgba(0,0,0,0.06)",borderRadius:20,padding:"36px 32px",maxWidth:"min(380px,90vw)",width:"90%",textAlign:"center",boxShadow:"0 24px 64px rgba(0,0,0,0.3)"}}>
             <div style={{width:44,height:44,borderRadius:12,background:"rgba(0,0,0,0.06)",display:"inline-flex",alignItems:"center",justifyContent:"center",marginBottom:14}}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#168EEA" strokeWidth="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
             </div>
             <div style={{fontSize:18,fontWeight:900,color:text,marginBottom:8}}>{t("regenTitle")}</div>
             <div style={{fontSize:13,color:muted,lineHeight:1.8,marginBottom:24,whiteSpace:"pre-line"}}>{t("regenDesc")}</div>
@@ -3139,7 +3139,7 @@ hospital equipment`
                 취소
               </button>
               <button onClick={()=>{ setShowRegenConfirm(false); setResult(""); setHtmlResult(""); generate(); }}
-                style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"#168EEA",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+                style={{flex:1,padding:"11px",borderRadius:12,border:"none",background:"#3b82f6",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>
                 {t("regenBtn")}
               </button>
             </div>
@@ -3213,9 +3213,9 @@ hospital equipment`
             {/* 모드 선택 칩 */}
             <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}>
               {[
-                {id:"write", label:t("bg_tabWrite"), color:"#168EEA", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
-                {id:"design", label:t("bg_tabDesign"), color:"#168EEA", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>},
-                {id:"shorts", label:t("bg_tabVideo"), color:"#168EEA", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>},
+                {id:"write", label:t("bg_tabWrite"), color:"#3b82f6", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
+                {id:"design", label:t("bg_tabDesign"), color:"#3b82f6", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>},
+                {id:"shorts", label:t("bg_tabVideo"), color:"#3b82f6", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>},
                 {id:"sns_publish", label:"SNS 발행", color:"#38bdf8", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>, navigate:true},
               ].map(m => {
                 const isActive = m.id==="shorts" ? shortsMode : mode===m.id && !shortsMode;
@@ -3328,7 +3328,7 @@ hospital equipment`
                     <div style={{display:"flex",gap:5,flexWrap:"wrap",alignItems:"center"}}>
                       {["#e4ff1a","#ff6b6b","#4ecdc4","#ffd93d","#ff9ff3","#48dbfb","#1dd1a1","#ff9f43","#ffffff","#6c5ce7"].map(c=>(
                         <button key={c} onClick={()=>setDesignPointColor(c)}
-                          style={{width:26,height:26,borderRadius:6,background:c,border:designPointColor===c?"3px solid #168EEA":"2px solid rgba(0,0,0,0.12)",cursor:"pointer",padding:0,transition:"all 0.15s"}}/>
+                          style={{width:26,height:26,borderRadius:6,background:c,border:designPointColor===c?"3px solid #3b82f6":"2px solid rgba(0,0,0,0.12)",cursor:"pointer",padding:0,transition:"all 0.15s"}}/>
                       ))}
                       <input type="color" value={designPointColor} onChange={e=>setDesignPointColor(e.target.value)}
                         style={{width:26,height:26,padding:0,border:"2px solid rgba(0,0,0,0.12)",borderRadius:6,cursor:"pointer"}}/>
@@ -3344,7 +3344,7 @@ hospital equipment`
                       </div>
                       <button onClick={()=>setDesignUseEmoji(!designUseEmoji)}
                         style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",
-                          background:designUseEmoji?"#168EEA":"rgba(0,0,0,0.12)",transition:"background 0.2s"}}>
+                          background:designUseEmoji?"#3b82f6":"rgba(0,0,0,0.12)",transition:"background 0.2s"}}>
                         <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,
                           left:designUseEmoji?23:3,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
                       </button>
@@ -3366,7 +3366,7 @@ hospital equipment`
                       style={{
                         padding:"8px 22px",borderRadius:14,border:"none",
                         cursor:designLoading||!fields.keyword?.trim()?"not-allowed":"pointer",
-                        background:fields.keyword?.trim()?"#168EEA":(isDark?"rgba(0,0,0,0.06)":"#e9ecef"),
+                        background:fields.keyword?.trim()?"#3b82f6":(isDark?"rgba(0,0,0,0.06)":"#e9ecef"),
                         color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,
                         display:"flex",alignItems:"center",gap:6,
                         opacity:designLoading||!fields.keyword?.trim()?0.5:1,
@@ -3460,10 +3460,10 @@ hospital equipment`
 
                 {error&&<div style={{marginTop:12,fontSize:13,color:"#ef4444",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",padding:"10px 14px",borderRadius:12,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)"}}>{error}
                   {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
-                    <button onClick={()=>window.location.hash="#pricing"} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#168EEA",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
+                    <button onClick={()=>window.location.hash="#pricing"} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#3b82f6",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
                   )}
                   {(error.includes("다시 시도") || error.includes("오류") || error.includes("응답")) && fields.keyword?.trim()?.length >= 10 && (
-                    <button onClick={()=>{setError("");generateCardNews();}} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#168EEA",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>다시 시도</button>
+                    <button onClick={()=>{setError("");generateCardNews();}} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#3b82f6",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>다시 시도</button>
                   )}
                 </div>}
 
@@ -3528,7 +3528,7 @@ hospital equipment`
                   </button>
                   <div style={{fontSize:14,fontWeight:800,color:text}}>카드뉴스 미리보기 ({designSlides.length}장)</div>
                   <button onClick={()=>setDesignStep("editor")}
-                    style={{padding:"8px 20px",borderRadius:12,border:"none",background:"#168EEA",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",boxShadow:"0 4px 14px rgba(0,0,0,0.06)"}}>
+                    style={{padding:"8px 20px",borderRadius:12,border:"none",background:"#3b82f6",color:"#fff",fontSize:13,fontWeight:800,cursor:"pointer",display:"flex",alignItems:"center",gap:5,fontFamily:"inherit",boxShadow:"0 4px 14px rgba(0,0,0,0.06)"}}>
                     디자인 편집
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                   </button>
@@ -3658,7 +3658,7 @@ hospital equipment`
                     슬라이드 추가
                   </button>
                   <button onClick={()=>setDesignStep("editor")}
-                    style={{padding:"10px 28px",borderRadius:12,border:"none",background:"#168EEA",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,boxShadow:"0 4px 14px rgba(0,0,0,0.06)"}}>
+                    style={{padding:"10px 28px",borderRadius:12,border:"none",background:"#3b82f6",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:6,boxShadow:"0 4px 14px rgba(0,0,0,0.06)"}}>
                     디자인 편집으로 이동
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                   </button>
@@ -3677,7 +3677,7 @@ hospital equipment`
                   <div style={{fontSize:11,color:muted}}>이어서 작업하시겠습니까?</div>
                 </div>
                 <div style={{display:"flex",gap:6,flexShrink:0}}>
-                  <button onClick={restoreDraft} style={{padding:"8px 16px",borderRadius:10,border:"none",background:"#168EEA",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>복원</button>
+                  <button onClick={restoreDraft} style={{padding:"8px 16px",borderRadius:10,border:"none",background:"#3b82f6",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>복원</button>
                   <button onClick={dismissDraft} style={{padding:"8px 12px",borderRadius:10,border:`1px solid ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:600,cursor:"pointer"}}>새로 시작</button>
                 </div>
               </div>
@@ -3842,7 +3842,7 @@ hospital equipment`
                   style={{
                     padding:"8px 22px",borderRadius:14,border:"none",
                     cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",
-                    background:fields.keyword?.trim()?"#168EEA":(isDark?"rgba(0,0,0,0.06)":"#e9ecef"),
+                    background:fields.keyword?.trim()?"#3b82f6":(isDark?"rgba(0,0,0,0.06)":"#e9ecef"),
                     color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,
                     display:"flex",alignItems:"center",gap:6,
                     opacity:loading||!fields.keyword?.trim()?0.5:1,
@@ -3882,7 +3882,7 @@ hospital equipment`
             {/* 에러 메시지 */}
             {error&&<div style={{maxWidth:720,margin:"12px auto 0",fontSize:13,color:"#ef4444",display:"flex",alignItems:"center",gap:10,flexWrap:"wrap",padding:"10px 14px",borderRadius:12,background:"rgba(239,68,68,0.08)",border:"1px solid rgba(239,68,68,0.2)"}}>{error}
               {(error.includes("포인트") || error.includes("충전") || error.includes("무료 횟수")) && (
-                <button onClick={()=>window.location.hash="#pricing"} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#168EEA",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
+                <button onClick={()=>window.location.hash="#pricing"} style={{padding:"6px 14px",borderRadius:10,border:"none",background:"#3b82f6",color:"#fff",fontSize:12,fontWeight:800,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>
               )}
             </div>}
 
@@ -4002,8 +4002,8 @@ hospital equipment`
                   <div style={{display:"flex",gap:10,justifyContent:"center"}}>
                     <button onClick={()=>{setShortsMode(false);}} style={{padding:"12px 24px",borderRadius:12,border:`1.5px solid ${border}`,background:"transparent",color:text,fontSize:14,fontWeight:700,cursor:"pointer"}}>돌아가기</button>
                     {_getUsageState().isGuest
-                      ? <button onClick={()=>{if(onLoginRequest) onLoginRequest();}} style={{padding:"12px 24px",borderRadius:12,border:"none",background:"#168EEA",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>로그인 / 회원가입</button>
-                      : <button onClick={()=>{try{window.location.hash="#pricing";}catch{}}} style={{padding:"12px 24px",borderRadius:12,border:"none",background:"#168EEA",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>플랜 둘러보기</button>}
+                      ? <button onClick={()=>{if(onLoginRequest) onLoginRequest();}} style={{padding:"12px 24px",borderRadius:12,border:"none",background:"#3b82f6",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>로그인 / 회원가입</button>
+                      : <button onClick={()=>{try{window.location.hash="#pricing";}catch{}}} style={{padding:"12px 24px",borderRadius:12,border:"none",background:"#3b82f6",color:"#fff",fontSize:14,fontWeight:700,cursor:"pointer"}}>플랜 둘러보기</button>}
                   </div>
                 </div>
               ) : !videoSubMode ? (
@@ -4046,7 +4046,7 @@ hospital equipment`
                       <button
                         onClick={()=>{if(videoFile||videoLink.trim())setVideoStep("select");}}
                         disabled={!videoFile&&!videoLink.trim()}
-                        style={{width:"100%",marginTop:20,padding:"14px",borderRadius:12,border:"none",background:(!videoFile&&!videoLink.trim())?"rgba(0,0,0,0.06)":"#168EEA",color:"#fff",fontSize:14,fontWeight:800,cursor:(!videoFile&&!videoLink.trim())?"default":"pointer",transition:"all 0.15s"}}>
+                        style={{width:"100%",marginTop:20,padding:"14px",borderRadius:12,border:"none",background:(!videoFile&&!videoLink.trim())?"rgba(0,0,0,0.06)":"#3b82f6",color:"#fff",fontSize:14,fontWeight:800,cursor:(!videoFile&&!videoLink.trim())?"default":"pointer",transition:"all 0.15s"}}>
                         다음
                       </button>
                     </div>

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useI18n } from "./i18n.jsx";
 import { supabase } from "./storage";
 
-const GRAD = "#168EEA";
+const GRAD = "#3b82f6";
 
 const PLANS = [
   {
@@ -221,7 +221,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
       {/* 헤더 */}
       <div style={{ textAlign: "center", marginBottom: 40 }}>
-        <div style={{ display: "inline-block", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 20, padding: "5px 16px", fontSize: 12, fontWeight: 700, marginBottom: 14, color: isDark ? "#c4b5fd" : "#168EEA" }}>Pricing</div>
+        <div style={{ display: "inline-block", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 20, padding: "5px 16px", fontSize: 12, fontWeight: 700, marginBottom: 14, color: isDark ? "#c4b5fd" : "#3b82f6" }}>Pricing</div>
         <h2 style={{ fontSize: "clamp(24px,4vw,36px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 10 }}>
           딱 필요한 만큼만, 심플하게
         </h2>
@@ -237,7 +237,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             <button key={id} onClick={() => setBilling(id)}
               style={{ padding: "9px 24px", borderRadius: 9, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700,
                 background: billing === id ? (isDark ? "rgba(0,0,0,0.06)" : "#fff") : "transparent",
-                color: billing === id ? (isDark ? "#c4b5fd" : "#168EEA") : C.muted,
+                color: billing === id ? (isDark ? "#c4b5fd" : "#3b82f6") : C.muted,
                 boxShadow: billing === id ? "0 2px 8px rgba(0,0,0,0.08)" : "none",
                 transition: "all 0.15s" }}>
               {label}
@@ -253,7 +253,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
       </div>
       <style>{`.pricing-free-banner { display: none !important; } @media(max-width:768px) { .pricing-free-banner { display: block !important; } }`}</style>
 
-      {/* 플랜 카드 */}
+      {/* 플랜 카드 — 다크 스타일 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 16, marginBottom: 56 }}>
         {PLANS.map(plan => {
           const isYearly = billing === "yearly";
@@ -263,76 +263,77 @@ export function PricingPage({ navigate, C, user, onLogin }) {
           return (
             <div key={plan.id} style={{
               position: "relative",
-              background: isHighlight ? GRAD : C.card,
-              border: isHighlight ? "none" : "1px solid " + C.border,
+              background: isHighlight ? "#1A1A2E" : C.card,
+              border: isHighlight ? "1px solid rgba(59,130,246,0.3)" : "1px solid " + C.border,
               borderRadius: 20, padding: "28px 20px 24px",
               display: "flex", flexDirection: "column",
-              boxShadow: isHighlight ? "0 8px 40px rgba(0,0,0,0.06)" : C.shadow,
-              transition: "transform 0.18s",
+              boxShadow: isHighlight ? "0 0 60px rgba(59,130,246,0.12)" : "none",
+              transition: "transform 0.18s, box-shadow 0.18s",
               color: isHighlight ? "#fff" : C.text,
             }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-4px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}>
+              onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; if (isHighlight) e.currentTarget.style.boxShadow = "0 0 80px rgba(59,130,246,0.2)"; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; if (isHighlight) e.currentTarget.style.boxShadow = "0 0 60px rgba(59,130,246,0.12)"; }}>
 
               {plan.badge && (
                 <div style={{
                   position: "absolute", top: -11, left: "50%", transform: "translateX(-50%)",
-                  background: isHighlight ? "#fff" : GRAD,
-                  color: isHighlight ? "#168EEA" : "#fff",
-                  fontSize: 11, fontWeight: 800, padding: "3px 14px", borderRadius: 20, whiteSpace: "nowrap",
+                  background: isHighlight ? GRAD : "#1A1A2E",
+                  color: "#fff",
+                  fontSize: 11, fontWeight: 800, padding: "4px 16px", borderRadius: 20, whiteSpace: "nowrap",
+                  border: isHighlight ? "none" : "1px solid " + C.border,
                 }}>
                   {plan.badge}
                 </div>
               )}
 
-              {/* 플랜명 + 가격 */}
-              <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 6, opacity: isHighlight ? 0.9 : 0.6 }}>{plan.name}</div>
+              <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>{plan.name}</div>
               {plan.free ? (
-                <div style={{ fontSize: 32, fontWeight: 900, marginBottom: 20 }}>무료</div>
+                <div style={{ fontSize: 36, fontWeight: 900, marginBottom: 20 }}>무료</div>
               ) : (
                 <div style={{ marginBottom: 20 }}>
-                  <span style={{ fontSize: 32, fontWeight: 900 }}>${price.toFixed(2)}</span>
-                  <span style={{ fontSize: 13, opacity: 0.6, marginLeft: 4 }}>/월</span>
+                  <span style={{ fontSize: 36, fontWeight: 900 }}>${price.toFixed(2)}</span>
+                  <span style={{ fontSize: 13, color: isHighlight ? "rgba(255,255,255,0.5)" : C.muted, marginLeft: 4 }}>/월</span>
                   {isYearly && (
-                    <div style={{ fontSize: 11, opacity: 0.5, marginTop: 2 }}>연 ${plan.yearlyPrice} 결제</div>
+                    <div style={{ fontSize: 11, color: isHighlight ? "rgba(255,255,255,0.4)" : C.muted, marginTop: 2 }}>연 ${plan.yearlyPrice} 결제</div>
                   )}
                 </div>
               )}
 
+              {/* CTA 버튼 — 상단 배치 */}
+              <button
+                onClick={() => plan.free ? (user ? null : onLogin?.()) : handleBuy(plan)}
+                disabled={plan.free && !!user}
+                style={{
+                  padding: "14px", borderRadius: 14, border: "none", cursor: (plan.free && user) ? "default" : "pointer",
+                  fontSize: 15, fontWeight: 700, width: "100%", minHeight: 48, marginBottom: 24,
+                  background: isHighlight ? GRAD : "#1A1A2E",
+                  color: "#fff",
+                  opacity: (plan.free && user) ? 0.5 : 1,
+                  transition: "opacity 0.15s",
+                  boxShadow: isHighlight ? "0 4px 16px rgba(59,130,246,0.3)" : "none",
+                }}>
+                {!user ? "로그인 후 시작" : (plan.free && user) ? "현재 플랜" : plan.btnLabel}
+              </button>
+
               {/* 횟수 표시 */}
               <div style={{ marginBottom: 16 }}>
                 {LIMIT_LABELS.map(({ key, label }) => (
-                  <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${isHighlight ? "rgba(255,255,255,0.15)" : C.border}` }}>
-                    <span style={{ fontSize: 13, fontWeight: 500, opacity: isHighlight ? 0.9 : 0.7 }}>{label}</span>
+                  <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${isHighlight ? "rgba(255,255,255,0.08)" : C.border}` }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: isHighlight ? "rgba(255,255,255,0.6)" : C.muted }}>{label}</span>
                     <span style={{ fontSize: 13, fontWeight: 800 }}>{fmtLimit(plan.limits[key])}</span>
                   </div>
                 ))}
               </div>
 
               {/* 기능 리스트 */}
-              <div style={{ flex: 1, marginBottom: 20 }}>
+              <div style={{ flex: 1 }}>
                 {plan.features.map((f, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 6, marginBottom: 7, fontSize: 12, opacity: isHighlight ? 0.9 : 0.7 }}>
-                    <span style={{ flexShrink: 0, fontWeight: 700, color: isHighlight ? "#fff" : "#168EEA" }}>✓</span>
-                    <span>{f}</span>
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: isHighlight ? "rgba(255,255,255,0.3)" : C.muted, flexShrink: 0 }}/>
+                    <span style={{ fontSize: 13, color: isHighlight ? "rgba(255,255,255,0.7)" : C.muted }}>{f}</span>
                   </div>
                 ))}
               </div>
-
-              {/* CTA 버튼 */}
-              <button
-                onClick={() => plan.free ? (user ? null : onLogin?.()) : handleBuy(plan)}
-                disabled={plan.free && !!user}
-                style={{
-                  padding: "13px", borderRadius: 12, border: "none", cursor: (plan.free && user) ? "default" : "pointer",
-                  fontSize: 13, fontWeight: 800, width: "100%", minHeight: 44,
-                  background: isHighlight ? "#fff" : GRAD,
-                  color: isHighlight ? "#168EEA" : "#fff",
-                  opacity: (plan.free && user) ? 0.5 : 1,
-                  transition: "opacity 0.15s",
-                }}>
-                {!user ? "로그인 후 시작" : (plan.free && user) ? "현재 플랜" : plan.btnLabel}
-              </button>
             </div>
           );
         })}
@@ -341,7 +342,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
       {/* 플랜 비교 테이블 */}
       <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "32px 24px", marginBottom: 40, overflowX: "auto" }}>
         <div style={{ textAlign: "center", marginBottom: 8 }}>
-          <span style={{ display: "inline-block", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 20, padding: "4px 14px", fontSize: 11, color: isDark ? "#c4b5fd" : "#168EEA", fontWeight: 700, marginBottom: 10 }}>Compare</span>
+          <span style={{ display: "inline-block", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 20, padding: "4px 14px", fontSize: 11, color: isDark ? "#c4b5fd" : "#3b82f6", fontWeight: 700, marginBottom: 10 }}>Compare</span>
         </div>
         <div style={{ fontSize: 20, fontWeight: 900, color: C.text, marginBottom: 6, textAlign: "center" }}>플랜 상세 비교</div>
         <div style={{ fontSize: 13, color: C.muted, marginBottom: 24, textAlign: "center" }}>내게 맞는 플랜을 찾아보세요</div>
@@ -351,9 +352,9 @@ export function PricingPage({ navigate, C, user, onLogin }) {
               <th style={{ textAlign: "left", padding: "14px 12px", fontSize: 13, fontWeight: 700, color: C.muted, borderBottom: "2px solid " + C.border, width: "28%" }}>기능</th>
               {[
                 { name: "Free", color: C.muted },
-                { name: "Basic", color: isDark ? "#c4b5fd" : "#168EEA" },
-                { name: "Pro", color: "#ec4899" },
-                { name: "Business", color: isDark ? "#c4b5fd" : "#168EEA" },
+                { name: "Basic", color: isDark ? "#c4b5fd" : "#3b82f6" },
+                { name: "Pro", color: "#3b82f6" },
+                { name: "Business", color: isDark ? "#c4b5fd" : "#3b82f6" },
               ].map(plan => (
                 <th key={plan.name} style={{ textAlign: "center", padding: "14px 8px", fontSize: 13, fontWeight: 800, color: plan.color, borderBottom: "2px solid " + C.border, width: "18%", position: "relative" }}>
                   {plan.name}
@@ -371,8 +372,8 @@ export function PricingPage({ navigate, C, user, onLogin }) {
                   let content, color;
                   if (type === "yes") { content = "✓"; color = "#22c55e"; }
                   else if (type === "no") { content = v; color = isDark ? "rgba(255,255,255,0.2)" : "#bbb"; }
-                  else if (type === "num") { content = v; color = j === 2 ? "#ec4899" : C.text; }
-                  else if (type === "highlight") { content = v; color = "#ec4899"; }
+                  else if (type === "num") { content = v; color = j === 2 ? "#3b82f6" : C.text; }
+                  else if (type === "highlight") { content = v; color = "#3b82f6"; }
                   else { content = v; color = C.muted; }
                   return (
                     <td key={j} style={{ textAlign: "center", padding: "14px 8px", fontSize: type === "yes" || type === "no" ? 16 : 13, fontWeight: type === "num" || type === "highlight" ? 700 : 500, borderBottom: "1px solid " + C.border, color }}>
@@ -392,11 +393,11 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 14 }}>
           {[
             { label: "SNS를 처음 시작하는 분", plan: "Free", desc: "무료로 AI 글쓰기를 체험하고, 커뮤니티에서 정보를 얻어보세요.", color: C.muted },
-            { label: "개인 블로거 / 크리에이터", plan: "Basic", desc: "매일 1~2개씩 꾸준히 콘텐츠를 만들고 싶은 분에게 딱 맞습니다.", color: isDark ? "#c4b5fd" : "#168EEA" },
-            { label: "마케터 / 소상공인", plan: "Pro", desc: "대량 콘텐츠 + NaverBot 자동발행으로 마케팅을 자동화하세요.", color: "#ec4899", badge: "추천" },
-            { label: "에이전시 / 기업", plan: "Business", desc: "월 500회 글쓰기와 대량 자동발행으로 팀 전체 콘텐츠를 관리하세요.", color: isDark ? "#c4b5fd" : "#168EEA" },
+            { label: "개인 블로거 / 크리에이터", plan: "Basic", desc: "매일 1~2개씩 꾸준히 콘텐츠를 만들고 싶은 분에게 딱 맞습니다.", color: isDark ? "#c4b5fd" : "#3b82f6" },
+            { label: "마케터 / 소상공인", plan: "Pro", desc: "대량 콘텐츠 + NaverBot 자동발행으로 마케팅을 자동화하세요.", color: "#3b82f6", badge: "추천" },
+            { label: "에이전시 / 기업", plan: "Business", desc: "월 500회 글쓰기와 대량 자동발행으로 팀 전체 콘텐츠를 관리하세요.", color: isDark ? "#c4b5fd" : "#3b82f6" },
           ].map((seg, i) => (
-            <div key={i} style={{ position: "relative", background: C.card, border: seg.badge ? "2px solid #ec4899" : "1px solid " + C.border, borderRadius: 16, padding: "24px 20px", textAlign: "center", boxShadow: seg.badge ? "0 0 20px rgba(236,72,153,0.12)" : C.shadow }}>
+            <div key={i} style={{ position: "relative", background: C.card, border: seg.badge ? "2px solid #3b82f6" : "1px solid " + C.border, borderRadius: 16, padding: "24px 20px", textAlign: "center", boxShadow: seg.badge ? "0 0 20px rgba(59,130,246,0.12)" : C.shadow }}>
               {seg.badge && (
                 <div style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: GRAD, color: "#fff", fontSize: 11, fontWeight: 800, padding: "3px 14px", borderRadius: 20, whiteSpace: "nowrap" }}>{seg.badge}</div>
               )}
@@ -414,7 +415,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(240px,100%),1fr))", gap: "8px 24px" }}>
           {COMMON_FEATURES.map((f, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: C.muted }}>
-              <span style={{ color: "#168EEA", fontWeight: 700, flexShrink: 0 }}>✓</span>{f}
+              <span style={{ color: "#3b82f6", fontWeight: 700, flexShrink: 0 }}>✓</span>{f}
             </div>
           ))}
         </div>

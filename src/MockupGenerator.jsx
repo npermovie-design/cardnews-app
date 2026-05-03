@@ -21,10 +21,10 @@ const MOCKUP_CATEGORIES = [
   {
     label:"기업·브랜딩",
     items:[
-      { id:"business_card",   label:"명함",          icon:"🪪", desc:"가로형 명함 디자인",        color:"#168EEA" },
+      { id:"business_card",   label:"명함",          icon:"🪪", desc:"가로형 명함 디자인",        color:"#3b82f6" },
       { id:"letterhead",      label:"레터헤드",       icon:"📄", desc:"회사 공문서 레터헤드",      color:"#4f46e5" },
-      { id:"envelope",        label:"봉투",           icon:"✉️", desc:"기업 봉투 CI 적용",         color:"#168EEA" },
-      { id:"id_badge",        label:"사원증/배지",    icon:"🪪", desc:"명찰·사원증 목업",          color:"#168EEA" },
+      { id:"envelope",        label:"봉투",           icon:"✉️", desc:"기업 봉투 CI 적용",         color:"#3b82f6" },
+      { id:"id_badge",        label:"사원증/배지",    icon:"🪪", desc:"명찰·사원증 목업",          color:"#3b82f6" },
       { id:"stamp",           label:"도장/스탬프",    icon:"📮", desc:"회사 도장 목업",            color:"#dc2626" },
     ]
   },
@@ -34,7 +34,7 @@ const MOCKUP_CATEGORIES = [
       { id:"phone",           label:"스마트폰",       icon:"📱", desc:"폰 화면 로고 노출",         color:"#06b6d4" },
       { id:"monitor",         label:"모니터",         icon:"🖥",  desc:"모니터 화면 목업",          color:"#8b5cf6" },
       { id:"notebook",        label:"노트북 화면",    icon:"💻", desc:"노트북 화면에 적용",        color:"#0891b2" },
-      { id:"tablet",          label:"태블릿",         icon:"📱", desc:"태블릿 화면 목업",          color:"#168EEA" },
+      { id:"tablet",          label:"태블릿",         icon:"📱", desc:"태블릿 화면 목업",          color:"#3b82f6" },
     ]
   },
   {

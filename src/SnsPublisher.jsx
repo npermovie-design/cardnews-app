@@ -46,7 +46,7 @@ const VISIBILITY_OPTIONS = [
 ];
 
 // ── 토글 스위치 ──
-function Toggle({ on, onChange, color = "#168EEA" }) {
+function Toggle({ on, onChange, color = "#3b82f6" }) {
   return (
     <button onClick={() => onChange(!on)} style={{
       width: 44, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
@@ -66,7 +66,7 @@ function Toggle({ on, onChange, color = "#168EEA" }) {
 function FileDropZone({ file, onFileSelect, onRemove, contentType, isDark }) {
   const inputRef = useRef(null);
   const [dragOver, setDragOver] = useState(false);
-  const acc = "#168EEA";
+  const acc = "#3b82f6";
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
 
   const accept = contentType === "video" ? "video/*" : contentType === "image" ? "image/*" : undefined;
@@ -227,7 +227,7 @@ function PreviewPanel({ contentType, file, title, description, enabledPlatforms,
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
   const [previewTab, setPreviewTab] = useState(null);
-  const acc = "#168EEA";
+  const acc = "#3b82f6";
 
   const tabs = enabledPlatforms.length > 0 ? enabledPlatforms : [];
 
@@ -327,7 +327,7 @@ function PublishHistory({ history, isDark, onRefresh }) {
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
-  const acc = "#168EEA";
+  const acc = "#3b82f6";
   const chipBg = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5";
   const chipActiveBg = isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)";
 
@@ -484,7 +484,7 @@ export default function SnsPublisher({ isDark, user, onLoginRequest }) {
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#fff";
-  const acc = "#168EEA";
+  const acc = "#3b82f6";
 
   // SNS 연결 상태 조회
   useEffect(() => {
@@ -822,7 +822,7 @@ export default function SnsPublisher({ isDark, user, onLoginRequest }) {
                   style={{
                     width: "100%", padding: "16px", borderRadius: 12, border: "none",
                     cursor: publishing || enabledPlatforms.length === 0 ? "not-allowed" : "pointer",
-                    background: enabledPlatforms.length === 0 ? (isDark ? "rgba(255,255,255,0.06)" : "#e5e5e5") : "#168EEA",
+                    background: enabledPlatforms.length === 0 ? (isDark ? "rgba(255,255,255,0.06)" : "#e5e5e5") : "#3b82f6",
                     color: enabledPlatforms.length === 0 ? muted : "#fff",
                     fontSize: 16, fontWeight: 800, letterSpacing: -0.3,
                     display: "flex", alignItems: "center", justifyContent: "center", gap: 8,

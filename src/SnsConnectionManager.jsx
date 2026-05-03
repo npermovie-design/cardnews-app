@@ -58,7 +58,7 @@ export default function SnsConnectionManager({ user, isDark, compact = false }) 
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
-  const acc = "#168EEA";
+  const acc = "#3b82f6";
 
   // 연결 목록 조회
   const fetchConnections = async () => {

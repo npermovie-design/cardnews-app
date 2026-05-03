@@ -86,7 +86,7 @@ export default function ViralityAnalyzer({ isDark }) {
   const bdr = D ? "rgba(255,255,255,0.08)" : "#e5e7eb";
   const cardBg = D ? "rgba(255,255,255,0.04)" : "#fff";
   const inputBg = D ? "rgba(255,255,255,0.06)" : "#f5f5f5";
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
 
   const [tab, setTab] = useState("feed");
   const [loading, setLoading] = useState(false);

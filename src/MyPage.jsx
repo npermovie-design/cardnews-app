@@ -13,7 +13,7 @@ import { useI18n } from "./i18n.jsx";
 const HISTORY_ICON = {
   "가입 보너스":        { icon:"+", color:"#4ade80" },
   "일일 로그인":        { icon:"+", color:"#60a5fa" },
-  "게시글 작성":        { icon:"+", color:"#4AABF2" },
+  "게시글 작성":        { icon:"+", color:"#60a5fa" },
   "댓글 작성":          { icon:"+", color:"#818cf8" },
   "AI 생성 사용":       { icon:"-", color:"#f87171" },
   "블로그 글 생성":      { icon:"-", color:"#f87171" },
@@ -26,7 +26,7 @@ const HISTORY_ICON = {
   "상세페이지 이미지 생성":{ icon:"-", color:"#f87171" },
   "로고 생성":           { icon:"-", color:"#f87171" },
   "목업 생성":           { icon:"-", color:"#f87171" },
-  "커뮤니티 글 작성":    { icon:"+", color:"#4AABF2" },
+  "커뮤니티 글 작성":    { icon:"+", color:"#60a5fa" },
   "관리자 지급":        { icon:"+", color:"#fbbf24" },
   "횟수 초기화":        { icon:"R", color:"#94a3b8" },
 };
@@ -69,7 +69,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
   // 브랜드 키트
   const DEFAULT_BRAND_KIT = {
-    colors: { primary: "#168EEA", secondary: "#ec4899", accent: "#22c55e" },
+    colors: { primary: "#3b82f6", secondary: "#ec4899", accent: "#22c55e" },
     font: "Pretendard",
     logo: null,
     name: "",
@@ -201,7 +201,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
         <div style={{ fontSize:48, marginBottom:16 }}></div>
         <div style={{ fontSize:18, fontWeight:800, color:text, marginBottom:8 }}>{ko?"로그인이 필요해요":"Login required"}</div>
         <div style={{ fontSize:13, color:muted, marginBottom:24 }}>{ko?"마이페이지는 로그인한 회원만 볼 수 있어요.":"Please log in to view your page."}</div>
-        <button onClick={()=>navigate("home")} style={{ padding:"11px 28px", borderRadius:12, border:"none", background:"#168EEA", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>{ko?"홈으로":"Home"}</button>
+        <button onClick={()=>navigate("home")} style={{ padding:"11px 28px", borderRadius:12, border:"none", background:"#3b82f6", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer" }}>{ko?"홈으로":"Home"}</button>
       </div>
     );
   }
@@ -253,7 +253,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
         <div className="myp-header" style={{ display:"flex", alignItems:"flex-start", gap:14 }}>
           {/* 왼쪽: 아바타 + 정보 */}
           <div style={{ display:"flex", gap:14, flex:1, minWidth:0 }}>
-            <div style={{ width:52, height:52, borderRadius:"50%", background:"#168EEA", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:900, color:"#fff", flexShrink:0 }}>
+            <div style={{ width:52, height:52, borderRadius:"50%", background:"#3b82f6", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:900, color:"#fff", flexShrink:0 }}>
               {(userData?.nick||"U")[0].toUpperCase()}
             </div>
             <div style={{ flex:1, minWidth:0 }}>
@@ -305,7 +305,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
               <input value={newNick} onChange={e=>setNewNick(e.target.value)} placeholder={ko?"새 닉네임 입력":"Enter new nickname"} maxLength={16}
                 style={{ flex:1, padding:"11px 14px", borderRadius:9, border:`1px solid ${inputBdr}`, background:inputBg, color:text, fontSize:14, outline:"none", fontFamily:"inherit", boxSizing:"border-box", minHeight:44 }}/>
               <button onClick={handleNickChange} disabled={nickLoading||!canChangeNick()}
-                style={{ padding:"11px 20px", borderRadius:9, border:"none", cursor:nickLoading?"wait":canChangeNick()?"pointer":"not-allowed", background:canChangeNick()?"#168EEA":"rgba(0,0,0,0.06)", color:"#fff", fontSize:13, fontWeight:700, flexShrink:0, whiteSpace:"nowrap", minHeight:44 }}>
+                style={{ padding:"11px 20px", borderRadius:9, border:"none", cursor:nickLoading?"wait":canChangeNick()?"pointer":"not-allowed", background:canChangeNick()?"#3b82f6":"rgba(0,0,0,0.06)", color:"#fff", fontSize:13, fontWeight:700, flexShrink:0, whiteSpace:"nowrap", minHeight:44 }}>
                 {nickLoading?(ko?"변경 중...":"Changing..."):(ko?"변경하기":"Change")}
               </button>
             </div>
@@ -480,7 +480,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
                   <div style={{ fontSize:14, fontWeight:900, color:text }}>{ko?"내 추천코드":"My Referral Code"}</div>
                   <div style={{ fontSize:12, color:muted, marginTop:3 }}>{ko?"친구가 이 코드로 가입하면 서로 추가 횟수를 받아요.":"You and your friend both get bonus credits when they sign up with this code."}</div>
                 </div>
-                <button onClick={copyReferral} style={{ padding:"9px 14px", borderRadius:9, border:"none", background:"#168EEA", color:"#fff", fontSize:12, fontWeight:800, cursor:"pointer" }}>
+                <button onClick={copyReferral} style={{ padding:"9px 14px", borderRadius:9, border:"none", background:"#3b82f6", color:"#fff", fontSize:12, fontWeight:800, cursor:"pointer" }}>
                   {ko?"링크 복사":"Copy Link"}
                 </button>
               </div>
@@ -607,7 +607,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
             <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               {["전문적","친근한","캐주얼","격식있는","유머러스"].map(t=>(
                 <button key={t} onClick={()=>setBrandKit(prev=>({...prev, tone:t}))}
-                  style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${brandKit.tone===t?"#168EEA":bdr}`, background:brandKit.tone===t?(isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)"):"transparent", color:brandKit.tone===t?"#a5b4fc":muted, fontSize:12, fontWeight:700, cursor:"pointer", transition:"all 0.15s" }}>
+                  style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${brandKit.tone===t?"#3b82f6":bdr}`, background:brandKit.tone===t?(isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)"):"transparent", color:brandKit.tone===t?"#a5b4fc":muted, fontSize:12, fontWeight:700, cursor:"pointer", transition:"all 0.15s" }}>
                   {t}
                 </button>
               ))}
@@ -628,7 +628,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
               console.error("brand kit save error:", e);
             } finally { setBrandSaving(false); }
           }}
-            style={{ padding:"14px 0", borderRadius:13, border:"none", background:"#168EEA", color:"#fff", fontSize:15, fontWeight:800, cursor:brandSaving?"wait":"pointer", opacity:brandSaving?0.6:1, transition:"opacity 0.15s" }}>
+            style={{ padding:"14px 0", borderRadius:13, border:"none", background:"#3b82f6", color:"#fff", fontSize:15, fontWeight:800, cursor:brandSaving?"wait":"pointer", opacity:brandSaving?0.6:1, transition:"opacity 0.15s" }}>
             {brandSaving ? (ko?"저장 중...":"Saving...") : (ko?"브랜드 키트 저장":"Save Brand Kit")}
           </button>
 

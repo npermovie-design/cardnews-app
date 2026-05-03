@@ -82,7 +82,7 @@ export default function AutoPublisher({ theme, user, onLoginRequest, embedded })
     );
   }
 
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const cardBdr = isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb";
   const textMain = isDark ? "#fff" : "#1a1a2e";

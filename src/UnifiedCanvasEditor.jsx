@@ -620,11 +620,11 @@ export default function UnifiedCanvasEditor({
   const addShape = (type) => {
     const fc=fcRef.current; if(!fc) return;
     let obj;
-    if(type==="rect") obj=new Rect({width:200,height:140,fill:"#168EEA33",left:width/2-100,top:height/2-70,rx:12,ry:12});
+    if(type==="rect") obj=new Rect({width:200,height:140,fill:"#3b82f633",left:width/2-100,top:height/2-70,rx:12,ry:12});
     else if(type==="circle") obj=new Circle({radius:80,fill:"#ec489933",left:width/2-80,top:height/2-80});
     else if(type==="triangle") obj=new Triangle({width:160,height:140,fill:"#f59e0b33",left:width/2-80,top:height/2-70});
     else if(type==="line") obj=new Line([width*0.2,height/2,width*0.8,height/2],{stroke:"#ffffff",strokeWidth:3});
-    else if(type==="filled-rect") obj=new Rect({width:width,height:height*0.3,fill:"#168EEA",left:0,top:height*0.7,rx:0,ry:0});
+    else if(type==="filled-rect") obj=new Rect({width:width,height:height*0.3,fill:"#3b82f6",left:0,top:height*0.7,rx:0,ry:0});
     else if(type==="rounded-rect") obj=new Rect({width:280,height:60,fill:"#ffffff",left:width/2-140,top:height/2-30,rx:30,ry:30,stroke:"#333",strokeWidth:2});
     else if(type==="badge") obj=new Rect({width:180,height:44,fill:"#ffffff",left:width/2-90,top:height*0.15,rx:22,ry:22,stroke:"#e5e7eb",strokeWidth:1.5});
     // 그라데이션 오버레이 — 기존 그라데이션 제거 후 추가, originX/Y 명시
@@ -851,8 +851,8 @@ export default function UnifiedCanvasEditor({
             <button key={t.id} onClick={()=>setPanel(panel===t.id&&panelOpen?null:t.id)||setPanelOpen(true)}
               style={{width:48,height:48,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:2,border:"none",borderRadius:8,cursor:"pointer",marginBottom:2,flexShrink:0,
                 background:panel===t.id&&panelOpen?"rgba(0,0,0,0.06)":"transparent",
-                borderLeft:panel===t.id&&panelOpen?"3px solid #168EEA":"3px solid transparent",
-                color:panel===t.id&&panelOpen?"#168EEA":"#666",transition:"all 0.12s"}}>
+                borderLeft:panel===t.id&&panelOpen?"3px solid #3b82f6":"3px solid transparent",
+                color:panel===t.id&&panelOpen?"#3b82f6":"#666",transition:"all 0.12s"}}>
               <span style={{fontSize:17,lineHeight:1}}>{t.icon}</span>
               <span style={{fontSize:9,fontWeight:700}}>{t.label}</span>
             </button>
@@ -899,7 +899,7 @@ export default function UnifiedCanvasEditor({
                     <div style={{fontSize:11,color:"#888",marginBottom:4}}>투명도: {Math.round((bgObj.opacity??1)*100)}%</div>
                     <input type="range" min={10} max={100} value={Math.round((bgObj.opacity??1)*100)}
                       onChange={e=>{bgObj.set("opacity",+e.target.value/100);fc.renderAll();setLayerTick(t=>t+1);}}
-                      style={{width:"100%",accentColor:"#168EEA",marginBottom:8}}/>
+                      style={{width:"100%",accentColor:"#3b82f6",marginBottom:8}}/>
                     <div style={{display:"flex",gap:6}}>
                       <button onClick={()=>{
                         const inp=document.createElement("input");inp.type="file";inp.accept="image/*";
@@ -923,7 +923,7 @@ export default function UnifiedCanvasEditor({
               {sel&&(sel.type==="textbox"||sel.type==="text")&&(
                 <div style={{padding:"8px 16px",borderBottom:"1px solid #f0f0f0"}}>
                   <button onClick={()=>{setPanel("text");setPanelOpen(true);}}
-                    style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid #168EEA",background:"rgba(0,0,0,0.06)",color:"#168EEA",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                    style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid #3b82f6",background:"rgba(0,0,0,0.06)",color:"#3b82f6",fontSize:12,fontWeight:700,cursor:"pointer"}}>
                     글씨 탭에서 편집 →
                   </button>
                 </div>
@@ -955,7 +955,7 @@ export default function UnifiedCanvasEditor({
                   <div style={{fontSize:11,color:"#888",marginBottom:4}}>투명도: {Math.round((sel.opacity??1)*100)}%</div>
                   <input type="range" min={5} max={100} value={Math.round((sel.opacity??1)*100)}
                     onChange={e=>{sel.set("opacity",+e.target.value/100);fcRef.current?.renderAll();setLayerTick(t=>t+1);}}
-                    style={{width:"100%",accentColor:"#168EEA"}}/>
+                    style={{width:"100%",accentColor:"#3b82f6"}}/>
                 </div>
               )}
 
@@ -1043,18 +1043,18 @@ export default function UnifiedCanvasEditor({
                         onClick={()=>{if(!isBg){fc.setActiveObject(obj);fc.renderAll();syncSel(obj);}}}
                         style={{display:"flex",alignItems:"center",gap:8,padding:"7px 10px",borderRadius:8,marginBottom:3,
                           cursor:isBg?"default":"grab",userSelect:"none",
-                          background:isActive?"rgba(0,0,0,0.06)":"transparent",border:`1.5px solid ${isActive?"#168EEA":"transparent"}`,
+                          background:isActive?"rgba(0,0,0,0.06)":"transparent",border:`1.5px solid ${isActive?"#3b82f6":"transparent"}`,
                           opacity:isBg?0.4:1,transition:"background 0.1s"}}>
                         <span style={{fontSize:10,color:"#bbb",cursor:"grab"}}>☰</span>
                         <span style={{fontSize:14,width:18,textAlign:"center"}}>{getIcon(obj)}</span>
-                        <span style={{flex:1,fontSize:12,fontWeight:isActive?700:400,color:isActive?"#168EEA":"#333",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{getLabel(obj)}</span>
+                        <span style={{flex:1,fontSize:12,fontWeight:isActive?700:400,color:isActive?"#3b82f6":"#333",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{getLabel(obj)}</span>
                         {isBg&&(
                           <button onClick={e=>{
                             e.stopPropagation();
                             const inp=document.createElement("input");inp.type="file";inp.accept="image/*";
                             inp.onchange=ev=>{const f=ev.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=e2=>setBgImage(e2.target.result);r.readAsDataURL(f);};
                             inp.click();
-                          }} style={{padding:"3px 8px",borderRadius:4,border:"1px solid #168EEA",background:"rgba(0,0,0,0.06)",cursor:"pointer",fontSize:9,fontWeight:700,color:"#168EEA"}}>교체</button>
+                          }} style={{padding:"3px 8px",borderRadius:4,border:"1px solid #3b82f6",background:"rgba(0,0,0,0.06)",cursor:"pointer",fontSize:9,fontWeight:700,color:"#3b82f6"}}>교체</button>
                         )}
                         {!isBg&&(
                           <div style={{display:"flex",gap:2}}>
@@ -1073,7 +1073,7 @@ export default function UnifiedCanvasEditor({
                                     });
                                   };rd.readAsDataURL(f);};
                                 inp.click();
-                              }} style={{width:20,height:20,borderRadius:3,border:"1px solid #168EEA",background:"rgba(0,0,0,0.06)",cursor:"pointer",fontSize:8,display:"flex",alignItems:"center",justifyContent:"center",color:"#168EEA"}}>↻</button>
+                              }} style={{width:20,height:20,borderRadius:3,border:"1px solid #3b82f6",background:"rgba(0,0,0,0.06)",cursor:"pointer",fontSize:8,display:"flex",alignItems:"center",justifyContent:"center",color:"#3b82f6"}}>↻</button>
                             )}
                             <button onClick={e=>{e.stopPropagation();fc.bringObjectForward(obj);fc.renderAll();setLayerTick(t=>t+1);}}
                               style={{width:20,height:20,borderRadius:3,border:"1px solid #ddd",background:"#fff",cursor:"pointer",fontSize:9,display:"flex",alignItems:"center",justifyContent:"center"}}>▲</button>
@@ -1124,7 +1124,7 @@ export default function UnifiedCanvasEditor({
                     await searchImages(first);
                   }catch{}
                   setImgLoading(false);
-                }} style={{width:"100%",padding:"10px",borderRadius:10,border:"none",cursor:"pointer",background:"#168EEA",color:"#fff",fontSize:12,fontWeight:700,marginBottom:10}}>
+                }} style={{width:"100%",padding:"10px",borderRadius:10,border:"none",cursor:"pointer",background:"#3b82f6",color:"#fff",fontSize:12,fontWeight:700,marginBottom:10}}>
                   AI 이미지 추천
                 </button>
                 <div style={{fontSize:11,color:"#888",marginBottom:8}}>Pexels + Unsplash + Pixabay 통합 검색</div>
@@ -1133,7 +1133,7 @@ export default function UnifiedCanvasEditor({
                   <input value={imgQuery} onChange={e=>setImgQuery(e.target.value)} placeholder="검색어 입력..."
                     onKeyDown={e=>{if(e.key==="Enter")searchImages(imgQuery);}}
                     style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1px solid #ddd",fontSize:12,outline:"none"}}/>
-                  <button onClick={()=>searchImages(imgQuery)} style={{background:"#168EEA",color:"#fff",border:"none",borderRadius:8,padding:"0 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>검색</button>
+                  <button onClick={()=>searchImages(imgQuery)} style={{background:"#3b82f6",color:"#fff",border:"none",borderRadius:8,padding:"0 14px",cursor:"pointer",fontSize:12,fontWeight:700}}>검색</button>
                 </div>
                 {/* 파일 업로드 / 배경 */}
                 <div style={{display:"flex",gap:6,marginBottom:12}}>
@@ -1173,10 +1173,10 @@ export default function UnifiedCanvasEditor({
                   </select>
                   <div style={{fontSize:10,color:"#888"}}>크기: {props.fontSize}px</div>
                   <input type="range" min={10} max={120} value={props.fontSize} onChange={e=>set("fontSize",+e.target.value)}
-                    style={{width:"100%",accentColor:"#168EEA",marginBottom:4}}/>
+                    style={{width:"100%",accentColor:"#3b82f6",marginBottom:4}}/>
                   <div style={{fontSize:10,color:"#888"}}>전체 색상</div>
                   <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>
-                    {["#ffffff","#000000","#168EEA","#ef4444","#f59e0b","#10b981"].map(c=>(
+                    {["#ffffff","#000000","#3b82f6","#ef4444","#f59e0b","#10b981"].map(c=>(
                       <button key={c} onClick={()=>set("fill",c)} style={{width:18,height:18,borderRadius:3,background:c,border:"1.5px solid rgba(0,0,0,0.15)",cursor:"pointer",padding:0}}/>
                     ))}
                     <input type="color" value={props.fill} onChange={e=>set("fill",e.target.value)}
@@ -1184,7 +1184,7 @@ export default function UnifiedCanvasEditor({
                   </div>
                   <div style={{fontSize:10,color:"#888"}}>선택 글자 색 (드래그 후)</div>
                   <div style={{display:"flex",gap:3,flexWrap:"wrap",marginBottom:6}}>
-                    {["#e4ff1a","#ff6b6b","#4ecdc4","#ffd93d","#ffffff","#168EEA","#ff9f43"].map(c=>(
+                    {["#e4ff1a","#ff6b6b","#4ecdc4","#ffd93d","#ffffff","#3b82f6","#ff9f43"].map(c=>(
                       <button key={"s"+c} onClick={()=>{
                         const tb=sel;if(!tb)return;
                         const start=tb.selectionStart,end=tb.selectionEnd;
@@ -1201,12 +1201,12 @@ export default function UnifiedCanvasEditor({
                   </div>
                   <div style={{display:"flex",gap:3,marginBottom:8}}>
                     <button onClick={()=>set("fontWeight",props.fontWeight==="bold"?"normal":"bold")}
-                      style={{...B,fontWeight:900,fontSize:11,background:props.fontWeight==="bold"?"#168EEA15":"transparent"}}>B</button>
+                      style={{...B,fontWeight:900,fontSize:11,background:props.fontWeight==="bold"?"#3b82f615":"transparent"}}>B</button>
                     <button onClick={()=>set("fontStyle",props.fontStyle==="italic"?"normal":"italic")}
-                      style={{...B,fontStyle:"italic",fontSize:11,background:props.fontStyle==="italic"?"#168EEA15":"transparent"}}>I</button>
+                      style={{...B,fontStyle:"italic",fontSize:11,background:props.fontStyle==="italic"?"#3b82f615":"transparent"}}>I</button>
                     {["left","center","right"].map(a=>(
                       <button key={a} onClick={()=>set("textAlign",a)}
-                        style={{...B,fontSize:11,background:props.textAlign===a?"#168EEA15":"transparent"}}>
+                        style={{...B,fontSize:11,background:props.textAlign===a?"#3b82f615":"transparent"}}>
                         {a==="left"?"◧":a==="center"?"◫":"◨"}
                       </button>
                     ))}
@@ -1217,7 +1217,7 @@ export default function UnifiedCanvasEditor({
                       if(!sel)return;
                       sel.set("shadow", sel.shadow ? null : "2px 3px 6px rgba(0,0,0,0.5)");
                       fcRef.current?.renderAll();
-                    }} style={{...B,fontSize:10,flex:1,background:sel?.shadow?"#168EEA15":"transparent",borderColor:sel?.shadow?"#168EEA":"#ddd"}}>
+                    }} style={{...B,fontSize:10,flex:1,background:sel?.shadow?"#3b82f615":"transparent",borderColor:sel?.shadow?"#3b82f6":"#ddd"}}>
                       {sel?.shadow?"그림자 ON":"그림자 OFF"}
                     </button>
                     <button onClick={()=>{if(!sel)return;sel.set("shadow","0 4px 12px rgba(0,0,0,0.8)");fcRef.current?.renderAll();}}
@@ -1329,7 +1329,7 @@ export default function UnifiedCanvasEditor({
                         }
                         if(slidesRef.current[idx]) await fc.loadFromJSON(slidesRef.current[idx]);
                         fc.renderAll();
-                      }} style={{padding:"7px 4px",borderRadius:6,border:"1px solid #168EEA",background:"rgba(0,0,0,0.06)",cursor:"pointer",fontSize:10,fontWeight:700,color:"#168EEA"}}>{a.label}</button>
+                      }} style={{padding:"7px 4px",borderRadius:6,border:"1px solid #3b82f6",background:"rgba(0,0,0,0.06)",cursor:"pointer",fontSize:10,fontWeight:700,color:"#3b82f6"}}>{a.label}</button>
                     ))}
                   </div>
                 </div>
@@ -1373,7 +1373,7 @@ export default function UnifiedCanvasEditor({
             </select>
             <div style={{flex:1}}/>
             {sel&&sel.name!=="bg"&&<button onClick={del} style={{...B,color:"#ef4444",borderColor:"#fca5a5",fontSize:11}}>삭제</button>}
-            <button onClick={exportPng} style={{background:"#168EEA",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700}}>PNG</button>
+            <button onClick={exportPng} style={{background:"#3b82f6",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700}}>PNG</button>
             {total>1&&<button onClick={exportAll} style={{background:"#333",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700}}>ZIP</button>}
             <button onClick={exportPdf} style={{background:"#e74c3c",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700}}>PDF</button>
             <button onClick={exportTxt} style={{background:"#27ae60",color:"#fff",border:"none",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:700}}>TXT</button>
@@ -1384,7 +1384,7 @@ export default function UnifiedCanvasEditor({
               onShareTemplate(preview);
             }} style={{...B,color:"#10b981",borderColor:"#86efac",fontSize:11}}>공유</button>}
             <button onClick={()=>setCaptionOpen(!captionOpen)}
-              style={{background:captionOpen?"#168EEA":"#fff",color:captionOpen?"#fff":"#168EEA",border:captionOpen?"none":"1.5px solid #168EEA",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
+              style={{background:captionOpen?"#3b82f6":"#fff",color:captionOpen?"#fff":"#3b82f6",border:captionOpen?"none":"1.5px solid #3b82f6",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",gap:5}}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
               AI 캡션
             </button>
@@ -1414,9 +1414,9 @@ export default function UnifiedCanvasEditor({
                 {id:"marketing",label:"마케팅"},
               ].map(t=>(
                 <button key={t.id} onClick={()=>setCaptionTone(t.id)}
-                  style={{padding:"8px 6px",borderRadius:8,border:captionTone===t.id?"2px solid #168EEA":"1px solid #eee",
+                  style={{padding:"8px 6px",borderRadius:8,border:captionTone===t.id?"2px solid #3b82f6":"1px solid #eee",
                     background:captionTone===t.id?"rgba(0,0,0,0.06)":"#fff",
-                    color:captionTone===t.id?"#168EEA":"#555",fontSize:12,fontWeight:captionTone===t.id?700:500,cursor:"pointer"}}>
+                    color:captionTone===t.id?"#3b82f6":"#555",fontSize:12,fontWeight:captionTone===t.id?700:500,cursor:"pointer"}}>
                   {t.label}
                 </button>
               ))}
@@ -1427,7 +1427,7 @@ export default function UnifiedCanvasEditor({
               <span style={{fontSize:12,fontWeight:600,color:"#555"}}>이모티콘 사용</span>
               <button onClick={()=>setCaptionEmoji(!captionEmoji)}
                 style={{width:44,height:24,borderRadius:12,border:"none",cursor:"pointer",position:"relative",
-                  background:captionEmoji?"#168EEA":"#ddd",transition:"background 0.2s"}}>
+                  background:captionEmoji?"#3b82f6":"#ddd",transition:"background 0.2s"}}>
                 <div style={{width:18,height:18,borderRadius:"50%",background:"#fff",position:"absolute",top:3,
                   left:captionEmoji?23:3,transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.2)"}}/>
               </button>
@@ -1467,7 +1467,7 @@ ${slideTexts}
               } catch(e) { setCaptionText(captionText || "캡션 생성 오류: "+(e.message||e)); }
               setCaptionLoading(false);
             }} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",cursor:captionLoading?"not-allowed":"pointer",
-              background:captionLoading?"#ccc":"#168EEA",color:"#fff",fontSize:13,fontWeight:700,
+              background:captionLoading?"#ccc":"#3b82f6",color:"#fff",fontSize:13,fontWeight:700,
               marginBottom:12,display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
               {captionLoading?(
                 <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중...</>

@@ -21,7 +21,7 @@ function PromptStudioPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, use
   const text = homeText, muted = homeMuted, bdr = cardBdr;
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const ibg = isDark ? "rgba(255,255,255,0.06)" : "#f9f9fc";
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
   const D = isDark;
 
   const [input, setInput] = useState("");
@@ -267,7 +267,7 @@ h1,h2,h3{color:#1a1a2e}li{list-style:disc}</style></head><body>${lines}<script>w
           </div>
         </div>
 
-        {err && <div style={{ padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", color:"#f87171", fontSize:13, marginBottom:14, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>window.location.href="/pricing"} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"#168EEA",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
+        {err && <div style={{ padding:"10px 14px", borderRadius:10, background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", color:"#f87171", fontSize:13, marginBottom:14, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>{err}{(err.includes("포인트")||err.includes("충전"))&&<button onClick={()=>window.location.href="/pricing"} style={{padding:"4px 12px",borderRadius:6,border:"none",background:"#3b82f6",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>충전하기</button>}</div>}
 
         <button onClick={generate} disabled={!input.trim()}
           style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", cursor:input.trim()?"pointer":"not-allowed",
@@ -458,7 +458,7 @@ async function fetchSnsNewsByCategory(categoryId) {
 function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
   const text = homeText, muted = homeMuted, bdr = cardBdr;
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
   const [activeTab, setActiveTab] = useState("sns");
   const [newsCache, setNewsCache] = useState({});
   const [loading, setLoading] = useState(true);
@@ -720,7 +720,7 @@ function SnsNewsFeed({ isDark, homeText, homeMuted, cardBdr, renderFooter }) {
           marginBottom: 24, borderRadius: 16, overflow: "hidden",
           background: isDark
             ? "linear-gradient(135deg, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.06) 100%)"
-            : "#168EEA",
+            : "#3b82f6",
           border: isDark ? "1px solid rgba(0,0,0,0.06)" : "none",
           boxShadow: isDark ? "none" : "0 4px 24px rgba(0,0,0,0.06)",
         }}>

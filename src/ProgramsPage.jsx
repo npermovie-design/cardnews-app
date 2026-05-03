@@ -32,11 +32,11 @@ function programPath(product) {
   return `/programs/${product.id}/${slugifyKo(product.title, "program")}`;
 }
 
-const BRAND = "#168EEA";
+const BRAND = "#3b82f6";
 const BRAND2 = "#34C759";
-const ACCENT = "#168EEA";
+const ACCENT = "#3b82f6";
 const INK = "#1A1A2E";
-const GRAD = "#168EEA";
+const GRAD = "#3b82f6";
 
 function AutomationIcon({ type, color = BRAND, size = 28 }) {
   const common = { stroke: color, strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round", fill: "none" };

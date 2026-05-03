@@ -130,7 +130,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
   const bdr   = cardBdr;
   const bg    = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5";
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
 
   const filteredBlog = blogList.filter(x =>
     x.type !== "shorts" && (!search || x.title.toLowerCase().includes(search.toLowerCase()) || (x.type||"").includes(search))
@@ -147,7 +147,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
   };
   const typeColor = {
     blog_naver:"#4ade80", blog_tistory:"#f97316", blog_insta:"#ec4899",
-    blog_youtube:"#ef4444", blog_thread:"#168EEA", blog_news:"#6366f1",
+    blog_youtube:"#ef4444", blog_thread:"#3b82f6", blog_news:"#6366f1",
     blog_yt_blog:"#6366f1", blog_link:"#6366f1"
   };
 
@@ -222,7 +222,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
               <div style={{ fontSize:13, lineHeight:1.8 }}>글 생성 후 자동으로 여기 저장됩니다</div>
               <button onClick={()=>setAiMenu("blog_naver")}
                 style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
-                  background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700 }}>
+                  background:"#3b82f6", color:"#fff", fontSize:13, fontWeight:700 }}>
                 블로그 글 작성하기 →
               </button>
             </div>
@@ -313,7 +313,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
               <div style={{ fontSize:13, lineHeight:1.8 }}>카드뉴스 편집 화면에서 저장하면 여기 표시됩니다</div>
               <button onClick={()=>setAiMenu("cardnews_simple")}
                 style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
-                  background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700 }}>
+                  background:"#3b82f6", color:"#fff", fontSize:13, fontWeight:700 }}>
                 카드뉴스 만들기 →
               </button>
             </div>
@@ -474,7 +474,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
               <div style={{ fontSize:13, lineHeight:1.8 }}>PPT 생성 후 자동으로 여기 저장됩니다</div>
               <button onClick={()=>setAiMenu("ppt")}
                 style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
-                  background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700 }}>
+                  background:"#3b82f6", color:"#fff", fontSize:13, fontWeight:700 }}>
                 PPT 만들기 →
               </button>
             </div>
@@ -513,7 +513,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
               <div style={{ fontSize:13, lineHeight:1.8 }}>비즈니스 문서 생성 후 자동으로 여기 저장됩니다</div>
               <button onClick={()=>setAiMenu("prompt_studio")}
                 style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
-                  background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700 }}>
+                  background:"#3b82f6", color:"#fff", fontSize:13, fontWeight:700 }}>
                 문서 작성하기 →
               </button>
             </div>
@@ -598,7 +598,7 @@ function LibraryPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, renderFo
               <div style={{ fontSize:13, lineHeight:1.8 }}>카드뉴스·상세페이지 생성 후 자동으로 여기 저장됩니다</div>
               <button onClick={()=>setAiMenu("cardnews_simple")}
                 style={{ marginTop:16, padding:"10px 24px", borderRadius:10, border:"none", cursor:"pointer",
-                  background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700 }}>
+                  background:"#3b82f6", color:"#fff", fontSize:13, fontWeight:700 }}>
                 카드뉴스 만들기 →
               </button>
             </div>
@@ -859,7 +859,7 @@ function SharedTemplatesTab({ isDark, text, muted, bdr, bg, accent, setAiMenu })
         <div style={{ marginTop: "auto", display: "flex", gap: 6 }}>
           <button onClick={() => handleUse(tmpl)}
             style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: "none", cursor: "pointer",
-              background: "#168EEA", color: "#fff", fontSize: 11, fontWeight: 700 }}>
+              background: "#3b82f6", color: "#fff", fontSize: 11, fontWeight: 700 }}>
             사용하기
           </button>
           {showUnshare && (
@@ -893,7 +893,7 @@ function SharedTemplatesTab({ isDark, text, muted, bdr, bg, accent, setAiMenu })
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: muted }}>
-          <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid rgba(0,0,0,0.06)", borderTopColor: "#168EEA", animation: "spin 1s linear infinite", margin: "0 auto 12px" }} />
+          <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid rgba(0,0,0,0.06)", borderTopColor: "#3b82f6", animation: "spin 1s linear infinite", margin: "0 auto 12px" }} />
           <div style={{ fontSize: 13 }}>불러오는 중...</div>
         </div>
       ) : templates.length === 0 ? (
@@ -909,7 +909,7 @@ function SharedTemplatesTab({ isDark, text, muted, bdr, bg, accent, setAiMenu })
           </div>
           <button onClick={() => setAiMenu("cardnews_simple")}
             style={{ marginTop: 16, padding: "10px 24px", borderRadius: 10, border: "none", cursor: "pointer",
-              background: "#168EEA", color: "#fff", fontSize: 13, fontWeight: 700 }}>
+              background: "#3b82f6", color: "#fff", fontSize: 13, fontWeight: 700 }}>
             카드뉴스 만들기 →
           </button>
         </div>

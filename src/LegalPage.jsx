@@ -168,7 +168,7 @@ export function LegalPage({ C, navigate, initialTab }) {
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             style={{ padding: "11px 20px", borderRadius: 10, border: "none", cursor: "pointer", fontSize: 13, fontWeight: 700, minHeight: 44,
-              background: tab === t.id ? "#168EEA" : (isDark ? "rgba(255,255,255,0.06)" : "#f0f0f5"),
+              background: tab === t.id ? "#3b82f6" : (isDark ? "rgba(255,255,255,0.06)" : "#f0f0f5"),
               color: tab === t.id ? "#fff" : C.muted,
               boxShadow: tab === t.id ? "0 4px 16px rgba(0,0,0,0.06)" : "none" }}>
             {t.label}

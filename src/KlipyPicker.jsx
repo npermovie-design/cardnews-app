@@ -30,7 +30,7 @@ const TABS = [
 
 export default function KlipyPicker({ onSelect, isDark = true, defaultTab = "gif", compact = false, onClose, style }) {
   const D = isDark;
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
   const text  = D ? "#fff" : "#1a1a2e";
   const muted = D ? "rgba(255,255,255,0.45)" : "#888";
   const bdr   = D ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.08)";
@@ -240,7 +240,7 @@ export function KlipyButton({ onSelect, isDark, compact, style, buttonStyle }) {
           padding: compact ? "6px 10px" : "8px 14px", borderRadius: 8,
           border: `1px solid ${isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)"}`,
           background: open ? `${isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)"}` : "transparent",
-          color: "#168EEA", fontSize: compact ? 11 : 12, fontWeight: 700, cursor: "pointer",
+          color: "#3b82f6", fontSize: compact ? 11 : 12, fontWeight: 700, cursor: "pointer",
           display: "flex", alignItems: "center", gap: 5,
           ...buttonStyle,
         }}>

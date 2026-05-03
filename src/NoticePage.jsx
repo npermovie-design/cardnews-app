@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 const ADMIN_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkxMDg1NywiZXhwIjoyMDg5NDg2ODU3fQ.gfWezarKfomCrT74eiH0CGoYfg8Ow6RGlR3_svdfstE";
 const adminSupabase = createClient(import.meta.env.VITE_SUPABASE_URL, ADMIN_SB_KEY);
 
-const BRAND = "#168EEA";
+const BRAND = "#3b82f6";
 
 const CATEGORIES = [
   { id: "all", label: "전체" },
@@ -14,7 +14,7 @@ const CATEGORIES = [
 ];
 
 const CAT_COLORS = {
-  update: { bg: "#dbeafe", color: "#168EEA", label: "업데이트" },
+  update: { bg: "#dbeafe", color: "#3b82f6", label: "업데이트" },
   notice: { bg: "#fef3c7", color: "#d97706", label: "공지" },
   event: { bg: "#dcfce7", color: "#16a34a", label: "이벤트" },
 };

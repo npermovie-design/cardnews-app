@@ -70,7 +70,7 @@ img {
 @media (max-width: 768px) {
   /* 터치 반응 개선: 탭 딜레이 제거 */
   html {
-    -webkit-tap-highlight-color: rgba(22, 142, 234, 0.15);
+    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.15);
     touch-action: manipulation;
   }
   /* 모든 클릭 가능 요소 최소 터치 영역 보장

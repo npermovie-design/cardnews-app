@@ -17,7 +17,7 @@ export default function KeywordInsightPanel({ keyword, isDark, onKeywordSelect }
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#f9f9fc";
-  const acc = "#168EEA";
+  const acc = "#3b82f6";
 
   // 키워드 변경 시 디바운스 분석
   useEffect(() => {

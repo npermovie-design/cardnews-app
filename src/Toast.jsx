@@ -14,7 +14,7 @@ export function ToastProvider({ children }) {
   const colors = {
     success: { bg: "#22c55e", border: "rgba(74,222,128,0.4)" },
     error:   { bg: "#ef4444", border: "rgba(239,68,68,0.4)" },
-    info:    { bg: "#168EEA", border: "rgba(0,0,0,0.06)" },
+    info:    { bg: "#3b82f6", border: "rgba(0,0,0,0.06)" },
     warning: { bg: "#f59e0b", border: "rgba(245,158,11,0.4)" },
   };
 

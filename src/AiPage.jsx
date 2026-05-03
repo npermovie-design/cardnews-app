@@ -34,7 +34,7 @@ const SnsPublisher = React.lazy(() => import("./SnsPublisher"));
 function VideoEditHub({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, showPointConfirm, initialMode }) {
   const [mode, setMode] = React.useState(initialMode); // null | "shortform" | "longform"
   const { t: _t } = useI18n();
-  const acc = "#168EEA";
+  const acc = "#3b82f6";
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0";
@@ -146,7 +146,7 @@ function ContentCreateSelector({ isDark, homeText, homeMuted, setAiMenu }) {
   const { t: _t } = useI18n();
   const bdr = isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb";
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
 
   // 편집 AI: 글씨 수정 가능한 에디터 (상세페이지 리뉴얼 전 비활성화)
   const editAiTools = [];
@@ -214,7 +214,7 @@ function MiniStats({ isDark, homeText, homeMuted, cardBdr, _s: _sProp }) {
       return !isNaN(ts) && (now - ts) < weekMs;
     }).length;
   }, [saves]);
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
   const stats = [
     { label: _s("totalContent"), value: totalCount, icon: "📝", color: accent },
     { label: _s("usedPoints"), value: usedUses + "회", icon: "💎", color: "#f59e0b" },
@@ -239,7 +239,7 @@ function RecentWork({ isDark, homeText, homeMuted, cardBdr, setAiMenu, _s: _sPro
   const saves = React.useMemo(() => {
     try { return JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]").slice(0, 3); } catch { return []; }
   }, []);
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
   const typeLabel = (tp) => {
     const map = { blog_naver:_s("platNaver"), blog_tistory:_s("platTistory"), blog_insta:_s("platInsta"), blog_youtube:_s("platYoutube"), blog_thread:_s("platThread"), blog_link:_s("platLink"), blog_cafe:_s("platCafe"), blog_yt_blog:_s("platLink") };
     return map[tp] || tp || _s("platOther");
@@ -280,7 +280,7 @@ function RecentWork({ isDark, homeText, homeMuted, cardBdr, setAiMenu, _s: _sPro
 function OnboardingModal({ isDark, onClose, _s: _sProp }) {
   const { t: _s } = useI18n();
   const [step, setStep] = React.useState(0);
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
   const bg = isDark ? "#1a1a2e" : "#fff";
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
@@ -355,7 +355,7 @@ function MiniPlanner({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
           </div>
         </div>
         <button onClick={() => setAiMenu("social_planner")}
-          style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)"}`, background:"transparent", color:"#168EEA", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+          style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)"}`, background:"transparent", color:"#3b82f6", fontSize:12, fontWeight:700, cursor:"pointer" }}>
           {_t("viewFullPlan")}
         </button>
       </div>
@@ -363,7 +363,7 @@ function MiniPlanner({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) {
         {todayPlans.length === 0 ? (
           <div style={{ textAlign:"center", padding:"16px 0", color:homeMuted, fontSize:13 }}>
             {_t("noPlanToday")} ·{" "}
-            <span onClick={() => setAiMenu("social_planner")} style={{ color:"#168EEA", cursor:"pointer", fontWeight:700 }}>{_t("createPlan")}</span>
+            <span onClick={() => setAiMenu("social_planner")} style={{ color:"#3b82f6", cursor:"pointer", fontWeight:700 }}>{_t("createPlan")}</span>
           </div>
         ) : (
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -403,7 +403,7 @@ function NaverShoppingInsight({ isDark, homeText, homeMuted, border, setAiMenu }
 
   const catNames = Object.keys(data);
   const catColorMap = {
-    "전체":"#03c75a", "패션의류":"#e1306c", "화장품/미용":"#d946ef", "디지털/가전":"#168EEA",
+    "전체":"#03c75a", "패션의류":"#e1306c", "화장품/미용":"#d946ef", "디지털/가전":"#3b82f6",
     "식품":"#ea580c", "가구/인테리어":"#0d9488", "출산/유아동":"#ec4899", "스포츠/레저":"#16a34a", "생활/건강":"#0891b2",
   };
   const catLabelMap = {
@@ -468,7 +468,7 @@ function SnsAutomationPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu, us
   const [generating, setGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState(null);
   const [copied, setCopied] = useState(false);
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
   const green = "#10b981";
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
@@ -747,7 +747,7 @@ if __name__ == "__main__":
                     </div>
                     <button onClick={() => { navigator.clipboard.writeText(s.cmd); }}
                       style={{ position:"absolute", bottom:10, right:10, padding:"6px 14px", borderRadius:7, border:"none",
-                        background:"#168EEA", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                        background:"#3b82f6", color:"#fff", fontSize:11, fontWeight:700, cursor:"pointer" }}>
                       {_t("copyBtn2")}
                     </button>
                   </div>
@@ -885,7 +885,7 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
   const [activeCat, setActiveCat] = useState("all");
   const [showTop, setShowTop] = useState(false);
   const scrollRef = useRef(null);
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
   const bg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
 
@@ -917,10 +917,10 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
 
   const catColors = {
     "AI 도구": "#6366f1", "AI 트렌드": "#7c3aed", "블로그": "#059669", "유튜브": "#dc2626",
-    "인스타": "#e1306c", "틱톡": "#0891b2", "마케팅": "#d97706", "광고": "#168EEA",
+    "인스타": "#e1306c", "틱톡": "#0891b2", "마케팅": "#d97706", "광고": "#3b82f6",
     "이커머스": "#0284c7", "부업/수익화": "#0d9488", "트렌드": "#ea580c", "뷰티": "#c026d3",
     "건강/운동": "#16a34a", "여행/맛집": "#e11d48", "재테크": "#9333ea", "자기계발": "#0891b2",
-    "AI/테크": "#6366f1", "SNS": "#e1306c", "비즈니스": "#168EEA", "라이프": "#16a34a",
+    "AI/테크": "#6366f1", "SNS": "#e1306c", "비즈니스": "#3b82f6", "라이프": "#16a34a",
     "기타": "#6b7280",
   };
   const catLabelMapKw = {
@@ -1082,7 +1082,7 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
       {showTop && (
         <button onClick={() => scrollRef.current?.scrollTo({ top:0, behavior:"smooth" })}
           style={{ position:"fixed", bottom:32, right:32, width:46, height:46, borderRadius:"50%", border:"none",
-            background:"#168EEA", color:"#fff", fontSize:18, cursor:"pointer",
+            background:"#3b82f6", color:"#fff", fontSize:18, cursor:"pointer",
             boxShadow:"0 4px 16px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", justifyContent:"center",
             transition:"opacity 0.2s, transform 0.2s", zIndex:20 }}
           onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
@@ -1098,7 +1098,7 @@ function TodayKeywordsPage({ isDark, homeText, homeMuted, cardBdr, setAiMenu }) 
 function TrendKeywords({ isDark, homeText, homeMuted, cardBdr, setAiMenu, _s: _sProp }) {
   const { t: _s, lang } = useI18n();
   const [trendPlatform, setTrendPlatform] = useState(0);
-  const accent_ = "#168EEA";
+  const accent_ = "#3b82f6";
   const trendPlatformsData = {
     ko: [
       { name:_s("ai_trendInsta"), icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>,
@@ -1203,7 +1203,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}` }}>
       <div style={{ maxWidth:720, margin:"0 auto", padding:"12px 24px", display:"flex", alignItems:"center", gap:10 }}>
         <button className="ai-sidebar-mobile" onClick={() => setSideOpen(true)}
-          style={{ background:"none", border:"none", cursor:"pointer", padding:"4px", color: isDark?"#a5b4fc":"#168EEA", display:"none", alignItems:"center", flexShrink:0 }}>
+          style={{ background:"none", border:"none", cursor:"pointer", padding:"4px", color: isDark?"#a5b4fc":"#3b82f6", display:"none", alignItems:"center", flexShrink:0 }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
         </button>
         <div style={{ flex:1, textAlign:"center" }}>
@@ -1252,7 +1252,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     return (
       <div style={{ padding:"36px 24px 0" }}>
         <div style={{ maxWidth:700, margin:"0 auto" }}>
-          <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(0,0,0,0.06)", fontSize:12, fontWeight:700, color:"#168EEA", marginBottom:14 }}>{h.badge}</div>
+          <div style={{ display:"inline-block", padding:"5px 14px", borderRadius:20, background:"rgba(0,0,0,0.06)", fontSize:12, fontWeight:700, color:"#3b82f6", marginBottom:14 }}>{h.badge}</div>
           <div style={{ fontSize:"clamp(24px,5vw,32px)", fontWeight:900, color: isDark?"#fff":"#1a1a1a", lineHeight:1.3, marginBottom:8, whiteSpace:"pre-line" }}>{h.title}</div>
           <div style={{ fontSize:14, color: isDark?"rgba(255,255,255,0.5)":"#888", lineHeight:1.6, marginBottom: h.siblings ? 20 : 0 }}>{h.desc}</div>
           {/* 이미지 도구 드롭다운 — 같은 카테고리 내 다른 기능 이동 */}
@@ -1260,7 +1260,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", marginTop:16, marginBottom:8 }}>
               {h.siblings.map(s => (
                 <button key={s.id} onClick={() => setAiMenu(s.id)}
-                  style={{ padding:"8px 16px", borderRadius:10, border:`1.5px solid ${menuId === s.id ? "#168EEA" : (isDark?"rgba(255,255,255,0.1)":"#e5e7eb")}`, background: menuId === s.id ? (isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)") : "transparent", cursor:"pointer", fontSize:12, fontWeight: menuId === s.id ? 700 : 500, color: menuId === s.id ? "#168EEA" : (isDark?"rgba(255,255,255,0.5)":"#888"), transition:"all 0.15s" }}>
+                  style={{ padding:"8px 16px", borderRadius:10, border:`1.5px solid ${menuId === s.id ? "#3b82f6" : (isDark?"rgba(255,255,255,0.1)":"#e5e7eb")}`, background: menuId === s.id ? (isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)") : "transparent", cursor:"pointer", fontSize:12, fontWeight: menuId === s.id ? 700 : 500, color: menuId === s.id ? "#3b82f6" : (isDark?"rgba(255,255,255,0.5)":"#888"), transition:"all 0.15s" }}>
                   {s.label}
                 </button>
               ))}
@@ -1330,7 +1330,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                       {plans.map((p, i) => (
                         <button key={i} onClick={() => setAiMenu("prompt_studio_make")}
                           style={{ padding:"12px 14px", borderRadius:12, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}
-                          onMouseEnter={e => e.currentTarget.style.borderColor="#168EEA"}
+                          onMouseEnter={e => e.currentTarget.style.borderColor="#3b82f6"}
                           onMouseLeave={e => e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}>
                           <div style={{ fontSize:12, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title || p.topic || tt("untitled")}</div>
                           <div style={{ fontSize:10, color:homeMuted, marginTop:3 }}>{p.docType || tt("ai_doc")} · {p.date || ""}</div>
@@ -1353,7 +1353,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                         display:"flex", flexDirection:"column", alignItems:"center", gap:6,
                         transition:"all 0.15s", textAlign:"center",
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor="#168EEA"; e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.06)"; }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor="#3b82f6"; e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.06)"; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"; e.currentTarget.style.boxShadow="none"; }}>
                       <span style={{ fontSize:32 }}>{item.icon}</span>
                       <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{item.label}</span>
@@ -1411,7 +1411,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                   style={{ flex:1, padding:"12px 16px", borderRadius:10, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.06)":"#fff", color:isDark?"#fff":"#1a1a1a", fontSize:13, outline:"none" }}
                   onKeyDown={e => e.key === "Enter" && handleNewsletterSub()} />
                 <button onClick={handleNewsletterSub}
-                  style={{ padding:"12px 24px", borderRadius:10, border:"none", background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap" }}>
+                  style={{ padding:"12px 24px", borderRadius:10, border:"none", background:"#3b82f6", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap" }}>
                   {tt("subscribeBtn")}
                 </button>
               </div>
@@ -1476,7 +1476,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     const writeItems = [];
     const tabStyle = (active) => ({
       flex:1, padding:"12px 0", borderRadius:12, border:"none", cursor:"pointer",
-      background: active ? "#168EEA" : "transparent",
+      background: active ? "#3b82f6" : "transparent",
       color: active ? "#fff" : (isDark ? "rgba(255,255,255,0.5)" : "#888"),
       fontSize:14, fontWeight:700, transition:"all 0.15s",
     });
@@ -1514,7 +1514,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                           {blogs.map((b, i) => (
                             <button key={i} onClick={() => setAiMenu(b.platform || "blog_naver")}
                               style={{ padding:"12px 14px", borderRadius:12, border:`1.5px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:isDark?"rgba(255,255,255,0.04)":"#fff", cursor:"pointer", textAlign:"left", transition:"all 0.12s" }}
-                              onMouseEnter={e => e.currentTarget.style.borderColor="#168EEA"}
+                              onMouseEnter={e => e.currentTarget.style.borderColor="#3b82f6"}
                               onMouseLeave={e => e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}>
                               <div style={{ fontSize:12, fontWeight:700, color:homeText, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{b.title || b.topic || tt("untitled")}</div>
                               <div style={{ fontSize:10, color:homeMuted, marginTop:3 }}>{b.platform_label || b.type || ""} · {b.date || ""}</div>
@@ -1537,7 +1537,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                             display:"flex", flexDirection:"column", alignItems:"center", gap:8,
                             transition:"all 0.15s", textAlign:"center",
                           }}
-                          onMouseEnter={e => { e.currentTarget.style.borderColor="#168EEA"; e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.06)"; }}
+                          onMouseEnter={e => { e.currentTarget.style.borderColor="#3b82f6"; e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.06)"; }}
                           onMouseLeave={e => { e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"; e.currentTarget.style.boxShadow="none"; }}>
                           {item.icon ? <img src={item.icon} alt="" loading="lazy" decoding="async" style={{ width:32, height:32, borderRadius:6, objectFit:"contain" }} /> : <span style={{ fontSize:32 }}>{item.emoji}</span>}
                           <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{item.label}</span>
@@ -1587,7 +1587,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
                         display:"flex", flexDirection:"column", alignItems:"center", gap:6,
                         transition:"all 0.15s", textAlign:"center",
                       }}
-                      onMouseEnter={e => { e.currentTarget.style.borderColor="#168EEA"; e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.06)"; }}
+                      onMouseEnter={e => { e.currentTarget.style.borderColor="#3b82f6"; e.currentTarget.style.boxShadow="0 4px 16px rgba(0,0,0,0.06)"; }}
                       onMouseLeave={e => { e.currentTarget.style.borderColor=isDark?"rgba(255,255,255,0.1)":"#e5e7eb"; e.currentTarget.style.boxShadow="none"; }}>
                       <img src={item.img} alt="" loading="lazy" decoding="async" style={{ width:40, height:40, objectFit:"contain" }} />
                       <span style={{ fontSize:13, fontWeight:700, color:homeText }}>{item.label}</span>
@@ -1648,7 +1648,7 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
         <div style={{ maxWidth:520, margin:"0 auto", padding:"32px 20px 60px" }}>
           {/* 프로필 카드 */}
           <div style={{ borderRadius:16, border:`1px solid ${bdr2}`, background:card2, padding:"24px", marginBottom:16, textAlign:"center" }}>
-            <div style={{ width:72, height:72, borderRadius:"50%", background:"#168EEA", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, fontWeight:900, color:"#fff", margin:"0 auto 12px" }}>
+            <div style={{ width:72, height:72, borderRadius:"50%", background:"#3b82f6", display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, fontWeight:900, color:"#fff", margin:"0 auto 12px" }}>
               {initial}
             </div>
             <div style={{ fontSize:20, fontWeight:900, color:isDark?"#fff":"#1a1a2e", marginBottom:4 }}>{nick}</div>
@@ -1660,14 +1660,14 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
             </div>
           </div>
           {/* 잔여 횟수 */}
-          <div style={{ borderRadius:14, border:`1px solid #168EEA20`, background:"rgba(0,0,0,0.06)", padding:"18px 20px", marginBottom:12 }}>
+          <div style={{ borderRadius:14, border:`1px solid #3b82f620`, background:"rgba(0,0,0,0.06)", padding:"18px 20px", marginBottom:12 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
               <div>
                 <div style={{ fontSize:12, color:isDark?"rgba(255,255,255,0.5)":"#888", marginBottom:2 }}>{tt("heldCredits")}</div>
                 <div style={{ fontSize:28, fontWeight:900, color:"#a5b4fc" }}>{pointsToUses(pts).toLocaleString()}<span style={{ fontSize:14 }}>회</span></div>
               </div>
               <button onClick={() => navigate("pricing")}
-                style={{ padding:"10px 20px", borderRadius:10, border:"none", cursor:"pointer", background:"#168EEA", color:"#fff", fontSize:13, fontWeight:800 }}>
+                style={{ padding:"10px 20px", borderRadius:10, border:"none", cursor:"pointer", background:"#3b82f6", color:"#fff", fontSize:13, fontWeight:800 }}>
                 {tt("chargeBtn")}
               </button>
             </div>
@@ -1977,9 +1977,9 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
               <div style={{ display:"flex", gap:10 }}>
                 <button onClick={pointConfirm.onCancel} style={{ flex:1, padding:"13px", borderRadius:12, border: "1px solid " + (isDark ? "rgba(255,255,255,0.12)" : "#ddd"), background:"transparent", color: isDark ? "rgba(255,255,255,0.6)" : "#888", fontSize:14, fontWeight:700, cursor:"pointer" }}>{"\uCDE8\uC18C"}</button>
                 {insufficient ? (
-                  <button onClick={() => { pointConfirm.onCancel(); navigate("pricing"); }} style={{ flex:1, padding:"13px", borderRadius:12, border:"none", background:"#168EEA", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 4px 16px rgba(0,0,0,0.06)" }}>{"\uCDA9\uC804\uD558\uAE30"}</button>
+                  <button onClick={() => { pointConfirm.onCancel(); navigate("pricing"); }} style={{ flex:1, padding:"13px", borderRadius:12, border:"none", background:"#3b82f6", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 4px 16px rgba(0,0,0,0.06)" }}>{"\uCDA9\uC804\uD558\uAE30"}</button>
                 ) : (
-                  <button onClick={pointConfirm.onConfirm} style={{ flex:1, padding:"13px", borderRadius:12, border:"none", background:"#168EEA", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 4px 16px rgba(0,0,0,0.06)" }}>{"\uC9C4\uD589"}</button>
+                  <button onClick={pointConfirm.onConfirm} style={{ flex:1, padding:"13px", borderRadius:12, border:"none", background:"#3b82f6", color:"#fff", fontSize:14, fontWeight:700, cursor:"pointer", boxShadow:"0 4px 16px rgba(0,0,0,0.06)" }}>{"\uC9C4\uD589"}</button>
                 )}
               </div>
             </div>
@@ -1991,7 +1991,7 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
       {shortsJob && shortsJob.status !== 'complete' && aiMenu !== 'video_create' && aiMenu !== 'shorts_make' && (
         <div onClick={() => setAiMenu('video_create')} style={{
           position:"absolute", bottom:20, right:20, zIndex:100,
-          background: isDark ? "rgba(0,0,0,0.06)" : "#168EEA",
+          background: isDark ? "rgba(0,0,0,0.06)" : "#3b82f6",
           borderRadius:16, padding:"14px 20px", cursor:"pointer",
           boxShadow:"0 8px 32px rgba(0,0,0,0.06)", minWidth:200,
           display:"flex", alignItems:"center", gap:12,

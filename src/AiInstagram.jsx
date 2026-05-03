@@ -11,7 +11,7 @@ function TabHeader({ title, subtitle, tabs, activeTab, onTabChange, isDark }) {
   const text = isDark ? "#e8eaed" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
   return (
     <div style={{ flexShrink:0, background: isDark ? "rgba(0,0,0,0.15)" : "rgba(249,250,251,0.6)" }}>
       <div style={{ maxWidth:720, margin:"0 auto", padding:"16px 24px 0" }}>
@@ -1001,7 +1001,7 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
                   <div style={{ display: "flex", gap: 8, marginBottom: 10, alignItems: "center", flexWrap: "wrap" }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: text }}>{t("ig_dm_message")}</div>
                     <button onClick={generateDM} disabled={generating}
-                      style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#168EEA", color: "#fff", fontSize: 11, fontWeight: 700, cursor: generating ? "wait" : "pointer", opacity: generating ? 0.6 : 1, minHeight: 30 }}>
+                      style={{ padding: "5px 12px", borderRadius: 8, border: "none", background: "#3b82f6", color: "#fff", fontSize: 11, fontWeight: 700, cursor: generating ? "wait" : "pointer", opacity: generating ? 0.6 : 1, minHeight: 30 }}>
                       {generating ? t("ig_ai_generating") : t("ig_ai_generate_btn")}
                     </button>
                     <button onClick={() => applyDefaultTemplate(selectedTone)}
@@ -1140,7 +1140,7 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
 
       {/* 안내 */}
       <div style={{ marginTop: 24, padding: 14, borderRadius: 12, border: `1px solid ${bdr}`, background: D ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)" }}>
-        <div style={{ fontSize: 12, fontWeight: 800, color: "#168EEA", marginBottom: 6 }}>📋 {t("ig_guide_title")}</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: "#3b82f6", marginBottom: 6 }}>📋 {t("ig_guide_title")}</div>
         <div style={{ fontSize: 11, color: muted, lineHeight: 1.8 }}>
           • {t("ig_guide_dm_1")}<br/>
           • {t("ig_guide_dm_2")}<br/>

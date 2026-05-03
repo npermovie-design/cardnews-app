@@ -111,7 +111,7 @@ export const PLANS = [
     price: 19.9,
     points: 80,
     label: "$19.90",
-    color: "#168EEA",
+    color: "#3b82f6",
     features: ["80회 지급", "모든 기능 이용 가능", "SNS 자동 발행"],
     btnLabel: "시작하기",
     highlight: true,

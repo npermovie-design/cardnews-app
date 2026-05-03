@@ -51,9 +51,9 @@ const FPS = 30;
 const IMG = "/video-assets/blog-tutorial";
 
 const K = {
-  purple: "#168EEA", pink: "#ec4899",
+  purple: "#3b82f6", pink: "#ec4899",
   white: "#ffffff", muted: "rgba(255,255,255,0.5)",
-  grad: "#168EEA",
+  grad: "#3b82f6",
   gradBg: "linear-gradient(165deg,#0d0b1a 0%,#1a1040 50%,#0d0b1a 100%)",
   naver: "#03c75a",
 };

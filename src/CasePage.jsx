@@ -65,7 +65,7 @@ export default function CasePage({ C, isDark, user }) {
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#f5f5f5";
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
   const isAdmin = user?.role === "admin";
 
   const [cases, setCases] = useState(DEFAULT_CASES);

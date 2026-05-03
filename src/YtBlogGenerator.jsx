@@ -70,13 +70,13 @@ function PointsExhausted({ isDark, isGuest, title }) {
           {isGuest ? (
             <button onClick={() => { if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); else window.location.hash="#home"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                background:"#168EEA", color:"#fff", fontSize:15, fontWeight:800 }}>
+                background:"#3b82f6", color:"#fff", fontSize:15, fontWeight:800 }}>
               {t("yt_signup")}
             </button>
           ) : (
             <button onClick={() => { window.location.hash = "#pricing"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
-                background:"#168EEA", color:"#fff", fontSize:15, fontWeight:800 }}>
+                background:"#3b82f6", color:"#fff", fontSize:15, fontWeight:800 }}>
               {t("yt_charge")}
             </button>
           )}
@@ -140,7 +140,7 @@ export default function YtBlogGenerator({ theme, embedded, user , onUserUpdate, 
   const cardBg  = isDark ? "rgba(255,255,255,0.04)"  : "#f8f9fa";
   const resultBg= isDark ? "rgba(0,0,0,0.15)"        : "#f8f9fa";
   const accent  = isDark ? "#a5b4fc"                 : "#4f46e5";
-  const accentRaw= "#168EEA";
+  const accentRaw= "#3b82f6";
   const headerBg= isDark ? "rgba(0,0,0,0.20)"        : "#fff";
 
   /* 상태 */
@@ -730,7 +730,7 @@ ${extra ? `추가 요청: ${extra}` : ""}${transcriptSection}
               style={{
                 width:"100%", padding:"15px", borderRadius:12, border:"none", marginTop:16,
                 cursor:generating?"not-allowed":"pointer",
-                background:"#168EEA",
+                background:"#3b82f6",
                 color:"#fff", fontSize:15, fontWeight:800,
                 display:"flex", alignItems:"center", justifyContent:"center", gap:8,
               }}>

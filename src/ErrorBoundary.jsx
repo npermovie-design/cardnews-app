@@ -51,7 +51,7 @@ export default class ErrorBoundary extends Component {
               다시 시도
             </button>
             <button onClick={() => { window.history.replaceState({}, "", "/"); window.location.reload(); }}
-              style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "#168EEA", color: "#fff", fontSize: 14, cursor: "pointer", fontWeight: 700 }}>
+              style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "#3b82f6", color: "#fff", fontSize: 14, cursor: "pointer", fontWeight: 700 }}>
               홈으로
             </button>
           </div>

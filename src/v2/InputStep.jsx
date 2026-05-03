@@ -191,7 +191,7 @@ export default function InputStep({ state, dispatch, C, isMobile }) {
         onClick={() => dispatch({ type: "SET_STEP", step: 2 })}
         style={{
           width: "100%", padding: "14px 0", borderRadius: 12, border: "none",
-          background: canProceed ? "#168EEA" : (C.border || "#ddd"),
+          background: canProceed ? "#3b82f6" : (C.border || "#ddd"),
           color: canProceed ? "#fff" : C.muted, fontSize: 16, fontWeight: 700,
           cursor: canProceed ? "pointer" : "not-allowed",
           transition: "opacity 0.2s",

@@ -4,7 +4,7 @@ import { Btn, Inp } from "./UI";
 
 /* ── 게시판 카테고리/태그 CRUD ── */
 const DEFAULT_BOARD_CATS = [
-  { id:"info",label:"정보공유",icon:"📌",color:"#168EEA" },
+  { id:"info",label:"정보공유",icon:"📌",color:"#3b82f6" },
   { id:"qna", label:"질문답변",icon:"❓",color:"#f59e0b" },
   { id:"free",label:"자유게시판",icon:"🗣",color:"#10b981" },
   { id:"review",label:"사용후기",icon:"⭐",color:"#ec4899" },
@@ -75,9 +75,9 @@ export default function AdminPage({ C, user: adminUser }) {
   const [boardCats, setBoardCats] = useState(DEFAULT_BOARD_CATS);
   const [selBoardCat, setSelBoardCat] = useState(null);
   const [boardTags, setBoardTags] = useState([]);
-  const [newCatForm, setNewCatForm] = useState({ id:"", label:"", icon:"📌", color:"#168EEA" });
+  const [newCatForm, setNewCatForm] = useState({ id:"", label:"", icon:"📌", color:"#3b82f6" });
   const [newTagLabel, setNewTagLabel] = useState("");
-  const [newTagColor, setNewTagColor] = useState("#168EEA");
+  const [newTagColor, setNewTagColor] = useState("#3b82f6");
   const [boardLoading, setBoardLoading] = useState(false);
   const [posts, setPosts2] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(false);
@@ -190,7 +190,7 @@ export default function AdminPage({ C, user: adminUser }) {
     try { setBoardTags(await fetchTagsByCatAdmin(catId)); } catch(e) { setBoardTags([]); }
   };
   const handleSelectBoardCat = async (cat) => {
-    setSelBoardCat(cat); setNewTagLabel(""); setNewTagColor("#168EEA");
+    setSelBoardCat(cat); setNewTagLabel(""); setNewTagColor("#3b82f6");
     await loadTagsForCat(cat.id);
   };
   const handleAddTag = async () => {
@@ -492,7 +492,7 @@ export default function AdminPage({ C, user: adminUser }) {
                   textAlign: "left", fontSize: 13, fontWeight: active ? 700 : 500, fontFamily: "inherit",
                   background: active ? activeBg : "transparent",
                   color: active ? C.purpleL : (isDark ? "rgba(255,255,255,0.55)" : "#666"),
-                  borderLeft: active ? "3px solid #168EEA" : "3px solid transparent",
+                  borderLeft: active ? "3px solid #3b82f6" : "3px solid transparent",
                   marginBottom: 2, transition: "all 0.12s", display: "block",
                 }}>
                   {label}
@@ -544,7 +544,7 @@ export default function AdminPage({ C, user: adminUser }) {
         const popularPosts = [...posts].sort((a,b) => (b.views||0)-(a.views||0)).slice(0,10);
 
         const cardStyle = { padding:"18px 20px", borderRadius:12, background:panelBg, border:`1px solid ${panelBorder}`, flex:1, minWidth:140, boxShadow:isDark?"none":"0 10px 24px rgba(15,23,42,0.035)" };
-        const numStyle = { fontSize:28, fontWeight:900, color:C.purpleL||"#168EEA", marginBottom:4 };
+        const numStyle = { fontSize:28, fontWeight:900, color:C.purpleL||"#3b82f6", marginBottom:4 };
         const labelStyle = { fontSize:12, color:C.muted, fontWeight:600 };
 
         return (
@@ -552,7 +552,7 @@ export default function AdminPage({ C, user: adminUser }) {
           {/* 요약 카드 */}
           <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginBottom:24 }}>
             {[
-              { n: totalMembers, l: "전체 회원", color: "#168EEA" },
+              { n: totalMembers, l: "전체 회원", color: "#3b82f6" },
               { n: recentMembers, l: "이번주 신규", color: "#22c55e" },
               { n: onlineCount||0, l: "실시간 접속", color: "#f59e0b" },
               { n: totalPosts, l: "전체 게시글", color: "#8b5cf6" },
@@ -576,9 +576,9 @@ export default function AdminPage({ C, user: adminUser }) {
                 <div key={cat} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                   <span style={{ fontSize:13, fontWeight:700, color:C.text, minWidth:80 }}>{cat}</span>
                   <div style={{ flex:1, height:8, borderRadius:4, background:isDark?"rgba(255,255,255,0.06)":"#f0f0f0", overflow:"hidden" }}>
-                    <div style={{ height:"100%", borderRadius:4, background:"#168EEA", width:`${Math.max(3,(cnt/Math.max(...Object.values(catStats)))*100)}%` }}/>
+                    <div style={{ height:"100%", borderRadius:4, background:"#3b82f6", width:`${Math.max(3,(cnt/Math.max(...Object.values(catStats)))*100)}%` }}/>
                   </div>
-                  <span style={{ fontSize:12, fontWeight:700, color:C.purpleL||"#168EEA", minWidth:30, textAlign:"right" }}>{cnt}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.purpleL||"#3b82f6", minWidth:30, textAlign:"right" }}>{cnt}</span>
                 </div>
               ))}
             </div>
@@ -590,7 +590,7 @@ export default function AdminPage({ C, user: adminUser }) {
                 <div key={nick} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                   <span style={{ fontSize:13, fontWeight:900, color:i<3?"#f59e0b":C.muted, minWidth:20 }}>{i+1}</span>
                   <span style={{ fontSize:13, fontWeight:700, color:C.text, flex:1 }}>{nick}</span>
-                  <span style={{ fontSize:12, fontWeight:700, color:C.purpleL||"#168EEA" }}>{cnt}건</span>
+                  <span style={{ fontSize:12, fontWeight:700, color:C.purpleL||"#3b82f6" }}>{cnt}건</span>
                 </div>
               ))}
             </div>
@@ -631,10 +631,10 @@ export default function AdminPage({ C, user: adminUser }) {
           <div style={{ marginTop:24, padding:"18px 22px", borderRadius:14, background:isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)", border:`1px solid ${isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)"}` }}>
             <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:10 }}>🔍 검색엔진 노출 현황</div>
             <div style={{ fontSize:12, color:C.muted, lineHeight:1.8 }}>
-              <b style={{color:C.text}}>Google Search Console</b> → <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" style={{color:"#168EEA"}}>바로가기</a> (snsmakeit.com 등록 필요)<br/>
-              <b style={{color:C.text}}>Naver Search Advisor</b> → <a href="https://searchadvisor.naver.com" target="_blank" rel="noopener noreferrer" style={{color:"#168EEA"}}>바로가기</a> (네이버 검색 노출)<br/>
-              <b style={{color:C.text}}>Bing Webmaster</b> → <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" style={{color:"#168EEA"}}>바로가기</a> (해외 Bing 검색)<br/>
-              <b style={{color:C.text}}>Google Analytics</b> → <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" style={{color:"#168EEA"}}>바로가기</a> (실시간 트래픽, 유입 경로, 페이지뷰)<br/>
+              <b style={{color:C.text}}>Google Search Console</b> → <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" style={{color:"#3b82f6"}}>바로가기</a> (snsmakeit.com 등록 필요)<br/>
+              <b style={{color:C.text}}>Naver Search Advisor</b> → <a href="https://searchadvisor.naver.com" target="_blank" rel="noopener noreferrer" style={{color:"#3b82f6"}}>바로가기</a> (네이버 검색 노출)<br/>
+              <b style={{color:C.text}}>Bing Webmaster</b> → <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" style={{color:"#3b82f6"}}>바로가기</a> (해외 Bing 검색)<br/>
+              <b style={{color:C.text}}>Google Analytics</b> → <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" style={{color:"#3b82f6"}}>바로가기</a> (실시간 트래픽, 유입 경로, 페이지뷰)<br/>
               <br/>
               <span style={{color:"#f59e0b",fontWeight:700}}>💡 추천:</span> Google Analytics를 연동하면 실시간 방문자, 페이지뷰, 유입 검색어, 검색엔진별 트래픽을 모두 확인할 수 있습니다.
               GA4 추적 코드를 <code style={{background:isDark?"rgba(255,255,255,0.1)":"#f0f0f6",padding:"1px 6px",borderRadius:4}}>index.html</code>에 추가하면 됩니다.
@@ -653,8 +653,8 @@ export default function AdminPage({ C, user: adminUser }) {
                   <div style={{ display:"flex", alignItems:"flex-end", gap:8, height:120 }}>
                     {dailySignups.map(d => (
                       <div key={d.date} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-                        <span style={{ fontSize:11, fontWeight:700, color:C.purpleL||"#168EEA" }}>{d.count}</span>
-                        <div style={{ width:"100%", maxWidth:40, borderRadius:"6px 6px 0 0", background:"#168EEA", height:`${Math.max((d.count/maxVal)*80, 4)}px`, transition:"height 0.3s" }}/>
+                        <span style={{ fontSize:11, fontWeight:700, color:C.purpleL||"#3b82f6" }}>{d.count}</span>
+                        <div style={{ width:"100%", maxWidth:40, borderRadius:"6px 6px 0 0", background:"#3b82f6", height:`${Math.max((d.count/maxVal)*80, 4)}px`, transition:"height 0.3s" }}/>
                         <span style={{ fontSize:9, color:C.muted, whiteSpace:"nowrap" }}>{d.date.slice(5)}</span>
                       </div>
                     ))}
@@ -736,7 +736,7 @@ export default function AdminPage({ C, user: adminUser }) {
                         {Object.entries(byReason).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([r,c]) => (
                           <div key={r} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                             <span style={{ fontSize:11, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r}</span>
-                            <span style={{ fontSize:12, fontWeight:700, color:"#168EEA" }}>{c}회</span>
+                            <span style={{ fontSize:12, fontWeight:700, color:"#3b82f6" }}>{c}회</span>
                           </div>
                         ))}
                       </div>
@@ -746,7 +746,7 @@ export default function AdminPage({ C, user: adminUser }) {
                           <div key={uid} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                             <span style={{ fontSize:12, fontWeight:900, color:i<3?"#f59e0b":C.muted, minWidth:16 }}>{i+1}</span>
                             <span style={{ fontSize:11, color:C.text, flex:1 }}>{nick(uid)}</span>
-                            <span style={{ fontSize:12, fontWeight:700, color:"#168EEA" }}>{c}회</span>
+                            <span style={{ fontSize:12, fontWeight:700, color:"#3b82f6" }}>{c}회</span>
                           </div>
                         ))}
                       </div>
@@ -815,7 +815,7 @@ export default function AdminPage({ C, user: adminUser }) {
                 {/* 회원 기본 정보 */}
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 42, height: 42, borderRadius: 12, background: "#168EEA", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 12, background: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
                       {(m.nick||"?")[0].toUpperCase()}
                     </div>
                     <div>
@@ -1023,7 +1023,7 @@ export default function AdminPage({ C, user: adminUser }) {
             {boardLoading && <div style={{ color:C.muted, fontSize:13 }}>불러오는 중...</div>}
             {boardCats.map(cat => (
               <div key={cat.id} onClick={()=>handleSelectBoardCat(cat)}
-                style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`2px solid ${selBoardCat?.id===cat.id?"#168EEA":bdr}`, background:selBoardCat?.id===cat.id?"rgba(0,0,0,0.06)":"transparent", cursor:"pointer", marginBottom:8, transition:"all 0.15s" }}>
+                style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`2px solid ${selBoardCat?.id===cat.id?"#3b82f6":bdr}`, background:selBoardCat?.id===cat.id?"rgba(0,0,0,0.06)":"transparent", cursor:"pointer", marginBottom:8, transition:"all 0.15s" }}>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{cat.label}</div>
                   <div style={{ fontSize:11, color:C.muted }}>ID: {cat.id}</div>
@@ -1071,7 +1071,7 @@ export default function AdminPage({ C, user: adminUser }) {
                       style={{ flex:1, padding:"9px 12px", borderRadius:9, border:"1px solid "+bdr, background:inputBg, color:C.text, fontSize:13, outline:"none" }}/>
                   </div>
                   <button onClick={handleAddTag} disabled={!newTagLabel.trim()}
-                    style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", cursor:newTagLabel.trim()?"pointer":"not-allowed", background:newTagLabel.trim()?"#168EEA":"rgba(0,0,0,0.06)", color:"#fff", fontSize:13, fontWeight:800, opacity:newTagLabel.trim()?1:0.6 }}>
+                    style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", cursor:newTagLabel.trim()?"pointer":"not-allowed", background:newTagLabel.trim()?"#3b82f6":"rgba(0,0,0,0.06)", color:"#fff", fontSize:13, fontWeight:800, opacity:newTagLabel.trim()?1:0.6 }}>
                     + 서브 카테고리 추가
                   </button>
                 </div>
@@ -1088,7 +1088,7 @@ export default function AdminPage({ C, user: adminUser }) {
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:16, flexWrap:"wrap", gap:10 }}>
             <div style={{ fontSize:14, color:C.muted }}>총 <b style={{ color:C.text }}>{videos.length}개</b>의 영상</div>
             <button onClick={() => { resetVidForm(); setVidEdit(null); setVidFormOpen(p=>!p); }}
-              style={{ padding:"9px 20px", borderRadius:10, border:"none", background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+              style={{ padding:"9px 20px", borderRadius:10, border:"none", background:"#3b82f6", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
               {vidFormOpen && !vidEdit ? "✕ 닫기" : "+ 영상 추가"}
             </button>
           </div>
@@ -1121,14 +1121,14 @@ export default function AdminPage({ C, user: adminUser }) {
               <div style={{ display:"flex", alignItems:"center", gap:16, marginTop:14 }}>
                 <label style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer", fontSize:13, color:C.text }}>
                   <input type="checkbox" checked={vidForm.isFree} onChange={e=>setVidForm(p=>({...p,isFree:e.target.checked}))}
-                    style={{ accentColor:"#168EEA" }} />
+                    style={{ accentColor:"#3b82f6" }} />
                   무료 공개
                 </label>
                 <div style={{ marginLeft:"auto", display:"flex", gap:8 }}>
                   <button onClick={() => { setVidFormOpen(false); setVidEdit(null); resetVidForm(); }}
                     style={{ padding:"9px 20px", borderRadius:9, border:"1px solid "+bdr, background:"transparent", color:C.muted, fontSize:13, cursor:"pointer" }}>취소</button>
                   <button onClick={submitVideo}
-                    style={{ padding:"9px 24px", borderRadius:9, border:"none", background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                    style={{ padding:"9px 24px", borderRadius:9, border:"none", background:"#3b82f6", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
                     {vidEdit ? "✅ 수정 완료" : "✅ 등록하기"}
                   </button>
                 </div>
@@ -1327,7 +1327,7 @@ function InquiryManager({ C, isDark }) {
           <textarea value={replyText} onChange={e => setReplyText(e.target.value)} rows={4} placeholder="답변 내용을 입력하세요..."
             style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit", resize: "vertical" }} />
           <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <button onClick={() => submitReply(s.id)} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "#168EEA", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>답변 저장</button>
+            <button onClick={() => submitReply(s.id)} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "#3b82f6", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>답변 저장</button>
             {s.status !== "closed" && <button onClick={() => updateStatus(s.id, "closed")} style={{ padding: "10px 18px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>종료 처리</button>}
           </div>
         </div>
@@ -1436,7 +1436,7 @@ function AppFeedbackTab({ C, isDark }) {
   const [feedbacks, setFeedbacks] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const catLabels = { feature:"기능 요청", bug:"버그 신고", improve:"개선 제안", other:"기타" };
-  const catColors = { feature:"#168EEA", bug:"#ef4444", improve:"#f59e0b", other:"#888" };
+  const catColors = { feature:"#3b82f6", bug:"#ef4444", improve:"#f59e0b", other:"#888" };
   const statusOpts = ["pending","reviewed","done","rejected"];
   const statusLabels = { pending:"검토 대기", reviewed:"검토 중", done:"반영 완료", rejected:"보류" };
   const statusColors = { pending:"#888", reviewed:"#3b82f6", done:"#10b981", rejected:"#ef4444" };
@@ -1501,7 +1501,7 @@ function VisitorMap({ geoPoints, isDark }) {
       const maxCnt = Math.max(...geoPoints.map(p => p.count), 1);
       geoPoints.forEach(p => {
         const r = Math.max(6, Math.min(30, (p.count / maxCnt) * 30));
-        const color = p.country === "KR" ? "#10b981" : p.country === "US" ? "#3b82f6" : p.country === "JP" ? "#f59e0b" : "#168EEA";
+        const color = p.country === "KR" ? "#10b981" : p.country === "US" ? "#3b82f6" : p.country === "JP" ? "#f59e0b" : "#3b82f6";
         L.circleMarker([p.lat, p.lng], { radius: r, fillColor: color, color: "rgba(255,255,255,0.5)", weight: 1, fillOpacity: 0.7 })
           .bindTooltip(`${p.city || "?"} (${COUNTRY_NAMES[p.country] || p.country}) — ${p.count}회`, { direction: "top" })
           .addTo(map);
@@ -1570,16 +1570,16 @@ function VisitorAnalyticsTab({ C, isDark }) {
       <div style={{ display: "flex", gap: 6, marginBottom: 24, alignItems: "center", flexWrap: "wrap" }}>
         {[7, 30, 90].map(d => (
           <button key={d} onClick={() => setDays(d)} style={{
-            padding: "7px 16px", borderRadius: 8, border: days === d ? "2px solid #168EEA" : `1px solid ${bdr}`,
+            padding: "7px 16px", borderRadius: 8, border: days === d ? "2px solid #3b82f6" : `1px solid ${bdr}`,
             background: days === d ? (isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)") : "transparent",
-            color: days === d ? "#168EEA" : muted, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
+            color: days === d ? "#3b82f6" : muted, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
           }}>{d}일</button>
         ))}
         <div style={{ display: "flex", gap: 4, alignItems: "center", marginLeft: 8 }}>
           <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} style={inputSt} />
           <span style={{ color: muted, fontSize: 12 }}>~</span>
           <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} style={inputSt} />
-          <button onClick={loadCustomRange} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "#168EEA", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>조회</button>
+          <button onClick={loadCustomRange} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${bdr}`, background: "#3b82f6", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>조회</button>
         </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 11, color: muted, background: isDark ? "rgba(255,255,255,0.06)" : "#f3f4f6", padding: "4px 12px", borderRadius: 8 }}>세션 {mm}:{ss}</span>
@@ -1596,7 +1596,7 @@ function VisitorAnalyticsTab({ C, isDark }) {
           ["페이지뷰", Object.values(data.dailyCounts || {}).reduce((s, v) => s + v, 0), `${data.days}일 전체 조회`],
         ].map(([label, val, desc], i) => (
           <div key={i} style={{ padding: "18px 20px", borderRadius: 14, background: card, border: `1px solid ${bdr}` }}>
-            <div style={{ fontSize: 12, color: "#168EEA", fontWeight: 600, marginBottom: 6 }}>{label}</div>
+            <div style={{ fontSize: 12, color: "#3b82f6", fontWeight: 600, marginBottom: 6 }}>{label}</div>
             <div style={{ fontSize: 28, fontWeight: 900, color: text }}>{val?.toLocaleString?.() || val || 0}</div>
             <div style={{ fontSize: 11, color: muted, marginTop: 4 }}>{desc}</div>
           </div>
@@ -1620,7 +1620,7 @@ function VisitorAnalyticsTab({ C, isDark }) {
             {dailyEntries.map(([date, cnt]) => (
               <div key={date} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                 <div style={{ fontSize: 9, color: muted }}>{cnt}</div>
-                <div style={{ width: "100%", maxWidth: 24, height: Math.max(4, (cnt / maxDaily) * 100), borderRadius: 4, background: "#168EEA", transition: "height 0.3s" }} />
+                <div style={{ width: "100%", maxWidth: 24, height: Math.max(4, (cnt / maxDaily) * 100), borderRadius: 4, background: "#3b82f6", transition: "height 0.3s" }} />
                 <div style={{ fontSize: 8, color: muted, transform: "rotate(-45deg)", transformOrigin: "center", whiteSpace: "nowrap" }}>{date.slice(5)}</div>
               </div>
             ))}
@@ -1639,7 +1639,7 @@ function VisitorAnalyticsTab({ C, isDark }) {
               <div key={code} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                 <span style={{ fontSize: 13, fontWeight: 600, color: text, minWidth: 80 }}>{COUNTRY_NAMES[code] || code}</span>
                 <div style={{ flex: 1, height: 6, borderRadius: 3, background: isDark ? "rgba(255,255,255,0.06)" : "#eee" }}>
-                  <div style={{ width: pct + "%", height: "100%", borderRadius: 3, background: "#168EEA" }} />
+                  <div style={{ width: pct + "%", height: "100%", borderRadius: 3, background: "#3b82f6" }} />
                 </div>
                 <span style={{ fontSize: 12, color: muted, minWidth: 50, textAlign: "right" }}>{cnt} ({pct}%)</span>
               </div>

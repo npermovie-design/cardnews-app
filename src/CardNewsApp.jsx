@@ -494,7 +494,7 @@ function PresetCanvas(props) {
   }, [dp.key]);
   return (
     <div onClick={props.onClick}
-      style={{cursor:"pointer", borderRadius:9, overflow:"hidden", border: isC ? "2.5px solid #168EEA" : "2px solid rgba(255,255,255,0.1)", boxShadow: isC ? "0 0 0 3px rgba(0,0,0,0.06)" : "none", position:"relative", flexShrink:0}}>
+      style={{cursor:"pointer", borderRadius:9, overflow:"hidden", border: isC ? "2.5px solid #3b82f6" : "2px solid rgba(255,255,255,0.1)", boxShadow: isC ? "0 0 0 3px rgba(0,0,0,0.06)" : "none", position:"relative", flexShrink:0}}>
       <canvas ref={cRef} width={size} height={size} style={{display:"block", width:size, height:size}}/>
       <div style={{position:"absolute", bottom:0, left:0, right:0, background:"linear-gradient(transparent,rgba(0,0,0,0.75))", padding:"12px 6px 5px", fontSize:9, fontWeight:700, color:"#fff", textAlign:"center"}}>
         {dpLabel}
@@ -763,7 +763,7 @@ function PreviewPanel(props) {
 
         <div style={{display:"flex", gap:6, flexWrap:"wrap", justifyContent:"center"}}>
           <button onClick={dlOne} disabled={dlSt.busy}
-            style={{padding:"8px 20px", borderRadius:8, border:"none", cursor: dlSt.busy ? "not-allowed" : "pointer", background:"#168EEA", color:"#fff", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
+            style={{padding:"8px 20px", borderRadius:8, border:"none", cursor: dlSt.busy ? "not-allowed" : "pointer", background:"#3b82f6", color:"#fff", fontSize:12, fontWeight:700, opacity: dlSt.busy ? 0.5 : 1}}>
             {t("cn_saveCurrent")}
           </button>
           <button onClick={dlZip} disabled={dlSt.busy}
@@ -803,7 +803,7 @@ function PreviewPanel(props) {
             let isC = i === idx;
             return (
               <div key={i} onClick={function() { setIdx(i); }}
-                style={{cursor:"pointer", borderRadius:7, overflow:"hidden", border: isC ? "2px solid #168EEA" : "2px solid transparent", boxShadow: isC ? "0 0 0 2px rgba(0,0,0,0.06)" : "none", position:"relative"}}>
+                style={{cursor:"pointer", borderRadius:7, overflow:"hidden", border: isC ? "2px solid #3b82f6" : "2px solid transparent", boxShadow: isC ? "0 0 0 2px rgba(0,0,0,0.06)" : "none", position:"relative"}}>
                 <SlideCanvas slide={sm} style={gs} bgUrl={bgIs[i] || null} width={70} thumb={true}/>
                 <div style={{position:"absolute", bottom:2, right:3, fontSize:9, fontWeight:700, color:"rgba(255,255,255,0.85)", textShadow:"0 1px 3px rgba(0,0,0,0.9)"}}>
                   {i < 9 ? "0" + (i + 1) : "" + (i + 1)}
@@ -837,7 +837,7 @@ export function PlannerPanel(props) {
   let accentBg  = isDark ? "rgba(0,0,0,0.06)"    : "rgba(0,0,0,0.06)";
   let accentBdr = isDark ? "rgba(0,0,0,0.06)"     : "rgba(0,0,0,0.06)";
   let tabBg     = isDark ? "rgba(255,255,255,0.07)"   : "#ede9fc";
-  let tabActive = isDark ? "rgba(0,0,0,0.06)"     : "#168EEA";
+  let tabActive = isDark ? "rgba(0,0,0,0.06)"     : "#3b82f6";
   let tabText   = isDark ? "rgba(255,255,255,0.45)"   : "#6c757d";
   let btnBg     = isDark ? "rgba(255,255,255,0.06)" : "#f0f0f8";
   let btnBdr    = isDark ? "rgba(255,255,255,0.12)"   : "#d8d6f0";
@@ -954,12 +954,12 @@ export function PlannerPanel(props) {
                   <div style={{display:"flex",gap:4}}>
                     {[4,5,6,7,8,10].map(function(n){
                       let isC = planCnt === n;
-                      return(<button key={n} onClick={function(){setPlanCnt(n);}} style={{width:28,height:28,borderRadius:6,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,background:isC?"#168EEA":tabBg,color:isC?"#fff":textSub}}>{n}</button>);
+                      return(<button key={n} onClick={function(){setPlanCnt(n);}} style={{width:28,height:28,borderRadius:6,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,background:isC?"#3b82f6":tabBg,color:isC?"#fff":textSub}}>{n}</button>);
                     })}
                   </div>
                 </div>
                 <button onClick={runUrlPlan} disabled={urlLoading || !urlInput.trim()}
-                  style={{width:"100%",padding:"11px",borderRadius:9,border:"none",cursor:(urlLoading||!urlInput.trim())?"not-allowed":"pointer",background:urlInput.trim()?"#168EEA":"rgba(0,0,0,0.06)",color:urlInput.trim()?"#fff":"rgba(255,255,255,0.3)",fontSize:13,fontWeight:800,opacity:urlLoading?0.7:1}}>
+                  style={{width:"100%",padding:"11px",borderRadius:9,border:"none",cursor:(urlLoading||!urlInput.trim())?"not-allowed":"pointer",background:urlInput.trim()?"#3b82f6":"rgba(0,0,0,0.06)",color:urlInput.trim()?"#fff":"rgba(255,255,255,0.3)",fontSize:13,fontWeight:800,opacity:urlLoading?0.7:1}}>
                   {urlLoading ? t("cn_analyzingUrl") : "🔗 " + t("cn_urlAnalyze")}
                 </button>
                 {urlErr && <div style={{fontSize:11,color:errColor,marginTop:8,textAlign:"center"}}>{urlErr}</div>}
@@ -1015,7 +1015,7 @@ export function PlannerPanel(props) {
                   </div>
                 </div>
                 <button onClick={runPlan} disabled={planLoading || !planTopic.trim()}
-                  style={{width:"100%", padding:"11px", borderRadius:9, border:"none", cursor: (planLoading || !planTopic.trim()) ? "not-allowed" : "pointer", background: planTopic.trim() ? "#168EEA" : "rgba(0,0,0,0.06)", color: planTopic.trim() ? "#fff" : "rgba(255,255,255,0.3)", fontSize:13, fontWeight:800, opacity: planLoading ? 0.7 : 1}}>
+                  style={{width:"100%", padding:"11px", borderRadius:9, border:"none", cursor: (planLoading || !planTopic.trim()) ? "not-allowed" : "pointer", background: planTopic.trim() ? "#3b82f6" : "rgba(0,0,0,0.06)", color: planTopic.trim() ? "#fff" : "rgba(255,255,255,0.3)", fontSize:13, fontWeight:800, opacity: planLoading ? 0.7 : 1}}>
                   {planLoading ? t("cn_planning") : "✨ " + t("cn_startPlanning")}
                 </button>
                 {planErr && <div style={{fontSize:11, color:errColor, marginTop:8, textAlign:"center"}}>{planErr}</div>}
@@ -1044,7 +1044,7 @@ export function PlannerPanel(props) {
                 <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12}}>
                   <div style={{fontSize:13, fontWeight:800, color:accentClr}}>"{parsedPlan.topic}" · {(parsedPlan.slides || []).length}장</div>
                   <button onClick={function() { if (parsedPlan) { onApplySlides(parsedPlan); onClose(); } }}
-                    style={{padding:"8px 18px", borderRadius:8, border:"none", cursor:"pointer", background:"#168EEA", color:"#fff", fontSize:12, fontWeight:800}}>
+                    style={{padding:"8px 18px", borderRadius:8, border:"none", cursor:"pointer", background:"#3b82f6", color:"#fff", fontSize:12, fontWeight:800}}>
                     {t("cn_startEditing")}
                   </button>
                 </div>
@@ -1165,7 +1165,7 @@ function Sidebar(props) {
           let isA = page === item.id;
           return (
             <button key={item.id} onClick={function() { setPage(item.id); }}
-              style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background: isA ? itemActiveBg : "transparent", color: isA ? itemActive : itemText, fontSize:12, fontWeight: isA ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: isA ? "3px solid #168EEA" : "3px solid transparent"}}>
+              style={{width:"100%", padding:"8px 10px", borderRadius:8, border:"none", cursor:"pointer", background: isA ? itemActiveBg : "transparent", color: isA ? itemActive : itemText, fontSize:12, fontWeight: isA ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: isA ? "3px solid #3b82f6" : "3px solid transparent"}}>
               {item.label}
             </button>
           );
@@ -1187,7 +1187,7 @@ function Sidebar(props) {
             {"🔗 " + t("cn_planByLinkMenu")}
           </button>
           <button onClick={function() { setPage("make"); }}
-            style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background: page === "make" ? itemActiveBg : "transparent", color: page === "make" ? itemActive : itemText, fontSize:11, fontWeight: page === "make" ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: page === "make" ? "3px solid #168EEA" : "3px solid transparent"}}>
+            style={{width:"100%", padding:"6px 10px 6px 20px", borderRadius:7, border:"none", cursor:"pointer", background: page === "make" ? itemActiveBg : "transparent", color: page === "make" ? itemActive : itemText, fontSize:11, fontWeight: page === "make" ? 700 : 400, textAlign:"left", marginBottom:1, borderLeft: page === "make" ? "3px solid #3b82f6" : "3px solid transparent"}}>
             {"🃏 " + t("cn_makeDirectMenu")}
           </button>
         </div>
@@ -1224,7 +1224,7 @@ function Sidebar(props) {
           </div>
         </div>
         <div style={{height:3, background:usageBar, borderRadius:2, overflow:"hidden"}}>
-          <div style={{height:"100%", width:pct, background:"#168EEA"}}/>
+          <div style={{height:"100%", width:pct, background:"#3b82f6"}}/>
         </div>
       </div>
     </div>
@@ -1343,13 +1343,13 @@ function PageMake(props) {
   let inputBdr= D ? "rgba(255,255,255,0.12)"   : "#d8d6f0";
   let sectionBg=D ? "rgba(255,255,255,0.03)"   : "#fff";
   let tagBg   = D ? "rgba(255,255,255,0.06)"   : "#ede9fc";
-  let tagClr  = D ? "rgba(255,255,255,0.6)"    : "#168EEA";
-  let tagAbg  = D ? "rgba(0,0,0,0.06)"     : "#168EEA";
+  let tagClr  = D ? "rgba(255,255,255,0.6)"    : "#3b82f6";
+  let tagAbg  = D ? "rgba(0,0,0,0.06)"     : "#3b82f6";
   let tagAClr = "#fff";
-  let stepDone= D ? "#168EEA"                  : "#168EEA";
+  let stepDone= D ? "#3b82f6"                  : "#3b82f6";
   let stepAct = D ? "rgba(0,0,0,0.06)"     : "rgba(0,0,0,0.06)";
   let stepInact= D ? "rgba(255,255,255,0.1)"   : "#e5e3f5";
-  let stepActTxt= D ? "#fff"                   : "#168EEA";
+  let stepActTxt= D ? "#fff"                   : "#3b82f6";
   let stepInTxt = D ? "rgba(255,255,255,0.25)" : "#bbb";
   let stepLbl = D ? "rgba(255,255,255,0.5)"    : "#888";
   let accentTxt = D ? "#a5b4fc"               : "#4f46e5";
@@ -1384,12 +1384,12 @@ function PageMake(props) {
           <div style={{display:"flex", flexDirection:"column", gap:10}}>
             {!props.user ? (
               <button onClick={function(){ if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); else window.location.hash="#home"; }}
-                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"#168EEA", color:"#fff", fontSize:14, fontWeight:800}}>
+                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"#3b82f6", color:"#fff", fontSize:14, fontWeight:800}}>
                 🚀 회원가입 / 로그인하기
               </button>
             ) : (
               <button onClick={function(){ window.location.hash = "#pricing"; }}
-                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"#168EEA", color:"#fff", fontSize:14, fontWeight:800}}>
+                style={{width:"100%", padding:"13px", borderRadius:12, border:"none", cursor:"pointer", background:"#3b82f6", color:"#fff", fontSize:14, fontWeight:800}}>
                 플랜 업그레이드
               </button>
             )}
@@ -1414,7 +1414,7 @@ function PageMake(props) {
               <div style={{display:"flex", alignItems:"center", gap:8, cursor: done ? "pointer" : "default"}}
                 onClick={function() { if (done) { setMakeStep(st.n); } }}>
                 <div style={{width:28, height:28, borderRadius:"50%",
-                  background: done ? "#168EEA" : (active ? "#168EEA" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5")),
+                  background: done ? "#3b82f6" : (active ? "#3b82f6" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5")),
                   display:"flex", alignItems:"center", justifyContent:"center",
                   fontSize:12, fontWeight:900, flexShrink:0,
                   color: (done || active) ? "#fff" : (D ? "rgba(255,255,255,0.3)" : "#bbb")}}>
@@ -1423,7 +1423,7 @@ function PageMake(props) {
                 <span style={{fontSize:13, fontWeight: active ? 800 : 500,
                   color: active ? text : (D ? "rgba(255,255,255,0.4)" : "#888"), whiteSpace:"nowrap"}}>{st.l}</span>
               </div>
-              {si < 2 && <div style={{flex:1, height:2, background: done ? "#168EEA" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5"), margin:"0 12px", minWidth:16}}/>}
+              {si < 2 && <div style={{flex:1, height:2, background: done ? "#3b82f6" : (D ? "rgba(255,255,255,0.1)" : "#e5e5e5"), margin:"0 12px", minWidth:16}}/>}
             </div>
           );
         })}
@@ -1444,7 +1444,7 @@ function PageMake(props) {
                 let isC = topic === ex.text;
                 return (
                   <button key={ex.labelKey} onClick={function() { setTopic(ex.text); }}
-                    style={{padding:"5px 12px", borderRadius:16, border:"1px solid "+(isC?"#168EEA":bdr),
+                    style={{padding:"5px 12px", borderRadius:16, border:"1px solid "+(isC?"#3b82f6":bdr),
                       background: isC ? "rgba(0,0,0,0.06)" : tagBg,
                       color: isC ? "#a5b4fc" : tagClr,
                       fontSize:12, cursor:"pointer", fontWeight: isC ? 700 : 400, transition:"all 0.12s"}}>
@@ -1474,7 +1474,7 @@ function PageMake(props) {
           <div style={{padding:"14px 18px", borderRadius:12, border:"1px solid "+bdr, background:sectionBg, marginBottom:16}}>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10}}>
               <div style={{fontSize:13, fontWeight:700, color:text}}>{t("cn_slideCountLabel")}</div>
-              <div style={{fontSize:20, fontWeight:900, color:"#168EEA"}}>{cnt}{t("cn_slideUnit")}</div>
+              <div style={{fontSize:20, fontWeight:900, color:"#3b82f6"}}>{cnt}{t("cn_slideUnit")}</div>
             </div>
             <div style={{display:"flex", gap:5, flexWrap:"wrap"}}>
               {[3,4,5,6,7,8,10,12].map(function(n) {
@@ -1482,7 +1482,7 @@ function PageMake(props) {
                 return (
                   <button key={n} onClick={function() { setCnt(n); }}
                     style={{width:36, height:36, borderRadius:9,
-                      border:"1.5px solid "+(isC?"#168EEA":bdr),
+                      border:"1.5px solid "+(isC?"#3b82f6":bdr),
                       cursor:"pointer", fontSize:13, fontWeight:700,
                       background: isC ? "rgba(0,0,0,0.06)" : "transparent",
                       color: isC ? "#a5b4fc" : (D ? "rgba(255,255,255,0.5)" : "#666")}}>
@@ -1497,7 +1497,7 @@ function PageMake(props) {
             <button onClick={function() { if (canGo) { setMakeStep(2); } }} disabled={!canGo}
               style={{padding:"14px 40px", borderRadius:12, border:"none",
                 cursor: canGo ? "pointer" : "not-allowed",
-                background: canGo ? "#168EEA" : (D ? "rgba(0,0,0,0.06)" : "#e5e3f5"),
+                background: canGo ? "#3b82f6" : (D ? "rgba(0,0,0,0.06)" : "#e5e3f5"),
                 color: canGo ? "#fff" : (D ? "rgba(255,255,255,0.3)" : "#bbb"),
                 fontSize:15, fontWeight:900, display:"flex", alignItems:"center", gap:8}}>
               {t("cn_nextDesign")} <span style={{fontSize:12, opacity:0.8}}>{t("cn_designSelect")}</span>
@@ -1520,7 +1520,7 @@ function PageMake(props) {
                   return (
                     <div key={dp.key} onClick={function() { setSelPreset(isC ? null : dp); }}
                       style={{borderRadius:12, overflow:"hidden", cursor:"pointer",
-                        border: isC ? "2px solid #168EEA" : "2px solid transparent",
+                        border: isC ? "2px solid #3b82f6" : "2px solid transparent",
                         boxShadow: isC ? "0 0 0 3px rgba(0,0,0,0.06)" : "0 2px 8px rgba(0,0,0,0.15)",
                         transition:"all 0.15s"}}>
                       <PresetCanvas dp={dp} size={86} isC={isC} onClick={function() {}}/>
@@ -1543,10 +1543,10 @@ function PageMake(props) {
                     {t("cn_previous")}
                   </button>
                   <div style={{textAlign:"right"}}>
-                    {user && <div style={{fontSize:12, color:muted, marginBottom:6}}>{t("cn_expectedCost")}: <b style={{color:"#168EEA"}}>10P</b></div>}
+                    {user && <div style={{fontSize:12, color:muted, marginBottom:6}}>{t("cn_expectedCost")}: <b style={{color:"#3b82f6"}}>10P</b></div>}
                     <button onClick={function() { setMakeStep(3); onGenerate(); }} disabled={loading}
                       style={{padding:"14px 40px", borderRadius:12, border:"none", cursor:"pointer",
-                        background:"#168EEA", color:"#fff", fontSize:15, fontWeight:900,
+                        background:"#3b82f6", color:"#fff", fontSize:15, fontWeight:900,
                         display:"flex", alignItems:"center", gap:8}}>
                       {loading ? t("cn_generating") : user ? <>{t("cn_generateCard")} 💎 10P</> : "✦ " + t("cn_generateOnce")}
                     </button>
@@ -1582,7 +1582,7 @@ function PageMake(props) {
                 <div style={{position:"relative", width:72, height:72, margin:"0 auto 16px"}}>
                   <div style={{position:"absolute", inset:0, borderRadius:"50%", border:"3px solid rgba(0,0,0,0.06)"}}/>
                   <div style={{position:"absolute", inset:0, borderRadius:"50%", border:"3px solid transparent",
-                    borderTopColor:"#168EEA", animation:"cn-spin 1s linear infinite"}}/>
+                    borderTopColor:"#3b82f6", animation:"cn-spin 1s linear infinite"}}/>
                   <div style={{position:"absolute", inset:8, borderRadius:"50%", border:"2px solid transparent",
                     borderTopColor:"rgba(0,0,0,0.06)", animation:"cn-spin 1.5s linear infinite reverse"}}/>
                   <div style={{position:"absolute", inset:0, display:"flex", alignItems:"center",
@@ -1594,7 +1594,7 @@ function PageMake(props) {
               <div style={{padding:"16px 24px"}}>
                 <div style={{height:8, borderRadius:4, background:D?"rgba(255,255,255,0.08)":"#e8e8e8", overflow:"hidden"}}>
                   <div style={{height:"100%", borderRadius:4,
-                    background:"#168EEA",
+                    background:"#3b82f6",
                     animation:"cn-progress 8s ease-out forwards"}}/>
                 </div>
                 <div style={{fontSize:11, color:D?"rgba(255,255,255,0.35)":"#bbb", marginTop:10, textAlign:"center"}}>
@@ -1621,7 +1621,7 @@ function PageMake(props) {
               <div style={{fontSize:14, color:muted, marginBottom:24}}>{tname} · {slides.length}{t("cn_slideUnit")}</div>
               <button onClick={function() { setPage("edit"); }}
                 style={{padding:"14px 40px", borderRadius:14, border:"none", cursor:"pointer",
-                  background:"#168EEA", color:"#fff",
+                  background:"#3b82f6", color:"#fff",
                   fontSize:16, fontWeight:900, boxShadow:"0 10px 32px rgba(0,0,0,0.06)"}}>
                 {"✏️ " + t("cn_goEdit")}
               </button>
@@ -1857,7 +1857,7 @@ export function CardNewsApp(props) {
     "@keyframes cn-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}" +
     "@keyframes cn-popin{from{opacity:0;transform:scale(0.82)}to{opacity:1;transform:scale(1)}}" +
     "input[type=range]{-webkit-appearance:none;height:4px;border-radius:2px;outline:none;background:" + (isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.15)") + ";width:100%}" +
-    "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#168EEA;cursor:pointer}" +
+    "input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#3b82f6;cursor:pointer}" +
     "::-webkit-scrollbar{width:4px;height:4px}" +
     "::-webkit-scrollbar-thumb{background:" + (isLight ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.12)") + ";border-radius:4px}" +
     "a{text-decoration:none}button{font-family:inherit}";
@@ -1932,7 +1932,7 @@ export function CardNewsApp(props) {
               <div style={{fontSize:28}}>🎨</div>
               <div style={{fontSize:13, color:"rgba(255,255,255,0.4)"}}>아직 생성된 카드뉴스가 없어요</div>
               <button onClick={function() { setPage("make"); setMakeStep(1); }}
-                style={{padding:"9px 20px", borderRadius:8, border:"none", cursor:"pointer", background:"#168EEA", color:"#fff", fontSize:13, fontWeight:700}}>
+                style={{padding:"9px 20px", borderRadius:8, border:"none", cursor:"pointer", background:"#3b82f6", color:"#fff", fontSize:13, fontWeight:700}}>
                 카드뉴스 만들기 →
               </button>
             </div>

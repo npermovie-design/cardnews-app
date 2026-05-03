@@ -55,7 +55,7 @@ export default function AttendanceModal({ user, onClose, onUserUpdate, isDark })
   const muted  = D ? "rgba(255,255,255,0.5)" : "#888";
   const bdr    = D ? "rgba(255,255,255,0.1)" : "#e9ecef";
   const card   = D ? "rgba(255,255,255,0.05)" : "#f8f8f8";
-  const ACC    = "#168EEA";
+  const ACC    = "#3b82f6";
 
   const [data, setData] = useState(null);
   const [checking, setChecking] = useState(false);

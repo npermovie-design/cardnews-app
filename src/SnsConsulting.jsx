@@ -53,7 +53,7 @@ const HOUR_OPTIONS = (() => {
 })();
 
 export default function SnsConsulting({ isDark, user }) {
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const border = isDark ? "rgba(255,255,255,0.1)" : "#e5e5f0";

@@ -32,7 +32,7 @@ function RepurposePage({ isDark, user, onLoginRequest, onUserUpdate, showPointCo
   const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff";
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
 
   const FORMAT_LIST = [
     { id: "insta",    label: t("at_insta_caption"), desc: t("at_insta_desc") },
@@ -398,7 +398,7 @@ function FileTranscriber({ isDark, user, onLoginRequest, onUserUpdate, showPoint
   const text = D ? "#e8eaed" : "#1a1a2e";
   const muted = D ? "rgba(255,255,255,0.5)" : "#888";
   const bdr = D ? "rgba(255,255,255,0.08)" : "#e5e7eb";
-  const accent = "#168EEA";
+  const accent = "#3b82f6";
   const ibg = D ? "rgba(255,255,255,0.06)" : "#f9f9fc";
   const card = D ? "rgba(255,255,255,0.05)" : "#fff";
   const accentBg = D ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)";

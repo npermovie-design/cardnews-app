@@ -82,7 +82,7 @@ export async function generatePageContent(productData, onProgress) {
   const { productName, sellingPoints, designMood, template, images, language = "ko", qaAnswers = {} } = productData;
 
   const sectionOrder = template?.sectionOrder || ["hero", "brand", "key_features", "product_info", "target", "gallery", "usage", "notices", "cta"];
-  const colorScheme = template?.colorScheme || { primary: "#1a1a2e", secondary: "#555", background: "#ffffff", text: "#111", accent: "#168EEA" };
+  const colorScheme = template?.colorScheme || { primary: "#1a1a2e", secondary: "#555", background: "#ffffff", text: "#111", accent: "#3b82f6" };
 
   onProgress?.(0, "고전환 제목 구상 중...", 10);
 

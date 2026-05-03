@@ -13,11 +13,11 @@ import { T } from "./infographic-i18n.js";
 // ═══════════════════════════════════════════════
 
 const K = {
-  purple: "#168EEA", pink: "#ec4899",
+  purple: "#3b82f6", pink: "#ec4899",
   dark: "#1a1730", white: "#ffffff",
   bg: "#0d0b1a", bgCard: "rgba(0,0,0,0.06)",
   muted: "rgba(255,255,255,0.5)",
-  grad: "#168EEA",
+  grad: "#3b82f6",
   gradBg: "linear-gradient(165deg,#0d0b1a 0%,#1a1040 50%,#0d0b1a 100%)",
 };
 
@@ -213,7 +213,7 @@ function GridBg({ opacity = 0.04 }) {
       <svg width="100%" height="120%" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#168EEA" strokeWidth="0.5" />
+            <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#3b82f6" strokeWidth="0.5" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#grid)" />
@@ -868,7 +868,7 @@ function Scene08_Resources({ lang = "ko" }) {
   return (
     <AbsoluteFill style={{ background: K.gradBg, justifyContent: "center", alignItems: "center" }}>
       <GridBg />
-      <WaveBg color="#168EEA" speed={0.04} yOffset={860} />
+      <WaveBg color="#3b82f6" speed={0.04} yOffset={860} />
       <GlowOrb x="40%" y="40%" color={K.purple} size={450} />
       <ParticleBg />
 
@@ -1174,7 +1174,7 @@ function CCControls({ lang, setLang, secondLang, setSecondLang, showCC, setShowC
           padding: "8px 16px", borderRadius: 10, cursor: "pointer",
           background: showCC ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)",
           border: showCC ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.1)",
-          color: showCC ? "#168EEA" : "rgba(255,255,255,0.4)",
+          color: showCC ? "#3b82f6" : "rgba(255,255,255,0.4)",
           fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 6,
         }}
       >
@@ -1221,7 +1221,7 @@ function CCControls({ lang, setLang, secondLang, setSecondLang, showCC, setShowC
                     display: "flex", alignItems: "center", gap: 10, width: "100%",
                     padding: "10px 14px", borderRadius: 8, border: "none", cursor: "pointer",
                     background: code === lang ? "rgba(0,0,0,0.06)" : "transparent",
-                    color: code === lang ? "#168EEA" : "#fff", fontSize: 14, fontWeight: 600,
+                    color: code === lang ? "#3b82f6" : "#fff", fontSize: 14, fontWeight: 600,
                     textAlign: "left",
                   }}
                 >
@@ -1407,7 +1407,7 @@ export default function InfographicVideoPage() {
               padding: "6px 14px", borderRadius: 8, cursor: "pointer",
               background: code === lang ? "rgba(0,0,0,0.06)" : "transparent",
               border: code === lang ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.06)",
-              color: code === lang ? "#168EEA" : "rgba(255,255,255,0.35)",
+              color: code === lang ? "#3b82f6" : "rgba(255,255,255,0.35)",
               fontSize: 12, fontWeight: 600,
             }}
           >

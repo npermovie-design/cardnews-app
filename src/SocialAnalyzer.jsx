@@ -25,7 +25,7 @@ function KeywordVolume({ isDark }) {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
 
-  const acc = "#168EEA";
+  const acc = "#3b82f6";
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
@@ -139,7 +139,7 @@ function TrendKeywords({ isDark }) {
   const [loading, setLoading] = React.useState({});
   const [lastUpdate, setLastUpdate] = React.useState(null);
 
-  const acc = "#168EEA";
+  const acc = "#3b82f6";
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
   const bdr = isDark ? "rgba(255,255,255,0.09)" : "#e5e5f0";
@@ -270,7 +270,7 @@ function TrendKeywords({ isDark }) {
 export function RealtimeAnalyzer({ isDark }) {
   const text = isDark ? "#fff" : "#1a1a2e";
   const muted = isDark ? "rgba(255,255,255,0.45)" : "#888";
-  const acc = "#168EEA";
+  const acc = "#3b82f6";
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", padding: "32px 20px 60px" }}>
       <div style={{ marginBottom: 20 }}>
@@ -294,7 +294,7 @@ export default function SocialAnalyzer({ isDark, user }) {
   const [activeTab, setActiveTab] = useState("overview");
   const [instaScreenshots, setInstaScreenshots] = useState({}); // {urlIndex: base64}
 
-  const acc = "#168EEA"; const text = isDark ? "#fff" : "#1a1a1a"; const muted = isDark ? "rgba(255,255,255,0.45)" : "#999";
+  const acc = "#3b82f6"; const text = isDark ? "#fff" : "#1a1a1a"; const muted = isDark ? "rgba(255,255,255,0.45)" : "#999";
   const cardBg = isDark ? "rgba(255,255,255,0.04)" : "#fff"; const bdr = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
   const inputBg = isDark ? "rgba(255,255,255,0.06)" : "#fff";
   const validLinks = links.filter(l => l.trim());
@@ -574,7 +574,7 @@ JSON 형식으로 응답:
       {sub&&<div style={{fontSize:9,color:muted,marginTop:2}}>{sub}</div>}
     </div>
   );
-  const Grade = ({g}) => { const c={S:"#168EEA",A:"#22c55e",B:"#3b82f6",C:"#f59e0b",D:"#ef4444"}[g]||muted; return <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:36,height:36,borderRadius:10,background:`${c}15`,border:`2px solid ${c}40`,fontSize:18,fontWeight:900,color:c}}>{g}</span>; };
+  const Grade = ({g}) => { const c={S:"#3b82f6",A:"#22c55e",B:"#3b82f6",C:"#f59e0b",D:"#ef4444"}[g]||muted; return <span style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:36,height:36,borderRadius:10,background:`${c}15`,border:`2px solid ${c}40`,fontSize:18,fontWeight:900,color:c}}>{g}</span>; };
   const Bar = ({value,max,color,label}) => { const pct=max>0?Math.min(100,value/max*100):0; return (
     <div style={{marginBottom:6}}>
       {label&&<div style={{display:"flex",justifyContent:"space-between",fontSize:10,marginBottom:3}}><span style={{color:isDark?"rgba(255,255,255,0.6)":"#666",fontWeight:600,flex:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginRight:8}}>{label}</span><span style={{color:color||acc,fontWeight:700,flexShrink:0}}>{fmtNum(value)}</span></div>}
@@ -695,7 +695,7 @@ JSON 형식으로 응답:
   const renderReport = (md) => {
     if (!md) return null;
     const sections = md.split(/^## /m).filter(Boolean);
-    const sColors = ["#168EEA","#22c55e","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#06b6d4"];
+    const sColors = ["#3b82f6","#22c55e","#3b82f6","#f59e0b","#ef4444","#8b5cf6","#06b6d4"];
     return sections.map((sec,si) => {
       const lines = sec.split("\n"); const title = lines[0]?.replace(/\*\*/g,"").trim();
       const body = lines.slice(1); const elements = []; let tbl = []; let k = 0;

@@ -11,7 +11,7 @@ export default function EditorStep({ state, dispatch, C, isMobile }) {
   const [rightOpen, setRightOpen] = useState(!isMobile);
 
   const sections = state.sections || [];
-  const colorScheme = state.template?.colorScheme || { primary: "#1a1a2e", secondary: "#555", background: "#ffffff", text: "#111", accent: "#168EEA" };
+  const colorScheme = state.template?.colorScheme || { primary: "#1a1a2e", secondary: "#555", background: "#ffffff", text: "#111", accent: "#3b82f6" };
   const selectedSec = sections.find(s => s.id === state.selectedSectionId);
   const selectedSecIdx = sections.findIndex(s => s.id === state.selectedSectionId);
 

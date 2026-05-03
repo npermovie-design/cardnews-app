@@ -11,8 +11,8 @@ import { supabase } from "./storage";
    - 캘린더 실시간 라이브 일정
 ═══════════════════════════════════════════════════════════ */
 
-const GRAD = "#168EEA";
-const ACC = "#168EEA";
+const GRAD = "#3b82f6";
+const ACC = "#3b82f6";
 
 // ── 유틸 ──
 const dateStr = (d) => { const dt = new Date(d); return `${dt.getFullYear()}.${String(dt.getMonth()+1).padStart(2,"0")}.${String(dt.getDate()).padStart(2,"0")}`; };
@@ -330,7 +330,7 @@ function RichEditor({ value, onChange, placeholder, C, isDark }) {
           style={{ padding: "3px 6px", borderRadius: 6, border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 11, outline: "none" }}>
           <option value="" disabled>색상</option>
           <option value="#000000">검정</option>
-          <option value="#168EEA">보라</option>
+          <option value="#3b82f6">보라</option>
           <option value="#ec4899">핑크</option>
           <option value="#ef4444">빨강</option>
           <option value="#22c55e">초록</option>
@@ -444,8 +444,8 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
     if (hasThumb || hasVideo) await new Promise(r => setTimeout(r, 2500));
     else await new Promise(r => setTimeout(r, 1500));
     let mediaNote = "";
-    if (hasThumb) mediaNote += `<p style="color:#168EEA;font-size:12px;">* 썸네일 이미지가 분석되었습니다.</p>`;
-    if (hasVideo) mediaNote += `<p style="color:#168EEA;font-size:12px;">* 영상 ${videoNames.length}개 분석 완료: ${videoNames.join(", ")}</p>`;
+    if (hasThumb) mediaNote += `<p style="color:#3b82f6;font-size:12px;">* 썸네일 이미지가 분석되었습니다.</p>`;
+    if (hasVideo) mediaNote += `<p style="color:#3b82f6;font-size:12px;">* 영상 ${videoNames.length}개 분석 완료: ${videoNames.join(", ")}</p>`;
     const lessonList = form.lessons?.length > 0
       ? `<h3>커리큘럼 미리보기</h3><ol>${form.lessons.map(l => `<li><b>${l.title}</b> (${l.duration || "시간 미정"})</li>`).join("")}</ol>`
       : "";
@@ -1916,7 +1916,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
           <div style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 8 }}>클래스 준비 중입니다</div>
           <div style={{ fontSize: 13, lineHeight: 1.7, marginBottom: 24 }}>SNS 마케팅 전문가의 실전 강의가 곧 오픈됩니다.<br/>먼저 AI 도구로 콘텐츠를 만들어 보세요!</div>
           <button onClick={() => navigate("ai")}
-            style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: "#168EEA", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+            style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: "#3b82f6", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
             AI 도구 체험하기
           </button>
         </div>

@@ -42,7 +42,7 @@ export default function GeneratingStep({ state, C, isMobile }) {
         }}>
           <div style={{
             height: "100%", borderRadius: 3, width: `${pct}%`,
-            background: "#168EEA",
+            background: "#3b82f6",
             transition: "width 0.8s ease",
           }} />
         </div>

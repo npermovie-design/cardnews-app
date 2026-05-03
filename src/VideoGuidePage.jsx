@@ -40,7 +40,7 @@ function VideoCard({ video, C, onPlay }) {
         }}>
           <div style={{
             fontSize: 28, fontWeight: 900, textAlign: "center",
-            background: "#168EEA",
+            background: "#3b82f6",
             WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
             padding: "0 20px",
           }}>
@@ -88,7 +88,7 @@ function VideoCard({ video, C, onPlay }) {
           {video.languages.map(lang => (
             <span key={lang} style={{
               fontSize: 11, padding: "2px 8px", borderRadius: 6,
-              background: "rgba(0,0,0,0.06)", color: "#168EEA",
+              background: "rgba(0,0,0,0.06)", color: "#3b82f6",
               fontWeight: 600, border: "1px solid rgba(0,0,0,0.06)",
             }}>
               {LANGUAGES[lang]?.flag} {LANGUAGES[lang]?.label}
@@ -195,7 +195,7 @@ function VideoPlayerModal({ video, onClose, C }) {
       {/* 제목 */}
       <h2 style={{
         fontSize: 24, fontWeight: 800, color: "#fff", marginBottom: 16,
-        background: "#168EEA",
+        background: "#3b82f6",
         WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
       }}>
         {video.title}
@@ -232,7 +232,7 @@ function VideoPlayerModal({ video, onClose, C }) {
           padding: "7px 14px", borderRadius: 8, cursor: "pointer",
           background: showCC ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)",
           border: showCC ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.1)",
-          color: showCC ? "#168EEA" : "rgba(255,255,255,0.4)",
+          color: showCC ? "#3b82f6" : "rgba(255,255,255,0.4)",
           fontSize: 12, fontWeight: 700,
         }}>
           CC {showCC ? "ON" : "OFF"}
@@ -260,7 +260,7 @@ function VideoPlayerModal({ video, onClose, C }) {
               padding: "7px 14px", borderRadius: 8, cursor: "pointer",
               background: code === lang ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.03)",
               border: code === lang ? "1px solid rgba(0,0,0,0.06)" : "1px solid rgba(255,255,255,0.06)",
-              color: code === lang ? "#168EEA" : "rgba(255,255,255,0.4)",
+              color: code === lang ? "#3b82f6" : "rgba(255,255,255,0.4)",
               fontSize: 12, fontWeight: 600,
             }}
           >
@@ -300,7 +300,7 @@ function VideoPlayerModal({ video, onClose, C }) {
           }
         }} style={{
           background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)",
-          borderRadius: 10, padding: "8px 18px", color: "#168EEA", cursor: "pointer",
+          borderRadius: 10, padding: "8px 18px", color: "#3b82f6", cursor: "pointer",
           fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 6,
         }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
