@@ -8,3 +8,6 @@ supabase/
 supabase/migrations/_tmp_hold_existing/
 public/downloads/
 dist/downloads/
+naverbot-desktop/
+.github/
+reports/
