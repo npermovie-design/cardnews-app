@@ -155,7 +155,7 @@ async function callAnthropicMessages(payload, { maxRetries = 2 } = {}) {
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({ ...payload, model }),
-        signal: AbortSignal.timeout(95000),
+        signal: AbortSignal.timeout(115000),
       });
 
       if (apiRes.ok) return await apiRes.json();
@@ -246,9 +246,9 @@ const VALID_SPEECH = ["polite_yo", "formal", "casual", "friendly", "mixed"];
 const VALID_WORDCOUNTS = ["short", "medium", "long"];
 
 const WORDCOUNT_TO_TOKENS = {
-  short: 3000,
-  medium: 5500,
-  long: 8000,
+  short: 4000,
+  medium: 8000,
+  long: 16000,
 };
 
 function validateInput(b) {
