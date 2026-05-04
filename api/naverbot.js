@@ -511,7 +511,15 @@ async function handleContentGenerate(req, res) {
     if (blk.type === "text" || blk.type === "subtitle" || blk.type === "quote") {
       blocks.push(blk);
     } else if (blk.type === "image") {
-      const photo = await searchImage(blk.keyword);
+      let photo = await searchImage(blk.keyword);
+      // 1차 실패 시 키워드 간소화 재시도
+      if (!photo && blk.keyword.split(" ").length > 2) {
+        photo = await searchImage(blk.keyword.split(" ").slice(0, 2).join(" "));
+      }
+      // 2차 실패 시 첫 단어만으로 재시도
+      if (!photo) {
+        photo = await searchImage(blk.keyword.split(" ")[0]);
+      }
       if (photo) {
         blocks.push({ type: "image", url: photo.url, alt: photo.alt, keyword: blk.keyword });
       } else {

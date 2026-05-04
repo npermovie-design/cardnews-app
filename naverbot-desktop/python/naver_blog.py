@@ -1397,19 +1397,20 @@ def _apply_text_color_to_keywords(page: Page, target, keyword: str, color_hex: s
 
     logger.info(f"  키워드 포인트 글색: '{keyword}' {total}개 발견, #{hex_val} 적용 시작")
 
+    # Range API로 직접 선택 + SE API 색상 적용 (마우스 좌표 불필요)
     count = 0
-    max_attempts = min(total + 5, 40)  # 안전 상한
+    max_attempts = min(total + 5, 40)
 
     for attempt_idx in range(max_attempts):
         if count >= total:
             break
         try:
-            # 다음 미처리 키워드 위치를 찾아 scrollIntoView + 좌표 반환
-            pos = target.evaluate("""(args) => {
+            # JS에서 Range로 키워드를 선택하고, SE API로 색상 적용
+            result = target.evaluate("""(args) => {
                 const kw = args[0];
-                const color = args[1];
+                const hex = args[1];
                 const container = document.querySelector('.se-main-container');
-                if (!container) return null;
+                if (!container) return 'no_container';
                 const comps = container.querySelectorAll('.se-component.se-text, .se-component.se-quotation');
                 for (const comp of comps) {
                     const walker = document.createTreeWalker(comp, NodeFilter.SHOW_TEXT, null, false);
@@ -1419,78 +1420,56 @@ def _apply_text_color_to_keywords(page: Page, target, keyword: str, color_hex: s
                         while (true) {
                             const idx = node.textContent.indexOf(kw, startIdx);
                             if (idx < 0) break;
-                            // 이미 색상 적용된 건 건너뛰기
                             const parent = node.parentElement;
                             if (parent && parent.style && parent.style.color) {
                                 const c = parent.style.color.toLowerCase();
-                                if (c && c !== 'rgb(0, 0, 0)' && c !== '#000000' && c !== 'black') {
+                                if (c && c !== '' && c !== 'rgb(0, 0, 0)' && c !== '#000000' && c !== 'black') {
                                     startIdx = idx + kw.length;
                                     continue;
                                 }
                             }
-                            try {
-                                const range = document.createRange();
-                                range.setStart(node, idx);
-                                range.setEnd(node, idx + kw.length);
-                                const el = node.parentElement;
-                                if (el) el.scrollIntoView({block: 'center', behavior: 'instant'});
-                                const rect = range.getBoundingClientRect();
-                                if (rect.width > 0 && rect.height > 0) {
-                                    return {x: rect.x, y: rect.y, w: rect.width, h: rect.height};
-                                }
-                            } catch(e) {}
-                            startIdx = idx + kw.length;
+                            // Range 선택
+                            const range = document.createRange();
+                            range.setStart(node, idx);
+                            range.setEnd(node, idx + kw.length);
+                            const sel = window.getSelection();
+                            sel.removeAllRanges();
+                            sel.addRange(range);
+                            return 'selected';
                         }
                     }
                 }
-                return null;
+                return 'not_found';
             }""", [keyword, hex_val])
 
-            if not pos:
-                break  # 더 이상 미처리 키워드 없음
+            if result != 'selected':
+                break
 
-            page.wait_for_timeout(300)
-
-            # 물리적 마우스로 키워드 드래그 선택
-            sx = pos['x'] + ix
-            sy = pos['y'] + pos['h'] / 2 + iy
-            ex = pos['x'] + pos['w'] + ix
-            ey = sy
-
-            page.mouse.click(sx, sy)
-            page.wait_for_timeout(100)
-            page.keyboard.down("Shift")
-            page.mouse.click(ex, ey)
-            page.keyboard.up("Shift")
             page.wait_for_timeout(200)
 
             # SE API로 텍스트 색상 적용
+            applied = False
             try:
                 _se_api(target, f'ed._propertyChangeService.updateStyle({{name:"color", value:"#{hex_val}"}});')
+                applied = True
             except Exception:
-                # SE API 실패 시 DOM 직접 보강
+                pass
+
+            if not applied:
+                # SE API 실패 시 DOM 직접 적용
                 target.evaluate("""(hex) => {
                     const sel = window.getSelection();
                     if (!sel || sel.rangeCount === 0 || sel.getRangeAt(0).collapsed) return;
                     const range = sel.getRangeAt(0);
-                    // 선택 영역 내 모든 텍스트 요소에 색상 적용
-                    const container = range.commonAncestorContainer;
-                    const el = container.nodeType === 3 ? container.parentElement : container;
-                    if (el) {
-                        el.style.color = '#' + hex;
-                        el.querySelectorAll('span, b, strong').forEach(n => { n.style.color = '#' + hex; });
-                    }
+                    const span = document.createElement('span');
+                    span.style.color = '#' + hex;
+                    range.surroundContents(span);
                 }""", hex_val)
 
-            page.keyboard.press("ArrowRight")
             page.wait_for_timeout(100)
             count += 1
         except Exception as e:
             logger.debug(f"키워드 글색 개별 적용 실패: {e}")
-            try:
-                page.keyboard.press("Escape")
-            except Exception:
-                pass
 
     logger.info(f"  키워드 포인트 글색 완료: '{keyword}' {count}/{total}개 → #{hex_val}")
     return count
@@ -2676,7 +2655,7 @@ def _se_insert_text(target, page: Page, text: str):
     try:
         _se_api(target, 'ed._editingService.insertComponentsWithData([{ctype:"text"}]);')
         page.wait_for_timeout(200)
-        page.keyboard.type(text, delay=2)
+        page.keyboard.insert_text(text)
         return True
     except Exception:
         return False
@@ -2687,7 +2666,7 @@ def _se_insert_quotation(target, page: Page, text: str, layout: str = "quotation
     try:
         _se_api(target, f'ed._editingService.insertComponentsWithData([{{ctype:"quotation", data:{{layout:"{layout}"}}}}]);')
         page.wait_for_timeout(300)
-        page.keyboard.type(text, delay=2)
+        page.keyboard.insert_text(text)
         return True
     except Exception:
         return False
@@ -2757,7 +2736,7 @@ def _se_insert_section_title(target, page: Page, text: str):
     try:
         _se_api(target, 'ed._editingService.insertComponentsWithData([{ctype:"sectionTitle"}]);')
         page.wait_for_timeout(200)
-        page.keyboard.type(text, delay=2)
+        page.keyboard.insert_text(text)
         return True
     except Exception:
         return False
@@ -3006,10 +2985,10 @@ def _apply_bold(page: Page, target, kb) -> bool:
 
 
 def _fast_input(page: Page, kb, text: str, target=None):
-    """텍스트 입력 — kb.type 사용. delay=2로 글자 누락 방지."""
+    """텍스트 입력 — insert_text로 한글 조합 이슈 없이 즉시 삽입."""
     if not text:
         return
-    kb.type(text, delay=2)
+    page.keyboard.insert_text(text)
 
 
 def _split_sentences(text: str) -> str:
@@ -3456,7 +3435,7 @@ def _input_body(target, body_text: str, page: Page = None, image_paths: list[str
         if n_imgs == 0:
             # 이미지 없음 — 그냥 전체 입력
             for line in paragraphs:
-                kb.type(line, delay=3)
+                page.keyboard.insert_text(line)
                 kb.press("Enter")
                 kb.press("Enter")
             return True
@@ -3466,7 +3445,7 @@ def _input_body(target, body_text: str, page: Page = None, image_paths: list[str
         img_idx = 0
 
         for i, line in enumerate(paragraphs):
-            kb.type(line, delay=3)
+            page.keyboard.insert_text(line)
             kb.press("Enter")
             kb.press("Enter")
             # chunk 경계 + 아직 삽입할 이미지 남았으면

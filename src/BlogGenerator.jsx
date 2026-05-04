@@ -9,6 +9,7 @@ import { callAI, callAIStream } from "./aiClient";
 import { isDarkTheme } from "./theme";
 import DOMPurify from "dompurify";
 import ShareButton from "./ShareButton";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ── 네이버 자동발행 모달 ──
 function NaverAutoPublishModal({ result, keyword, isDark, onClose }) {
@@ -3201,37 +3202,73 @@ hospital equipment`
         {!showResult && !(mode==="design" && designStep==="editor" && designSlides) && (
           <div className="bl-search-wrap" style={{maxWidth:720,margin:"0 auto",padding:"0 24px",display:"flex",flexDirection:"column",justifyContent: (shortsMode && videoSubMode) ? "flex-start" : "center",minHeight: (shortsMode && videoSubMode) ? "auto" : "100%",flexShrink:0}}>
             {/* 타이틀 */}
-            <div style={{textAlign:"center",marginBottom:32}}>
-              <div style={{fontSize:28,fontWeight:900,color:text,letterSpacing:-0.5,lineHeight:1.3}}>
+            <motion.div
+              initial={{opacity:0,y:18}}
+              animate={{opacity:1,y:0}}
+              transition={{duration:0.5,ease:"easeOut"}}
+              style={{textAlign:"center",marginBottom:32}}
+            >
+              <motion.div
+                initial={{opacity:0,y:10}}
+                animate={{opacity:1,y:0}}
+                transition={{delay:0.15,duration:0.45}}
+                style={{fontSize:28,fontWeight:900,color:text,letterSpacing:-0.5,lineHeight:1.3}}
+              >
                 무엇을 만들어볼까요?
-              </div>
-              <div style={{fontSize:14,color:muted,marginTop:8,lineHeight:1.6}}>
+              </motion.div>
+              <motion.div
+                initial={{opacity:0}}
+                animate={{opacity:1}}
+                transition={{delay:0.3,duration:0.4}}
+                style={{fontSize:14,color:muted,marginTop:8,lineHeight:1.6}}
+              >
                 주제, 링크, 파일을 자유롭게 입력하세요. 유튜브 링크로 쇼츠도 만들 수 있어요
-              </div>
-            </div>
+              </motion.div>
+              <motion.div
+                initial={{width:0,opacity:0}}
+                animate={{width:"60%",opacity:1}}
+                transition={{delay:0.5,duration:0.7}}
+                style={{height:1,background:"linear-gradient(90deg,transparent,rgba(59,130,246,0.3),transparent)",margin:"16px auto 0"}}
+              />
+            </motion.div>
 
             {/* 모드 선택 칩 */}
-            <div style={{display:"flex",justifyContent:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+            <motion.div
+              initial={{opacity:0,y:10}}
+              animate={{opacity:1,y:0}}
+              transition={{delay:0.25,duration:0.4}}
+              style={{display:"flex",justifyContent:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}
+            >
               {[
                 {id:"write", label:t("bg_tabWrite"), color:"#3b82f6", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
                 {id:"design", label:t("bg_tabDesign"), color:"#3b82f6", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>},
                 {id:"sns_publish", label:"SNS 발행", color:"#38bdf8", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>, navigate:true},
-              ].map(m => {
+              ].map((m,mi) => {
                 const isActive = m.id==="shorts" ? shortsMode : mode===m.id && !shortsMode;
                 return (
-                <button key={m.id} onClick={()=>{if(m.navigate&&setAiMenu){setAiMenu(m.id);return;}if(m.id==="shorts"){setShortsMode(true);setVideoSubMode(null);setVideoStep("upload");setVideoFile(null);setVideoLink("");setShortsYtUrl("");}else{setShortsMode(false);setVideoSubMode(null);setMode(m.id);if(m.id==="write"){setWriteStep("input");}if(m.id==="design"){setDesignSlides(null);setDesignStep("input");}}}} style={{
-                  padding:"10px 20px", borderRadius:20,
-                  border: isActive ? `2px solid ${m.color}` : `1.5px solid ${border}`,
-                  background: isActive ? (isDark?`${m.color}15`:`${m.color}08`) : "transparent",
-                  color: isActive ? m.color : muted,
-                  fontSize:14, fontWeight: isActive?800:600,
-                  cursor:"pointer", display:"flex", alignItems:"center", gap:6,
-                  fontFamily:"inherit", transition:"all 0.15s",
-                }}>
-                  {m.icon} {m.label}
-                </button>
+                <motion.button
+                  key={m.id}
+                  initial={{opacity:0,y:8}}
+                  animate={{opacity:1,y:0}}
+                  transition={{delay:0.3+mi*0.08,duration:0.35}}
+                  whileHover={{scale:1.04,y:-2}}
+                  whileTap={{scale:0.97}}
+                  onClick={()=>{if(m.navigate&&setAiMenu){setAiMenu(m.id);return;}if(m.id==="shorts"){setShortsMode(true);setVideoSubMode(null);setVideoStep("upload");setVideoFile(null);setVideoLink("");setShortsYtUrl("");}else{setShortsMode(false);setVideoSubMode(null);setMode(m.id);if(m.id==="write"){setWriteStep("input");}if(m.id==="design"){setDesignSlides(null);setDesignStep("input");}}}}
+                  style={{
+                    padding:"10px 20px", borderRadius:20,
+                    border: isActive ? `2px solid ${m.color}` : `1.5px solid ${border}`,
+                    background: isActive ? (isDark?`${m.color}15`:`${m.color}08`) : "transparent",
+                    color: isActive ? m.color : muted,
+                    fontSize:14, fontWeight: isActive?800:600,
+                    cursor:"pointer", display:"flex", alignItems:"center", gap:6,
+                    fontFamily:"inherit", transition:"all 0.15s",
+                    position:"relative",overflow:"hidden",
+                  }}>
+                  {isActive && <motion.div layoutId="active-mode-bg" style={{position:"absolute",inset:0,borderRadius:20,background:`${m.color}0a`}} transition={{type:"spring",stiffness:400,damping:30}}/>}
+                  <span style={{position:"relative",zIndex:1,display:"flex",alignItems:"center",gap:6}}>{m.icon} {m.label}</span>
+                </motion.button>
               );})}
-            </div>
+            </motion.div>
 
             {/* 영상 모드: 모드 칩 아래에 인라인으로 에디터 표시 */}
             {shortsMode ? (
@@ -3695,14 +3732,25 @@ hospital equipment`
             )}
 
             {/* 메인 검색창 */}
-            <div className="bl-search-box" style={{
-              background:inputBg,
-              border:`1.5px solid ${dragOver?accent:(error&&!fields.keyword?.trim()?"#ef4444":inputBdr)}`,
-              borderRadius:24,
-              padding:"18px 20px 14px",
-              boxShadow:isDark?"0 4px 24px rgba(0,0,0,0.3)":"0 4px 24px rgba(0,0,0,0.06)",
-              transition:"border-color 0.2s, box-shadow 0.2s",
-            }}>
+            <motion.div
+              className="bl-search-box"
+              initial={{opacity:0,scale:0.97}}
+              animate={{opacity:1,scale:1}}
+              transition={{delay:0.35,duration:0.4,ease:"easeOut"}}
+              whileHover={{boxShadow:isDark?"0 8px 40px rgba(59,130,246,0.15)":"0 8px 40px rgba(59,130,246,0.12)"}}
+              style={{
+                background:inputBg,
+                border:`1.5px solid ${dragOver?accent:(error&&!fields.keyword?.trim()?"#ef4444":inputBdr)}`,
+                borderRadius:24,
+                padding:"18px 20px 14px",
+                boxShadow:isDark?"0 4px 24px rgba(0,0,0,0.3)":"0 4px 24px rgba(0,0,0,0.06)",
+                transition:"border-color 0.2s",
+                position:"relative",overflow:"hidden",
+              }}
+            >
+              {/* 배경 글로우 */}
+              <div style={{position:"absolute",top:"-50%",left:"-20%",width:"60%",height:"200%",background:"radial-gradient(circle,rgba(59,130,246,0.04) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
+              <div style={{position:"absolute",bottom:"-50%",right:"-20%",width:"50%",height:"200%",background:"radial-gradient(circle,rgba(139,92,246,0.03) 0%,transparent 70%)",pointerEvents:"none",zIndex:0}}/>
               <textarea
                 ref={textareaRef}
                 className="bl-search-textarea"
@@ -3783,19 +3831,33 @@ hospital equipment`
               )}
 
               {/* 첨부 파일 표시 */}
+              <AnimatePresence>
               {fields._files && fields._files.length > 0 && (
-                <div style={{marginTop:10,display:"flex",flexWrap:"wrap",gap:6}}>
+                <motion.div
+                  initial={{opacity:0,height:0}}
+                  animate={{opacity:1,height:"auto"}}
+                  exit={{opacity:0,height:0}}
+                  style={{marginTop:10,display:"flex",flexWrap:"wrap",gap:6,overflow:"hidden"}}
+                >
                   {fields._files.map((f,i) => (
-                    <span key={i} style={{fontSize:12,padding:"5px 10px",borderRadius:8,background:isDark?"rgba(236,72,153,0.12)":"rgba(236,72,153,0.08)",color:"#ec4899",display:"inline-flex",alignItems:"center",gap:6,fontWeight:700}}>
+                    <motion.span
+                      key={f.name+i}
+                      initial={{opacity:0,scale:0.85}}
+                      animate={{opacity:1,scale:1}}
+                      exit={{opacity:0,scale:0.85}}
+                      transition={{duration:0.2}}
+                      style={{fontSize:12,padding:"5px 10px",borderRadius:8,background:isDark?"rgba(236,72,153,0.12)":"rgba(236,72,153,0.08)",color:"#ec4899",display:"inline-flex",alignItems:"center",gap:6,fontWeight:700}}
+                    >
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                       {f.name}
                       <button onClick={()=>{const nf=[...fields._files];nf.splice(i,1);setField("_files",nf);}} style={{background:"none",border:"none",cursor:"pointer",color:"inherit",padding:0,display:"flex",alignItems:"center",opacity:0.7}} aria-label="제거">
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                       </button>
-                    </span>
+                    </motion.span>
                   ))}
-                </div>
+                </motion.div>
               )}
+              </AnimatePresence>
 
               {/* 하단 툴바 */}
               <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:12,paddingTop:10,borderTop:`1px solid ${border}`}}>
@@ -3837,25 +3899,30 @@ hospital equipment`
                   )}
                 </div>
                 {/* 생성 버튼 */}
-                <button className="bl-gen-btn" onClick={handleGenerateClick} disabled={loading||fileLoading||!fields.keyword?.trim()}
+                <motion.button
+                  className="bl-gen-btn"
+                  onClick={handleGenerateClick}
+                  disabled={loading||fileLoading||!fields.keyword?.trim()}
+                  whileHover={fields.keyword?.trim()?{scale:1.03}:{}}
+                  whileTap={fields.keyword?.trim()?{scale:0.97}:{}}
                   style={{
                     padding:"8px 22px",borderRadius:14,border:"none",
                     cursor:loading||!fields.keyword?.trim()?"not-allowed":"pointer",
-                    background:fields.keyword?.trim()?"#3b82f6":(isDark?"rgba(0,0,0,0.06)":"#e9ecef"),
+                    background:fields.keyword?.trim()?"linear-gradient(135deg,#3b82f6,#6366f1)":(isDark?"rgba(0,0,0,0.06)":"#e9ecef"),
                     color:fields.keyword?.trim()?"#fff":muted,fontSize:14,fontWeight:800,
                     display:"flex",alignItems:"center",gap:6,
                     opacity:loading||!fields.keyword?.trim()?0.5:1,
                     transition:"all 0.15s",minHeight:38,fontFamily:"inherit",
-                    boxShadow:fields.keyword?.trim()?"0 4px 14px rgba(0,0,0,0.06)":"none",
+                    boxShadow:fields.keyword?.trim()?"0 4px 14px rgba(59,130,246,0.25)":"none",
                   }}>
                   {loading ? (
                     <><div style={{width:14,height:14,border:"2px solid rgba(255,255,255,0.3)",borderTop:"2px solid #fff",borderRadius:"50%",animation:"spin 0.8s linear infinite"}}/>생성 중</>
                   ) : (
                     <><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>{mode==="write"&&writeStep==="input"?"다음":"생성"}{!(mode==="write"&&writeStep==="input")&&user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>1회</span>}{!(mode==="write"&&writeStep==="input")&&!user && <span style={{fontSize:11,opacity:0.85,fontWeight:600,marginLeft:2,background:"rgba(255,255,255,0.18)",padding:"2px 8px",borderRadius:8}}>무료</span>}</>
                   )}
-                </button>
+                </motion.button>
               </div>
-            </div>
+            </motion.div>
 
             {/* 제목 추천 (키워드 입력 시 자동 표시) */}
             {false && mode==="write" && titleLoading && (
@@ -3960,7 +4027,12 @@ hospital equipment`
             )}
 
             {/* 프롬프트 가이드 (검색창 아래, 글쓰기 모드만) */}
-            {mode==="write" && <div style={{marginTop:20,padding:"0 24px",textAlign:"center"}}>
+            {mode==="write" && <motion.div
+              initial={{opacity:0,y:10}}
+              animate={{opacity:1,y:0}}
+              transition={{delay:0.5,duration:0.4}}
+              style={{marginTop:20,padding:"0 24px",textAlign:"center"}}
+            >
               <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
                 {[
                   {label:"블로그로 써줘",platform:"blog_naver"},
@@ -3968,19 +4040,31 @@ hospital equipment`
                   {label:"인스타로 써줘",platform:"blog_insta"},
                   {label:"유튜브 대본 써줘",platform:"blog_youtube"},
                   {label:"스레드로 써줘",platform:"blog_thread"},
-                ].map(g=>(
-                  <button key={g.label} onClick={()=>setPlatformId(g.platform)}
-                    style={{padding:"7px 14px",borderRadius:10,border:`1px solid ${platformId===g.platform?accent:border}`,background:platformId===g.platform?`${accent}0d`:"transparent",cursor:"pointer",fontSize:12,fontWeight:platformId===g.platform?700:500,color:platformId===g.platform?accent:muted,fontFamily:"inherit",transition:"all 0.15s"}}
+                ].map((g,gi)=>(
+                  <motion.button
+                    key={g.label}
+                    initial={{opacity:0,y:8}}
+                    animate={{opacity:1,y:0}}
+                    transition={{delay:0.55+gi*0.06,duration:0.3}}
+                    whileHover={{scale:1.05,y:-2}}
+                    whileTap={{scale:0.96}}
+                    onClick={()=>setPlatformId(g.platform)}
+                    style={{padding:"7px 14px",borderRadius:10,border:`1px solid ${platformId===g.platform?accent:border}`,background:platformId===g.platform?`${accent}0d`:"transparent",cursor:"pointer",fontSize:12,fontWeight:platformId===g.platform?700:500,color:platformId===g.platform?accent:muted,fontFamily:"inherit",transition:"border-color 0.15s, color 0.15s, background 0.15s",position:"relative",overflow:"hidden"}}
                     onMouseEnter={e=>{if(platformId!==g.platform){e.currentTarget.style.borderColor=accent;e.currentTarget.style.color=accent;}}}
                     onMouseLeave={e=>{if(platformId!==g.platform){e.currentTarget.style.borderColor=border;e.currentTarget.style.color=muted;}}}>
                     {g.label}
-                  </button>
+                  </motion.button>
                 ))}
               </div>
-              <div style={{fontSize:11,color:muted,marginTop:10,lineHeight:1.6}}>
+              <motion.div
+                initial={{opacity:0}}
+                animate={{opacity:1}}
+                transition={{delay:0.8,duration:0.4}}
+                style={{fontSize:11,color:muted,marginTop:10,lineHeight:1.6}}
+              >
                 프롬프트에 <span style={{color:accent,fontWeight:600}}>"블로그로 써줘"</span>, <span style={{color:accent,fontWeight:600}}>"카페로 써줘"</span> 등을 입력하면 자동으로 플랫폼이 전환됩니다
-              </div>
-            </div>}
+              </motion.div>
+            </motion.div>}
             {/* 이미지 모드 도구 칩 — 제거됨 */}
             </>
             )}

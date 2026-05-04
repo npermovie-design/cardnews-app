@@ -32,6 +32,7 @@ export default defineConfig({
           if (id.includes('leaflet')) return 'leaflet';
           if (id.includes('i18n.jsx') || id.includes('i18n-pages.js')) return 'i18n';
           if (id.includes('dompurify')) return 'purify';
+          if (id.includes('framer-motion')) return 'framer';
         },
       },
     },

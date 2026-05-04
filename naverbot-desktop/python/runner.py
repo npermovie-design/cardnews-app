@@ -600,7 +600,44 @@ def fetch_news_topics(theme: str, count: int = 3) -> list[str]:
     except Exception:
         pass
 
-    # 8. SEO 롱테일 변형 (상위노출 가능한 구체적 키워드)
+    # 8. Reddit (해외 커뮤니티 인기 글)
+    try:
+        reddit_url = f"https://www.reddit.com/search.json?q={quote(theme)}&sort=hot&limit=10"
+        resp = requests.get(reddit_url, headers={**headers, "User-Agent": "NaverBot/1.0"}, timeout=10)
+        reddit_data = resp.json()
+        reddit_posts = reddit_data.get("data", {}).get("children", [])
+        for post in reddit_posts:
+            title = post.get("data", {}).get("title", "").strip()
+            if title and len(title) > 5:
+                topics.append(f"{theme} — {title[:60]}")
+    except Exception:
+        pass
+
+    # 9. Google 영문 검색 (해외 자료 기반 글감)
+    try:
+        g_url = f"https://www.google.com/search?q={quote(theme)}&hl=en&num=8"
+        resp = requests.get(g_url, headers={**headers, "Accept-Language": "en-US,en;q=0.9"}, timeout=10)
+        g_title_pat = re.compile(r'<h3[^>]*>(.*?)</h3>', re.DOTALL)
+        g_titles = [clean_tag.sub('', t).strip() for t in g_title_pat.findall(resp.text)]
+        for t in g_titles[:8]:
+            if t and len(t) > 5:
+                topics.append(f"{theme} — {t[:60]}")
+    except Exception:
+        pass
+
+    # 10. YouTube 인기 영상 제목 (트렌드 반영)
+    try:
+        yt_url = f"https://www.youtube.com/results?search_query={quote(theme)}&sp=CAI%253D"
+        resp = requests.get(yt_url, headers=headers, timeout=10)
+        yt_pat = re.compile(r'"title":\{"runs":\[\{"text":"(.*?)"\}', re.DOTALL)
+        yt_titles = yt_pat.findall(resp.text)[:8]
+        for t in yt_titles:
+            if t and len(t) > 5 and t != theme:
+                topics.append(t)
+    except Exception:
+        pass
+
+    # 11. SEO 롱테일 변형 (상위노출 가능한 구체적 키워드)
     variations = [
         f"{theme} 초보자 가이드",
         f"{theme} 하는 법 총정리",
@@ -1046,13 +1083,13 @@ def run_autopilot() -> dict:
         categories = [""]
     topic_contexts = [(th, cat) for th in themes for cat in categories] or [(themes[0], "")]
 
-    first_context = " ".join([x for x in [topic_contexts[0][0], topic_contexts[0][1]] if x])
-    emit({"status": "progress", "step": "analyze", "message": f"[4/{total_steps}] '{first_context}' 관련 최신 뉴스/트렌드 분석 중... (약 15초 소요)"})
-    # 각 테마/카테고리별로 글감 수집
+    first_theme = topic_contexts[0][0]
+    emit({"status": "progress", "step": "analyze", "message": f"[4/{total_steps}] '{first_theme}' 관련 최신 뉴스/트렌드 분석 중... (약 15초 소요)"})
+    # 각 테마별로 글감 수집 (메뉴명은 글감 검색에 사용하지 않음 — 발행 위치 전용)
     raw_topics_by_context = {}
     for th, cat in topic_contexts:
-        query = " ".join([x for x in [th, cat] if x])
-        raw_topics_by_context[(th, cat)] = fetch_news_topics(query, max(posts_per_day // len(topic_contexts) + 1, 3))
+        if (th, cat) not in raw_topics_by_context:
+            raw_topics_by_context[(th, cat)] = fetch_news_topics(th, max(posts_per_day // len(topic_contexts) + 1, 3))
     raw_topics = []
     for th, cat in topic_contexts:
         raw_topics.extend([(t, th, cat) for t in raw_topics_by_context[(th, cat)]])
@@ -1098,12 +1135,11 @@ def run_autopilot() -> dict:
 
         # 현재 테마/카테고리 (순환)
         current_theme, current_category = topic_contexts[i % len(topic_contexts)]
-        current_query = " ".join([x for x in [current_theme, current_category] if x])
 
-        # 글감 부족 시 자동 보충
+        # 글감 부족 시 자동 보충 (키워드만으로 검색, 메뉴명 미포함)
         if len(raw_topics) < 3:
             emit({"status": "progress", "step": "analyze", "message": f"글감 보충 중... ({i+1}/{posts_per_day})"})
-            extra_topics = fetch_news_topics(current_query or current_theme, run_count - i)
+            extra_topics = fetch_news_topics(current_theme, run_count - i)
             used = {r.get("topic", "") for r in results}
             extra_topics = [t for t in extra_topics if t not in used]
             raw_topics.extend([(t, current_theme, current_category) for t in extra_topics])
@@ -1119,33 +1155,26 @@ def run_autopilot() -> dict:
         if topic is None and raw_topics:
             topic, topic_theme, topic_category = raw_topics.pop(random.randint(0, min(len(raw_topics) - 1, 2)))
         if topic is None:
-            topic = f"{current_query or current_theme} 관련 정보"
+            topic = f"{current_theme} 관련 정보"
 
-        # 글감을 테마와 결합
-        category_prefix = f"{topic_category} — " if topic_category and topic_category not in topic else ""
+        # 글감을 키워드와 결합 (메뉴명은 포함하지 않음 — 발행 위치 전용)
         keyword_base = f"{topic_theme} — {topic}" if topic_theme and topic_theme not in topic else topic
-        keyword = f"{category_prefix}{keyword_base}"
+        keyword = keyword_base
         drive_item = drive_items[i % len(drive_items)] if drive_items else None
         if drive_item:
             drive_topic = drive_item.folder_name or drive_item.name
-            keyword = f"{category_prefix}{topic_theme} — {drive_topic}" if topic_theme not in drive_topic else f"{category_prefix}{drive_topic}"
+            keyword = f"{topic_theme} — {drive_topic}" if topic_theme not in drive_topic else drive_topic
 
         emit({"status": "progress", "step": "generate", "message": f"[5/{total_steps}] 글 생성 중 ({i+1}/{run_count}번째): {keyword[:50]}... (약 30~60초 소요)"})
 
         # 커스텀 프롬프트 + SEO 프롬프트 → user_prompt로 전달 (8000자 제한)
         # fields.extra는 2000자 제한이므로 SEO 프롬프트는 user_prompt에 포함
         custom_prompt = ap.get("custom_prompt", "")
-        seo_prompt = _build_seo_prompt(current_query or current_theme, keyword)
+        seo_prompt = _build_seo_prompt(current_theme, keyword)
         visual_prompt = "" if drive_images else _build_visual_blog_prompt()
         source_guard_prompt = _build_source_guard_prompt(topic)
         base_extra = custom_prompt if custom_prompt else ""
-        if topic_category:
-            base_extra += (
-                f"\n[카테고리 맞춤 작성]\n"
-                f"- 이번 글의 네이버 카테고리: {topic_category}\n"
-                f"- 글의 사례, 독자 관점, 소제목을 '{topic_category}' 카테고리에 맞춰 작성.\n"
-                "- 다른 카테고리 이야기가 중심이 되지 않게 할 것.\n"
-            )
+        # 메뉴명은 발행 위치 지정에만 사용, 글 내용 생성에 영향 없음
         # 콘텐츠 분야(브리프 카테고리)에 따른 우선 정보 힌트
         brief_cat = ap.get("briefCategory", write.get("briefCategory", ""))
         if brief_cat:
@@ -1277,7 +1306,7 @@ def run_autopilot() -> dict:
             word_count=ap.get("wordCount") or write.get("wordCount", "medium"),
             fields=fields,
             user_prompt=generation_prompt,
-            use_gif=(False if drive_images else ap.get("use_gif", False)),
+            use_gif=(False if drive_images else ap.get("use_gif", True)),
             aeo_position=aeo_position,
             include_pros_cons=include_pros_cons,
         )
@@ -1293,7 +1322,7 @@ def run_autopilot() -> dict:
                 word_count=ap.get("wordCount") or write.get("wordCount", "medium"),
                 fields=fields,
                 user_prompt=generation_prompt,
-                use_gif=(False if drive_images else ap.get("use_gif", False)),
+                use_gif=(False if drive_images else ap.get("use_gif", True)),
                 aeo_position=aeo_position,
                 include_pros_cons=include_pros_cons,
             )
