@@ -146,6 +146,14 @@ body {
 
 .nav-icon { display: none; }
 
+/* 챌린지/커뮤니티 본문 이미지 제한 */
+#challengeDetailContent img,
+#communityPostContent img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
 .home-automation-hero {
   display: flex;
   align-items: center;

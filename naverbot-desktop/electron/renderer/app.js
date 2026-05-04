@@ -3746,27 +3746,10 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     currentCh = null;
   });
 
-  // 미션 제출
-  var missionBtn = $("challengeMissionBtn");
-  if (missionBtn) missionBtn.addEventListener("click", async function() {
-    if (!currentCh) return;
-    var cfg = await bridge.loadConfig();
-    if (!cfg || !cfg.makeit_uid) { showModal("로그인 필요", "미션 제출은 로그인 후 가능합니다.", "확인"); return; }
-    var content = prompt("미션 인증 내용을 입력하세요:");
-    if (!content || !content.trim()) return;
-    var link = prompt("인증 링크 (블로그 URL 등, 없으면 빈칸):");
-    try {
-      await sbInsert("challenge_missions", {
-        id: "cm_" + Date.now(),
-        challenge_id: currentCh.id,
-        uid: cfg.makeit_uid,
-        author: cfg.makeit_email ? cfg.makeit_email.split("@")[0] : "익명",
-        content: content.trim(),
-        link: (link || "").trim(),
-        created_at: new Date().toISOString()
-      });
-      loadMissions(currentCh.id);
-    } catch (e) { showModal("제출 실패", e.message || "다시 시도해주세요.", "확인"); }
+  // 홈페이지에서 참여하기
+  var joinBtn = $("challengeJoinBtn");
+  if (joinBtn) joinBtn.addEventListener("click", function() {
+    if (bridge.openExternal) bridge.openExternal("https://snsmakeit.com/challenge");
   });
 
   // 패널 활성화 시 자동 로드
