@@ -109,6 +109,21 @@ async function handleSitemap(req, res) {
     }
   } catch {}
 
+  // 챌린지 페이지
+  let challengeUrls = [];
+  try {
+    const sb3 = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_KEY);
+    const { data: chs } = await sb3.from("challenges").select("id,title,updated_at").order("created_at", { ascending: false });
+    if (chs) {
+      challengeUrls = chs.map(c => ({
+        url: `/challenge/${c.id}`,
+        priority: "0.8",
+        freq: "daily",
+        lastmod: c.updated_at ? c.updated_at.slice(0, 10) : today,
+      }));
+    }
+  } catch {}
+
   // XML 생성
   const hreflang = (url) => `
     <xhtml:link rel="alternate" hreflang="ko" href="${SITE}${url}"/>
@@ -127,7 +142,7 @@ async function handleSitemap(req, res) {
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
         xmlns:xhtml="http://www.w3.org/1999/xhtml">
-${[...staticPages, ...postUrls, ...programUrls].map(urlEntry).join("\n")}
+${[...staticPages, ...postUrls, ...programUrls, ...challengeUrls].map(urlEntry).join("\n")}
 </urlset>`;
 
   res.setHeader("Content-Type", "application/xml; charset=utf-8");

@@ -83,6 +83,11 @@ const PAGE_META = {
     desc: "SNS 운영과 사업 확장을 위한 필수 솔루션 패키지. 디자인, 마케팅, 자동화 도구를 만나보세요.",
     keywords: "SNS 프로그램, 마케팅 도구, 디자인 템플릿, SNS 자동화",
   },
+  "/challenge": {
+    title: "SNS메이킷 챌린지 - 함께 도전하고 결과를 만드세요",
+    desc: "SNS 수익화, 포스팅 습관 만들기, 브랜딩 챌린지에 참여하세요. 함께 하면 습관이 됩니다.",
+    keywords: "SNS 챌린지, 블로그 챌린지, 인스타 챌린지, SNS 수익화, 포스팅 챌린지",
+  },
 };
 
 // 카테고리별 이름
@@ -316,6 +321,33 @@ export default async function middleware(request) {
           || DEFAULT_OG.image;
         keywords = extractKeywords(titleClean, plainBody, catName);
         bodyContent = `<article><h2>${esc(titleClean)}</h2>${post.author ? `<p><strong>작성자:</strong> ${esc(post.author)}</p>` : ""}<p>${esc(plainBody.slice(0, 2000))}</p><p><a href="${SITE}/community/${catId}">${esc(catName)} 목록보기</a></p></article>`;
+      }
+    } catch {}
+  }
+
+  // ── 챌린지 상세: /challenge/:id ──
+  const challengeMatch = !title && path.match(/\/challenge\/(ch_[^/]+)/);
+  if (challengeMatch) {
+    const chId = challengeMatch[1];
+    try {
+      const data = await sbRows(`challenges?id=eq.${chId}&select=title,subtitle,description,thumbnail,platform,duration,price,application_count,start_date`);
+      const ch = data?.[0];
+      if (ch) {
+        const plainDesc = stripMdHtml(ch.description || ch.subtitle || "").slice(0, 155);
+        title = `${ch.title} - SNS메이킷 챌린지`;
+        desc = plainDesc + (plainDesc.length >= 155 ? "..." : "");
+        if (ch.thumbnail) image = ch.thumbnail;
+        keywords = `SNS 챌린지, ${ch.title}, ${ch.platform || "모든 SNS"}, SNS메이킷`;
+        canonicalPath = `/challenge/${chId}`;
+        // 참가자 링크 목록도 bodyContent에 포함 (검색엔진 크롤링)
+        let linksHtml = "";
+        try {
+          const missions = await sbRows(`challenge_missions?challenge_id=eq.${chId}&day=gt.0&link=not.is.null&select=nick,day,link&order=created_at.desc&limit=50`);
+          if (missions.length) {
+            linksHtml = `<section><h3>${ch.title} 참가자 현황</h3><ul>${missions.map(m => `<li><strong>${esc(m.nick || "참가자")}</strong> Day ${m.day}: <a href="${esc(m.link)}" rel="noopener">${esc(m.link)}</a></li>`).join("")}</ul></section>`;
+          }
+        } catch {}
+        bodyContent = `<article><h2>${esc(ch.title)}</h2><p>${esc(desc)}</p><p>기간: ${ch.duration || 10}일 | 플랫폼: ${esc(ch.platform || "모든 SNS")} | 참가자: ${ch.application_count || 0}명</p>${linksHtml}<p><a href="${SITE}/challenge">전체 챌린지 목록</a></p></article>`;
       }
     } catch {}
   }

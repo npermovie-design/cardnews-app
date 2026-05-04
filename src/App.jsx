@@ -290,6 +290,7 @@ export default function App() {
   const [boardCat,   setBoardCat]   = useState("info");
   const [pendingPostId, setPendingPostId] = useState(null);
   const [programId, setProgramId] = useState(null);
+  const [challengeId, setChallengeId] = useState(null);
   const [aiMenu,     setAiMenu]     = useState("home");
   const [theme,      setTheme]      = useState(getSavedTheme);
   const [guardModal, setGuardModal] = useState(null); // { cost, onConfirm }
@@ -532,6 +533,10 @@ export default function App() {
     // /programs/[id] → page=programs, programId=id
     if (mainSeg === "programs" && segments[1]) {
       setProgramId(segments[1]);
+    }
+    // /challenge/[id] → page=challenge, challengeId=id
+    if (mainSeg === "challenge" && segments[1]) {
+      setChallengeId(segments[1]);
     }
     if (mainSeg && mainSeg !== "home") setPage(mainSeg);
     if (mainSeg === "ai") setAiVisited(true);
@@ -801,7 +806,7 @@ export default function App() {
       if (user?.role !== "admin" && user?.role !== "instructor") { navigate("home"); return null; }
       return <ClassPage C={C} navigate={navigate} user={user} theme={theme} />;
     }
-    if (page === "challenge") return <ChallengePage C={C} navigate={navigate} user={user} theme={theme} onLoginRequest={() => navigate("login")} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
+    if (page === "challenge") return <ChallengePage C={C} navigate={navigate} user={user} theme={theme} onLoginRequest={() => navigate("login")} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} initialChallengeId={challengeId} />;
     if (page === "snsnews")  { navigate("community"); return null; }
     if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} user={user} />;
     if (page === "intro-video") { navigate("home"); return null; }

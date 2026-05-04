@@ -23,7 +23,7 @@ async function saveChallenge(c) {
 }
 async function deleteChallenge(id) { await supabase.from("challenges").delete().eq("id", id); }
 async function loadApplications(cid) { const { data } = await supabase.from("challenge_applications").select("*").eq("challenge_id", cid).order("created_at", { ascending: false }); return data || []; }
-async function loadMyApplication(cid, uid) { if (!uid) return null; const { data } = await supabase.from("challenge_applications").select("*").eq("challenge_id", cid).eq("uid", uid).single(); return data || null; }
+async function loadMyApplication(cid, uid) { if (!uid) return null; const { data } = await supabase.from("challenge_applications").select("*").eq("challenge_id", cid).eq("uid", uid).maybeSingle(); return data || null; }
 async function submitApplication(app) { const row = { ...app, id: "ca_" + Date.now(), status: "pending", created_at: new Date().toISOString() }; await supabase.from("challenge_applications").insert(row); return row; }
 async function updateApplicationStatus(id, status) { await supabase.from("challenge_applications").update({ status }).eq("id", id); }
 async function loadMissions(cid) { const { data } = await supabase.from("challenge_missions").select("*").eq("challenge_id", cid).order("created_at", { ascending: false }); return data || []; }
@@ -32,7 +32,7 @@ async function submitMission(m) { const row = { ...m, id: "cm_" + Date.now(), cr
 /* ═══════════════════════════════════════════════════════════
    ChallengePage
    ═══════════════════════════════════════════════════════════ */
-export default function ChallengePage({ C, navigate, user, theme, onLoginRequest }) {
+export default function ChallengePage({ C, navigate, user, theme, onLoginRequest, initialChallengeId }) {
   const isDark = theme === "dark";
   const bdr = C.border;
   const card = C.card || (isDark ? "rgba(255,255,255,0.03)" : "#fff");
@@ -40,7 +40,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   const [mob, setMob] = useState(typeof window !== "undefined" && window.innerWidth < 768);
   useEffect(() => { const h = () => setMob(window.innerWidth < 768); window.addEventListener("resize", h); return () => window.removeEventListener("resize", h); }, []);
 
-  const [view, setView] = useState("list");
+  const [view, setView] = useState(initialChallengeId ? "loading_detail" : "list");
   const [challenges, setChallenges] = useState([]);
   const [sel, setSel] = useState(null);
   const [myApp, setMyApp] = useState(null);
@@ -50,12 +50,57 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   const [toast, setToast] = useState("");
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(""), 3000); };
 
-  useEffect(() => { (async () => { try { setChallenges(await loadChallenges()); } catch { setChallenges([]); } setLoading(false); })(); }, []);
+  // SEO 메타 업데이트
+  const updateSeo = (ch) => {
+    if (!ch) return;
+    const title = `${ch.title} - SNS메이킷 챌린지`;
+    const desc = (ch.subtitle || ch.description?.replace(/<[^>]*>/g, "") || "").slice(0, 155);
+    const url = `https://snsmakeit.com/challenge/${ch.id}`;
+    document.title = title;
+    const setM = (sel, val) => { const el = document.querySelector(sel); if (el && val) el.content = val; };
+    setM('meta[name="description"]', desc);
+    setM('meta[property="og:title"]', title);
+    setM('meta[property="og:description"]', desc);
+    setM('meta[property="og:url"]', url);
+    setM('meta[property="og:type"]', "website");
+    setM('meta[name="twitter:title"]', title);
+    setM('meta[name="twitter:description"]', desc);
+    if (ch.thumbnail) { setM('meta[property="og:image"]', ch.thumbnail); setM('meta[name="twitter:image"]', ch.thumbnail); }
+    let canon = document.querySelector('link[rel="canonical"]');
+    if (!canon) { canon = document.createElement("link"); canon.rel = "canonical"; document.head.appendChild(canon); }
+    canon.href = url;
+  };
+  const resetSeo = () => { document.title = "챌린지 - SNS메이킷"; };
 
-  const openDetail = async ch => { setSel(ch); setView("detail"); window.scrollTo(0, 0); if (user?.uid) setMyApp(await loadMyApplication(ch.id, user.uid)); };
+  useEffect(() => {
+    (async () => {
+      try {
+        const data = await loadChallenges();
+        setChallenges(data);
+        // URL에 challengeId가 있으면 해당 챌린지 바로 열기
+        if (initialChallengeId) {
+          const ch = data.find(c => c.id === initialChallengeId);
+          if (ch) {
+            setSel(ch);
+            updateSeo(ch);
+            if (user?.uid) setMyApp(await loadMyApplication(ch.id, user.uid));
+            setView("detail");
+          } else { setView("list"); }
+        }
+      } catch { setChallenges([]); if (initialChallengeId) setView("list"); }
+      setLoading(false);
+    })();
+  }, []);
+
+  const openDetail = async ch => {
+    setSel(ch); setView("detail"); window.scrollTo(0, 0);
+    window.history.pushState(null, "", "/challenge/" + ch.id);
+    updateSeo(ch);
+    if (user?.uid) setMyApp(await loadMyApplication(ch.id, user.uid));
+  };
   const openBoard = async ch => { setSel(ch); try { setMissions(await loadMissions(ch.id)); } catch { setMissions([]); } setView("board"); window.scrollTo(0, 0); };
   const openAdmin = async ch => { setSel(ch); try { setApps(await loadApplications(ch.id)); } catch { setApps([]); } setView("admin"); window.scrollTo(0, 0); };
-  const back = () => { setView("list"); setSel(null); setMyApp(null); window.scrollTo(0, 0); };
+  const back = () => { setView("list"); setSel(null); setMyApp(null); window.history.pushState(null, "", "/challenge"); resetSeo(); window.scrollTo(0, 0); };
   const getStatus = ch => { if (ch.status === "completed") return "completed"; const now = new Date(); if (ch.start_date && new Date(ch.start_date) <= now && ch.end_date && new Date(ch.end_date) >= now) return "ongoing"; if (ch.recruit_end && new Date(ch.recruit_end) < now) return "ongoing"; return "recruiting"; };
 
   /* ── Toast ── */
@@ -161,7 +206,8 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   if (view === "detail" && sel) {
     const ch = sel;
     const st = STATUS_MAP[getStatus(ch)] || STATUS_MAP.recruiting;
-    const isRecruiting = getStatus(ch) === "recruiting";
+    const curStatus = getStatus(ch);
+    const canApply = curStatus === "recruiting" || curStatus === "ongoing";
     const isParticipant = myApp?.status === "confirmed";
     const hasApplied = !!myApp;
 
@@ -191,7 +237,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
               <span style={{ fontSize: 12, fontWeight: 800, color: st.color, background: st.bg, padding: "5px 14px", borderRadius: 99 }}>{st.label}</span>
-              {isRecruiting && ch.recruit_end && <span style={{ fontSize: 13, fontWeight: 700, color: "#ef4444" }}>{dday(ch.recruit_end)}</span>}
+              {curStatus === "recruiting" && ch.recruit_end && <span style={{ fontSize: 13, fontWeight: 700, color: "#ef4444" }}>{dday(ch.recruit_end)}</span>}
             </div>
             <h1 style={{ fontSize: mob ? "clamp(24px,5vw,32px)" : "clamp(30px,4vw,42px)", fontWeight: 700, color: "#1a1a1a", lineHeight: 1.3, marginBottom: 8 }}>{ch.title}</h1>
             {ch.subtitle && <p style={{ fontSize: mob ? 14 : 17, color: "#4a5568", lineHeight: 1.7 }}>{ch.subtitle}</p>}
@@ -217,7 +263,26 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             ))}
           </div>
 
+          {/* 빠른 이동 */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 36, padding: "16px 0", borderBottom: "1px solid " + bdr }}>
+            {[
+              ...(isParticipant ? [["미션 게시판", () => openBoard(ch)]] : []),
+              ["현황판", () => document.getElementById("public-board")?.scrollIntoView({ behavior: "smooth" })],
+              ["챌린지 개요", () => document.getElementById("sect-overview")?.scrollIntoView({ behavior: "smooth" })],
+              ...(canApply && !hasApplied ? [["신청하기", () => document.getElementById("cta-section")?.scrollIntoView({ behavior: "smooth" })]] : []),
+              ...(isAdmin ? [["신청자 관리", () => openAdmin(ch)]] : []),
+            ].map(([label, fn], i) => (
+              <button key={i} onClick={fn}
+                style={{ padding: "9px 20px", borderRadius: 99, border: "1px solid " + bdr, background: i === 0 && isParticipant ? PRIMARY : "transparent", color: i === 0 && isParticipant ? "#fff" : C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}
+                onMouseEnter={e => { if (!(i === 0 && isParticipant)) { e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)"; } }}
+                onMouseLeave={e => { if (!(i === 0 && isParticipant)) { e.currentTarget.style.background = "transparent"; } }}>
+                {label}
+              </button>
+            ))}
+          </div>
+
           {/* 콘텐츠 섹션들 */}
+          <div id="sect-overview" />
           {ch.description && <Sect title="챌린지 개요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: ch.description }} /></Sect>}
           {ch.target_audience && <Sect title="이런 사람에게 추천해요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: ch.target_audience }} /></Sect>}
           {ch.process && <Sect title="진행 방식" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: ch.process }} /></Sect>}
@@ -226,19 +291,23 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
           {ch.refund_policy && <Sect title="환불 정책" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.muted, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: ch.refund_policy }} /></Sect>}
 
           {/* CTA */}
-          <div style={{ background: "linear-gradient(135deg, #E8F0FF, rgba(59,130,246,0.08))", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 24, padding: mob ? "36px 20px" : "52px 40px", textAlign: "center", marginTop: 44 }}>
+          <div id="cta-section" style={{ background: "linear-gradient(135deg, #E8F0FF, rgba(59,130,246,0.08))", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 24, padding: mob ? "36px 20px" : "52px 40px", textAlign: "center", marginTop: 44 }}>
             <div style={{ fontSize: mob ? 20 : 28, fontWeight: 700, color: "#1a1a1a", marginBottom: 14 }}>
-              {isParticipant ? "미션 게시판에 입장하세요" : hasApplied ? "신청이 완료되었습니다" : isRecruiting ? "지금 바로 신청하세요" : "다음 챌린지를 기대해주세요"}
+              {isParticipant ? "미션 게시판에 입장하세요" : hasApplied ? "신청이 완료되었습니다" : canApply ? "지금 바로 신청하세요" : "다음 챌린지를 기대해주세요"}
             </div>
             {isParticipant ? (
               <button onClick={() => openBoard(ch)} style={ctaBtn(PRIMARY)}>미션 게시판 입장</button>
             ) : hasApplied ? (
               <p style={{ fontSize: 14, color: "#4a5568" }}>관리자 확인 후 참여가 확정됩니다</p>
-            ) : isRecruiting ? (
+            ) : canApply ? (
               <button onClick={() => { if (!user) { onLoginRequest(); return; } setView("apply"); window.scrollTo(0, 0); }} style={ctaBtn("#1A1A2E")}>신청하기</button>
             ) : null}
             {isAdmin && <button onClick={() => openAdmin(ch)} style={{ ...ctaBtn("transparent"), border: "1px solid " + bdr, color: C.muted, marginLeft: 12, boxShadow: "none" }}>관리자 보기</button>}
           </div>
+
+          {/* 공개 현황판 - 검색엔진 노출용 (누구나 열람 가능) */}
+          <div id="public-board" />
+          <PublicLinkBoard challengeId={ch.id} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} title={ch.title} isAdmin={isAdmin} />
         </div>
       </div>
     );
@@ -285,7 +354,8 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
 
   /* ═══ ADMIN ══════════════════════════════════════════════ */
   if (view === "admin" && sel) return <AdminPanel ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} apps={apps} setApps={setApps} onBack={() => { setView("detail"); window.scrollTo(0, 0); }} onEdit={() => { setView("editor"); window.scrollTo(0, 0); }}
-    onStatus={async (id, s) => { await updateApplicationStatus(id, s); setApps(p => p.map(a => a.id === id ? { ...a, status: s } : a)); showToast(s === "confirmed" ? "참여 확정!" : "상태 변경 완료"); }} />;
+    onStatus={async (id, s) => { await updateApplicationStatus(id, s); setApps(p => p.map(a => a.id === id ? { ...a, status: s } : a)); showToast(s === "confirmed" ? "참여 확정!" : "상태 변경 완료"); }}
+    onDelete={async (id) => { if (!confirm("이 신청자를 삭제하시겠습니까?")) return; await supabase.from("challenge_applications").delete().eq("id", id); setApps(p => p.filter(a => a.id !== id)); showToast("신청자 삭제 완료"); }} />;
 
   /* ═══ EDITOR ═════════════════════════════════════════════ */
   if (view === "editor") return <Editor ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} onBack={back}
@@ -319,7 +389,8 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
   const [busy, setBusy] = useState(false);
   const up = (k, v) => sf(p => ({ ...p, [k]: v }));
   const inp = { width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
-  const ok = f.name && f.phone && f.email && f.purpose && f.agree_rules && (ch.price > 0 ? f.agree_refund : true);
+  const phoneValid = /^01[016789]-\d{3,4}-\d{4}$/.test(f.phone);
+  const ok = f.name && phoneValid && f.email && f.purpose && f.agree_rules && (ch.price > 0 ? f.agree_refund : true);
 
   return (
     <div style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)" }}>
@@ -332,7 +403,11 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
           <p style={{ fontSize: 13, color: C.muted, marginBottom: 32 }}>챌린지 참가 신청</p>
 
           <Fld label="이름 *" C={C}><input value={f.name} onChange={e => up("name", e.target.value)} placeholder="이름" style={inp} /></Fld>
-          <Fld label="연락처 *" C={C}><input value={f.phone} onChange={e => up("phone", e.target.value)} placeholder="010-0000-0000" style={inp} /></Fld>
+          <Fld label="연락처 *" C={C}><input value={f.phone} onChange={e => {
+            const v = e.target.value.replace(/[^0-9]/g, "").slice(0, 11);
+            const formatted = v.length <= 3 ? v : v.length <= 7 ? v.slice(0,3) + "-" + v.slice(3) : v.slice(0,3) + "-" + v.slice(3,7) + "-" + v.slice(7);
+            up("phone", formatted);
+          }} placeholder="010-0000-0000" style={inp} inputMode="tel" maxLength={13} /></Fld>
           <Fld label="이메일 *" C={C}><input value={f.email} onChange={e => up("email", e.target.value)} placeholder="email@example.com" style={inp} /></Fld>
           <Fld label="SNS 계정 링크" C={C}><input value={f.sns_link} onChange={e => up("sns_link", e.target.value)} placeholder="블로그, 인스타그램 등" style={inp} /></Fld>
           <Fld label="참여 목적 *" C={C}>
@@ -377,11 +452,12 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
 
 /* ═══ MissionBoard ═════════════════════════════════════════ */
 function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissions, onBack }) {
-  const [selDay, setSelDay] = useState(null); // 선택된 Day (링크 등록/조회)
+  const [selDay, setSelDay] = useState(null);
   const [link, setLink] = useState("");
   const [memo, setMemo] = useState("");
+  const [extraLink, setExtraLink] = useState(""); // 추가 활동 (댓글/공감/공유 스크린샷)
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState("calendar"); // calendar | feed | my
+  const [tab, setTab] = useState("calendar");
   const inp = { width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
 
   const totalDays = parseInt(ch.duration) || 10;
@@ -405,8 +481,8 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
   const submit = async () => {
     if (!link.trim() || !selDay) return; setBusy(true);
     try {
-      const m = await submitMission({ challenge_id: ch.id, uid: user.uid, nick: user.nick || "참가자", day: selDay, title: `Day ${selDay} 미션 인증`, body: memo.trim(), link: link.trim() });
-      setMissions(p => [m, ...p]); setLink(""); setMemo(""); setSelDay(null);
+      const m = await submitMission({ challenge_id: ch.id, uid: user.uid, nick: user.nick || "참가자", day: selDay, title: `Day ${selDay} 미션 인증`, body: memo.trim(), link: link.trim(), extra_link: extraLink.trim() || null });
+      setMissions(p => [m, ...p]); setLink(""); setMemo(""); setExtraLink(""); setSelDay(null);
     } catch(e) { alert("등록 실패: " + e.message); }
     setBusy(false);
   };
@@ -416,6 +492,19 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
   const isToday = d => d === todayNum;
   const isPast = d => d < todayNum;
   const isFuture = d => d > todayNum;
+  const isWeekend = d => { const dt = dayDate(d); const dow = dt.getDay(); return dow === 0 || dow === 6; };
+  const dayLabel = d => { const dt = dayDate(d); return ["일","월","화","수","목","금","토"][dt.getDay()]; };
+
+  // 점수 계산: 평일 인증=1점, 주말 인증=2점(보너스), 추가활동=+0.5점
+  const calcScore = (missionsByDay) => {
+    let score = 0;
+    Object.entries(missionsByDay).forEach(([d, m]) => {
+      score += isWeekend(Number(d)) ? 2 : 1;
+      if (m.extra_link) score += 0.5;
+    });
+    return score;
+  };
+  const myScore = calcScore(myMissions);
 
   return (
     <div style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)" }}>
@@ -431,7 +520,10 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
         <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: "20px 22px", marginBottom: 24, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>내 진행률</span>
-            <span style={{ fontSize: 14, fontWeight: 700, color: PRIMARY }}>{myChecked}/{totalDays}일 ({pct}%)</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>{myScore}점</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: PRIMARY }}>{myChecked}/{totalDays}일 ({pct}%)</span>
+            </div>
           </div>
           <div style={{ width: "100%", height: 8, borderRadius: 99, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb", overflow: "hidden" }}>
             <div style={{ height: "100%", borderRadius: 99, background: `linear-gradient(90deg, ${PRIMARY}, #60a5fa)`, width: `${pct}%`, transition: "width 0.4s ease" }} />
@@ -445,7 +537,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
 
         {/* 탭 */}
         <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "1px solid " + bdr }}>
-          {[["calendar", "날짜별 체크"], ["feed", "전체 피드"], ["my", "내 기록"]].map(([v, l]) => (
+          {[["calendar", "날짜별 체크"], ["members", "참가자 현황"], ["feed", "전체 피드"], ["my", "내 기록"], ["board", "자유게시판"]].map(([v, l]) => (
             <button key={v} onClick={() => setTab(v)} style={{ padding: "12px 20px", border: "none", cursor: "pointer", fontSize: 14, fontWeight: tab === v ? 700 : 500, background: "transparent", color: tab === v ? PRIMARY : C.muted, borderBottom: tab === v ? `2px solid ${PRIMARY}` : "2px solid transparent", marginBottom: -1, fontFamily: "inherit", transition: "all 0.15s" }}>{l}</button>
           ))}
         </div>
@@ -459,20 +551,23 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                 const checked = !!myMissions[d];
                 const today = isToday(d);
                 const past = isPast(d);
-                const missed = past && !checked;
+                const missed = past && !checked && !isWeekend(d); // 주말 미인증은 miss 아님
+                const weekendMissed = past && !checked && isWeekend(d);
                 const dt = dayDate(d);
                 const allCount = (allByDay[d] || []).length;
+                const wknd = isWeekend(d);
                 return (
                   <div key={d} onClick={() => setSelDay(selDay === d ? null : d)}
                     style={{
                       borderRadius: 14, padding: mob ? "10px 4px" : "12px 8px", textAlign: "center", cursor: "pointer",
                       border: selDay === d ? `2px solid ${PRIMARY}` : today ? `2px solid ${PRIMARY}40` : `1px solid ${bdr}`,
-                      background: checked ? "rgba(59,130,246,0.06)" : missed ? "rgba(239,68,68,0.04)" : card,
+                      background: checked && wknd ? "rgba(245,158,11,0.08)" : checked ? "rgba(59,130,246,0.06)" : missed ? "rgba(239,68,68,0.04)" : wknd ? (isDark ? "rgba(245,158,11,0.03)" : "rgba(245,158,11,0.03)") : card,
                       transition: "all 0.15s", position: "relative",
                     }}
                     onMouseEnter={e => { if (selDay !== d) e.currentTarget.style.transform = "translateY(-2px)"; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
-                    <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>{fmtShort(dt)}</div>
+                    {wknd && <div style={{ position: "absolute", top: 4, right: 4, fontSize: 8, fontWeight: 800, color: "#f59e0b", background: "rgba(245,158,11,0.12)", padding: "1px 5px", borderRadius: 4 }}>x2</div>}
+                    <div style={{ fontSize: 11, color: wknd ? "#f59e0b" : C.muted, marginBottom: 4 }}>{fmtShort(dt)} {dayLabel(d)}</div>
                     <div style={{ fontSize: 16, fontWeight: 700, color: today ? PRIMARY : C.text }}>Day {d}</div>
                     {/* 체크 상태 */}
                     <div style={{ marginTop: 6 }}>
@@ -513,13 +608,21 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                   </div>
                 ) : (selDay <= todayNum && user) ? (
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 10 }}>인증 링크 등록</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>인증 링크 등록</span>
+                      {isWeekend(selDay) && <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.1)", padding: "2px 8px", borderRadius: 99 }}>주말 보너스 x2</span>}
+                    </div>
                     <input value={link} onChange={e => setLink(e.target.value)} placeholder="블로그 글, 인스타 포스팅 URL 등" style={{ ...inp, marginBottom: 8 }} />
-                    <input value={memo} onChange={e => setMemo(e.target.value)} placeholder="메모 (선택)" style={{ ...inp, marginBottom: 12 }} />
-                    <button disabled={!link.trim() || busy} onClick={submit}
-                      style={{ padding: "11px 24px", borderRadius: 99, border: "none", background: link.trim() ? "#1A1A2E" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: link.trim() ? "#fff" : C.muted, fontSize: 14, fontWeight: 700, cursor: link.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
-                      {busy ? "등록 중..." : "인증하기"}
-                    </button>
+                    <input value={memo} onChange={e => setMemo(e.target.value)} placeholder="메모 (선택)" style={{ ...inp, marginBottom: 8 }} />
+                    <div style={{ fontSize: 12, fontWeight: 600, color: "#f59e0b", marginBottom: 6, marginTop: 4 }}>추가 활동 (가산점 +0.5점)</div>
+                    <input value={extraLink} onChange={e => setExtraLink(e.target.value)} placeholder="댓글/공감/공유 활동 스크린샷 or 링크 (선택)" style={{ ...inp, marginBottom: 12 }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <button disabled={!link.trim() || busy} onClick={submit}
+                        style={{ padding: "11px 24px", borderRadius: 99, border: "none", background: link.trim() ? "#1A1A2E" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: link.trim() ? "#fff" : C.muted, fontSize: 14, fontWeight: 700, cursor: link.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+                        {busy ? "등록 중..." : "인증하기"}
+                      </button>
+                      <span style={{ fontSize: 11, color: C.muted }}>평일 1점 / 주말 2점 / 추가활동 +0.5점</span>
+                    </div>
                   </div>
                 ) : (
                   <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>{isFuture(selDay) ? "아직 시작되지 않은 Day입니다" : "인증 기간이 지났습니다"}</div>
@@ -537,6 +640,12 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                           {m.link && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{m.link}</a>}
                         </div>
                         <span style={{ fontSize: 11, color: C.muted, flexShrink: 0 }}>{new Date(m.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</span>
+                        {user?.role === "admin" && (
+                          <button onClick={async () => { if (!confirm(`${m.nick}의 Day ${selDay} 인증을 삭제하시겠습니까?`)) return; await supabase.from("challenge_missions").delete().eq("id", m.id); setMissions(p => p.filter(x => x.id !== m.id)); }}
+                            title="삭제" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(239,68,68,0.5)", padding: 4, flexShrink: 0 }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -546,31 +655,117 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
           </div>
         )}
 
+        {/* ── 탭: 참가자 현황 ── */}
+        {tab === "members" && (() => {
+          // 참가자별 인증 현황 집계
+          const memberMap = {};
+          missions.forEach(m => {
+            if (!memberMap[m.uid]) memberMap[m.uid] = { nick: m.nick, uid: m.uid, days: {}, count: 0 };
+            if (!memberMap[m.uid].days[m.day]) { memberMap[m.uid].days[m.day] = m; memberMap[m.uid].count++; }
+          });
+          const members = Object.values(memberMap).sort((a, b) => calcScore(b.days) - calcScore(a.days));
+          return (
+            <div>
+              <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>총 {members.length}명 참가 중</div>
+              {members.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 20px", color: C.muted, border: "1px dashed " + bdr, borderRadius: 16 }}>아직 인증 기록이 없습니다</div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {members.map((mem, idx) => {
+                    const memberPct = Math.round((mem.count / totalDays) * 100);
+                    const memberScore = calcScore(mem.days);
+                    return (
+                      <div key={mem.uid} style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: "18px 22px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+                        {/* 참가자 헤더 */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: "50%", background: idx === 0 ? "#f59e0b" : idx === 1 ? "#94a3b8" : idx === 2 ? "#cd7f32" : PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
+                            {idx < 3 ? ["1","2","3"][idx] : (mem.nick || "?")[0]}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{mem.nick}</div>
+                            <div style={{ fontSize: 12, color: C.muted }}>{mem.count}/{totalDays}일 인증 ({memberPct}%)</div>
+                          </div>
+                          <div style={{ textAlign: "right" }}>
+                            <div style={{ fontSize: 20, fontWeight: 700, color: "#f59e0b" }}>{memberScore}점</div>
+                            <div style={{ fontSize: 11, color: C.muted }}>{memberPct}%</div>
+                          </div>
+                        </div>
+                        {/* 진행률 바 */}
+                        <div style={{ width: "100%", height: 6, borderRadius: 99, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb", marginBottom: 12 }}>
+                          <div style={{ height: "100%", borderRadius: 99, background: memberPct >= 80 ? "#22c55e" : `linear-gradient(90deg, ${PRIMARY}, #60a5fa)`, width: `${memberPct}%`, transition: "width 0.4s" }} />
+                        </div>
+                        {/* Day별 인증 현황 (작은 도트) */}
+                        <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+                          {Array.from({ length: totalDays }, (_, i) => i + 1).map(d => {
+                            const done = !!mem.days[d];
+                            const past = d <= todayNum;
+                            return (
+                              <div key={d} title={`Day ${d}${done ? " - " + (mem.days[d].link || "인증완료") : ""}`}
+                                onClick={() => { if (done && mem.days[d].link) window.open(mem.days[d].link, "_blank"); }}
+                                style={{ width: mob ? 16 : 20, height: mob ? 16 : 20, borderRadius: 4, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", cursor: done ? "pointer" : "default",
+                                  background: done ? "rgba(34,197,94,0.15)" : past ? "rgba(239,68,68,0.06)" : (isDark ? "rgba(255,255,255,0.04)" : "#f3f4f6"),
+                                  color: done ? "#22c55e" : past ? "rgba(239,68,68,0.3)" : "transparent",
+                                  border: d === todayNum ? `1.5px solid ${PRIMARY}` : "none",
+                                }}>{d}</div>
+                            );
+                          })}
+                        </div>
+                        {/* 최근 인증 링크들 */}
+                        <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 4 }}>
+                          {Object.entries(mem.days).sort(([a],[b]) => Number(b) - Number(a)).slice(0, 3).map(([d, m]) => (
+                            m.link ? <div key={d} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                              <span style={{ color: PRIMARY, fontWeight: 700, flexShrink: 0 }}>Day {d}</span>
+                              <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ color: C.muted, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.link}</a>
+                            </div> : null
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
         {/* ── 탭: 전체 피드 ── */}
-        {tab === "feed" && (
-          missions.length === 0 ? (
+        {tab === "feed" && (() => {
+          const feedMissions = missions.filter(m => m.day > 0);
+          const deleteMission = async (id) => {
+            if (!confirm("이 인증 기록을 삭제하시겠습니까?")) return;
+            await supabase.from("challenge_missions").delete().eq("id", id);
+            setMissions(p => p.filter(x => x.id !== id));
+          };
+          return feedMissions.length === 0 ? (
             <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted, border: "1px dashed " + bdr, borderRadius: 20 }}>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>아직 인증이 없어요</div>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {missions.map(m => (
+              {feedMissions.map(m => (
                 <div key={m.id} style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: "16px 20px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(m.nick || "?")[0]}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{m.nick}</span>
                       <span style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "2px 8px", borderRadius: 99 }}>Day {m.day}</span>
+                      {m.extra_link && <span style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.1)", padding: "2px 6px", borderRadius: 99 }}>+0.5</span>}
                       <span style={{ fontSize: 11, color: C.muted, marginLeft: "auto" }}>{new Date(m.created_at).toLocaleDateString("ko-KR")}</span>
                     </div>
                     {m.body && <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>{m.body}</div>}
                     {m.link && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{m.link}</a>}
+                    {m.extra_link && <a href={m.extra_link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#f59e0b", textDecoration: "none", display: "block", marginTop: 2 }}>추가활동: {m.extra_link}</a>}
                   </div>
+                  {user?.role === "admin" && (
+                    <button onClick={() => deleteMission(m.id)} title="삭제" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(239,68,68,0.5)", fontSize: 16, flexShrink: 0, padding: 4 }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
-          )
-        )}
+          );
+        })()}
 
         {/* ── 탭: 내 기록 ── */}
         {tab === "my" && (
@@ -613,13 +808,236 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
             )}
           </div>
         )}
+        {/* ── 탭: 자유게시판 ── */}
+        {tab === "board" && <FreeBoard ch={ch} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} user={user} />}
       </div>
     </div>
   );
 }
 
+/* ═══ 자유게시판 (참여자 전용) ═════════════════════════════ */
+function FreeBoard({ ch, C, bdr, card, isDark, mob, user }) {
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [writing, setWriting] = useState(false);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [openId, setOpenId] = useState(null); // 댓글 열기
+  const [comment, setComment] = useState("");
+  const inp = { width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
+
+  // day = -1 → 자유게시판 글
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from("challenge_missions").select("*").eq("challenge_id", ch.id).eq("day", -1).order("created_at", { ascending: false });
+        setPosts(data || []);
+      } catch { setPosts([]); }
+      setLoading(false);
+    })();
+  }, [ch.id]);
+
+  const submitPost = async () => {
+    if (!title.trim()) return; setBusy(true);
+    try {
+      const row = { id: "cb_" + Date.now(), challenge_id: ch.id, uid: user.uid, nick: user.nick || "참가자", day: -1, title: title.trim(), body: body.trim(), link: null, extra_link: null, created_at: new Date().toISOString() };
+      await supabase.from("challenge_missions").insert(row);
+      setPosts(p => [{ ...row, comments: [] }, ...p]);
+      setTitle(""); setBody(""); setWriting(false);
+    } catch (e) { alert("등록 실패: " + e.message); }
+    setBusy(false);
+  };
+
+  const submitComment = async (postId) => {
+    if (!comment.trim()) return;
+    try {
+      // 댓글은 body에 JSON으로 append (별도 테이블 없이 간단 구현)
+      const post = posts.find(p => p.id === postId);
+      const comments = post?._comments || [];
+      comments.push({ uid: user.uid, nick: user.nick || "참가자", text: comment.trim(), at: new Date().toISOString() });
+      const newBody = (post?.body || "") + `\n<!--comment:${JSON.stringify({ uid: user.uid, nick: user.nick, text: comment.trim(), at: new Date().toISOString() })}-->`;
+      await supabase.from("challenge_missions").update({ body: newBody }).eq("id", postId);
+      setPosts(p => p.map(x => x.id === postId ? { ...x, body: newBody, _comments: comments } : x));
+      setComment("");
+    } catch (e) { alert("댓글 실패: " + e.message); }
+  };
+
+  // 댓글 파싱
+  const parseComments = (bodyStr) => {
+    if (!bodyStr) return [];
+    const regex = /<!--comment:(.*?)-->/g;
+    const comments = [];
+    let match;
+    while ((match = regex.exec(bodyStr)) !== null) { try { comments.push(JSON.parse(match[1])); } catch {} }
+    return comments;
+  };
+  const cleanBody = (bodyStr) => (bodyStr || "").replace(/\n?<!--comment:.*?-->/g, "").trim();
+
+  if (loading) return <div style={{ textAlign: "center", padding: "40px", color: C.muted }}>불러오는 중...</div>;
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <div style={{ fontSize: 13, color: C.muted }}>{posts.length}개 글</div>
+        {user && <button onClick={() => setWriting(!writing)} style={{ padding: "10px 22px", borderRadius: 99, border: "none", background: writing ? C.muted : "#1A1A2E", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{writing ? "취소" : "글쓰기"}</button>}
+      </div>
+
+      {/* 글쓰기 폼 */}
+      {writing && (
+        <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: "20px", marginBottom: 20, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="제목" style={{ ...inp, marginBottom: 8, fontWeight: 700 }} />
+          <textarea value={body} onChange={e => setBody(e.target.value)} placeholder="자유롭게 글을 남겨보세요 (질문, 팁 공유, 근황 등)" rows={4} style={{ ...inp, resize: "vertical", marginBottom: 12 }} />
+          <button disabled={!title.trim() || busy} onClick={submitPost}
+            style={{ padding: "10px 24px", borderRadius: 99, border: "none", background: title.trim() ? PRIMARY : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: title.trim() ? "#fff" : C.muted, fontSize: 14, fontWeight: 700, cursor: title.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+            {busy ? "등록 중..." : "등록하기"}
+          </button>
+        </div>
+      )}
+
+      {/* 글 목록 */}
+      {posts.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted, border: "1px dashed " + bdr, borderRadius: 16 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>아직 글이 없어요</div>
+          <div style={{ fontSize: 13 }}>챌린지 참여자끼리 자유롭게 소통해보세요!</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {posts.map(p => {
+            const comments = p._comments || parseComments(p.body);
+            const clean = cleanBody(p.body);
+            const isOpen = openId === p.id;
+            return (
+              <div key={p.id} style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+                <div style={{ padding: "18px 22px" }}>
+                  {/* 작성자 */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(p.nick || "?")[0]}</div>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{p.nick}</div>
+                      <div style={{ fontSize: 11, color: C.muted }}>{new Date(p.created_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</div>
+                    </div>
+                  </div>
+                  {/* 내용 */}
+                  <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>{p.title}</div>
+                  {clean && <div style={{ fontSize: 14, color: C.text, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{clean}</div>}
+                  {/* 댓글 토글 */}
+                  <button onClick={() => setOpenId(isOpen ? null : p.id)}
+                    style={{ marginTop: 12, background: "none", border: "none", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                    댓글 {comments.length > 0 ? comments.length : ""}
+                  </button>
+                </div>
+
+                {/* 댓글 영역 */}
+                {isOpen && (
+                  <div style={{ borderTop: "1px solid " + bdr, padding: "16px 22px", background: isDark ? "rgba(255,255,255,0.02)" : "#f9fafb" }}>
+                    {comments.length > 0 && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+                        {comments.map((c, i) => (
+                          <div key={i} style={{ display: "flex", gap: 10 }}>
+                            <div style={{ width: 24, height: 24, borderRadius: "50%", background: isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: C.muted, flexShrink: 0, marginTop: 2 }}>{(c.nick || "?")[0]}</div>
+                            <div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{c.nick}</span>
+                                <span style={{ fontSize: 11, color: C.muted }}>{new Date(c.at).toLocaleDateString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                              </div>
+                              <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6, marginTop: 2 }}>{c.text}</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* 댓글 입력 */}
+                    {user && (
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input value={comment} onChange={e => setComment(e.target.value)} placeholder="댓글을 남겨보세요"
+                          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(p.id); } }}
+                          style={{ ...inp, flex: 1 }} />
+                        <button onClick={() => submitComment(p.id)} disabled={!comment.trim()}
+                          style={{ padding: "10px 18px", borderRadius: 99, border: "none", background: comment.trim() ? PRIMARY : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: comment.trim() ? "#fff" : C.muted, fontSize: 13, fontWeight: 700, cursor: comment.trim() ? "pointer" : "not-allowed", flexShrink: 0, fontFamily: "inherit" }}>
+                          등록
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══ 공개 현황판 (SEO 크롤링 대상) ═════════════════════════ */
+function PublicLinkBoard({ challengeId, C, bdr, card, isDark, mob, title, isAdmin }) {
+  const [links, setLinks] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from("challenge_missions").select("id,nick,day,link,extra_link,created_at").eq("challenge_id", challengeId).gt("day", 0).not("link", "is", null).order("created_at", { ascending: false });
+        setLinks(data || []);
+      } catch { setLinks([]); }
+      setLoaded(true);
+    })();
+  }, [challengeId]);
+
+  const deleteLink = async (id) => {
+    if (!confirm("이 인증 링크를 삭제하시겠습니까?")) return;
+    await supabase.from("challenge_missions").delete().eq("id", id);
+    setLinks(p => p.filter(x => x.id !== id));
+  };
+
+  if (!loaded || links.length === 0) return null;
+
+  const displayLinks = expanded ? links : links.slice(0, 10);
+
+  return (
+    <div style={{ marginTop: 48 }}>
+      <div style={{ marginBottom: 20 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 6 }}>{title} 현황판</h2>
+        <p style={{ fontSize: 13, color: C.muted }}>참가자들이 올린 콘텐츠를 확인하세요 ({links.length}개)</p>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {displayLinks.map((l, i) => (
+          <div key={l.id || i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 14, border: "1px solid " + bdr, background: card, transition: "all 0.15s", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.06)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)"; }}>
+            <div style={{ width: 32, height: 32, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(l.nick || "?")[0]}</div>
+            <a href={l.link} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, textDecoration: "none" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{l.nick}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "1px 8px", borderRadius: 99 }}>Day {l.day}</span>
+              </div>
+              <div style={{ fontSize: 12, color: PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.link}</div>
+            </a>
+            {isAdmin && (
+              <button onClick={() => deleteLink(l.id)} title="삭제"
+                style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(239,68,68,0.5)", padding: 4, flexShrink: 0 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+              </button>
+            )}
+            {!isAdmin && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" style={{ flexShrink: 0 }}><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>}
+          </div>
+        ))}
+      </div>
+      {links.length > 10 && !expanded && (
+        <button onClick={() => setExpanded(true)}
+          style={{ display: "block", margin: "16px auto 0", padding: "10px 28px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+          전체 {links.length}개 보기
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ═══ AdminPanel ═══════════════════════════════════════════ */
-function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onStatus }) {
+function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onStatus, onDelete }) {
   const SL = { pending: ["대기", "#f59e0b"], paid: ["결제완료", PRIMARY], confirmed: ["참여확정", "#22c55e"], cancelled: ["취소", "#ef4444"] };
   return (
     <div style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)" }}>
@@ -650,7 +1068,7 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
                       {a.status !== "confirmed" && <button onClick={() => onStatus(a.id, "confirmed")} style={{ padding: "7px 16px", borderRadius: 99, border: "none", background: "#22c55e", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>확정</button>}
-                      {a.status !== "cancelled" && <button onClick={() => onStatus(a.id, "cancelled")} style={{ padding: "7px 16px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 600, cursor: "pointer" }}>취소</button>}
+                      <button onClick={() => onDelete(a.id)} style={{ padding: "7px 16px", borderRadius: 99, border: "1px solid rgba(239,68,68,0.3)", background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>삭제</button>
                     </div>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr 1fr", gap: 6, fontSize: 12, color: C.muted }}>
