@@ -273,6 +273,16 @@ navItems.forEach((item) => {
     navItems.forEach((n) => n.classList.toggle("active", n === item));
     panels.forEach((p) => p.classList.toggle("hidden", p.dataset.panel !== target));
 
+    // 영상 편집기: 숏폼/롱폼 자동 선택
+    if (target === "video-editor" && item.dataset.veType) {
+      var veType = item.dataset.veType;
+      var typeChips = document.querySelectorAll("#veTypeChips .chip");
+      typeChips.forEach(function(c) { c.classList.toggle("active", c.dataset.value === veType); });
+      // state 업데이트 트리거
+      var activeChip = document.querySelector('#veTypeChips .chip[data-value="' + veType + '"]');
+      if (activeChip) activeChip.click();
+    }
+
     // 패널별 진입 시 렌더링
     if (target === "home") renderHomeDashboard();
     if (target === "pricing") renderPricingPanel();
@@ -3103,6 +3113,51 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function chipG(id,cb) { var w=$(id); if(!w) return; w.addEventListener("click",function(e){ var b=e.target.closest(".chip"); if(!b) return; w.querySelectorAll(".chip").forEach(function(c){c.classList.remove("active")}); b.classList.add("active"); cb(b.dataset.value); }); }
 
   chipG("veTypeChips",function(v){ ve.type=v; var so=$("veShortsOpts"),lo=$("veLongformOpts"),sc=$("veSegmentsCard"); if(v==="shorts"){if(so)so.style.display="";if(lo)lo.style.display="none";if(sc)sc.style.display="";}else{if(so)so.style.display="none";if(lo)lo.style.display="";if(sc)sc.style.display="none";} });
+
+  // 탭 전환
+  document.querySelectorAll(".ve-tab-btn").forEach(function(btn){
+    btn.addEventListener("click",function(){
+      document.querySelectorAll(".ve-tab-btn").forEach(function(b){b.classList.remove("active")});
+      btn.classList.add("active");
+      document.querySelectorAll(".ve-tab-content").forEach(function(t){t.style.display="none"});
+      var tab = btn.dataset.veTab;
+      if(tab==="sub") $("veTabSub").style.display="";
+      else if(tab==="clip") $("veTabClip").style.display="";
+      else if(tab==="image") $("veTabImage").style.display="";
+    });
+  });
+
+  // 줌
+  var timelineZoom = 1;
+  var zIn=$("veZoomIn"),zOut=$("veZoomOut");
+  if(zIn) zIn.addEventListener("click",function(){ timelineZoom=Math.min(5,timelineZoom*1.3); renderTimeline(); });
+  if(zOut) zOut.addEventListener("click",function(){ timelineZoom=Math.max(0.5,timelineZoom/1.3); renderTimeline(); });
+
+  // AI 짤 자동 삽입
+  var autoImgBtn=$("veAutoImageBtn"); if(autoImgBtn) autoImgBtn.addEventListener("click",async function(){
+    if(!ve.subtitles.length){showModal("자막 필요","먼저 영상을 분석해주세요.","확인");return;}
+    autoImgBtn.disabled=true; autoImgBtn.textContent="AI 분석 중...";
+    try{
+      // 자막에서 키워드 추출 → Unsplash에서 이미지 검색
+      var text=ve.subtitles.map(function(s){return s.text}).join(" ");
+      var keywords=text.replace(/[^가-힣a-zA-Z\s]/g,"").split(/\s+/).filter(function(w){return w.length>=2}).slice(0,5);
+      var dur=ve.duration||60;
+      var interval=Math.max(10,dur/Math.min(5,keywords.length||1));
+      ve.overlays=[];
+      for(var ki=0;ki<Math.min(5,keywords.length);ki++){
+        try{
+          var resp=await fetch("https://snsmakeit.com/api/image?action=search&q="+encodeURIComponent(keywords[ki])+"&count=1");
+          var data=await resp.json();
+          var imgUrl=(data.results&&data.results[0]&&data.results[0].urls)?data.results[0].urls.small:null;
+          if(imgUrl){
+            ve.overlays.push({path:imgUrl,startTime:ki*interval,endTime:ki*interval+3,x:10,y:10,width:120,height:120,isUrl:true});
+          }
+        }catch(e){}
+      }
+      renderImageList(); renderImageTrack();
+    }catch(e){showModal("실패",e.message||"AI 짤 삽입 실패","확인");}
+    autoImgBtn.disabled=false; autoImgBtn.textContent="AI 짤 삽입";
+  });
   chipG("veClipCountChips",function(v){ve.clipCount=parseInt(v)});
   chipG("veSubChips",function(v){ve.subEnabled=v==="on"});
   chipG("veSilenceChips",function(v){ve.silenceRemove=v==="on"});
@@ -3169,20 +3224,32 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var list=$("veImageList"); if(!list) return;
     if(!ve.overlays.length){list.innerHTML="<span style='color:var(--text-dim);'>없음</span>";return;}
     list.innerHTML=ve.overlays.map(function(ov,i){
-      var name=ov.path.split(/[\\/]/).pop();
-      return "<div style='display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border-soft);'>"+
-        "<img src='file:///"+ov.path.replace(/\\/g,"/")+"' style='width:28px;height:28px;object-fit:cover;border-radius:4px;'>"+
+      var name=ov.isUrl?(ov.path.split("/").pop().split("?")[0].slice(0,20)):ov.path.split(/[\\/]/).pop();
+      var src=ov.isUrl?ov.path:("file:///"+ov.path.replace(/\\/g,"/"));
+      return "<div style='display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid var(--border-soft);'>"+
+        "<img src='"+escapeHtml(src)+"' style='width:32px;height:32px;object-fit:cover;border-radius:4px;'>"+
         "<div style='flex:1;min-width:0;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>"+escapeHtml(name)+"</div>"+
-        "<span style='font-size:9px;color:var(--text-dim);'>"+fmtTime(ov.startTime)+"~"+fmtTime(ov.endTime)+"</span>"+
+        "<span style='font-size:9px;color:var(--text-dim);white-space:nowrap;'>"+fmtTime(ov.startTime)+"~"+fmtTime(ov.endTime)+"</span>"+
         "<button data-ov-idx='"+i+"' style='border:none;background:none;color:var(--danger);cursor:pointer;font-size:10px;padding:2px;'>X</button>"+
         "</div>";
     }).join("");
     list.querySelectorAll("[data-ov-idx]").forEach(function(btn){
       btn.addEventListener("click",function(){
         ve.overlays.splice(parseInt(btn.dataset.ovIdx),1);
-        renderImageList();
+        renderImageList(); renderImageTrack();
       });
     });
+  }
+
+  function renderImageTrack(){
+    var track=$("veTrackImages"); if(!track) return;
+    var dur=ve.duration||1;
+    if(!ve.overlays.length){track.innerHTML="";return;}
+    track.innerHTML=ve.overlays.map(function(ov,i){
+      var left=(ov.startTime/dur*100).toFixed(2)+"%";
+      var width=((ov.endTime-ov.startTime)/dur*100).toFixed(2)+"%";
+      return "<div style='position:absolute;top:3px;bottom:3px;left:"+left+";width:"+width+";background:#f59e0b80;border-left:2px solid #f59e0b;border-radius:3px;cursor:pointer;font-size:8px;color:#fff;padding:0 4px;overflow:hidden;white-space:nowrap;' title='이미지 "+(i+1)+"'>"+(i+1)+"</div>";
+    }).join("");
   }
 
   var bkBtn=$("veBackToUpload"); if(bkBtn) bkBtn.addEventListener("click",function(){goStep(1);ve.segments=[];ve.subtitles=[];ve.overlays=[];stopPlayback()});
