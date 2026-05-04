@@ -380,7 +380,6 @@ function createWindow() {
   setupHotCacheInterceptor(mainWindow);
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
-  mainWindow.webContents.openDevTools({ mode: "detach" });
 }
 
 app.whenReady().then(async () => {
