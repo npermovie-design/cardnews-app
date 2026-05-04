@@ -802,7 +802,7 @@ export default function App() {
     }
     if (page === "snsnews")  { navigate("community"); return null; }
     if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} user={user} />;
-    if (page === "intro-video") return <InfographicVideoPage />;
+    if (page === "intro-video") { navigate("home"); return null; }
     if (page === "payment/success") return <PaymentSuccessPage C={C} navigate={navigate} />;
     if (page === "payment/fail")    return <PaymentFailPage C={C} navigate={navigate} />;
     if (page === "legal")           return <LegalPage C={C} navigate={navigate} initialTab={legalTab} />;

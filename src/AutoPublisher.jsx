@@ -26,7 +26,6 @@ const CATEGORIES = [
   { id: "instagram", label: "인스타그램" },
   { id: "youtube", label: "유튜브" },
   { id: "blog_cafe", label: "블로그/카페" },
-  { id: "video_edit", label: "영상편집" },
   { id: "custom", label: "직접 입력" },
 ];
 

@@ -1238,7 +1238,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   const TOOL_HEADERS = {
     blog_write:    { badge: tt2("toolBlogBadge"), title: tt2("toolBlogTitle"), desc: tt2("toolBlogDesc") },
     blog_naver:    { badge: tt2("toolBlogBadge"), title: tt2("toolBlogTitle"), desc: tt2("toolBlogDesc") },
-    shorts_create: { badge: tt2("sideVideo"), title: tt2("toolBlogTitle").replace(tt2("toolBlogBadge"), tt2("sideVideo")), desc: tt2("toolBlogDesc") },
   };
   Object.assign(TOOL_HEADERS, {
     yt_analyzer:   { badge: tt2("toolYtBadge"), title: tt2("toolYtTitle"), desc: tt2("toolYtDesc") },
@@ -1429,8 +1428,6 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   const TOOL_ICONS = {
     blog_write: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
     blog_link: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>,
-    // cardnews_simple, detail_simple, thumbnail_gen 제거됨
-    shorts_make: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>,
     repurpose: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
   };
 
@@ -1750,14 +1747,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // 영상 편집 — BlogGenerator 영상 모드로 표시 (화면 전환 없이 아래에 인라인)
+  // 영상 편집 — SaaS 데스크톱 앱으로 이관됨 (웹에서 제거)
   if (aiMenu === "video_edit" || aiMenu === "video_create" || aiMenu === "shorts" || aiMenu === "shorts_make" || aiMenu === "longform_edit") {
-    const videoInitMode = aiMenu === "longform_edit" ? "longform" : (aiMenu === "shorts" || aiMenu === "shorts_make") ? "shortform" : null;
-    return (
-      <div style={{ flex:1, display:"flex", overflow:"hidden" }}>
-        <BlogGenerator embedded theme={theme} user={user} onLoginRequest={onLoginRequest} onUserUpdate={onUserUpdate} showPointConfirm={showPointConfirm} setAiMenu={setAiMenu} initialVideoMode={videoInitMode} />
-      </div>
-    );
+    setAiMenu(null);
   }
 
 
@@ -1987,37 +1979,6 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
         );
       })()}
 
-      {/* 영상 생성 플로팅 배너 */}
-      {shortsJob && shortsJob.status !== 'complete' && aiMenu !== 'video_create' && aiMenu !== 'shorts_make' && (
-        <div onClick={() => setAiMenu('video_create')} style={{
-          position:"absolute", bottom:20, right:20, zIndex:100,
-          background: isDark ? "rgba(0,0,0,0.06)" : "#3b82f6",
-          borderRadius:16, padding:"14px 20px", cursor:"pointer",
-          boxShadow:"0 8px 32px rgba(0,0,0,0.06)", minWidth:200,
-          display:"flex", alignItems:"center", gap:12,
-        }}>
-          <div style={{ width:32, height:32, borderRadius:"50%", border:"3px solid rgba(255,255,255,0.3)", borderTopColor:"#fff", animation:"spin 1s linear infinite" }} />
-          <div>
-            <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>{tt("videoGenProgress")}</div>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>{shortsJob.completed}/{shortsJob.total}{tt("completedOf")}</div>
-          </div>
-        </div>
-      )}
-      {shortsJob && shortsJob.status === 'complete' && aiMenu !== 'video_create' && aiMenu !== 'shorts_make' && (
-        <div onClick={() => { setAiMenu('video_create'); setShortsJob(null); }} style={{
-          position:"absolute", bottom:90, right:20, zIndex:100,
-          background:"linear-gradient(135deg,#22c55e,#16a34a)",
-          borderRadius:16, padding:"14px 20px", cursor:"pointer",
-          boxShadow:"0 8px 32px rgba(34,197,94,0.4)", minWidth:200,
-          display:"flex", alignItems:"center", gap:12,
-        }}>
-          <div style={{ width:24, height:24, borderRadius:"50%", background:"#fff", display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:"#22c55e", fontWeight:900 }}>V</div>
-          <div>
-            <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>{tt("videoGenDone")}</div>
-            <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>{tt("clickToCheck")}</div>
-          </div>
-        </div>
-      )}
 
       {/* 글로벌 백그라운드 작업 인디케이터 */}
       {/* BackgroundTaskIndicator 제거 */}
