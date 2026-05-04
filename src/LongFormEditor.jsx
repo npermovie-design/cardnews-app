@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useGeneratingGuard } from "./useGeneratingGuard";
+import { supabase } from "./storage";
 
 const API = import.meta.env.VITE_SHORTS_FACTORY_URL || "https://shorts-factory-r33o.onrender.com";
 
@@ -196,6 +197,77 @@ export default function LongFormEditor({ isDark, user, onUserUpdate, onLoginRequ
   const card = D ? "rgba(255,255,255,0.05)" : "#fff";
   const ibg = D ? "rgba(255,255,255,0.06)" : "#f9f9fc";
   const acc = "#3b82f6";
+
+  // ── 보관함 ──
+  const [savedProjects, setSavedProjects] = useState([]);
+  const [showSaved, setShowSaved] = useState(false);
+  const [savingProject, setSavingProject] = useState(false);
+  const currentProjectId = useRef(null);
+
+  // 보관함 로드
+  useEffect(() => {
+    if (!user?.uid) return;
+    supabase.from("video_projects").select("id, title, created_at, updated_at, file_id, duration, sub_count, type")
+      .eq("uid", user.uid).order("updated_at", { ascending: false }).limit(20)
+      .then(({ data }) => setSavedProjects(data || []));
+  }, [user?.uid]);
+
+  // 프로젝트 저장
+  const saveProject = async (title) => {
+    if (!user?.uid || !fileId) return;
+    setSavingProject(true);
+    const projectData = {
+      uid: user.uid,
+      file_id: fileId,
+      title: title || `편집 ${new Date().toLocaleDateString("ko-KR")}`,
+      type: "longform",
+      duration: videoDuration,
+      sub_count: subtitles?.length || 0,
+      data: { videoSegs, subtitles, subtitlesEnabled, captionAnimation, captionStyle, silenceRemoved, silenceRegions, silenceGap, dualSubEnabled, dualSubLang, dualSubs, overlays: [] },
+      updated_at: new Date().toISOString(),
+    };
+    if (currentProjectId.current) {
+      await supabase.from("video_projects").update(projectData).eq("id", currentProjectId.current);
+    } else {
+      const { data } = await supabase.from("video_projects").insert({ ...projectData, created_at: new Date().toISOString() }).select("id").single();
+      if (data) currentProjectId.current = data.id;
+    }
+    // 목록 갱신
+    const { data: list } = await supabase.from("video_projects").select("id, title, created_at, updated_at, file_id, duration, sub_count, type")
+      .eq("uid", user.uid).order("updated_at", { ascending: false }).limit(20);
+    setSavedProjects(list || []);
+    setSavingProject(false);
+  };
+
+  // 프로젝트 불러오기
+  const loadProject = async (project) => {
+    const { data } = await supabase.from("video_projects").select("*").eq("id", project.id).single();
+    if (!data?.data) return;
+    currentProjectId.current = project.id;
+    setFileId(data.file_id);
+    const d = data.data;
+    setVideoSegs(d.videoSegs || []);
+    setSubtitles(d.subtitles || []);
+    setSubtitlesEnabled(d.subtitlesEnabled ?? true);
+    setCaptionAnimation(d.captionAnimation || "highlight");
+    setCaptionStyle(d.captionStyle || captionStyle);
+    setSilenceRemoved(d.silenceRemoved || false);
+    setSilenceRegions(d.silenceRegions || []);
+    setSilenceGap(d.silenceGap || 0.25);
+    setDualSubEnabled(d.dualSubEnabled || false);
+    setDualSubLang(d.dualSubLang || "en");
+    setDualSubs(d.dualSubs || []);
+    setVideoDuration(data.duration || 0);
+    setStep("edit");
+    setShowSaved(false);
+  };
+
+  // 프로젝트 삭제
+  const deleteProject = async (id) => {
+    await supabase.from("video_projects").delete().eq("id", id);
+    setSavedProjects(prev => prev.filter(p => p.id !== id));
+    if (currentProjectId.current === id) currentProjectId.current = null;
+  };
 
   // ── 상태 ──
   const [step, setStep] = useState("upload"); // upload | loading | edit | generate | result
@@ -1215,6 +1287,35 @@ JSON 배열로만 응답:
           ))}
         </div>
 
+        {/* 보관함 */}
+        {user && savedProjects.length > 0 && (
+          <div style={{ ...cardStyle, marginTop: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: text }}>내 프로젝트</div>
+              <span style={{ fontSize: 11, color: muted }}>{savedProjects.length}개</span>
+            </div>
+            {savedProjects.slice(0, showSaved ? 20 : 3).map(p => (
+              <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, background: ibg, marginBottom: 6, cursor: "pointer", transition: "background 0.15s" }}
+                onClick={() => loadProject(p)}
+                onMouseEnter={e => e.currentTarget.style.background = `${acc}10`}
+                onMouseLeave={e => e.currentTarget.style.background = ibg}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={acc} strokeWidth="2" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
+                  <div style={{ fontSize: 10, color: muted }}>{p.duration ? `${Math.floor(p.duration / 60)}분 ${Math.floor(p.duration % 60)}초` : ""} {p.sub_count ? `/ 자막 ${p.sub_count}개` : ""} / {new Date(p.updated_at).toLocaleDateString("ko-KR")}</div>
+                </div>
+                <button onClick={e => { e.stopPropagation(); deleteProject(p.id); }}
+                  style={{ padding: "4px 8px", borderRadius: 6, border: "none", background: "rgba(239,68,68,0.1)", color: "#f87171", fontSize: 10, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>삭제</button>
+              </div>
+            ))}
+            {savedProjects.length > 3 && (
+              <button onClick={() => setShowSaved(!showSaved)} style={{ width: "100%", padding: "8px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: muted, fontSize: 11, cursor: "pointer", marginTop: 4 }}>
+                {showSaved ? "접기" : `${savedProjects.length - 3}개 더 보기`}
+              </button>
+            )}
+          </div>
+        )}
+
         {error && <div style={{ marginTop: 12, padding: 14, borderRadius: 12, background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.2)", color: "#f87171", fontSize: 13 }}>{error}</div>}
       </div>
     </div>
@@ -1842,12 +1943,19 @@ JSON 배열로만 응답:
               )}
             </div>
 
-            {/* 내보내기 버튼 */}
+            {/* 내보내기 + 저장 버튼 */}
             <div style={{ padding: "12px", borderTop: "1px solid #2a2a4a" }}>
               <button onClick={handleExport}
                 style={{ width: "100%", padding: "12px", borderRadius: 10, border: "none", background: `linear-gradient(135deg,${acc},#8b5cf6)`, color: "#fff", fontSize: 14, fontWeight: 900, cursor: "pointer" }}>
                 내보내기 <span style={{ opacity: 0.7, fontSize: 12 }}>(1회)</span>
               </button>
+              {user && (
+                <button onClick={() => saveProject()} disabled={savingProject}
+                  style={{ width: "100%", marginTop: 6, padding: "10px", borderRadius: 8, border: "1px solid #2a2a4a", background: "rgba(59,130,246,0.08)", color: acc, fontSize: 12, fontWeight: 700, cursor: savingProject ? "wait" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  {savingProject ? "저장 중..." : currentProjectId.current ? "프로젝트 저장" : "보관함에 저장"}
+                </button>
+              )}
               {subtitles.length > 0 && (
                 <button onClick={() => {
                   const pad = n => String(Math.floor(n)).padStart(2,"0");
