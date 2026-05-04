@@ -409,5 +409,158 @@ def generate_short(
     return str(output_path)
 
 
+def generate_longform(
+    video_path: str,
+    output_path: str,
+    video_segments: list[dict] | None = None,
+    subs: list[dict] | None = None,
+    subtitles_enabled: bool = True,
+    caption_style: dict | None = None,
+    remove_silence: bool = False,
+    silence_regions: list[dict] | None = None,
+    silence_gap: float = 0.25,
+    progress_callback: Callable[[float], None] | None = None,
+) -> str:
+    """롱폼 영상 편집 — ffmpeg 기반 (16:9 유지, 자막 번인)"""
+    import subprocess, tempfile, os
+    output_path = Path(output_path).resolve()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    cs = caption_style or {}
+
+    # 1) 무음 제거 시 구간별로 자르고 concat
+    if remove_silence and silence_regions:
+        # 무음이 아닌 구간 계산
+        input_container = av.open(str(video_path))
+        total_dur = float(input_container.duration / av.time_base) if input_container.duration else 600
+        input_container.close()
+
+        # silence_regions → 소리 있는 구간 추출
+        speech_segs = []
+        prev_end = 0
+        for sr in sorted(silence_regions, key=lambda x: x.get("start", 0)):
+            s_start = sr.get("start", 0)
+            if s_start > prev_end + 0.05:
+                speech_segs.append((prev_end, s_start))
+            prev_end = sr.get("end", s_start)
+        if prev_end < total_dur:
+            speech_segs.append((prev_end, total_dur))
+
+        if speech_segs:
+            # concat demuxer 방식
+            tmpdir = tempfile.mkdtemp()
+            seg_files = []
+            for i, (ss, se) in enumerate(speech_segs):
+                seg_out = os.path.join(tmpdir, f"seg_{i:04d}.ts")
+                subprocess.run([
+                    "ffmpeg", "-i", video_path,
+                    "-ss", str(max(0, ss)), "-to", str(se + silence_gap),
+                    "-c:v", "libx264", "-preset", "fast", "-crf", "22",
+                    "-c:a", "aac", "-b:a", "192k",
+                    "-f", "mpegts", "-y", seg_out
+                ], capture_output=True, timeout=300)
+                if Path(seg_out).exists() and Path(seg_out).stat().st_size > 100:
+                    seg_files.append(seg_out)
+                if progress_callback:
+                    progress_callback(30 * (i + 1) / len(speech_segs))
+
+            if seg_files:
+                concat_input = "|".join(seg_files)
+                no_sub_path = str(output_path.parent / "_nosub.mp4")
+                subprocess.run([
+                    "ffmpeg", "-i", f"concat:{concat_input}",
+                    "-c:v", "libx264", "-preset", "medium", "-crf", "21",
+                    "-c:a", "aac", "-b:a", "192k", "-y", no_sub_path
+                ], capture_output=True, timeout=600)
+
+                if Path(no_sub_path).exists() and Path(no_sub_path).stat().st_size > 1000:
+                    video_path = no_sub_path
+
+            # cleanup
+            for f in seg_files:
+                try: os.unlink(f)
+                except: pass
+            try: os.rmdir(tmpdir)
+            except: pass
+
+    if progress_callback:
+        progress_callback(40)
+
+    # 2) 자막 번인
+    if subtitles_enabled and subs and len(subs) > 0:
+        # SRT 파일 생성
+        srt_tmp = str(output_path.parent / "_subs.srt")
+        pad = lambda n: str(int(n)).zfill(2)
+        def fmt_srt(s):
+            h = int(s // 3600); m = int((s % 3600) // 60); sec = int(s % 60); ms = int((s % 1) * 1000)
+            return f"{pad(h)}:{pad(m)}:{pad(sec)},{str(ms).zfill(3)}"
+        with open(srt_tmp, "w", encoding="utf-8") as f:
+            for i, sub in enumerate(subs):
+                f.write(f"{i+1}\n{fmt_srt(sub.get('start_seconds', sub.get('start', 0)))}")
+                f.write(f" --> {fmt_srt(sub.get('end_seconds', sub.get('end', 0)))}\n")
+                f.write(f"{sub.get('text', '')}\n\n")
+
+        font_size = cs.get("fontSize", 18)
+        font_color = cs.get("color", "#FFFFFF").lstrip("#")
+        bg_enabled = cs.get("bgBox", True)
+        shadow = cs.get("shadow", True)
+
+        # ASS 스타일 자막 필터
+        force_style = f"FontSize={font_size},PrimaryColour=&H00{font_color[4:6]}{font_color[2:4]}{font_color[0:2]}"
+        if bg_enabled:
+            bg_c = cs.get("bgColor", "rgba(0,0,0,0.7)")
+            force_style += ",BackColour=&H99000000,BorderStyle=4"
+        if shadow:
+            force_style += ",Shadow=2"
+        force_style += ",MarginV=30"
+
+        # Escape path for ffmpeg filter (Windows backslash 처리)
+        srt_escaped = srt_tmp.replace("\\", "/").replace(":", "\\:")
+
+        final_cmd = [
+            "ffmpeg", "-i", video_path,
+            "-vf", f"subtitles='{srt_escaped}':force_style='{force_style}'",
+            "-c:v", "libx264", "-preset", "medium", "-crf", "21",
+            "-c:a", "aac", "-b:a", "192k", "-y", str(output_path)
+        ]
+        result = subprocess.run(final_cmd, capture_output=True, text=True, timeout=1200)
+
+        if result.returncode != 0:
+            # 자막 필터 실패 시 자막 없이 복사
+            print(f"Subtitle burn failed: {result.stderr[-300:]}")
+            subprocess.run([
+                "ffmpeg", "-i", video_path,
+                "-c:v", "libx264", "-preset", "medium", "-crf", "21",
+                "-c:a", "aac", "-b:a", "192k", "-y", str(output_path)
+            ], capture_output=True, timeout=600)
+
+        # cleanup
+        try: os.unlink(srt_tmp)
+        except: pass
+    else:
+        # 자막 없이 그냥 복사 (코덱 변환만)
+        subprocess.run([
+            "ffmpeg", "-i", video_path,
+            "-c:v", "libx264", "-preset", "medium", "-crf", "21",
+            "-c:a", "aac", "-b:a", "192k", "-y", str(output_path)
+        ], capture_output=True, timeout=600)
+
+    if progress_callback:
+        progress_callback(90)
+
+    # 임시 파일 정리
+    nosub = output_path.parent / "_nosub.mp4"
+    if nosub.exists() and str(nosub) != str(output_path):
+        try: nosub.unlink()
+        except: pass
+
+    gc.collect()
+    if progress_callback:
+        progress_callback(100)
+
+    if output_path.exists() and output_path.stat().st_size > 1000:
+        return str(output_path)
+    raise RuntimeError("롱폼 영상 생성 실패 — 출력 파일이 생성되지 않았습니다")
+
+
 def check_ffmpeg() -> bool:
     return True

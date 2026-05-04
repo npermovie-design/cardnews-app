@@ -919,7 +919,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
   const [showAssignment, setShowAssignment] = useState(null);
   const [completedAssignments, setCompletedAssignments] = useState({}); // { lessonId: true }
   const [selectedDate, setSelectedDate] = useState(null);
-  const [subtitleLang, setSubtitleLang] = useState("ko");
+  const [subtitleLang, setSubtitleLang] = useState("off");
   const [voiceLang, setVoiceLang] = useState("ko");
   const [subtitles, setSubtitles] = useState({}); // { lessonId: { ko: [{start,end,text}], en: [...] } }
   const [currentSubtitle, setCurrentSubtitle] = useState("");
@@ -937,6 +937,9 @@ export default function ClassPage({ C, navigate, user, theme }) {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState("");
   const [detailCommentText, setDetailCommentText] = useState("");
+  const [lessonNotes, setLessonNotes] = useState({}); // { lessonId: "note text" }
+  const [noteSaving, setNoteSaving] = useState(false);
+  const noteSaveTimer = useRef(null);
   const STORAGE_BASE = "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/classes/";
 
   // 코스 선택 시 후기/진도/댓글 로드
@@ -953,6 +956,13 @@ export default function ClassPage({ C, navigate, user, theme }) {
           (data || []).forEach(p => { map[p.lesson_id] = p; });
           setProgress(map);
         });
+      // 노트 로드
+      supabase.from("class_notes").select("lesson_id, content").eq("class_id", selectedCourse.id).eq("uid", user.uid)
+        .then(({ data }) => {
+          const map = {};
+          (data || []).forEach(n => { map[n.lesson_id] = n.content; });
+          setLessonNotes(map);
+        });
     }
   }, [selectedCourse?.id, user?.uid]);
 
@@ -961,7 +971,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
     if (!selectedLesson?.id) return;
     setAudioMode("original");
     setDubbingAudio(null);
-    setSubtitleLang("ko");
+    setSubtitleLang("off");
     setVoiceLang("ko");
     if (subtitles[selectedLesson.id]) return;
     supabase.from("class_subtitles").select("lang, subtitles").eq("lesson_id", selectedLesson.id)
@@ -1170,6 +1180,13 @@ export default function ClassPage({ C, navigate, user, theme }) {
   const [editingCourse, setEditingCourse] = useState(null);
   const [playSpeed, setPlaySpeed] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showPlayerControls, setShowPlayerControls] = useState(false);
+  const [playerProgress, setPlayerProgress] = useState(0);
+  const [playerCurrentTime, setPlayerCurrentTime] = useState(0);
+  const [playerDuration, setPlayerDuration] = useState(0);
+  const [playerVolume, setPlayerVolume] = useState(1);
+  const [playerMuted, setPlayerMuted] = useState(false);
+  const hideControlsTimer = useRef(null);
   const videoRef = useRef(null);
   const videoUrlRef = useRef(null);
   useEffect(() => {
@@ -1298,39 +1315,158 @@ export default function ClassPage({ C, navigate, user, theme }) {
 
         {/* 메인 영역 */}
         <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-          {/* 영상 + 컨트롤 */}
+          {/* 영상 + 플로팅 컨트롤 */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
             {/* 비디오 영역 */}
-            <div className="class-player" style={{ flex: "1 1 0", minHeight: 0, background: "#000", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}>
+            <div className="class-player" style={{ flex: "1 1 0", minHeight: 0, background: "#000", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden" }}
+              onMouseEnter={() => setShowPlayerControls(true)}
+              onMouseMove={() => {
+                setShowPlayerControls(true);
+                clearTimeout(hideControlsTimer.current);
+                hideControlsTimer.current = setTimeout(() => { if (isPlaying) setShowPlayerControls(false); }, 3000);
+              }}
+              onMouseLeave={() => setShowPlayerControls(false)}
+            >
               {hasVideo ? (<>
-                <video ref={videoRef} src={selectedLesson.videoSrc || videoUrlRef.current} style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                  onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} controls
+                <video ref={videoRef} src={selectedLesson.videoSrc || videoUrlRef.current} style={{ width: "100%", height: "100%", objectFit: "contain", cursor: "pointer" }}
+                  onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)}
                   controlsList="nodownload noremoteplayback" disablePictureInPicture
                   onContextMenu={e => e.preventDefault()}
+                  onTimeUpdate={() => {
+                    const v = videoRef.current; if (!v) return;
+                    const pct = (v.currentTime / v.duration) * 100;
+                    setPlayerProgress(isFinite(pct) ? pct : 0);
+                    setPlayerCurrentTime(v.currentTime);
+                    setPlayerDuration(v.duration || 0);
+                  }}
                   onEnded={() => {
                     if (user?.uid && selectedCourse?.id) {
                       setProgress(prev => ({ ...prev, [selectedLesson.id]: { ...prev[selectedLesson.id], watched: true } }));
                       supabase.from("class_progress").upsert({ class_id: selectedCourse.id, lesson_id: selectedLesson.id, uid: user.uid, watched: true, updated_at: new Date().toISOString() }, { onConflict: "lesson_id,uid" }).then(() => {});
                     }
                   }} />
-                {/* 우클릭/드래그 차단 오버레이 */}
-                <div onContextMenu={e => e.preventDefault()} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 50, zIndex: 1 }}
+                {/* 우클릭/드래그 차단 + 클릭 재생 오버레이 */}
+                <div onContextMenu={e => e.preventDefault()} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1 }}
                   onClick={togglePlay} />
+
+                {/* 중앙 재생/일시정지 아이콘 (호버 시) */}
+                {showPlayerControls && !isPlaying && (
+                  <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 5, width: 72, height: 72, borderRadius: "50%", background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "opacity .3s, transform .3s" }}
+                    onClick={togglePlay}>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><polygon points="6 3 20 12 6 21 6 3" fill="#fff" /></svg>
+                  </div>
+                )}
+
+                {/* ── 플로팅 글래스 컨트롤러 ── */}
+                <div style={{
+                  position: "absolute", bottom: 16, left: "50%", transform: `translateX(-50%) translateY(${showPlayerControls ? "0" : "20px"})`,
+                  opacity: showPlayerControls ? 1 : 0, transition: "all 0.4s cubic-bezier(0.23,1,0.32,1)",
+                  zIndex: 10, width: "min(92%, 640px)", pointerEvents: showPlayerControls ? "auto" : "none",
+                }}>
+                  <div style={{ padding: "14px 18px", background: "rgba(17,17,17,0.6)", backdropFilter: "blur(20px)", borderRadius: 18, border: "1px solid rgba(255,255,255,0.08)" }}>
+                    {/* 프로그레스 바 */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontVariantNumeric: "tabular-nums", minWidth: 36 }}>
+                        {(() => { const m = Math.floor(playerCurrentTime / 60); const s = Math.floor(playerCurrentTime % 60); return `${m}:${s.toString().padStart(2, "0")}`; })()}
+                      </span>
+                      <div style={{ flex: 1, height: 4, borderRadius: 4, background: "rgba(255,255,255,0.15)", cursor: "pointer", position: "relative" }}
+                        onClick={e => {
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          const pct = ((e.clientX - rect.left) / rect.width) * 100;
+                          const time = (pct / 100) * (videoRef.current?.duration || 0);
+                          if (videoRef.current && isFinite(time)) { videoRef.current.currentTime = time; setPlayerProgress(pct); }
+                        }}>
+                        <div style={{ position: "absolute", top: 0, left: 0, height: "100%", width: `${playerProgress}%`, borderRadius: 4, background: "#fff", transition: "width 0.1s linear" }} />
+                      </div>
+                      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontVariantNumeric: "tabular-nums", minWidth: 36 }}>
+                        {(() => { const m = Math.floor(playerDuration / 60); const s = Math.floor(playerDuration % 60); return `${m}:${s.toString().padStart(2, "0")}`; })()}
+                      </span>
+                    </div>
+                    {/* 컨트롤 버튼 줄 */}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        {/* 이전 강의 */}
+                        {prevLesson && !isLessonLocked(course, prevLesson, curIdx - 1) && ctrlBtn(() => setSelectedLesson(prevLesson),
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>, "이전 강의"
+                        )}
+                        {/* 10초 뒤로 */}
+                        {ctrlBtn(() => skip(-10),
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 4v6h6" /><path d="M3.51 15a9 9 0 105.64-8.36L1 10" /></svg>, "10초 뒤로"
+                        )}
+                        {/* 재생/일시정지 */}
+                        {ctrlBtn(togglePlay,
+                          isPlaying
+                            ? <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
+                            : <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><polygon points="6 3 20 12 6 21 6 3" fill="#fff" /></svg>,
+                          isPlaying ? "일시정지" : "재생"
+                        )}
+                        {/* 10초 앞으로 */}
+                        {ctrlBtn(() => skip(10),
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M23 4v6h-6" /><path d="M20.49 15a9 9 0 11-5.64-8.36L23 10" /></svg>, "10초 앞으로"
+                        )}
+                        {/* 다음 강의 */}
+                        {nextLesson && !isLessonLocked(course, nextLesson, curIdx + 1) && ctrlBtn(() => setSelectedLesson(nextLesson),
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>, "다음 강의"
+                        )}
+                        {/* 볼륨 */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 2, marginLeft: 4 }}>
+                          {ctrlBtn(() => {
+                            if (videoRef.current) {
+                              const newMuted = !playerMuted;
+                              videoRef.current.muted = newMuted;
+                              setPlayerMuted(newMuted);
+                              if (!newMuted && playerVolume === 0) { setPlayerVolume(1); videoRef.current.volume = 1; }
+                            }
+                          },
+                            playerMuted || playerVolume === 0
+                              ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                              : playerVolume > 0.5
+                                ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
+                                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg>,
+                            "음소거"
+                          )}
+                          <div style={{ width: 60, height: 4, borderRadius: 4, background: "rgba(255,255,255,0.15)", cursor: "pointer", position: "relative" }}
+                            onClick={e => {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const pct = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+                              if (videoRef.current) { videoRef.current.volume = pct; setPlayerVolume(pct); setPlayerMuted(pct === 0); }
+                            }}>
+                            <div style={{ position: "absolute", top: 0, left: 0, height: "100%", width: `${(playerMuted ? 0 : playerVolume) * 100}%`, borderRadius: 4, background: "#fff" }} />
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        {/* CC 토글 */}
+                        <button onClick={() => {
+                          if (subtitleLang === "off") {
+                            setSubtitleLang("ko");
+                            if (!subtitles[selectedLesson.id]?.ko) generateSubtitles(selectedLesson);
+                          } else { setSubtitleLang("off"); }
+                        }}
+                          style={{ padding: "5px 10px", borderRadius: 6, border: subtitleLang !== "off" ? `2px solid ${ACC}` : "1px solid rgba(255,255,255,0.15)", background: subtitleLang !== "off" ? `${ACC}30` : "rgba(255,255,255,0.08)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                          CC
+                        </button>
+                        {/* 배속 */}
+                        {speeds.map(sp => (
+                          <button key={sp} onClick={() => { setPlaySpeed(sp); if (videoRef.current) videoRef.current.playbackRate = sp; }}
+                            style={{ padding: "5px 8px", borderRadius: 6, border: "none", background: playSpeed === sp ? "rgba(255,255,255,0.2)" : "transparent", color: "#fff", fontSize: 11, fontWeight: playSpeed === sp ? 800 : 500, cursor: "pointer", fontFamily: "inherit", transition: "background 0.15s" }}>
+                            {sp}x
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 자막 오버레이 */}
                 {currentSubtitle && subtitleLang !== "off" && (
-                  <div style={{ position: "absolute", bottom: 70, left: "50%", transform: "translateX(-50%)", zIndex: 2, padding: "12px 28px", borderRadius: 10, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 22, fontWeight: 700, textAlign: "center", maxWidth: "85%", lineHeight: 1.5, backdropFilter: "blur(6px)", textShadow: "0 1px 4px rgba(0,0,0,0.5)" }}>
+                  <div style={{ position: "absolute", bottom: showPlayerControls ? 120 : 40, left: "50%", transform: "translateX(-50%)", zIndex: 8, padding: "12px 28px", borderRadius: 10, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 22, fontWeight: 700, textAlign: "center", maxWidth: "85%", lineHeight: 1.5, backdropFilter: "blur(6px)", textShadow: "0 1px 4px rgba(0,0,0,0.5)", transition: "bottom 0.3s" }}>
                     {currentSubtitle}
                   </div>
                 )}
-                {/* 더빙 오디오 (원본 완전 음소거 + AI 음성 재생) */}
-                {dubbingAudio && voiceLang !== "ko" && (
-                  <audio src={dubbingAudio} autoPlay style={{ display: "none" }}
-                    onPlay={() => { if (videoRef.current) { videoRef.current.muted = true; videoRef.current.volume = 0; } }}
-                    onEnded={() => { if (videoRef.current && voiceLang === "ko") { videoRef.current.muted = false; videoRef.current.volume = 1; } }} />
-                )}
                 {/* 로딩 표시 */}
                 {subLoading && (
-                  <div style={{ position: "absolute", top: 16, left: "50%", transform: "translateX(-50%)", zIndex: 3, padding: "8px 18px", borderRadius: 10, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, backdropFilter: "blur(4px)" }}>
+                  <div style={{ position: "absolute", top: 16, left: "50%", transform: "translateX(-50%)", zIndex: 12, padding: "8px 18px", borderRadius: 10, background: "rgba(0,0,0,0.8)", color: "#fff", fontSize: 13, fontWeight: 700, display: "flex", alignItems: "center", gap: 8, backdropFilter: "blur(4px)" }}>
                     <div style={{ width: 14, height: 14, border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
                     {subLoading}
                   </div>
@@ -1344,78 +1480,21 @@ export default function ClassPage({ C, navigate, user, theme }) {
               )}
             </div>
 
-            {/* 컨트롤 바 */}
-            <div style={{ padding: "8px 16px", background: "#111", borderTop: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-              {/* 이전 강의 */}
-              {prevLesson && !isLessonLocked(course, prevLesson, curIdx - 1) && ctrlBtn(() => setSelectedLesson(prevLesson),
-                <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg> 이전</>, "이전 강의"
-              )}
-              {/* 10초 뒤로 */}
-              {ctrlBtn(() => skip(-10),
-                <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 4v6h6" /><path d="M3.51 15a9 9 0 105.64-8.36L1 10" /></svg> 10s</>, "10초 뒤로"
-              )}
-              {/* 재생/일시정지 */}
-              {ctrlBtn(togglePlay,
-                isPlaying
-                  ? <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><rect x="6" y="4" width="4" height="16" /><rect x="14" y="4" width="4" height="16" /></svg>
-                  : <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><polygon points="5 3 19 12 5 21 5 3" fill="#fff" /></svg>,
-                isPlaying ? "일시정지" : "재생"
-              )}
-              {/* 10초 앞으로 */}
-              {ctrlBtn(() => skip(10),
-                <>10s <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M23 4v6h-6" /><path d="M20.49 15a9 9 0 11-5.64-8.36L23 10" /></svg></>, "10초 앞으로"
-              )}
-              {/* 배속 */}
-              {ctrlBtn(changeSpeed, <>{playSpeed}x</>, "재생 속도 변경")}
-
-              <div style={{ flex: 1 }} />
-
-              {/* CC 토글 */}
-              <button onClick={() => {
-                if (subtitleLang === "off") {
-                  setSubtitleLang("ko");
-                  if (!subtitles[selectedLesson.id]?.ko) generateSubtitles(selectedLesson);
-                } else { setSubtitleLang("off"); }
-              }}
-                style={{ padding: "5px 10px", borderRadius: 6, border: subtitleLang !== "off" ? `2px solid ${ACC}` : "1px solid rgba(255,255,255,0.15)", background: subtitleLang !== "off" ? `${ACC}30` : "rgba(255,255,255,0.1)", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                CC {subtitleLang !== "off" && subtitleLang !== "ko" ? LANGS.find(l=>l.code===subtitleLang)?.label : ""}
-              </button>
-
-              {/* 다음 강의 */}
-              {nextLesson && !isLessonLocked(course, nextLesson, curIdx + 1) && ctrlBtn(() => setSelectedLesson(nextLesson),
-                <>다음 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg></>, "다음 강의"
-              )}
-            </div>
-
             {/* 하단: 강의 제목 + 언어/모드 선택 */}
             <div style={{ padding: "10px 16px", background: "#0d0d18", borderTop: "1px solid rgba(255,255,255,0.1)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
               {/* 왼쪽: 제목 */}
               <div style={{ fontSize: 14, fontWeight: 800, color: "#fff", flexShrink: 0, maxWidth: "30%" }}>#{selectedLesson.order} {selectedLesson.title}</div>
               {/* 가운데: 언어 선택 + 모드 토글 */}
               <div style={{ display: "flex", gap: 4, alignItems: "center", flex: 1, justifyContent: "center", flexWrap: "wrap" }}>
-                {/* 언어 버튼 */}
                 {LANGS.map(l => {
                   const isActive = subtitleLang === l.code;
                   return (
-                    <button key={l.code} onClick={() => switchLang(selectedLesson, l.code, l.code === "ko" ? "original" : audioMode === "dubbing" ? "dubbing" : "subtitle")}
+                    <button key={l.code} onClick={() => switchLang(selectedLesson, l.code, "subtitle")}
                       style={{ padding: "5px 10px", borderRadius: 8, fontSize: 11, fontWeight: isActive ? 800 : 500, cursor: "pointer", fontFamily: "inherit", border: isActive ? `2px solid ${ACC}` : "1px solid rgba(255,255,255,0.1)", background: isActive ? `${ACC}20` : "transparent", color: isActive ? ACC : "rgba(255,255,255,0.4)", transition: "all 0.12s" }}>
                       {l.label}
                     </button>
                   );
                 })}
-                {/* 모드 토글: 자막/더빙 (한국어가 아닐 때만 표시) */}
-                {subtitleLang !== "ko" && subtitleLang !== "off" && (
-                  <div style={{ display: "flex", borderRadius: 8, overflow: "hidden", border: "1px solid rgba(255,255,255,0.15)", marginLeft: 8 }}>
-                    <button onClick={() => switchLang(selectedLesson, subtitleLang, "subtitle")}
-                      style={{ padding: "5px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", border: "none", background: audioMode === "subtitle" ? ACC : "transparent", color: audioMode === "subtitle" ? "#fff" : "rgba(255,255,255,0.5)", transition: "all 0.15s" }}>
-                      CC 자막
-                    </button>
-                    <button onClick={() => switchLang(selectedLesson, subtitleLang, "dubbing")}
-                      style={{ padding: "5px 12px", fontSize: 10, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", border: "none", borderLeft: "1px solid rgba(255,255,255,0.1)", background: audioMode === "dubbing" ? "#ec4899" : "transparent", color: audioMode === "dubbing" ? "#fff" : "rgba(255,255,255,0.5)", transition: "all 0.15s" }}>
-                      AI 더빙
-                    </button>
-                  </div>
-                )}
                 {subLoading && (
                   <span style={{ fontSize: 10, color: ACC, fontWeight: 600, display: "flex", alignItems: "center", gap: 4, marginLeft: 6 }}>
                     <div style={{ width: 8, height: 8, border: "2px solid " + ACC, borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
@@ -1436,12 +1515,60 @@ export default function ClassPage({ C, navigate, user, theme }) {
           {/* 사이드 커리큘럼 */}
           <div style={{ width: 300, minWidth: 300, borderLeft: "1px solid rgba(255,255,255,0.1)", overflowY: "auto", flexShrink: 0, background: "#111", display: "flex", flexDirection: "column" }}>
             <div style={{ padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 16, flexShrink: 0 }}>
-              {["커리큘럼", "커뮤니티"].map(t => (
-                <span key={t} onClick={() => setDetailTab(t === "커리큘럼" ? "curriculum" : "community")}
-                  style={{ fontSize: 14, fontWeight: (t === "커리큘럼" && detailTab !== "community") || (t === "커뮤니티" && detailTab === "community") ? 800 : 500, color: (t === "커리큘럼" && detailTab !== "community") || (t === "커뮤니티" && detailTab === "community") ? ACC : "rgba(255,255,255,0.4)", cursor: "pointer", paddingBottom: 6, borderBottom: ((t === "커리큘럼" && detailTab !== "community") || (t === "커뮤니티" && detailTab === "community")) ? `2px solid ${ACC}` : "none" }}>{t}</span>
-              ))}
+              {["커리큘럼", "노트", "커뮤니티"].map(t => {
+                const tabKey = t === "커리큘럼" ? "curriculum" : t === "노트" ? "notes" : "community";
+                const isActive = detailTab === tabKey;
+                return (
+                  <span key={t} onClick={() => setDetailTab(tabKey)}
+                    style={{ fontSize: 14, fontWeight: isActive ? 800 : 500, color: isActive ? ACC : "rgba(255,255,255,0.4)", cursor: "pointer", paddingBottom: 6, borderBottom: isActive ? `2px solid ${ACC}` : "none" }}>{t}</span>
+                );
+              })}
             </div>
-            {detailTab === "community" ? (
+            {detailTab === "notes" ? (
+              <div style={{ flex: 1, padding: "16px", display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#e5e7eb" }}>#{selectedLesson.order} {selectedLesson.title}</span>
+                  {noteSaving && <span style={{ fontSize: 10, color: ACC }}>저장 중...</span>}
+                </div>
+                {/* 타임스탬프 삽입 버튼 */}
+                <button onClick={() => {
+                  const v = videoRef.current;
+                  if (!v) return;
+                  const m = Math.floor(v.currentTime / 60);
+                  const s = Math.floor(v.currentTime % 60);
+                  const stamp = `[${m}:${s.toString().padStart(2, "0")}] `;
+                  const cur = lessonNotes[selectedLesson.id] || "";
+                  const newNote = cur + (cur && !cur.endsWith("\n") ? "\n" : "") + stamp;
+                  setLessonNotes(prev => ({ ...prev, [selectedLesson.id]: newNote }));
+                }}
+                  style={{ alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  현재 시간 삽입
+                </button>
+                <textarea
+                  value={lessonNotes[selectedLesson.id] || ""}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setLessonNotes(prev => ({ ...prev, [selectedLesson.id]: val }));
+                    // 자동 저장 (1.5초 디바운스)
+                    clearTimeout(noteSaveTimer.current);
+                    if (user?.uid && selectedCourse?.id) {
+                      setNoteSaving(true);
+                      noteSaveTimer.current = setTimeout(async () => {
+                        await supabase.from("class_notes").upsert(
+                          { class_id: selectedCourse.id, lesson_id: selectedLesson.id, uid: user.uid, content: val, updated_at: new Date().toISOString() },
+                          { onConflict: "class_id,lesson_id,uid" }
+                        );
+                        setNoteSaving(false);
+                      }, 1500);
+                    }
+                  }}
+                  placeholder="강의를 들으며 메모를 남겨보세요...&#10;&#10;[0:00] 타임스탬프로 중요 포인트를 기록하세요"
+                  style={{ flex: 1, width: "100%", padding: "12px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.04)", color: "#e5e7eb", fontSize: 13, lineHeight: 1.7, outline: "none", fontFamily: "inherit", resize: "none", boxSizing: "border-box" }}
+                />
+                {!user && <div style={{ textAlign: "center", padding: "20px 0", color: "rgba(255,255,255,0.3)", fontSize: 13 }}>로그인 후 노트를 저장할 수 있습니다</div>}
+              </div>
+            ) : detailTab === "community" ? (
               <div style={{ flex: 1, padding: "16px", color: "rgba(255,255,255,0.5)", fontSize: 13, display: "flex", flexDirection: "column" }}>
                 {user && (
                   <div style={{ marginBottom: 12 }}>

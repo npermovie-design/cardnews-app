@@ -842,38 +842,58 @@ async def generate_async(request: Request):
         "file_id": file_id,
     }
 
+    is_longform = body.get("longform", False)
+
     def run_generation():
         python_exe = sys.executable
         worker_script = str(BASE_DIR / "generate_worker.py")
         for idx, clip in enumerate(clips):
             job_store[job_id]["current"] = idx
-            output_file = output_dir / f"short_{idx+1:02d}.mp4"
+            output_file = output_dir / (f"longform_{idx+1:02d}.mp4" if is_longform else f"short_{idx+1:02d}.mp4")
             subtitles_on = body.get("subtitles_enabled", True)
             edited_subs = [
                 {"start_seconds": s["start"], "end_seconds": s["end"], "text": s["text"]}
                 for s in clip.get("subtitles", [])
             ] if subtitles_on else []
-            worker_args = json.dumps({
-                "video_path": meta["video_path"],
-                "srt_path": meta.get("subtitle_path", ""),
-                "start_seconds": clip["start_seconds"],
-                "end_seconds": clip["end_seconds"],
-                "output_path": str(output_file),
-                "title": clip.get("title", ""),
-                "subtitle": clip.get("subtitle_text", ""),
-                "logo_path": meta.get("logo_path", ""),
-                "remove_silence": body.get("remove_silence", False),
-                "subs": edited_subs,
-                "template": body.get("template", "minimal"),
-                "custom_font": meta.get("custom_font_path", ""),
-                "title_color": body.get("title_color", ""),
-                "caption_color": body.get("caption_color", ""),
-                "subtitles_enabled": subtitles_on,
-            }, ensure_ascii=False)
+
+            if is_longform:
+                worker_args = json.dumps({
+                    "longform": True,
+                    "video_path": meta["video_path"],
+                    "output_path": str(output_file),
+                    "video_segments": body.get("video_segments", []),
+                    "subs": edited_subs,
+                    "subtitles_enabled": subtitles_on,
+                    "caption_style": body.get("caption_style", {}),
+                    "remove_silence": body.get("remove_silence", False),
+                    "silence_regions": body.get("silence_regions", []),
+                    "silence_gap": body.get("silence_gap", 0.25),
+                }, ensure_ascii=False)
+            else:
+                worker_args = json.dumps({
+                    "video_path": meta["video_path"],
+                    "srt_path": meta.get("subtitle_path", ""),
+                    "start_seconds": clip["start_seconds"],
+                    "end_seconds": clip["end_seconds"],
+                    "output_path": str(output_file),
+                    "title": clip.get("title", ""),
+                    "subtitle": clip.get("subtitle_text", ""),
+                    "logo_path": meta.get("logo_path", ""),
+                    "remove_silence": body.get("remove_silence", False),
+                    "subs": edited_subs,
+                    "template": body.get("template", "minimal"),
+                    "custom_font": meta.get("custom_font_path", ""),
+                    "title_color": body.get("title_color", ""),
+                    "caption_color": body.get("caption_color", ""),
+                    "subtitles_enabled": subtitles_on,
+                }, ensure_ascii=False)
+
             try:
+                # 롱폼은 타임아웃 20분, 숏폼은 10분
+                timeout = 1200 if is_longform else 600
                 proc_result = subprocess.run(
                     [python_exe, worker_script, worker_args],
-                    capture_output=True, text=True, timeout=600, cwd=str(BASE_DIR),
+                    capture_output=True, text=True, timeout=timeout, cwd=str(BASE_DIR),
                 )
                 if proc_result.returncode == 0:
                     out = json.loads(proc_result.stdout.strip().split('\n')[-1])

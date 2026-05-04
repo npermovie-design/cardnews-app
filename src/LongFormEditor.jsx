@@ -898,11 +898,12 @@ JSON 배열로만 응답:
 
   // ── 생성 (내보내기) ──
   const handleExport = async () => {
-    setStep("generate"); setResultUrl(null);
+    setStep("generate"); setResultUrl(null); setError("");
     window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
       detail: { action: "register", task: { id: "longform_gen", type: "longform_make", message: "롱폼 영상 편집 중..." } }
     }));
-    // 2분 타임아웃 — 응답 없으면 자동 복귀
+
+    // 타임아웃 설정 (10분)
     if (genTimeoutRef.current) clearTimeout(genTimeoutRef.current);
     genTimeoutRef.current = setTimeout(() => {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
@@ -948,10 +949,23 @@ JSON 배열로만 응답:
             clearTimeout(genTimeoutRef.current);
             clearInterval(pollRef.current); pollRef.current = null;
             const done = (j.results || []).find(r => r.type === "done");
-            if (done) setResultUrl(`${API}/outputs/${fileId}/${done.filename}`);
-            window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
-              detail: { action: "complete", task: { id: "longform_gen", message: "롱폼 편집 완료!" } }
-            }));
+            const errResult = (j.results || []).find(r => r.type === "error");
+            if (done) {
+              setResultUrl(`${API}/outputs/${fileId}/${done.filename}`);
+              window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
+                detail: { action: "complete", task: { id: "longform_gen", message: "롱폼 편집 완료!" } }
+              }));
+            } else if (errResult) {
+              // 서버가 status=complete로 보내지만 results에 error만 있는 경우
+              setError("렌더링 실패: " + (errResult.message || "알 수 없는 오류") + "\n\n영상 파일 형식이 지원되지 않거나 손상되었을 수 있습니다.\nMP4(H.264) 형식으로 다시 시도해주세요.");
+              setStep("edit");
+              window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
+                detail: { action: "complete", task: { id: "longform_gen", message: "렌더링 실패" } }
+              }));
+            } else {
+              setError("렌더링 완료되었으나 결과 파일을 찾을 수 없습니다.\n다시 시도해주세요.");
+              setStep("edit");
+            }
           } else if (j.status === "error" || j.status === "failed") {
             clearTimeout(genTimeoutRef.current);
             clearInterval(pollRef.current); pollRef.current = null;
@@ -961,7 +975,7 @@ JSON 배열로만 응답:
         } catch (pollErr) {
           console.warn("[LongFormEditor] polling 실패:", pollFails + 1, pollErr?.message || pollErr);
           pollFails++;
-          if (pollFails >= 15) {
+          if (pollFails >= 30) {
             clearTimeout(genTimeoutRef.current);
             clearInterval(pollRef.current); pollRef.current = null;
             setError("서버 연결 끊김. 영상을 다시 불러온 후 시도해주세요.");
@@ -972,7 +986,10 @@ JSON 배열로만 응답:
     } catch (e) {
       console.error("[LongFormEditor] 내보내기 실패:", e);
       clearTimeout(genTimeoutRef.current);
-      setError("생성 실패: " + (e.message || e) + "\n\n서버가 준비되지 않았거나 영상 파일이 만료되었을 수 있습니다.\n영상을 다시 업로드 후 시도해주세요.");
+      const isFileGone = (e.message || "").includes("파일을 찾을 수 없") || (e.message || "").includes("404");
+      setError(isFileGone
+        ? "서버에서 영상 파일을 찾을 수 없습니다.\n\n영상을 다시 업로드한 후 내보내기를 시도해주세요."
+        : "생성 실패: " + (e.message || e) + "\n\n영상을 다시 업로드 후 시도해주세요.");
       setStep("edit");
       window.dispatchEvent(new CustomEvent("bgTaskUpdate", {
         detail: { action: "complete", task: { id: "longform_gen", message: "생성 실패" } }
@@ -1294,6 +1311,22 @@ JSON 배열로만 응답:
         <style>{`
           @keyframes lf-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
         `}</style>
+
+        {/* 에러 배너 */}
+        {error && (
+          <div style={{ padding: "10px 16px", background: "rgba(239,68,68,0.1)", borderBottom: "1px solid rgba(239,68,68,0.2)", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f87171" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <div style={{ flex: 1, fontSize: 12, color: "#f87171", whiteSpace: "pre-line" }}>{error}</div>
+            <button onClick={() => { setError(""); setStep("upload"); setVideoSegs([]); setSubtitles([]); setSilenceRegions([]); setWaveformData(null); setFileId(null); }}
+              style={{ padding: "5px 14px", borderRadius: 8, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.15)", color: "#f87171", fontSize: 11, fontWeight: 700, cursor: "pointer", flexShrink: 0, fontFamily: "inherit" }}>
+              다시 업로드
+            </button>
+            <button onClick={() => setError("")}
+              style={{ padding: "5px 10px", borderRadius: 8, border: "none", background: "transparent", color: "#f87171", fontSize: 16, cursor: "pointer", flexShrink: 0 }}>
+              &times;
+            </button>
+          </div>
+        )}
 
         {/* ── TOP: Preview + Right Panel ── */}
         <div style={{ flex: "1 1 0%", display: "flex", overflow: "hidden", minHeight: 0 }}>
