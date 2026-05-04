@@ -33,7 +33,7 @@
   --danger:      #ef4444;
   --warn:        #f59e0b;
 
-  --gradient:    linear-gradient(135deg, #3b82f6, #6366f1);
+  --gradient:    #3b82f6;
 
   --radius:      14px;
   --radius-sm:   10px;
@@ -95,9 +95,7 @@ body {
 .brand-title {
   font-size: 16px;
   font-weight: 800;
-  background: linear-gradient(135deg, #3b82f6, #6366f1);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #3b82f6;
   letter-spacing: -0.02em;
 }
 
@@ -153,24 +151,12 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 20px;
-  background: linear-gradient(135deg, #eff6ff 0%, #f0f4ff 50%, #faf5ff 100%);
+  background: #eff6ff;
   border: 1px solid #dbeafe;
   border-radius: var(--radius);
   padding: 28px 30px;
   margin-bottom: 16px;
   box-shadow: var(--shadow);
-  position: relative;
-  overflow: hidden;
-}
-.home-automation-hero::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  right: -10%;
-  width: 200px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(99,102,241,0.06) 0%, transparent 70%);
-  pointer-events: none;
 }
 .home-kicker {
   font-size: 12px;
@@ -442,15 +428,15 @@ body {
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-primary {
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: #3b82f6;
   border-color: transparent;
   color: var(--accent-on);
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
 }
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  background: #2563eb;
   border-color: transparent;
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
   transform: translateY(-1px);
 }
 

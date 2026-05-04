@@ -46,7 +46,6 @@ function PopularSlider({ posts, openPost, C, isDark, bdr }) {
 const DEFAULT_CATS = [
   { id: "info",    label: "정보공유",   icon: "", color: "#3b82f6" },
   { id: "qna",     label: "질문답변",   icon: "", color: "#f59e0b" },
-  { id: "sns_briefing", label: "SNS 브리핑", icon: "", color: "#6366f1" },
 ];
 
 /* ─── SEO: 게시글 메타태그 업데이트 헬퍼 ──────────────────── */
@@ -94,7 +93,7 @@ function extractKeywordsBoard(title, plainBody, catName) {
   if (catName) base.push(catName);
   return [...base, ...top].join(", ");
 }
-const CAT_LABEL_MAP = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", showcase: "작품 공유", sns_briefing: "SNS 브리핑" };
+const CAT_LABEL_MAP = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", showcase: "작품 공유" };
 
 function slugifyKo(input, fallback = "post") {
   const slug = stripMdHtml(input || "")
