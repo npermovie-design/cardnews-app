@@ -29,6 +29,9 @@
         <button class="nav-item nav-sub hidden" data-panel="chat" style="display:none;">
           <span class="nav-icon nav-chat"></span>잡담방
         </button>
+        <button class="nav-item nav-sub" data-panel="challenge">
+          <span class="nav-icon nav-challenge"></span>챌린지
+        </button>
         <button class="nav-item nav-sub" data-panel="feedback">
           <span class="nav-icon nav-feedback"></span>요청합니다
         </button>
@@ -142,6 +145,28 @@
       </section>
 
       <!-- 홈 패널 -->
+      <!-- 챌린지 패널 -->
+      <section class="panel hidden" data-panel="challenge">
+        <div class="panel-header">
+          <h1>챌린지</h1>
+          <p class="panel-sub">SNS 운영 챌린지에 참여하고 함께 성장하세요.</p>
+        </div>
+        <div id="challengeList" style="display:flex;flex-direction:column;gap:12px;">
+          <div style="text-align:center;padding:40px 0;color:var(--text-dim);font-size:13px;">불러오는 중...</div>
+        </div>
+        <div id="challengeDetail" style="display:none;">
+          <button class="btn btn-sm" id="challengeBackBtn" style="margin-bottom:16px;">목록으로</button>
+          <div class="card" id="challengeDetailContent"></div>
+          <div style="margin-top:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <div style="font-size:15px;font-weight:700;">미션 인증</div>
+              <button class="btn btn-primary btn-sm" id="challengeMissionBtn" style="padding:6px 14px;font-size:11px;">미션 제출</button>
+            </div>
+            <div id="challengeMissionList" style="display:flex;flex-direction:column;gap:8px;"></div>
+          </div>
+        </div>
+      </section>
+
       <section class="panel" data-panel="home">
         <div class="panel-header">
           <h1>메이킷 SNS 자동화</h1>

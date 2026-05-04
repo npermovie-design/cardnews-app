@@ -3617,3 +3617,163 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (p && p.style.display !== "none" && !p.classList.contains("hidden")) loadPosts();
   }, 1000);
 })();
+
+// ══════════════════════════════════════════════════════════
+// 챌린지 게시판 (Supabase REST API)
+// ══════════════════════════════════════════════════════════
+(function initChallenge() {
+  var SB_URL = "https://ckzjnpzadeovrasucjmu.supabase.co";
+  var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
+  var challenges = [];
+  var currentCh = null;
+
+  function sbGet(path) {
+    return fetch(SB_URL + "/rest/v1/" + path, {
+      headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY }
+    }).then(function(r) { return r.json(); });
+  }
+  function sbInsert(table, body) {
+    return fetch(SB_URL + "/rest/v1/" + table, {
+      method: "POST",
+      headers: { apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, "Content-Type": "application/json", Prefer: "return=representation" },
+      body: JSON.stringify(body)
+    }).then(function(r) { return r.json(); });
+  }
+
+  function getStatus(ch) {
+    if (ch.status === "completed") return { label: "완료", color: "#6b7280", bg: "rgba(107,114,128,0.1)" };
+    var now = new Date();
+    if (ch.start_date && new Date(ch.start_date) <= now && ch.end_date && new Date(ch.end_date) >= now)
+      return { label: "진행중", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" };
+    if (ch.recruit_end && new Date(ch.recruit_end) < now)
+      return { label: "진행중", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" };
+    return { label: "모집중", color: "#22c55e", bg: "rgba(34,197,94,0.1)" };
+  }
+  function dday(d) { if (!d) return ""; var diff = Math.ceil((new Date(d) - new Date()) / 86400000); return diff > 0 ? "D-" + diff : diff === 0 ? "D-DAY" : "마감"; }
+  function fmtDate(d) { return d ? new Date(d).toLocaleDateString("ko-KR") : ""; }
+
+  function loadChallenges() {
+    var list = $("challengeList");
+    var detail = $("challengeDetail");
+    if (list) list.style.display = "";
+    if (detail) detail.style.display = "none";
+    if (list) list.innerHTML = "<div style='text-align:center;padding:40px 0;color:var(--text-dim);font-size:13px;'>불러오는 중...</div>";
+
+    sbGet("challenges?select=*&order=created_at.desc&limit=30")
+      .then(function(data) {
+        challenges = data || [];
+        renderChallengeList();
+      }).catch(function() {
+        if (list) list.innerHTML = "<div style='text-align:center;padding:40px 0;color:var(--danger);font-size:13px;'>불러오기 실패</div>";
+      });
+  }
+
+  function renderChallengeList() {
+    var list = $("challengeList");
+    if (!list) return;
+    if (!challenges.length) { list.innerHTML = "<div style='text-align:center;padding:40px 0;color:var(--text-dim);font-size:13px;'>등록된 챌린지가 없습니다.</div>"; return; }
+    list.innerHTML = challenges.map(function(ch) {
+      var st = getStatus(ch);
+      var dd = ch.recruit_end ? dday(ch.recruit_end) : "";
+      return "<div class='challenge-card' data-chid='" + ch.id + "' style='padding:20px;background:var(--bg-card);border:1px solid var(--border-soft);border-radius:var(--radius);cursor:pointer;transition:all 0.15s;'>" +
+        "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;'>" +
+        "<span style='font-size:11px;font-weight:700;color:" + st.color + ";background:" + st.bg + ";padding:3px 10px;border-radius:6px;'>" + st.label + "</span>" +
+        (dd ? "<span style='font-size:11px;font-weight:700;color:var(--accent);'>" + dd + "</span>" : "") +
+        "</div>" +
+        "<div style='font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;'>" + escapeHtml(ch.title || "") + "</div>" +
+        "<div style='font-size:12px;color:var(--text-dim);line-height:1.6;'>" + escapeHtml((ch.description || "").slice(0, 80)) + "</div>" +
+        "<div style='display:flex;gap:12px;margin-top:10px;font-size:11px;color:var(--text-dim);'>" +
+        "<span>" + fmtDate(ch.start_date) + " ~ " + fmtDate(ch.end_date) + "</span>" +
+        (ch.max_participants ? "<span>정원 " + ch.max_participants + "명</span>" : "") +
+        "</div></div>";
+    }).join("");
+
+    list.querySelectorAll(".challenge-card").forEach(function(card) {
+      card.addEventListener("click", function() { openChallenge(card.dataset.chid); });
+      card.addEventListener("mouseenter", function() { card.style.borderColor = "var(--accent)"; card.style.boxShadow = "var(--shadow-md)"; });
+      card.addEventListener("mouseleave", function() { card.style.borderColor = "var(--border-soft)"; card.style.boxShadow = "none"; });
+    });
+  }
+
+  function openChallenge(id) {
+    var ch = challenges.find(function(c) { return c.id === id; });
+    if (!ch) return;
+    currentCh = ch;
+    var list = $("challengeList");
+    var detail = $("challengeDetail");
+    var content = $("challengeDetailContent");
+    if (list) list.style.display = "none";
+    if (detail) detail.style.display = "";
+
+    var st = getStatus(ch);
+    if (content) content.innerHTML =
+      "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;'>" +
+      "<span style='font-size:12px;font-weight:700;color:" + st.color + ";background:" + st.bg + ";padding:4px 12px;border-radius:6px;'>" + st.label + "</span>" +
+      "<span style='font-size:12px;color:var(--text-dim);'>" + fmtDate(ch.start_date) + " ~ " + fmtDate(ch.end_date) + "</span></div>" +
+      "<h2 style='font-size:20px;font-weight:800;margin-bottom:10px;'>" + escapeHtml(ch.title || "") + "</h2>" +
+      "<div style='font-size:14px;line-height:1.8;color:var(--text-sub);word-break:break-word;'>" + (ch.description || ch.body || "") + "</div>" +
+      (ch.purpose ? "<div style='margin-top:14px;font-size:12px;color:var(--accent);font-weight:600;'>목적: " + escapeHtml(ch.purpose) + "</div>" : "");
+
+    // 미션 목록 로드
+    loadMissions(id);
+  }
+
+  function loadMissions(chId) {
+    var mList = $("challengeMissionList");
+    if (!mList) return;
+    mList.innerHTML = "<div style='color:var(--text-dim);font-size:12px;'>불러오는 중...</div>";
+    sbGet("challenge_missions?challenge_id=eq." + chId + "&select=*&order=created_at.desc&limit=30")
+      .then(function(data) {
+        if (!data || !data.length) { mList.innerHTML = "<div style='color:var(--text-dim);font-size:12px;padding:12px 0;'>아직 미션 인증이 없습니다.</div>"; return; }
+        mList.innerHTML = data.map(function(m) {
+          return "<div style='padding:12px 14px;background:var(--bg-card);border:1px solid var(--border-soft);border-radius:var(--radius-sm);'>" +
+            "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;'>" +
+            "<span style='font-size:13px;font-weight:600;color:var(--text);'>" + escapeHtml(m.author || "") + "</span>" +
+            "<span style='font-size:10px;color:var(--text-dim);'>" + fmtDate(m.created_at) + "</span></div>" +
+            "<div style='font-size:13px;color:var(--text-sub);line-height:1.6;'>" + escapeHtml(m.content || m.body || "") + "</div>" +
+            (m.link ? "<a href='#' style='font-size:11px;color:var(--accent);' onclick=\"event.preventDefault();window.nbBridge&&window.nbBridge.openExternal('" + escapeHtml(m.link) + "');\">링크 보기</a>" : "") +
+            "</div>";
+        }).join("");
+      }).catch(function() { mList.innerHTML = "<div style='color:var(--danger);font-size:12px;'>불러오기 실패</div>"; });
+  }
+
+  // 목록으로
+  var backBtn = $("challengeBackBtn");
+  if (backBtn) backBtn.addEventListener("click", function() {
+    var list = $("challengeList"); var detail = $("challengeDetail");
+    if (list) list.style.display = "";
+    if (detail) detail.style.display = "none";
+    currentCh = null;
+  });
+
+  // 미션 제출
+  var missionBtn = $("challengeMissionBtn");
+  if (missionBtn) missionBtn.addEventListener("click", async function() {
+    if (!currentCh) return;
+    var cfg = await bridge.loadConfig();
+    if (!cfg || !cfg.makeit_uid) { showModal("로그인 필요", "미션 제출은 로그인 후 가능합니다.", "확인"); return; }
+    var content = prompt("미션 인증 내용을 입력하세요:");
+    if (!content || !content.trim()) return;
+    var link = prompt("인증 링크 (블로그 URL 등, 없으면 빈칸):");
+    try {
+      await sbInsert("challenge_missions", {
+        id: "cm_" + Date.now(),
+        challenge_id: currentCh.id,
+        uid: cfg.makeit_uid,
+        author: cfg.makeit_email ? cfg.makeit_email.split("@")[0] : "익명",
+        content: content.trim(),
+        link: (link || "").trim(),
+        created_at: new Date().toISOString()
+      });
+      loadMissions(currentCh.id);
+    } catch (e) { showModal("제출 실패", e.message || "다시 시도해주세요.", "확인"); }
+  });
+
+  // 패널 활성화 시 자동 로드
+  var observer = new MutationObserver(function() {
+    var panel = document.querySelector('[data-panel="challenge"]');
+    if (panel && !panel.classList.contains("hidden")) loadChallenges();
+  });
+  var panel = document.querySelector('[data-panel="challenge"]');
+  if (panel) observer.observe(panel, { attributes: true, attributeFilter: ["class"] });
+})();
