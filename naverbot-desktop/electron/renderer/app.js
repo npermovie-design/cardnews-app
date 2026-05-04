@@ -235,7 +235,7 @@ const navItems = document.querySelectorAll(".nav-item");
 const panels = document.querySelectorAll(".panel");
 
 // 로그인 없이 접근 가능한 패널 (홈만)
-const LOGIN_FREE_PANELS = ["home", "pricing", "about"];
+const LOGIN_FREE_PANELS = ["home", "pricing", "about", "video-shorts", "video-longform"];
 // 네이버 계정 필요 패널
 const ACCOUNT_REQUIRED_PANELS = ["naver-blog", "naver-cafe"];
 
@@ -629,7 +629,7 @@ function _friendlyError(err) {
     [/라이선스/i, "구독이 만료되었거나 비활성 상태입니다. snsmakeit.com에서 구독을 확인해주세요."],
     [/글 생성 실패/i, "AI 글 생성에 실패했습니다. 잠시 후 다시 시도해주세요."],
     [/timeout|시간 초과|TIMEOUT/i, "작업 시간이 초과되었습니다. 인터넷 속도를 확인하고 다시 시도해주세요."],
-    [/카테고리.*선택 실패/i, "블로그 카테고리를 선택하지 못했습니다. 카테고리 이름을 정확히 입력했는지 확인해주세요."],
+    [/카테고리.*선택 실패/i, "블로그 메뉴를 선택하지 못했습니다. 메뉴명을 정확히 입력했는지 확인해주세요."],
   ];
   for (const [pattern, msg] of map) {
     if (pattern.test(err)) return msg;
@@ -744,7 +744,7 @@ async function renderHomeDashboard() {
     if (ap && ap.active) {
       apCard.style.display = "";
       const apInfo = $("dashApInfo");
-      if (apInfo) apInfo.innerHTML = `테마: <strong>${escapeHtml(ap.theme || "")}</strong> · ${ap.posts_per_day || 3}개/일 · 카테고리: ${escapeHtml(ap.category || "없음")}`;
+      if (apInfo) apInfo.innerHTML = `키워드: <strong>${escapeHtml(ap.theme || "")}</strong> · ${ap.posts_per_day || 3}개/일 · 메뉴: ${escapeHtml(ap.category || "없음")}`;
     } else {
       apCard.style.display = "none";
     }
@@ -795,7 +795,7 @@ async function renderDashboardAutopilot() {
   }
 
   $("dashboardAutopilotInfo").innerHTML = `
-    <strong>테마:</strong> ${escapeHtml(ap.theme || "")}<br>
+    <strong>키워드:</strong> ${escapeHtml(ap.theme || "")}<br>
     <strong>발행:</strong> 하루 ${ap.posts_per_day || 3}개<br>
     <strong>시작:</strong> ${startDate}<br>
     <strong>기간:</strong> ${endText}<br>
@@ -1509,8 +1509,8 @@ if ($("modeDriveAutopilot")) $("modeDriveAutopilot").addEventListener("click", (
 if ($("quickStartBtn")) $("quickStartBtn").addEventListener("click", async () => {
   const theme = ($("quickTheme") && $("quickTheme").value.trim()) || "";
   const category = ($("quickCategory") && $("quickCategory").value.trim()) || "";
-  if (!theme) return showModal("알림", "테마를 입력하세요.", "확인");
-  if (!category) return showModal("알림", "카테고리를 입력하세요.", "확인");
+  if (!theme) return showModal("알림", "키워드를 입력하세요.", "확인");
+  if (!category) return showModal("알림", "메뉴명을 입력하세요.", "확인");
   if (!state.loggedIn) return showModal("알림", "먼저 메이킷 계정에 로그인하세요.", "확인");
   if (!(await canUseExperience("quick"))) return;
 
@@ -1547,7 +1547,7 @@ if ($("quickStartBtn")) $("quickStartBtn").addEventListener("click", async () =>
   };
   await bridge.saveConfig(merged);
 
-  addLog(`[빠른 시작] 테마: "${theme}", 카테고리: "${category}"${quickTemplate ? ", 템플릿: " + quickTemplate : ""} — 1개 발행 시작`);
+  addLog(`[빠른 시작] 키워드: "${theme}", 메뉴: "${category}"${quickTemplate ? ", 템플릿: " + quickTemplate : ""} — 1개 발행 시작`);
   state.botRunning = true;
   $("quickStartBtn").disabled = true;
   $("quickStartBtn").textContent = "발행 중...";
@@ -1650,16 +1650,21 @@ function renderCalendar() {
   }
 
   grid.innerHTML = html;
-  grid.querySelectorAll(".cal-day[data-date]").forEach(el => {
-    el.addEventListener("click", () => {
-      calSelectedDate = el.dataset.date;
-      renderCalendar();
-      renderDayHistory(calSelectedDate);
-    });
-  });
-
   renderDayHistory(calSelectedDate);
 }
+
+// 달력 클릭 이벤트 위임 (한 번만 등록, 리스너 누적 방지)
+(function initCalendarDelegation() {
+  const grid = $("calendarGrid");
+  if (!grid) return;
+  grid.addEventListener("click", (e) => {
+    const day = e.target.closest(".cal-day[data-date]");
+    if (!day) return;
+    calSelectedDate = day.dataset.date;
+    renderCalendar();
+    renderDayHistory(calSelectedDate);
+  });
+})();
 
 function getDotsForDate(dateStr) {
   // config에서 publish_history 확인
@@ -1823,7 +1828,7 @@ function goApStep(n) {
   }
 }
 if ($("apStep1Next")) $("apStep1Next").addEventListener("click", () => {
-  if (!$("autopilotTheme").value.trim()) return showModal("알림", "테마를 입력하세요", "확인");
+  if (!$("autopilotTheme").value.trim()) return showModal("알림", "키워드를 입력하세요", "확인");
   // 항상 Step 2(스타일 설정)로 이동해 사용자가 스타일을 검토/수정할 수 있도록
   goApStep(2);
 });
@@ -2044,7 +2049,7 @@ $("startAutopilotBtn").addEventListener("click", async () => {
     return showModal("실행 중", "자동 운영이 이미 실행 중입니다.", "확인");
   }
   const theme = $("autopilotTheme").value.trim();
-  if (!theme) return showModal("알림","테마를 입력하세요","확인");
+  if (!theme) return showModal("알림","키워드를 입력하세요","확인");
   const naverId = $("naverId").value.trim();
   if (!naverId) return showModal("알림","네이버 계정을 설정하세요","확인");
   if (!state.loggedIn) return showModal("알림","먼저 메이킷 계정에 로그인하세요","확인");
@@ -2064,7 +2069,7 @@ $("startAutopilotBtn").addEventListener("click", async () => {
     );
   }
   const category = ($("autopilotCategory") && $("autopilotCategory").value.trim()) || "";
-  if (!category) return showModal("알림", "카테고리를 입력하세요", "확인");
+  if (!category) return showModal("알림", "메뉴명을 입력하세요", "확인");
   const categoryCount = parseInt(($("autopilotCategoryCount") && $("autopilotCategoryCount").value) || "1") || 1;
 
   // 템플릿 "네" 선택했으면 이름 필수
@@ -2126,7 +2131,7 @@ $("startAutopilotBtn").addEventListener("click", async () => {
   };
   await bridge.saveConfig(merged);
 
-  addLog(`[자동 운영] 즉시 시작 — 테마: "${theme}", ${postCount}개, 기간: ${durationLabel}, 간격: ${interval}${category ? ", 카테고리 순환: " + category : ""}${driveFolderUrl ? ", 드라이브 자료/사진 반영" : ""}`);
+  addLog(`[자동 운영] 즉시 시작 — 키워드: "${theme}", ${postCount}개, 기간: ${durationLabel}, 간격: ${interval}${category ? ", 메뉴 순환: " + category : ""}${driveFolderUrl ? ", 드라이브 자료/사진 반영" : ""}`);
   state.botRunning = true;
   $("startAutopilotBtn").disabled = true;
   $("startAutopilotBtn").style.display = "none";
@@ -2437,7 +2442,7 @@ if ($("cafeApCount")) {
 if ($("startCafeApBtn")) $("startCafeApBtn").addEventListener("click", async () => {
   if (!requireExeFeature("cafe", "카페 자동 운영은 Pro 이상에서 사용할 수 있습니다.")) return;
   const theme = $("cafeApTheme").value.trim();
-  if (!theme) return showModal("알림","테마를 입력하세요","확인");
+  if (!theme) return showModal("알림","키워드를 입력하세요","확인");
   const cafeId = ($("cafeApCafeId") && $("cafeApCafeId").value.trim()) || "";
   const cafeNumber = ($("cafeApCafeNumber") && $("cafeApCafeNumber").value.trim()) || "";
   const menuId = ($("cafeApMenuId") && $("cafeApMenuId").value.trim()) || "";
@@ -2459,7 +2464,7 @@ if ($("startCafeApBtn")) $("startCafeApBtn").addEventListener("click", async () 
   await bridge.saveConfig(cfg);
   const r = await bridge.createSchedule([startTime]);
   if (r.ok) {
-    addLog(`[카페 자동] 시작 — 테마: "${theme}", 하루 ${count}개`);
+    addLog(`[카페 자동] 시작 — 키워드: "${theme}", 하루 ${count}개`);
     $("startCafeApBtn").style.display = "none";
     $("stopCafeApBtn").style.display = "";
     goToPanel("execlog");
@@ -2690,6 +2695,16 @@ if (!state.loggedIn) {
 }
 
 setTimeout(checkForAppUpdate, 2500);
+
+// 봇 상태 동기화 (Python 비정상 종료 시 복구)
+if (bridge.isBotRunning) {
+  bridge.isBotRunning().then(running => {
+    if (state.botRunning && !running) {
+      state.botRunning = false;
+      addLog("[시스템] 봇 프로세스가 종료된 상태로 확인됨 — 상태 복구");
+    }
+  });
+}
 
 // exe 자동 업데이트 체크 (electron-updater)
 setTimeout(async () => {
@@ -3042,4 +3057,249 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       }
     });
   }
+})();
+
+// ══════════════════════════════════════════════════════════
+// 영상 편집 (숏폼 + 롱폼) — 로컬 ffmpeg 처리
+// ══════════════════════════════════════════════════════════
+(function initVideoEditors() {
+  if (!bridge.videoSelectFile) return;
+  const API = "https://shorts-factory-r33o.onrender.com";
+
+  // ── 숏폼 ──
+  const vs = {
+    filePath: null, fileInfo: null, count: 3, length: 30,
+    el: { selectFile: $("vsSelectFile"), fileInfo: $("vsFileInfo"), startBtn: $("vsStartBtn"),
+      inputCard: $("vsInputCard"), progressCard: $("vsProgressCard"), progressPct: $("vsProgressPct"),
+      progressLabel: $("vsProgressLabel"), progressSub: $("vsProgressSub"), progressBar: $("vsProgressBar"),
+      cancelBtn: $("vsCancelBtn"), resultArea: $("vsResultArea") },
+  };
+
+  // 칩 초기화
+  function initChipGroup(id, defaultVal, cb) {
+    const wrap = $(id); if (!wrap) return;
+    wrap.addEventListener("click", e => {
+      const btn = e.target.closest(".chip"); if (!btn) return;
+      wrap.querySelectorAll(".chip").forEach(c => c.classList.remove("active"));
+      btn.classList.add("active");
+      cb(btn.dataset.value);
+    });
+  }
+  initChipGroup("vsCountChips", "3", v => { vs.count = parseInt(v); });
+  initChipGroup("vsLengthChips", "30", v => { vs.length = parseInt(v); });
+
+  // 파일 선택
+  vs.el.selectFile?.addEventListener("click", async () => {
+    const r = await bridge.videoSelectFile();
+    if (!r.ok) return;
+    vs.filePath = r.filePath;
+    const info = await bridge.videoProbe(r.filePath);
+    vs.fileInfo = info;
+    const name = r.filePath.split(/[\\/]/).pop();
+    const dur = info.ok ? `${Math.floor(info.duration/60)}:${String(Math.floor(info.duration%60)).padStart(2,"0")}` : "";
+    const size = info.ok ? `${(info.size/1e6).toFixed(1)}MB` : "";
+    vs.el.fileInfo.style.display = "";
+    vs.el.fileInfo.innerHTML = `<strong>${escapeHtml(name)}</strong> ${dur} · ${size} · ${info.width}x${info.height}`;
+    vs.el.startBtn.disabled = false;
+  });
+
+  // 진행률 수신
+  bridge.onVideoProgress?.((d) => {
+    if (vs.el.progressCard.style.display !== "none") {
+      vs.el.progressPct.textContent = d.percent + "%";
+      vs.el.progressBar.style.width = d.percent + "%";
+      if (d.clip) vs.el.progressSub.textContent = `클립 ${d.clip}/${d.total}`;
+    }
+    if ($("vlProgressCard") && $("vlProgressCard").style.display !== "none") {
+      $("vlProgressPct").textContent = d.percent + "%";
+      $("vlProgressBar").style.width = d.percent + "%";
+    }
+  });
+
+  // 시작
+  vs.el.startBtn?.addEventListener("click", async () => {
+    if (!vs.filePath) return;
+    vs.el.inputCard.style.display = "none";
+    vs.el.progressCard.style.display = "";
+    vs.el.resultArea.style.display = "none";
+    vs.el.progressPct.textContent = "0%";
+    vs.el.progressBar.style.width = "0%";
+    vs.el.progressLabel.textContent = "AI 분석 중 (서버)...";
+    vs.el.progressSub.textContent = "하이라이트 구간 추출 + 자막 생성";
+
+    try {
+      // 1) 서버 업로드 + 분석
+      const form = new FormData();
+      const blob = new Blob([await (await fetch("file:///" + vs.filePath.replace(/\\/g, "/"))).arrayBuffer()]);
+      form.append("video", blob, vs.filePath.split(/[\\/]/).pop());
+
+      vs.el.progressLabel.textContent = "서버에 업로드 중...";
+      const upResp = await fetch(`${API}/upload`, { method: "POST", body: form });
+      if (!upResp.ok) throw new Error("업로드 실패");
+      const upData = await upResp.json();
+      vs.el.progressPct.textContent = "25%"; vs.el.progressBar.style.width = "25%";
+
+      vs.el.progressLabel.textContent = "AI 분석 중...";
+      const analyzeResp = await fetch(`${API}/analyze/${upData.file_id}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ max_segments: vs.count }),
+      });
+      if (!analyzeResp.ok) throw new Error("분석 실패");
+      const analyzeData = await analyzeResp.json();
+      const clips = (analyzeData.segments || []).slice(0, vs.count).map(s => ({
+        ...s, title: s.hook || s.hook_text || s.title || "",
+        subtitles: s.subtitles || [],
+      }));
+      vs.el.progressPct.textContent = "50%"; vs.el.progressBar.style.width = "50%";
+
+      if (!clips.length) throw new Error("하이라이트 구간을 찾지 못했습니다");
+
+      // 2) 로컬 ffmpeg 렌더링
+      vs.el.progressLabel.textContent = "로컬 렌더링 중...";
+      vs.el.progressSub.textContent = "ffmpeg (PC에서 직접 처리, 빠름)";
+      const result = await bridge.videoRenderShorts({
+        inputPath: vs.filePath, clips, outputDir: null,
+        template: "minimal", subtitlesEnabled: true,
+      });
+
+      if (!result.ok) throw new Error(result.error || "렌더링 실패");
+
+      // 3) 결과 표시
+      vs.el.progressCard.style.display = "none";
+      vs.el.resultArea.style.display = "";
+      vs.el.resultArea.innerHTML = `
+        <div class="panel-header" style="margin-bottom:12px;">
+          <h1 style="font-size:18px;">${result.results.length}개 쇼츠 완성</h1>
+          <p class="panel-sub">아래에서 파일을 확인하세요</p>
+        </div>
+        ${result.results.map((r, i) => `
+          <div class="card" style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-size:14px;font-weight:700;color:var(--text);">Short ${r.index + 1}</div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">${escapeHtml(r.filename)}</div>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="bridge.openExternal('file:///${r.path.replace(/\\/g, "/").split("/").slice(0, -1).join("/")}')">폴더 열기</button>
+          </div>
+        `).join("")}
+        <button class="btn btn-primary btn-full" style="margin-top:12px;" onclick="
+          document.getElementById('vsInputCard').style.display='';
+          document.getElementById('vsResultArea').style.display='none';
+        ">새 영상</button>
+      `;
+    } catch (e) {
+      vs.el.progressCard.style.display = "none";
+      vs.el.inputCard.style.display = "";
+      showModal("오류", e.message || "처리 실패", "확인");
+    }
+  });
+
+  vs.el.cancelBtn?.addEventListener("click", () => {
+    bridge.videoCancel();
+    vs.el.progressCard.style.display = "none";
+    vs.el.inputCard.style.display = "";
+  });
+
+  // ── 롱폼 ──
+  const vl = {
+    filePath: null,
+    el: { selectFile: $("vlSelectFile"), fileInfo: $("vlFileInfo"), startBtn: $("vlStartBtn"),
+      inputCard: $("vlInputCard"), progressCard: $("vlProgressCard"), progressPct: $("vlProgressPct"),
+      progressLabel: $("vlProgressLabel"), progressBar: $("vlProgressBar"),
+      cancelBtn: $("vlCancelBtn"), resultArea: $("vlResultArea") },
+  };
+
+  vl.el.selectFile?.addEventListener("click", async () => {
+    const r = await bridge.videoSelectFile();
+    if (!r.ok) return;
+    vl.filePath = r.filePath;
+    const info = await bridge.videoProbe(r.filePath);
+    const name = r.filePath.split(/[\\/]/).pop();
+    const dur = info.ok ? `${Math.floor(info.duration/60)}:${String(Math.floor(info.duration%60)).padStart(2,"0")}` : "";
+    vl.el.fileInfo.style.display = "";
+    vl.el.fileInfo.innerHTML = `<strong>${escapeHtml(name)}</strong> ${dur} · ${(info.size/1e6).toFixed(1)}MB`;
+    vl.el.startBtn.disabled = false;
+  });
+
+  vl.el.startBtn?.addEventListener("click", async () => {
+    if (!vl.filePath) return;
+    vl.el.inputCard.style.display = "none";
+    vl.el.progressCard.style.display = "";
+    vl.el.resultArea.style.display = "none";
+    vl.el.progressPct.textContent = "0%";
+    vl.el.progressBar.style.width = "0%";
+    vl.el.progressLabel.textContent = "서버에 업로드 중...";
+
+    try {
+      // 1) 서버 업로드 + STT
+      const form = new FormData();
+      const blob = new Blob([await (await fetch("file:///" + vl.filePath.replace(/\\/g, "/"))).arrayBuffer()]);
+      form.append("video", blob, vl.filePath.split(/[\\/]/).pop());
+      const upResp = await fetch(`${API}/upload`, { method: "POST", body: form });
+      if (!upResp.ok) throw new Error("업로드 실패");
+      const upData = await upResp.json();
+      vl.el.progressPct.textContent = "20%"; vl.el.progressBar.style.width = "20%";
+
+      vl.el.progressLabel.textContent = "AI 음성 인식 중...";
+      const sttResp = await fetch(`${API}/analyze/${upData.file_id}`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ max_segments: 3, longform: true, full_subtitles: true }),
+      });
+      if (!sttResp.ok) throw new Error("음성 인식 실패");
+      const sttData = await sttResp.json();
+      vl.el.progressPct.textContent = "50%"; vl.el.progressBar.style.width = "50%";
+
+      // 자막 추출
+      let subs = [];
+      const segments = sttData.segments || [];
+      const fullSubs = sttData.all_subs || sttData.full_transcript;
+      if (fullSubs && Array.isArray(fullSubs)) subs = fullSubs;
+      if (!subs.length) {
+        for (const seg of segments) {
+          if (seg.subtitles?.length) subs.push(...seg.subtitles);
+          else if (seg.script) {
+            const ss = seg.start_seconds || 0, se = seg.end_seconds || 60;
+            const chunks = seg.script.match(/.{1,18}/g) || [];
+            const cd = (se - ss) / Math.max(1, chunks.length);
+            chunks.forEach((t, i) => subs.push({ start: ss + i * cd, end: ss + (i+1) * cd, text: t.trim() }));
+          }
+        }
+      }
+      if (!subs.length) throw new Error("자막을 생성하지 못했습니다");
+
+      // 2) 로컬 ffmpeg 렌더링
+      vl.el.progressLabel.textContent = "로컬 렌더링 중 (자막 번인)...";
+      const result = await bridge.videoRenderLongform({
+        inputPath: vl.filePath, subtitles: subs, subtitlesEnabled: true,
+        captionStyle: { fontSize: 18, color: "#FFFFFF" },
+      });
+
+      if (!result.ok) throw new Error(result.error || "렌더링 실패");
+
+      // 3) 결과
+      vl.el.progressCard.style.display = "none";
+      vl.el.resultArea.style.display = "";
+      vl.el.resultArea.innerHTML = `
+        <div class="card" style="text-align:center;padding:24px;">
+          <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px;">편집 완료</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">${subs.length}개 자막이 입혀졌습니다</div>
+          <div style="font-size:12px;color:var(--text-sub);margin-bottom:16px;word-break:break-all;">${escapeHtml(result.outputPath)}</div>
+          <button class="btn btn-primary btn-full" onclick="bridge.openExternal('file:///${result.outputPath.replace(/\\/g, "/").split("/").slice(0, -1).join("/")}')">폴더 열기</button>
+          <button class="btn btn-outline btn-full" style="margin-top:8px;" onclick="
+            document.getElementById('vlInputCard').style.display='';
+            document.getElementById('vlResultArea').style.display='none';
+          ">새 영상</button>
+        </div>
+      `;
+    } catch (e) {
+      vl.el.progressCard.style.display = "none";
+      vl.el.inputCard.style.display = "";
+      showModal("오류", e.message || "처리 실패", "확인");
+    }
+  });
+
+  vl.el.cancelBtn?.addEventListener("click", () => {
+    bridge.videoCancel();
+    vl.el.progressCard.style.display = "none";
+    vl.el.inputCard.style.display = "";
+  });
 })();

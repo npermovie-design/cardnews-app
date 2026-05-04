@@ -40,6 +40,13 @@
         <button class="nav-item nav-sub" data-panel="naver-cafe">
           <span class="nav-icon nav-cafe"></span>카페
         </button>
+        <div class="nav-group-label" style="margin-top:8px;">영상 편집</div>
+        <button class="nav-item nav-sub" data-panel="video-shorts">
+          <span class="nav-icon nav-vs"></span>숏폼 생성
+        </button>
+        <button class="nav-item nav-sub" data-panel="video-longform">
+          <span class="nav-icon nav-vl"></span>롱폼 자막
+        </button>
         <div class="nav-group-label" style="margin-top:8px;">관리</div>
         <button class="nav-item nav-sub" data-panel="calendar">
           <span class="nav-icon nav-calendar"></span>자동화 현황
@@ -120,7 +127,7 @@
             <div class="home-feature-icon">B</div>
             <div>
               <h3>블로그 자동 발행</h3>
-              <p>테마, 카테고리, 톤을 정하면 SEO 글을 생성하고 네이버 블로그에 발행합니다.</p>
+              <p>키워드, 메뉴명, 톤을 정하면 SEO 글을 생성하고 네이버 블로그에 발행합니다.</p>
             </div>
           </div>
           <div class="home-feature-card">
@@ -344,11 +351,11 @@
           <!-- 빠른 시작 -->
           <div class="card" style="background:linear-gradient(135deg,#f0ecff,#e8f4fd);border:2px solid var(--accent);margin-bottom:16px;padding:20px;">
             <div style="font-size:16px;font-weight:800;color:var(--accent);margin-bottom:8px;">빠른 시작</div>
-            <div style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">테마와 카테고리만 입력하면 나머지는 AI가 알아서 설정합니다.</div>
+            <div style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">키워드와 메뉴명만 입력하면 나머지는 AI가 알아서 설정합니다.</div>
             <div class="form">
               <div style="display:flex;gap:8px;">
-                <input type="text" id="quickTheme" placeholder="테마 (예: 부동산 투자, 건강관리)" style="flex:2;">
-                <input type="text" id="quickCategory" placeholder="카테고리" style="flex:1;">
+                <input type="text" id="quickTheme" placeholder="키워드 (예: 부동산 투자, 건강관리)" style="flex:2;">
+                <input type="text" id="quickCategory" placeholder="메뉴명" style="flex:1;">
               </div>
               <input type="text" id="quickTitle" placeholder="글 제목 직접 입력 (비우면 AI 자동 생성)" style="margin-top:8px;">
               <input type="text" id="quickTemplate" placeholder="네이버 블로그 템플릿 이름 (선택)" style="margin-top:8px;">
@@ -361,7 +368,7 @@
           <div class="mode-cards">
             <div class="mode-card" id="modeAutopilot">
               <div class="mode-card-title">자동 운영</div>
-              <div class="mode-card-desc">테마, 스타일, 분량, 인용구 등 세부 설정으로 자동 발행합니다.</div>
+              <div class="mode-card-desc">키워드, 스타일, 분량, 인용구 등 세부 설정으로 자동 발행합니다.</div>
             </div>
             <div class="mode-card" id="modeDriveAutopilot">
               <div class="mode-card-title">원하는 사진으로 자동 운영</div>
@@ -393,9 +400,9 @@
             <div class="card">
               <div class="card-header"><h3>주제 설정</h3></div>
               <div class="form">
-                <label>테마 <span class="req">*</span></label>
+                <label>키워드 <span class="req">*</span></label>
                 <input type="text" id="autopilotTheme" placeholder="예: 부동산 투자, 건강관리, 심리상담">
-                <div class="form-hint">쉼표(,)로 여러 테마를 입력하면 순환하며 발행합니다. 각 테마의 최신 뉴스/트렌드를 분석합니다.</div>
+                <div class="form-hint">쉼표(,)로 여러 키워드를 입력하면 순환하며 발행합니다. 각 키워드의 최신 뉴스/트렌드를 분석해 글감을 생성합니다.</div>
 
                 <label>원하는 글 방향 <span class="optional">(선택)</span></label>
                 <textarea id="autopilotPrompt" rows="3" placeholder="예: 이미지 먼저 보여주고, 짧은 문단으로 쉽게 써줘. 핵심 단어는 굵게 강조해줘." style="padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;background:var(--bg-elev);color:var(--text);"></textarea>
@@ -663,13 +670,13 @@
                 <input type="text" id="autopilotTemplate" placeholder="네이버 블로그에 저장된 템플릿 이름 (정확히 입력)" style="display:none;">
                 <div class="form-hint">네이버 블로그 글쓰기 → 우상단 '템플릿' → '내 템플릿'에서 저장한 이름을 정확히 입력하세요.</div>
 
-                <label>카테고리 <span class="req">*</span></label>
+                <label>메뉴명 <span class="req">*</span></label>
                 <textarea id="autopilotCategory" rows="3" placeholder="예: 마케팅, IT·컴퓨터, 꿀팁&#10;쉼표 또는 줄바꿈으로 여러 개 입력" style="padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;background:var(--bg-elev);color:var(--text);"></textarea>
                 <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
                   <input type="number" id="autopilotCategoryCount" min="1" max="50" value="1" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--bg-elev);color:var(--text);font-size:13px;width:120px;">
-                  <span style="font-size:12px;color:var(--text-sub);">개 카테고리를 순환 발행</span>
+                  <span style="font-size:12px;color:var(--text-sub);">개 메뉴를 순환 발행</span>
                 </div>
-                <div class="form-hint">입력한 순서대로 카테고리를 돌아가며 글을 작성하고, 해당 네이버 블로그 카테고리에 발행합니다.</div>
+                <div class="form-hint">네이버 블로그의 메뉴명을 입력하세요. 입력한 순서대로 돌아가며 해당 메뉴에 발행합니다.</div>
               </div>
             </div>
             <div class="card">
@@ -716,7 +723,7 @@
           <div class="mode-cards">
             <div class="mode-card" id="cafeModeAutopilot">
               <div class="mode-card-title">자동 운영</div>
-              <div class="mode-card-desc">테마를 설정하면 자동으로 카페에 글을 발행합니다.</div>
+              <div class="mode-card-desc">키워드를 설정하면 자동으로 카페에 글을 발행합니다.</div>
             </div>
           </div>
         </div>
@@ -746,10 +753,10 @@
             <div class="card-header"><h3>자동 운영 설정</h3></div>
             <div class="form">
               <div class="form-hint" style="margin-bottom:14px;background:#eef6ff;padding:12px;border-radius:8px;color:#1e40af;line-height:1.6;">
-                테마를 설정하면 매일 자동으로 뉴스/트렌드를 분석해 카페에 글을 발행합니다.
+                키워드를 설정하면 매일 자동으로 뉴스/트렌드를 분석해 카페에 글을 발행합니다.
               </div>
 
-              <label>테마 <span class="req">*</span> <span class="tip">?<span class="tip-text">이 테마와 관련된 최신 뉴스와 트렌드를 분석하여 매일 자동으로 글감을 생성합니다.</span></span></label>
+              <label>키워드 <span class="req">*</span> <span class="tip">?<span class="tip-text">이 키워드와 관련된 최신 뉴스와 트렌드를 분석하여 매일 자동으로 글감을 생성합니다.</span></span></label>
               <input type="text" id="cafeApTheme" placeholder="예: 경제 뉴스, 부동산, 주식">
 
               <label>하루 글 갯수 <span class="tip">?<span class="tip-text">카페는 블로그와 달리 글 갯수 제한이 자유롭습니다. 카페 규칙에 맞게 설정하세요. 너무 많으면 스팸으로 간주될 수 있습니다.</span></span></label>
@@ -941,6 +948,76 @@
           </div>
         </div>
       </section>
+
+      <!-- ========== 숏폼 생성 ========== -->
+      <section class="panel hidden" data-panel="video-shorts">
+        <div class="panel-header">
+          <h1 style="font-size:18px;">숏폼 자동 생성</h1>
+          <p class="panel-sub">영상을 넣으면 AI가 하이라이트를 찾아 쇼츠로 만듭니다</p>
+        </div>
+        <!-- 입력 -->
+        <div class="card" id="vsInputCard">
+          <div class="form">
+            <label>영상 파일 선택</label>
+            <button class="btn btn-outline btn-full" id="vsSelectFile" style="margin-top:0;">파일 선택 (MP4, MOV, MKV)</button>
+            <div id="vsFileInfo" style="display:none;margin-top:8px;font-size:12px;color:var(--text-sub);"></div>
+            <label style="margin-top:14px;">쇼츠 개수</label>
+            <div class="chips" id="vsCountChips">
+              <button class="chip" data-value="1">1개</button>
+              <button class="chip" data-value="2">2개</button>
+              <button class="chip active" data-value="3">3개</button>
+              <button class="chip" data-value="4">4개</button>
+              <button class="chip" data-value="5">5개</button>
+            </div>
+            <label style="margin-top:14px;">쇼츠 길이</label>
+            <div class="chips" id="vsLengthChips">
+              <button class="chip" data-value="15">15초</button>
+              <button class="chip active" data-value="30">30초</button>
+              <button class="chip" data-value="60">60초</button>
+              <button class="chip" data-value="90">90초</button>
+            </div>
+            <button class="btn btn-primary btn-full btn-lg" id="vsStartBtn" style="margin-top:16px;" disabled>숏폼 자동 생성</button>
+          </div>
+        </div>
+        <!-- 진행률 -->
+        <div class="card" id="vsProgressCard" style="display:none;text-align:center;padding:32px 20px;">
+          <div style="font-size:32px;font-weight:800;color:var(--accent);" id="vsProgressPct">0%</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin:8px 0 4px;" id="vsProgressLabel">준비 중...</div>
+          <div style="font-size:11px;color:var(--text-dim);" id="vsProgressSub"></div>
+          <div style="height:4px;background:var(--border);border-radius:2px;margin-top:16px;overflow:hidden;">
+            <div id="vsProgressBar" style="height:100%;background:var(--accent);width:0%;border-radius:2px;transition:width 0.3s;"></div>
+          </div>
+          <button class="btn btn-outline btn-sm" id="vsCancelBtn" style="margin-top:14px;">취소</button>
+        </div>
+        <!-- 결과 -->
+        <div id="vsResultArea" style="display:none;"></div>
+      </section>
+
+      <!-- ========== 롱폼 자막 ========== -->
+      <section class="panel hidden" data-panel="video-longform">
+        <div class="panel-header">
+          <h1 style="font-size:18px;">롱폼 자막 편집</h1>
+          <p class="panel-sub">영상에 AI 자막을 자동으로 입혀서 내보냅니다</p>
+        </div>
+        <div class="card" id="vlInputCard">
+          <div class="form">
+            <label>영상 파일 선택</label>
+            <button class="btn btn-outline btn-full" id="vlSelectFile" style="margin-top:0;">파일 선택 (MP4, MOV, MKV)</button>
+            <div id="vlFileInfo" style="display:none;margin-top:8px;font-size:12px;color:var(--text-sub);"></div>
+            <button class="btn btn-primary btn-full btn-lg" id="vlStartBtn" style="margin-top:16px;" disabled>자막 입히기</button>
+          </div>
+        </div>
+        <div class="card" id="vlProgressCard" style="display:none;text-align:center;padding:32px 20px;">
+          <div style="font-size:32px;font-weight:800;color:var(--accent);" id="vlProgressPct">0%</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text);margin:8px 0 4px;" id="vlProgressLabel">준비 중...</div>
+          <div style="height:4px;background:var(--border);border-radius:2px;margin-top:16px;overflow:hidden;">
+            <div id="vlProgressBar" style="height:100%;background:var(--accent);width:0%;border-radius:2px;transition:width 0.3s;"></div>
+          </div>
+          <button class="btn btn-outline btn-sm" id="vlCancelBtn" style="margin-top:14px;">취소</button>
+        </div>
+        <div id="vlResultArea" style="display:none;"></div>
+      </section>
+
     </main>
   </div>
 

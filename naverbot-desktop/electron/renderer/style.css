@@ -161,6 +161,8 @@ body {
 .nav-log::before { content: "L"; }
 .nav-info::before { content: "i"; }
 .nav-pricing::before { content: "₩"; }
+.nav-vs::before { content: "S"; }
+.nav-vl::before { content: "L"; }
 
 .home-automation-hero {
   display: flex;

@@ -40,6 +40,7 @@ contextBridge.exposeInMainWorld("nbBridge", {
   // 봇 실행
   runOnce: (overrides) => ipcRenderer.invoke("bot:runOnce", overrides),
   stopBot: () => ipcRenderer.invoke("bot:stop"),
+  isBotRunning: () => ipcRenderer.invoke("bot:isRunning"),
   runAnalyze: (url) => ipcRenderer.invoke("bot:analyze-ref", url),
   onLog: (cb) => {
     ipcRenderer.on("bot:log", (_, text) => cb(text));
@@ -48,6 +49,11 @@ contextBridge.exposeInMainWorld("nbBridge", {
   // 체험 횟수 (별도 파일로 저장 — 경쟁 상태 없음)
   getTrialUsed: () => ipcRenderer.invoke("trial:get"),
   setTrialUsed: (n) => ipcRenderer.invoke("trial:set", n),
+
+  // 스케줄 (인앱 타이머)
+  createSchedule: (times) => ipcRenderer.invoke("schedule:create", times),
+  clearSchedule: () => ipcRenderer.invoke("schedule:clear"),
+  onScheduleTrigger: (cb) => ipcRenderer.on("schedule:trigger", (_, time) => cb(time)),
 
   // 외부 링크
   openExternal: (url) => ipcRenderer.invoke("shell:openExternal", url),
@@ -67,4 +73,13 @@ contextBridge.exposeInMainWorld("nbBridge", {
 
   // snsmakeit.com 로그인 페이지 열기 (Google/이메일 통합)
   openGoogleOAuth: () => ipcRenderer.send("auth:google"),
+
+  // ── 영상 편집 (로컬 ffmpeg) ──
+  videoSelectFile: () => ipcRenderer.invoke("video:selectFile"),
+  videoProbe: (filePath) => ipcRenderer.invoke("video:probe", filePath),
+  videoRenderShorts: (opts) => ipcRenderer.invoke("video:renderShorts", opts),
+  videoRenderLongform: (opts) => ipcRenderer.invoke("video:renderLongform", opts),
+  videoCancel: () => ipcRenderer.invoke("video:cancel"),
+  videoSelectSaveDir: () => ipcRenderer.invoke("video:selectSaveDir"),
+  onVideoProgress: (cb) => ipcRenderer.on("video:progress", (_, d) => cb(d)),
 });

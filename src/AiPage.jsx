@@ -32,101 +32,48 @@ const SnsPublisher = React.lazy(() => import("./SnsPublisher"));
    VideoEditHub — 숏폼/롱폼 선택 → 해당 에디터 표시
 ════════════════════════════════════════════════════════════ */
 function VideoEditHub({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, showPointConfirm, initialMode }) {
-  const [mode, setMode] = React.useState(initialMode); // null | "shortform" | "longform"
+  const [mode, setMode] = React.useState(initialMode || "shortform");
   const { t: _t } = useI18n();
-  const acc = "#3b82f6";
-  const text = isDark ? "#fff" : "#1a1a2e";
-  const muted = isDark ? "rgba(255,255,255,0.5)" : "#888";
-  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e5f0";
+  const acc = "#6366f1";
+  const text = isDark ? "#e8e8ed" : "#1a1a2e";
+  const muted = isDark ? "rgba(255,255,255,0.45)" : "#6b7280";
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e8ecf1";
+  const tabBg = isDark ? "rgba(255,255,255,0.06)" : "#f0f1f3";
 
   return (
-    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "transparent" : "#f4f4f8" }}>
-      {/* 상단 탭 바 */}
-      <div style={{ padding:"10px 24px 0", display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-        <div style={{ display:"flex", gap:4, padding:3, borderRadius:12, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }}>
+    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "#0a0a0f" : "#f8f9fb" }}>
+      {/* 숏폼/롱폼 탭 — 컴팩트, 본문과 붙어있게 */}
+      <div style={{ padding:"12px 24px 0", flexShrink:0 }}>
+        <div style={{ display:"inline-flex", gap:0, borderRadius:8, overflow:"hidden", border:`1px solid ${bdr}` }}>
           {[
-            { id: null, label: _t("typeSelect") },
-            { id: "shortform", label: _t("shortformEdit") },
-            { id: "longform", label: _t("longformEdit") },
+            { id: "shortform", label: "숏폼" },
+            { id: "longform", label: "롱폼" },
           ].map(tab => (
-            <button key={tab.id||"select"} onClick={() => setMode(tab.id)}
+            <button key={tab.id} onClick={() => setMode(tab.id)}
               style={{
-                padding:"7px 16px", borderRadius:9, border:"none", cursor:"pointer",
+                padding:"7px 20px", border:"none", cursor:"pointer",
                 background: mode === tab.id ? acc : "transparent",
                 color: mode === tab.id ? "#fff" : muted,
-                fontSize:13, fontWeight:700, transition:"all 0.15s",
+                fontSize:12, fontWeight:700, transition:"all 0.12s",
               }}>{tab.label}</button>
           ))}
         </div>
-        {mode && (
-          <div style={{ display:"inline-block", padding:"3px 10px", borderRadius:20, background:"rgba(0,0,0,0.06)", fontSize:10, fontWeight:700, color:acc, marginLeft:4 }}>
-            {mode === "shortform" ? _t("shortformMode") : _t("longformMode")}
-          </div>
-        )}
       </div>
 
-      {/* 콘텐츠 영역 */}
+      {/* 콘텐츠 */}
       {mode === "shortform" ? (
-        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>{_t("loadingText")}</div>}>
+        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>...</div>}>
           <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={() => {}} />
         </React.Suspense>
-      ) : mode === "longform" ? (
-        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>{_t("loadingText")}</div>}>
+      ) : (
+        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>...</div>}>
           <LongFormEditor isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={() => {}} />
         </React.Suspense>
-      ) : (
-        /* 유형 선택 화면 */
-        <div style={{ flex:1, overflowY:"auto" }}>
-          <div style={{ maxWidth:640, margin:"0 auto", padding:"36px 20px 60px", textAlign:"center" }}>
-            <div style={{ fontSize:22, fontWeight:900, color:text, marginBottom:6 }}>{_t("videoEditing")}</div>
-            <div style={{ fontSize:13, color:muted, marginBottom:32 }}>{_t("whatVideoEdit")}</div>
-            <div className="ai-home-2col" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-              {/* 숏폼 */}
-              <div onClick={() => setMode("shortform")} className="hover-lift"
-                style={{ padding:"32px 20px", borderRadius:16, border:`1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer", textAlign:"center", transition:"all 0.2s" }}>
-                <div style={{ width:72, height:72, borderRadius:18, background:`${acc}10`, margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                    <rect x="6" y="2" width="12" height="20" rx="3" stroke={acc} strokeWidth="1.8"/>
-                    <path d="M10 14V10l4 2-4 2z" fill={acc}/>
-                  </svg>
-                </div>
-                <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:6 }}>{_t("shortformEdit")}</div>
-                <div style={{ fontSize:13, color:muted, lineHeight:1.6, marginBottom:12, whiteSpace:"pre-line" }}>
-                  {_t("shortformDesc")}
-                </div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:4, justifyContent:"center" }}>
-                  {[_t("aiHighlight"),_t("vertical916"),_t("autoCaption")].map(tag => (
-                    <span key={tag} style={{ padding:"4px 10px", borderRadius:20, background:`${acc}10`, fontSize:11, color:acc, fontWeight:600 }}>{tag}</span>
-                  ))}
-                </div>
-              </div>
-              {/* 롱폼 */}
-              <div onClick={() => setMode("longform")} className="hover-lift"
-                style={{ padding:"32px 20px", borderRadius:16, border:`1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.04)" : "#fff", cursor:"pointer", textAlign:"center", transition:"all 0.2s" }}>
-                <div style={{ width:72, height:72, borderRadius:18, background:`${acc}10`, margin:"0 auto 16px", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
-                    <rect x="2" y="4" width="20" height="16" rx="3" stroke={acc} strokeWidth="1.8"/>
-                    <path d="M8 4v16M16 4v16" stroke={acc} strokeWidth="1" opacity="0.4"/>
-                    <path d="M2 12h20" stroke={acc} strokeWidth="1" opacity="0.4"/>
-                  </svg>
-                </div>
-                <div style={{ fontSize:18, fontWeight:900, color:text, marginBottom:6 }}>{_t("longformEdit")}</div>
-                <div style={{ fontSize:13, color:muted, lineHeight:1.6, marginBottom:12, whiteSpace:"pre-line" }}>
-                  {_t("longformDesc")}
-                </div>
-                <div style={{ display:"flex", flexWrap:"wrap", gap:4, justifyContent:"center" }}>
-                  {[_t("silenceRemove"),_t("repeatRemove"),_t("captionAnimation")].map(tag => (
-                    <span key={tag} style={{ padding:"4px 10px", borderRadius:20, background:`${acc}10`, fontSize:11, color:acc, fontWeight:600 }}>{tag}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
 }
+
 
 /* ════════════════════════════════════════════════════════════
    AiPage
@@ -1740,16 +1687,12 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
   }
 
   if (aiMenu === "social_analyzer") {
-    return (
-      <div style={{ flex:1, overflowY:"auto", background: isDark ? "transparent" : "#f4f4f8" }}>
-        <SocialAnalyzer isDark={isDark} user={user} />
-      </div>
-    );
+    setAiMenu("home");
   }
 
   // 영상 편집 — SaaS 데스크톱 앱으로 이관됨 (웹에서 제거)
   if (aiMenu === "video_edit" || aiMenu === "video_create" || aiMenu === "shorts" || aiMenu === "shorts_make" || aiMenu === "longform_edit") {
-    setAiMenu(null);
+    setAiMenu("home");
   }
 
 

@@ -64,7 +64,6 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
         background: active ? itemActiveBg : "transparent",
         color: active ? itemActive : itemText,
         fontSize: 13, fontWeight: active ? 700 : 500,
-        borderLeft: active ? "3px solid #3b82f6" : "3px solid transparent",
         display: "flex", alignItems: "center", gap: 0, marginBottom: 2,
         minHeight: 40, transition: "background 0.12s",
       }}
@@ -89,7 +88,6 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
     { id:"home", label:"AI도구", ids:["home","blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link","blog_write"] },
     { id:"today_keywords", label:t("sideKeywords"), ids:["today_keywords"] },
     { id:"sns_consulting", label:t("sideConsulting"), ids:["sns_consulting"] },
-    { id:"social_analyzer", label:t("sideAnalyzer"), ids:["social_analyzer"] },
     { id:"library", label:t("library") },
   ];
 
@@ -139,7 +137,7 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
                 fontSize:15, fontWeight: active ? 800 : 600,
                 transition:"background 0.12s",
                 minHeight:50, fontFamily:"inherit",
-                borderLeft: active ? `3px solid ${itemActive}` : "3px solid transparent",
+                /* borderLeft 제거 */
               }}
               onMouseEnter={e => { if(!active) e.currentTarget.style.background = isDark?"rgba(255,255,255,0.05)":"rgba(59,130,246,0.06)"; }}
               onMouseLeave={e => { if(!active) e.currentTarget.style.background = active ? itemActiveBg : "transparent"; }}>

@@ -12,6 +12,12 @@ const os = require("os");
 const http = require("http");
 const urlLib = require("url");
 
+// EPIPE 에러 방지 (ffmpeg 프로세스 종료 후 stderr 쓰기 시도)
+process.on("uncaughtException", (err) => {
+  if (err.code === "EPIPE" || err.message?.includes("EPIPE")) return;
+  console.error("[uncaughtException]", err);
+});
+
 const IS_LOCAL_DEV_INSTANCE = process.env.NAVERBOT_LOCAL_DEV === "1";
 const UPDATE_CHECK_URL = process.env.NAVERBOT_UPDATE_CHECK_URL || "https://snsmakeit.com/api/naverbot/update";
 const HOT_MANIFEST_URL = "https://snsmakeit.com/api/naverbot/hot-manifest";
@@ -419,6 +425,20 @@ app.whenReady().then(async () => {
 });
 
 app.on("window-all-closed", () => {
+  // 종료 시 스케줄 타이머 + 실행 중 프로세스 정리
+  scheduleTimers.forEach(t => clearTimeout(t));
+  scheduleTimers = [];
+  if (currentProcess) {
+    try {
+      if (process.platform === "win32") {
+        spawn("taskkill", ["/pid", String(currentProcess.pid), "/T", "/F"], { stdio: "ignore" });
+      } else {
+        currentProcess.kill("SIGTERM");
+      }
+    } catch {}
+    currentProcess = null;
+  }
+  closeAuthHttpServer();
   if (process.platform !== "darwin") app.quit();
 });
 
@@ -474,6 +494,45 @@ app.on("open-url", (event, url) => {
   // macOS
   event.preventDefault();
   handleAuthCallback(parseProtocolUrl(url));
+});
+
+// ── IPC: 스케줄 (인앱 타이머 기반) ──
+let scheduleTimers = [];
+
+ipcMain.handle("schedule:create", (_, times) => {
+  // 기존 스케줄 정리
+  scheduleTimers.forEach(t => clearTimeout(t));
+  scheduleTimers = [];
+
+  if (!Array.isArray(times) || times.length === 0) return { ok: false, error: "시간 없음" };
+
+  const now = new Date();
+  for (const timeStr of times) {
+    const [h, m] = String(timeStr).split(":").map(Number);
+    if (isNaN(h) || isNaN(m)) continue;
+
+    let target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, 0);
+    if (target <= now) target.setDate(target.getDate() + 1); // 이미 지난 시간이면 내일
+
+    const delay = target.getTime() - now.getTime();
+    const tid = setTimeout(() => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send("schedule:trigger", timeStr);
+      }
+    }, delay);
+    scheduleTimers.push(tid);
+  }
+
+  console.log(`[Schedule] ${times.length}개 스케줄 등록: ${times.join(", ")}`);
+  return { ok: true, count: times.length };
+});
+
+ipcMain.handle("schedule:clear", () => {
+  const count = scheduleTimers.length;
+  scheduleTimers.forEach(t => clearTimeout(t));
+  scheduleTimers = [];
+  console.log(`[Schedule] ${count}개 스케줄 해제`);
+  return { ok: true, cleared: count };
 });
 
 // ── IPC: 체험 횟수 (별도 파일) ──
@@ -740,7 +799,13 @@ ipcMain.handle("bot:runOnce", async (event, overrides = {}) => {
     const timeoutMs = Math.max(1800000, postCount * 600000); // 글당 10분, 최소 30분
     const timeout = setTimeout(() => {
       if (currentProcess === py) {
-        py.kill();
+        try {
+          if (process.platform === "win32") {
+            spawn("taskkill", ["/pid", String(py.pid), "/T", "/F"], { stdio: "ignore" });
+          } else {
+            py.kill("SIGTERM");
+          }
+        } catch {}
         currentProcess = null;
         resolve({ ok: false, error: "타임아웃" });
       }
@@ -789,12 +854,24 @@ ipcMain.handle("bot:runOnce", async (event, overrides = {}) => {
 
 ipcMain.handle("bot:stop", () => {
   if (currentProcess) {
-    currentProcess.kill();
+    try {
+      // Windows에서 프로세스 트리 전체 종료 (Chromium 자식 프로세스 포함)
+      if (process.platform === "win32") {
+        spawn("taskkill", ["/pid", String(currentProcess.pid), "/T", "/F"], { stdio: "ignore" });
+      } else {
+        currentProcess.kill("SIGTERM");
+      }
+    } catch (e) {
+      console.error("[bot:stop] kill error:", e.message);
+    }
     currentProcess = null;
     return { ok: true };
   }
   return { ok: false, error: "실행 중인 봇 없음" };
 });
+
+// 봇 프로세스 상태 확인 (렌더러에서 동기화용)
+ipcMain.handle("bot:isRunning", () => !!currentProcess);
 
 // ── IPC: 참고 글 분석 (Playwright) ──
 ipcMain.handle("bot:analyze-ref", (_, url) => {
@@ -934,7 +1011,10 @@ let authHttpServer = null;
 
 function closeAuthHttpServer() {
   if (authHttpServer) {
-    try { authHttpServer.close(); } catch {}
+    try {
+      authHttpServer.close();
+      authHttpServer.unref();
+    } catch {}
     authHttpServer = null;
   }
 }
@@ -1075,3 +1155,205 @@ ipcMain.on("auth:google", () => {
 });
 
 ipcMain.on("auth:openExternal", (_, url) => shell.openExternal(url));
+
+// ═══════════════════════════════════════════════════════════
+// 영상 편집 — 로컬 ffmpeg 처리
+// ═══════════════════════════════════════════════════════════
+
+function getFfmpegPath() {
+  try { const p = require("ffmpeg-static"); if (p && fs.existsSync(p)) return p; } catch {}
+  return "ffmpeg";
+}
+function getFfprobePath() {
+  try { const p = require("ffprobe-static"); if (p?.path && fs.existsSync(p.path)) return p.path; } catch {}
+  return "ffprobe";
+}
+
+// 파일 선택
+ipcMain.handle("video:selectFile", async () => {
+  const r = await dialog.showOpenDialog(mainWindow, {
+    properties: ["openFile"],
+    filters: [{ name: "영상", extensions: ["mp4", "mov", "avi", "mkv", "webm"] }],
+  });
+  if (r.canceled || !r.filePaths.length) return { ok: false };
+  return { ok: true, filePath: r.filePaths[0] };
+});
+
+// 저장 폴더 선택
+ipcMain.handle("video:selectSaveDir", async () => {
+  const r = await dialog.showOpenDialog(mainWindow, { properties: ["openDirectory"] });
+  if (r.canceled || !r.filePaths.length) return { ok: false };
+  return { ok: true, dirPath: r.filePaths[0] };
+});
+
+// ffprobe 영상 정보
+ipcMain.handle("video:probe", async (_, filePath) => {
+  if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: "파일 없음" };
+  return new Promise((resolve) => {
+    const proc = spawn(getFfprobePath(), ["-v", "quiet", "-print_format", "json", "-show_format", "-show_streams", filePath], { windowsHide: true });
+    const chunks = [];
+    proc.stdout.on("data", d => chunks.push(d.toString()));
+    proc.on("close", () => {
+      try {
+        const data = JSON.parse(chunks.join(""));
+        const vs = (data.streams || []).find(s => s.codec_type === "video");
+        resolve({ ok: true, duration: parseFloat(data.format?.duration || 0), width: vs?.width || 0, height: vs?.height || 0, size: parseInt(data.format?.size || 0) });
+      } catch (e) { resolve({ ok: false, error: e.message }); }
+    });
+    proc.on("error", e => resolve({ ok: false, error: e.message }));
+  });
+});
+
+// SRT 파일 생성 헬퍼
+function writeSrt(srtPath, subs, offset = 0) {
+  const fmt = (s) => { s = Math.max(0, s); const h = Math.floor(s/3600); const m = Math.floor((s%3600)/60); const sec = Math.floor(s%60); const ms = Math.round((s%1)*1000); return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(sec).padStart(2,"0")},${String(ms).padStart(3,"0")}`; };
+  let content = "";
+  subs.forEach((sub, i) => {
+    const start = (sub.start_seconds ?? sub.start ?? 0) - offset;
+    const end = (sub.end_seconds ?? sub.end ?? start + 2) - offset;
+    content += `${i+1}\n${fmt(Math.max(0,start))} --> ${fmt(Math.max(0.1,end))}\n${sub.text || ""}\n\n`;
+  });
+  fs.writeFileSync(srtPath, content, "utf8");
+}
+
+// ffmpeg 자막 필터 생성 헬퍼
+function buildSubFilter(srtPath, fontSize, fontColor) {
+  const fc = (fontColor || "#FFFFFF").replace("#", "");
+  const assColor = `&H00${fc.slice(4,6)}${fc.slice(2,4)}${fc.slice(0,2)}`;
+  const escaped = srtPath.replace(/\\/g, "/").replace(/:/g, "\\:");
+  return `subtitles='${escaped}':force_style='FontSize=${fontSize},PrimaryColour=${assColor},Bold=1,FontName=Malgun Gothic,BackColour=&H99000000,BorderStyle=4,MarginV=30,Shadow=2'`;
+}
+
+// 숏폼 렌더링 (로컬 ffmpeg)
+let videoProcess = null;
+
+ipcMain.handle("video:renderShorts", async (_, opts) => {
+  if (videoProcess) return { ok: false, error: "이미 렌더링 중" };
+  const { inputPath, clips, outputDir, template, subtitlesEnabled } = opts;
+  if (!inputPath || !fs.existsSync(inputPath)) return { ok: false, error: "입력 파일 없음" };
+
+  const saveDir = outputDir || path.dirname(inputPath);
+  const results = [];
+
+  for (let ci = 0; ci < clips.length; ci++) {
+    const clip = clips[ci];
+    const ss = clip.start_seconds || 0;
+    const se = clip.end_seconds || 30;
+    const duration = se - ss;
+    const outName = `short_${ci + 1}_${Date.now()}.mp4`;
+    const outPath = path.join(saveDir, outName);
+
+    // SRT
+    const srtPath = path.join(os.tmpdir(), `makeit_short_${ci}.srt`);
+    if (subtitlesEnabled && clip.subtitles?.length) {
+      writeSrt(srtPath, clip.subtitles, ss);
+    }
+
+    // ffmpeg 필터
+    const filters = [];
+    filters.push("scale=1080:-2:force_original_aspect_ratio=decrease");
+    filters.push("pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=0x000000");
+
+    // 제목
+    if (clip.title) {
+      const safeTitle = clip.title.replace(/'/g, "\\'").replace(/:/g, "\\:");
+      filters.push(`drawtext=text='${safeTitle}':fontsize=42:fontcolor=white:x=(w-text_w)/2:y=80:shadowcolor=black:shadowx=2:shadowy=2:box=1:boxcolor=black@0.6:boxborderw=12`);
+    }
+
+    // 자막
+    if (subtitlesEnabled && clip.subtitles?.length) {
+      filters.push(buildSubFilter(srtPath, 38, "#FFFFFF"));
+    }
+
+    filters.push(`fade=t=in:st=0:d=0.5,fade=t=out:st=${Math.max(0, duration - 0.5).toFixed(2)}:d=0.5`);
+
+    const args = ["-ss", String(Math.max(0, ss)), "-to", String(se + 0.3), "-i", inputPath,
+      "-vf", filters.join(","), "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+      "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", "-y", outPath];
+
+    // 실행
+    const ok = await new Promise((resolve) => {
+      const proc = spawn(getFfmpegPath(), args, { windowsHide: true });
+      videoProcess = proc;
+      let totalDur = duration;
+      proc.stderr.on("data", d => {
+        const text = d.toString();
+        const tm = text.match(/time=(\d+):(\d+):(\d+)\.(\d+)/);
+        if (tm && totalDur > 0) {
+          const cur = parseInt(tm[1])*3600 + parseInt(tm[2])*60 + parseInt(tm[3]) + parseInt(tm[4])/100;
+          const clipPct = Math.min(100, Math.round(cur / totalDur * 100));
+          const overallPct = Math.round(((ci + clipPct / 100) / clips.length) * 100);
+          if (mainWindow) mainWindow.webContents.send("video:progress", { percent: overallPct, clip: ci + 1, total: clips.length });
+        }
+      });
+      proc.on("close", code => { videoProcess = null; resolve(code === 0 && fs.existsSync(outPath) && fs.statSync(outPath).size > 1000); });
+      proc.on("error", () => { videoProcess = null; resolve(false); });
+    });
+
+    try { fs.unlinkSync(srtPath); } catch {}
+    if (ok) results.push({ index: ci, path: outPath, filename: outName });
+  }
+
+  if (mainWindow) mainWindow.webContents.send("video:progress", { percent: 100 });
+  return { ok: true, results };
+});
+
+// 롱폼 렌더링 (로컬 ffmpeg)
+ipcMain.handle("video:renderLongform", async (_, opts) => {
+  if (videoProcess) return { ok: false, error: "이미 렌더링 중" };
+  const { inputPath, subtitles, subtitlesEnabled, captionStyle, outputDir } = opts;
+  if (!inputPath || !fs.existsSync(inputPath)) return { ok: false, error: "입력 파일 없음" };
+
+  const saveDir = outputDir || path.dirname(inputPath);
+  const outPath = path.join(saveDir, `longform_sub_${Date.now()}.mp4`);
+
+  const args = ["-i", inputPath];
+
+  if (subtitlesEnabled && subtitles?.length) {
+    const srtPath = path.join(os.tmpdir(), `makeit_long_${Date.now()}.srt`);
+    writeSrt(srtPath, subtitles, 0);
+    const cs = captionStyle || {};
+    const fontSize = cs.fontSize || 18;
+    const fontColor = cs.color || "#FFFFFF";
+    args.push("-vf", buildSubFilter(srtPath, fontSize, fontColor));
+    // 렌더 후 SRT 정리
+    args._srtPath = srtPath;
+  }
+
+  args.push("-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+    "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", "-y", outPath);
+
+  return new Promise((resolve) => {
+    const proc = spawn(getFfmpegPath(), args.filter(a => typeof a === "string"), { windowsHide: true });
+    videoProcess = proc;
+    let totalDur = 0;
+    proc.stderr.on("data", d => {
+      const text = d.toString();
+      const dm = text.match(/Duration:\s*(\d+):(\d+):(\d+)\.(\d+)/);
+      if (dm) totalDur = parseInt(dm[1])*3600 + parseInt(dm[2])*60 + parseInt(dm[3]);
+      const tm = text.match(/time=(\d+):(\d+):(\d+)\.(\d+)/);
+      if (tm && totalDur > 0) {
+        const cur = parseInt(tm[1])*3600 + parseInt(tm[2])*60 + parseInt(tm[3]);
+        if (mainWindow) mainWindow.webContents.send("video:progress", { percent: Math.min(99, Math.round(cur / totalDur * 100)) });
+      }
+    });
+    proc.on("close", code => {
+      videoProcess = null;
+      if (args._srtPath) try { fs.unlinkSync(args._srtPath); } catch {}
+      if (mainWindow) mainWindow.webContents.send("video:progress", { percent: 100 });
+      if (code === 0 && fs.existsSync(outPath)) resolve({ ok: true, outputPath: outPath });
+      else resolve({ ok: false, error: "렌더링 실패" });
+    });
+    proc.on("error", e => { videoProcess = null; resolve({ ok: false, error: e.message }); });
+  });
+});
+
+// 렌더링 취소
+ipcMain.handle("video:cancel", () => {
+  if (videoProcess) {
+    try { if (process.platform === "win32") spawn("taskkill", ["/pid", String(videoProcess.pid), "/T", "/F"], { stdio: "ignore" }); else videoProcess.kill("SIGTERM"); } catch {}
+    videoProcess = null;
+    return { ok: true };
+  }
+  return { ok: false };
+});
