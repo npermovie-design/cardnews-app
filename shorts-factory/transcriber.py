@@ -33,17 +33,21 @@ def transcribe_video(video_path: str, output_dir: str, max_chars: int = 0) -> st
 
     # 2) Groq Whisper API (무료, 빠름)
     if GROQ_API_KEY:
+        audio_size = os.path.getsize(audio_path) if os.path.exists(audio_path) else 0
+        print(f"[transcribe] audio_path={audio_path}, size={audio_size}, audio_ok={audio_ok}")
         try:
             result = _transcribe_groq(audio_path)
             if result:
                 _write_srt(srt_path, result, max_chars)
                 return srt_path
+            print("[transcribe] Groq returned None")
         except Exception as e:
-            print(f"Groq transcription failed: {e}")
+            import traceback
+            print(f"Groq transcription failed: {e}\n{traceback.format_exc()}")
         # Groq 실패 시 원본 영상으로 재시도
         if audio_path != video_path:
             try:
-                print("Retrying Groq with original video file...")
+                print(f"[transcribe] Retrying Groq with original video: {video_path}")
                 result = _transcribe_groq(video_path)
                 if result:
                     _write_srt(srt_path, result, max_chars)
@@ -51,14 +55,15 @@ def transcribe_video(video_path: str, output_dir: str, max_chars: int = 0) -> st
             except Exception as e:
                 print(f"Groq retry failed: {e}")
 
-    # 3) 로컬 faster-whisper 폴백
-    try:
-        result = _transcribe_local(video_path, max_chars)
-        if result:
-            _write_srt_entries(srt_path, result)
-            return srt_path
-    except Exception as e:
-        print(f"Local whisper failed: {e}")
+    # 3) 로컬 faster-whisper 폴백 — Render 메모리 제한으로 비활성화
+    # faster-whisper 모델 로딩이 512MB+ 메모리를 사용하여 서버 크래시 유발
+    # try:
+    #     result = _transcribe_local(video_path, max_chars)
+    #     if result:
+    #         _write_srt_entries(srt_path, result)
+    #         return srt_path
+    # except Exception as e:
+    #     print(f"Local whisper failed: {e}")
 
     raise RuntimeError("음성 인식에 실패했습니다. 자막(SRT) 파일을 직접 업로드해주세요.")
 

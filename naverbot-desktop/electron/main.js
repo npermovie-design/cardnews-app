@@ -1176,10 +1176,9 @@ function getFfprobePath() {
   return "ffprobe";
 }
 
-// 로컬 ffmpeg 오디오 추출 → 메이킷 서버 Whisper API → 자막 분석
-// 서버 렌더링 의존 완전 제거
+// 서버에 영상 업로드 + 분석 (curl 방식 — 원래 동작하던 방식 복원)
 ipcMain.handle("video:uploadAndAnalyze", async (_, filePath, maxSegments) => {
-  const WHISPER_API = "https://shorts-factory-r33o.onrender.com/whisper";
+  const API = "https://shorts-factory-r33o.onrender.com";
   try {
     if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: "파일 없음" };
 
@@ -1187,145 +1186,85 @@ ipcMain.handle("video:uploadAndAnalyze", async (_, filePath, maxSegments) => {
       if (mainWindow) mainWindow.webContents.send("video:progress", { percent: pct, label });
     };
 
-    // 1. 로컬 ffmpeg로 오디오 추출 (mp3, 64kbps, 16kHz mono)
-    sendProg(10, "오디오 추출 중...");
-    const audioPath = path.join(os.tmpdir(), `makeit_audio_${Date.now()}.mp3`);
-    console.log("[video:analyze] Extracting audio:", filePath, "→", audioPath);
+    // 1. 업로드 (child_process curl)
+    sendProg(10, "서버에 업로드 중...");
+    const fileName = path.basename(filePath);
 
-    await new Promise((resolve, reject) => {
-      const proc = spawn(getFfmpegPath(), [
-        "-i", filePath, "-vn", "-acodec", "libmp3lame",
-        "-ab", "64k", "-ar", "16000", "-ac", "1", "-y", audioPath
+    const upResult = await new Promise((resolve) => {
+      console.log("[video:upload] Starting curl upload:", filePath);
+      const proc = spawn("curl", [
+        "-s", "-w", "\n%{http_code}",
+        "-X", "POST",
+        `${API}/upload`,
+        "-F", `video=@${filePath}`,
       ], { windowsHide: true });
-      proc.on("close", (code) => {
-        if (code === 0 && fs.existsSync(audioPath) && fs.statSync(audioPath).size > 1000) resolve();
-        else reject(new Error("오디오 추출 실패 (ffmpeg)"));
-      });
-      proc.on("error", (e) => reject(new Error("ffmpeg 실행 실패: " + e.message)));
-    });
-
-    const audioSize = fs.statSync(audioPath).size;
-    console.log("[video:analyze] Audio extracted:", (audioSize / 1024 / 1024).toFixed(1), "MB");
-
-    // 25MB 초과 시 분할 처리
-    if (audioSize > 25 * 1024 * 1024) {
-      sendProg(15, "오디오가 커서 분할 중...");
-      // 3분 단위 분할 → 첫 청크만 사용 (간단 처리)
-      const chunkPath = path.join(os.tmpdir(), `makeit_chunk_${Date.now()}.mp3`);
-      await new Promise((resolve, reject) => {
-        const proc = spawn(getFfmpegPath(), [
-          "-i", audioPath, "-t", "180", "-acodec", "libmp3lame",
-          "-ab", "64k", "-ar", "16000", "-ac", "1", "-y", chunkPath
-        ], { windowsHide: true });
-        proc.on("close", () => {
-          if (fs.existsSync(chunkPath)) { fs.unlinkSync(audioPath); fs.renameSync(chunkPath, audioPath); }
-          resolve();
-        });
-        proc.on("error", () => resolve());
-      });
-    }
-
-    // 2. 메이킷 서버 Whisper API 호출 (base64 방식)
-    sendProg(30, "AI 음성 인식 중...");
-    const audioBase64 = fs.readFileSync(audioPath).toString("base64");
-    fs.unlinkSync(audioPath); // 임시 파일 정리
-
-    const whisperData = await new Promise((resolve, reject) => {
-      const reqBody = JSON.stringify({
-        audio_base64: audioBase64,
-        file_name: "audio.mp3",
-        lang: "ko"
-      });
-      const https = require("https");
-      const url = new URL(WHISPER_API);
-      const req = https.request({
-        hostname: url.hostname,
-        path: url.pathname + url.search,
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Content-Length": Buffer.byteLength(reqBody) },
-        timeout: 180000,
-      }, (res) => {
-        const chunks = [];
-        res.on("data", (c) => chunks.push(c));
-        res.on("end", () => {
-          const raw = Buffer.concat(chunks).toString();
-          console.log("[video:whisper] response:", res.statusCode, raw.slice(0, 500));
-          try {
-            const data = JSON.parse(raw);
-            if (res.statusCode >= 200 && res.statusCode < 300) resolve(data);
-            else reject(new Error(data.error || `음성 인식 실패 (${res.statusCode})`));
-          } catch { reject(new Error("음성 인식 응답 파싱 실패")); }
-        });
-      });
-      req.on("error", (e) => reject(new Error("서버 연결 실패: " + e.message)));
-      req.on("timeout", () => { req.destroy(); reject(new Error("음성 인식 시간 초과 (3분)")); });
-      req.write(reqBody);
-      req.end();
-    });
-
-    sendProg(70, "자막 분석 중...");
-
-    // 3. Whisper 응답 → 자막 배열 생성
-    const segments = whisperData.segments || [];
-    const words = whisperData.words || [];
-    let subtitles = [];
-
-    if (words && words.length > 0) {
-      // word-level 자막 생성 (15자 단위)
-      let chunk = "", chunkStart = null, chunkEnd = 0;
-      for (const w of words) {
-        const text = (w.word || "").trim();
-        if (!text) continue;
-        if (chunkStart === null) chunkStart = w.start || 0;
-        const test = chunk ? chunk + " " + text : text;
-        if (test.length > 15 && chunk) {
-          subtitles.push({ start: chunkStart, end: chunkEnd, text: chunk.trim() });
-          chunk = text;
-          chunkStart = w.start || 0;
-        } else {
-          chunk = test;
+      const chunks = [];
+      const errChunks = [];
+      proc.stdout.on("data", d => chunks.push(d.toString()));
+      proc.stderr.on("data", d => errChunks.push(d.toString()));
+      proc.on("close", code => {
+        const raw = chunks.join("");
+        console.log("[video:upload] curl exit:", code, "response:", raw.slice(0, 300));
+        if (errChunks.length) console.log("[video:upload] curl stderr:", errChunks.join("").slice(0, 200));
+        try {
+          const lines = raw.trim().split("\n");
+          const httpCode = parseInt(lines[lines.length - 1]);
+          const body = lines.slice(0, -1).join("\n");
+          const data = JSON.parse(body);
+          resolve({ ok: httpCode >= 200 && httpCode < 300, data, httpCode });
+        } catch (e) {
+          console.log("[video:upload] parse error:", e.message, "raw:", raw.slice(0, 200));
+          resolve({ ok: false, error: "응답 파싱 실패" });
         }
-        chunkEnd = w.end || 0;
-      }
-      if (chunk && chunkStart !== null) subtitles.push({ start: chunkStart, end: chunkEnd, text: chunk.trim() });
-    } else if (segments.length > 0) {
-      subtitles = segments.map(s => ({
-        start: s.start || 0,
-        end: s.end || 0,
-        text: (s.text || "").trim()
-      })).filter(s => s.text);
-    }
-
-    // 4. AI 하이라이트 구간 생성 (간단 알고리즘: 균등 분할)
-    const totalDur = subtitles.length ? subtitles[subtitles.length - 1].end : 0;
-    const segCount = Math.min(maxSegments || 5, Math.max(1, Math.floor(totalDur / 30)));
-    const segDur = totalDur / Math.max(1, segCount);
-    const highlightSegments = [];
-    for (let i = 0; i < segCount; i++) {
-      const ss = i * segDur;
-      const se = Math.min((i + 1) * segDur, totalDur);
-      const segSubs = subtitles.filter(s => s.start >= ss - 0.5 && s.end <= se + 0.5);
-      const title = segSubs.length ? segSubs[0].text.slice(0, 30) : `구간 ${i + 1}`;
-      highlightSegments.push({
-        start_seconds: Math.round(ss * 100) / 100,
-        end_seconds: Math.round(se * 100) / 100,
-        hook: title,
-        score: Math.floor(70 + Math.random() * 20),
-        subtitles: segSubs,
       });
+      proc.on("error", (e) => { console.log("[video:upload] curl error:", e.message); resolve({ ok: false, error: e.message }); });
+    });
+
+    if (!upResult.ok || !upResult.data?.file_id) {
+      return { ok: false, error: "업로드 실패" };
+    }
+    const upData = upResult.data;
+    sendProg(40, "AI 분석 중 (음성 인식)...");
+    console.log("[video:analyze] file_id:", upData.file_id);
+
+    // 2. 분석 (curl로 5분 타임아웃)
+    const aResult = await new Promise((resolve) => {
+      const proc = spawn("curl", [
+        "-s", "-w", "\n%{http_code}",
+        "-X", "POST",
+        `${API}/analyze/${upData.file_id}`,
+        "-H", "Content-Type: application/json",
+        "-d", JSON.stringify({ max_segments: maxSegments || 5, longform: true, full_subtitles: true }),
+        "--max-time", "300",
+      ], { windowsHide: true });
+      const chunks = [];
+      proc.stdout.on("data", d => chunks.push(d.toString()));
+      proc.on("close", code => {
+        const raw = chunks.join("");
+        console.log("[video:analyze] curl exit:", code, "response:", raw.slice(0, 500));
+        try {
+          const lines = raw.trim().split("\n");
+          const httpCode = parseInt(lines[lines.length - 1]);
+          const body = lines.slice(0, -1).join("\n");
+          const data = JSON.parse(body);
+          resolve({ ok: httpCode >= 200 && httpCode < 300, data, httpCode });
+        } catch (e) {
+          resolve({ ok: false, error: "분석 응답 파싱 실패" });
+        }
+      });
+      proc.on("error", (e) => resolve({ ok: false, error: e.message }));
+    });
+
+    if (!aResult.ok) {
+      let errMsg = aResult.data?.detail || aResult.error || "분석 실패";
+      if (errMsg.includes("자막을 파싱") || errMsg.includes("음성 인식 실패")) {
+        return { ok: false, error: "음성이 없거나 인식할 수 없는 영상입니다.\n음성이 포함된 영상을 선택해주세요." };
+      }
+      return { ok: false, error: `분석 실패: ${String(errMsg).slice(0, 150)}` };
     }
 
     sendProg(100, "분석 완료!");
-    console.log("[video:analyze] Done! subtitles:", subtitles.length, "segments:", highlightSegments.length);
-
-    return {
-      ok: true,
-      fileId: "local_" + Date.now(),
-      analyzeData: {
-        segments: highlightSegments,
-        all_subs: subtitles,
-      }
-    };
+    return { ok: true, fileId: upData.file_id, analyzeData: aResult.data };
   } catch (e) {
     console.error("[video:uploadAndAnalyze] ERROR:", e);
     return { ok: false, error: e.message || "알 수 없는 오류" };
