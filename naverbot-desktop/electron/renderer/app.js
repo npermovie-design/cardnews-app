@@ -3452,6 +3452,19 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     }).then(function(r) { return r.json(); });
   }
 
+  function sbPost(path, body) {
+    return fetch(SB_URL + "/rest/v1/" + path, {
+      method: "POST",
+      headers: {
+        apikey: SB_KEY,
+        Authorization: "Bearer " + SB_KEY,
+        "Content-Type": "application/json",
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify(body)
+    }).then(function(r) { return r.json(); });
+  }
+
   function loadPosts(cat) {
     currentCat = cat || currentCat;
     var list = $("communityList");
@@ -3539,6 +3552,53 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var postView = $("communityPost");
     if (list) list.style.display = "";
     if (postView) postView.style.display = "none";
+  });
+
+  // 글쓰기
+  var writeBtn = $("communityWriteBtn");
+  var writeForm = $("communityWriteForm");
+  var writeCancel = $("communityWriteCancel");
+  var submitBtn = $("communitySubmitBtn");
+
+  if (writeBtn) writeBtn.addEventListener("click", async function() {
+    var cfg = await bridge.loadConfig();
+    if (!cfg || !cfg.makeit_uid) { showModal("로그인 필요", "커뮤니티 글쓰기는 로그인 후 가능합니다.", "확인"); return; }
+    if (writeForm) writeForm.style.display = "";
+    writeBtn.style.display = "none";
+  });
+  if (writeCancel) writeCancel.addEventListener("click", function() {
+    if (writeForm) writeForm.style.display = "none";
+    if (writeBtn) writeBtn.style.display = "";
+  });
+  if (submitBtn) submitBtn.addEventListener("click", async function() {
+    var title = $("communityWriteTitle").value.trim();
+    var body = $("communityWriteBody").value.trim();
+    if (!title) { showModal("입력 오류", "제목을 입력하세요.", "확인"); return; }
+    if (!body) { showModal("입력 오류", "내용을 입력하세요.", "확인"); return; }
+    var cfg = await bridge.loadConfig();
+    var author = cfg.makeit_email ? cfg.makeit_email.split("@")[0] : "익명";
+    submitBtn.disabled = true; submitBtn.textContent = "등록 중...";
+    try {
+      await sbPost("posts", {
+        title: title,
+        body: body,
+        content: body,
+        cat: currentCat,
+        author: author,
+        author_uid: cfg.makeit_uid || "",
+        views: 0,
+        likes: 0,
+        images: []
+      });
+      $("communityWriteTitle").value = "";
+      $("communityWriteBody").value = "";
+      if (writeForm) writeForm.style.display = "none";
+      if (writeBtn) writeBtn.style.display = "";
+      loadPosts(currentCat);
+    } catch (e) {
+      showModal("등록 실패", e.message || "다시 시도해주세요.", "확인");
+    }
+    submitBtn.disabled = false; submitBtn.textContent = "등록";
   });
 
   // 패널 활성화 시 자동 로드

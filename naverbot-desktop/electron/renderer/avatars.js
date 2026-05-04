@@ -52,7 +52,7 @@ function showAvatarPicker(onSelect) {
 
   var header = document.createElement("div");
   header.style.cssText = "display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;";
-  header.innerHTML = '<div style="font-size:16px;font-weight:700;">프로필 캐릭터 선택</div><button id="avatarPickerClose" style="border:none;background:none;font-size:20px;cursor:pointer;color:#666;padding:4px 8px;">X</button>';
+  header.innerHTML = '<div style="font-size:16px;font-weight:700;">프로필 캐릭터 선택</div><div style="display:flex;gap:8px;align-items:center;"><button id="avatarRandomBtn" style="border:1px solid #e2e8f0;background:#f8fafc;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;color:#3b82f6;transition:all 0.15s;">랜덤</button><button id="avatarPickerClose" style="border:none;background:none;font-size:20px;cursor:pointer;color:#666;padding:4px 8px;">X</button></div>';
 
   var grid = document.createElement("div");
   grid.style.cssText = "display:grid;grid-template-columns:repeat(5,1fr);gap:10px;overflow-y:auto;padding:4px;";
@@ -85,6 +85,11 @@ function showAvatarPicker(onSelect) {
 
   modal.addEventListener("click", function(e) { if (e.target === modal) modal.remove(); });
   document.getElementById("avatarPickerClose").addEventListener("click", function() { modal.remove(); });
+  document.getElementById("avatarRandomBtn").addEventListener("click", function() {
+    var randIdx = Math.floor(Math.random() * 100);
+    if (onSelect) onSelect(randIdx, getAvatarURL(randIdx));
+    modal.remove();
+  });
 }
 
 window._showAvatarPicker = showAvatarPicker;
