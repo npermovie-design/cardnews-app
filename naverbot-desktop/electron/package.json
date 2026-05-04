@@ -11,6 +11,9 @@
   },
   "author": "npermovie",
   "license": "UNLICENSED",
+  "dependencies": {
+    "electron-updater": "^6.8.3"
+  },
   "devDependencies": {
     "electron": "^28.0.0",
     "electron-builder": "^24.0.0"
@@ -44,7 +47,9 @@
       {
         "from": "python-runtime",
         "to": "python-runtime",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
@@ -52,7 +57,9 @@
       "icon": "build/icon.ico"
     },
     "mac": {
-      "target": ["dir"],
+      "target": [
+        "dir"
+      ],
       "category": "public.app-category.productivity",
       "icon": "build/icon.png",
       "identity": null
@@ -60,9 +67,15 @@
     "protocols": [
       {
         "name": "메이킷 SNS 자동화",
-        "schemes": ["makeit-sns"]
+        "schemes": [
+          "makeit-sns"
+        ]
       }
     ],
+    "publish": {
+      "provider": "generic",
+      "url": "https://snsmakeit.com/naverbot-releases"
+    },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true

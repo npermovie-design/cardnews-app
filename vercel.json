@@ -165,6 +165,8 @@
     { "source": "/naverbot-auth.html", "destination": "/api/naverbot?action=login-page" },
     { "source": "/naverbot-callback", "destination": "/index.html" },
     { "source": "/api/naverbot/update", "destination": "/api/naverbot?action=update" },
+    { "source": "/api/naverbot/hot-manifest", "destination": "/api/naverbot?action=hot-manifest" },
+    { "source": "/api/naverbot/version-check", "destination": "/api/naverbot?action=version-check" },
 
     { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|_vercel|naver[0-9a-f]+\\.html|naverbot-auth\\.html|naverbot-callback|index\\.html).*)", "destination": "/api/render" }
   ],

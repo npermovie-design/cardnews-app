@@ -642,6 +642,58 @@ function handleUpdate(req, res) {
   });
 }
 
+// ══════════════════════════════════════════════════════════
+// ACTION: hot-manifest — 렌더러 핫 업데이트 매니페스트
+// ══════════════════════════════════════════════════════════
+function handleHotManifest(req, res) {
+  if (req.method !== "GET") return res.status(405).json({ ok: false, error: "GET only" });
+
+  const baseUrl = "https://snsmakeit.com/naverbot-assets";
+  const version = process.env.NAVERBOT_RENDERER_VERSION || "0";
+
+  // version이 "0"이면 핫 업데이트 비활성 (배포 전)
+  if (version === "0") {
+    return res.status(200).json({ version: "0", files: [] });
+  }
+
+  return res.status(200).json({
+    version,
+    files: [
+      { name: "style.css", url: `${baseUrl}/style.css?v=${version}` },
+      { name: "app.js", url: `${baseUrl}/app.js?v=${version}` },
+    ],
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+// ACTION: version-check — 최소 요구 버전 확인 (앱 기동 시)
+// ══════════════════════════════════════════════════════════
+function handleVersionCheck(req, res) {
+  if (req.method !== "GET") return res.status(405).json({ ok: false, error: "GET only" });
+
+  const clientVersion = req.query.v || "0.0.0";
+  const minVersion = process.env.NAVERBOT_MIN_VERSION || "0.1.8";
+  const downloadUrl = process.env.NAVERBOT_DOWNLOAD_URL || "https://snsmakeit.com/pricing";
+
+  const compare = (a, b) => {
+    const pa = String(a).split(".").map(n => parseInt(n, 10) || 0);
+    const pb = String(b).split(".").map(n => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      const diff = (pa[i] || 0) - (pb[i] || 0);
+      if (diff !== 0) return diff;
+    }
+    return 0;
+  };
+
+  const isOk = compare(clientVersion, minVersion) >= 0;
+  return res.status(200).json({
+    ok: isOk,
+    min_version: minVersion,
+    message: isOk ? "" : "최소 요구 버전보다 낮습니다. 업데이트가 필요합니다.",
+    download_url: downloadUrl,
+  });
+}
+
 const ACTION_MAP = {
   "account-verify": handleAccountVerify,
   "license-verify": handleLicenseVerify,
@@ -650,6 +702,8 @@ const ACTION_MAP = {
   "login-page": handleLoginPage,
   "token-refresh": handleTokenRefresh,
   "update": handleUpdate,
+  "hot-manifest": handleHotManifest,
+  "version-check": handleVersionCheck,
 };
 
 export default async function handler(req, res) {

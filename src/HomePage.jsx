@@ -70,72 +70,91 @@ function FaqItem({ q, a }) {
   );
 }
 
-/* ── Floating SNS Icons (floating-icons-hero 변환) ── */
-const FLOAT_ICONS = [
-  { src: "/icon-naver-blog.png", top: "8%", left: "8%" },
-  { src: "/icon-instagram.webp", top: "15%", right: "10%" },
-  { src: "/icon-youtube.png", top: "60%", left: "5%" },
-  { src: "/icon-threads.png", bottom: "12%", right: "8%" },
-  { src: "/icon-tistory.png", top: "5%", left: "35%" },
-  { src: "/icon-naver-blog.png", top: "40%", right: "6%" },
-  { src: "/icon-instagram.webp", bottom: "20%", left: "15%" },
-  { src: "/icon-youtube.png", top: "25%", left: "18%" },
-  { src: "/icon-threads.png", bottom: "30%", right: "18%" },
-  { src: "/icon-tistory.png", top: "70%", right: "25%" },
+/* ── 3D 궤도 회전 SNS 아이콘 배경 ── */
+const ORBIT_ICONS = [
+  // 궤도 0 (안쪽) — 4개, 90도 간격
+  { src: "/icon-naver-blog.png", orbit: 0, angle: 0, size: 48 },
+  { src: "/icon-instagram.svg", orbit: 0, angle: 90, size: 46 },
+  { src: "/icon-youtube.png", orbit: 0, angle: 180, size: 48 },
+  { src: "/icon-x.svg", orbit: 0, angle: 270, size: 44 },
+  // 궤도 1 (중간) — 5개, 72도 간격
+  { src: "/icon-threads.png", orbit: 1, angle: 0, size: 42 },
+  { src: "/icon-linkedin.svg", orbit: 1, angle: 72, size: 40 },
+  { src: "/icon-tistory.png", orbit: 1, angle: 144, size: 38 },
+  { src: "/icon-facebook.svg", orbit: 1, angle: 216, size: 40 },
+  { src: "/icon-discord.svg", orbit: 1, angle: 288, size: 38 },
+  // 궤도 2 (바깥) — 5개, 72도 간격 (36도 오프셋)
+  { src: "/icon-naver-cafe.webp", orbit: 2, angle: 36, size: 36 },
+  { src: "/icon-tiktok.svg", orbit: 2, angle: 108, size: 34 },
+  { src: "/icon-youtube.png", orbit: 2, angle: 180, size: 36 },
+  { src: "/icon-instagram.svg", orbit: 2, angle: 252, size: 34 },
+  { src: "/icon-naver-blog.png", orbit: 2, angle: 324, size: 32 },
 ];
 
-function FloatingIcons() {
-  const iconsRef = useRef([]);
-  const mouseRef = useRef({ x: 0, y: 0 });
-
-  useEffect(() => {
-    // 각 아이콘에 부유 애니메이션 랜덤 적용
-    iconsRef.current.forEach((el, i) => {
-      if (!el) return;
-      const dur = 4 + Math.random() * 4;
-      const delay = i * 0.3;
-      el.style.animation = `hp-icon-float ${dur}s ${delay}s ease-in-out infinite`;
-      el.style.opacity = "1";
-    });
-  }, []);
-
-  const handleMouseMove = (x, y) => {
-    mouseRef.current = { x, y };
-    iconsRef.current.forEach(el => {
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
-      if (dist < 140) {
-        const angle = Math.atan2(y - cy, x - cx);
-        const force = (1 - dist / 140) * 35;
-        el.style.transform = `translate(${-Math.cos(angle) * force}px, ${-Math.sin(angle) * force}px)`;
-      } else {
-        el.style.transform = "translate(0,0)";
-      }
-    });
-  };
-
-  return { handleMouseMove, iconsRef };
-}
-
-function FloatingIconsLayer({ iconsRef }) {
+function OrbitIconsBg() {
+  const orbitRadii = [280, 400, 520];
+  const orbitSpeeds = [50, 70, 90]; // seconds per revolution
   return (
-    <>
-      {FLOAT_ICONS.map((ic, i) => (
-        <div key={i} ref={el => iconsRef.current[i] = el} className="hp-float-icon" style={{
-          position: "absolute", top: ic.top, left: ic.left, right: ic.right, bottom: ic.bottom,
-          opacity: 0, transition: "transform 0.2s ease-out", zIndex: 1, pointerEvents: "none",
-        }}>
-          <div style={{ width: 52, height: 52, borderRadius: 16, background: "rgba(255,255,255,0.06)", backdropFilter: "blur(8px)", border: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <img src={ic.src} alt="" style={{ width: 24, height: 24, borderRadius: 6 }} />
+    <div style={{
+      position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 0,
+      perspective: "1200px",
+    }}>
+      <div style={{
+        position: "absolute", top: "40%", left: "50%",
+        transform: "translate(-50%, -50%) rotateX(55deg)",
+        transformStyle: "preserve-3d",
+      }}>
+        {[0, 1, 2].map(oi => (
+          <div key={oi} style={{
+            position: "absolute", top: 0, left: 0,
+            width: 0, height: 0,
+            animation: `hp-orbit-spin ${orbitSpeeds[oi]}s linear infinite`,
+            transformStyle: "preserve-3d",
+          }}>
+            {/* 궤도 링 */}
+            <div style={{
+              position: "absolute",
+              top: -orbitRadii[oi], left: -orbitRadii[oi],
+              width: orbitRadii[oi] * 2, height: orbitRadii[oi] * 2,
+              borderRadius: "50%",
+              border: "1px solid rgba(59,130,246,0.12)",
+              pointerEvents: "none",
+            }}/>
+            {ORBIT_ICONS.filter(ic => ic.orbit === oi).map((ic, i) => {
+              const rad = (ic.angle * Math.PI) / 180;
+              const x = Math.cos(rad) * orbitRadii[oi];
+              const y = Math.sin(rad) * orbitRadii[oi];
+              return (
+                <div key={i} style={{
+                  position: "absolute",
+                  left: x - ic.size / 2,
+                  top: y - ic.size / 2,
+                  width: ic.size, height: ic.size,
+                  animation: `hp-orbit-counter ${orbitSpeeds[oi]}s linear infinite`,
+                  transformStyle: "preserve-3d",
+                }}>
+                  <div style={{
+                    width: "100%", height: "100%",
+                    borderRadius: 14,
+                    background: "rgba(255,255,255,0.85)",
+                    backdropFilter: "blur(8px)",
+                    border: "1px solid rgba(59,130,246,0.12)",
+                    boxShadow: "0 8px 32px rgba(59,130,246,0.1)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    transform: "rotateX(-55deg)",
+                  }}>
+                    <img src={ic.src} alt="" style={{ width: "55%", height: "55%", borderRadius: 6, objectFit: "contain" }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
       {/* 글로우 블롭 */}
-      <div style={{ position: "absolute", right: "-10%", top: "-10%", width: "35%", height: "35%", borderRadius: "50%", background: "rgba(59,130,246,0.1)", filter: "blur(100px)", pointerEvents: "none" }}/>
-      <div style={{ position: "absolute", left: "-8%", bottom: "-15%", width: "30%", height: "30%", borderRadius: "50%", background: "rgba(52,199,89,0.06)", filter: "blur(80px)", pointerEvents: "none" }}/>
-    </>
+      <div style={{ position: "absolute", right: "-10%", top: "-10%", width: "35%", height: "35%", borderRadius: "50%", background: "rgba(59,130,246,0.12)", filter: "blur(120px)", pointerEvents: "none" }}/>
+      <div style={{ position: "absolute", left: "-8%", bottom: "-15%", width: "30%", height: "30%", borderRadius: "50%", background: "rgba(52,199,89,0.08)", filter: "blur(100px)", pointerEvents: "none" }}/>
+    </div>
   );
 }
 
@@ -213,6 +232,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
         @keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
         @keyframes hp-scroll-y{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
         @keyframes hp-icon-float{0%,100%{transform:translateY(0) rotate(0deg)}25%{transform:translateY(-10px) rotate(3deg)}50%{transform:translateY(-4px) rotate(-2deg)}75%{transform:translateY(-12px) rotate(1deg)}}
+        @keyframes hp-orbit-spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+        @keyframes hp-orbit-counter{0%{transform:rotate(0deg)}100%{transform:rotate(-360deg)}}
         @keyframes hp-logo-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
         .hp-logo-track{display:flex;gap:32px;animation:hp-logo-scroll 20s linear infinite;width:max-content}
         .hp-logo-track:hover{animation-play-state:paused}
@@ -250,8 +271,10 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
 
       {/* ══════ HERO — PulseFit 스타일 ══════ */}
       <section style={{ position: "relative", overflow: "hidden", minHeight: "90vh", display: "flex", flexDirection: "column", background: "linear-gradient(180deg, #E8F0FF 0%, #F5F9FF 50%, #fff 100%)" }}>
+        {/* 3D 궤도 아이콘 배경 */}
+        <OrbitIconsBg />
         {/* 메인 콘텐츠 */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "clamp(120px,16vw,180px) 20px clamp(40px,6vw,60px)", textAlign: "center" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "clamp(120px,16vw,180px) 20px clamp(40px,6vw,60px)", textAlign: "center", position: "relative", zIndex: 10 }}>
           <h1 style={{ fontSize: "clamp(38px,7vw,72px)", fontWeight: 700, color: "#1a1a1a", letterSpacing: "-0.02em", lineHeight: 1.1, margin: "0 0 24px", maxWidth: 700 }}>
             {ko ? <>대표님들의<br/>SNS 발행 파트너</> : <>Your SNS<br/>publishing partner</>}
           </h1>
@@ -288,7 +311,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
         </div>
 
         {/* 하단 프로그램 카드 캐러셀 */}
-        <div style={{ position: "relative", width: "100%", overflow: "hidden", padding: "40px 0 60px" }}>
+        <div style={{ position: "relative", width: "100%", overflow: "hidden", padding: "40px 0 60px", zIndex: 10 }}>
           {/* 좌우 페이드 */}
           <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 120, background: "linear-gradient(90deg, #fff, transparent)", zIndex: 2, pointerEvents: "none" }}/>
           <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 120, background: "linear-gradient(270deg, #fff, transparent)", zIndex: 2, pointerEvents: "none" }}/>
@@ -351,12 +374,12 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             <div className="hp-logo-track">
               {[
                 { src: "/icon-naver-blog.png", name: "네이버 블로그" },
-                { src: "/icon-instagram.webp", name: "Instagram" },
+                { src: "/icon-instagram.svg", name: "Instagram" },
                 { src: "/icon-youtube.png", name: "YouTube" },
                 { src: "/icon-threads.png", name: "Threads" },
                 { src: "/icon-tistory.png", name: "Tistory" },
                 { src: "/icon-naver-blog.png", name: "네이버 카페" },
-                { src: "/icon-instagram.webp", name: "Instagram" },
+                { src: "/icon-instagram.svg", name: "Instagram" },
                 { src: "/icon-youtube.png", name: "YouTube" },
                 { src: "/icon-threads.png", name: "Threads" },
                 { src: "/icon-tistory.png", name: "Tistory" },

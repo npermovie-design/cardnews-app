@@ -8,6 +8,18 @@ contextBridge.exposeInMainWorld("nbBridge", {
   getAppVersion: () => ipcRenderer.invoke("app:getVersion"),
   checkUpdate: () => ipcRenderer.invoke("app:checkUpdate"),
 
+  // 핫 업데이트 (CSS/JS 서버 로드)
+  hotUpdateSync: () => ipcRenderer.invoke("app:hotUpdateSync"),
+  getRendererVersion: () => ipcRenderer.invoke("app:getRendererVersion"),
+
+  // exe 자동 업데이트 (electron-updater)
+  checkExeUpdate: () => ipcRenderer.invoke("app:checkExeUpdate"),
+  downloadExeUpdate: () => ipcRenderer.invoke("app:downloadExeUpdate"),
+  installExeUpdate: () => ipcRenderer.invoke("app:installExeUpdate"),
+  onExeUpdateAvailable: (cb) => ipcRenderer.on("exe-update:available", (_, d) => cb(d)),
+  onExeUpdateProgress: (cb) => ipcRenderer.on("exe-update:progress", (_, d) => cb(d)),
+  onExeUpdateDownloaded: (cb) => ipcRenderer.on("exe-update:downloaded", (_, d) => cb(d)),
+
   // 비밀번호 (service: NaverBotSaaS | NaverBotSaaS_Makeit)
   savePassword: (username, password, service) =>
     ipcRenderer.invoke("password:save", { username, password, service }),

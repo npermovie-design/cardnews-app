@@ -14,6 +14,7 @@ const urlLib = require("url");
 
 const IS_LOCAL_DEV_INSTANCE = process.env.NAVERBOT_LOCAL_DEV === "1";
 const UPDATE_CHECK_URL = process.env.NAVERBOT_UPDATE_CHECK_URL || "https://snsmakeit.com/api/naverbot/update";
+const HOT_MANIFEST_URL = "https://snsmakeit.com/api/naverbot/hot-manifest";
 const APPDATA_ROOT = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
 const CONFIG_DIR_NAME = IS_LOCAL_DEV_INSTANCE ? "NaverBotSaaS-LocalDev" : "NaverBotSaaS";
 const PROD_CONFIG_DIR = path.join(APPDATA_ROOT, "NaverBotSaaS");
@@ -205,7 +206,7 @@ async function ensurePlaywright() {
           처음 한 번만 실행되며, 1~3분 소요됩니다.
         </p>
         <div style="margin-top:20px;width:240px;height:4px;background:#e5e7eb;border-radius:4px;overflow:hidden;">
-          <div style="width:100%;height:100%;background:linear-gradient(90deg,#7c6aff,#ec4899);animation:loading 1.5s ease-in-out infinite;"></div>
+          <div style="width:100%;height:100%;background:linear-gradient(90deg,#3b82f6,#60a5fa);animation:loading 1.5s ease-in-out infinite;"></div>
         </div>
         <p id="status" style="margin-top:14px;font-size:11px;color:#9ca3af;">Chromium 다운로드 중...</p>
         <style>@keyframes loading{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}</style>
@@ -245,6 +246,110 @@ async function ensurePlaywright() {
   });
 }
 
+// ── Hot Update (CSS/JS 서버 핫로드) ──
+const HOT_CACHE_DIR = path.join(CONFIG_DIR, "renderer-cache");
+
+function getLocalRendererVersion() {
+  try {
+    const vf = path.join(HOT_CACHE_DIR, "version.json");
+    if (fs.existsSync(vf)) return JSON.parse(fs.readFileSync(vf, "utf8")).version || "0";
+  } catch {}
+  return "0";
+}
+
+async function syncHotUpdate() {
+  try {
+    const resp = await fetch(HOT_MANIFEST_URL, { cache: "no-store" });
+    if (!resp.ok) return { updated: false };
+    const manifest = await resp.json();
+    if (!manifest.version) return { updated: false };
+
+    const localVer = getLocalRendererVersion();
+    if (manifest.version === localVer) return { updated: false, version: localVer };
+
+    // 새 버전 발견 — 파일 다운로드
+    if (!fs.existsSync(HOT_CACHE_DIR)) fs.mkdirSync(HOT_CACHE_DIR, { recursive: true });
+
+    for (const file of manifest.files || []) {
+      const fileResp = await fetch(file.url);
+      if (!fileResp.ok) continue;
+      const content = await fileResp.text();
+      fs.writeFileSync(path.join(HOT_CACHE_DIR, file.name), content, "utf8");
+    }
+
+    fs.writeFileSync(
+      path.join(HOT_CACHE_DIR, "version.json"),
+      JSON.stringify({ version: manifest.version, updated_at: new Date().toISOString() }),
+      "utf8"
+    );
+
+    return { updated: true, version: manifest.version, fromVersion: localVer };
+  } catch (e) {
+    console.error("[HotUpdate] sync error:", e.message);
+    return { updated: false, error: e.message };
+  }
+}
+
+// 렌더러 파일 요청을 캐시된 핫 업데이트 파일로 리다이렉트
+function setupHotCacheInterceptor(win) {
+  win.webContents.session.webRequest.onBeforeRequest((details, callback) => {
+    if (!details.url.startsWith("file://")) return callback({});
+    const decoded = decodeURIComponent(details.url.replace(/\?.*$/, ""));
+    const fileName = path.basename(decoded);
+    if (["style.css", "app.js"].includes(fileName)) {
+      const cached = path.join(HOT_CACHE_DIR, fileName);
+      if (fs.existsSync(cached)) {
+        const redirectURL = "file:///" + cached.replace(/\\/g, "/");
+        console.log(`[HotUpdate] serving cached: ${fileName}`);
+        return callback({ redirectURL });
+      }
+    }
+    callback({});
+  });
+}
+
+// ── electron-updater (exe 자동 교체) ──
+let autoUpdater = null;
+try {
+  autoUpdater = require("electron-updater").autoUpdater;
+  autoUpdater.autoDownload = false;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.logger = { info: console.log, warn: console.warn, error: console.error };
+} catch (e) {
+  console.log("[AutoUpdater] electron-updater 미설치, 수동 업데이트만 사용:", e.message);
+}
+
+function setupAutoUpdater() {
+  if (!autoUpdater) return;
+
+  autoUpdater.on("update-available", (info) => {
+    console.log("[AutoUpdater] 새 버전:", info.version);
+    if (mainWindow) mainWindow.webContents.send("exe-update:available", {
+      version: info.version,
+      releaseNotes: info.releaseNotes || "",
+    });
+  });
+
+  autoUpdater.on("download-progress", (progress) => {
+    if (mainWindow) mainWindow.webContents.send("exe-update:progress", {
+      percent: Math.round(progress.percent),
+      transferred: progress.transferred,
+      total: progress.total,
+    });
+  });
+
+  autoUpdater.on("update-downloaded", (info) => {
+    console.log("[AutoUpdater] 다운로드 완료:", info.version);
+    if (mainWindow) mainWindow.webContents.send("exe-update:downloaded", {
+      version: info.version,
+    });
+  });
+
+  autoUpdater.on("error", (err) => {
+    console.error("[AutoUpdater] 오류:", err.message);
+  });
+}
+
 // ── Window ──
 let mainWindow = null;
 
@@ -262,8 +367,11 @@ function createWindow() {
       nodeIntegration: false,
     },
     title: "메이킷 SNS 자동화",
-    backgroundColor: "#f5f3ff",
+    backgroundColor: "#f9fafb",
   });
+
+  // 핫 업데이트 캐시 인터셉터 (loadFile 전에 설정)
+  setupHotCacheInterceptor(mainWindow);
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
   // mainWindow.webContents.openDevTools({ mode: "detach" });
@@ -276,6 +384,9 @@ app.whenReady().then(async () => {
   });
   // 초기 실행 시 process.argv에 protocol URL이 있으면 처리
   handleProtocolArgs(process.argv);
+
+  // electron-updater 설정
+  setupAutoUpdater();
 
   // Playwright 브라우저 자동 설치 (없을 때만)
   await ensurePlaywright();
@@ -729,6 +840,33 @@ ipcMain.handle("bot:analyze-ref", (_, url) => {
       resolve({ ok: false, error: e.message });
     });
   });
+});
+
+// ── IPC: 핫 업데이트 (CSS/JS) ──
+ipcMain.handle("app:hotUpdateSync", () => syncHotUpdate());
+ipcMain.handle("app:getRendererVersion", () => getLocalRendererVersion());
+
+// ── IPC: exe 자동 업데이트 (electron-updater) ──
+ipcMain.handle("app:checkExeUpdate", async () => {
+  if (!autoUpdater) return { available: false, reason: "electron-updater 미설치" };
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { available: !!result?.updateInfo, version: result?.updateInfo?.version };
+  } catch (e) {
+    return { available: false, error: e.message };
+  }
+});
+
+ipcMain.handle("app:downloadExeUpdate", () => {
+  if (!autoUpdater) return { ok: false };
+  autoUpdater.downloadUpdate();
+  return { ok: true };
+});
+
+ipcMain.handle("app:installExeUpdate", () => {
+  if (!autoUpdater) return { ok: false };
+  autoUpdater.quitAndInstall(false, true);
+  return { ok: true };
 });
 
 // ── IPC: 외부 링크 ──
