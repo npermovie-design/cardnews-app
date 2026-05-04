@@ -211,10 +211,10 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
   useEffect(() => {
     (async () => {
       try {
-        const { count } = await supabase.from("users").select("*", { count: "exact", head: true });
-        if (count != null) setUserCount(count);
-        const { data } = await supabase.from("users").select("nick,photo_url").order("created_at", { ascending: false }).limit(5);
-        if (data) setRecentUsers(data);
+        const { count, error: cErr } = await supabase.from("users").select("*", { count: "exact", head: true });
+        if (!cErr && count != null) setUserCount(count);
+        const { data, error: dErr } = await supabase.from("users").select("nick").order("created_at", { ascending: false }).limit(5);
+        if (!dErr && data) setRecentUsers(data);
       } catch {}
     })();
     // 실시간 구독 — 새 가입자 감지
