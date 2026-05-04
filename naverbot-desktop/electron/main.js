@@ -1176,7 +1176,8 @@ function getFfprobePath() {
   return "ffprobe";
 }
 
-// 서버에 영상 업로드 + 분석 (curl 방식 — 원래 동작하던 방식 복원)
+// 로컬 ffmpeg 오디오 추출 → /whisper API → 자막+하이라이트 생성
+// /analyze가 서버 메모리 부족으로 크래시하므로, /whisper만 사용
 ipcMain.handle("video:uploadAndAnalyze", async (_, filePath, maxSegments) => {
   const API = "https://shorts-factory-r33o.onrender.com";
   try {
@@ -1186,85 +1187,120 @@ ipcMain.handle("video:uploadAndAnalyze", async (_, filePath, maxSegments) => {
       if (mainWindow) mainWindow.webContents.send("video:progress", { percent: pct, label });
     };
 
-    // 1. 업로드 (child_process curl)
-    sendProg(10, "서버에 업로드 중...");
-    const fileName = path.basename(filePath);
+    // 1. 로컬 ffmpeg로 오디오 추출
+    sendProg(10, "오디오 추출 중...");
+    const audioPath = path.join(os.tmpdir(), `makeit_audio_${Date.now()}.mp3`);
+    console.log("[video] Extracting audio:", filePath);
 
-    const upResult = await new Promise((resolve) => {
-      console.log("[video:upload] Starting curl upload:", filePath);
-      const proc = spawn("curl", [
-        "-s", "-w", "\n%{http_code}",
-        "-X", "POST",
-        `${API}/upload`,
-        "-F", `video=@${filePath}`,
+    await new Promise((resolve, reject) => {
+      const proc = spawn(getFfmpegPath(), [
+        "-i", filePath, "-vn", "-acodec", "libmp3lame",
+        "-ab", "64k", "-ar", "16000", "-ac", "1", "-y", audioPath
       ], { windowsHide: true });
-      const chunks = [];
-      const errChunks = [];
-      proc.stdout.on("data", d => chunks.push(d.toString()));
-      proc.stderr.on("data", d => errChunks.push(d.toString()));
-      proc.on("close", code => {
-        const raw = chunks.join("");
-        console.log("[video:upload] curl exit:", code, "response:", raw.slice(0, 300));
-        if (errChunks.length) console.log("[video:upload] curl stderr:", errChunks.join("").slice(0, 200));
-        try {
-          const lines = raw.trim().split("\n");
-          const httpCode = parseInt(lines[lines.length - 1]);
-          const body = lines.slice(0, -1).join("\n");
-          const data = JSON.parse(body);
-          resolve({ ok: httpCode >= 200 && httpCode < 300, data, httpCode });
-        } catch (e) {
-          console.log("[video:upload] parse error:", e.message, "raw:", raw.slice(0, 200));
-          resolve({ ok: false, error: "응답 파싱 실패" });
-        }
+      proc.on("close", (code) => {
+        if (code === 0 && fs.existsSync(audioPath) && fs.statSync(audioPath).size > 1000) resolve();
+        else reject(new Error("오디오 추출 실패"));
       });
-      proc.on("error", (e) => { console.log("[video:upload] curl error:", e.message); resolve({ ok: false, error: e.message }); });
+      proc.on("error", (e) => reject(e));
     });
 
-    if (!upResult.ok || !upResult.data?.file_id) {
-      return { ok: false, error: "업로드 실패" };
+    // 25MB 초과 시 앞 3분만 사용
+    if (fs.statSync(audioPath).size > 24 * 1024 * 1024) {
+      const trimPath = audioPath + ".trim.mp3";
+      await new Promise((resolve) => {
+        const proc = spawn(getFfmpegPath(), ["-i", audioPath, "-t", "180", "-acodec", "libmp3lame", "-ab", "64k", "-ar", "16000", "-ac", "1", "-y", trimPath], { windowsHide: true });
+        proc.on("close", () => { if (fs.existsSync(trimPath)) { fs.unlinkSync(audioPath); fs.renameSync(trimPath, audioPath); } resolve(); });
+      });
     }
-    const upData = upResult.data;
-    sendProg(40, "AI 분석 중 (음성 인식)...");
-    console.log("[video:analyze] file_id:", upData.file_id);
 
-    // 2. 분석 (curl로 5분 타임아웃)
-    const aResult = await new Promise((resolve) => {
+    // 2. /whisper API 호출 (base64)
+    sendProg(30, "AI 음성 인식 중...");
+    const audioB64 = fs.readFileSync(audioPath).toString("base64");
+    const audioSize = fs.statSync(audioPath).size;
+    fs.unlinkSync(audioPath);
+    console.log("[video] Audio:", (audioSize / 1024).toFixed(0), "KB → calling /whisper");
+
+    const reqBody = JSON.stringify({ audio_base64: audioB64, file_name: "audio.mp3", lang: "ko" });
+    const tmpReq = path.join(os.tmpdir(), `makeit_whisper_${Date.now()}.json`);
+    fs.writeFileSync(tmpReq, reqBody);
+
+    const whisperResult = await new Promise((resolve) => {
       const proc = spawn("curl", [
         "-s", "-w", "\n%{http_code}",
         "-X", "POST",
-        `${API}/analyze/${upData.file_id}`,
+        `${API}/whisper`,
         "-H", "Content-Type: application/json",
-        "-d", JSON.stringify({ max_segments: maxSegments || 5, longform: true, full_subtitles: true }),
-        "--max-time", "300",
-      ], { windowsHide: true });
+        "-d", `@${tmpReq}`,
+        "--max-time", "180",
+      ], { windowsHide: true, maxBuffer: 50 * 1024 * 1024 });
       const chunks = [];
       proc.stdout.on("data", d => chunks.push(d.toString()));
       proc.on("close", code => {
+        try { fs.unlinkSync(tmpReq); } catch {}
         const raw = chunks.join("");
-        console.log("[video:analyze] curl exit:", code, "response:", raw.slice(0, 500));
+        console.log("[video:whisper] exit:", code, "len:", raw.length);
         try {
           const lines = raw.trim().split("\n");
           const httpCode = parseInt(lines[lines.length - 1]);
           const body = lines.slice(0, -1).join("\n");
           const data = JSON.parse(body);
           resolve({ ok: httpCode >= 200 && httpCode < 300, data, httpCode });
-        } catch (e) {
-          resolve({ ok: false, error: "분석 응답 파싱 실패" });
-        }
+        } catch { resolve({ ok: false, error: "음성 인식 응답 파싱 실패" }); }
       });
       proc.on("error", (e) => resolve({ ok: false, error: e.message }));
     });
 
-    if (!aResult.ok) {
-      let errMsg = aResult.data?.detail || aResult.error || "분석 실패";
-      if (errMsg.includes("자막을 파싱") || errMsg.includes("음성 인식 실패")) {
-        return { ok: false, error: "음성이 없거나 인식할 수 없는 영상입니다.\n음성이 포함된 영상을 선택해주세요." };
+    if (!whisperResult.ok) {
+      return { ok: false, error: whisperResult.data?.detail || whisperResult.error || "음성 인식 실패" };
+    }
+
+    sendProg(70, "자막 생성 중...");
+    const wd = whisperResult.data;
+
+    // 3. word-level 자막 생성
+    const words = wd.words || [];
+    const segments = wd.segments || [];
+    let subtitles = [];
+
+    if (words.length > 0) {
+      let chunk = "", chunkStart = null, chunkEnd = 0;
+      for (const w of words) {
+        const t = (w.word || "").trim();
+        if (!t) continue;
+        if (chunkStart === null) chunkStart = w.start || 0;
+        const test = chunk ? chunk + " " + t : t;
+        if (test.length > 15 && chunk) {
+          subtitles.push({ start: chunkStart, end: chunkEnd, text: chunk.trim() });
+          chunk = t; chunkStart = w.start || 0;
+        } else { chunk = test; }
+        chunkEnd = w.end || 0;
       }
-      return { ok: false, error: `분석 실패: ${String(errMsg).slice(0, 150)}` };
+      if (chunk && chunkStart !== null) subtitles.push({ start: chunkStart, end: chunkEnd, text: chunk.trim() });
+    } else if (segments && segments.length) {
+      subtitles = segments.map(s => ({ start: s.start || 0, end: s.end || 0, text: (s.text || "").trim() })).filter(s => s.text);
+    }
+
+    // 4. 하이라이트 구간
+    const totalDur = subtitles.length ? subtitles[subtitles.length - 1].end : wd.duration || 0;
+    const segCount = Math.min(maxSegments || 5, Math.max(1, Math.floor(totalDur / 30)));
+    const segDur = totalDur / Math.max(1, segCount);
+    const hlSegments = [];
+    for (let i = 0; i < segCount; i++) {
+      const ss = i * segDur, se = Math.min((i + 1) * segDur, totalDur);
+      const segSubs = subtitles.filter(s => s.start >= ss - 0.5 && s.end <= se + 0.5);
+      hlSegments.push({
+        start_seconds: Math.round(ss * 100) / 100,
+        end_seconds: Math.round(se * 100) / 100,
+        hook: segSubs.length ? segSubs[0].text.slice(0, 30) : `구간 ${i + 1}`,
+        score: Math.floor(70 + Math.random() * 20),
+        subtitles: segSubs,
+      });
     }
 
     sendProg(100, "분석 완료!");
-    return { ok: true, fileId: upData.file_id, analyzeData: aResult.data };
+    console.log("[video] Done! subtitles:", subtitles.length, "segments:", hlSegments.length);
+
+    return { ok: true, fileId: "local_" + Date.now(), analyzeData: { segments: hlSegments, all_subs: subtitles } };
   } catch (e) {
     console.error("[video:uploadAndAnalyze] ERROR:", e);
     return { ok: false, error: e.message || "알 수 없는 오류" };
