@@ -3,13 +3,10 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-function isAllowedOrigin(o) { return o.includes("snsmakeit.com") || o.includes("vercel.app") || o.includes("localhost"); }
+import { isAllowedOrigin, setCors as _setCors, rateLimit } from "../lib/security.js";
 
 function setCors(req, res, methods) {
-  const origin = req.headers.origin || req.headers.referer || "";
-  res.setHeader("Access-Control-Allow-Origin", isAllowedOrigin(origin) ? origin : "https://snsmakeit.com");
-  res.setHeader("Access-Control-Allow-Methods", methods);
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  _setCors(req, res, { methods });
 }
 
 // ── Generate Image (Gemini) ──
@@ -18,6 +15,7 @@ async function handleGenerate(req, res) {
   res.setHeader("Access-Control-Allow-Credentials", "true");
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "POST만 허용" });
+  if (!rateLimit(req, { limit: 10, windowMs: 60000 })) return res.status(429).json({ error: "요청이 너무 많습니다" });
 
   // ── Supabase 인증 검증 ──
   const authHeader = req.headers.authorization;
@@ -27,7 +25,7 @@ async function handleGenerate(req, res) {
   const token = authHeader.replace("Bearer ", "");
   try {
     const supabase = createClient(
-      "https://ckzjnpzadeovrasucjmu.supabase.co",
+      process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
       process.env.VITE_SUPABASE_KEY || ""
     );
     const { data: { user }, error } = await supabase.auth.getUser(token);

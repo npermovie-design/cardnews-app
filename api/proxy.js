@@ -1,11 +1,10 @@
 // api/proxy.js — Klipy / Pexels / Pixabay API 프록시 통합
 // ?action=klipy|pexels|pixabay
 
+import { isAllowedOrigin } from "../lib/security.js";
 function setCors(req, res) {
   const origin = req.headers.origin || req.headers.referer || "";
-  // snsmakeit.com + 모든 vercel preview URL 허용
-  const isAllowed = origin.includes("snsmakeit.com") || origin.includes("vercel.app") || origin.includes("localhost");
-  res.setHeader("Access-Control-Allow-Origin", isAllowed ? origin : "https://snsmakeit.com");
+  res.setHeader("Access-Control-Allow-Origin", isAllowedOrigin(origin) ? origin : "https://snsmakeit.com");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
@@ -146,9 +145,13 @@ async function handleImage(req, res) {
 }
 
 // ── Router ──
+import { rateLimit } from "../lib/security.js";
 export default async function handler(req, res) {
   setCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
+  if (!rateLimit(req, { limit: 60, windowMs: 60000 })) {
+    return res.status(429).json({ error: "요청이 너무 많습니다" });
+  }
 
   const action = req.query.action;
 

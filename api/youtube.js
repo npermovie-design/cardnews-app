@@ -15,7 +15,7 @@ import ytdlCore from "ytdl-core";
 import ytdlDistube from "@distube/ytdl-core";
 
 // ── 공통 ──────────────────────────────────────────────
-function isAllowedOrigin(o) { return o.includes("snsmakeit.com") || o.includes("vercel.app") || o.includes("localhost"); }
+import { isAllowedOrigin } from "../lib/security.js";
 
 const INVIDIOUS = [
   "https://invidious.io.lol",
@@ -767,12 +767,8 @@ export default async function handler(req, res) {
   const action = req.query.action;
 
   if (!action || !HANDLERS[action]) {
-    // CORS도 세팅 (에러 응답도 CORS 필요)
     setCors(req, res);
-    return res.status(400).json({
-      error: "action 파라미터 필요",
-      available: Object.keys(HANDLERS),
-    });
+    return res.status(400).json({ error: "잘못된 요청입니다" });
   }
 
   return HANDLERS[action](req, res);

@@ -16,10 +16,10 @@ const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
 // ── 공통 CORS ──
+import { isAllowedOrigin, rateLimit } from "../lib/security.js";
 function setCors(req, res) {
   const origin = req.headers?.origin || "";
-  const allowed = origin.includes("snsmakeit.com") || origin.includes("vercel.app") || origin.includes("localhost");
-  res.setHeader("Access-Control-Allow-Origin", allowed ? origin : "https://snsmakeit.com");
+  res.setHeader("Access-Control-Allow-Origin", isAllowedOrigin(origin) ? origin : "https://snsmakeit.com");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }

@@ -74,8 +74,12 @@ contextBridge.exposeInMainWorld("nbBridge", {
   // snsmakeit.com 로그인 페이지 열기 (Google/이메일 통합)
   openGoogleOAuth: () => ipcRenderer.send("auth:google"),
 
+  // 영상 업로드+분석 (main process에서 직접 처리)
+  videoUploadAndAnalyze: (filePath, maxSegs) => ipcRenderer.invoke("video:uploadAndAnalyze", filePath, maxSegs),
+
   // ── 영상 편집 (로컬 ffmpeg) ──
   videoSelectFile: () => ipcRenderer.invoke("video:selectFile"),
+  videoSelectImage: () => ipcRenderer.invoke("video:selectImage"),
   videoProbe: (filePath) => ipcRenderer.invoke("video:probe", filePath),
   videoRenderShorts: (opts) => ipcRenderer.invoke("video:renderShorts", opts),
   videoRenderLongform: (opts) => ipcRenderer.invoke("video:renderLongform", opts),

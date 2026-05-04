@@ -94,32 +94,12 @@ async function refreshTiktokToken(conn) {
   return conn.access_token;
 }
 
-// ── 공통 CORS 처리 ──────────────────────────────────────────────
-const ALLOWED_ORIGINS = [
-  "https://snsmakeit.com",
-  "https://www.snsmakeit.com",
-  "http://localhost:5173",
-  "http://localhost:3000",
-];
+// ── 공통 CORS + 인증 (lib/security.js) ──────────────────────────
+import { isAllowedOrigin as _isAllowed, setCors as _setCorsBase, verifyUid, requireAuth, rateLimit, safeError } from "../lib/security.js";
 
 function setCors(res, req) {
-  const origin = req?.headers?.origin || "";
-  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  res.setHeader("Access-Control-Allow-Origin", allowed);
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
+  _setCorsBase(req, res, { methods: "GET,POST,DELETE,OPTIONS" });
   res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,X-Admin-Uid");
-  res.setHeader("Vary", "Origin");
-}
-
-// ── 공통 인증 헬퍼: Bearer token에서 uid 확인 ──────────────────
-async function verifyUid(req) {
-  const authHeader = req.headers?.authorization || "";
-  if (!authHeader.startsWith("Bearer ")) return null;
-  try {
-    const anonClient = createClient(process.env.SUPABASE_URL, process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || "");
-    const { data: { user } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
-    return user?.id || null;
-  } catch { return null; }
 }
 
 // ── 마크다운 → HTML 변환 (티스토리용) ────────────────────────────
@@ -155,7 +135,7 @@ async function handlePublish(req, res) {
 
   // Origin check — block untrusted callers
   const origin = req.headers.origin || req.headers.referer || "";
-  const isTrusted = origin.includes("snsmakeit.com") || origin.includes("vercel.app") || origin.includes("localhost");
+  const isTrusted = _isAllowed(origin);
   if (!isTrusted) return res.status(403).json({ error: "Forbidden" });
 
   try {
@@ -273,7 +253,8 @@ async function handlePublish(req, res) {
       });
       const createData = await createRes.json();
       if (!createData.id) {
-        publishError = `인스타 컨테이너 실패 [userId:${conn.platform_user_id}] [img:${imageUrl?.slice(0,80)}] [resp:${JSON.stringify(createData)}]`;
+        console.error(`[sns] 인스타 컨테이너 실패 [userId:${conn.platform_user_id}] [img:${imageUrl?.slice(0,80)}] [resp:${JSON.stringify(createData)}]`);
+        publishError = "인스타그램 컨테이너 생성에 실패했습니다";
       } else {
         const pubParams = new URLSearchParams({
           creation_id: createData.id,
@@ -320,7 +301,7 @@ async function handleMultiPublish(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   const origin = req.headers.origin || req.headers.referer || "";
-  const isTrusted = origin.includes("snsmakeit.com") || origin.includes("vercel.app") || origin.includes("localhost");
+  const isTrusted = _isAllowed(origin);
   if (!isTrusted) return res.status(403).json({ error: "Forbidden" });
 
   try {
@@ -1310,17 +1291,29 @@ async function handleWebhookLemonsqueezy(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const url = new URL(req.url, `https://${req.headers.host}`);
-    const token = (url.searchParams.get("token") || "").trim();
     const secret = (process.env.LEMONSQUEEZY_WEBHOOK_SECRET || "").trim();
-
     if (!secret) {
-      console.error("[LS] Auth failed — LEMONSQUEEZY_WEBHOOK_SECRET env var NOT SET on Vercel");
+      console.error("[LS] LEMONSQUEEZY_WEBHOOK_SECRET not set");
       return res.status(401).json({ error: "Server misconfigured" });
     }
-    if (token !== secret) {
-      console.error(`[LS] Auth failed — token mismatch (len ${token.length} vs ${secret.length})`);
-      return res.status(401).json({ error: "Unauthorized" });
+
+    // HMAC-SHA256 서명 검증 (X-Signature 헤더)
+    const signature = req.headers["x-signature"] || "";
+    if (signature) {
+      const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+      const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+        console.error("[LS] HMAC signature mismatch");
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+    } else {
+      // 폴백: 쿼리 파라미터 토큰 (하위 호환)
+      const url = new URL(req.url, `https://${req.headers.host}`);
+      const token = (url.searchParams.get("token") || "").trim();
+      if (token !== secret) {
+        console.error("[LS] Auth failed — no signature, token mismatch");
+        return res.status(401).json({ error: "Unauthorized" });
+      }
     }
 
     const payload = req.body;
@@ -1467,10 +1460,7 @@ async function handleAdmin(req, res) {
     const { data: { user } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
     if (user) authUid = user.id;
   }
-  if (!authUid && process.env.VERCEL !== "1") {
-    const origin = req.headers.origin || req.headers.referer || "";
-    if (origin.includes("localhost")) authUid = req.query.admin_uid || req.headers["x-admin-uid"] || "";
-  }
+  // localhost uid 우회 제거 (보안 위험)
   if (!authUid) return res.status(403).json({ error: "관리자 인증 필요" });
   const { data: adminCheck } = await sb.from("users").select("role").eq("uid", authUid).single();
   if (!adminCheck || adminCheck.role !== "admin") {
@@ -1700,12 +1690,14 @@ export default async function handler(req, res) {
   setCors(res, req);
   if (req.method === "OPTIONS") return res.status(200).end();
 
+  // 전역 Rate Limiting (webhook 제외)
   const action = req.query.action;
+  if (action !== "webhook-lemonsqueezy" && !rateLimit(req, { limit: 60, windowMs: 60000 })) {
+    return res.status(429).json({ error: "요청이 너무 많습니다" });
+  }
+
   if (!action || !ACTION_MAP[action]) {
-    return res.status(400).json({
-      error: "action 파라미터 필수",
-      validActions: Object.keys(ACTION_MAP),
-    });
+    return res.status(400).json({ error: "잘못된 요청입니다" });
   }
 
   return ACTION_MAP[action](req, res);

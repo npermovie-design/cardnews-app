@@ -1,6 +1,7 @@
 // api/insta.js — 인스타그램 통합 API
 // ?action=auto-dm|auto-reply|media|webhook|fetch
 import { createClient } from "@supabase/supabase-js";
+import { isAllowedOrigin, setCors, requireAuth, safeError, rateLimit } from "../lib/security.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
@@ -8,7 +9,6 @@ const supabase = createClient(
 );
 
 const VERIFY_TOKEN = process.env.INSTA_WEBHOOK_VERIFY_TOKEN || "";
-function isAllowedOrigin(o) { return o.includes("snsmakeit.com") || o.includes("vercel.app") || o.includes("localhost"); }
 
 export const config = { maxDuration: 15 };
 
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     case "fetch":
       return handleFetch(req, res);
     default:
-      return res.status(400).json({ error: `알 수 없는 action: ${action}` });
+      return res.status(400).json({ error: "잘못된 요청입니다" });
   }
 }
 
@@ -39,15 +39,25 @@ export default async function handler(req, res) {
 // ── auto-dm: 인스타그램 자동 DM 캠페인 관리 ──
 // ============================================================
 async function handleAutoDm(req, res) {
-  // CORS
-  const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
-  res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  setCors(req, res, { methods: "POST,OPTIONS" });
   if (req.method === "OPTIONS") return res.status(200).end();
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
+
+  // Rate Limiting
+  if (!rateLimit(req, { limit: 30, windowMs: 60000 })) {
+    return res.status(429).json({ error: "요청이 너무 많습니다. 잠시 후 다시 시도하세요." });
+  }
+
+  // uid 인증 (Bearer token 기반)
+  const bodyUid = req.body?.uid;
+  const authUid = await requireAuth(req, res, bodyUid);
+  if (!authUid) return;
+
+  // 인증된 uid로 강제 교체 (body의 uid 조작 방지)
+  if (req.body) req.body.uid = authUid;
 
   try {
     const { action } = req.body || {};
@@ -71,18 +81,17 @@ async function handleAutoDm(req, res) {
       case "list_logs":
         return await autoDm_listLogs(req, res);
       default:
-        return res.status(400).json({ error: `알 수 없는 action: ${action}` });
+        return res.status(400).json({ error: "잘못된 요청입니다" });
     }
   } catch (err) {
     console.error("insta-auto-dm error:", err);
-    return res.status(500).json({ error: err.message || "서버 오류" });
+    return res.status(500).json({ error: "서버 오류가 발생했습니다" });
   }
 }
 
 // ── 캠페인 목록 조회 ──
 async function autoDm_listCampaigns(req, res) {
   const { uid } = req.body;
-  if (!uid) return res.status(400).json({ error: "uid 필수" });
 
   const { data, error } = await supabase
     .from("insta_dm_campaigns")
@@ -298,14 +307,18 @@ async function autoDm_listLogs(req, res) {
 // ── auto-reply: 인스타그램 자동 대댓글 캠페인 관리 ──
 // ============================================================
 async function handleAutoReply(req, res) {
-  const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
-  res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization");
+  setCors(req, res, { methods: "POST,OPTIONS" });
   if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+  if (!rateLimit(req, { limit: 30, windowMs: 60000 })) {
+    return res.status(429).json({ error: "요청이 너무 많습니다" });
   }
+
+  const bodyUid = req.body?.uid;
+  const authUid = await requireAuth(req, res, bodyUid);
+  if (!authUid) return;
+  if (req.body) req.body.uid = authUid;
 
   try {
     const { action } = req.body || {};
@@ -475,9 +488,7 @@ async function autoReply_toggleCampaign(req, res) {
 // ── media: 연동된 인스타 계정의 최근 미디어 조회 ──
 // ============================================================
 async function handleMedia(req, res) {
-  const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  setCors(req, res, { methods: "GET,OPTIONS" });
   if (req.method === "OPTIONS") return res.status(200).end();
 
   const { uid } = req.query;
@@ -544,7 +555,7 @@ async function handleMedia(req, res) {
 // ── webhook: Instagram Webhook — 댓글 감지 → 키워드 매칭 → 자동 DM 발송 ──
 // ============================================================
 async function handleWebhook(req, res) {
-  const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
+  setCors(req, res, { methods: "GET,POST,OPTIONS" });
 
   // ── GET: Webhook 인증 (Hub Challenge) ──
   if (req.method === "GET") {

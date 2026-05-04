@@ -714,17 +714,21 @@ const ACTION_MAP = {
   "version-check": handleVersionCheck,
 };
 
+import { rateLimit as _rl } from "../lib/security.js";
+
 export default async function handler(req, res) {
   setCors(req, res);
   if (req.method === "OPTIONS") return res.status(200).end();
 
+  // Rate Limiting (content-generate는 무겁기 때문에 별도 한도)
   const action = req.query.action;
+  const limit = action === "content-generate" ? 10 : 30;
+  if (!_rl(req, { limit, windowMs: 60000 })) {
+    return res.status(429).json({ error: "요청이 너무 많습니다" });
+  }
 
   if (!action || !ACTION_MAP[action]) {
-    return res.status(400).json({
-      error: "action 파라미터 필요",
-      validActions: Object.keys(ACTION_MAP),
-    });
+    return res.status(400).json({ error: "잘못된 요청입니다" });
   }
 
   return ACTION_MAP[action](req, res);

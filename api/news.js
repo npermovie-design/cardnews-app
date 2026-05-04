@@ -3,7 +3,12 @@
 
 export const config = { runtime: "edge" };
 
-function isAllowedOrigin(o) { return o.includes("snsmakeit.com") || o.includes("vercel.app") || o.includes("localhost"); }
+function isAllowedOrigin(o) {
+  if (!o) return false;
+  if (o.includes("snsmakeit.com")) return true;
+  if (/^https:\/\/sns-?makeit[a-z0-9-]*\.vercel\.app$/.test(o)) return true;
+  return false;
+}
 function getAllowedOrigin(req) {
   const origin = req.headers.get("origin") || "";
   return isAllowedOrigin(origin) ? origin : "https://snsmakeit.com";
@@ -13,15 +18,21 @@ function isBlockedUrl(urlStr) {
   try {
     const u = new URL(urlStr);
     if (!["http:", "https:"].includes(u.protocol)) return true;
-    const host = u.hostname;
-    if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0" || host === "[::1]") return true;
+    const host = u.hostname.toLowerCase();
+    // 로컬/내부 호스트 차단
+    if (host === "localhost" || host === "0.0.0.0" || host === "[::1]") return true;
+    if (host.endsWith(".local") || host.endsWith(".internal")) return true;
+    // 메타데이터 엔드포인트
+    if (host === "169.254.169.254" || host === "metadata.google.internal") return true;
+    // IP 주소 분석
     const parts = host.split(".").map(Number);
     if (parts.length === 4 && parts.every(n => !isNaN(n))) {
-      if (parts[0] === 10) return true;
-      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true;
-      if (parts[0] === 192 && parts[1] === 168) return true;
-      if (parts[0] === 169 && parts[1] === 254) return true;
-      if (parts[0] === 127) return true;
+      if (parts[0] === 10) return true;                                     // 10.x.x.x
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return true; // 172.16-31.x.x
+      if (parts[0] === 192 && parts[1] === 168) return true;                // 192.168.x.x
+      if (parts[0] === 169 && parts[1] === 254) return true;                // 169.254.x.x (링크 로컬)
+      if (parts[0] === 127) return true;                                     // 127.x.x.x 전체
+      if (parts[0] === 0) return true;                                       // 0.x.x.x
     }
     return false;
   } catch { return true; }

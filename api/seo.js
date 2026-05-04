@@ -212,7 +212,7 @@ function detectTag(images) {
 }
 
 async function handleArchiveAutoTag(req, res) {
-  const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
+  const _origin = req.headers?.origin || ""; const _allowed = _origin.includes("snsmakeit.com") || /^https:\/\/sns-?makeit[a-z0-9-]*\.vercel\.app$/.test(_origin); res.setHeader("Access-Control-Allow-Origin", _allowed ? _origin : "https://snsmakeit.com");
   if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
 
   try {

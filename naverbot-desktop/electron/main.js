@@ -380,7 +380,7 @@ function createWindow() {
   setupHotCacheInterceptor(mainWindow);
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
-  // mainWindow.webContents.openDevTools({ mode: "detach" });
+  mainWindow.webContents.openDevTools({ mode: "detach" });
 }
 
 app.whenReady().then(async () => {
@@ -947,7 +947,14 @@ ipcMain.handle("app:installExeUpdate", () => {
 });
 
 // ── IPC: 외부 링크 ──
-ipcMain.handle("shell:openExternal", (_, url) => shell.openExternal(url));
+ipcMain.handle("shell:openExternal", (_, url) => {
+  // file:// 경로면 shell.openPath 사용 (폴더/파일 열기)
+  if (url && url.startsWith("file:///")) {
+    const localPath = decodeURIComponent(url.replace("file:///", "")).replace(/\//g, path.sep);
+    return shell.openPath(localPath);
+  }
+  return shell.openExternal(url);
+});
 
 // ── 로그인 창 (인앱 login.html — 이메일/Google) ──
 let authWindow = null;
@@ -1169,11 +1176,103 @@ function getFfprobePath() {
   return "ffprobe";
 }
 
+// 서버에 영상 업로드 + 분석까지 main process에서 직접 처리
+// Node.js native fetch + FormData 사용 (curl 한글 경로 문제 해결)
+ipcMain.handle("video:uploadAndAnalyze", async (_, filePath, maxSegments) => {
+  const API = "https://shorts-factory-r33o.onrender.com";
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: "파일 없음" };
+
+    const sendProg = (pct, label) => {
+      if (mainWindow) mainWindow.webContents.send("video:progress", { percent: pct, label });
+    };
+
+    // 1. 업로드 (multipart/form-data 직접 구성 — 한글 경로 안전)
+    sendProg(10, "서버에 업로드 중...");
+    const fileName = path.basename(filePath);
+    console.log("[video:upload] Starting upload:", filePath, "size:", fs.statSync(filePath).size);
+
+    const boundary = "----MakeitUpload" + Date.now();
+    const fileBuffer = fs.readFileSync(filePath);
+    const header = Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="video"; filename="${encodeURIComponent(fileName)}"\r\nContent-Type: video/mp4\r\n\r\n`
+    );
+    const footer = Buffer.from(`\r\n--${boundary}--\r\n`);
+    const body = Buffer.concat([header, fileBuffer, footer]);
+
+    const upResp = await fetch(`${API}/upload`, {
+      method: "POST",
+      headers: { "Content-Type": `multipart/form-data; boundary=${boundary}` },
+      body,
+    });
+    if (!upResp.ok) {
+      const errText = await upResp.text().catch(() => "");
+      console.log("[video:upload] server error:", upResp.status, errText.slice(0, 200));
+      return { ok: false, error: `업로드 실패 (${upResp.status})` };
+    }
+    const upData = await upResp.json();
+    console.log("[video:upload] success:", JSON.stringify(upData).slice(0, 200));
+
+    if (!upData.file_id) {
+      return { ok: false, error: "업로드 응답에 file_id 없음" };
+    }
+
+    // 2. 분석 (5분 타임아웃 — Whisper 음성 인식 시간 고려)
+    sendProg(40, "AI 분석 중 (음성 인식)...");
+    console.log("[video:analyze] file_id:", upData.file_id);
+
+    const ac = new AbortController();
+    const timeout = setTimeout(() => ac.abort(), 300000); // 5분
+    let aResp;
+    try {
+      aResp = await fetch(`${API}/analyze/${upData.file_id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ max_segments: maxSegments || 5, longform: true, full_subtitles: true }),
+        signal: ac.signal,
+      });
+    } catch (fetchErr) {
+      clearTimeout(timeout);
+      if (fetchErr.name === "AbortError") {
+        return { ok: false, error: "분석 시간 초과 (5분). 더 짧은 영상을 시도해주세요." };
+      }
+      throw fetchErr;
+    }
+    clearTimeout(timeout);
+
+    if (!aResp.ok) {
+      let errMsg = "";
+      try { const ej = await aResp.json(); errMsg = ej.detail || JSON.stringify(ej); } catch { errMsg = await aResp.text().catch(() => ""); }
+      if (errMsg.includes("자막을 파싱") || errMsg.includes("음성 인식 실패")) {
+        return { ok: false, error: "음성이 없거나 인식할 수 없는 영상입니다.\n음성이 포함된 영상을 선택해주세요." };
+      }
+      return { ok: false, error: `분석 실패: ${errMsg.slice(0, 150)}` };
+    }
+    const aData = await aResp.json();
+    sendProg(100, "분석 완료!");
+
+    return { ok: true, fileId: upData.file_id, analyzeData: aData };
+  } catch (e) {
+    console.error("[video:uploadAndAnalyze] ERROR:", e);
+    return { ok: false, error: e.message || "알 수 없는 오류" };
+  }
+});
+
 // 파일 선택
 ipcMain.handle("video:selectFile", async () => {
   const r = await dialog.showOpenDialog(mainWindow, {
     properties: ["openFile"],
     filters: [{ name: "영상", extensions: ["mp4", "mov", "avi", "mkv", "webm"] }],
+  });
+  if (r.canceled || !r.filePaths.length) return { ok: false };
+  return { ok: true, filePath: r.filePaths[0] };
+});
+
+// 이미지/GIF 선택 (짤 삽입용)
+ipcMain.handle("video:selectImage", async () => {
+  const r = await dialog.showOpenDialog(mainWindow, {
+    properties: ["openFile"],
+    filters: [{ name: "이미지", extensions: ["png", "jpg", "jpeg", "gif", "webp"] }],
   });
   if (r.canceled || !r.filePaths.length) return { ok: false };
   return { ok: true, filePath: r.filePaths[0] };

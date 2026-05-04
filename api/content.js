@@ -3,7 +3,7 @@
 
 // ── Shared constants & helpers ───────────────────────────────────────────
 
-function isAllowedOrigin(o) { return o.includes("snsmakeit.com") || o.includes("vercel.app") || o.includes("localhost"); }
+import { isAllowedOrigin, isBlockedUrl as secBlockedUrl, rateLimit } from "../lib/security.js";
 
 function isBlockedUrl(urlStr) {
   try {
@@ -23,13 +23,9 @@ function isBlockedUrl(urlStr) {
   } catch { return true; }
 }
 
-function setCors(req, res, { methods = "POST,OPTIONS", useWildcard = false } = {}) {
-  if (useWildcard) {
-    const _origin = req.headers?.origin || ""; res.setHeader("Access-Control-Allow-Origin", _origin.includes("snsmakeit.com") || _origin.includes("vercel.app") || _origin.includes("localhost") ? _origin : "https://snsmakeit.com");
-  } else {
-    const origin = req.headers.origin || "";
-    res.setHeader("Access-Control-Allow-Origin", isAllowedOrigin(origin) ? origin : "https://snsmakeit.com");
-  }
+function setCors(req, res, { methods = "POST,OPTIONS" } = {}) {
+  const origin = req.headers?.origin || "";
+  res.setHeader("Access-Control-Allow-Origin", isAllowedOrigin(origin) ? origin : "https://snsmakeit.com");
   res.setHeader("Access-Control-Allow-Methods", methods);
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 }
@@ -140,10 +136,11 @@ async function handleCrawl(req, res) {
   setCors(req, res, { methods: "POST,OPTIONS" });
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "POST만 허용" });
+  if (!rateLimit(req, { limit: 20, windowMs: 60000 })) return res.status(429).json({ error: "요청이 너무 많습니다" });
 
   const { url } = req.body || {};
-  if (!url) return res.status(400).json({ error: "url 필요" });
-  if (isBlockedUrl(url)) return res.status(400).json({ error: "허용되지 않는 URL입니다." });
+  if (!url || typeof url !== "string" || url.length > 2000) return res.status(400).json({ error: "url 필요" });
+  if (isBlockedUrl(url) || secBlockedUrl(url)) return res.status(400).json({ error: "허용되지 않는 URL입니다." });
 
   try {
     const r = await fetch(url, {
@@ -1006,13 +1003,15 @@ async function handleSnsProfile(req, res) {
 export default async function handler(req, res) {
   const { action } = req.query;
 
+  // 전역 Rate Limiting (IP당 60회/분)
+  if (!rateLimit(req, { limit: 60, windowMs: 60000 })) {
+    return res.status(429).json({ error: "요청이 너무 많습니다" });
+  }
+
   if (!action || !ACTION_HANDLERS[action]) {
     const origin = req.headers.origin || "";
     res.setHeader("Access-Control-Allow-Origin", isAllowedOrigin(origin) ? origin : "https://snsmakeit.com");
-    return res.status(400).json({
-      error: "action 파라미터 필요",
-      validActions: Object.keys(ACTION_HANDLERS),
-    });
+    return res.status(400).json({ error: "잘못된 요청입니다" });
   }
 
   return ACTION_HANDLERS[action](req, res);
