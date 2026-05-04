@@ -425,7 +425,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(150px,45%),1fr))", gap: 12 }}>
           {[
             { action: "회원가입", count: "글쓰기 5회", desc: "가입 즉시 지급" },
-            { action: "매일 로그인", count: "글쓰기 +1회", desc: "출석 체크 시 적립" },
+            { action: "매일 로그인", count: "+1회", desc: "출석 체크 시 적립" },
           ].map((item, i) => (
             <div key={i} style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", borderRadius: 14, padding: "18px 16px", textAlign: "center" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 4 }}>{item.action}</div>

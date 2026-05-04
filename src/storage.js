@@ -50,7 +50,7 @@ export const POINTS = {
   DAILY_LOGIN: 1,      // 일일 로그인 1회
   REFERRAL_SIGNUP: 5,  // 추천코드 가입자 보상 5회
   REFERRAL_REFERRER: 10, // 추천한 회원 보상 10회
-  POST_WRITE:  1,      // 게시글 작성 1회 (하루 10회 제한)
+  POST_WRITE:  0,      // 게시글 작성 적립 폐지
   COMMENT:     0,      // 댓글 작성
   // ── AI 생성 (모두 1회 = 1 차감) ────────────────────────
   AI_USE:      -1,     // 텍스트 생성

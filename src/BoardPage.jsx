@@ -93,7 +93,7 @@ function extractKeywordsBoard(title, plainBody, catName) {
   if (catName) base.push(catName);
   return [...base, ...top].join(", ");
 }
-const CAT_LABEL_MAP = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", showcase: "작품 공유" };
+const CAT_LABEL_MAP = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", showcase: "작품 공유", challenge: "챌린지" };
 
 function slugifyKo(input, fallback = "post") {
   const slug = stripMdHtml(input || "")
@@ -147,9 +147,9 @@ function updatePostSeoMeta(post, catId) {
 function resetBoardSeoMeta() {
   document.title = "SNS메이킷 - 커뮤니티";
   const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.content = val; };
-  setMeta('meta[name="description"]', "SNS메이킷 커뮤니티 - 정보공유, 질문답변, 자유게시판");
+  setMeta('meta[name="description"]', "SNS메이킷 커뮤니티 - 정보공유, 질문답변, 챌린지");
   setMeta('meta[property="og:title"]', "SNS메이킷 - 커뮤니티");
-  setMeta('meta[property="og:description"]', "SNS메이킷 커뮤니티 - 정보공유, 질문답변, 자유게시판");
+  setMeta('meta[property="og:description"]', "SNS메이킷 커뮤니티 - 정보공유, 질문답변, 챌린지");
 }
 
 /* ─── BoardPage 메인 ──────────────────────────────────────── */
@@ -1804,7 +1804,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <div style={{padding:"14px 16px",borderBottom:"1px solid "+bdr}}>
                 <span style={{fontSize:13,fontWeight:800,color:C.text}}>횟수 적립</span>
               </div>
-              {[["AI 글쓰기","-1회"],["가입 즉시","+5회"],["매일 로그인","+1회"]].map(([a,p])=>(
+              {[["AI 글쓰기","-1회"],["가입 즉시","+5회"],["매일 로그인","+1회"],["플랜 업그레이드","매월 충전"]].map(([a,p])=>(
                 <div key={a} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid "+bdr,fontSize:13}}>
                   <span style={{color:C.muted}}>{a}</span>
                   <span style={{fontWeight:700,color:p.startsWith("+")?"#4ade80":"#f87171"}}>{p}</span>

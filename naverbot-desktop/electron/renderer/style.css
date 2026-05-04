@@ -253,7 +253,7 @@ body {
 /* ── Main ───────────────────────────────────────────────── */
 .main {
   overflow-y: auto;
-  padding: 32px 44px 44px;
+  padding: 24px 28px 28px;
 }
 .main::-webkit-scrollbar {
   width: 8px;

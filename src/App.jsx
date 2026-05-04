@@ -29,6 +29,7 @@ const AnalyzerPage = lazy(() => import("./AnalyzerPage.jsx"));
 const ProgramsPage = lazy(() => import("./ProgramsPage.jsx"));
 const NoticePage = lazy(() => import("./NoticePage.jsx"));
 const ClassPage = lazy(() => import("./ClassPage.jsx"));
+const ChallengePage = lazy(() => import("./ChallengePage.jsx"));
 const InfographicVideoPage = lazy(() => import("./InfographicVideo.jsx"));
 
 // 로딩 폴백
@@ -357,7 +358,7 @@ export default function App() {
         ai: "AI로 블로그 글, 인스타그램 캡션, 카드뉴스, 상세페이지, 제품컷, 로고, 쇼츠 영상을 자동 생성하세요.",
         pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 AI 글쓰기와 영상 편집을 이용하세요.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류, 제휴 문의를 남겨주시면 빠르게 답변드립니다.",
-        community: "SNS메이킷 커뮤니티. SNS 운영, AI 콘텐츠 제작, 마케팅 정보와 질문답변을 공유하세요.",
+        community: "SNS메이킷 커뮤니티. SNS 운영, AI 콘텐츠 제작, 마케팅 정보와 질문답변, 챌린지를 함께하세요.",
         programs: "SNS 운영에 필요한 자동화 도구, 템플릿, 무료 사진, 무료 영상 자료를 확인하세요.",
         event: "SNS메이킷 이벤트와 혜택을 확인하세요.",
         cases: "SNS메이킷을 활용한 고객사례와 AI 콘텐츠 제작 성공 사례를 확인하세요.",
@@ -602,7 +603,7 @@ export default function App() {
     // SEO: 다국어 동적 타이틀
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
     const titleMap = {
-      ko: { home:"SNS메이킷 - AI SNS 콘텐츠 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자동화", class:"클래스", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
+      ko: { home:"SNS메이킷 - AI SNS 콘텐츠 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자동화", class:"클래스", challenge:"챌린지", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
       en: { home:"SNS Makeit - AI Social Content Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", notice:"Notices", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy" },
       ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", programs:"プログラムストア", notice:"お知らせ", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約" },
     };
@@ -642,7 +643,7 @@ export default function App() {
     setBoardCat(cat);
     window.history.pushState(null, "", "/community/" + cat);
     setPage("community"); setOpenMenu(null); setMobileOpen(false);
-    const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기" };
+    const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용���기", challenge: "챌린지" };
     const title = (catNames[cat] || "커뮤니티") + " - SNS메이킷";
     document.title = title;
     updateOgMeta(title, null, "/community/" + cat);
@@ -800,6 +801,7 @@ export default function App() {
       if (user?.role !== "admin" && user?.role !== "instructor") { navigate("home"); return null; }
       return <ClassPage C={C} navigate={navigate} user={user} theme={theme} />;
     }
+    if (page === "challenge") return <ChallengePage C={C} navigate={navigate} user={user} theme={theme} onLoginRequest={() => navigate("login")} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (page === "snsnews")  { navigate("community"); return null; }
     if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} user={user} />;
     if (page === "intro-video") { navigate("home"); return null; }
@@ -1088,6 +1090,11 @@ export default function App() {
           {(user?.role === "admin" || user?.role === "instructor") && (
             <NavBtn id="class" label="클래스" />
           )}
+          {/* 챌린지 - 커뮤니티 왼쪽 독립 메뉴 */}
+          <button onClick={() => navigate("challenge")}
+            style={{ padding: "8px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 14, fontWeight: page==="challenge" ? 700 : 500, background: page==="challenge" ? "rgba(59,130,246,0.08)" : "transparent", color: page==="challenge" ? "#3b82f6" : C.muted, transition: "all 0.15s", fontFamily: "inherit" }}>
+            챌린지
+          </button>
           {/* 커뮤니티 */}
           <div style={{ position: "relative" }}>
             <DropBtn id="community" label={t("community")} open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
@@ -1317,6 +1324,7 @@ export default function App() {
             { id: "ai",       label: "AI 스튜디오",    onClick: () => { navigate("ai"); setMobileOpen(false); },       active: page==="ai"||page==="analyzer" },
             { id: "programs", label: "자동화", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
             ...((user?.role === "admin" || user?.role === "instructor") ? [{ id: "class", label: "클래스", onClick: () => { navigate("class"); setMobileOpen(false); }, active: page==="class" }] : []),
+            { id: "challenge", label: "챌린지", onClick: () => { navigate("challenge"); setMobileOpen(false); }, active: page==="challenge" },
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
           ].map(m => (
             <button key={m.id} onClick={m.onClick} style={{

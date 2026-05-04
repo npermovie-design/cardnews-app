@@ -1338,13 +1338,13 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:24 }}>
           {(isGuest ? [
             { icon:"🎁", title:"회원가입 혜택", desc:"가입 즉시 5회 지급" },
-            { icon:"P", title:"게시글 적립", desc:"작성할 때마다 1P" },
+            { icon:"P", title:"매일 로그인", desc:"출석 체크 적립" },
             { icon:"🔄", title:"일일 로그인", desc:"매일 3P 적립" },
             { icon:"♾️", title:"AI 무제한", desc:"포인트 충전으로" },
           ] : [
             { icon:"💳", title:"포인트 충전" },
             { icon:"🔥", title:"Standard 플랜", desc:"$19.90 / 2,400P" },
-            { icon:"P", title:"무료 적립", desc:"게시글 작성 1P" },
+            { icon:"P", title:"무료 적립", desc:"매일 로그인 적립" },
             { icon:"💬", title:"관리자 문의", desc:"포인트 문의" },
           ]).map((item, i) => (
             <div key={i} style={{ background:card, border:`1px solid ${bdr}`, borderRadius:12, padding:"14px 12px" }}>
