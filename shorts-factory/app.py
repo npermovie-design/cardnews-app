@@ -635,7 +635,18 @@ async def debug_env():
 async def analyze(file_id: str, request: Request):
     """자막 분석 → 추천 구간 JSON + 자막 데이터 반환"""
     if file_id not in file_store:
-        raise HTTPException(404, "파일을 찾을 수 없습니다")
+        # 파일 스토어에 없으면 디스크에서 복구 시도
+        file_dir = UPLOAD_DIR / file_id
+        video_path = file_dir / "video.mp4"
+        if video_path.exists():
+            file_store[file_id] = {
+                "video_path": str(video_path), "subtitle_path": None,
+                "subtitle_ext": ".srt", "logo_path": "", "custom_font_path": "",
+                "needs_transcription": True, "subs_parsed": None,
+            }
+            logger.info(f"[analyze] Recovered file_store from disk: {file_id}")
+        else:
+            raise HTTPException(404, f"파일을 찾을 수 없습니다 (id={file_id})")
 
     try:
         body = await request.json()
@@ -645,7 +656,7 @@ async def analyze(file_id: str, request: Request):
     max_segments = body.get("max_segments", 5)
 
     meta = file_store[file_id]
-    logger.info(f"[analyze] file_id={file_id}, needs_transcription={meta.get('needs_transcription')}, max_segments={max_segments}")
+    logger.info(f"[analyze] file_id={file_id}, needs_transcription={meta.get('needs_transcription')}, video_path={meta.get('video_path')}, max_segments={max_segments}")
 
     if meta.get("needs_transcription") or not meta.get("subtitle_path"):
         try:
@@ -661,8 +672,8 @@ async def analyze(file_id: str, request: Request):
             logger.info(f"[analyze] Transcription complete: {srt_path}")
         except Exception as e:
             import traceback
-            traceback.print_exc()
-            logger.error(f"[analyze] Transcription failed: {e}")
+            tb = traceback.format_exc()
+            logger.error(f"[analyze] Transcription failed: {e}\n{tb}")
             raise HTTPException(500, f"음성 인식 실패: {str(e)[:200]}")
 
     sub_path = meta["subtitle_path"]
