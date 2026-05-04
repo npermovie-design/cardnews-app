@@ -561,6 +561,51 @@ async def youtube_info(url: str = ""):
     raise HTTPException(500, "영상 정보를 불러올 수 없습니다")
 
 
+@app.post("/whisper")
+async def whisper_stt(request: Request):
+    """오디오 → Groq Whisper STT (word-level timestamps)"""
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(400, "JSON body 필요 (audio_base64, file_name)")
+
+    audio_b64 = body.get("audio_base64", "")
+    file_name = body.get("file_name", "audio.mp3")
+    lang = body.get("lang", "ko")
+
+    if not audio_b64:
+        raise HTTPException(400, "audio_base64 필드가 없습니다")
+
+    import base64
+    audio_data = base64.b64decode(audio_b64)
+    if len(audio_data) > 25 * 1024 * 1024:
+        raise HTTPException(413, "파일 크기는 25MB 이하여야 합니다")
+
+    GROQ_KEY = os.getenv("GROQ_API_KEY", "")
+    if not GROQ_KEY:
+        raise HTTPException(500, "GROQ_API_KEY 환경변수 필요")
+
+    import httpx
+    files = {"file": (file_name, audio_data, "audio/mpeg")}
+    data = {
+        "model": "whisper-large-v3",
+        "response_format": "verbose_json",
+        "timestamp_granularities[]": "word",
+        "language": lang,
+    }
+    resp = httpx.post(
+        "https://api.groq.com/openai/v1/audio/transcriptions",
+        headers={"Authorization": f"Bearer {GROQ_KEY}"},
+        files=files,
+        data=data,
+        timeout=180,
+    )
+    if resp.status_code != 200:
+        raise HTTPException(resp.status_code, f"Groq Whisper 실패: {resp.text[:200]}")
+
+    return resp.json()
+
+
 @app.post("/upload")
 async def upload(request: Request):
     """영상 + 자막 + 로고 + 커스텀폰트 업로드"""

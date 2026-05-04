@@ -1179,7 +1179,7 @@ function getFfprobePath() {
 // 로컬 ffmpeg 오디오 추출 → 메이킷 서버 Whisper API → 자막 분석
 // 서버 렌더링 의존 완전 제거
 ipcMain.handle("video:uploadAndAnalyze", async (_, filePath, maxSegments) => {
-  const WHISPER_API = "https://snsmakeit.com/api/ai-proxy?target=whisper";
+  const WHISPER_API = "https://shorts-factory-r33o.onrender.com/whisper";
   try {
     if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: "파일 없음" };
 
