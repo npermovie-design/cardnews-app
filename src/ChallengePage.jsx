@@ -209,7 +209,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
     const curStatus = getStatus(ch);
     const canApply = curStatus === "recruiting" || curStatus === "ongoing";
     const isParticipant = myApp?.status === "confirmed";
-    const hasApplied = !!myApp;
+    const hasApplied = myApp && myApp.status !== "cancelled";
 
     return (
       <div style={{ background: isDark ? "transparent" : "#fff", minHeight: "calc(100vh - 64px)" }}>
@@ -385,7 +385,7 @@ function Fld({ label, children, C }) {
 
 /* ═══ ApplyForm ════════════════════════════════════════════ */
 function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
-  const [f, sf] = useState({ name: user?.nick || "", phone: "", email: user?.email || "", sns_link: "", purpose: "", payment_method: ch.price > 0 ? "card" : "free", agree_rules: false, agree_refund: false });
+  const [f, sf] = useState({ name: user?.nick || "", phone: "", email: user?.email || "", sns_link: "", purpose: "", payment_method: ch.price > 0 ? "later" : "free", agree_rules: false, agree_refund: false });
   const [busy, setBusy] = useState(false);
   const up = (k, v) => sf(p => ({ ...p, [k]: v }));
   const inp = { width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
@@ -421,7 +421,7 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
 
           {ch.price > 0 && <Fld label="결제 방식" C={C}>
             <div style={{ display: "flex", gap: 8 }}>
-              {[["card", "카드 결제"], ["bank", "계좌이체"], ["later", "나중에 결제"]].map(([v, l]) => (
+              {[["bank", "계좌이체"], ["later", "추후 입금"]].map(([v, l]) => (
                 <button key={v} onClick={() => up("payment_method", v)}
                   style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid " + (f.payment_method === v ? PRIMARY : bdr), background: f.payment_method === v ? "rgba(59,130,246,0.06)" : "transparent", color: f.payment_method === v ? PRIMARY : C.muted, fontSize: 13, fontWeight: f.payment_method === v ? 700 : 500, cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
               ))}
