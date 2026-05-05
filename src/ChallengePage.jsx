@@ -310,7 +310,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             ) : hasApplied ? (
               <p style={{ fontSize: 14, color: "#4a5568" }}>관리자 확인 후 참여가 확정됩니다</p>
             ) : canApply ? (
-              <button onClick={() => { if (!user) { onLoginRequest(); return; } setView("apply"); window.scrollTo(0, 0); }} style={ctaBtn("#1A1A2E")}>신청하기</button>
+              <button onClick={() => { setView("apply"); window.scrollTo(0, 0); }} style={ctaBtn("#1A1A2E")}>신청하기</button>
             ) : null}
             {isAdmin && <button onClick={() => openAdmin(ch)} style={{ ...ctaBtn("transparent"), border: "1px solid " + bdr, color: C.muted, marginLeft: 12, boxShadow: "none" }}>관리자 보기</button>}
           </div>
@@ -347,7 +347,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   if (view === "apply" && sel) return <ApplyForm ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} user={user}
     onBack={() => { setView("detail"); window.scrollTo(0, 0); }}
     onSubmit={async fd => {
-      const app = await submitApplication({ ...fd, challenge_id: sel.id, uid: user.uid });
+      const app = await submitApplication({ ...fd, challenge_id: sel.id, uid: user?.uid || "guest_" + Date.now() });
       setMyApp(app);
       await supabase.from("challenges").update({ application_count: (sel.application_count || 0) + 1 }).eq("id", sel.id);
       setSel(p => ({ ...p, application_count: (p.application_count || 0) + 1 }));
