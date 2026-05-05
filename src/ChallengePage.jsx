@@ -61,7 +61,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   // SEO 메타 업데이트
   const updateSeo = (ch) => {
     if (!ch) return;
-    const title = `${ch.title} - SNS메이킷 챌린지`;
+    const title = `${ch.title} - SNS메이킷 부트캠프`;
     const desc = (ch.subtitle || ch.description?.replace(/<[^>]*>/g, "") || "").slice(0, 155);
     const url = `https://snsmakeit.com/challenge/${ch.id}`;
     document.title = title;
@@ -78,7 +78,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
     if (!canon) { canon = document.createElement("link"); canon.rel = "canonical"; document.head.appendChild(canon); }
     canon.href = url;
   };
-  const resetSeo = () => { document.title = "챌린지 - SNS메이킷"; };
+  const resetSeo = () => { document.title = "부트캠프 - SNS메이킷"; };
 
   useEffect(() => {
     (async () => {
@@ -136,14 +136,14 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
         <div style={{ position: "absolute", bottom: -40, right: "20%", width: 250, height: 250, borderRadius: "50%", background: "rgba(52,199,89,0.06)", filter: "blur(80px)", pointerEvents: "none" }} />
 
         <div style={{ position: "relative", maxWidth: 700, margin: "0 auto" }}>
-          <div style={{ display: "inline-block", background: PRIMARY, color: "#fff", fontSize: 12, fontWeight: 700, padding: "5px 16px", borderRadius: 99, marginBottom: 20 }}>CHALLENGE</div>
+          <div style={{ display: "inline-block", background: PRIMARY, color: "#fff", fontSize: 12, fontWeight: 700, padding: "5px 16px", borderRadius: 99, marginBottom: 20 }}>BOOTCAMP</div>
           <h1 style={{ fontSize: mob ? "clamp(26px,6vw,38px)" : "clamp(36px,5vw,52px)", fontWeight: 700, color: "#1a1a1a", lineHeight: 1.3, marginBottom: 14, letterSpacing: "-0.02em" }}>
-            함께 도전하고,<br/>
-            <span style={{ background: `linear-gradient(135deg, ${PRIMARY}, #60a5fa)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>결과를 만드세요</span>
+            함께 성장하는<br/>
+            <span style={{ background: `linear-gradient(135deg, ${PRIMARY}, #60a5fa)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>SNS 부트캠프</span>
           </h1>
           <p style={{ fontSize: mob ? 14 : 17, color: "#4a5568", lineHeight: 1.7, marginBottom: 32 }}>
-            혼자 하면 작심삼일, 함께 하면 습관이 됩니다.<br/>
-            목표를 세우고 미션을 수행하고 성장을 경험하세요.
+            챌린지, 스터디, 모임까지 다양한 프로그램을 운영합니다.<br/>
+            함께 실행하고, 서로 피드백하며 성장하세요.
           </p>
           {isAdmin && (
             <button onClick={() => { setSel(null); setView("editor"); }}
