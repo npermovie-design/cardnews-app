@@ -1058,7 +1058,7 @@
           </div>
 
           <!-- 상단: 프리뷰(왼쪽) + 설정(오른쪽) -->
-          <div style="display:flex;gap:10px;height:calc(100vh - 320px);min-height:280px;">
+          <div id="veMainLayout" style="display:flex;gap:10px;height:calc(100vh - 320px);min-height:280px;">
             <!-- 프리뷰 -->
             <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
               <div id="veVideoWrap" style="position:relative;background:#0a0a0a;border-radius:10px;overflow:hidden;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;">
@@ -1130,31 +1130,44 @@
           </div>
 
           <!-- 하단: 멀티트랙 타임라인 -->
-          <div style="background:#1a1a2e;border-radius:10px;padding:8px 10px;margin-top:8px;" id="veTimeline">
+          <div style="background:#12122a;border-radius:10px;padding:0;margin-top:8px;border:1px solid rgba(255,255,255,0.06);overflow:hidden;" id="veTimeline">
             <!-- 타임라인 헤더 -->
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-              <span style="font-size:10px;color:#94a3b8;font-weight:600;width:60px;">타임라인</span>
-              <div style="flex:1;height:1px;background:#334155;"></div>
-              <button id="veZoomIn" style="border:none;background:#334155;color:#94a3b8;width:22px;height:22px;border-radius:4px;cursor:pointer;font-size:12px;">+</button>
-              <button id="veZoomOut" style="border:none;background:#334155;color:#94a3b8;width:22px;height:22px;border-radius:4px;cursor:pointer;font-size:12px;">-</button>
+            <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;background:#161630;border-bottom:1px solid rgba(255,255,255,0.06);">
+              <span style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Timeline</span>
+              <div style="flex:1;"></div>
+              <span id="veTimelinePos" style="font-size:10px;color:#64748b;font-variant-numeric:tabular-nums;">00:00 / 00:00</span>
+              <div style="display:flex;gap:2px;margin-left:6px;">
+                <button id="veZoomOut" style="border:none;background:#1e1e3a;color:#94a3b8;width:22px;height:22px;border-radius:4px;cursor:pointer;font-size:12px;line-height:1;">-</button>
+                <button id="veZoomIn" style="border:none;background:#1e1e3a;color:#94a3b8;width:22px;height:22px;border-radius:4px;cursor:pointer;font-size:12px;line-height:1;">+</button>
+              </div>
+            </div>
+            <!-- 타임 룰러 -->
+            <div style="display:flex;align-items:center;gap:6px;padding:0 10px;">
+              <span style="font-size:9px;color:transparent;width:54px;"></span>
+              <div id="veTimeRuler" style="flex:1;position:relative;height:18px;border-bottom:1px solid rgba(255,255,255,0.04);overflow:hidden;"></div>
             </div>
             <!-- 트랙: 영상 -->
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-              <span style="font-size:9px;color:#64748b;width:54px;text-align:right;">영상</span>
-              <div style="flex:1;position:relative;height:24px;background:#0f172a;border-radius:4px;overflow:hidden;">
-                <div id="veTrackVideo" style="position:absolute;inset:0;background:linear-gradient(90deg,#3b82f6 0%,#2563eb 100%);border-radius:4px;"></div>
-                <div id="veTimelineHead" style="position:absolute;top:0;bottom:0;width:2px;background:#f59e0b;z-index:2;left:0;transition:left 0.1s;"></div>
+            <div style="display:flex;align-items:center;gap:6px;padding:2px 10px;">
+              <span style="font-size:9px;color:#475569;width:54px;text-align:right;font-weight:600;">Video</span>
+              <div style="flex:1;position:relative;height:28px;background:#0c0c20;border-radius:4px;overflow:hidden;">
+                <div id="veTrackVideo" style="position:absolute;inset:0;background:linear-gradient(90deg,#2563eb 0%,#3b82f6 50%,#2563eb 100%);border-radius:4px;opacity:0.8;"></div>
+                <div id="veTimelineHead" style="position:absolute;top:0;bottom:0;width:2px;background:#ff4444;z-index:2;left:0;transition:left 0.1s;box-shadow:0 0 6px rgba(255,68,68,0.5);"></div>
               </div>
             </div>
             <!-- 트랙: 자막 -->
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
-              <span style="font-size:9px;color:#64748b;width:54px;text-align:right;">자막</span>
-              <div id="veTimelineBlocks" style="flex:1;position:relative;height:24px;background:#0f172a;border-radius:4px;overflow:hidden;"></div>
+            <div style="display:flex;align-items:center;gap:6px;padding:2px 10px;">
+              <span style="font-size:9px;color:#475569;width:54px;text-align:right;font-weight:600;">Subtitle</span>
+              <div id="veTimelineBlocks" style="flex:1;position:relative;height:28px;background:#0c0c20;border-radius:4px;overflow:hidden;"></div>
+            </div>
+            <!-- 트랙: 오디오 (웨이브폼 시각) -->
+            <div style="display:flex;align-items:center;gap:6px;padding:2px 10px;">
+              <span style="font-size:9px;color:#475569;width:54px;text-align:right;font-weight:600;">Audio</span>
+              <div id="veTrackAudio" style="flex:1;position:relative;height:24px;background:#0c0c20;border-radius:4px;overflow:hidden;"></div>
             </div>
             <!-- 트랙: 이미지 -->
-            <div style="display:flex;align-items:center;gap:6px;">
-              <span style="font-size:9px;color:#64748b;width:54px;text-align:right;">이미지</span>
-              <div id="veTrackImages" style="flex:1;position:relative;height:24px;background:#0f172a;border-radius:4px;overflow:hidden;"></div>
+            <div style="display:flex;align-items:center;gap:6px;padding:2px 10px 6px;">
+              <span style="font-size:9px;color:#475569;width:54px;text-align:right;font-weight:600;">Image</span>
+              <div id="veTrackImages" style="flex:1;position:relative;height:24px;background:#0c0c20;border-radius:4px;overflow:hidden;"></div>
             </div>
           </div>
         </div>

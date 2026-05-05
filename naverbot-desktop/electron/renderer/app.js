@@ -3112,7 +3112,40 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function setProg(pId,bId,lId,pct,label) { var p=$(pId),b=$(bId),l=$(lId); if(p) p.textContent=pct+"%"; if(b) b.style.width=pct+"%"; if(l&&label) l.textContent=label; }
   function chipG(id,cb) { var w=$(id); if(!w) return; w.addEventListener("click",function(e){ var b=e.target.closest(".chip"); if(!b) return; w.querySelectorAll(".chip").forEach(function(c){c.classList.remove("active")}); b.classList.add("active"); cb(b.dataset.value); }); }
 
-  chipG("veTypeChips",function(v){ ve.type=v; var so=$("veShortsOpts"),lo=$("veLongformOpts"),sc=$("veSegmentsCard"); if(v==="shorts"){if(so)so.style.display="";if(lo)lo.style.display="none";if(sc)sc.style.display="";}else{if(so)so.style.display="none";if(lo)lo.style.display="";if(sc)sc.style.display="none";} });
+  chipG("veTypeChips",function(v){ ve.type=v; var so=$("veShortsOpts"),lo=$("veLongformOpts"),sc=$("veSegmentsCard"); if(v==="shorts"){if(so)so.style.display="";if(lo)lo.style.display="none";if(sc)sc.style.display="";}else{if(so)so.style.display="none";if(lo)lo.style.display="";if(sc)sc.style.display="none";}
+    // 롱폼 vs 숏폼 레이아웃 전환
+    applyVeLayout(v);
+  });
+
+  function applyVeLayout(mode) {
+    var layout = $("veMainLayout");
+    var videoWrap = $("veVideoWrap");
+    var video = $("veVideo");
+    var timeline = $("veTimeline");
+    var settingsPanel = document.querySelector("#veStep3 > div:nth-child(2) > div:last-child");
+    if (!layout) return;
+
+    if (mode === "longform") {
+      // 롱폼: 와이드 16:9 프리뷰, 넓은 타임라인
+      layout.style.height = "calc(100vh - 380px)";
+      if (videoWrap) { videoWrap.style.aspectRatio = "16/9"; videoWrap.style.background = "#000"; }
+      if (video) video.style.objectFit = "contain";
+      if (timeline) { timeline.style.padding = "10px 10px"; }
+      if (settingsPanel) settingsPanel.style.width = "240px";
+      // 자막 목록 더 크게
+      var subList = $("veSubtitleList");
+      if (subList) subList.style.maxHeight = "300px";
+    } else {
+      // 숏폼: 세로 비율 프리뷰
+      layout.style.height = "calc(100vh - 320px)";
+      if (videoWrap) { videoWrap.style.aspectRatio = ""; videoWrap.style.background = "#0a0a0a"; }
+      if (video) video.style.objectFit = "contain";
+      if (timeline) { timeline.style.padding = "8px 10px"; }
+      if (settingsPanel) settingsPanel.style.width = "280px";
+      var subList = $("veSubtitleList");
+      if (subList) subList.style.maxHeight = "200px";
+    }
+  }
 
   // 탭 전환
   document.querySelectorAll(".ve-tab-btn").forEach(function(btn){
@@ -3454,11 +3487,53 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         document.addEventListener("mouseup",onUp);
       });
     });
+    renderTimeRuler();
+    renderAudioWaveform();
   }
 
   function updateTimelineHead(cur,dur){
     var head=$("veTimelineHead"); if(!head) return;
     head.style.left=(cur/dur*100).toFixed(2)+"%";
+    // 타임라인 위치 표시
+    var posEl=$("veTimelinePos");
+    if(posEl) posEl.textContent=fmtTime(cur)+" / "+fmtTime(dur);
+  }
+
+  function fmtTime(s){
+    var h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=Math.floor(s%60);
+    if(h>0) return h+":"+String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0");
+    return m+":"+String(sec).padStart(2,"0");
+  }
+
+  function renderTimeRuler(){
+    var ruler=$("veTimeRuler"); if(!ruler) return;
+    var dur=ve.duration||1;
+    var interval=dur>600?60:dur>300?30:dur>120?15:dur>60?10:5;
+    var count=Math.ceil(dur/interval)+1;
+    var html="";
+    for(var i=0;i<count;i++){
+      var t=i*interval; if(t>dur) break;
+      var left=(t/dur*100).toFixed(2)+"%";
+      html+="<div style='position:absolute;left:"+left+";top:0;height:100%;display:flex;flex-direction:column;align-items:flex-start;'>";
+      html+="<div style='width:1px;height:8px;background:rgba(255,255,255,0.15);'></div>";
+      html+="<span style='font-size:8px;color:#475569;margin-left:2px;font-variant-numeric:tabular-nums;'>"+fmtTime(t)+"</span>";
+      html+="</div>";
+    }
+    ruler.innerHTML=html;
+  }
+
+  function renderAudioWaveform(){
+    var el=$("veTrackAudio"); if(!el) return;
+    var dur=ve.duration||1;
+    var barCount=Math.min(300,Math.floor(dur*3));
+    var html="<div style='position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(255,255,255,0.05);'></div>";
+    for(var i=0;i<barCount;i++){
+      var h=2+Math.random()*18;
+      var left=(i/barCount*100).toFixed(2)+"%";
+      var w=Math.max(1,(100/barCount-0.2)).toFixed(2)+"%";
+      html+="<div style='position:absolute;left:"+left+";width:"+w+";height:"+h+"px;background:rgba(99,102,241,0.35);bottom:"+(12-h/2)+"px;border-radius:1px;'></div>";
+    }
+    el.innerHTML=html;
   }
 
   function highlightActiveSub(t){
