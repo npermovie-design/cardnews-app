@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase, uploadFileToStorage } from "./storage";
 import { RichEditor } from "./BoardComponents.jsx";
+import DOMPurify from "dompurify";
 
 /* ── 상수 / 헬퍼 ──────────────────────────────────────── */
 const PRIMARY = "#3b82f6";
@@ -26,7 +27,12 @@ async function loadApplications(cid) { const { data } = await supabase.from("cha
 async function loadMyApplication(cid, uid) { if (!uid) return null; const { data } = await supabase.from("challenge_applications").select("*").eq("challenge_id", cid).eq("uid", uid).maybeSingle(); return data || null; }
 async function submitApplication(app) { const row = { ...app, id: "ca_" + Date.now(), status: "pending", created_at: new Date().toISOString() }; await supabase.from("challenge_applications").insert(row); return row; }
 async function updateApplicationStatus(id, status) { await supabase.from("challenge_applications").update({ status }).eq("id", id); }
-async function loadPublicApplicants(cid) { const { data } = await supabase.from("challenge_applications").select("id,name,status,created_at").eq("challenge_id", cid).order("created_at", { ascending: true }); return data || []; }
+async function loadPublicApplicants(cid) {
+  const { data, error } = await supabase.rpc("get_challenge_participants", { p_challenge_id: cid });
+  if (!error) return data || [];
+  const { data: fb } = await supabase.from("challenge_applications").select("id,name,status,created_at").eq("challenge_id", cid).order("created_at", { ascending: true });
+  return fb || [];
+}
 async function loadMissions(cid) { const { data } = await supabase.from("challenge_missions").select("*").eq("challenge_id", cid).order("created_at", { ascending: false }); return data || []; }
 async function submitMission(m) { const row = { ...m, id: "cm_" + Date.now(), created_at: new Date().toISOString() }; await supabase.from("challenge_missions").insert(row); return row; }
 
@@ -103,7 +109,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
     try { setPublicApps(await loadPublicApplicants(ch.id)); } catch { setPublicApps([]); }
   };
   const openBoard = async ch => { setSel(ch); try { setMissions(await loadMissions(ch.id)); } catch { setMissions([]); } setView("board"); window.scrollTo(0, 0); };
-  const openAdmin = async ch => { setSel(ch); try { setApps(await loadApplications(ch.id)); } catch { setApps([]); } setView("admin"); window.scrollTo(0, 0); };
+  const openAdmin = async ch => { if (!isAdmin) return; setSel(ch); try { setApps(await loadApplications(ch.id)); } catch { setApps([]); } setView("admin"); window.scrollTo(0, 0); };
   const back = () => { setView("list"); setSel(null); setMyApp(null); window.history.pushState(null, "", "/challenge"); resetSeo(); window.scrollTo(0, 0); };
   const getStatus = ch => { if (ch.status === "completed") return "completed"; const now = new Date(); if (ch.start_date && new Date(ch.start_date) <= now && ch.end_date && new Date(ch.end_date) >= now) return "ongoing"; if (ch.recruit_end && new Date(ch.recruit_end) < now) return "ongoing"; return "recruiting"; };
 
@@ -287,12 +293,12 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
 
           {/* 콘텐츠 섹션들 */}
           <div id="sect-overview" />
-          {ch.description && <Sect title="챌린지 개요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: ch.description }} /></Sect>}
-          {ch.target_audience && <Sect title="이런 사람에게 추천해요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: ch.target_audience }} /></Sect>}
-          {ch.process && <Sect title="진행 방식" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: ch.process }} /></Sect>}
-          {ch.rules && <Sect title="규칙" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: ch.rules }} /></Sect>}
-          {ch.rewards && <Sect title="보상 구조" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: ch.rewards }} /></Sect>}
-          {ch.refund_policy && <Sect title="환불 정책" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.muted, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: ch.refund_policy }} /></Sect>}
+          {ch.description && <Sect title="챌린지 개요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.description) }} /></Sect>}
+          {ch.target_audience && <Sect title="이런 사람에게 추천해요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.target_audience) }} /></Sect>}
+          {ch.process && <Sect title="진행 방식" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.process) }} /></Sect>}
+          {ch.rules && <Sect title="규칙" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.rules) }} /></Sect>}
+          {ch.rewards && <Sect title="보상 구조" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.rewards) }} /></Sect>}
+          {ch.refund_policy && <Sect title="환불 정책" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.muted, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.refund_policy) }} /></Sect>}
 
           {/* CTA */}
           <div id="cta-section" style={{ background: "linear-gradient(135deg, #E8F0FF, rgba(59,130,246,0.08))", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 24, padding: mob ? "36px 20px" : "52px 40px", textAlign: "center", marginTop: 44 }}>
