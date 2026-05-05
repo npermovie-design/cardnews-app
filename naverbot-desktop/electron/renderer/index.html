@@ -30,10 +30,7 @@
           <span class="nav-icon nav-chat"></span>잡담방
         </button>
         <button class="nav-item nav-sub" data-panel="challenge">
-          <span class="nav-icon nav-challenge"></span>챌린지
-        </button>
-        <button class="nav-item nav-sub" data-panel="feedback">
-          <span class="nav-icon nav-feedback"></span>요청합니다
+          <span class="nav-icon nav-challenge"></span>SNS 챌린지
         </button>
         <button class="nav-item nav-sub" data-panel="pricing">
           <span class="nav-icon nav-pricing"></span>가격정책
@@ -42,7 +39,7 @@
         <button class="nav-item nav-sub" data-panel="naver-account">
           <span class="nav-icon nav-account"></span>계정 설정
         </button>
-        <button class="nav-item nav-sub" data-panel="webview-write" data-webview-url="/blog">
+        <button class="nav-item nav-sub" data-panel="manual-write">
           <span class="nav-icon nav-write"></span>수동 글쓰기
         </button>
         <button class="nav-item nav-sub" data-panel="naver-blog">
@@ -52,7 +49,7 @@
           <span class="nav-icon nav-cafe"></span>카페
         </button>
         <div class="nav-group-label" style="margin-top:8px;">디자인</div>
-        <button class="nav-item nav-sub" data-panel="webview-cardnews" data-webview-url="/cardnews">
+        <button class="nav-item nav-sub" data-panel="cardnews">
           <span class="nav-icon nav-card"></span>카드뉴스
         </button>
         <div class="nav-group-label" style="margin-top:8px;">영상</div>
@@ -68,6 +65,9 @@
         </button>
         <button class="nav-item nav-sub" data-panel="execlog">
           <span class="nav-icon nav-log"></span>실행 로그
+        </button>
+        <button class="nav-item nav-sub" data-panel="feedback">
+          <span class="nav-icon nav-feedback"></span>문의하기
         </button>
         <button class="nav-item nav-sub" data-panel="about">
           <span class="nav-icon nav-info"></span>정보
@@ -1196,23 +1196,382 @@
         <div id="veStep5" style="display:none;"></div>
       </section>
 
-      <!-- AI 글쓰기 (webview) -->
-      <section class="panel hidden" data-panel="webview-write">
-        <div id="webviewWriteContainer" style="width:100%;height:100%;position:relative;">
-          <div id="webviewWriteLoading" style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:14px;">불러오는 중...</div>
+      <!-- 수동 글쓰기 -->
+      <section class="panel hidden" data-panel="manual-write">
+        <div class="panel-header">
+          <h1>AI 글쓰기</h1>
+          <p class="panel-sub">주제를 입력하면 AI가 블로그 글을 생성합니다.</p>
+        </div>
+
+        <div id="writeInputView">
+          <!-- 단계 표시 바 -->
+          <div class="step-bar" id="writeStepBar">
+            <div class="step-item active" data-step="1"><span class="step-num">1</span> 주제 설정</div>
+            <div class="step-item" data-step="2"><span class="step-num">2</span> 스타일 설정</div>
+            <div class="step-item" data-step="3"><span class="step-num">3</span> 꾸미기</div>
+          </div>
+
+          <!-- 횟수 표시 -->
+          <div id="writeQuotaInfo" style="font-size:12px;color:var(--text-dim);text-align:right;margin-bottom:6px;"></div>
+
+          <!-- Step 1: 주제 설정 -->
+          <div class="wiz-step" id="writeStep1">
+            <div class="card" style="padding:16px 18px;">
+              <label style="display:block;font-size:13px;font-weight:700;color:var(--text-sub);margin-bottom:10px;">플랫폼</label>
+              <div class="chips" id="writePlatformChips">
+                <button class="chip active" data-value="naver">네이버 블로그</button>
+                <button class="chip" data-value="tistory">티스토리</button>
+                <button class="chip" data-value="instagram">인스타그램</button>
+                <button class="chip" data-value="thread">스레드</button>
+                <button class="chip" data-value="youtube">유튜브 대본</button>
+              </div>
+            </div>
+            <div class="card form" style="padding:18px;margin-top:10px;">
+              <label>주제 / 키워드 <span class="req">*</span></label>
+              <input type="text" id="writeTopic" placeholder="예: 제주도 3박4일 여행 코스 추천" style="font-size:15px;padding:14px;">
+
+              <label>참고 URL <span class="optional">(선택)</span></label>
+              <div style="display:flex;gap:6px;">
+                <input type="text" id="writeRefUrl" placeholder="https://... 참고할 글이나 뉴스 URL" style="flex:1;">
+                <button class="btn btn-outline btn-sm" id="writeUrlFetchBtn" style="white-space:nowrap;">가져오기</button>
+              </div>
+              <div id="writeUrlPreview" style="display:none;margin-top:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text-sub);line-height:1.6;max-height:80px;overflow-y:auto;"></div>
+
+              <label>원하는 글 방향 <span class="optional">(선택)</span></label>
+              <textarea id="writeExtra" rows="2" placeholder="예: 이미지 먼저 보여주고, 짧은 문단으로 쉽게 써줘. 핵심 단어는 굵게 강조해줘."></textarea>
+            </div>
+            <div class="wiz-nav">
+              <div></div>
+              <button class="btn btn-primary" id="writeStep1Next">다음: 스타일 설정</button>
+            </div>
+          </div>
+
+          <!-- Step 2: 스타일 설정 -->
+          <div class="wiz-step hidden" id="writeStep2">
+            <div class="card">
+              <div class="card-header"><h3>글 스타일</h3></div>
+              <div class="form">
+                <label>글 타입</label>
+                <div class="chips" id="writeSubtypeChips">
+                  <button class="chip active" data-value="info">정보성 글</button>
+                  <button class="chip" data-value="visit">체험·방문후기</button>
+                  <button class="chip" data-value="travel">여행 후기</button>
+                  <button class="chip" data-value="product">제품 후기</button>
+                  <button class="chip" data-value="column">칼럼</button>
+                  <button class="chip" data-value="article">기사 방식</button>
+                </div>
+
+                <label>글 톤</label>
+                <div class="chips" id="writeToneChips">
+                  <button class="chip active" data-value="friendly">친근·정보형</button>
+                  <button class="chip" data-value="diary">일기형</button>
+                  <button class="chip" data-value="review">리뷰형</button>
+                  <button class="chip" data-value="professional">전문형</button>
+                </div>
+
+                <label>말투</label>
+                <div class="chips" id="writeSpeechChips">
+                  <button class="chip active" data-value="polite_yo">~요 체</button>
+                  <button class="chip" data-value="formal">~합니다 체</button>
+                  <button class="chip" data-value="casual">반말 체</button>
+                  <button class="chip" data-value="mixed">혼합 체</button>
+                </div>
+
+                <label>분량</label>
+                <div class="chips" id="writeLengthChips">
+                  <button class="chip" data-value="short">보통 (1~1.5K)</button>
+                  <button class="chip active" data-value="medium">길게 (2~3K)</button>
+                  <button class="chip" data-value="long">아주 길게 (4K+)</button>
+                </div>
+
+                <label>콘텐츠 분야 <span class="optional">(선택)</span></label>
+                <div class="chips" id="writeCategoryChips">
+                  <button class="chip active" data-value="">미지정</button>
+                  <button class="chip" data-value="여행">여행</button>
+                  <button class="chip" data-value="쇼핑">쇼핑</button>
+                  <button class="chip" data-value="경제">경제</button>
+                  <button class="chip" data-value="사회">사회</button>
+                  <button class="chip" data-value="IT">IT</button>
+                  <button class="chip" data-value="건강">건강</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="card" style="margin-top:10px;">
+              <div class="card-header"><h3>글 구조</h3></div>
+              <div class="form">
+                <label>Q&A (AEO) 위치</label>
+                <div class="chips" id="writeAeoChips">
+                  <button class="chip active" data-value="top">상단</button>
+                  <button class="chip" data-value="middle">중앙</button>
+                  <button class="chip" data-value="bottom">하단</button>
+                  <button class="chip" data-value="none">없음</button>
+                </div>
+
+                <label>장단점 / 추천·비추천</label>
+                <div class="chips" id="writeProsConsChips">
+                  <button class="chip active" data-value="on">포함</button>
+                  <button class="chip" data-value="off">미포함</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="wiz-nav">
+              <button class="btn btn-outline" id="writeStep2Prev">이전</button>
+              <button class="btn btn-primary" id="writeStep2Next">다음: 꾸미기</button>
+            </div>
+          </div>
+
+          <!-- Step 3: 꾸미기 -->
+          <div class="wiz-step hidden" id="writeStep3">
+            <div class="card">
+              <div class="card-header"><h3>꾸미기</h3></div>
+              <div class="form">
+                <label>사진 삽입</label>
+                <div class="chips" id="writeImageChips">
+                  <button class="chip active" data-value="auto">자동 삽입</button>
+                  <button class="chip" data-value="none">없음</button>
+                </div>
+                <div class="form-hint">소제목마다 관련 무료 사진을 검색해 본문 중간에 넣습니다.</div>
+
+                <label>짤/GIF</label>
+                <div class="chips" id="writeGifChips">
+                  <button class="chip active" data-value="on">사용</button>
+                  <button class="chip" data-value="off">안함</button>
+                </div>
+
+                <label>인용구 스타일</label>
+                <div class="chips" id="writeQuoteChips">
+                  <button class="chip active" data-value="postit">포스트잇</button>
+                  <button class="chip" data-value="따옴표">따옴표</button>
+                  <button class="chip" data-value="vertical">버티컬 라인</button>
+                  <button class="chip" data-value="bubble">말풍선</button>
+                  <button class="chip" data-value="none">없음</button>
+                </div>
+
+                <label>키워드 강조색</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="color" id="writeAccentColor" value="#2DB400" style="width:34px;height:28px;border:1px solid var(--border);border-radius:6px;cursor:pointer;">
+                  <div class="chips" id="writeAccentPresets">
+                    <button class="chip" data-value="#2DB400" style="background:#2DB400;color:#fff;min-width:auto;padding:3px 8px;font-size:11px;">초록</button>
+                    <button class="chip" data-value="#FF6B35" style="background:#FF6B35;color:#fff;min-width:auto;padding:3px 8px;font-size:11px;">주황</button>
+                    <button class="chip" data-value="#4A90D9" style="background:#4A90D9;color:#fff;min-width:auto;padding:3px 8px;font-size:11px;">파랑</button>
+                    <button class="chip" data-value="" style="min-width:auto;padding:3px 8px;font-size:11px;">없음</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wiz-nav">
+              <button class="btn btn-outline" id="writeStep3Prev">이전</button>
+              <button class="btn btn-primary btn-lg" id="writeGenerateBtn">AI 글 생성</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 생성 중 -->
+        <div id="writeLoadingView" style="display:none;">
+          <div class="card" style="padding:48px 20px;text-align:center;">
+            <div style="width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;"></div>
+            <div style="font-size:15px;font-weight:600;color:var(--text);" id="writeGenStatus">글을 생성하고 있습니다...</div>
+            <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;max-width:320px;margin:16px auto 0;">
+              <div id="writeGenBar" style="height:100%;background:var(--accent);width:0%;border-radius:2px;transition:width 0.5s;"></div>
+            </div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:14px;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.6;" id="writeGenPreview"></div>
+          </div>
+        </div>
+
+        <!-- 결과 -->
+        <div id="writeResultView" style="display:none;">
+          <div class="card" style="padding:18px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <h3 style="margin:0;font-size:16px;font-weight:700;" id="writeResultTitle">생성된 글</h3>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-primary btn-sm" id="writeCopyBtn">복사</button>
+                <button class="btn btn-outline btn-sm" id="writeHtmlCopyBtn">HTML 복사</button>
+                <button class="btn btn-outline btn-sm" id="writeRetryBtn">다시 생성</button>
+              </div>
+            </div>
+            <!-- 제목 추천 -->
+            <div id="writeTitleSuggestions" style="display:none;margin-bottom:10px;">
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;">추천 제목</label>
+              <div id="writeTitleList" class="chips"></div>
+            </div>
+            <!-- SEO 키워드 -->
+            <div id="writeSeoKeys" style="display:none;margin-bottom:10px;">
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;">SEO 키워드</label>
+              <div id="writeSeoList" class="chips"></div>
+            </div>
+            <div id="writeResultContent" style="font-size:14px;line-height:2;color:var(--text);white-space:pre-wrap;max-height:55vh;overflow-y:auto;padding:16px 18px;background:var(--bg);border:1px solid var(--border);border-radius:10px;"></div>
+            <!-- AI 이미지 생성 -->
+            <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+              <button class="btn btn-outline btn-sm" id="writeAiImageBtn">AI 대표 이미지 생성</button>
+              <div id="writeAiImageStatus" style="font-size:12px;color:var(--text-dim);"></div>
+            </div>
+            <div id="writeAiImageResult" style="display:none;margin-top:10px;">
+              <img id="writeAiImageImg" style="max-width:100%;border-radius:8px;cursor:pointer;" title="클릭하여 다운로드">
+            </div>
+          </div>
         </div>
       </section>
 
-      <!-- 카드뉴스 (webview) -->
-      <section class="panel hidden" data-panel="webview-cardnews">
-        <div id="webviewCardnewsContainer" style="width:100%;height:100%;position:relative;">
-          <div id="webviewCardnewsLoading" style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:14px;">불러오는 중...</div>
+      <!-- 카드뉴스 -->
+      <section class="panel hidden" data-panel="cardnews">
+        <div class="panel-header">
+          <h1>카드뉴스</h1>
+          <p class="panel-sub">내용을 입력하거나 AI로 기획하면 카드뉴스 슬라이드를 자동 생성합니다.</p>
+        </div>
+
+        <!-- ① 입력/기획 -->
+        <div id="cardInputView">
+          <div id="cardQuotaInfo" style="font-size:12px;color:var(--text-dim);text-align:right;margin-bottom:6px;"></div>
+          <div class="card form" style="padding:18px;">
+            <label>주제 <span class="req">*</span></label>
+            <div style="display:flex;gap:6px;">
+              <input type="text" id="cardTopic" placeholder="예: 직장인 아침 루틴 5가지" style="flex:1;font-size:15px;padding:14px;">
+              <button class="btn btn-primary btn-sm" id="cardAiPlanBtn" style="white-space:nowrap;">AI로 내용 기획</button>
+            </div>
+
+            <label>내용 입력 <span class="optional">(직접 작성 또는 AI 기획 결과)</span></label>
+            <textarea id="cardContent" rows="5" placeholder="AI 기획 버튼을 누르면 자동으로 채워집니다.&#10;또는 직접 카드뉴스 내용을 작성하세요." style="font-size:14px;"></textarea>
+
+            <label>참고 URL <span class="optional">(선택)</span></label>
+            <div style="display:flex;gap:6px;">
+              <input type="text" id="cardRefUrl" placeholder="https://... URL 내용 기반으로 생성">
+              <button class="btn btn-outline btn-sm" id="cardUrlFetchBtn" style="white-space:nowrap;">가져오기</button>
+            </div>
+            <div id="cardUrlPreview" style="display:none;margin-top:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text-sub);line-height:1.6;max-height:80px;overflow-y:auto;"></div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+              <div>
+                <label>브랜드명 <span class="optional">(선택)</span></label>
+                <select id="cardBrandName">
+                  <option value="">없음</option>
+                  <option value="메이킷" selected>메이킷</option>
+                  <option value="엔퍼">엔퍼</option>
+                  <option value="_custom">직접 입력</option>
+                </select>
+                <input type="text" id="cardBrandCustom" placeholder="브랜드명 직접 입력" style="display:none;margin-top:6px;">
+              </div>
+              <div>
+                <label>댓글 유도 멘트 <span class="optional">(선택)</span></label>
+                <input type="text" id="cardCommentCTA" placeholder="예: 댓글로 의견 남겨주세요">
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:4px;">
+              <div style="flex:1;">
+                <label>비율</label>
+                <select id="cardRatio">
+                  <option value="1:1" selected>정사각형</option>
+                  <option value="9:16">세로 (스토리)</option>
+                  <option value="4:5">피드 (4:5)</option>
+                </select>
+              </div>
+            </div>
+            <input type="hidden" id="cardSlideCount" value="7">
+            <input type="hidden" id="cardStyle" value="bold_dark">
+
+            <button class="btn btn-primary btn-full btn-lg" id="cardGenerateBtn" style="margin-top:16px;">카드뉴스 생성</button>
+          </div>
+        </div>
+
+        <!-- ② 생성 중 -->
+        <div id="cardLoadingView" style="display:none;">
+          <div class="card" style="padding:48px 20px;text-align:center;">
+            <div style="width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;"></div>
+            <div style="font-size:15px;font-weight:600;color:var(--text);" id="cardLoadingMsg">카드뉴스를 생성하고 있습니다...</div>
+          </div>
+        </div>
+
+        <!-- ③ 편집/결과 -->
+        <div id="cardResultView" style="display:none;">
+          <!-- 상단 액션 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h3 style="margin:0;font-size:16px;font-weight:700;">슬라이드 편집</h3>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-outline btn-sm" id="cardAddSlideBtn">슬라이드 추가</button>
+              <button class="btn btn-primary btn-sm" id="cardDownloadAllBtn">전체 다운로드</button>
+              <button class="btn btn-outline btn-sm" id="cardRetryBtn">처음부터</button>
+            </div>
+          </div>
+
+          <!-- 슬라이드 탭 -->
+          <div class="chips" id="cardSlideTabs" style="margin-bottom:10px;flex-wrap:wrap;"></div>
+
+          <!-- Fabric 캔버스 에디터 -->
+          <div style="display:flex;gap:14px;align-items:start;">
+            <!-- 좌측: 캔버스 -->
+            <div style="flex:1;text-align:center;">
+              <div style="display:inline-block;position:relative;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.2);">
+                <canvas id="cardFabricCanvas"></canvas>
+              </div>
+            </div>
+            <!-- 우측: 속성 패널 -->
+            <div style="width:240px;flex-shrink:0;">
+              <div class="card form" style="padding:14px;">
+                <label style="font-size:12px;margin:0 0 6px;">배경</label>
+                <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
+                  <input type="color" id="cardBgColor" value="#1c1c1e" style="width:32px;height:28px;border:1px solid var(--border);border-radius:4px;cursor:pointer;">
+                  <button class="btn btn-outline btn-sm" id="cardSearchBgBtn" style="font-size:11px;">사진 검색</button>
+                </div>
+
+                <label style="font-size:12px;margin:0 0 6px;">텍스트 추가</label>
+                <div style="display:flex;gap:4px;margin-bottom:8px;">
+                  <button class="btn btn-outline btn-sm" id="cardAddTitleBtn" style="font-size:11px;">제목</button>
+                  <button class="btn btn-outline btn-sm" id="cardAddBodyBtn" style="font-size:11px;">본문</button>
+                  <button class="btn btn-outline btn-sm" id="cardAddBadgeBtn" style="font-size:11px;">뱃지</button>
+                </div>
+
+                <label style="font-size:12px;margin:0 0 6px;">선택 요소</label>
+                <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+                  <label style="font-size:11px;margin:0;">색상</label>
+                  <input type="color" id="cardSelColor" value="#ffffff" style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;cursor:pointer;">
+                  <label style="font-size:11px;margin:0;">크기</label>
+                  <input type="number" id="cardSelSize" value="28" min="8" max="120" style="width:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;">
+                </div>
+                <div style="display:flex;gap:4px;margin-bottom:8px;">
+                  <button class="btn btn-outline btn-sm" id="cardSelBold" style="font-size:11px;font-weight:900;">B</button>
+                  <button class="btn btn-outline btn-sm" id="cardSelDelete" style="font-size:11px;color:#ef4444;">삭제</button>
+                  <button class="btn btn-outline btn-sm" id="cardSelDuplicate" style="font-size:11px;">복제</button>
+                </div>
+
+                <label style="font-size:12px;margin:0 0 6px;">오버레이</label>
+                <input type="range" id="cardOverlay" min="0" max="80" value="50" style="width:100%;">
+              </div>
+            </div>
+          </div>
+
+          <!-- 배경 이미지 검색 -->
+          <div id="cardBgSearchView" style="display:none;margin-top:12px;">
+            <div class="card" style="padding:12px 16px;">
+              <div style="display:flex;gap:6px;margin-bottom:10px;">
+                <input type="text" id="cardBgSearchQuery" placeholder="배경 이미지 검색어" style="flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;">
+                <button class="btn btn-primary btn-sm" id="cardBgSearchBtn">검색</button>
+              </div>
+              <div id="cardBgSearchResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;max-height:200px;overflow-y:auto;"></div>
+            </div>
+          </div>
+
+          <!-- 인스타 캡션 -->
+          <div class="card" style="padding:16px;margin-top:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <label style="font-size:13px;font-weight:700;color:var(--text-sub);margin:0;">인스타그램 캡션</label>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-outline btn-sm" id="cardGenCaptionBtn">AI 캡션 생성</button>
+                <button class="btn btn-outline btn-sm" id="cardCopyCaptionBtn">복사</button>
+              </div>
+            </div>
+            <textarea id="cardCaptionText" rows="4" style="width:100%;font-size:13px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);resize:vertical;" placeholder="AI 캡션 생성 버튼을 누르거나 직접 입력하세요."></textarea>
+          </div>
         </div>
       </section>
 
     </main>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
   <script src="app.js"></script>
+  <script src="cardnews.js"></script>
 </body>
 </html>

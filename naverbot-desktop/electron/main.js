@@ -380,6 +380,17 @@ function createWindow() {
   setupHotCacheInterceptor(mainWindow);
 
   mainWindow.loadFile(path.join(__dirname, "renderer", "index.html"));
+
+  // snsmakeit.com iframe 로드 시 X-Frame-Options 제거
+  mainWindow.webContents.session.webRequest.onHeadersReceived(
+    { urls: ["https://snsmakeit.com/*"] },
+    (details, callback) => {
+      const headers = { ...details.responseHeaders };
+      delete headers["X-Frame-Options"];
+      delete headers["x-frame-options"];
+      callback({ responseHeaders: headers });
+    }
+  );
 }
 
 app.whenReady().then(async () => {

@@ -235,7 +235,7 @@ const navItems = document.querySelectorAll(".nav-item");
 const panels = document.querySelectorAll(".panel");
 
 // 로그인 없이 접근 가능한 패널 (홈만)
-const LOGIN_FREE_PANELS = ["home", "pricing", "about", "video-editor", "webview-write", "webview-cardnews"];
+const LOGIN_FREE_PANELS = ["home", "pricing", "about", "video-editor", "manual-write", "cardnews"];
 // 네이버 계정 필요 패널
 const ACCOUNT_REQUIRED_PANELS = ["naver-blog", "naver-cafe"];
 
@@ -286,41 +286,52 @@ navItems.forEach((item) => {
     // 패널별 진입 시 렌더링
     if (target === "home") renderHomeDashboard();
     if (target === "pricing") renderPricingPanel();
-    if (target.startsWith("webview-")) loadWebviewPanel(target, item.dataset.webviewUrl);
+    if (target === "manual-write") updateWriteQuota();
+    if (target === "cardnews") updateCardQuota();
   });
 });
+
+// 횟수 표시 (수동 글쓰기)
+async function updateWriteQuota() {
+  const el = $("writeQuotaInfo");
+  if (!el) return;
+  if (!state.loggedIn) { el.textContent = "로그인 후 이용 가능"; return; }
+  try {
+    const cfg = (await bridge.loadConfig()) || {};
+    const today = new Date().toISOString().slice(0, 10);
+    const used = cfg._manual_write_date === today ? (cfg._manual_write_used || 0) : 0;
+    const planKey = normalizeExePlan(state.user);
+    const limits = { trial: 3, starter: 5, pro: 20, premium: 99999, admin: 99999 };
+    const limit = limits[planKey] || 3;
+    const remaining = Math.max(0, limit - used);
+    el.textContent = limit >= 99999 ? `오늘 ${used}회 사용` : `오늘 남은 횟수: ${remaining}/${limit}회`;
+    el.style.color = remaining <= 1 && limit < 99999 ? "#ef4444" : "var(--text-dim)";
+  } catch { el.textContent = ""; }
+}
+
+// 횟수 표시 (카드뉴스)
+async function updateCardQuota() {
+  const el = $("cardQuotaInfo");
+  if (!el) return;
+  if (!state.loggedIn) { el.textContent = "로그인 후 이용 가능"; return; }
+  try {
+    const cfg = (await bridge.loadConfig()) || {};
+    const today = new Date().toISOString().slice(0, 10);
+    const used = cfg._cardnews_date === today ? (cfg._cardnews_used || 0) : 0;
+    const planKey = normalizeExePlan(state.user);
+    const limits = { trial: 2, starter: 3, pro: 10, premium: 99999, admin: 99999 };
+    const limit = limits[planKey] || 2;
+    const remaining = Math.max(0, limit - used);
+    el.textContent = limit >= 99999 ? `오늘 ${used}회 사용` : `오늘 남은 횟수: ${remaining}/${limit}회`;
+    el.style.color = remaining <= 1 && limit < 99999 ? "#ef4444" : "var(--text-dim)";
+  } catch { el.textContent = ""; }
+}
 
 function goToPanel(name) {
   const btn = document.querySelector(`.nav-item[data-panel="${name}"]`);
   if (btn) btn.click();
 }
 
-// ── Webview 패널 (AI 글쓰기 / 카드뉴스) ──
-const _webviewLoaded = {};
-function loadWebviewPanel(panelId, urlPath) {
-  if (_webviewLoaded[panelId]) return;
-  const containerId = panelId === "webview-write" ? "webviewWriteContainer" : "webviewCardnewsContainer";
-  const container = $(containerId);
-  if (!container) return;
-
-  const baseUrl = "https://snsmakeit.com";
-  const fullUrl = baseUrl + (urlPath || "/");
-
-  // 로그인 상태면 토큰을 URL에 포함
-  const token = state.user?.email ? `?app=1&email=${encodeURIComponent(state.user.email)}` : "?app=1";
-
-  const iframe = document.createElement("iframe");
-  iframe.src = fullUrl + token;
-  iframe.style.cssText = "width:100%;height:100%;border:none;border-radius:8px;";
-  iframe.allow = "clipboard-write";
-  iframe.onload = () => {
-    const loading = container.querySelector("[id$='Loading']");
-    if (loading) loading.style.display = "none";
-  };
-
-  container.appendChild(iframe);
-  _webviewLoaded[panelId] = true;
-}
 
 function renderPricingPanel() {
   const box = $("pricingCurrentPlan");
@@ -1091,10 +1102,16 @@ function setLoginBtnState(loading) {
 }
 
 async function handleBrowserLogin() {
-  if (_loginInProgress) return;
+  if (_loginInProgress) {
+    // 30초 이상 대기 시 리셋
+    setLoginBtnState(false);
+    return;
+  }
   setLoginBtnState(true);
   addLog("[계정] 로그인 창 여는 중...");
   setUserBadge("대기 중...", "gray");
+  // 60초 후 자동 리셋 (로그인 창 닫힌 경우)
+  setTimeout(() => { if (_loginInProgress) setLoginBtnState(false); }, 60000);
   await bridge.openLoginWindow();
 }
 
@@ -3930,3 +3947,383 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   var panel = document.querySelector('[data-panel="challenge"]');
   if (panel) observer.observe(panel, { attributes: true, attributeFilter: ["class"] });
 })();
+
+// ── 수동 글쓰기 (네이티브) ──
+(function() {
+  const API = "https://snsmakeit.com/api";
+  const PLATFORM_PROMPTS = {
+    naver: "네이버 블로그에 적합한 SEO 최적화 글",
+    tistory: "티스토리 블로그에 적합한 마크다운 글",
+    instagram: "인스타그램 캡션 (해시태그 포함, 2200자 이내)",
+    thread: "스레드(Threads)용 짧은 글 (500자 이내)",
+    youtube: "유튜브 영상 대본 ([인트로][본문][아웃트로] 구조)",
+  };
+  const SPEECH_MAP = { polite_yo: "~요 체", formal: "~합니다 체", casual: "반말 체", mixed: "혼합 체" };
+  const LENGTH_TOKENS = { short: 2500, medium: 5000, long: 8000 };
+  let _refContent = "";
+
+  // 칩 셋업 (이벤트 위임 — 수동 글쓰기 전용)
+  function chipVal(id, fb) { return $(id)?.querySelector(".chip.active")?.dataset.value || fb; }
+
+  document.querySelector('[data-panel="manual-write"]')?.addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    const container = chip.closest(".chips");
+    if (!container) return;
+    // 강조색 프리셋은 다중 선택 아님
+    container.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+    chip.classList.add("active");
+    // 강조색 연동
+    if (container.id === "writeAccentPresets" && chip.dataset.value) {
+      if ($("writeAccentColor")) $("writeAccentColor").value = chip.dataset.value;
+    }
+  });
+
+  // 스텝 전환
+  function writeGoStep(step) {
+    [1,2,3].forEach(s => {
+      const el = $("writeStep" + s);
+      if (el) el.classList.toggle("hidden", s !== step);
+    });
+    $("writeStepBar")?.querySelectorAll(".step-item").forEach(item => {
+      const s = parseInt(item.dataset.step);
+      item.classList.toggle("active", s === step);
+      item.classList.toggle("done", s < step);
+    });
+  }
+  $("writeStep1Next")?.addEventListener("click", () => {
+    if (!$("writeTopic")?.value.trim()) return showModal("알림", "주제를 입력해주세요.", "확인");
+    writeGoStep(2);
+  });
+  $("writeStep2Prev")?.addEventListener("click", () => writeGoStep(1));
+  $("writeStep2Next")?.addEventListener("click", () => writeGoStep(3));
+  $("writeStep3Prev")?.addEventListener("click", () => writeGoStep(2));
+
+  // URL 가져오기
+  $("writeUrlFetchBtn")?.addEventListener("click", async () => {
+    const url = $("writeRefUrl")?.value.trim(); if (!url) return;
+    $("writeUrlFetchBtn").textContent = "가져오는 중..."; $("writeUrlFetchBtn").disabled = true;
+    try {
+      const res = await fetch(API + "/fetch-url-content", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) });
+      const data = await res.json();
+      _refContent = data.content || data.text || "";
+      if (_refContent) { $("writeUrlPreview").style.display = "block"; $("writeUrlPreview").textContent = _refContent.slice(0, 300) + "..."; }
+    } catch { showModal("오류", "URL을 가져올 수 없습니다.", "확인"); }
+    $("writeUrlFetchBtn").textContent = "가져오기"; $("writeUrlFetchBtn").disabled = false;
+  });
+
+  // 이미지 검색 (Pexels 프록시) — 중복 방지
+  const _usedImageUrls = new Set();
+  async function searchImages(query, count = 1) {
+    try {
+      const res = await fetch(API + "/proxy?action=pexels&path=v1/search&query=" + encodeURIComponent(query) + "&per_page=8&orientation=landscape");
+      const data = await res.json();
+      const all = (data.photos || []).map(p => p.src?.large || p.src?.medium).filter(Boolean);
+      const fresh = all.filter(u => !_usedImageUrls.has(u));
+      const pick = (fresh.length ? fresh : all).slice(0, count);
+      pick.forEach(u => _usedImageUrls.add(u));
+      return pick;
+    } catch { return []; }
+  }
+
+  // 수동 글쓰기 횟수 관리
+  const WRITE_LIMIT_KEY = "_manual_write_used";
+  const WRITE_LIMIT_DATE_KEY = "_manual_write_date";
+  const MANUAL_WRITE_LIMITS = { trial: 3, starter: 5, pro: 20, premium: 99999, admin: 99999 };
+
+  async function checkWriteLimit() {
+    const cfg = (await bridge.loadConfig()) || {};
+    const today = new Date().toISOString().slice(0, 10);
+    if (cfg[WRITE_LIMIT_DATE_KEY] !== today) { cfg[WRITE_LIMIT_KEY] = 0; cfg[WRITE_LIMIT_DATE_KEY] = today; await bridge.saveConfig(cfg); }
+    const planKey = normalizeExePlan(state.user);
+    const limit = MANUAL_WRITE_LIMITS[planKey] || 3;
+    const used = cfg[WRITE_LIMIT_KEY] || 0;
+    return { canUse: used < limit, used, limit, remaining: Math.max(0, limit - used) };
+  }
+
+  async function markWriteUsed() {
+    const cfg = (await bridge.loadConfig()) || {};
+    const today = new Date().toISOString().slice(0, 10);
+    if (cfg[WRITE_LIMIT_DATE_KEY] !== today) { cfg[WRITE_LIMIT_KEY] = 0; cfg[WRITE_LIMIT_DATE_KEY] = today; }
+    cfg[WRITE_LIMIT_KEY] = (cfg[WRITE_LIMIT_KEY] || 0) + 1;
+    await bridge.saveConfig(cfg);
+  }
+
+  // 글 생성
+  $("writeGenerateBtn")?.addEventListener("click", async () => {
+    const topic = $("writeTopic")?.value.trim();
+    if (!topic) return showModal("알림", "주제를 입력해주세요.", "확인");
+
+    // 횟수 체크
+    if (!state.loggedIn) return showModal("로그인 필요", "먼저 메이킷 계정에 로그인해주세요.", "확인");
+    const quota = await checkWriteLimit();
+    if (!quota.canUse) {
+      return showModal("일일 한도 초과", `오늘의 수동 글쓰기 한도(${quota.limit}회)를 모두 사용했습니다.\n내일 다시 이용하거나 플랜을 업그레이드하세요.`, "구독하기", () => bridge.openExternal("https://snsmakeit.com/pricing"));
+    }
+
+    const platform = chipVal("writePlatformChips", "naver");
+    const subtype = chipVal("writeSubtypeChips", "info");
+    const tone = chipVal("writeToneChips", "friendly");
+    const speech = SPEECH_MAP[chipVal("writeSpeechChips", "polite_yo")] || "~요 체";
+    const length = chipVal("writeLengthChips", "medium");
+    const category = chipVal("writeCategoryChips", "");
+    const imageMode = chipVal("writeImageChips", "auto");
+    const quoteStyle = chipVal("writeQuoteChips", "postit");
+    const aeoPos = chipVal("writeAeoChips", "top");
+    const prosCons = chipVal("writeProsConsChips", "on") === "on";
+    const accentColor = $("writeAccentColor")?.value || "";
+    const extra = $("writeExtra")?.value.trim() || "";
+    const platformGuide = PLATFORM_PROMPTS[platform] || PLATFORM_PROMPTS.naver;
+
+    $("writeInputView").style.display = "none";
+    $("writeLoadingView").style.display = "block";
+    $("writeResultView").style.display = "none";
+    $("writeGenBar").style.width = "10%";
+    $("writeGenPreview").textContent = "";
+
+    const useGif = chipVal("writeGifChips", "on") === "on";
+
+    const prompt = `${platformGuide}을 작성해주세요.
+
+주제: ${topic}
+글 타입: ${subtype}
+글 톤: ${tone}
+말투: ${speech}
+${category ? "콘텐츠 분야: " + category : ""}
+${_refContent ? "\n참고 자료:\n" + _refContent.slice(0, 2000) : ""}
+${extra ? "\n글 방향: " + extra : ""}
+
+글 구조 (반드시 이 형식으로):
+[TITLE]
+제목
+
+[BODY]
+도입부 (2~3문장)
+
+[SUBTITLE] 소제목1
+본문 (3~5문장)
+[image: 영문키워드 2~3단어]
+${quoteStyle !== "none" ? "[QUOTE] 핵심 인용 문장" : ""}
+
+[SUBTITLE] 소제목2
+본문 (3~5문장)
+[image: 영문키워드 2~3단어]
+
+(이 패턴을 4~5회 반복)
+
+${useGif ? "[gif: 한글키워드] 를 재미있는 부분에 1~2개 배치" : ""}
+${aeoPos !== "none" ? `Q&A(AEO) 섹션을 글의 ${aeoPos === "top" ? "상단" : aeoPos === "middle" ? "중앙" : "하단"}에 포함` : ""}
+${prosCons ? "장단점 또는 추천/비추천 섹션 포함" : ""}
+${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
+
+[TAGS]
+태그1, 태그2, 태그3, ... (10개, # 없이 쉼표 구분)
+
+규칙:
+- [image: keyword]는 영문 2~3단어로 구체적 장면. 예: [image: jeju beach sunset]
+- [image:]는 전체 4~6개
+- 모든 섹션은 [SUBTITLE]로 시작
+- 마크다운 문법(#, ##, *, -) 절대 사용 금지
+- 이모지 아이콘 사용 금지
+- 배경색 형광펜 스타일 사용 금지`;
+
+    try {
+      const maxTok = LENGTH_TOKENS[length] || 5000;
+      let full = "";
+      const res = await fetch(API + "/ai-proxy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: maxTok, stream: true, messages: [{ role: "user", content: prompt }] }),
+      });
+      if (!res.ok) throw new Error("AI 서버 오류: " + res.status);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n"); buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const d = line.slice(6); if (d === "[DONE]") break;
+          try {
+            const delta = JSON.parse(d).choices?.[0]?.delta?.content || "";
+            if (delta) {
+              full += delta;
+              $("writeGenBar").style.width = Math.min(90, Math.floor((full.length / (maxTok * 2)) * 100)) + "%";
+              $("writeGenPreview").textContent = full.slice(-100);
+            }
+          } catch {}
+        }
+      }
+
+      $("writeGenBar").style.width = "100%";
+      $("writeGenStatus").textContent = "이미지를 삽입하고 있습니다...";
+
+      // 마커 기반 파싱 (자동글쓰기와 동일)
+      let rendered = full;
+
+      // [TITLE] / [BODY] / [TAGS] 마커 제거
+      const titleMatch = rendered.match(/\[TITLE\]\s*\n([^\n]+)/);
+      const extractedTitle = titleMatch ? titleMatch[1].trim() : "";
+      rendered = rendered.replace(/\[TITLE\]\s*\n[^\n]+\n?/, "");
+      rendered = rendered.replace(/\[BODY\]\s*\n?/, "");
+
+      // [TAGS] → 해시태그로 변환
+      const tagsMatch = rendered.match(/\[TAGS\]\s*\n([^\n]+)/);
+      if (tagsMatch) {
+        const hashtags = tagsMatch[1].split(/[,，]/).map(t => "#" + t.trim().replace(/^#/, "").replace(/\s+/g, "")).filter(t => t.length > 1).join(" ");
+        rendered = rendered.replace(/\[TAGS\]\s*\n[^\n]+/, "\n\n" + hashtags);
+      }
+
+      // [SUBTITLE] → 소제목 스타일
+      rendered = rendered.replace(/\[SUBTITLE\]\s*(.+)/g, '<div style="font-size:17px;font-weight:800;color:var(--text);margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--accent);">$1</div>');
+
+      // [image: ...] → 실제 이미지
+      if (imageMode !== "none") {
+        const imgTags = rendered.match(/\[image:\s*(.+?)\]/gi) || [];
+        for (const tag of imgTags) {
+          const keyword = tag.match(/\[image:\s*(.+?)\]/i)?.[1] || topic;
+          const urls = await searchImages(keyword, 1);
+          if (urls.length) {
+            rendered = rendered.replace(tag, '<img src="' + urls[0] + '" alt="' + keyword + '" style="max-width:100%;border-radius:8px;margin:8px 0;">');
+          } else { rendered = rendered.replace(tag, ""); }
+        }
+      } else {
+        rendered = rendered.replace(/\[image:\s*.+?\]/gi, "");
+      }
+
+      // [gif: ...] → 실제 GIF
+      const gifTags = rendered.match(/\[gif:\s*(.+?)\]/gi) || [];
+      for (const tag of gifTags) {
+        const keyword = tag.match(/\[gif:\s*(.+?)\]/i)?.[1] || topic;
+        try {
+          const gRes = await fetch(API + "/proxy?action=klipy&path=gifs/search&q=" + encodeURIComponent(keyword) + "&per_page=5&locale=ko_KR");
+          const gData = await gRes.json();
+          const items = gData?.data?.data || gData?.data || [];
+          const item = items[Math.floor(Math.random() * Math.min(items.length, 3))];
+          const gifUrl = item?.media_formats?.gif?.url || item?.media_formats?.tinygif?.url || item?.url || "";
+          if (gifUrl) { rendered = rendered.replace(tag, '<img src="' + gifUrl + '" style="max-width:280px;border-radius:8px;margin:8px 0;">'); }
+          else { rendered = rendered.replace(tag, ""); }
+        } catch { rendered = rendered.replace(tag, ""); }
+      }
+
+      // [QUOTE] → 인용구 스타일
+      rendered = rendered.replace(/\[QUOTE\]\s*(.+)/g, (_, text) => {
+        if (quoteStyle === "postit") return '<div style="background:#fffde7;border-left:4px solid #fbc02d;padding:12px 16px;margin:12px 0;border-radius:4px;color:#5d4037;font-style:italic;">' + text + '</div>';
+        if (quoteStyle === "vertical") return '<div style="border-left:3px solid #3b82f6;padding:8px 16px;margin:12px 0;color:var(--text-sub);">' + text + '</div>';
+        if (quoteStyle === "bubble") return '<div style="background:var(--bg-elev,#f3f4f6);border-radius:12px 12px 12px 2px;padding:12px 16px;margin:12px 0;color:var(--text-sub);">' + text + '</div>';
+        return text;
+      });
+
+      // **강조** → 색상 bold
+      const boldColor = accentColor || "#2DB400";
+      rendered = rendered.replace(/\*\*(.+?)\*\*/g, '<strong style="color:' + boldColor + ';">$1</strong>');
+
+      $("writeLoadingView").style.display = "none";
+      $("writeResultView").style.display = "block";
+      $("writeResultContent").innerHTML = rendered.replace(/\n/g, "<br>");
+      $("writeResultTitle").textContent = extractedTitle || (full.split("\n")[0].replace(/^#+\s*/, "").trim()).slice(0, 50) || "생성된 글";
+
+      // 횟수 차감 + 표시 업데이트
+      await markWriteUsed();
+      updateWriteQuota();
+
+      // 제목 추천 + SEO
+      generateTitleSuggestions(topic, full);
+      generateSeoKeywords(topic, full);
+
+    } catch (e) {
+      $("writeLoadingView").style.display = "none";
+      $("writeInputView").style.display = "block";
+      showModal("생성 실패", e.message, "확인");
+    }
+  });
+
+  // 제목 추천
+  async function generateTitleSuggestions(topic, content) {
+    try {
+      const res = await fetch(API + "/ai-proxy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: 500, messages: [{ role: "user", content: `다음 글에 대한 매력적인 블로그 제목 5개를 줄바꿈으로 구분해서 제안해줘. 번호 없이 제목만.\n\n주제: ${topic}\n\n글 내용 요약: ${content.slice(0, 500)}` }] }),
+      });
+      const data = await res.json();
+      const titles = (data.choices?.[0]?.message?.content || "").split("\n").filter(t => t.trim());
+      if (titles.length) {
+        $("writeTitleSuggestions").style.display = "block";
+        $("writeTitleList").innerHTML = titles.map(t => `<button class="chip" style="font-size:12px;">${escapeHtml(t.trim())}</button>`).join("");
+        $("writeTitleList").querySelectorAll(".chip").forEach(c => {
+          c.addEventListener("click", () => navigator.clipboard.writeText(c.textContent));
+        });
+      }
+    } catch {}
+  }
+
+  // SEO 키워드
+  async function generateSeoKeywords(topic, content) {
+    try {
+      const res = await fetch(API + "/ai-proxy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: 300, messages: [{ role: "user", content: `다음 글의 SEO 핵심 키워드 8~10개를 쉼표로 구분해서 나열해줘. 키워드만 출력.\n\n주제: ${topic}\n내용: ${content.slice(0, 500)}` }] }),
+      });
+      const data = await res.json();
+      const keys = (data.choices?.[0]?.message?.content || "").split(/[,，]/).map(k => k.trim()).filter(k => k);
+      if (keys.length) {
+        $("writeSeoKeys").style.display = "block";
+        $("writeSeoList").innerHTML = keys.map(k => `<button class="chip" style="font-size:11px;">${escapeHtml(k)}</button>`).join("");
+        $("writeSeoList").querySelectorAll(".chip").forEach(c => {
+          c.addEventListener("click", () => navigator.clipboard.writeText(c.textContent));
+        });
+      }
+    } catch {}
+  }
+
+  // 복사
+  $("writeCopyBtn")?.addEventListener("click", () => {
+    navigator.clipboard.writeText($("writeResultContent")?.textContent || "").then(() => {
+      $("writeCopyBtn").textContent = "복사됨!"; setTimeout(() => { $("writeCopyBtn").textContent = "복사"; }, 2000);
+    });
+  });
+
+  // HTML 복사 (티스토리용)
+  $("writeHtmlCopyBtn")?.addEventListener("click", () => {
+    const text = $("writeResultContent")?.textContent || "";
+    const html = text.replace(/^## (.+)$/gm, "<h3>$1</h3>").replace(/^### (.+)$/gm, "<h4>$1</h4>").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>");
+    navigator.clipboard.writeText(html).then(() => {
+      $("writeHtmlCopyBtn").textContent = "복사됨!"; setTimeout(() => { $("writeHtmlCopyBtn").textContent = "HTML 복사"; }, 2000);
+    });
+  });
+
+  // 다시 생성
+  $("writeRetryBtn")?.addEventListener("click", () => {
+    $("writeResultView").style.display = "none";
+    $("writeInputView").style.display = "block";
+    $("writeTitleSuggestions").style.display = "none";
+    $("writeSeoKeys").style.display = "none";
+    $("writeAiImageResult").style.display = "none";
+    writeGoStep(1);
+  });
+
+  // AI 대표 이미지
+  $("writeAiImageBtn")?.addEventListener("click", async () => {
+    const topic = $("writeTopic")?.value.trim() || "블로그 대표 이미지";
+    $("writeAiImageStatus").textContent = "이미지 생성 중...";
+    $("writeAiImageBtn").disabled = true;
+    try {
+      const res = await fetch(API + "/generate-image", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: `Blog thumbnail for: ${topic}. Clean, modern, professional style. No text overlay.`, aspectRatio: "16:9" }),
+      });
+      const data = await res.json();
+      if (data.url || data.image_url) {
+        $("writeAiImageResult").style.display = "block";
+        $("writeAiImageImg").src = data.url || data.image_url;
+        $("writeAiImageImg").onclick = () => { const a = document.createElement("a"); a.href = $("writeAiImageImg").src; a.download = "ai-image.png"; a.click(); };
+        $("writeAiImageStatus").textContent = "생성 완료! 클릭하여 다운로드";
+      } else { $("writeAiImageStatus").textContent = "이미지 생성 실패"; }
+    } catch { $("writeAiImageStatus").textContent = "이미지 생성 실패"; }
+    $("writeAiImageBtn").disabled = false;
+  });
+})();
+

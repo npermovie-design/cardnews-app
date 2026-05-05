@@ -337,14 +337,16 @@ function parseResponse(text, fallbackKeyword) {
   return { title, body: cleanBody, tags };
 }
 
-async function searchImage(keyword) {
+async function searchImage(keyword, excludeUrls = []) {
   if (!PEXELS_KEY || !keyword) return null;
   try {
-    const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&per_page=1&orientation=landscape`;
+    const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&per_page=8&orientation=landscape`;
     const r = await fetch(url, { headers: { Authorization: PEXELS_KEY.trim() } });
     if (!r.ok) return null;
     const data = await r.json();
-    const photo = data?.photos?.[0];
+    const excludeSet = new Set(excludeUrls);
+    const photos = (data?.photos || []).filter(p => p?.src?.large && !excludeSet.has(p.src.large));
+    const photo = photos[Math.floor(Math.random() * Math.min(photos.length, 3))];
     if (!photo?.src?.large) return null;
     return { url: photo.src.large, alt: photo.alt || keyword, keyword };
   } catch (e) {
@@ -507,20 +509,20 @@ async function handleContentGenerate(req, res) {
   const rawBlocks = splitBodyByImageMarkers(parsed.body);
 
   const blocks = [];
+  const usedImageUrls = []; // 중복 방지
   for (const blk of rawBlocks) {
     if (blk.type === "text" || blk.type === "subtitle" || blk.type === "quote") {
       blocks.push(blk);
     } else if (blk.type === "image") {
-      let photo = await searchImage(blk.keyword);
-      // 1차 실패 시 키워드 간소화 재시도
+      let photo = await searchImage(blk.keyword, usedImageUrls);
       if (!photo && blk.keyword.split(" ").length > 2) {
-        photo = await searchImage(blk.keyword.split(" ").slice(0, 2).join(" "));
+        photo = await searchImage(blk.keyword.split(" ").slice(0, 2).join(" "), usedImageUrls);
       }
-      // 2차 실패 시 첫 단어만으로 재시도
       if (!photo) {
-        photo = await searchImage(blk.keyword.split(" ")[0]);
+        photo = await searchImage(blk.keyword.split(" ")[0], usedImageUrls);
       }
       if (photo) {
+        usedImageUrls.push(photo.url);
         blocks.push({ type: "image", url: photo.url, alt: photo.alt, keyword: blk.keyword });
       } else {
         console.warn(`[naverbot] 이미지 검색 실패 (키워드: ${blk.keyword}) — PEXELS_KEY 확인 필요`);
@@ -542,6 +544,12 @@ async function handleContentGenerate(req, res) {
       tokens_used: tokensUsed,
     });
   if (logError) console.error("[naverbot] 로그 실패:", logError.message);
+
+  // 본문 마지막에 해시태그 블록 추가
+  if (parsed.tags.length) {
+    const hashtagText = parsed.tags.map(t => "#" + t.replace(/\s+/g, "")).join(" ");
+    blocks.push({ type: "text", text: "\n" + hashtagText });
+  }
 
   return res.status(200).json({
     ok: true,
