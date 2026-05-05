@@ -1088,29 +1088,7 @@ export default function App() {
         {/* 데스크톱 메뉴 — 중앙 정렬 */}
         <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
           <NavBtn id="home" label={t("home")} />
-          {/* 콘텐츠 만들기 - 드롭다운 */}
-          <div style={{ position: "relative" }}>
-            <DropBtn id="ai" label="콘텐츠 만들기" open={openMenu==="content"} active={page==="ai"} onClick={() => setOpenMenu(m => m==="content"?null:"content")} />
-            {openMenu==="content" && (
-              <div style={{ position: "absolute", top: "100%", left: 0, marginTop: 6, background: isDark ? "#1e1e2e" : "#fff", border: `1px solid ${C.border}`, borderRadius: 12, padding: 6, minWidth: 180, boxShadow: "0 8px 32px rgba(0,0,0,0.12)", zIndex: 100 }}>
-                <button onClick={() => { navigate("ai"); setAiMenu("home"); setOpenMenu(null); }}
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "none", cursor: "pointer", textAlign: "left", fontSize: 13, fontWeight: 600, background: "transparent", color: C.text, transition: "background 0.1s" }}
-                  onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.06)" : "#f3f4f6"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  글쓰기
-                  <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>AI가 블로그/SNS 글 작성</div>
-                </button>
-                <button onClick={() => { navigate("ai"); setAiMenu("auto_publish"); setOpenMenu(null); }}
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "none", cursor: "pointer", textAlign: "left", fontSize: 13, fontWeight: 600, background: "transparent", color: C.text, transition: "background 0.1s" }}
-                  onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.06)" : "#f3f4f6"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  디자인 자동발행
-                  <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>카드뉴스 자동 생성 + 발행</div>
-                </button>
-              </div>
-            )}
-          </div>
-          <NavBtn id="programs" label="자동화" />
+          <NavBtn id="programs" label="제품" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
           <NavBtn id="class" label="클래스" />
           {/* 챌린지 - 커뮤니티 왼쪽 독립 메뉴 */}
@@ -1344,9 +1322,7 @@ export default function App() {
               {/* PC 상단 메뉴와 동일한 큰 메뉴만 */}
           {[
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
-            { id: "ai_write", label: "글쓰기",         onClick: () => { navigate("ai"); setAiMenu("home"); setMobileOpen(false); }, active: page==="ai" && aiMenu==="home" },
-            { id: "ai_auto",  label: "디자인 자동발행", onClick: () => { navigate("ai"); setAiMenu("auto_publish"); setMobileOpen(false); }, active: page==="ai" && aiMenu==="auto_publish" },
-            { id: "programs", label: "자동화", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
+            { id: "programs", label: "제품", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
             { id: "class", label: "클래스", onClick: () => { navigate("class"); setMobileOpen(false); }, active: page==="class" },
             { id: "challenge", label: "챌린지", onClick: () => { navigate("challenge"); setMobileOpen(false); }, active: page==="challenge" },
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
