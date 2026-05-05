@@ -366,12 +366,6 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
           관리자 확인 후 참여가 확정되면 안내를 드립니다.
           {sel.start_date && <><br/>챌린지 시작일: <strong style={{ color: C.text }}>{fmt(sel.start_date)}</strong></>}
         </p>
-        {sel.community_link && (
-          <a href={sel.community_link} target="_blank" rel="noopener noreferrer"
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "14px 32px", borderRadius: 99, background: "#fee500", color: "#1a1a1a", fontSize: 15, fontWeight: 700, textDecoration: "none", marginBottom: 16 }}>
-            오픈채팅 입장하기
-          </a>
-        )}
         <div style={{ marginTop: 16 }}>
           <button onClick={back} style={{ padding: "12px 28px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>목록으로</button>
         </div>
