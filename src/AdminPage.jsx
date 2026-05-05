@@ -478,7 +478,7 @@ export default function AdminPage({ C, user: adminUser }) {
         {/* 메뉴 그룹 */}
         {[
           { group: "대시보드", items: [["stats", "통계"], ["visitors", "접속 분석"]] },
-          { group: "회원", items: [["members", "회원 관리"], ["pointHistory", "횟수 내역"], ["guest", "비회원 관리"]] },
+          { group: "회원", items: [["members", "회원 관리"], ["membership", "멤버십 관리"], ["pointHistory", "횟수 내역"], ["guest", "비회원 관리"]] },
           { group: "콘텐츠", items: [["posts", "게시글 관리"], ["board", "게시판 관리"]] },
           { group: "고객", items: [["inquiries", "문의 관리"], ["appFeedback", "앱 피드백"]] },
         ].map(({ group, items }) => (
@@ -1250,6 +1250,9 @@ export default function AdminPage({ C, user: adminUser }) {
 
       {/* ── 접속 분석 ── */}
       {tab === "visitors" && <VisitorAnalyticsTab C={C} isDark={isDark} />}
+
+      {/* ── 멤버십 관리 ── */}
+      {tab === "membership" && <MembershipTab C={C} isDark={isDark} />}
       </main>
     </div>
   );
@@ -1691,6 +1694,93 @@ function VisitorAnalyticsTab({ C, isDark }) {
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══ 멤버십 관리 탭 ═══ */
+function MembershipTab({ C, isDark }) {
+  const [members, setMembers] = useState([]);
+  const [subs, setSubs] = useState([]);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [msg, setMsg] = useState("");
+  const PLANS = ["Free", "Starter", "Pro", "Business", "Enterprise"];
+
+  useEffect(() => {
+    (async () => {
+      const [{ data: u }, { data: s }] = await Promise.all([
+        supabase.from("users").select("uid,email,nick,role").order("created_at", { ascending: false }),
+        supabase.from("subscriptions").select("*").in("status", ["active", "on_trial"]),
+      ]);
+      setMembers(u || []);
+      setSubs(s || []);
+      setLoading(false);
+    })();
+  }, []);
+
+  const getSub = (uid) => subs.find(s => s.uid === uid);
+
+  const setPlan = async (uid, plan) => {
+    if (plan === "Free") {
+      await supabase.from("subscriptions").delete().eq("uid", uid);
+      setSubs(p => p.filter(s => s.uid !== uid));
+    } else {
+      const existing = subs.find(s => s.uid === uid);
+      if (existing) {
+        await supabase.from("subscriptions").update({ product_name: plan, status: "active", monthly_limit: plan === "Enterprise" ? 9999 : plan === "Business" ? 500 : plan === "Pro" ? 999 : 30, updated_at: new Date().toISOString() }).eq("id", existing.id);
+        setSubs(p => p.map(s => s.uid === uid ? { ...s, product_name: plan, status: "active" } : s));
+      } else {
+        const row = { uid, product_name: plan, status: "active", monthly_limit: plan === "Enterprise" ? 9999 : plan === "Business" ? 500 : plan === "Pro" ? 999 : 30, updated_at: new Date().toISOString() };
+        const { data } = await supabase.from("subscriptions").insert(row).select().single();
+        if (data) setSubs(p => [...p, data]);
+      }
+    }
+    setMsg(`${plan} 플랜 적용 완료`);
+    setTimeout(() => setMsg(""), 2000);
+  };
+
+  const filtered = members.filter(m => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return (m.email || "").toLowerCase().includes(q) || (m.nick || "").toLowerCase().includes(q);
+  });
+
+  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
+  const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
+  const inp = { width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.06)" : "#f9fafb", color: C.text, fontSize: 13, outline: "none", fontFamily: "inherit" };
+
+  if (loading) return <div style={{ padding: 40, textAlign: "center", color: C.muted }}>불러오는 중...</div>;
+
+  return (
+    <div>
+      <h2 style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 16 }}>멤버십 관리</h2>
+
+      {msg && <div style={{ padding: "10px 16px", borderRadius: 8, background: "rgba(34,197,94,0.1)", color: "#22c55e", fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{msg}</div>}
+
+      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이메일 또는 닉네임 검색" style={{ ...inp, marginBottom: 16 }} />
+
+      <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>총 {filtered.length}명</div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        {filtered.slice(0, 50).map(m => {
+          const sub = getSub(m.uid);
+          const currentPlan = sub?.product_name || "Free";
+          return (
+            <div key={m.uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 10, border: `1px solid ${bdr}`, background: card }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.nick || "-"}</div>
+                <div style={{ fontSize: 11, color: C.muted }}>{m.email}</div>
+              </div>
+              <span style={{ fontSize: 11, fontWeight: 700, color: currentPlan === "Free" ? C.muted : "#3b82f6", background: currentPlan === "Free" ? "transparent" : "rgba(59,130,246,0.1)", padding: "3px 10px", borderRadius: 99 }}>{currentPlan}</span>
+              <select value={currentPlan} onChange={e => setPlan(m.uid, e.target.value)}
+                style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
