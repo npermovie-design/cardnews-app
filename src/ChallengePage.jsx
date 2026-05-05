@@ -25,7 +25,7 @@ async function saveChallenge(c) {
 async function deleteChallenge(id) { await supabase.from("challenges").delete().eq("id", id); }
 async function loadApplications(cid) { const { data } = await supabase.from("challenge_applications").select("*").eq("challenge_id", cid).order("created_at", { ascending: false }); return data || []; }
 async function loadMyApplication(cid, uid) { if (!uid) return null; const { data } = await supabase.from("challenge_applications").select("*").eq("challenge_id", cid).eq("uid", uid).maybeSingle(); return data || null; }
-async function submitApplication(app) { const row = { ...app, id: "ca_" + Date.now(), status: "pending", created_at: new Date().toISOString() }; await supabase.from("challenge_applications").insert(row); return row; }
+async function submitApplication(app) { const row = { ...app, id: "ca_" + Date.now(), status: "pending", created_at: new Date().toISOString() }; const { error } = await supabase.from("challenge_applications").insert(row); if (error) throw new Error(error.message || "신청 저장 실패"); return row; }
 async function updateApplicationStatus(id, status) { await supabase.from("challenge_applications").update({ status }).eq("id", id); }
 async function loadPublicApplicants(cid) {
   const { data, error } = await supabase.rpc("get_challenge_participants", { p_challenge_id: cid });
@@ -349,8 +349,6 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
     onSubmit={async fd => {
       const app = await submitApplication({ ...fd, challenge_id: sel.id, uid: user?.uid || "guest_" + Date.now() });
       setMyApp(app);
-      await supabase.from("challenges").update({ application_count: (sel.application_count || 0) + 1 }).eq("id", sel.id);
-      setSel(p => ({ ...p, application_count: (p.application_count || 0) + 1 }));
       setView("confirmed"); window.scrollTo(0, 0);
     }} />;
 
@@ -444,13 +442,8 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
           </Fld>
 
           {ch.price > 0 && <Fld label="결제 방식" C={C}>
-            <div style={{ display: "flex", gap: 8 }}>
-              {[["bank", "계좌이체"], ["later", "추후 입금"]].map(([v, l]) => (
-                <button key={v} onClick={() => up("payment_method", v)}
-                  style={{ flex: 1, padding: "12px", borderRadius: 10, border: "1.5px solid " + (f.payment_method === v ? PRIMARY : bdr), background: f.payment_method === v ? "rgba(59,130,246,0.06)" : "transparent", color: f.payment_method === v ? PRIMARY : C.muted, fontSize: 13, fontWeight: f.payment_method === v ? 700 : 500, cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
-              ))}
-            </div>
-            {f.payment_method === "later" && <div style={{ fontSize: 12, color: C.muted, marginTop: 8 }}>신청 후 별도 결제 안내를 드립니다</div>}
+            <div style={{ padding: "12px", borderRadius: 10, border: "1.5px solid " + PRIMARY, background: "rgba(59,130,246,0.06)", color: PRIMARY, fontSize: 13, fontWeight: 700, textAlign: "center" }}>추후 안내</div>
+            <div style={{ fontSize: 12, color: C.muted, marginTop: 8 }}>신청 후 별도 결제 안내를 드립니다</div>
           </Fld>}
 
           <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
