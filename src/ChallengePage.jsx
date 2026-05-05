@@ -26,6 +26,7 @@ async function loadApplications(cid) { const { data } = await supabase.from("cha
 async function loadMyApplication(cid, uid) { if (!uid) return null; const { data } = await supabase.from("challenge_applications").select("*").eq("challenge_id", cid).eq("uid", uid).maybeSingle(); return data || null; }
 async function submitApplication(app) { const row = { ...app, id: "ca_" + Date.now(), status: "pending", created_at: new Date().toISOString() }; await supabase.from("challenge_applications").insert(row); return row; }
 async function updateApplicationStatus(id, status) { await supabase.from("challenge_applications").update({ status }).eq("id", id); }
+async function loadPublicApplicants(cid) { const { data } = await supabase.from("challenge_applications").select("id,name,status,created_at").eq("challenge_id", cid).order("created_at", { ascending: true }); return data || []; }
 async function loadMissions(cid) { const { data } = await supabase.from("challenge_missions").select("*").eq("challenge_id", cid).order("created_at", { ascending: false }); return data || []; }
 async function submitMission(m) { const row = { ...m, id: "cm_" + Date.now(), created_at: new Date().toISOString() }; await supabase.from("challenge_missions").insert(row); return row; }
 
@@ -46,6 +47,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   const [myApp, setMyApp] = useState(null);
   const [apps, setApps] = useState([]);
   const [missions, setMissions] = useState([]);
+  const [publicApps, setPublicApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState("");
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(""), 3000); };
@@ -84,6 +86,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             setSel(ch);
             updateSeo(ch);
             if (user?.uid) setMyApp(await loadMyApplication(ch.id, user.uid));
+            try { setPublicApps(await loadPublicApplicants(ch.id)); } catch { setPublicApps([]); }
             setView("detail");
           } else { setView("list"); }
         }
@@ -97,6 +100,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
     window.history.pushState(null, "", "/challenge/" + ch.id);
     updateSeo(ch);
     if (user?.uid) setMyApp(await loadMyApplication(ch.id, user.uid));
+    try { setPublicApps(await loadPublicApplicants(ch.id)); } catch { setPublicApps([]); }
   };
   const openBoard = async ch => { setSel(ch); try { setMissions(await loadMissions(ch.id)); } catch { setMissions([]); } setView("board"); window.scrollTo(0, 0); };
   const openAdmin = async ch => { setSel(ch); try { setApps(await loadApplications(ch.id)); } catch { setApps([]); } setView("admin"); window.scrollTo(0, 0); };
@@ -304,6 +308,26 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             ) : null}
             {isAdmin && <button onClick={() => openAdmin(ch)} style={{ ...ctaBtn("transparent"), border: "1px solid " + bdr, color: C.muted, marginLeft: 12, boxShadow: "none" }}>관리자 보기</button>}
           </div>
+
+          {/* 참여자 현황 - 누구나 볼 수 있음 */}
+          {publicApps.length > 0 && (
+            <div style={{ marginTop: 48 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 6 }}>참여자 현황</h2>
+              <p style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>총 {publicApps.length}명 신청</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                {publicApps.map(a => {
+                  const isConfirmed = a.status === "confirmed";
+                  return (
+                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, border: "1px solid " + bdr, background: card }}>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: isConfirmed ? PRIMARY : "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(a.name || "?")[0]}</div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{a.name}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: isConfirmed ? "#22c55e" : "#f59e0b", background: isConfirmed ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)", padding: "2px 8px", borderRadius: 99 }}>{isConfirmed ? "확정" : "대기중"}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* 공개 현황판 - 검색엔진 노출용 (누구나 열람 가능) */}
           <div id="public-board" />
