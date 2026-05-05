@@ -388,8 +388,8 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
     onDelete={async (id) => { if (!confirm("이 신청자를 삭제하시겠습니까?")) return; await supabase.from("challenge_applications").delete().eq("id", id); setApps(p => p.filter(a => a.id !== id)); const newCount = Math.max(0, (sel.application_count || 1) - 1); await supabase.from("challenges").update({ application_count: newCount }).eq("id", sel.id); setSel(p => ({ ...p, application_count: newCount })); showToast("신청자 삭제 완료"); }} />;
 
   /* ═══ EDITOR ═════════════════════════════════════════════ */
-  if (view === "editor") return <Editor ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} onBack={back}
-    onSave={async fd => { const s = await saveChallenge(fd); setChallenges(p => { const e = p.find(c => c.id === s.id); return e ? p.map(c => c.id === s.id ? s : c) : [s, ...p]; }); showToast("저장 완료"); back(); }}
+  if (view === "editor") return <Editor ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} user={user} onBack={back}
+    onSave={async fd => { if (!fd.host_name && user?.nick) fd.host_name = user.nick; const s = await saveChallenge(fd); setChallenges(p => { const e = p.find(c => c.id === s.id); return e ? p.map(c => c.id === s.id ? s : c) : [s, ...p]; }); showToast("저장 완료"); back(); }}
     onDelete={async id => { if (!confirm("정말 삭제하시겠습니까?")) return; await deleteChallenge(id); setChallenges(p => p.filter(c => c.id !== id)); showToast("삭제 완료"); back(); }} />;
 
   return null;
@@ -1119,11 +1119,11 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
 }
 
 /* ═══ Editor ═══════════════════════════════════════════════ */
-function Editor({ ch, C, bdr, card, isDark, mob, onBack, onSave, onDelete }) {
+function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete }) {
   const [f, sf] = useState(ch || {
     title: "", subtitle: "", description: "", thumbnail: "", start_date: "", end_date: "", recruit_start: "", recruit_end: "",
     price: 0, max_participants: 0, duration: "10", platform: "모든 SNS", daily_mission: "매일 1포스팅",
-    target_audience: "", process: "", rules: "", rewards: "", refund_policy: "", community_link: "", status: "recruiting", application_count: 0, host_name: "",
+    target_audience: "", process: "", rules: "", rewards: "", refund_policy: "", community_link: "", status: "recruiting", application_count: 0, host_name: user?.nick || "",
   });
   const [saving, setSaving] = useState(false);
   const [thumb, setThumb] = useState(ch?.thumbnail || "");
