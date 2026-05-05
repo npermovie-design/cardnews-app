@@ -431,7 +431,36 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
             up("phone", formatted);
           }} placeholder="010-0000-0000" style={inp} inputMode="tel" maxLength={13} /></Fld>
           <Fld label="이메일 *" C={C}><input value={f.email} onChange={e => up("email", e.target.value)} placeholder="email@example.com" style={inp} /></Fld>
-          <Fld label="SNS 계정 링크" C={C}><input value={f.sns_link} onChange={e => up("sns_link", e.target.value)} placeholder="블로그, 인스타그램 등" style={inp} /></Fld>
+          <Fld label="SNS 계정 링크" C={C}>
+            {(() => {
+              const SNS_TYPES = ["블로그", "인스타그램", "유튜브", "스레드", "틱톡", "카페", "기타"];
+              const links = f.sns_links || [{ type: "", url: "" }];
+              const updateLinks = (nl) => sf(p => ({ ...p, sns_links: nl, sns_link: nl.map(l => l.type && l.url ? `[${l.type}] ${l.url}` : l.url).filter(Boolean).join(" | ") }));
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {links.map((link, i) => (
+                    <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                      <select value={link.type} onChange={e => { const nl = [...links]; nl[i] = { ...nl[i], type: e.target.value }; updateLinks(nl); }}
+                        style={{ ...inp, width: 100, flex: "none", padding: "10px 8px", fontSize: 12 }}>
+                        <option value="">선택</option>
+                        {SNS_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <input value={link.url} onChange={e => { const nl = [...links]; nl[i] = { ...nl[i], url: e.target.value }; updateLinks(nl); }}
+                        placeholder="https://..." style={{ ...inp, flex: 1 }} />
+                      {links.length > 1 && (
+                        <button onClick={() => { const nl = links.filter((_, j) => j !== i); updateLinks(nl); }}
+                          style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", fontSize: 14, fontWeight: 700, padding: "4px 6px", flexShrink: 0 }}>X</button>
+                      )}
+                    </div>
+                  ))}
+                  {links.length < 5 && (
+                    <button onClick={() => updateLinks([...links, { type: "", url: "" }])}
+                      style={{ alignSelf: "flex-start", padding: "6px 14px", borderRadius: 8, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>+ 추가</button>
+                  )}
+                </div>
+              );
+            })()}
+          </Fld>
           <Fld label="참여 목적 *" C={C}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {PURPOSE_OPTIONS.map(p => (
