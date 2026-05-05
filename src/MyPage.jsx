@@ -67,6 +67,26 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
   const [nickMsg, setNickMsg]     = useState("");
   const [toast, setToast]         = useState("");
 
+  // 아바타
+  const AVATAR_SEEDS = ["Felix","Aneka","Mia","Leo","Zoe","Max","Luna","Kai","Aria","Noah","Chloe","Ryan","Emma","Jack","Lily","Sam","Ivy","Owen","Ruby","Finn","Nora","Theo","Ella","Luke","Maya","Ethan","Sage","Cole","Iris","Liam","Hazel","Dylan","Olive","Alex","Jade","Miles","Wren","Blake","Cora","Jesse","Piper","Quinn","Scout","River","Eden","Atlas","Fern","Asher","Violet","Hugo","Stella","Oscar","Clara","Jasper","Daisy","Milo","Pearl","Rowan","Flora","Silas","Lyra","Ezra","Willow","Caleb","Poppy","Jude","Maple","Ellis","Briar","Otto","Dahlia","Rhys","Ember","Orion","Clover","Arlo","Ivy2","Cedar","Lark","Kit","Willa","Nash","Thea","Reid","Opal","Vince","Freya","Beau","Astrid","Hayes","Elara","Crew","Maren","Shay","Petra","Lane","Suki","Tate","Remi","Sage2"];
+  const AVATAR_BGS = ["c0aede","b6e3f4","d1d4f9","ffd5dc","ffdfbf","c1f0c1","f9c9b6","a3d9e8","e8d5b7","d4f4dd"];
+  const getAvatarURL = (i) => `https://api.dicebear.com/7.x/notionists/svg?seed=${AVATAR_SEEDS[i % 100]}&backgroundColor=${AVATAR_BGS[i % 10]}`;
+  const [avatarIdx, setAvatarIdx] = useState(userData?.avatar_idx ?? -1);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const avatarUrl = avatarIdx >= 0 ? getAvatarURL(avatarIdx) : null;
+
+  const pickAvatar = async (idx) => {
+    setAvatarIdx(idx);
+    setShowAvatarPicker(false);
+    if (user?.uid) {
+      await supabase.from("users").update({ avatar_idx: idx }).eq("uid", user.uid);
+      const updated = { ...userData, avatar_idx: idx };
+      setUserData(updated);
+      if (setUser) setUser(updated);
+    }
+    showToast(ko ? "프로필 변경 완료!" : "Avatar changed!");
+  };
+
   // 브랜드 키트
   const DEFAULT_BRAND_KIT = {
     colors: { primary: "#3b82f6", secondary: "#ec4899", accent: "#22c55e" },
@@ -246,6 +266,34 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
         </div>
       )}
 
+      {/* ── 아바타 선택 모달 ── */}
+      {showAvatarPicker && (
+        <div onClick={e => { if (e.target === e.currentTarget) setShowAvatarPicker(false); }}
+          style={{ position:"fixed", inset:0, zIndex:99999, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.4)", backdropFilter:"blur(4px)" }}>
+          <div style={{ background:isDark?"#1e1e2e":"#fff", borderRadius:16, padding:24, maxWidth:480, width:"90%", maxHeight:"80vh", display:"flex", flexDirection:"column", boxShadow:"0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <span style={{ fontSize:16, fontWeight:700, color:text }}>{ko?"프로필 캐릭터 선택":"Choose Avatar"}</span>
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={() => pickAvatar(Math.floor(Math.random() * 100))}
+                  style={{ border:`1px solid ${bdr}`, background:isDark?"rgba(255,255,255,0.06)":"#f8fafc", padding:"6px 14px", borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer", color:"#3b82f6" }}>{ko?"랜덤":"Random"}</button>
+                <button onClick={() => setShowAvatarPicker(false)}
+                  style={{ border:"none", background:"none", fontSize:20, cursor:"pointer", color:muted, padding:"4px 8px" }}>X</button>
+              </div>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:10, overflowY:"auto", padding:4 }}>
+              {Array.from({ length: 100 }, (_, i) => (
+                <div key={i} onClick={() => pickAvatar(i)}
+                  style={{ cursor:"pointer", borderRadius:12, border:`2px solid ${avatarIdx === i ? "#3b82f6" : "transparent"}`, padding:4, transition:"all 0.15s" }}
+                  onMouseEnter={e => { if (avatarIdx !== i) e.currentTarget.style.borderColor = "#3b82f680"; }}
+                  onMouseLeave={e => { if (avatarIdx !== i) e.currentTarget.style.borderColor = "transparent"; }}>
+                  <img src={getAvatarURL(i)} alt="" loading="lazy" style={{ width:"100%", aspectRatio:"1", borderRadius:10, background:isDark?"rgba(255,255,255,0.06)":"#f8fafc" }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── 프로필 헤더 ── */}
       <div style={{ background:cardBg, border:`1px solid ${bdr}`, borderRadius:18, padding:"20px 18px", marginBottom:16 }}>
 
@@ -253,8 +301,13 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
         <div className="myp-header" style={{ display:"flex", alignItems:"flex-start", gap:14 }}>
           {/* 왼쪽: 아바타 + 정보 */}
           <div style={{ display:"flex", gap:14, flex:1, minWidth:0 }}>
-            <div style={{ width:52, height:52, borderRadius:"50%", background:"#3b82f6", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:900, color:"#fff", flexShrink:0 }}>
-              {(userData?.nick||"U")[0].toUpperCase()}
+            <div onClick={() => setShowAvatarPicker(true)} style={{ width:52, height:52, borderRadius:"50%", background:"#3b82f6", display:"flex", alignItems:"center", justifyContent:"center", fontSize:22, fontWeight:900, color:"#fff", flexShrink:0, cursor:"pointer", overflow:"hidden", position:"relative", border:"2px solid transparent", transition:"border-color 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = "#3b82f6"}
+              onMouseLeave={e => e.currentTarget.style.borderColor = "transparent"}>
+              {avatarUrl ? <img src={avatarUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (userData?.nick||"U")[0].toUpperCase()}
+              <div style={{ position:"absolute", bottom:0, left:0, right:0, height:16, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+              </div>
             </div>
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:4 }}>
