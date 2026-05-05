@@ -347,7 +347,8 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   if (view === "apply" && sel) return <ApplyForm ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} user={user}
     onBack={() => { setView("detail"); window.scrollTo(0, 0); }}
     onSubmit={async fd => {
-      const app = await submitApplication({ ...fd, challenge_id: sel.id, uid: user?.uid || "guest_" + Date.now() });
+      const { sns_links, ...cleanFd } = fd;
+      const app = await submitApplication({ ...cleanFd, challenge_id: sel.id, uid: user?.uid || "guest_" + Date.now() });
       setMyApp(app);
       setView("confirmed"); window.scrollTo(0, 0);
     }} />;
