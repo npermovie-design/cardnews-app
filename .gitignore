@@ -60,3 +60,4 @@ naverbot-desktop/python/*.pyc
 naverbot-desktop/python/debug/
 naverbot-desktop/*.png
 naverbot-desktop/server-original/
+naverbot-desktop/electron/dist2/

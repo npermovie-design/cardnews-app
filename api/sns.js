@@ -1256,7 +1256,7 @@ async function addPoints(uid, points, reason) {
 
 // 플랜별 월간 글쓰기 한도
 const PLAN_MONTHLY_LIMITS = {
-  "Basic": 50, "Pro": 200, "Premium": 350, "Business": 500, "Agency": 99999,
+  "Basic": 50, "Pro": 200, "Premium": 350, "Business": 99999, "Agency": 99999,
 };
 
 async function saveSubscription(subId, uid, productName, interval, status, attrs = {}) {

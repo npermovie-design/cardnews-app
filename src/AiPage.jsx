@@ -17,8 +17,6 @@ const PlannerPanel = React.lazy(() => import("./CardNewsApp").then(m => ({ defau
 const CardNewsApp = React.lazy(() => import("./CardNewsApp").then(m => ({ default: m.CardNewsApp })));
 const SimpleDetailPageGenerator = React.lazy(() => import("./SimpleDetailPageGenerator"));
 const DetailPageStudio = React.lazy(() => import("./v2/DetailPageStudioV2"));
-const ShortsCreator = React.lazy(() => import("./ShortsCreator"));
-const LongFormEditor = React.lazy(() => import("./LongFormEditor"));
 const BlogGenerator = React.lazy(() => import("./BlogGenerator"));
 const SocialAnalyzer = React.lazy(() => import("./SocialAnalyzer"));
 const VideoGuidePage = React.lazy(() => import("./VideoGuidePage"));
@@ -29,50 +27,7 @@ const SnsConsulting = React.lazy(() => import("./SnsConsulting"));
 const SnsPublisher = React.lazy(() => import("./SnsPublisher"));
 
 /* ════════════════════════════════════════════════════════════
-   VideoEditHub — 숏폼/롱폼 선택 → 해당 에디터 표시
 ════════════════════════════════════════════════════════════ */
-function VideoEditHub({ isDark, user, onUserUpdate, onLoginRequest, setAiMenu, showPointConfirm, initialMode }) {
-  const [mode, setMode] = React.useState(initialMode || "shortform");
-  const { t: _t } = useI18n();
-  const acc = "#6366f1";
-  const text = isDark ? "#e8e8ed" : "#1a1a2e";
-  const muted = isDark ? "rgba(255,255,255,0.45)" : "#6b7280";
-  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e8ecf1";
-  const tabBg = isDark ? "rgba(255,255,255,0.06)" : "#f0f1f3";
-
-  return (
-    <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", background: isDark ? "#0a0a0f" : "#f8f9fb" }}>
-      {/* 숏폼/롱폼 탭 — 컴팩트, 본문과 붙어있게 */}
-      <div style={{ padding:"12px 24px 0", flexShrink:0 }}>
-        <div style={{ display:"inline-flex", gap:0, borderRadius:8, overflow:"hidden", border:`1px solid ${bdr}` }}>
-          {[
-            { id: "shortform", label: "숏폼" },
-            { id: "longform", label: "롱폼" },
-          ].map(tab => (
-            <button key={tab.id} onClick={() => setMode(tab.id)}
-              style={{
-                padding:"7px 20px", border:"none", cursor:"pointer",
-                background: mode === tab.id ? acc : "transparent",
-                color: mode === tab.id ? "#fff" : muted,
-                fontSize:12, fontWeight:700, transition:"all 0.12s",
-              }}>{tab.label}</button>
-          ))}
-        </div>
-      </div>
-
-      {/* 콘텐츠 */}
-      {mode === "shortform" ? (
-        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>...</div>}>
-          <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={() => {}} />
-        </React.Suspense>
-      ) : (
-        <React.Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>...</div>}>
-          <LongFormEditor isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={() => {}} />
-        </React.Suspense>
-      )}
-    </div>
-  );
-}
 
 
 /* ════════════════════════════════════════════════════════════
@@ -1730,8 +1685,6 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
   const [sideOpen, setSideOpen] = useState(false);
   const [sideCollapsed, setSideCollapsed] = useState(false);
   // isGenerating은 state 대신 전역 변수로 (리렌더 방지 — BlogGenerator unmount 원인)
-  const [shortsJob, setShortsJob] = useState(null);
-  const [shortsActive, setShortsActive] = useState(false);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -1747,33 +1700,6 @@ export function AiPage({ user, navigate, navigateBoard, navigateAi, C, theme, ai
     return () => { alive = false; };
   }, [user?.uid]);
 
-  // Shorts Factory 메시지 수신 (전역 — 메뉴 이동해도 유지)
-  useEffect(() => {
-    const handler = async (e) => {
-      if (e.data?.type !== 'shorts-factory') return;
-      if (e.data.action === 'gen-start') setShortsJob({ total: e.data.total, completed: 0, status: 'processing' });
-      if (e.data.action === 'gen-progress') setShortsJob(prev => ({ ...prev, completed: e.data.completed, total: e.data.total, status: e.data.status }));
-      if (e.data.action === 'gen-complete') setShortsJob(prev => ({ ...prev, status: 'complete' }));
-      if (e.data.action === 'navigate') {
-        if (e.data.data) {
-          try { localStorage.setItem('shorts_linked_data', JSON.stringify(e.data.data)); } catch(err) {}
-        }
-        setAiMenu(e.data.target);
-      }
-      if (e.data.action === 'deduct-points' && user) {
-        try {
-          const { changePoints, setLocalUser } = await import('./storage.js');
-          const cost = Math.abs(e.data.cost || 1);
-          const newPts = await changePoints(user.uid, -cost, e.data.reason || "숏폼 영상 생성");
-          const newUser = { ...user, points: newPts };
-          setLocalUser(newUser);
-          if (onUserUpdate) onUserUpdate(newUser);
-        } catch(err) { console.error("이용 횟수 차감 실패:", err); }
-      }
-    };
-    window.addEventListener('message', handler);
-    return () => window.removeEventListener('message', handler);
-  }, [user]);
   // CardNewsApp 등 하위 컴포넌트에서 로그인 모달 접근용 전역 등록
   useEffect(function() {
     window.__onLoginRequest = onLoginRequest || function(){};

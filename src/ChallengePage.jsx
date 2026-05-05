@@ -196,7 +196,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
                     <div style={{ display: "flex", alignItems: "center", gap: 16, paddingTop: 14, borderTop: "1px solid " + bdr, fontSize: 12, color: C.muted }}>
                       {[
                         [<svg key="c" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>, `${ch.duration || "10"}일`],
-                        [<svg key="u" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>, `${ch.application_count || 0}명`],
+                        [<svg key="u" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>, ch.host_name || "모집중"],
                         ...(ch.platform ? [[<svg key="p" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg>, ch.platform]] : []),
                       ].map(([icon, text], i) => (
                         <span key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>{icon}{text}</span>
@@ -261,8 +261,8 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
           <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 12, marginBottom: 44 }}>
             {[
               { label: "기간", value: `${ch.duration || 10}일`, sub: ch.start_date ? `${fmt(ch.start_date)} ~` : "" },
-              { label: "참가비", value: ch.price > 0 ? `${Number(ch.price).toLocaleString()}원` : "무료", sub: ch.price > 0 ? "신청 후 안내" : "" },
-              { label: "참가자", value: `${ch.application_count || 0}명`, sub: ch.max_participants ? `최대 ${ch.max_participants}명` : "제한 없음" },
+              { label: "참가비", value: ch.price > 0 ? `${Number(ch.price).toLocaleString()}원` : "무료", sub: "추후 안내" },
+              { label: "진행자", value: ch.host_name || "-", sub: `${publicApps.length}명 참여중` },
               { label: "플랫폼", value: ch.platform || "모든 SNS", sub: ch.daily_mission || "매일 1포스팅" },
             ].map((info, i) => (
               <div key={i} style={{ background: isDark ? "rgba(255,255,255,0.04)" : "#f9fafb", border: "1px solid " + bdr, borderRadius: 16, padding: "18px 16px", textAlign: "center" }}>
@@ -1123,7 +1123,7 @@ function Editor({ ch, C, bdr, card, isDark, mob, onBack, onSave, onDelete }) {
   const [f, sf] = useState(ch || {
     title: "", subtitle: "", description: "", thumbnail: "", start_date: "", end_date: "", recruit_start: "", recruit_end: "",
     price: 0, max_participants: 0, duration: "10", platform: "모든 SNS", daily_mission: "매일 1포스팅",
-    target_audience: "", process: "", rules: "", rewards: "", refund_policy: "", community_link: "", status: "recruiting", application_count: 0,
+    target_audience: "", process: "", rules: "", rewards: "", refund_policy: "", community_link: "", status: "recruiting", application_count: 0, host_name: "",
   });
   const [saving, setSaving] = useState(false);
   const [thumb, setThumb] = useState(ch?.thumbnail || "");
@@ -1171,6 +1171,7 @@ function Editor({ ch, C, bdr, card, isDark, mob, onBack, onSave, onDelete }) {
             <Fld label="플랫폼" C={C}><input value={f.platform} onChange={e => up("platform", e.target.value)} style={inp} /></Fld>
             <Fld label="일일 미션" C={C}><input value={f.daily_mission} onChange={e => up("daily_mission", e.target.value)} style={inp} /></Fld>
           </div>
+          <Fld label="진행자 이름" C={C}><input value={f.host_name || ""} onChange={e => up("host_name", e.target.value)} placeholder="챌린지 진행자 이름" style={inp} /></Fld>
           <Fld label="커뮤니티 링크" C={C}><input value={f.community_link} onChange={e => up("community_link", e.target.value)} placeholder="카카오 오픈채팅, 디스코드 등" style={inp} /></Fld>
           <Fld label="상태" C={C}>
             <div style={{ display: "flex", gap: 8 }}>

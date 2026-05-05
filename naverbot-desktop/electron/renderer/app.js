@@ -1,4 +1,4 @@
-// NaverBot renderer - UI 로직 (v2 Clean)
+// 메이킷자동화 renderer - UI 로직 (v2 Clean)
 const bridge = window.nbBridge;
 
 if (!bridge) {
@@ -118,35 +118,35 @@ function isAdminAccount(email, result = {}) {
 const EXE_PLAN_RULES = {
   trial: {
     label: "무료 체험",
-    maxPostsPerRun: 1,
-    maxDurationDays: 1,
+    maxPostsPerRun: 3,
+    maxDurationDays: 7,
     canSchedule: true,
     canCafe: false,
-    desc: "블로그 자동 운영 1일 체험 · 1회 1개 · 카페 제한",
+    desc: "블로그 자동 운영 7일 체험 · 1회 3개 · 카페 제한",
   },
   starter: {
     label: "Basic",
-    maxPostsPerRun: 1,
-    maxDurationDays: 3,
+    maxPostsPerRun: 5,
+    maxDurationDays: 30,
     canSchedule: true,
     canCafe: false,
-    desc: "블로그 자동 운영 · 1회 최대 1개 · 카페 제한",
+    desc: "블로그 자동 운영 · 1회 최대 5개 · 카페 제한",
   },
   pro: {
     label: "Pro",
     maxPostsPerRun: 3,
-    maxDurationDays: 30,
+    maxDurationDays: 0,
     canSchedule: true,
-    canCafe: true,
-    desc: "블로그/카페 30일 자동 운영 · 하루 최대 3개",
+    canCafe: false,
+    desc: "블로그 자동 운영 · 하루 최대 3개 · 카페 제한",
   },
   premium: {
-    label: "Premium",
+    label: "Business",
     maxPostsPerRun: 10,
-    maxDurationDays: 30,
+    maxDurationDays: 0,
     canSchedule: true,
     canCafe: true,
-    desc: "블로그/카페 30일 자동 운영 · 하루 최대 10개",
+    desc: "블로그/카페 자동 운영 · 하루 최대 10개",
   },
   admin: {
     label: "Admin",
@@ -159,8 +159,8 @@ const EXE_PLAN_RULES = {
 };
 
 const EXPERIENCE_LIMITS = {
-  quick: 5,
-  autopilot: 1,
+  quick: 10,
+  autopilot: 3,
 };
 
 function normalizeExePlan(user) {
@@ -203,7 +203,7 @@ function renderPlanFeatures(rules, user = state.user) {
       </div>
       <div class="plan-feature">
         <div class="plan-feature-label">카페 발행</div>
-        <div class="plan-feature-value ${rules.canCafe ? "ok" : "locked"}">${rules.canCafe ? "가능" : "Pro 이상"}</div>
+        <div class="plan-feature-value ${rules.canCafe ? "ok" : "locked"}">${rules.canCafe ? "가능" : "Business 이상"}</div>
       </div>
       <div class="plan-feature">
         <div class="plan-feature-label">예약 발행</div>
@@ -220,7 +220,7 @@ function requireExeFeature(feature, message) {
   }
   const rules = getExePlanRules();
   if (feature === "cafe" && !rules.canCafe) {
-    showModal("Pro 기능", message || "카페 발행은 Pro 이상에서 사용할 수 있습니다.", "구독하기", () => bridge.openExternal("https://snsmakeit.com/pricing"));
+    showModal("Business 기능", message || "카페 발행은 Business 이상에서 사용할 수 있습니다.", "구독하기", () => bridge.openExternal("https://snsmakeit.com/pricing"));
     return false;
   }
   if (feature === "schedule" && !rules.canSchedule) {
@@ -235,7 +235,7 @@ const navItems = document.querySelectorAll(".nav-item");
 const panels = document.querySelectorAll(".panel");
 
 // 로그인 없이 접근 가능한 패널 (홈만)
-const LOGIN_FREE_PANELS = ["home", "pricing", "about", "video-editor"];
+const LOGIN_FREE_PANELS = ["home", "pricing", "about", "video-editor", "webview-write", "webview-cardnews"];
 // 네이버 계정 필요 패널
 const ACCOUNT_REQUIRED_PANELS = ["naver-blog", "naver-cafe"];
 
@@ -286,12 +286,40 @@ navItems.forEach((item) => {
     // 패널별 진입 시 렌더링
     if (target === "home") renderHomeDashboard();
     if (target === "pricing") renderPricingPanel();
+    if (target.startsWith("webview-")) loadWebviewPanel(target, item.dataset.webviewUrl);
   });
 });
 
 function goToPanel(name) {
   const btn = document.querySelector(`.nav-item[data-panel="${name}"]`);
   if (btn) btn.click();
+}
+
+// ── Webview 패널 (AI 글쓰기 / 카드뉴스) ──
+const _webviewLoaded = {};
+function loadWebviewPanel(panelId, urlPath) {
+  if (_webviewLoaded[panelId]) return;
+  const containerId = panelId === "webview-write" ? "webviewWriteContainer" : "webviewCardnewsContainer";
+  const container = $(containerId);
+  if (!container) return;
+
+  const baseUrl = "https://snsmakeit.com";
+  const fullUrl = baseUrl + (urlPath || "/");
+
+  // 로그인 상태면 토큰을 URL에 포함
+  const token = state.user?.email ? `?app=1&email=${encodeURIComponent(state.user.email)}` : "?app=1";
+
+  const iframe = document.createElement("iframe");
+  iframe.src = fullUrl + token;
+  iframe.style.cssText = "width:100%;height:100%;border:none;border-radius:8px;";
+  iframe.allow = "clipboard-write";
+  iframe.onload = () => {
+    const loading = container.querySelector("[id$='Loading']");
+    if (loading) loading.style.display = "none";
+  };
+
+  container.appendChild(iframe);
+  _webviewLoaded[panelId] = true;
 }
 
 function renderPricingPanel() {
@@ -309,7 +337,7 @@ function renderPricingPanel() {
   box.innerHTML = `
     <strong>${escapeHtml(planLabel)}</strong>${escapeHtml(expiresText)}<br>
     ${escapeHtml(rules.desc)}<br>
-    발행 한도: ${escapeHtml(postLimit)} · 카페 발행: ${rules.canCafe ? "가능" : "Pro 이상"} · 예약 발행: ${rules.canSchedule ? "가능" : "제한"}
+    발행 한도: ${escapeHtml(postLimit)} · 카페 발행: ${rules.canCafe ? "가능" : "Business 이상"} · 예약 발행: ${rules.canSchedule ? "가능" : "제한"}
   `;
 }
 
@@ -476,7 +504,7 @@ async function canUseExperience(kind) {
   const limit = EXPERIENCE_LIMITS[kind] || 0;
   if (usage[kind] < limit) return true;
 
-  const label = kind === "quick" ? "즉시 발행 5회" : "자동 운영 1회";
+  const label = kind === "quick" ? "즉시 발행 10회" : "자동 운영 3회";
   showModal(
     "Pro 플랜 필요",
     `${label} 체험을 모두 사용했습니다.\n이후 자동 발행은 Pro 이상 플랜에서 이용할 수 있습니다.`,
@@ -1120,7 +1148,7 @@ function handleVerifyResult(r, email) {
       expires_at: r.result.expires_at || "",
       trial: isAdmin ? false : !!r.result.trial,
       trial_used: isAdmin ? 0 : Math.max(r.result.trial_used || 0, _trialUsedCache),
-      trial_limit: isAdmin ? 999999 : (r.result.trial_limit || 5),
+      trial_limit: isAdmin ? 999999 : (r.result.trial_limit || 10),
       admin: isAdmin,
     };
     state.loggedIn = true;
@@ -2481,7 +2509,7 @@ if ($("cafeApCount")) {
 }
 
 if ($("startCafeApBtn")) $("startCafeApBtn").addEventListener("click", async () => {
-  if (!requireExeFeature("cafe", "카페 자동 운영은 Pro 이상에서 사용할 수 있습니다.")) return;
+  if (!requireExeFeature("cafe", "카페 자동 운영은 Business 이상에서 사용할 수 있습니다.")) return;
   const theme = $("cafeApTheme").value.trim();
   if (!theme) return showModal("알림","키워드를 입력하세요","확인");
   const cafeId = ($("cafeApCafeId") && $("cafeApCafeId").value.trim()) || "";
@@ -2647,7 +2675,7 @@ if ($("runCafeBtn")) {
       alert("먼저 계정 패널에서 메이킷 로그인하세요");
       return;
     }
-    if (!requireExeFeature("cafe", "카페 발행은 Pro 이상에서 사용할 수 있습니다.")) return;
+    if (!requireExeFeature("cafe", "카페 발행은 Business 이상에서 사용할 수 있습니다.")) return;
     if (state.user && state.user.trial) {
       const remaining = Math.max(0, state.user.trial_limit - state.user.trial_used);
       if (remaining <= 0) {
@@ -2807,7 +2835,7 @@ bridge.loadConfig().then(async cfg => {
       role: isAdminBoot ? "admin" : "",
       trial: isAdminBoot ? false : !cfg._cached_plan,
       trial_used: cachedUsed,
-      trial_limit: isAdminBoot ? 999999 : 5,
+      trial_limit: isAdminBoot ? 999999 : 10,
       admin: isAdminBoot,
     };
     setUserBadge(isAdminBoot ? `관리자 · ${nick}` : nick, "green");

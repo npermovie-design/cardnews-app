@@ -38,15 +38,22 @@
         <button class="nav-item nav-sub" data-panel="pricing">
           <span class="nav-icon nav-pricing"></span>가격정책
         </button>
-        <div class="nav-group-label">글쓰기</div>
+        <div class="nav-group-label">SNS</div>
         <button class="nav-item nav-sub" data-panel="naver-account">
           <span class="nav-icon nav-account"></span>계정 설정
         </button>
+        <button class="nav-item nav-sub" data-panel="webview-write" data-webview-url="/blog">
+          <span class="nav-icon nav-write"></span>수동 글쓰기
+        </button>
         <button class="nav-item nav-sub" data-panel="naver-blog">
-          <span class="nav-icon nav-blog"></span>블로그
+          <span class="nav-icon nav-blog"></span>자동 글쓰기
         </button>
         <button class="nav-item nav-sub" data-panel="naver-cafe">
           <span class="nav-icon nav-cafe"></span>카페
+        </button>
+        <div class="nav-group-label" style="margin-top:8px;">디자인</div>
+        <button class="nav-item nav-sub" data-panel="webview-cardnews" data-webview-url="/cardnews">
+          <span class="nav-icon nav-card"></span>카드뉴스
         </button>
         <div class="nav-group-label" style="margin-top:8px;">영상</div>
         <button class="nav-item nav-sub" data-panel="video-editor" data-ve-type="shorts">
@@ -295,10 +302,10 @@
             <div class="pricing-title">Basic</div>
             <div class="pricing-desc">블로그 자동 발행을 가볍게 시작하는 플랜</div>
             <div class="pricing-features">
-              <div><strong>즉시 발행</strong><span>체험 5회</span></div>
-              <div><strong>자동 운영</strong><span>체험 1회</span></div>
+              <div><strong>즉시 발행</strong><span>체험 10회</span></div>
+              <div><strong>자동 운영</strong><span>체험 3회</span></div>
+              <div><strong>1회 발행</strong><span>최대 5개</span></div>
               <div><strong>카페 발행</strong><span>제한</span></div>
-              <div><strong>계속 사용</strong><span>Pro 이상</span></div>
             </div>
             <button class="btn btn-outline btn-full pricingOpenBtn">구독 페이지 보기</button>
           </div>
@@ -306,23 +313,23 @@
           <div class="pricing-card featured">
             <div class="plan-badge active">Pro</div>
             <div class="pricing-title">Pro</div>
-            <div class="pricing-desc">블로그와 카페를 함께 운영하는 기본 권장 플랜</div>
+            <div class="pricing-desc">블로그 자동 운영 권장 플랜</div>
             <div class="pricing-features">
-              <div><strong>1회 발행</strong><span>최대 3개</span></div>
-              <div><strong>자동 운영</strong><span>30일 단위</span></div>
-              <div><strong>카페 발행</strong><span>가능</span></div>
+              <div><strong>블로그 발행</strong><span>하루 3개</span></div>
+              <div><strong>자동 운영</strong><span>무제한</span></div>
               <div><strong>예약 발행</strong><span>가능</span></div>
+              <div><strong>카페 발행</strong><span>Business 이상</span></div>
             </div>
             <button class="btn btn-primary btn-full pricingOpenBtn">구독 페이지 보기</button>
           </div>
 
           <div class="pricing-card">
-            <div class="plan-badge active">Premium</div>
-            <div class="pricing-title">Premium</div>
-            <div class="pricing-desc">더 많은 글을 한 번에 발행하는 고사용량 플랜</div>
+            <div class="plan-badge active">Business</div>
+            <div class="pricing-title">Business</div>
+            <div class="pricing-desc">블로그와 카페를 함께 운영하는 플랜</div>
             <div class="pricing-features">
-              <div><strong>1회 발행</strong><span>최대 10개</span></div>
-              <div><strong>자동 운영</strong><span>30일 단위</span></div>
+              <div><strong>블로그 발행</strong><span>하루 10개</span></div>
+              <div><strong>자동 운영</strong><span>무제한</span></div>
               <div><strong>카페 발행</strong><span>가능</span></div>
               <div><strong>예약 발행</strong><span>가능</span></div>
             </div>
@@ -1187,6 +1194,20 @@
 
         <!-- Step 5: 결과 -->
         <div id="veStep5" style="display:none;"></div>
+      </section>
+
+      <!-- AI 글쓰기 (webview) -->
+      <section class="panel hidden" data-panel="webview-write">
+        <div id="webviewWriteContainer" style="width:100%;height:100%;position:relative;">
+          <div id="webviewWriteLoading" style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:14px;">불러오는 중...</div>
+        </div>
+      </section>
+
+      <!-- 카드뉴스 (webview) -->
+      <section class="panel hidden" data-panel="webview-cardnews">
+        <div id="webviewCardnewsContainer" style="width:100%;height:100%;position:relative;">
+          <div id="webviewCardnewsLoading" style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);font-size:14px;">불러오는 중...</div>
+        </div>
       </section>
 
     </main>

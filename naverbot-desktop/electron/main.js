@@ -1,4 +1,4 @@
-// NaverBot Electron - main process
+// 메이킷자동화 Electron - main process
 // - BrowserWindow 생성
 // - 설정 저장/로드
 // - Python runner.py 서브프로세스 실행
