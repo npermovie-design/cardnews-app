@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef, Suspense } from "react";
-const ShortsCreator = React.lazy(() => import("./ShortsCreator"));
-const LongFormEditor = React.lazy(() => import("./LongFormEditor"));
 import { changePoints, getAiUsage, setAiUsage, guestLimitExceeded, incrementGuestUsage, getAuthToken, upsertLibraryItem } from "./storage";
 import { useGeneratingGuard } from "./useGeneratingGuard";
 import { useI18n } from "./i18n.jsx";
@@ -4200,15 +4198,7 @@ hospital equipment`
               </button>
               <span style={{fontSize:11,fontWeight:700,color:accent,padding:"3px 10px",borderRadius:20,background:`${accent}12`}}>{videoSubMode==="shortform"?t("bg_shortformEdit"):t("bg_longformEdit")}</span>
             </div>
-            {videoSubMode === "shortform" ? (
-              <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>로딩 중...</div>}>
-                <ShortsCreator isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} initialVideoFile={videoFile} initialVideoLink={videoLink} />
-              </Suspense>
-            ) : (
-              <Suspense fallback={<div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted}}>로딩 중...</div>}>
-                <LongFormEditor isDark={isDark} user={user} onUserUpdate={onUserUpdate} onLoginRequest={onLoginRequest} setAiMenu={setAiMenu} showPointConfirm={showPointConfirm} onStatusChange={()=>{}} initialVideoFile={videoFile} initialVideoLink={videoLink} />
-              </Suspense>
-            )}
+            <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",color:muted,fontSize:13}}>영상편집은 데스크톱 앱에서 이용해주세요</div>
           </div>
         )}
 
