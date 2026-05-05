@@ -2041,11 +2041,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           </div>
           <div style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 8 }}>클래스 준비 중입니다</div>
-          <div style={{ fontSize: 13, lineHeight: 1.7, marginBottom: 24 }}>SNS 마케팅 전문가의 실전 강의가 곧 오픈됩니다.<br/>먼저 AI 도구로 콘텐츠를 만들어 보세요!</div>
-          <button onClick={() => navigate("ai")}
-            style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: "#3b82f6", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
-            AI 도구 체험하기
-          </button>
+          <div style={{ fontSize: 13, lineHeight: 1.7 }}>SNS 마케팅 전문가의 실전 강의가 곧 오픈됩니다.</div>
         </div>
       )}
 

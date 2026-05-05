@@ -1241,19 +1241,6 @@ export default function App() {
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              {(() => {
-                const left = Math.max(0, FREE_GUEST - guestUsageCount);
-                return (
-                  <div onClick={() => left === 0 && setShowPointsModal(true)}
-                    style={{ padding: "4px 10px", borderRadius: 16, cursor: left === 0 ? "pointer" : "default",
-                      background: left > 0 ? "rgba(59,130,246,0.1)" : "rgba(239,68,68,0.1)",
-                      border: `1px solid ${left > 0 ? "rgba(59,130,246,0.3)" : "rgba(239,68,68,0.3)"}` }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: left > 0 ? "#60a5fa" : "#f87171" }}>
-                      {left > 0 ? `AI 무료 ${left}회 남음` : "무료 소진 ⚡"}
-                    </span>
-                  </div>
-                );
-              })()}
               <button onClick={() => navigate("login")} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12, background: "#3b82f6", color: "#fff", minHeight: 36 }}>로그인</button>
             </div>
           )}

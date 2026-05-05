@@ -684,10 +684,10 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
           {(ko ? [
             { q: "SNS메이킷은 어떤 서비스인가요?", a: "AI 기반 콘텐츠 자동 생성 플랫폼입니다. 블로그 글쓰기, 영상 편집, SNS 자동 발행까지 하나의 플랫폼에서 제공합니다." },
             { q: "어떤 콘텐츠를 만들 수 있나요?", a: "네이버 블로그, 인스타그램 캡션, 유튜브 대본, 티스토리 글, 숏폼 영상 등 다양한 콘텐츠를 자동 생성합니다." },
-            { q: "무료로 사용할 수 있나요?", a: "네. 비회원 5회 무료, 가입 시 5회 지급, 매일 출석 체크로 추가 적립 가능합니다." },
+            { q: "무료로 사용할 수 있나요?", a: "네. 기본 기능은 무료로 제공되며, 프리미엄 기능은 유료 플랜으로 이용할 수 있습니다." },
             { q: "콘텐츠 품질은 어떤가요?", a: "최신 AI 모델(Claude)로 높은 품질의 콘텐츠를 생성합니다. SEO 최적화도 자동 적용됩니다." },
             { q: "어떤 플랫폼을 지원하나요?", a: "네이버 블로그, 티스토리, 인스타그램, 유튜브, 스레드, 네이버 카페 등 20개+ 플랫폼을 지원합니다." },
-            { q: "횟수는 어떻게 충전하나요?", a: "가입 시 5회 지급 + 매일 출석 적립. 유료 플랜으로 더 많은 횟수를 이용할 수 있습니다." },
+            { q: "유료 플랜은 어떻게 이용하나요?", a: "제품 페이지에서 자동화 도구를 확인하고, 플랜을 선택하여 이용할 수 있습니다." },
             { q: "상업적으로 사용 가능한가요?", a: "네, 모든 콘텐츠는 상업적으로 자유롭게 사용 가능합니다." },
             { q: "개인정보는 안전한가요?", a: "Supabase 인프라 + 공식 OAuth 인증 + 암호화 저장으로 안전하게 관리됩니다." },
           ] : [
@@ -713,13 +713,13 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
               {ko ? "지금 바로 시작하세요." : "Start right now."}
             </h2>
             <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.6, marginBottom: 32 }}>
-              {ko ? "로그인 없이 5회 무료 체험. 카드 등록 불필요." : "5 free trials without login. No card needed."}
+              {ko ? "SNS 자동화부터 부트캠프까지, 함께 성장하세요." : "From SNS automation to bootcamps, grow together."}
             </p>
-            <button onClick={goAi} style={{
+            <button onClick={() => navigate("programs")} style={{
               position: "relative", overflow: "hidden",
               fontSize: 16, fontWeight: 600, padding: "14px 36px", borderRadius: 24,
               border: "none", background: P, color: "#fff", cursor: "pointer", fontFamily: "inherit",
-            }}>{ko ? "무료로 시작하기" : "Get started free"}</button>
+            }}>{ko ? "제품 둘러보기" : "Explore products"}</button>
           </Reveal>
         </div>
       </section>
@@ -727,10 +727,10 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
       {/* 모바일 하단 CTA */}
       <div className="mobile-sticky-cta" style={{ display: "none", position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 900, alignItems: "center", gap: 10, padding: "14px 16px", borderRadius: 14, background: "rgba(255,255,255,0.95)", border: "1px solid " + BDR, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", backdropFilter: "blur(16px)" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{ko ? "AI 무료 체험" : "Free AI trial"}</div>
-          <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>{ko ? "비회원 5회 / 가입 +5회" : "5 guest + 5 signup"}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{ko ? "SNS 자동화" : "SNS Automation"}</div>
+          <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>{ko ? "제품 둘러보기" : "Explore products"}</div>
         </div>
-        <button onClick={goAi} style={{ flex: "0 0 auto", minHeight: 44, padding: "0 20px", borderRadius: 10, border: "none", background: P, color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{ko ? "시작" : "Start"}</button>
+        <button onClick={() => navigate("programs")} style={{ flex: "0 0 auto", minHeight: 44, padding: "0 20px", borderRadius: 10, border: "none", background: P, color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{ko ? "보기" : "View"}</button>
       </div>
     </div>
   );
