@@ -202,7 +202,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
     (async () => { try { const { count } = await supabase.from("posts").select("*", { count: "exact", head: true }); if (count != null) setStatsCount(count); } catch {} })();
   }, []);
 
-  const goAi = () => navigate("ai");
+  const goAi = () => navigate("programs");
   const goPrice = () => navigate("pricing");
 
   // 실시간 가입자 수 + 최근 가입자
@@ -408,7 +408,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
           { id: "shorts", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="6" y="2" width="12" height="20" rx="3"/><polygon points="10,8 15,12 10,16" fill="currentColor" stroke="none"/></svg>, label: ko ? "쇼츠 제작" : "Shorts",
             badge: "NEW", title: ko ? "쇼츠 제작부터 자동 발행까지" : "Shorts creation to auto-publishing",
             desc: ko ? "유튜브 링크 하나로 쇼츠를 자동 생성하고, YouTube, Instagram, TikTok에 원클릭으로 발행하세요." : "Create shorts from YouTube, publish to YouTube, Instagram, TikTok with one click.",
-            btn: ko ? "쇼츠 만들기" : "Create Shorts", onClick: () => { goAi(); setAiMenu && setAiMenu("sns_publish"); },
+            btn: ko ? "쇼츠 만들기" : "Create Shorts", onClick: goAi,
             visual: <div style={{ borderRadius: 16, background: DARK, aspectRatio: "16/10", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ textAlign: "center", color: "#fff" }}><svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ margin: "0 auto 8px" }}><rect x="3" y="5" width="18" height="14" rx="4" stroke="#fff" strokeWidth="1.5"/><polygon points="10,8.5 15,12 10,15.5" fill="#fff"/></svg><div style={{ fontSize: 14, fontWeight: 600 }}>{ko ? "유튜브 링크 -> 쇼츠 자동 생성" : "YouTube -> Auto Shorts"}</div></div></div>,
           },
           { id: "keyword", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>, label: ko ? "키워드 분석" : "Keywords",
