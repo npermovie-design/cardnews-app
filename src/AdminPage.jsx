@@ -411,7 +411,7 @@ export default function AdminPage({ C, user: adminUser }) {
   const panelBorder = isDark ? "rgba(255,255,255,0.08)" : "#e6e8f0";
   const subtleBg = isDark ? "rgba(255,255,255,0.035)" : "#f8f9fc";
   const activeBg = isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)";
-  const adminTitle = {stats:"통계 대시보드", visitors:"접속 분석", members:"회원 관리", pointHistory:"횟수 내역", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백"}[tab] || tab;
+  const adminTitle = {stats:"통계 대시보드", visitors:"접속 분석", members:"회원 관리", membership:"멤버십 관리", pointHistory:"횟수 내역", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백"}[tab] || tab;
   const adminDesc = {
     stats: "회원, 게시글, AI 사용량을 한 화면에서 확인합니다.",
     visitors: "유입 경로와 접속 데이터를 점검합니다.",
@@ -422,6 +422,7 @@ export default function AdminPage({ C, user: adminUser }) {
     board: "게시판 카테고리와 태그를 관리합니다.",
     inquiries: "고객 문의 상태와 답변을 처리합니다.",
     appFeedback: "앱 피드백을 확인하고 상태를 변경합니다.",
+    membership: "회원별 구독 플랜을 지정하고 관리합니다.",
   }[tab] || "관리자 작업을 처리합니다.";
   const refreshAdminData = () => {
     loadMembers(); loadPosts(); loadAiLogs(); loadDailySignups(); loadDailyAiUsage();
@@ -477,24 +478,25 @@ export default function AdminPage({ C, user: adminUser }) {
 
         {/* 메뉴 그룹 */}
         {[
-          { group: "대시보드", items: [["stats", "통계"], ["visitors", "접속 분석"]] },
-          { group: "회원", items: [["members", "회원 관리"], ["membership", "멤버십 관리"], ["pointHistory", "횟수 내역"], ["guest", "비회원 관리"]] },
-          { group: "콘텐츠", items: [["posts", "게시글 관리"], ["board", "게시판 관리"]] },
-          { group: "고객", items: [["inquiries", "문의 관리"], ["appFeedback", "앱 피드백"]] },
+          { group: "대시보드", items: [["stats", "S", "통계"], ["visitors", "V", "접속 분석"]] },
+          { group: "회원", items: [["members", "M", "회원 관리"], ["membership", "P", "멤버십"], ["pointHistory", "H", "횟수 내역"], ["guest", "G", "비회원"]] },
+          { group: "콘텐츠", items: [["posts", "T", "게시글"], ["board", "B", "게시판"]] },
+          { group: "고객", items: [["inquiries", "Q", "문의"], ["appFeedback", "F", "앱 피드백"]] },
         ].map(({ group, items }) => (
-          <div key={group} style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, textTransform: "uppercase", padding: "0 10px", marginBottom: 6, letterSpacing: 1 }}>{group}</div>
-            {items.map(([id, label]) => {
+          <div key={group} style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", padding: "0 10px", marginBottom: 4, letterSpacing: 1.5 }}>{group}</div>
+            {items.map(([id, icon, label]) => {
               const active = tab === id;
               return (
                 <button key={id} onClick={() => { setTab(id); setSideOpen(false); }} style={{
-                  width: "100%", padding: "9px 12px", borderRadius: 8, border: "none", cursor: "pointer",
-                  textAlign: "left", fontSize: 13, fontWeight: active ? 700 : 500, fontFamily: "inherit",
+                  width: "100%", padding: "8px 10px", borderRadius: 8, border: "none", cursor: "pointer",
+                  textAlign: "left", fontSize: 12, fontWeight: active ? 700 : 500, fontFamily: "inherit",
                   background: active ? activeBg : "transparent",
                   color: active ? C.purpleL : (isDark ? "rgba(255,255,255,0.55)" : "#666"),
                   borderLeft: active ? "3px solid #3b82f6" : "3px solid transparent",
-                  marginBottom: 2, transition: "all 0.12s", display: "block",
+                  marginBottom: 1, transition: "all 0.12s", display: "flex", alignItems: "center", gap: 8,
                 }}>
+                  <span style={{ width: 20, height: 20, borderRadius: 6, background: active ? "rgba(59,130,246,0.15)" : (isDark ? "rgba(255,255,255,0.06)" : "#f3f4f6"), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: active ? "#3b82f6" : C.muted, flexShrink: 0 }}>{icon}</span>
                   {label}
                 </button>
               );
