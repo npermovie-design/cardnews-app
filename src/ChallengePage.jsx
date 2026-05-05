@@ -12,6 +12,11 @@ const STATUS_MAP = {
   ongoing:    { label: "진행중", color: PRIMARY,   bg: "rgba(59,130,246,0.1)" },
   completed:  { label: "완료",   color: "#6b7280", bg: "rgba(107,114,128,0.1)" },
 };
+const TYPE_MAP = {
+  challenge: { label: "챌린지", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
+  meetup:    { label: "모임",   color: "#8b5cf6", bg: "rgba(139,92,246,0.1)" },
+  study:     { label: "스터디", color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
+};
 const PURPOSE_OPTIONS = ["SNS 수익화", "꾸준한 습관 만들기", "브랜딩 / 퍼스널브랜드", "마케팅 실력 향상", "기타"];
 
 /* ── Supabase CRUD ─────────────────────────────────────── */
@@ -184,6 +189,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
                   <div style={{ padding: "20px 22px 22px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                       <span style={{ fontSize: 11, fontWeight: 800, color: st.color, background: st.bg, padding: "4px 12px", borderRadius: 99 }}>{st.label}</span>
+                      {ch.type && ch.type !== "challenge" && (() => { const tp = TYPE_MAP[ch.type]; return tp ? <span style={{ fontSize: 11, fontWeight: 800, color: tp.color, background: tp.bg, padding: "4px 12px", borderRadius: 99 }}>{tp.label}</span> : null; })()}
                       {getStatus(ch) === "recruiting" && ch.recruit_end && <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444" }}>{dday(ch.recruit_end)}</span>}
                       <span style={{ fontSize: 12, fontWeight: 700, color: ch.price > 0 ? "#1a1a1a" : "#22c55e", marginLeft: "auto" }}>
                         {ch.price > 0 ? `${Number(ch.price).toLocaleString()}원` : "무료"}
@@ -1148,7 +1154,7 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
   const [f, sf] = useState(ch || {
     title: "", subtitle: "", description: "", thumbnail: "", start_date: "", end_date: "", recruit_start: "", recruit_end: "",
     price: 0, max_participants: 0, duration: "10", platform: "모든 SNS", daily_mission: "매일 1포스팅",
-    target_audience: "", process: "", rules: "", rewards: "", refund_policy: "", community_link: "", status: "recruiting", application_count: 0, host_name: user?.nick || "", badge_image: "", badge_title: "",
+    target_audience: "", process: "", rules: "", rewards: "", refund_policy: "", community_link: "", status: "recruiting", type: "challenge", application_count: 0, host_name: user?.nick || "", badge_image: "", badge_title: "",
   });
   const [saving, setSaving] = useState(false);
   const [thumb, setThumb] = useState(ch?.thumbnail || "");
@@ -1211,6 +1217,17 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
                   if (!error) { const url = `https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/${path}`; up("badge_image", url); }
                 }} />
               </div>
+            </div>
+          </Fld>
+          <Fld label="유형" C={C}>
+            <div style={{ display: "flex", gap: 8 }}>
+              {[["challenge", "챌린지"], ["meetup", "모임"], ["study", "스터디"]].map(([v, l]) => {
+                const tc = TYPE_MAP[v]?.color || PRIMARY;
+                return (
+                  <button key={v} onClick={() => up("type", v)}
+                    style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1.5px solid ${f.type === v ? tc : bdr}`, background: f.type === v ? tc + "12" : "transparent", color: f.type === v ? tc : C.muted, fontSize: 13, fontWeight: f.type === v ? 700 : 500, cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
+                );
+              })}
             </div>
           </Fld>
           <Fld label="상태" C={C}>
