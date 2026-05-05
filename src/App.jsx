@@ -1092,9 +1092,7 @@ export default function App() {
           <NavBtn id="ai" label="AI 스튜디오" />
           <NavBtn id="programs" label="자동화" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
-          {(user?.role === "admin" || user?.role === "instructor") && (
-            <NavBtn id="class" label="클래스" />
-          )}
+          <NavBtn id="class" label="클래스" />
           {/* 챌린지 - 커뮤니티 왼쪽 독립 메뉴 */}
           <button onClick={() => navigate("challenge")}
             style={{ padding: "8px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 14, fontWeight: page==="challenge" ? 700 : 500, background: page==="challenge" ? "rgba(59,130,246,0.08)" : "transparent", color: page==="challenge" ? "#3b82f6" : C.muted, transition: "all 0.15s", fontFamily: "inherit" }}>
@@ -1328,7 +1326,7 @@ export default function App() {
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
             { id: "ai",       label: "AI 스튜디오",    onClick: () => { navigate("ai"); setMobileOpen(false); },       active: page==="ai"||page==="analyzer" },
             { id: "programs", label: "자동화", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
-            ...((user?.role === "admin" || user?.role === "instructor") ? [{ id: "class", label: "클래스", onClick: () => { navigate("class"); setMobileOpen(false); }, active: page==="class" }] : []),
+            { id: "class", label: "클래스", onClick: () => { navigate("class"); setMobileOpen(false); }, active: page==="class" },
             { id: "challenge", label: "챌린지", onClick: () => { navigate("challenge"); setMobileOpen(false); }, active: page==="challenge" },
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
           ].map(m => (
