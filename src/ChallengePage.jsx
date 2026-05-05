@@ -149,7 +149,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             <button onClick={() => { setSel(null); setView("editor"); }}
               style={{ padding: "16px 36px", borderRadius: 99, border: "none", background: "#1A1A2E", color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "transform 0.18s", fontFamily: "inherit" }}
               onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={e => e.currentTarget.style.transform = "none"}>
-              + 새 챌린지 만들기
+              + 새 부트캠프 만들기
             </button>
           )}
         </div>
@@ -378,7 +378,14 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   /* ═══ ADMIN ══════════════════════════════════════════════ */
   if (view === "admin" && sel) return <AdminPanel ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} apps={apps} setApps={setApps} onBack={() => { setView("detail"); window.scrollTo(0, 0); }} onEdit={() => { setView("editor"); window.scrollTo(0, 0); }}
     onStatus={async (id, s) => { await updateApplicationStatus(id, s); setApps(p => p.map(a => a.id === id ? { ...a, status: s } : a)); showToast(s === "confirmed" ? "참여 확정!" : "상태 변경 완료"); }}
-    onDelete={async (id) => { if (!confirm("이 신청자를 삭제하시겠습니까?")) return; await supabase.from("challenge_applications").delete().eq("id", id); setApps(p => p.filter(a => a.id !== id)); const newCount = Math.max(0, (sel.application_count || 1) - 1); await supabase.from("challenges").update({ application_count: newCount }).eq("id", sel.id); setSel(p => ({ ...p, application_count: newCount })); showToast("신청자 삭제 완료"); }} />;
+    onDelete={async (id) => { if (!confirm("이 신청자를 삭제하시겠습니까?")) return; await supabase.from("challenge_applications").delete().eq("id", id); setApps(p => p.filter(a => a.id !== id)); const newCount = Math.max(0, (sel.application_count || 1) - 1); await supabase.from("challenges").update({ application_count: newCount }).eq("id", sel.id); setSel(p => ({ ...p, application_count: newCount })); showToast("신청자 삭제 완료"); }}
+    onBadge={async (app) => {
+      if (!app.uid || app.uid.startsWith("guest_")) { showToast("비회원에게는 뱃지를 지급할 수 없습니다"); return; }
+      const { error } = await supabase.from("user_badges").insert({ id: "ub_" + Date.now(), uid: app.uid, challenge_id: sel.id, earned_at: new Date().toISOString() });
+      if (error?.code === "23505") { showToast("이미 지급된 뱃지입니다"); return; }
+      if (error) { showToast("뱃지 지급 실패: " + error.message); return; }
+      showToast(`${app.name}에게 뱃지 지급 완료!`);
+    }} />;
 
   /* ═══ EDITOR ═════════════════════════════════════════════ */
   if (view === "editor") return <Editor ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} user={user} onBack={back}
@@ -1084,7 +1091,7 @@ function PublicLinkBoard({ challengeId, C, bdr, card, isDark, mob, title, isAdmi
 }
 
 /* ═══ AdminPanel ═══════════════════════════════════════════ */
-function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onStatus, onDelete }) {
+function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onStatus, onDelete, onBadge }) {
   const SL = { pending: ["대기", "#f59e0b"], paid: ["결제완료", PRIMARY], confirmed: ["참여확정", "#22c55e"], cancelled: ["취소", "#ef4444"] };
   return (
     <div style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)" }}>
@@ -1115,6 +1122,7 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
                       {a.status !== "confirmed" && <button onClick={() => onStatus(a.id, "confirmed")} style={{ padding: "7px 16px", borderRadius: 99, border: "none", background: "#22c55e", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>확정</button>}
+                      {a.status === "confirmed" && ch.badge_image && <button onClick={() => onBadge(a)} style={{ padding: "7px 16px", borderRadius: 99, border: "none", background: "#f59e0b", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>뱃지 지급</button>}
                       <button onClick={() => onDelete(a.id)} style={{ padding: "7px 16px", borderRadius: 99, border: "1px solid rgba(239,68,68,0.3)", background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>삭제</button>
                     </div>
                   </div>
@@ -1140,7 +1148,7 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
   const [f, sf] = useState(ch || {
     title: "", subtitle: "", description: "", thumbnail: "", start_date: "", end_date: "", recruit_start: "", recruit_end: "",
     price: 0, max_participants: 0, duration: "10", platform: "모든 SNS", daily_mission: "매일 1포스팅",
-    target_audience: "", process: "", rules: "", rewards: "", refund_policy: "", community_link: "", status: "recruiting", application_count: 0, host_name: user?.nick || "",
+    target_audience: "", process: "", rules: "", rewards: "", refund_policy: "", community_link: "", status: "recruiting", application_count: 0, host_name: user?.nick || "", badge_image: "", badge_title: "",
   });
   const [saving, setSaving] = useState(false);
   const [thumb, setThumb] = useState(ch?.thumbnail || "");
@@ -1190,6 +1198,21 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
           </div>
           <Fld label="진행자 이름" C={C}><input value={f.host_name || ""} onChange={e => up("host_name", e.target.value)} placeholder="챌린지 진행자 이름" style={inp} /></Fld>
           <Fld label="커뮤니티 링크" C={C}><input value={f.community_link} onChange={e => up("community_link", e.target.value)} placeholder="카카오 오픈채팅, 디스코드 등" style={inp} /></Fld>
+          <Fld label="달성 뱃지" C={C}>
+            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              {f.badge_image && <img src={f.badge_image} alt="뱃지" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 8 }} />}
+              <div style={{ flex: 1 }}>
+                <input value={f.badge_title || ""} onChange={e => up("badge_title", e.target.value)} placeholder="뱃지 이름 (예: 까짓거 SNS챌린지 2기)" style={{ ...inp, marginBottom: 8 }} />
+                <input value={f.badge_image || ""} onChange={e => up("badge_image", e.target.value)} placeholder="뱃지 이미지 URL" style={inp} />
+                <input type="file" accept="image/*" style={{ marginTop: 8, fontSize: 12 }} onChange={async e => {
+                  const file = e.target.files?.[0]; if (!file) return;
+                  const path = `badges/badge_${Date.now()}.${file.name.split(".").pop()}`;
+                  const { error } = await uploadFileToStorage("public-assets", path, file);
+                  if (!error) { const url = `https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/${path}`; up("badge_image", url); }
+                }} />
+              </div>
+            </div>
+          </Fld>
           <Fld label="상태" C={C}>
             <div style={{ display: "flex", gap: 8 }}>
               {[["recruiting", "모집중"], ["ongoing", "진행중"], ["completed", "완료"]].map(([v, l]) => {

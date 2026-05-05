@@ -67,6 +67,9 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
   const [nickMsg, setNickMsg]     = useState("");
   const [toast, setToast]         = useState("");
 
+  // 뱃지
+  const [badges, setBadges] = useState([]);
+
   // 아바타
   const AVATAR_SEEDS = ["Felix","Aneka","Mia","Leo","Zoe","Max","Luna","Kai","Aria","Noah","Chloe","Ryan","Emma","Jack","Lily","Sam","Ivy","Owen","Ruby","Finn","Nora","Theo","Ella","Luke","Maya","Ethan","Sage","Cole","Iris","Liam","Hazel","Dylan","Olive","Alex","Jade","Miles","Wren","Blake","Cora","Jesse","Piper","Quinn","Scout","River","Eden","Atlas","Fern","Asher","Violet","Hugo","Stella","Oscar","Clara","Jasper","Daisy","Milo","Pearl","Rowan","Flora","Silas","Lyra","Ezra","Willow","Caleb","Poppy","Jude","Maple","Ellis","Briar","Otto","Dahlia","Rhys","Ember","Orion","Clover","Arlo","Ivy2","Cedar","Lark","Kit","Willa","Nash","Thea","Reid","Opal","Vince","Freya","Beau","Astrid","Hayes","Elara","Crew","Maren","Shay","Petra","Lane","Suki","Tate","Remi","Sage2"];
   const AVATAR_BGS = ["c0aede","b6e3f4","d1d4f9","ffd5dc","ffdfbf","c1f0c1","f9c9b6","a3d9e8","e8d5b7","d4f4dd"];
@@ -150,6 +153,16 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
           if (setUser && withCode?.referral_code && withCode.referral_code !== user?.referral_code) setUser({ ...user, ...withCode });
         }
       } catch(e) {}
+
+      // 뱃지 조회
+      try {
+        const { data: badgeData } = await supabase
+          .from("user_badges")
+          .select("*, challenges(title, badge_image, badge_title)")
+          .eq("uid", user.uid)
+          .order("earned_at", { ascending: false });
+        setBadges(badgeData || []);
+      } catch { setBadges([]); }
 
       // 활성 구독 조회 (active 또는 cancelled but ends_at 미래인 것)
       try {
@@ -372,7 +385,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
       {/* ── 탭 ── */}
       <div style={{ display:"flex", gap:4, marginBottom:14, background:isDark?"rgba(255,255,255,0.04)":"#f3f4f6", borderRadius:12, padding:4 }}>
-        {[["info",ko?"계정 정보":"Account"],["history",ko?"이용 내역":"History"],["brand",ko?"브랜드 키트":"Brand Kit"]].map(([t,l])=>(
+        {[["info",ko?"계정 정보":"Account"],["badges",ko?"달성 뱃지":"Badges"],["history",ko?"이용 내역":"History"],["brand",ko?"브랜드 키트":"Brand Kit"]].map(([t,l])=>(
           <button key={t} className="myp-tab" onClick={()=>setTab(t)} style={{ flex:1, padding:"9px 16px", borderRadius:9, border:"none", cursor:"pointer", fontSize:13, fontWeight:700,
             background:tab===t?cardBg:"transparent", color:tab===t?"#a5b4fc":muted,
             boxShadow:tab===t?"0 1px 4px rgba(0,0,0,0.1)":"none", transition:"all 0.15s" }}>
@@ -421,6 +434,37 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
                   </div>
                 );
               })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 달성 뱃지 탭 ── */}
+      {tab === "badges" && (
+        <div>
+          {badges.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "48px 20px", color: muted }}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: "0 auto 12px", display: "block", opacity: 0.3 }}><path d="M12 15l-3 3h6l-3-3z"/><circle cx="12" cy="8" r="5"/><path d="M6.5 13L4 21l3.5-2L12 21l4.5-2L20 21l-2.5-8"/></svg>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{ko ? "아직 달성한 뱃지가 없어요" : "No badges yet"}</div>
+              <div style={{ fontSize: 12, marginTop: 6 }}>{ko ? "부트캠프를 완료하면 뱃지를 받을 수 있어요!" : "Complete a bootcamp to earn badges!"}</div>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12 }}>
+              {badges.map(b => (
+                <div key={b.id} style={{ background: cardBg, border: `1px solid ${bdr}`, borderRadius: 16, padding: 16, textAlign: "center", transition: "transform 0.15s" }}
+                  onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                  onMouseLeave={e => e.currentTarget.style.transform = "none"}>
+                  {b.challenges?.badge_image ? (
+                    <img src={b.challenges.badge_image} alt="" style={{ width: 80, height: 80, objectFit: "contain", margin: "0 auto 10px", display: "block" }} />
+                  ) : (
+                    <div style={{ width: 80, height: 80, borderRadius: "50%", background: "linear-gradient(135deg, #fbbf24, #f59e0b)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", fontSize: 28 }}>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2"><path d="M12 15l-3 3h6l-3-3z"/><circle cx="12" cy="8" r="5"/></svg>
+                    </div>
+                  )}
+                  <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 4 }}>{b.challenges?.badge_title || b.challenges?.title || "뱃지"}</div>
+                  <div style={{ fontSize: 10, color: muted }}>{new Date(b.earned_at).toLocaleDateString(ko ? "ko-KR" : "en-US")}</div>
+                </div>
+              ))}
             </div>
           )}
         </div>
