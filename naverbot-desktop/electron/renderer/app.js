@@ -3300,9 +3300,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (_veCanvasRAF) cancelAnimationFrame(_veCanvasRAF);
     function draw() {
       var video = $("veVideo");
-      if (!video || !_veCanvas || !_veCanvasCtx) return;
+      if (!video || !_veCanvas || !_veCanvasCtx) { _veCanvasRAF = requestAnimationFrame(draw); return; }
       var ctx = _veCanvasCtx;
       var cw = _veCanvas.width, ch = _veCanvas.height;
+
+      // 비디오 프레임이 준비되지 않으면 이전 프레임 유지 (깜빡임 방지)
+      if (video.readyState < 2) { _veCanvasRAF = requestAnimationFrame(draw); return; }
 
       // 배경
       ctx.fillStyle = "#000";
@@ -3978,8 +3981,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var ab=$("veAnalyzeBtn"); if(ab) ab.disabled=false;
   });
 
-  // 시퀀스 비율 칩 (Step1)
-  chipG("veInitRatioChips", function(v) { ve.type = v; });
+  // 시퀀스 비율 칩 (Step1) + 숏폼 추천 토글
+  chipG("veInitRatioChips", function(v) {
+    ve.type = v;
+    var rec = $("veShortsRecommend");
+    if (rec) rec.style.display = (v === "portrait") ? "" : "none";
+  });
 
   // 저장 폴더 선택
   var odBtn=$("veSelectOutputDir"); if(odBtn) odBtn.addEventListener("click",async function(){
@@ -4378,21 +4385,30 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   var _selectedClipIdx = -1;
   function selectClip(idx) {
     _selectedClipIdx = idx;
-    // 하이라이트 표시
     var blocks = $("veTimelineBlocks");
     if (!blocks) return;
     blocks.querySelectorAll("[data-idx]").forEach(function(el) {
       var i = parseInt(el.dataset.idx);
-      el.style.outline = (i === idx) ? "2px solid #fff" : "none";
+      el.style.outline = (i === idx) ? "2px solid #3b82f6" : "none";
       el.style.outlineOffset = (i === idx) ? "-1px" : "";
+      el.style.boxShadow = (i === idx) ? "0 0 8px rgba(59,130,246,0.4)" : "none";
     });
-    // 자막 목록에서도 하이라이트
     var subList = $("veSubtitleList");
     if (subList) {
       subList.querySelectorAll("[data-sub-idx]").forEach(function(el) {
         var i = parseInt(el.dataset.subIdx);
         el.style.background = (i === idx) ? "rgba(59,130,246,0.15)" : "";
       });
+    }
+    // 선택 정보 표시
+    var info = $("veSelectedInfo");
+    if (info) {
+      if (idx >= 0 && ve.subtitles[idx]) {
+        var s = ve.subtitles[idx];
+        var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+        var en = s.end_seconds != null ? s.end_seconds : (s.end || 0);
+        info.textContent = "선택: #" + (idx + 1) + " [" + fmtTime(st) + "~" + fmtTime(en) + "]";
+      } else { info.textContent = ""; }
     }
   }
 
