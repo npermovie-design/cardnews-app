@@ -318,18 +318,18 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
           <style>{`@keyframes hp-hero-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}.hp-hero-cards{display:flex;gap:20px;animation:hp-hero-scroll 30s linear infinite;width:max-content}.hp-hero-cards:hover{animation-play-state:paused}`}</style>
           <div className="hp-hero-cards" style={{ paddingLeft: 20 }}>
             {[
-              { img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&h=520&fit=crop", cat: ko ? "블로그" : "BLOG", title: ko ? "AI 블로그 글쓰기" : "AI Blog Writing" },
-              { img: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=520&fit=crop", cat: ko ? "인스타그램" : "INSTAGRAM", title: ko ? "인스타 캡션 자동 생성" : "Auto Instagram Captions" },
-              { img: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=400&h=520&fit=crop", cat: ko ? "쇼츠" : "SHORTS", title: ko ? "유튜브 쇼츠 제작" : "YouTube Shorts Creator" },
-              { img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=520&fit=crop", cat: ko ? "키워드" : "KEYWORDS", title: ko ? "실시간 트렌드 분석" : "Real-time Trend Analysis" },
-              { img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=520&fit=crop", cat: ko ? "발행" : "PUBLISH", title: ko ? "SNS 자동 발행" : "Auto SNS Publishing" },
-              { img: "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=400&h=520&fit=crop", cat: ko ? "카드뉴스" : "CARD NEWS", title: ko ? "카드뉴스 자동 제작" : "Auto Card News" },
-              { img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&h=520&fit=crop", cat: ko ? "블로그" : "BLOG", title: ko ? "AI 블로그 글쓰기" : "AI Blog Writing" },
-              { img: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=520&fit=crop", cat: ko ? "인스타그램" : "INSTAGRAM", title: ko ? "인스타 캡션 자동 생성" : "Auto Instagram Captions" },
-              { img: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=400&h=520&fit=crop", cat: ko ? "쇼츠" : "SHORTS", title: ko ? "유튜브 쇼츠 제작" : "YouTube Shorts Creator" },
-              { img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=520&fit=crop", cat: ko ? "키워드" : "KEYWORDS", title: ko ? "실시간 트렌드 분석" : "Real-time Trend Analysis" },
-              { img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=520&fit=crop", cat: ko ? "발행" : "PUBLISH", title: ko ? "SNS 자동 발행" : "Auto SNS Publishing" },
-              { img: "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=400&h=520&fit=crop", cat: ko ? "카드뉴스" : "CARD NEWS", title: ko ? "카드뉴스 자동 제작" : "Auto Card News" },
+              { img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&h=520&fit=crop", cat: ko ? "자동 발행" : "AUTO PUBLISH", title: ko ? "네이버 블로그 자동 발행" : "Naver Blog Auto Publish" },
+              { img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=520&fit=crop", cat: ko ? "AI 글쓰기" : "AI WRITING", title: ko ? "AI가 쓰는 SEO 블로그 글" : "AI-Written SEO Blog Posts" },
+              { img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=520&fit=crop", cat: ko ? "키워드" : "KEYWORDS", title: ko ? "실시간 트렌드 키워드" : "Real-time Trend Keywords" },
+              { img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=520&fit=crop", cat: ko ? "드라이브" : "DRIVE", title: ko ? "구글 드라이브 자동 연동" : "Google Drive Auto Sync" },
+              { img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=520&fit=crop", cat: ko ? "대시보드" : "DASHBOARD", title: ko ? "발행 현황 한눈에" : "Publishing Dashboard" },
+              { img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=520&fit=crop", cat: ko ? "자동 운영" : "AUTO MODE", title: ko ? "매일 자동 발행 모드" : "Daily Auto Publishing" },
+              { img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&h=520&fit=crop", cat: ko ? "자동 발행" : "AUTO PUBLISH", title: ko ? "네이버 블로그 자동 발행" : "Naver Blog Auto Publish" },
+              { img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=520&fit=crop", cat: ko ? "AI 글쓰기" : "AI WRITING", title: ko ? "AI가 쓰는 SEO 블로그 글" : "AI-Written SEO Blog Posts" },
+              { img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=520&fit=crop", cat: ko ? "키워드" : "KEYWORDS", title: ko ? "실시간 트렌드 키워드" : "Real-time Trend Keywords" },
+              { img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=520&fit=crop", cat: ko ? "드라이브" : "DRIVE", title: ko ? "구글 드라이브 자동 연동" : "Google Drive Auto Sync" },
+              { img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=520&fit=crop", cat: ko ? "대시보드" : "DASHBOARD", title: ko ? "발행 현황 한눈에" : "Publishing Dashboard" },
+              { img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=520&fit=crop", cat: ko ? "자동 운영" : "AUTO MODE", title: ko ? "매일 자동 발행 모드" : "Daily Auto Publishing" },
             ].map((card, i) => (
               <div key={i} onClick={goAi} style={{ flexShrink: 0, width: 300, height: 400, borderRadius: 24, overflow: "hidden", position: "relative", cursor: "pointer", transition: "transform .3s" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.04) translateY(-8px)"}
@@ -541,12 +541,12 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
               <div style={{ padding: "clamp(24px,4vw,48px)", borderBottom: "1px solid " + BDR }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: MUTED, marginBottom: 24 }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                  {ko ? "기존 SNS 운영 방식" : "Traditional SNS workflow"}
+                  {ko ? "기존 블로그 운영 방식" : "Traditional blog workflow"}
                 </div>
                 <h3 style={{ fontSize: "clamp(20px,2.5vw,28px)", fontWeight: 700, color: TEXT, lineHeight: 1.3, marginBottom: 24 }}>
                   {ko ? <>매일 2시간씩 소모되는<br/>반복 작업들</> : <>Repetitive tasks<br/>consuming 2hrs daily</>}
                 </h3>
-                {(ko ? ["키워드 조사 30분+","블로그 1시간 + SEO 별도","채널마다 따로 작성","쇼츠 편집 반나절"] : ["30min+ keyword research","1hr blog + separate SEO","Write per channel","Half-day shorts editing"]).map((t, i) => (
+                {(ko ? ["키워드 조사 30분+","블로그 글 작성 1시간+","이미지 찾아 삽입 30분","카테고리 선택 후 수동 발행"] : ["30min+ keyword research","1hr+ writing blog posts","30min finding & inserting images","Manual category & publish"]).map((t, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                     <svg width="14" height="14" viewBox="0 0 14 14"><path d="M4 4l6 6M10 4l-6 6" stroke={MUTED} strokeWidth="2" strokeLinecap="round"/></svg>
                     <span style={{ fontSize: 15, color: TEXT }}>{t}</span>
@@ -564,7 +564,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
                 <h3 style={{ fontSize: "clamp(20px,2.5vw,28px)", fontWeight: 700, color: TEXT, lineHeight: 1.3, marginBottom: 24 }}>
                   {ko ? <>AI가 대신 만들고<br/>원클릭으로 발행</> : <>AI creates for you,<br/>publish in one click</>}
                 </h3>
-                {(ko ? ["AI 추천 키워드로 즉시 시작","SEO 최적화 글 3분 완성","20개+ 플랫폼 동시 생성","유튜브 링크로 쇼츠 자동"] : ["Start with AI keywords","SEO blog in 3 min","20+ platforms at once","Auto shorts from YouTube"]).map((t, i) => (
+                {(ko ? ["테마 입력 한 번이면 AI가 글 작성","이미지 자동 삽입 + 카테고리 매칭","발행까지 원클릭 자동 처리","매일 자동 운영 모드로 손 안 대도 OK"] : ["One topic input, AI writes the post","Auto images + category matching","One-click auto publishing","Daily auto mode, hands-free"]).map((t, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                     <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3.5 7l2.5 2.5 4.5-4.5" stroke={P} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
                     <span style={{ fontSize: 15, color: TEXT, fontWeight: 500 }}>{t}</span>
@@ -597,12 +597,12 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
                       <span style={{ fontSize: 11, color: MUTED }}>방금 전</span>
                     </div>
                     <div style={{ marginTop: 6, padding: "10px 14px", borderRadius: 12, border: "1px solid " + BDR, background: BG, fontSize: 13, color: TEXT, width: "fit-content", maxWidth: "65%" }}>
-                      {ko ? "블로그 글 품질이 어느 정도인가요?" : "How good is the blog quality?"}
+                      {ko ? "자동 발행하면 글 품질은 어떤가요?" : "How good is auto-published quality?"}
                     </div>
                   </div>
                   <div style={{ marginLeft: "auto" }}>
                     <div style={{ padding: "10px 14px", borderRadius: 12, background: P, color: "#fff", fontSize: 13, width: "fit-content", maxWidth: "65%" }}>
-                      {ko ? "Claude AI 기반으로 SEO 최적화된 고품질 글을 자동 생성합니다." : "High-quality SEO-optimized content powered by Claude AI."}
+                      {ko ? "Claude AI가 SEO 최적화 글 작성 + 이미지/인용구 자동 삽입까지 해드립니다." : "Claude AI writes SEO posts with auto images & quotes."}
                     </div>
                     <div style={{ fontSize: 11, color: MUTED, textAlign: "right", marginTop: 4 }}>{ko ? "방금" : "Now"}</div>
                   </div>
@@ -616,8 +616,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
                   {ko ? "실시간 활동" : "Activity feed"}
                 </div>
                 <h3 style={{ fontSize: "clamp(18px,2vw,24px)", fontWeight: 700, color: TEXT, lineHeight: 1.3 }}>
-                  {ko ? <>콘텐츠 성과를<br/>실시간으로 확인</> : <>Monitor performance<br/>in real-time</>}
-                  <span style={{ color: MUTED, fontWeight: 400 }}> {ko ? "즉시 개선하세요." : "Improve instantly."}</span>
+                  {ko ? <>발행 현황을<br/>대시보드에서 확인</> : <>Check publishing stats<br/>on dashboard</>}
+                  <span style={{ color: MUTED, fontWeight: 400 }}> {ko ? "성공률, 발행 수 한눈에." : "Success rate at a glance."}</span>
                 </h3>
                 {/* 미니 차트 대체 — 바 그래프 */}
                 <div style={{ display: "flex", alignItems: "flex-end", gap: 6, marginTop: 32, height: 100 }}>
@@ -682,23 +682,23 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             </div>
           </Reveal>
           {(ko ? [
-            { q: "SNS메이킷은 어떤 서비스인가요?", a: "AI 기반 콘텐츠 자동 생성 플랫폼입니다. 블로그 글쓰기, 영상 편집, SNS 자동 발행까지 하나의 플랫폼에서 제공합니다." },
-            { q: "어떤 콘텐츠를 만들 수 있나요?", a: "네이버 블로그, 인스타그램 캡션, 유튜브 대본, 티스토리 글, 숏폼 영상 등 다양한 콘텐츠를 자동 생성합니다." },
-            { q: "무료로 사용할 수 있나요?", a: "네. 기본 기능은 무료로 제공되며, 프리미엄 기능은 유료 플랜으로 이용할 수 있습니다." },
-            { q: "콘텐츠 품질은 어떤가요?", a: "최신 AI 모델(Claude)로 높은 품질의 콘텐츠를 생성합니다. SEO 최적화도 자동 적용됩니다." },
-            { q: "어떤 플랫폼을 지원하나요?", a: "네이버 블로그, 티스토리, 인스타그램, 유튜브, 스레드, 네이버 카페 등 20개+ 플랫폼을 지원합니다." },
-            { q: "유료 플랜은 어떻게 이용하나요?", a: "제품 페이지에서 자동화 도구를 확인하고, 플랜을 선택하여 이용할 수 있습니다." },
-            { q: "상업적으로 사용 가능한가요?", a: "네, 모든 콘텐츠는 상업적으로 자유롭게 사용 가능합니다." },
-            { q: "개인정보는 안전한가요?", a: "Supabase 인프라 + 공식 OAuth 인증 + 암호화 저장으로 안전하게 관리됩니다." },
+            { q: "SNS메이킷은 어떤 서비스인가요?", a: "AI가 네이버 블로그 글을 자동으로 작성하고 발행까지 해주는 데스크톱 프로그램입니다. 웹에서는 AI 글쓰기, 키워드 분석 등을 이용할 수 있습니다." },
+            { q: "어떻게 사용하나요?", a: "프로그램을 다운로드 후 설치하고, 네이버 로그인 → 테마 입력 → 발행 버튼만 누르면 됩니다. 빠른 시작 모드로 1분 안에 첫 발행이 가능합니다." },
+            { q: "무료로 사용할 수 있나요?", a: "네. 프로그램은 무료로 다운로드할 수 있고, 웹에서 AI 글쓰기 5회를 무료로 체험할 수 있습니다. 자동 발행은 Pro 플랜 이상에서 이용 가능합니다." },
+            { q: "글 품질은 어떤가요?", a: "Claude AI 기반으로 SEO 최적화된 고품질 글을 자동 생성합니다. 인용구, GIF, 이미지도 자동 삽입됩니다." },
+            { q: "자동 발행은 어떤 플랫폼을 지원하나요?", a: "현재 네이버 블로그 자동 발행을 지원합니다. 네이버 카페는 Business 플랜에서 이용 가능합니다." },
+            { q: "구글 드라이브 연동이 되나요?", a: "네. 구글 드라이브 폴더를 연결하면 글감과 이미지를 자동으로 불러와 포스팅에 활용합니다." },
+            { q: "여러 글을 한 번에 발행할 수 있나요?", a: "네. 다중 테마 순환 기능으로 쉼표로 여러 테마를 입력하면 순환하며 자동 발행합니다. 자동 운영 모드로 매일 설정한 수만큼 자동 발행도 가능합니다." },
+            { q: "개인정보는 안전한가요?", a: "네이버 로그인 정보는 PC에 암호화 저장되며, 서버에 전송되지 않습니다. 프로그램은 사용자 PC에서만 동작합니다." },
           ] : [
-            { q: "What is SNS Makeit?", a: "AI-powered content platform for blog writing, video editing, and SNS auto-publishing." },
-            { q: "What content can I create?", a: "Naver blog, Instagram, YouTube scripts, Tistory, short-form videos, and more." },
-            { q: "Is it free?", a: "Yes. 5 guest uses, 5 on signup, +1 daily check-in." },
-            { q: "Content quality?", a: "Latest AI models (Claude) with automatic SEO optimization." },
-            { q: "Supported platforms?", a: "20+ including Naver, Tistory, Instagram, YouTube, Threads." },
-            { q: "How to get credits?", a: "5 on signup + daily check-in. Paid plans for more." },
-            { q: "Commercial use?", a: "Yes, all content is free for commercial use." },
-            { q: "Is my data safe?", a: "Supabase + OAuth + encrypted storage." },
+            { q: "What is SNS Makeit?", a: "A desktop program that auto-writes and publishes Naver blog posts using AI." },
+            { q: "How do I use it?", a: "Download, install, log in to Naver, enter a topic, and click publish. First post in under 1 minute." },
+            { q: "Is it free?", a: "Yes. Free download + 5 free AI writes on web. Auto-publishing requires Pro plan or above." },
+            { q: "Content quality?", a: "Claude AI-powered, SEO-optimized posts with auto images, quotes, and GIFs." },
+            { q: "Which platforms?", a: "Naver Blog auto-publishing. Naver Cafe available on Business plan." },
+            { q: "Google Drive sync?", a: "Yes. Connect a Drive folder to auto-import content and images." },
+            { q: "Bulk publishing?", a: "Yes. Multi-theme rotation + daily auto mode for hands-free publishing." },
+            { q: "Is my data safe?", a: "Naver credentials are encrypted locally. Nothing is sent to our servers." },
           ]).map((item, i) => (
             <Reveal key={i} delay={i * 0.02}><FaqItem q={item.q} a={item.a}/></Reveal>
           ))}
