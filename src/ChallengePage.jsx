@@ -123,7 +123,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
     if (user?.uid) setMyApp(await loadMyApplication(ch.id, user.uid));
     try { setPublicApps(await loadPublicApplicants(ch.id)); } catch { setPublicApps([]); }
   };
-  const openBoard = async ch => { setSel(ch); try { setMissions(await loadMissions(ch.id)); } catch { setMissions([]); } setView("board"); window.scrollTo(0, 0); };
+  const openBoard = async ch => { setSel(ch); try { setMissions(await loadMissions(ch.id)); } catch { setMissions([]); } setView("board"); window.scrollTo(0, 0); window.history.pushState(null, "", "/challenge/" + ch.id + "/board"); document.title = `미션 게시판 - ${ch.title} | SNS메이킷`; };
   const openAdmin = async ch => { if (!isAdmin) return; setSel(ch); try { setApps(await loadApplications(ch.id)); } catch { setApps([]); } setView("admin"); window.scrollTo(0, 0); };
   const back = () => { setView("list"); setSel(null); setMyApp(null); window.history.pushState(null, "", "/challenge"); resetSeo(); window.scrollTo(0, 0); };
   const getStatus = ch => { if (ch.status === "completed") return "completed"; const now = new Date(); if (ch.start_date && new Date(ch.start_date) <= now && ch.end_date && new Date(ch.end_date) >= now) return "ongoing"; if (ch.recruit_end && new Date(ch.recruit_end) < now) return "ongoing"; return "recruiting"; };
@@ -315,7 +315,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
           {/* 빠른 이동 */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 36, padding: "16px 0", borderBottom: "1px solid " + bdr }}>
             {[
-              ...(isParticipant ? [["미션 게시판", () => openBoard(ch)]] : []),
+              ["미션 게시판", () => openBoard(ch)],
               ["현황판", () => document.getElementById("public-board")?.scrollIntoView({ behavior: "smooth" })],
               ["챌린지 개요", () => document.getElementById("sect-overview")?.scrollIntoView({ behavior: "smooth" })],
               ...(canApply && !hasApplied ? [["신청하기", () => document.getElementById("cta-section")?.scrollIntoView({ behavior: "smooth" })]] : []),
@@ -393,7 +393,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   );
 
   /* ═══ BOARD ══════════════════════════════════════════════ */
-  if (view === "board" && sel) return <MissionBoard ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} user={user} missions={missions} setMissions={setMissions} onBack={() => { setView("detail"); window.scrollTo(0, 0); }} />;
+  if (view === "board" && sel) return <MissionBoard ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} user={user} missions={missions} setMissions={setMissions} isParticipant={myApp?.status === "confirmed"} onBack={() => { setView("detail"); window.scrollTo(0, 0); }} />;
 
   /* ═══ ADMIN ══════════════════════════════════════════════ */
   if (view === "admin" && sel) return <AdminPanel ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} apps={apps} setApps={setApps} onBack={() => { setView("detail"); window.scrollTo(0, 0); }} onEdit={() => { setView("editor"); window.scrollTo(0, 0); }}
@@ -525,7 +525,7 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
 }
 
 /* ═══ MissionBoard ═════════════════════════════════════════ */
-function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissions, onBack }) {
+function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissions, isParticipant, onBack }) {
   const [selDay, setSelDay] = useState(null);
   const [link, setLink] = useState("");
   const [memo, setMemo] = useState("");
@@ -704,7 +704,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                     <a href={myMissions[selDay].link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: PRIMARY, wordBreak: "break-all" }}>{myMissions[selDay].link}</a>
                     {myMissions[selDay].body && <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>{myMissions[selDay].body}</div>}
                   </div>
-                ) : (selDay <= todayNum && user) ? (
+                ) : (selDay <= todayNum && user && isParticipant) ? (
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>인증 링크 등록</span>
@@ -743,7 +743,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                     </div>
                   </div>
                 ) : (
-                  <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>{isFuture(selDay) ? "아직 시작되지 않은 Day입니다" : "인증 기간이 지났습니다"}</div>
+                  <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>{!user ? "로그인 후 참여할 수 있습니다" : !isParticipant ? "참가 신청 후 인증할 수 있습니다" : isFuture(selDay) ? "아직 시작되지 않은 Day입니다" : "인증 기간이 지났습니다"}</div>
                 )}
 
                 {/* 해당 Day 전체 참가자 인증 목록 */}
