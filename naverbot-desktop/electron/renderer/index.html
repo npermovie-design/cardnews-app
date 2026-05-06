@@ -60,6 +60,9 @@
           <span class="nav-icon nav-ve"></span>롱폼
         </button>
         <div class="nav-group-label" style="margin-top:8px;">관리</div>
+        <button class="nav-item nav-sub" data-panel="archive">
+          <span class="nav-icon nav-archive"></span>보관함
+        </button>
         <button class="nav-item nav-sub" data-panel="calendar">
           <span class="nav-icon nav-calendar"></span>자동화 현황
         </button>
@@ -933,6 +936,23 @@
             <button class="btn btn-outline btn-sm" id="clearLogBtn">지우기</button>
           </div>
           <pre class="log" id="log">준비 완료.</pre>
+        </div>
+      </section>
+
+      <!-- 보관함 패널 -->
+      <section class="panel hidden" data-panel="archive">
+        <div class="panel-header">
+          <h1>보관함</h1>
+          <p class="panel-sub">글쓰기, 영상편집 등 작업 내역을 저장하고 다시 열 수 있습니다.</p>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+          <button class="chip active" data-archive-filter="all">전체</button>
+          <button class="chip" data-archive-filter="blog">글쓰기</button>
+          <button class="chip" data-archive-filter="cardnews">카드뉴스</button>
+          <button class="chip" data-archive-filter="video">영상편집</button>
+        </div>
+        <div id="archiveList" style="display:flex;flex-direction:column;gap:8px;">
+          <div style="text-align:center;padding:60px 0;color:var(--text-dim);font-size:13px;">저장된 작업이 없습니다.</div>
         </div>
       </section>
 

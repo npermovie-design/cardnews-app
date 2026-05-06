@@ -1595,9 +1595,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                             <span style={{color:C.purpleL,fontWeight:600}}>{p.nick}</span>
                             <span>{p.date}</span><span>{p.views||0}</span>
                             {(p.likes||0)>0&&<span style={{color:"#f59e0b",fontWeight:700}}>{p.likes}</span>}
+                            {user?.role==="admin"&&<button onClick={e=>{e.stopPropagation();del(p.id);}} style={{padding:"2px 8px",borderRadius:5,border:"none",background:"rgba(239,68,68,0.1)",color:"#ef4444",fontSize:10,cursor:"pointer",fontWeight:700,marginLeft:"auto"}}>삭제</button>}
                           </div>
                         </div>
-                        {/* 번호 제거 */}
                       </div>
                     </div>
                   ) : (
@@ -1639,7 +1639,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                       </div>
                       <span style={{textAlign:"center",fontSize:12,color:C.muted,fontWeight:500}}>{p.date}</span>
                       <span style={{textAlign:"center",fontSize:13,color:C.muted,fontWeight:600}}>{p.views||0}</span>
-                      <span style={{textAlign:"center",fontSize:13,fontWeight:(p.likes||0)>0?800:500,color:(p.likes||0)>0?"#f59e0b":C.muted}}>{p.likes||0}</span>
+                      <div style={{textAlign:"center",display:"flex",alignItems:"center",justifyContent:"center",gap:4}}>
+                        <span style={{fontSize:13,fontWeight:(p.likes||0)>0?800:500,color:(p.likes||0)>0?"#f59e0b":C.muted}}>{p.likes||0}</span>
+                        {user?.role==="admin"&&<button onClick={e=>{e.stopPropagation();del(p.id);}} style={{padding:"2px 6px",borderRadius:4,border:"none",background:"rgba(239,68,68,0.1)",color:"#ef4444",fontSize:10,cursor:"pointer",fontWeight:700,lineHeight:1}}>x</button>}
+                      </div>
                     </div>
                   );
                 })}
