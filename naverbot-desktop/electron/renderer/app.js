@@ -3861,8 +3861,24 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // AI 짤 자동 삽입
   var autoImgBtn=$("veAutoImageBtn"); if(autoImgBtn) autoImgBtn.addEventListener("click",async function(){
     if(!ve.subtitles.length){showModal("자막 필요","먼저 영상을 분석해주세요.","확인");return;}
-    // 삽입 비율 30% 고정 (프롬프트 제거 — Electron에서 prompt 차단 이슈)
-    var insertPct = 30;
+    // 비율 선택 모달
+    var modalMsg = document.getElementById("modalMessage");
+    showModal("AI 짤 삽입 비율", "", "삽입 시작", function() {
+      var inp = document.getElementById("_aiGifPctInput");
+      var insertPct = Math.max(5, Math.min(80, parseInt(inp ? inp.value : "30") || 30));
+      doAiGifInsert(insertPct);
+    });
+    if (modalMsg) {
+      modalMsg.innerHTML = '<div style="font-size:13px;color:#64748b;margin-bottom:10px;">영상 길이 대비 짤이 표시될 비율</div>' +
+        '<div style="display:flex;gap:6px;align-items:center;">' +
+        '<input id="_aiGifPctInput" type="number" value="30" min="5" max="80" style="width:60px;padding:6px;border:1px solid #334155;border-radius:6px;background:#0f0f23;color:#e2e8f0;font-size:14px;text-align:center;">' +
+        '<span style="color:#94a3b8;font-size:13px;">% (예: 30% → 10분 영상에 3분)</span></div>';
+    }
+    return;
+  });
+
+  async function doAiGifInsert(insertPct) {
+    var autoImgBtn = $("veAutoImageBtn"); if (!autoImgBtn) return;
     autoImgBtn.disabled=true; var _origImgBtnHtml=autoImgBtn.innerHTML; autoImgBtn.innerHTML="삽입 중...";
     showVeLoading("AI 짤을 검색하고 삽입하는 중...\n(GIF 우선, 영상의 " + insertPct + "% 비율)");
     try{
@@ -3923,7 +3939,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       showModal("AI 짤 삽입 완료", inserted+"개 GIF/이미지가 삽입되었습니다.\n(영상의 "+insertPct+"% 비율)", "확인");
     }catch(e){hideVeLoading();showModal("실패",e.message||"AI 짤 삽입 실패","확인");}
     autoImgBtn.disabled=false; autoImgBtn.innerHTML=_origImgBtnHtml;
-  });
+  }
   chipG("veClipCountChips",function(v){ve.clipCount=parseInt(v)});
   chipG("veSubChips",function(v){ve.subEnabled=v==="on"});
   chipG("veSilenceChips",function(v){
@@ -3996,7 +4012,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         });
       }
 
-      renderSubList(); renderTimeline(); renderVideoTrack();
+      renderSubList(); renderTimeline(); renderVideoTrack(); renderAudioWaveform();
       hideVeLoading();
 
       // 잘라낸 구간 상세
@@ -4705,15 +4721,40 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function renderAudioWaveform(){
     var el=$("veTrackAudio"); if(!el) return;
     var dur=ve.duration||1;
-    var barCount=Math.min(300,Math.floor(dur*3));
-    var html="<div style='position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(255,255,255,0.05);'></div>";
-    for(var i=0;i<barCount;i++){
-      var h=2+Math.random()*18;
-      var left=(i/barCount*100).toFixed(2)+"%";
-      var w=Math.max(1,(100/barCount-0.2)).toFixed(2)+"%";
-      html+="<div style='position:absolute;left:"+left+";width:"+w+";height:"+h+"px;background:rgba(99,102,241,0.35);bottom:"+(12-h/2)+"px;border-radius:1px;'></div>";
+
+    // 비디오 클립이 있으면 같은 구간으로 오디오도 잘라서 표시
+    if (ve.videoClips && ve.videoClips.length > 1) {
+      var html = "";
+      ve.videoClips.forEach(function(c, i) {
+        var left = (c.start / dur * 100).toFixed(2) + "%";
+        var width = ((c.end - c.start) / dur * 100).toFixed(2) + "%";
+        var colors = ["rgba(99,102,241,0.5)", "rgba(79,82,211,0.5)", "rgba(119,122,251,0.5)"];
+        var color = colors[i % colors.length];
+        // 구간 안에 웨이브폼 바
+        var segDur = c.end - c.start;
+        var barCount = Math.max(5, Math.floor(segDur * 3));
+        var bars = "";
+        for (var b = 0; b < barCount; b++) {
+          var h = 3 + Math.random() * 16;
+          var bLeft = (b / barCount * 100).toFixed(1) + "%";
+          var bW = Math.max(1, (100 / barCount - 0.3)).toFixed(1) + "%";
+          bars += "<div style='position:absolute;left:" + bLeft + ";width:" + bW + ";height:" + h + "px;background:" + color + ";bottom:" + (12 - h / 2) + "px;border-radius:1px;'></div>";
+        }
+        html += "<div style='position:absolute;top:2px;bottom:2px;left:" + left + ";width:" + width + ";background:#0c0c2a;border-radius:3px;overflow:hidden;border:1px solid rgba(99,102,241,0.2);'>" + bars + "</div>";
+      });
+      el.innerHTML = html;
+    } else {
+      // 잘리지 않은 전체 웨이브폼
+      var barCount = Math.min(200, Math.floor(dur * 2));
+      var html = "";
+      for (var i = 0; i < barCount; i++) {
+        var h = 3 + Math.random() * 16;
+        var left = (i / barCount * 100).toFixed(2) + "%";
+        var w = Math.max(1, (100 / barCount - 0.2)).toFixed(2) + "%";
+        html += "<div style='position:absolute;left:" + left + ";width:" + w + ";height:" + h + "px;background:rgba(99,102,241,0.35);bottom:" + (12 - h / 2) + "px;border-radius:1px;'></div>";
+      }
+      el.innerHTML = html;
     }
-    el.innerHTML=html;
   }
 
   var _prevActiveSubIdx = -1;
