@@ -1309,6 +1309,69 @@ ipcMain.handle("video:selectSaveDir", async () => {
   return { ok: true, dirPath: r.filePaths[0] };
 });
 
+// ffmpeg 무음 감지
+ipcMain.handle("video:detectSilence", async (_, { filePath, threshold, minDuration }) => {
+  if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: "파일 없음" };
+  const th = threshold || -30; // dB
+  const dur = minDuration || 0.5; // 초
+  return new Promise((resolve) => {
+    const args = ["-i", filePath, "-af", `silencedetect=noise=${th}dB:d=${dur}`, "-f", "null", "-"];
+    const proc = spawn(getFfmpegPath(), args, { windowsHide: true });
+    let stderr = "";
+    proc.stderr.on("data", d => { stderr += d.toString(); });
+    proc.on("close", () => {
+      const silences = [];
+      const starts = stderr.match(/silence_start: ([\d.]+)/g) || [];
+      const ends = stderr.match(/silence_end: ([\d.]+)/g) || [];
+      for (let i = 0; i < starts.length; i++) {
+        const s = parseFloat(starts[i].replace("silence_start: ", ""));
+        const e = ends[i] ? parseFloat(ends[i].replace("silence_end: ", "")) : s + dur;
+        silences.push({ start: s, end: e });
+      }
+      resolve({ ok: true, silences });
+    });
+    proc.on("error", e => resolve({ ok: false, error: e.message }));
+  });
+});
+
+// ffmpeg 무음 구간 제거 (concat filter)
+ipcMain.handle("video:removeSilence", async (_, { filePath, silences, outputDir }) => {
+  if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: "파일 없음" };
+  if (!silences || !silences.length) return { ok: false, error: "무음 구간 없음" };
+
+  const dir = outputDir || path.dirname(filePath);
+  const ext = path.extname(filePath);
+  const base = path.basename(filePath, ext);
+  const outPath = path.join(dir, base + "_nosilence" + ext);
+
+  // 무음이 아닌 구간 추출
+  const duration = silences[silences.length - 1]?.end + 10 || 9999;
+  const keeps = [];
+  let cursor = 0;
+  for (const s of silences) {
+    if (s.start > cursor + 0.1) keeps.push({ start: cursor, end: s.start });
+    cursor = s.end;
+  }
+  keeps.push({ start: cursor, end: duration });
+
+  // filter_complex로 concat
+  const inputs = keeps.map((k, i) => `[0:v]trim=start=${k.start}:end=${k.end},setpts=PTS-STARTPTS[v${i}]; [0:a]atrim=start=${k.start}:end=${k.end},asetpts=PTS-STARTPTS[a${i}]`).join("; ");
+  const concatV = keeps.map((_, i) => `[v${i}][a${i}]`).join("");
+  const filter = `${inputs}; ${concatV}concat=n=${keeps.length}:v=1:a=1[outv][outa]`;
+
+  return new Promise((resolve) => {
+    const args = ["-y", "-i", filePath, "-filter_complex", filter, "-map", "[outv]", "-map", "[outa]", "-c:v", "libx264", "-preset", "fast", "-c:a", "aac", outPath];
+    const proc = spawn(getFfmpegPath(), args, { windowsHide: true });
+    let stderr = "";
+    proc.stderr.on("data", d => { stderr += d.toString(); });
+    proc.on("close", code => {
+      if (code === 0 && fs.existsSync(outPath)) resolve({ ok: true, outputPath: outPath });
+      else resolve({ ok: false, error: "렌더링 실패: " + stderr.slice(-200) });
+    });
+    proc.on("error", e => resolve({ ok: false, error: e.message }));
+  });
+});
+
 // ffprobe 영상 정보
 ipcMain.handle("video:probe", async (_, filePath) => {
   if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: "파일 없음" };

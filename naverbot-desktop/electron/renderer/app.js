@@ -3546,32 +3546,57 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // 무음제거 간격
   var _silenceThresh = 0.5;
   chipG("veSilenceThreshChips",function(v){ _silenceThresh=parseFloat(v); });
-  // 무음 구간 자동 제거 실행
-  var silRunBtn=$("veSilenceRunBtn"); if(silRunBtn) silRunBtn.addEventListener("click",function(){
-    if(!ve.subtitles.length){showModal("자막 필요","먼저 영상을 분석해주세요.","확인");return;}
-    // 자막 간 간격이 threshold보다 긴 구간을 찾아서 제거 (자막을 밀착)
-    var removed=0;
-    for(var i=1;i<ve.subtitles.length;i++){
-      var prev=ve.subtitles[i-1];
-      var cur=ve.subtitles[i];
-      var prevEnd=prev.end_seconds!=null?prev.end_seconds:(prev.end||0);
-      var curStart=cur.start_seconds!=null?cur.start_seconds:(cur.start||0);
-      var gap=curStart-prevEnd;
-      if(gap>_silenceThresh){
-        // gap을 threshold로 줄임
-        var shift=gap-_silenceThresh;
-        for(var j=i;j<ve.subtitles.length;j++){
-          var s=ve.subtitles[j];
-          if(s.start_seconds!=null) s.start_seconds=Math.max(0,s.start_seconds-shift);
-          else s.start=Math.max(0,(s.start||0)-shift);
-          if(s.end_seconds!=null) s.end_seconds=Math.max(0,s.end_seconds-shift);
-          else s.end=Math.max(0,(s.end||0)-shift);
+  // 무음 구간 자동 제거 실행 (ffmpeg 기반)
+  var silRunBtn=$("veSilenceRunBtn"); if(silRunBtn) silRunBtn.addEventListener("click",async function(){
+    if(!ve.filePath){showModal("알림","먼저 영상을 불러와주세요.","확인");return;}
+    silRunBtn.disabled=true; silRunBtn.textContent="무음 감지 중...";
+
+    try{
+      // 1단계: ffmpeg로 무음 구간 감지
+      var detectResult=await bridge.videoDetectSilence({filePath:ve.filePath,threshold:-30,minDuration:_silenceThresh});
+      if(!detectResult.ok) throw new Error(detectResult.error||"무음 감지 실패");
+      var silences=detectResult.silences||[];
+      if(!silences.length){showModal("결과","무음 구간이 없습니다.","확인");silRunBtn.disabled=false;silRunBtn.textContent="무음 구간 자동 제거 실행";return;}
+
+      silRunBtn.textContent="영상 잘라내는 중... ("+silences.length+"개 구간)";
+
+      // 2단계: ffmpeg로 무음 구간 제거한 영상 생성
+      var removeResult=await bridge.videoRemoveSilence({filePath:ve.filePath,silences:silences,outputDir:ve._outputDir||null});
+      if(!removeResult.ok) throw new Error(removeResult.error||"무음 제거 실패");
+
+      // 3단계: 새 영상으로 교체
+      ve.filePath=removeResult.outputPath;
+      var video=$("veVideo");
+      if(video){ video.src="file:///"+ve.filePath.replace(/\\/g,"/"); video.load(); }
+      var info=await bridge.videoProbe(ve.filePath);
+      if(info.ok) ve.duration=info.duration;
+
+      // 자막 타이밍도 조정
+      var removed=0;
+      for(var i=1;i<ve.subtitles.length;i++){
+        var prev=ve.subtitles[i-1];
+        var cur=ve.subtitles[i];
+        var prevEnd=prev.end_seconds!=null?prev.end_seconds:(prev.end||0);
+        var curStart=cur.start_seconds!=null?cur.start_seconds:(cur.start||0);
+        var gap=curStart-prevEnd;
+        if(gap>_silenceThresh){
+          var shift=gap-0.1;
+          for(var j=i;j<ve.subtitles.length;j++){
+            var s=ve.subtitles[j];
+            if(s.start_seconds!=null) s.start_seconds=Math.max(0,s.start_seconds-shift);
+            else s.start=Math.max(0,(s.start||0)-shift);
+            if(s.end_seconds!=null) s.end_seconds=Math.max(0,s.end_seconds-shift);
+            else s.end=Math.max(0,(s.end||0)-shift);
+          }
+          removed++;
         }
-        removed++;
       }
+      renderSubList(); renderTimeline();
+      showModal("무음제거 완료",silences.length+"개 무음 구간이 제거되었습니다.\n새 영상: "+removeResult.outputPath.split(/[\\/]/).pop(),"확인");
+    }catch(e){
+      showModal("무음제거 실패",e.message||"오류","확인");
     }
-    renderSubList(); renderTimeline();
-    showModal("무음제거 완료",removed+"개 무음 구간이 제거되었습니다.","확인");
+    silRunBtn.disabled=false; silRunBtn.textContent="무음 구간 자동 제거 실행";
   });
   chipG("veSubColorChips",function(v){ve.subColor=v;var el=$("veSubColor");if(el)el.value=v});
 
@@ -3868,16 +3893,21 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var blocks=$("veTimelineBlocks"); if(!blocks) return;
     var dur=ve.duration||1;
 
-    // 줌 적용: 트랙 영역을 넓게
+    // 줌 적용: 트랙 + 룰러를 함께 확대
     var tracksArea=$("veTracksArea");
+    var ruler=$("veTimeRuler");
+    var timeline=$("veTimeline");
+    var zoomW = timelineZoom > 1 ? (timelineZoom * 100) + "%" : "100%";
     if(tracksArea){
-      var lanes=tracksArea.querySelectorAll(".ve-track-lane");
-      lanes.forEach(function(lane){ lane.style.width=timelineZoom>1?(timelineZoom*100)+"%":""; });
-      // Video 트랙도 줌
-      var vt=$("veTrackVideo"); if(vt) vt.style.width=timelineZoom>1?(timelineZoom*100)+"%":"";
-      // 스크롤 가능
-      lanes.forEach(function(lane){ lane.parentElement.style.overflowX=timelineZoom>1?"auto":"hidden"; });
+      tracksArea.style.width = zoomW;
+      tracksArea.style.minWidth = "100%";
     }
+    if(ruler) {
+      ruler.style.width = zoomW;
+      ruler.style.minWidth = "100%";
+    }
+    // 타임라인 영역을 스크롤 가능하게
+    if(timeline) { timeline.style.overflowX = timelineZoom > 1 ? "auto" : "hidden"; }
     if(!ve.subtitles.length){blocks.innerHTML="<div style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);'>자막 없음</div>";return;}
     var html="";
     ve.subtitles.forEach(function(s,i){

@@ -85,5 +85,7 @@ contextBridge.exposeInMainWorld("nbBridge", {
   videoRenderLongform: (opts) => ipcRenderer.invoke("video:renderLongform", opts),
   videoCancel: () => ipcRenderer.invoke("video:cancel"),
   videoSelectSaveDir: () => ipcRenderer.invoke("video:selectSaveDir"),
+  videoDetectSilence: (opts) => ipcRenderer.invoke("video:detectSilence", opts),
+  videoRemoveSilence: (opts) => ipcRenderer.invoke("video:removeSilence", opts),
   onVideoProgress: (cb) => ipcRenderer.on("video:progress", (_, d) => cb(d)),
 });
