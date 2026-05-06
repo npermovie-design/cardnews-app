@@ -4005,36 +4005,59 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var info = await bridge.videoProbe(ve.filePath);
       var newDur = info.ok ? info.duration : ve.duration;
 
-      // 자막 타이밍 재계산: 각 자막의 시간에서 그 앞의 모든 무음 구간 합을 빼기
+      // keep 구간 계산 (무음이 아닌 구간 = 실제 남는 영상)
+      var keeps2 = [];
+      var cur2 = 0;
+      for (var si2 = 0; si2 < silences.length; si2++) {
+        if (silences[si2].start > cur2 + 0.05) keeps2.push({ origStart: cur2, origEnd: silences[si2].start });
+        cur2 = silences[si2].end;
+      }
+      if (cur2 < (ve._prevDuration || 9999) - 0.1) keeps2.push({ origStart: cur2, origEnd: ve._prevDuration || 9999 });
+
+      // 각 keep의 새 영상에서의 시작 시간
+      var cumT = 0;
+      keeps2.forEach(function(k) { k.newStart = cumT; cumT += (k.origEnd - k.origStart); });
+
+      // 원본 시간 → 새 영상 시간 매핑
+      function remap(origT) {
+        for (var ki = 0; ki < keeps2.length; ki++) {
+          var k = keeps2[ki];
+          if (origT >= k.origStart && origT <= k.origEnd) {
+            return k.newStart + (origT - k.origStart);
+          }
+        }
+        // 무음 구간 안 → 가장 가까운 keep 시작으로
+        for (var ki = 0; ki < keeps2.length; ki++) {
+          if (origT < keeps2[ki].origStart) return keeps2[ki].newStart;
+        }
+        return cumT;
+      }
+
+      // 자막 재매핑 + 무음 구간 자막 제거
+      var newSubs = [];
       ve.subtitles.forEach(function(s) {
         var origSt = s.start_seconds != null ? s.start_seconds : (s.start || 0);
         var origEn = s.end_seconds != null ? s.end_seconds : (s.end || origSt + 2);
-        // 이 자막 시작 시간 이전의 모든 무음 구간 길이 합산
-        var shiftForStart = 0, shiftForEnd = 0;
-        for (var si = 0; si < silences.length; si++) {
-          var sil = silences[si];
-          if (sil.end <= origSt) {
-            shiftForStart += (sil.end - sil.start);
-          } else if (sil.start < origSt && sil.end > origSt) {
-            shiftForStart += (origSt - sil.start);
-          }
-          if (sil.end <= origEn) {
-            shiftForEnd += (sil.end - sil.start);
-          } else if (sil.start < origEn && sil.end > origEn) {
-            shiftForEnd += (origEn - sil.start);
-          }
+
+        // 무음 구간에 완전히 포함된 자막 → 삭제
+        var inSilence = false;
+        for (var si3 = 0; si3 < silences.length; si3++) {
+          if (origSt >= silences[si3].start && origEn <= silences[si3].end) { inSilence = true; break; }
         }
-        var newSt = Math.max(0, origSt - shiftForStart);
-        var newEn = Math.max(newSt + 0.1, origEn - shiftForEnd);
+        if (inSilence) return;
+
+        var newSt = remap(origSt);
+        var newEn = remap(origEn);
+        if (newEn - newSt < 0.05) return;
+        // 새 영상 duration 초과 방지
+        newSt = Math.min(newSt, newDur);
+        newEn = Math.min(newEn, newDur);
+
         if (s.start_seconds != null) { s.start_seconds = Math.round(newSt * 100) / 100; s.end_seconds = Math.round(newEn * 100) / 100; }
         else { s.start = Math.round(newSt * 100) / 100; s.end = Math.round(newEn * 100) / 100; }
+        newSubs.push(s);
       });
-      // 무음 구간에 완전히 포함된 자막 제거
-      ve.subtitles = ve.subtitles.filter(function(s) {
-        var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
-        var en = s.end_seconds != null ? s.end_seconds : (s.end || 0);
-        return (en - st) > 0.05;
-      });
+      ve.subtitles = newSubs;
       ve.duration = newDur;
 
       // 잘라낸 구간 정보 저장 + 비디오 클립 업데이트
