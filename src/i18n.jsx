@@ -21,7 +21,7 @@ const T = {
     sidePointsSub: "더 많은 AI 생성", sideLibrarySub: "생성한 글·카드뉴스", sideProfileMember: "회원",
     darkMode: "다크", lightMode: "라이트", online: "명 접속중", login: "로그인 / 회원가입",
     logout: "로그아웃", myPage: "마이페이지", userInfo: "회원정보", admin: "관리자 페이지",
-    attendance: "출석체크", pointCharge: "횟수 충전",
+    attendance: "", pointCharge: "플랜 보기",
     // AI 생성기
     snsWrite: "SNS 글쓰기", snsImage: "SNS 이미지", imageGen: "이미지 생성",
     snsWriteDesc: "블로그·인스타·유튜브", snsImageDesc: "카드뉴스·상세페이지", imageGenDesc: "현재 미사용",

@@ -141,7 +141,7 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
             +5회
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
-            {ko ? "AI 생성 5회 분량" : "5 AI credits"}
+            {ko ? "콘텐츠 생성 5회 분량" : "5 content credits"}
           </div>
         </div>
 
@@ -990,7 +990,7 @@ export default function App() {
             <div style={{ fontSize: "clamp(16px,4vw,19px)", fontWeight: 900, color: "#1a1730", marginBottom: 10 }}>무료 사용 횟수를 모두 사용했어요</div>
             <div style={{ fontSize: 13, color: "rgba(26,23,48,0.55)", lineHeight: 1.9, marginBottom: 26 }}>
               비회원은 AI 기능을 <b style={{ color: "#3b82f6" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
-              로그인하면 <b style={{ color: "#3b82f6" }}>AI 생성 5회</b>가 즉시 지급됩니다!
+              로그인하면 <b style={{ color: "#3b82f6" }}>5회</b>가 즉시 지급됩니다!
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button onClick={() => { setShowPointsModal(false); navigate("login"); }}
