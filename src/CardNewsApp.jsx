@@ -83,7 +83,7 @@ let SNS_LINKS = [
 let USAGE_KEY = "nper_ai_usage";
 let SAVES_KEY = "nper_saved_works_v2";
 let FREE_GUEST = 5;
-let FREE_MEMBER = 20;
+let FREE_MEMBER = 5;
 
 // ─── 사용량 ──────────────────────────────────────────────────────────────────
 function getUsage() { try { return JSON.parse(localStorage.getItem(USAGE_KEY) || "{}"); } catch(e) { return {}; } }

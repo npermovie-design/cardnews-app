@@ -80,56 +80,7 @@ export const CHAT_COST = {
   "gemini-2.5-pro": POINTS.CHAT_GEMINI_PRO,
 };
 
-// 단건 충전 플랜 (1 point = 1회)
-export const PLANS = [
-  {
-    id: "free",
-    name: "Free",
-    price: 0,
-    points: 0,
-    label: "무료",
-    color: "#888",
-    features: ["가입 시 5회 지급", "비회원 5회 무료 체험", "이용 횟수 소진 시 구독 필요"],
-    btnLabel: "무료 체험",
-    highlight: false,
-  },
-  {
-    id: "pack1",
-    name: "Starter",
-    price: 5.9,
-    points: 20,
-    label: "$5.90",
-    color: "#4ade80",
-    features: ["20회 지급", "모든 기능 이용 가능", "유효기간 없음"],
-    btnLabel: "시작하기",
-    highlight: false,
-    badge: "입문",
-  },
-  {
-    id: "pack3",
-    name: "Standard",
-    price: 19.9,
-    points: 80,
-    label: "$19.90",
-    color: "#3b82f6",
-    features: ["80회 지급", "모든 기능 이용 가능", "SNS 자동 발행"],
-    btnLabel: "시작하기",
-    highlight: true,
-    badge: "추천",
-  },
-  {
-    id: "pack5",
-    name: "Pro",
-    price: 49.9,
-    points: 216,
-    label: "$49.90",
-    color: "#f59e0b",
-    features: ["216회 지급", "모든 기능 이용 가능", "우선 고객지원"],
-    btnLabel: "시작하기",
-    highlight: false,
-    badge: "전문가용",
-  },
-];
+// 단건 충전 플랜 폐지 — 월 구독제로 전환 (PricingPage.jsx 참조)
 
 // ── 로컬스토리지 헬퍼 ─────────────────────────────────────────────────────
 export const POSTS_KEY   = "nper_posts_v2";
@@ -473,11 +424,10 @@ const UNLIMITED_PLANS = ["Agency"];
 
 // 구독 플랜별 월간 한도 (PricingPage 기준)
 export const PLAN_LIMITS = {
-  "Basic":    { write: 30,  video: 99999, naver: 0 },
-  "Pro":      { write: 100, video: 99999, naver: 3 },
-  "Premium":  { write: 200, video: 99999, naver: 5 },
-  "Business": { write: 99999, video: 99999, naver: 10 },
-  "Agency":   { write: 99999, video: 99999, naver: 99999 },
+  "Basic":    { write: 30,  video: 10,  naver: 0 },
+  "Pro":      { write: 100, video: 30,  naver: 3 },
+  "Business": { write: 500, video: 100, naver: 10 },
+  "Agency":   { write: 999, video: 999, naver: 99 },
 };
 
 // 구독 정보 캐시

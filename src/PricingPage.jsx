@@ -10,7 +10,7 @@ const PLANS = [
     monthlyPrice: 0, yearlyPrice: 0,
     highlight: false, badge: null,
     limits: { write: 5, naver: 0 },
-    features: ["가입 시 5회 글쓰기 제공", "영상 생성 3회/월", "커뮤니티 이용", "키워드 분석"],
+    features: ["가입 시 5회 제공", "영상 생성 3회/월", "커뮤니티 이용", "키워드 분석"],
     btnLabel: "무료로 시작",
     free: true,
   },
@@ -19,7 +19,7 @@ const PLANS = [
     monthlyPrice: 9.9, yearlyPrice: 99,
     highlight: false, badge: null,
     limits: { write: 30, naver: 0 },
-    features: ["AI 생성 월 30회 (글쓰기+디자인)", "영상 생성 무제한", "20개+ SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석", "이메일 지원"],
+    features: ["콘텐츠 생성 월 30회", "영상 생성 10회/월", "SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석", "이메일 지원"],
     btnLabel: "시작하기",
     lsId: "8dca976c-3064-4d76-af4b-8743a10e9f9f",
     lsIdYearly: "6b3922c9-04e1-40f0-b295-75870a9e0b3f",
@@ -29,7 +29,7 @@ const PLANS = [
     monthlyPrice: 19.9, yearlyPrice: 199,
     highlight: true, badge: "추천",
     limits: { write: 100, naver: 3 },
-    features: ["AI 생성 월 100회 (글쓰기+디자인)", "영상 생성 무제한", "자동발행 일 3회", "20개+ SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석", "이메일 지원"],
+    features: ["콘텐츠 생성 월 100회", "영상 생성 30회/월", "자동발행 일 3회", "SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석", "이메일 지원"],
     btnLabel: "시작하기",
     lsId: "81968d65-1482-4dd8-b3a2-88540bdba780",
     lsIdYearly: "ab2d967d-43bb-40a8-96c0-9fcfd6d9c62a",
@@ -38,8 +38,8 @@ const PLANS = [
     id: "business", name: "Business",
     monthlyPrice: 39.9, yearlyPrice: 399,
     highlight: false, badge: "대량 생산",
-    limits: { write: 99999, naver: 10 },
-    features: ["AI 생성 무제한 (글쓰기+디자인)", "영상 생성 무제한", "자동발행 일 10회", "카페 발행 가능", "계정 3개", "20개+ SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석", "우선 고객 지원"],
+    limits: { write: 500, naver: 10 },
+    features: ["콘텐츠 생성 월 500회", "영상 생성 100회/월", "자동발행 일 10회", "카페 발행 가능", "계정 3개", "SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석", "우선 고객 지원"],
     btnLabel: "시작하기",
     lsId: "",
     lsIdYearly: "",
@@ -47,12 +47,12 @@ const PLANS = [
 ];
 
 const LIMIT_LABELS = [
-  { key: "write", label: "AI 생성" },
+  { key: "write", label: "콘텐츠 생성" },
 ];
 
 const COMPARE_ROWS = [
-  { label: "AI 생성 (글+디자인)", vals: ["5회/월", "30회/월", "100회/월", "무제한"], types: ["num","num","num","highlight"] },
-  { label: "영상 생성", vals: ["3회/월", "무제한", "무제한", "무제한"], types: ["num","highlight","highlight","highlight"] },
+  { label: "콘텐츠 생성 (글+디자인)", vals: ["5회/월", "30회/월", "100회/월", "500회/월"], types: ["num","num","num","highlight"] },
+  { label: "영상 생성", vals: ["3회/월", "10회/월", "30회/월", "100회/월"], types: ["num","num","num","highlight"] },
   { label: "자동발행", vals: ["-", "체험", "일 3회", "일 10회"], types: ["no","num","num","highlight"] },
   { label: "카페 발행", vals: ["-", "-", "-", "✓"], types: ["no","no","no","yes"] },
   { label: "SNS 다중 발행", vals: ["✓", "✓", "✓", "✓"], types: ["yes","yes","yes","yes"] },
@@ -62,10 +62,9 @@ const COMPARE_ROWS = [
 ];
 
 const COMMON_FEATURES = [
-  "20개+ SNS 플랫폼 지원",
-  "네이버 블로그 / 티스토리 / 인스타그램 / 스레드",
-  "뉴스 기사 기반 블로그 자동 생성",
-  "유튜브 영상 기반 블로그 변환",
+  "SNS 플랫폼 지원 (네이버 블로그, 티스토리, 인스타, 스레드)",
+  "블로그 자동 글쓰기",
+  "키워드 트렌드 분석",
   "콘텐츠 라이브러리 (생성 글 보관)",
   "커뮤니티 이용",
 ];

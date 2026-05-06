@@ -62,7 +62,7 @@ function getDriveThumb(url) {
 
 const ADMIN_PW = import.meta.env.VITE_ADMIN_PW || "";
 const FREE_GUEST  = 5;
-const FREE_MEMBER = 20;
+const FREE_MEMBER = 5;
 
 export default function AdminPage({ C, user: adminUser }) {
   const isAdminRole = adminUser?.role === "admin";
