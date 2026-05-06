@@ -279,7 +279,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             {ko ? <>네이버 블로그<br/>자동 발행 솔루션</> : <>Naver Blog<br/>Auto Publishing</>}
           </h1>
           <p style={{ fontSize: "clamp(16px,2vw,20px)", color: "#4a5568", lineHeight: 1.6, margin: "0 auto 32px", maxWidth: 520 }}>
-            {ko ? "AI가 글을 쓰고, 이미지를 넣고, 블로그에 발행까지. 데스크톱 프로그램 하나로 끝." : "AI writes, inserts images, and publishes to your blog. One desktop app does it all."}
+            {ko ? "테마만 입력하면 글 작성, 이미지 삽입, 발행까지 자동. 프로그램 하나로 끝." : "Enter a topic — writing, images, and publishing, all automatic. One program does it all."}
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 12 }}>
             <button onClick={goAi} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 18, fontWeight: 500, padding: "16px 36px", borderRadius: 99, border: "none", background: "#1a1a1a", color: "#fff", cursor: "pointer", fontFamily: "inherit", transition: "transform .15s" }}
@@ -319,13 +319,13 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
           <div className="hp-hero-cards" style={{ paddingLeft: 20 }}>
             {[
               { img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&h=520&fit=crop", cat: ko ? "자동 발행" : "AUTO PUBLISH", title: ko ? "네이버 블로그 자동 발행" : "Naver Blog Auto Publish" },
-              { img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=520&fit=crop", cat: ko ? "AI 글쓰기" : "AI WRITING", title: ko ? "AI가 쓰는 SEO 블로그 글" : "AI-Written SEO Blog Posts" },
+              { img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=520&fit=crop", cat: ko ? "글쓰기" : "WRITING", title: ko ? "SEO 최적화 블로그 글" : "SEO-Optimized Blog Posts" },
               { img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=520&fit=crop", cat: ko ? "키워드" : "KEYWORDS", title: ko ? "실시간 트렌드 키워드" : "Real-time Trend Keywords" },
               { img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=520&fit=crop", cat: ko ? "드라이브" : "DRIVE", title: ko ? "구글 드라이브 자동 연동" : "Google Drive Auto Sync" },
               { img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=520&fit=crop", cat: ko ? "대시보드" : "DASHBOARD", title: ko ? "발행 현황 한눈에" : "Publishing Dashboard" },
               { img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=520&fit=crop", cat: ko ? "자동 운영" : "AUTO MODE", title: ko ? "매일 자동 발행 모드" : "Daily Auto Publishing" },
               { img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&h=520&fit=crop", cat: ko ? "자동 발행" : "AUTO PUBLISH", title: ko ? "네이버 블로그 자동 발행" : "Naver Blog Auto Publish" },
-              { img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=520&fit=crop", cat: ko ? "AI 글쓰기" : "AI WRITING", title: ko ? "AI가 쓰는 SEO 블로그 글" : "AI-Written SEO Blog Posts" },
+              { img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=520&fit=crop", cat: ko ? "글쓰기" : "WRITING", title: ko ? "SEO 최적화 블로그 글" : "SEO-Optimized Blog Posts" },
               { img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=520&fit=crop", cat: ko ? "키워드" : "KEYWORDS", title: ko ? "실시간 트렌드 키워드" : "Real-time Trend Keywords" },
               { img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=520&fit=crop", cat: ko ? "드라이브" : "DRIVE", title: ko ? "구글 드라이브 자동 연동" : "Google Drive Auto Sync" },
               { img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=520&fit=crop", cat: ko ? "대시보드" : "DASHBOARD", title: ko ? "발행 현황 한눈에" : "Publishing Dashboard" },
@@ -400,8 +400,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
       {(() => {
         const tabs = [
           { id: "auto", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>, label: ko ? "자동 발행" : "Auto Publish",
-            badge: "HOT", title: ko ? "테마만 입력하면 AI가 알아서 발행" : "Just enter a topic, AI publishes automatically",
-            desc: ko ? "주제 키워드만 입력하면 AI가 글 작성, 이미지 삽입, 카테고리 선택, 네이버 블로그 발행까지 전부 자동으로 처리합니다." : "Enter a keyword and AI handles writing, images, categories, and publishing to Naver Blog.",
+            badge: "HOT", title: ko ? "테마만 입력하면 자동으로 발행" : "Just enter a topic, auto-published",
+            desc: ko ? "주제 키워드만 입력하면 글 작성, 이미지 삽입, 카테고리 선택, 네이버 블로그 발행까지 전부 자동으로 처리합니다." : "Enter a keyword and it handles writing, images, categories, and publishing to Naver Blog.",
             btn: ko ? "프로그램 다운로드" : "Download program", onClick: goAi,
             visual: <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid " + BDR }}><img src="/hero-writing.png" alt="" style={{ width: "100%", display: "block" }} loading="lazy" /></div>,
           },
@@ -415,7 +415,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             title: ko ? "오늘 뜨는 키워드로 바로 글쓰기" : "Write with today's trending keywords",
             desc: ko ? "네이버와 구글에서 실시간으로 수집한 320개 이상의 트렌드 키워드를 확인하고, 바로 콘텐츠를 만드세요." : "320+ trending keywords from Naver & Google.",
             btn: ko ? "키워드 확인하기" : "Check keywords", onClick: goAi,
-            visual: <div style={{ borderRadius: 16, padding: 24, background: PBG, border: "1px solid " + PBDR }}><div style={{ fontSize: 13, fontWeight: 600, color: P, marginBottom: 12 }}>{ko ? "실시간 트렌드 키워드" : "Trending now"}</div><div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{(ko ? ["AI 마케팅","블로그 수익화","인스타 릴스","유튜브 쇼츠","SNS 자동화","네이버 상위노출","부업 추천","뷰티 트렌드"] : ["AI Marketing","Blog Monetize","Insta Reels","YouTube Shorts","SNS Automation","SEO Tips","Side Hustle","Beauty"]).map((t, i) => <span key={i} style={{ fontSize: 13, padding: "6px 14px", borderRadius: 8, background: i < 2 ? P : "#fff", color: i < 2 ? "#fff" : TEXT, fontWeight: 600, border: i < 2 ? "none" : "1px solid " + BDR }}>{t}</span>)}</div></div>,
+            visual: <div style={{ borderRadius: 16, padding: 24, background: PBG, border: "1px solid " + PBDR }}><div style={{ fontSize: 13, fontWeight: 600, color: P, marginBottom: 12 }}>{ko ? "실시간 트렌드 키워드" : "Trending now"}</div><div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{(ko ? ["블로그 마케팅","블로그 수익화","네이버 상위노출","SNS 자동화","부업 추천","자동 발행","키워드 분석","뷰티 트렌드"] : ["Blog Marketing","Blog Monetize","Naver SEO","SNS Automation","Side Hustle","Auto Publish","Keyword Analysis","Beauty"]).map((t, i) => <span key={i} style={{ fontSize: 13, padding: "6px 14px", borderRadius: 8, background: i < 2 ? P : "#fff", color: i < 2 ? "#fff" : TEXT, fontWeight: 600, border: i < 2 ? "none" : "1px solid " + BDR }}>{t}</span>)}</div></div>,
           },
         ];
         const [activeTab, setActiveTab] = useState(tabs[0].id);
@@ -477,7 +477,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
       {(() => {
         const [accIdx, setAccIdx] = useState(0);
         const accItems = [
-          { title: ko ? "AI 글쓰기" : "AI Writing", img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600&h=800&fit=crop&q=80" },
+          { title: ko ? "자동 글쓰기" : "Auto Writing", img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600&h=800&fit=crop&q=80" },
           { title: ko ? "자동 발행" : "Auto Publish", img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=600&h=800&fit=crop&q=80" },
           { title: ko ? "키워드 분석" : "Keywords", img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=800&fit=crop&q=80" },
           { title: ko ? "드라이브 연동" : "Drive Sync", img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&h=800&fit=crop&q=80" },
@@ -494,7 +494,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
                       {ko ? <>블로그 운영의 모든 것,<br/>데스크톱 하나로</> : <>Everything for blogging,<br/>one desktop app</>}
                     </h2>
                     <p style={{ fontSize: 16, color: SUB, lineHeight: 1.65, margin: "0 0 28px", maxWidth: 380 }}>
-                      {ko ? "AI 글쓰기, 이미지 삽입, 카테고리 선택, 발행까지. 프로그램 하나로 해결하세요." : "AI writing, images, categories, publishing. All in one program."}
+                      {ko ? "글쓰기, 이미지 삽입, 카테고리 선택, 발행까지. 프로그램 하나로 해결하세요." : "Writing, images, categories, publishing. All in one program."}
                     </p>
                     <button onClick={goAi} style={{
                       position: "relative", overflow: "hidden",
@@ -562,9 +562,9 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
                   SNS Makeit
                 </div>
                 <h3 style={{ fontSize: "clamp(20px,2.5vw,28px)", fontWeight: 700, color: TEXT, lineHeight: 1.3, marginBottom: 24 }}>
-                  {ko ? <>AI가 대신 만들고<br/>원클릭으로 발행</> : <>AI creates for you,<br/>publish in one click</>}
+                  {ko ? <>자동으로 만들고<br/>원클릭으로 발행</> : <>Auto-created,<br/>published in one click</>}
                 </h3>
-                {(ko ? ["테마 입력 한 번이면 AI가 글 작성","이미지 자동 삽입 + 카테고리 매칭","발행까지 원클릭 자동 처리","매일 자동 운영 모드로 손 안 대도 OK"] : ["One topic input, AI writes the post","Auto images + category matching","One-click auto publishing","Daily auto mode, hands-free"]).map((t, i) => (
+                {(ko ? ["테마 입력 한 번이면 글 자동 작성","이미지 자동 삽입 + 카테고리 매칭","발행까지 원클릭 자동 처리","매일 자동 운영 모드로 손 안 대도 OK"] : ["One topic input, auto-writes the post","Auto images + category matching","One-click auto publishing","Daily auto mode, hands-free"]).map((t, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                     <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3.5 7l2.5 2.5 4.5-4.5" stroke={P} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
                     <span style={{ fontSize: 15, color: TEXT, fontWeight: 500 }}>{t}</span>
@@ -602,7 +602,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
                   </div>
                   <div style={{ marginLeft: "auto" }}>
                     <div style={{ padding: "10px 14px", borderRadius: 12, background: P, color: "#fff", fontSize: 13, width: "fit-content", maxWidth: "65%" }}>
-                      {ko ? "Claude AI가 SEO 최적화 글 작성 + 이미지/인용구 자동 삽입까지 해드립니다." : "Claude AI writes SEO posts with auto images & quotes."}
+                      {ko ? "SEO 최적화 글 작성 + 이미지/인용구 자동 삽입까지 한 번에 처리됩니다." : "SEO-optimized posts with auto images & quotes, all at once."}
                     </div>
                     <div style={{ fontSize: 11, color: MUTED, textAlign: "right", marginTop: 4 }}>{ko ? "방금" : "Now"}</div>
                   </div>
@@ -682,19 +682,19 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             </div>
           </Reveal>
           {(ko ? [
-            { q: "SNS메이킷은 어떤 서비스인가요?", a: "AI가 네이버 블로그 글을 자동으로 작성하고 발행까지 해주는 데스크톱 프로그램입니다. 웹에서는 AI 글쓰기, 키워드 분석 등을 이용할 수 있습니다." },
+            { q: "SNS메이킷은 어떤 서비스인가요?", a: "네이버 블로그 글을 자동으로 작성하고 발행까지 해주는 데스크톱 프로그램입니다. 웹에서도 글쓰기, 키워드 분석 등을 이용할 수 있습니다." },
             { q: "어떻게 사용하나요?", a: "프로그램을 다운로드 후 설치하고, 네이버 로그인 → 테마 입력 → 발행 버튼만 누르면 됩니다. 빠른 시작 모드로 1분 안에 첫 발행이 가능합니다." },
-            { q: "무료로 사용할 수 있나요?", a: "네. 프로그램은 무료로 다운로드할 수 있고, 웹에서 AI 글쓰기 5회를 무료로 체험할 수 있습니다. 자동 발행은 Pro 플랜 이상에서 이용 가능합니다." },
-            { q: "글 품질은 어떤가요?", a: "Claude AI 기반으로 SEO 최적화된 고품질 글을 자동 생성합니다. 인용구, GIF, 이미지도 자동 삽입됩니다." },
+            { q: "무료로 사용할 수 있나요?", a: "네. 프로그램은 무료로 다운로드할 수 있고, 웹에서 글쓰기 5회를 무료로 체험할 수 있습니다. 자동 발행은 Pro 플랜 이상에서 이용 가능합니다." },
+            { q: "글 품질은 어떤가요?", a: "SEO 최적화된 고품질 글을 자동 생성합니다. 인용구, GIF, 이미지도 자동 삽입됩니다." },
             { q: "자동 발행은 어떤 플랫폼을 지원하나요?", a: "현재 네이버 블로그 자동 발행을 지원합니다. 네이버 카페는 Business 플랜에서 이용 가능합니다." },
             { q: "구글 드라이브 연동이 되나요?", a: "네. 구글 드라이브 폴더를 연결하면 글감과 이미지를 자동으로 불러와 포스팅에 활용합니다." },
             { q: "여러 글을 한 번에 발행할 수 있나요?", a: "네. 다중 테마 순환 기능으로 쉼표로 여러 테마를 입력하면 순환하며 자동 발행합니다. 자동 운영 모드로 매일 설정한 수만큼 자동 발행도 가능합니다." },
             { q: "개인정보는 안전한가요?", a: "네이버 로그인 정보는 PC에 암호화 저장되며, 서버에 전송되지 않습니다. 프로그램은 사용자 PC에서만 동작합니다." },
           ] : [
-            { q: "What is SNS Makeit?", a: "A desktop program that auto-writes and publishes Naver blog posts using AI." },
+            { q: "What is SNS Makeit?", a: "A desktop program that auto-writes and publishes Naver blog posts." },
             { q: "How do I use it?", a: "Download, install, log in to Naver, enter a topic, and click publish. First post in under 1 minute." },
-            { q: "Is it free?", a: "Yes. Free download + 5 free AI writes on web. Auto-publishing requires Pro plan or above." },
-            { q: "Content quality?", a: "Claude AI-powered, SEO-optimized posts with auto images, quotes, and GIFs." },
+            { q: "Is it free?", a: "Yes. Free download + 5 free writes on web. Auto-publishing requires Pro plan or above." },
+            { q: "Content quality?", a: "SEO-optimized posts with auto images, quotes, and GIFs." },
             { q: "Which platforms?", a: "Naver Blog auto-publishing. Naver Cafe available on Business plan." },
             { q: "Google Drive sync?", a: "Yes. Connect a Drive folder to auto-import content and images." },
             { q: "Bulk publishing?", a: "Yes. Multi-theme rotation + daily auto mode for hands-free publishing." },
