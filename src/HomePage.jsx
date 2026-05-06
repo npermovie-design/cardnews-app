@@ -276,17 +276,17 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
         {/* 메인 콘텐츠 */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "clamp(120px,16vw,180px) 20px clamp(40px,6vw,60px)", textAlign: "center", position: "relative", zIndex: 10 }}>
           <h1 style={{ fontSize: "clamp(38px,7vw,72px)", fontWeight: 700, color: "#1a1a1a", letterSpacing: "-0.02em", lineHeight: 1.1, margin: "0 0 24px", maxWidth: 700 }}>
-            {ko ? <>네이버 블로그<br/>자동 발행 솔루션</> : <>Naver Blog<br/>Auto Publishing</>}
+            {ko ? <>SNS 콘텐츠,<br/>더 쉽게 관리하세요</> : <>Manage your SNS<br/>the easy way</>}
           </h1>
           <p style={{ fontSize: "clamp(16px,2vw,20px)", color: "#4a5568", lineHeight: 1.6, margin: "0 auto 32px", maxWidth: 520 }}>
-            {ko ? "테마만 입력하면 글 작성, 이미지 삽입, 발행까지 자동. 프로그램 하나로 끝." : "Enter a topic — writing, images, and publishing, all automatic. One program does it all."}
+            {ko ? "블로그 글쓰기, 자동 발행, 키워드 분석까지. 복잡한 SNS 운영을 심플하게." : "Blog writing, auto-publishing, keyword analysis. Simplify your SNS management."}
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 12 }}>
             <button onClick={goAi} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 18, fontWeight: 500, padding: "16px 36px", borderRadius: 99, border: "none", background: "#1a1a1a", color: "#fff", cursor: "pointer", fontFamily: "inherit", transition: "transform .15s" }}
               onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
               onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
             >
-              {ko ? "무료 다운로드" : "Free download"}
+              {ko ? "무료로 시작하기" : "Start free"}
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 10H13M13 10L10 7M13 10L10 13" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
             <button onClick={goPrice} style={{ fontSize: 18, fontWeight: 500, padding: "16px 36px", borderRadius: 99, border: "1px solid #cbd5e0", background: "transparent", color: "#1a1a1a", cursor: "pointer", fontFamily: "inherit", transition: "transform .15s" }}
@@ -318,18 +318,18 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
           <style>{`@keyframes hp-hero-scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}.hp-hero-cards{display:flex;gap:20px;animation:hp-hero-scroll 30s linear infinite;width:max-content}.hp-hero-cards:hover{animation-play-state:paused}`}</style>
           <div className="hp-hero-cards" style={{ paddingLeft: 20 }}>
             {[
-              { img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&h=520&fit=crop", cat: ko ? "자동 발행" : "AUTO PUBLISH", title: ko ? "네이버 블로그 자동 발행" : "Naver Blog Auto Publish" },
-              { img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=520&fit=crop", cat: ko ? "글쓰기" : "WRITING", title: ko ? "SEO 최적화 블로그 글" : "SEO-Optimized Blog Posts" },
-              { img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=520&fit=crop", cat: ko ? "키워드" : "KEYWORDS", title: ko ? "실시간 트렌드 키워드" : "Real-time Trend Keywords" },
-              { img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=520&fit=crop", cat: ko ? "드라이브" : "DRIVE", title: ko ? "구글 드라이브 자동 연동" : "Google Drive Auto Sync" },
-              { img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=520&fit=crop", cat: ko ? "대시보드" : "DASHBOARD", title: ko ? "발행 현황 한눈에" : "Publishing Dashboard" },
-              { img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=520&fit=crop", cat: ko ? "자동 운영" : "AUTO MODE", title: ko ? "매일 자동 발행 모드" : "Daily Auto Publishing" },
-              { img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&h=520&fit=crop", cat: ko ? "자동 발행" : "AUTO PUBLISH", title: ko ? "네이버 블로그 자동 발행" : "Naver Blog Auto Publish" },
-              { img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&h=520&fit=crop", cat: ko ? "글쓰기" : "WRITING", title: ko ? "SEO 최적화 블로그 글" : "SEO-Optimized Blog Posts" },
-              { img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=520&fit=crop", cat: ko ? "키워드" : "KEYWORDS", title: ko ? "실시간 트렌드 키워드" : "Real-time Trend Keywords" },
-              { img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=520&fit=crop", cat: ko ? "드라이브" : "DRIVE", title: ko ? "구글 드라이브 자동 연동" : "Google Drive Auto Sync" },
-              { img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=520&fit=crop", cat: ko ? "대시보드" : "DASHBOARD", title: ko ? "발행 현황 한눈에" : "Publishing Dashboard" },
-              { img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=520&fit=crop", cat: ko ? "자동 운영" : "AUTO MODE", title: ko ? "매일 자동 발행 모드" : "Daily Auto Publishing" },
+              { img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&h=520&fit=crop", cat: ko ? "블로그" : "BLOG", title: ko ? "블로그 글쓰기 자동화" : "Blog Writing Automation" },
+              { img: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=520&fit=crop", cat: ko ? "SNS 발행" : "PUBLISH", title: ko ? "SNS 자동 발행" : "SNS Auto Publishing" },
+              { img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=520&fit=crop", cat: ko ? "키워드" : "KEYWORDS", title: ko ? "실시간 트렌드 분석" : "Real-time Trend Analysis" },
+              { img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=520&fit=crop", cat: ko ? "대시보드" : "DASHBOARD", title: ko ? "콘텐츠 성과 관리" : "Content Performance" },
+              { img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=520&fit=crop", cat: ko ? "드라이브" : "DRIVE", title: ko ? "구글 드라이브 연동" : "Google Drive Sync" },
+              { img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=520&fit=crop", cat: ko ? "커뮤니티" : "COMMUNITY", title: ko ? "부트캠프 & 커뮤니티" : "Bootcamp & Community" },
+              { img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&h=520&fit=crop", cat: ko ? "블로그" : "BLOG", title: ko ? "블로그 글쓰기 자동화" : "Blog Writing Automation" },
+              { img: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=520&fit=crop", cat: ko ? "SNS 발행" : "PUBLISH", title: ko ? "SNS 자동 발행" : "SNS Auto Publishing" },
+              { img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=520&fit=crop", cat: ko ? "키워드" : "KEYWORDS", title: ko ? "실시간 트렌드 분석" : "Real-time Trend Analysis" },
+              { img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=520&fit=crop", cat: ko ? "대시보드" : "DASHBOARD", title: ko ? "콘텐츠 성과 관리" : "Content Performance" },
+              { img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=520&fit=crop", cat: ko ? "드라이브" : "DRIVE", title: ko ? "구글 드라이브 연동" : "Google Drive Sync" },
+              { img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=520&fit=crop", cat: ko ? "커뮤니티" : "COMMUNITY", title: ko ? "부트캠프 & 커뮤니티" : "Bootcamp & Community" },
             ].map((card, i) => (
               <div key={i} onClick={goAi} style={{ flexShrink: 0, width: 300, height: 400, borderRadius: 24, overflow: "hidden", position: "relative", cursor: "pointer", transition: "transform .3s" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.04) translateY(-8px)"}
@@ -353,7 +353,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
           <div className="hp-stats" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, textAlign: "center" }}>
             {[
               { num: 92, suffix: "%", label: ko ? "시간 절약" : "Time saved" },
-              { num: 180, suffix: "+", label: ko ? "다운로드" : "Downloads" },
+              { num: 20, suffix: "+", label: ko ? "지원 기능" : "Features" },
               { num: 320, suffix: "+", label: ko ? "실시간 키워드" : "Keywords" },
             ].map((s, i) => (
               <div key={i}>
@@ -400,14 +400,14 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
       {(() => {
         const tabs = [
           { id: "auto", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>, label: ko ? "자동 발행" : "Auto Publish",
-            badge: "HOT", title: ko ? "테마만 입력하면 자동으로 발행" : "Just enter a topic, auto-published",
-            desc: ko ? "주제 키워드만 입력하면 글 작성, 이미지 삽입, 카테고리 선택, 네이버 블로그 발행까지 전부 자동으로 처리합니다." : "Enter a keyword and it handles writing, images, categories, and publishing to Naver Blog.",
-            btn: ko ? "프로그램 다운로드" : "Download program", onClick: goAi,
+            badge: "HOT", title: ko ? "콘텐츠 제작부터 발행까지 한 번에" : "From content creation to publishing",
+            desc: ko ? "주제만 입력하면 글 작성, 이미지 삽입, 카테고리 선택, 발행까지 자동으로 처리됩니다. 반복 작업에서 벗어나세요." : "Enter a topic and it handles writing, images, categories, and publishing automatically.",
+            btn: ko ? "자세히 보기" : "Learn more", onClick: goAi,
             visual: <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid " + BDR }}><img src="/hero-writing.png" alt="" style={{ width: "100%", display: "block" }} loading="lazy" /></div>,
           },
           { id: "drive", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 6V2M8 6V4M16 6V4"/></svg>, label: ko ? "드라이브 연동" : "Drive Sync",
-            badge: "NEW", title: ko ? "구글 드라이브로 글감 자동 활용" : "Use Google Drive for auto content",
-            desc: ko ? "구글 드라이브 폴더를 연결하면 글감과 이미지를 자동으로 불러와 포스팅에 활용합니다. 사진 블로그도 자동화." : "Connect Google Drive to auto-import content and images for blog posts.",
+            badge: "NEW", title: ko ? "내 자료를 바로 콘텐츠로" : "Turn your files into content",
+            desc: ko ? "구글 드라이브에 있는 글감과 이미지를 연결하면, 별도 정리 없이 바로 콘텐츠로 활용할 수 있습니다." : "Connect Google Drive files and images to instantly use them as content.",
             btn: ko ? "자세히 보기" : "Learn more", onClick: goAi,
             visual: <div style={{ borderRadius: 16, background: DARK, aspectRatio: "16/10", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ textAlign: "center", color: "#fff" }}><svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ margin: "0 auto 8px" }}><path d="M8 18L3 12L8 6M16 6L21 12L16 18" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg><div style={{ fontSize: 14, fontWeight: 600 }}>{ko ? "드라이브 폴더 -> 자동 포스팅" : "Drive folder -> Auto posting"}</div></div></div>,
           },
@@ -429,7 +429,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
                     {ko ? "주요 기능" : "Key Features"}
                   </span>
                   <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 700, color: TEXT, letterSpacing: -0.5, margin: "0 0 12px", lineHeight: 1.2 }}>
-                    {ko ? "블로그 자동화의 모든 것" : "Everything for blog automation"}
+                    {ko ? "SNS 운영에 필요한 모든 것" : "Everything for SNS management"}
                   </h2>
                   <p style={{ fontSize: 16, color: SUB }}>{ko ? "탭을 눌러 각 기능을 확인하세요." : "Click each tab to explore features."}</p>
                 </div>
@@ -477,11 +477,11 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
       {(() => {
         const [accIdx, setAccIdx] = useState(0);
         const accItems = [
-          { title: ko ? "자동 글쓰기" : "Auto Writing", img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600&h=800&fit=crop&q=80" },
-          { title: ko ? "자동 발행" : "Auto Publish", img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=600&h=800&fit=crop&q=80" },
+          { title: ko ? "블로그 글쓰기" : "Blog Writing", img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600&h=800&fit=crop&q=80" },
+          { title: ko ? "SNS 발행" : "Publishing", img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=600&h=800&fit=crop&q=80" },
           { title: ko ? "키워드 분석" : "Keywords", img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=800&fit=crop&q=80" },
           { title: ko ? "드라이브 연동" : "Drive Sync", img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&h=800&fit=crop&q=80" },
-          { title: ko ? "대시보드" : "Dashboard", img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=800&fit=crop&q=80" },
+          { title: ko ? "커뮤니티" : "Community", img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=800&fit=crop&q=80" },
         ];
         return (
           <section className="hp-sec" style={{ padding: "clamp(80px,12vw,112px) clamp(20px,5vw,32px)", background: BG2 }}>
@@ -491,16 +491,16 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
                 <div className="hp-row-text" style={{ flex: "1 1 45%", minWidth: 0 }}>
                   <Reveal>
                     <h2 style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 700, color: TEXT, letterSpacing: -1, margin: "0 0 16px", lineHeight: 1.15 }}>
-                      {ko ? <>블로그 운영의 모든 것,<br/>데스크톱 하나로</> : <>Everything for blogging,<br/>one desktop app</>}
+                      {ko ? <>SNS 운영의 모든 것,<br/>하나로 해결하세요</> : <>Everything for SNS,<br/>all in one place</>}
                     </h2>
                     <p style={{ fontSize: 16, color: SUB, lineHeight: 1.65, margin: "0 0 28px", maxWidth: 380 }}>
-                      {ko ? "글쓰기, 이미지 삽입, 카테고리 선택, 발행까지. 프로그램 하나로 해결하세요." : "Writing, images, categories, publishing. All in one program."}
+                      {ko ? "글쓰기, 키워드 분석, 자동 발행, 커뮤니티까지. SNS 운영을 쉽게 만들어 드립니다." : "Writing, keywords, publishing, community. Making SNS management easy."}
                     </p>
                     <button onClick={goAi} style={{
                       position: "relative", overflow: "hidden",
                       fontSize: 15, fontWeight: 600, padding: "12px 28px", borderRadius: 24,
                       border: `1px solid ${P}30`, background: P, color: "#fff", cursor: "pointer", fontFamily: "inherit",
-                    }}>{ko ? "무료 다운로드" : "Free download"}</button>
+                    }}>{ko ? "무료로 시작하기" : "Start free"}</button>
                   </Reveal>
                 </div>
                 {/* 오른쪽 아코디언 */}
@@ -541,12 +541,12 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
               <div style={{ padding: "clamp(24px,4vw,48px)", borderBottom: "1px solid " + BDR }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: MUTED, marginBottom: 24 }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                  {ko ? "기존 블로그 운영 방식" : "Traditional blog workflow"}
+                  {ko ? "기존 SNS 운영 방식" : "Traditional SNS workflow"}
                 </div>
                 <h3 style={{ fontSize: "clamp(20px,2.5vw,28px)", fontWeight: 700, color: TEXT, lineHeight: 1.3, marginBottom: 24 }}>
                   {ko ? <>매일 2시간씩 소모되는<br/>반복 작업들</> : <>Repetitive tasks<br/>consuming 2hrs daily</>}
                 </h3>
-                {(ko ? ["키워드 조사 30분+","블로그 글 작성 1시간+","이미지 찾아 삽입 30분","카테고리 선택 후 수동 발행"] : ["30min+ keyword research","1hr+ writing blog posts","30min finding & inserting images","Manual category & publish"]).map((t, i) => (
+                {(ko ? ["키워드 조사하느라 30분+","글 하나 쓰는 데 1시간+","이미지 찾고 편집하는 시간","채널마다 일일이 수동 관리"] : ["30min+ on keyword research","1hr+ writing a single post","Time spent finding & editing images","Manually managing each channel"]).map((t, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                     <svg width="14" height="14" viewBox="0 0 14 14"><path d="M4 4l6 6M10 4l-6 6" stroke={MUTED} strokeWidth="2" strokeLinecap="round"/></svg>
                     <span style={{ fontSize: 15, color: TEXT }}>{t}</span>
@@ -562,9 +562,9 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
                   SNS Makeit
                 </div>
                 <h3 style={{ fontSize: "clamp(20px,2.5vw,28px)", fontWeight: 700, color: TEXT, lineHeight: 1.3, marginBottom: 24 }}>
-                  {ko ? <>자동으로 만들고<br/>원클릭으로 발행</> : <>Auto-created,<br/>published in one click</>}
+                  {ko ? <>콘텐츠 제작부터<br/>발행까지 한 번에</> : <>From creation to<br/>publishing, all at once</>}
                 </h3>
-                {(ko ? ["테마 입력 한 번이면 글 자동 작성","이미지 자동 삽입 + 카테고리 매칭","발행까지 원클릭 자동 처리","매일 자동 운영 모드로 손 안 대도 OK"] : ["One topic input, auto-writes the post","Auto images + category matching","One-click auto publishing","Daily auto mode, hands-free"]).map((t, i) => (
+                {(ko ? ["테마만 입력하면 글이 완성","이미지와 카테고리도 자동 매칭","발행까지 원클릭으로 끝","커뮤니티에서 함께 성장"] : ["Enter a topic, post is ready","Auto image & category matching","One-click to publish","Grow together in community"]).map((t, i) => (
                   <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
                     <svg width="14" height="14" viewBox="0 0 14 14"><path d="M3.5 7l2.5 2.5 4.5-4.5" stroke={P} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
                     <span style={{ fontSize: 15, color: TEXT, fontWeight: 500 }}>{t}</span>
@@ -682,23 +682,23 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             </div>
           </Reveal>
           {(ko ? [
-            { q: "SNS메이킷은 어떤 서비스인가요?", a: "네이버 블로그 글을 자동으로 작성하고 발행까지 해주는 데스크톱 프로그램입니다. 웹에서도 글쓰기, 키워드 분석 등을 이용할 수 있습니다." },
-            { q: "어떻게 사용하나요?", a: "프로그램을 다운로드 후 설치하고, 네이버 로그인 → 테마 입력 → 발행 버튼만 누르면 됩니다. 빠른 시작 모드로 1분 안에 첫 발행이 가능합니다." },
-            { q: "무료로 사용할 수 있나요?", a: "네. 프로그램은 무료로 다운로드할 수 있고, 웹에서 글쓰기 5회를 무료로 체험할 수 있습니다. 자동 발행은 Pro 플랜 이상에서 이용 가능합니다." },
-            { q: "글 품질은 어떤가요?", a: "SEO 최적화된 고품질 글을 자동 생성합니다. 인용구, GIF, 이미지도 자동 삽입됩니다." },
-            { q: "자동 발행은 어떤 플랫폼을 지원하나요?", a: "현재 네이버 블로그 자동 발행을 지원합니다. 네이버 카페는 Business 플랜에서 이용 가능합니다." },
-            { q: "구글 드라이브 연동이 되나요?", a: "네. 구글 드라이브 폴더를 연결하면 글감과 이미지를 자동으로 불러와 포스팅에 활용합니다." },
-            { q: "여러 글을 한 번에 발행할 수 있나요?", a: "네. 다중 테마 순환 기능으로 쉼표로 여러 테마를 입력하면 순환하며 자동 발행합니다. 자동 운영 모드로 매일 설정한 수만큼 자동 발행도 가능합니다." },
-            { q: "개인정보는 안전한가요?", a: "네이버 로그인 정보는 PC에 암호화 저장되며, 서버에 전송되지 않습니다. 프로그램은 사용자 PC에서만 동작합니다." },
+            { q: "SNS메이킷은 어떤 서비스인가요?", a: "SNS 콘텐츠 제작과 관리를 쉽게 도와주는 올인원 플랫폼입니다. 블로그 글쓰기, 키워드 분석, 자동 발행, 부트캠프까지 한곳에서 해결할 수 있습니다." },
+            { q: "무료로 사용할 수 있나요?", a: "네. 회원가입 시 5회가 무료로 지급되며, 비회원도 5회 체험이 가능합니다. 데스크톱 프로그램도 무료로 다운로드할 수 있습니다." },
+            { q: "어떤 기능을 제공하나요?", a: "블로그 자동 글쓰기, 키워드 트렌드 분석, SNS 자동 발행, 구글 드라이브 연동, 부트캠프, 커뮤니티 등 20가지 이상의 기능을 제공합니다." },
+            { q: "자동 발행은 어떻게 되나요?", a: "데스크톱 프로그램을 설치하면 테마 입력만으로 글 작성부터 이미지 삽입, 발행까지 자동으로 처리됩니다. Pro 플랜 이상에서 이용 가능합니다." },
+            { q: "어떤 플랫폼을 지원하나요?", a: "네이버 블로그, 네이버 카페 자동 발행을 지원하며, 웹에서는 인스타그램, 유튜브, 스레드 등 다양한 SNS용 콘텐츠를 생성할 수 있습니다." },
+            { q: "부트캠프는 무엇인가요?", a: "SNS 운영 역량을 함께 키울 수 있는 그룹 챌린지입니다. 매일 미션을 인증하고, 참가자들과 함께 성장할 수 있습니다." },
+            { q: "상업적으로 사용 가능한가요?", a: "네, 생성된 모든 콘텐츠는 상업적으로 자유롭게 사용할 수 있습니다." },
+            { q: "개인정보는 안전한가요?", a: "암호화된 인프라에서 안전하게 관리되며, 데스크톱 프로그램의 로그인 정보는 PC에만 저장됩니다." },
           ] : [
-            { q: "What is SNS Makeit?", a: "A desktop program that auto-writes and publishes Naver blog posts." },
-            { q: "How do I use it?", a: "Download, install, log in to Naver, enter a topic, and click publish. First post in under 1 minute." },
-            { q: "Is it free?", a: "Yes. Free download + 5 free writes on web. Auto-publishing requires Pro plan or above." },
-            { q: "Content quality?", a: "SEO-optimized posts with auto images, quotes, and GIFs." },
-            { q: "Which platforms?", a: "Naver Blog auto-publishing. Naver Cafe available on Business plan." },
-            { q: "Google Drive sync?", a: "Yes. Connect a Drive folder to auto-import content and images." },
-            { q: "Bulk publishing?", a: "Yes. Multi-theme rotation + daily auto mode for hands-free publishing." },
-            { q: "Is my data safe?", a: "Naver credentials are encrypted locally. Nothing is sent to our servers." },
+            { q: "What is SNS Makeit?", a: "An all-in-one platform for easy SNS content creation and management." },
+            { q: "Is it free?", a: "Yes. 5 free uses on signup, guests get 5 free tries. Desktop app is free to download." },
+            { q: "What features?", a: "Blog writing, keyword analysis, auto-publishing, Drive sync, bootcamps, and 20+ tools." },
+            { q: "Auto-publishing?", a: "Desktop app handles writing, images, and publishing automatically. Pro plan required." },
+            { q: "Which platforms?", a: "Naver Blog, Naver Cafe auto-publish. Web supports Instagram, YouTube, Threads content." },
+            { q: "What are bootcamps?", a: "Group challenges to build your SNS skills together with daily missions." },
+            { q: "Commercial use?", a: "Yes, all content is free for commercial use." },
+            { q: "Is my data safe?", a: "Encrypted infrastructure. Desktop login info stored locally only." },
           ]).map((item, i) => (
             <Reveal key={i} delay={i * 0.02}><FaqItem q={item.q} a={item.a}/></Reveal>
           ))}
@@ -713,7 +713,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
               {ko ? "지금 바로 시작하세요." : "Start right now."}
             </h2>
             <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.6, marginBottom: 32 }}>
-              {ko ? "데스크톱 프로그램 하나로 네이버 블로그 자동화를 시작하세요." : "Start Naver blog automation with one desktop program."}
+              {ko ? "복잡한 SNS 운영, 이제 쉽게 시작하세요." : "Complex SNS management, now made easy."}
             </p>
             <button onClick={() => navigate("programs")} style={{
               position: "relative", overflow: "hidden",
@@ -727,8 +727,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
       {/* 모바일 하단 CTA */}
       <div className="mobile-sticky-cta" style={{ display: "none", position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 900, alignItems: "center", gap: 10, padding: "14px 16px", borderRadius: 14, background: "rgba(255,255,255,0.95)", border: "1px solid " + BDR, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", backdropFilter: "blur(16px)" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{ko ? "블로그 자동화" : "Blog Automation"}</div>
-          <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>{ko ? "무료 다운로드" : "Free download"}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{ko ? "SNS 콘텐츠 관리" : "SNS Management"}</div>
+          <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>{ko ? "무료로 시작하기" : "Start free"}</div>
         </div>
         <button onClick={() => navigate("programs")} style={{ flex: "0 0 auto", minHeight: 44, padding: "0 20px", borderRadius: 10, border: "none", background: P, color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{ko ? "보기" : "View"}</button>
       </div>
