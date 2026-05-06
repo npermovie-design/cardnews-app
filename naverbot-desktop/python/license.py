@@ -15,14 +15,35 @@ TIMEOUT = 10
 
 
 def get_machine_id() -> str:
-    """PC 고유 식별자 (MAC + Windows 머신 ID 해시)"""
+    """PC 고유 식별자 (하드웨어 시리얼 + MAC + hostname 복합 해시)"""
+    parts = []
+    # Windows WMI: 마더보드/CPU/디스크 시리얼 (위조 어려움)
+    if platform.system() == "Windows":
+        try:
+            import subprocess
+            for cmd in [
+                "wmic baseboard get serialnumber",
+                "wmic cpu get processorid",
+                "wmic diskdrive get serialnumber",
+            ]:
+                out = subprocess.check_output(cmd, shell=True, timeout=5,
+                                              stderr=subprocess.DEVNULL).decode().strip()
+                lines = [l.strip() for l in out.splitlines() if l.strip()]
+                if len(lines) > 1:
+                    parts.append(lines[-1])
+        except Exception:
+            pass
+    # 폴백: MAC + hostname + OS
     try:
-        mac = uuid.getnode()
-        node = platform.node()
-        raw = f"{mac}-{node}-{platform.system()}"
-        return hashlib.sha256(raw.encode()).hexdigest()[:32]
+        parts.append(str(uuid.getnode()))
+        parts.append(platform.node())
+        parts.append(platform.system())
     except Exception:
+        pass
+    if not parts:
         return "unknown"
+    raw = "-".join(parts)
+    return hashlib.sha256(raw.encode()).hexdigest()[:32]
 
 
 @dataclass

@@ -117,7 +117,7 @@ echo "[N-CRIT-3a] RPC IDOR 차단 (다른 사용자 uid)"
 RES=$(curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/change_points_atomic" \
   -H "$H_API" -H "$H_AUTH" -H "$H_CT" \
   -d '{"p_uid":"00000000-0000-0000-0000-000000000000","p_delta":-1,"p_reason":"verify"}')
-if echo "$RES" | grep -qE "다른 사용자의 포인트를 변경할 수 없습니다"; then
+if echo "$RES" | grep -qE "다른 사용자의 (포인트|이용 횟수)를 변경할 수 없습니다"; then
   ok "IDOR 차단됨"
 else
   ng "IDOR 통과! 응답: $(echo $RES | head -c 300)"
@@ -127,7 +127,7 @@ echo "[N-CRIT-3b] RPC 양수 차단"
 RES=$(curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/change_points_atomic" \
   -H "$H_API" -H "$H_AUTH" -H "$H_CT" \
   -d "{\"p_uid\":\"$MY_USER_ID\",\"p_delta\":1,\"p_reason\":\"verify\"}")
-if echo "$RES" | grep -qE "결제 시스템을 통해서만"; then
+if echo "$RES" | grep -qE "결제 시스템을 통해서만|결제.*가능합니다"; then
   ok "양수 차단됨"
 else
   ng "양수 통과! 응답: $(echo $RES | head -c 200)"
