@@ -170,7 +170,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill,minmax(${mob ? "100%" : "340px"},1fr))`, gap: 24 }}>
-            {challenges.map(ch => {
+            {challenges.filter(ch => ch.visibility !== "admin" || user?.role === "admin").map(ch => {
               const st = STATUS_MAP[getStatus(ch)] || STATUS_MAP.recruiting;
               return (
                 <div key={ch.id} onClick={() => openDetail(ch)}
@@ -520,6 +520,10 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
   const [link, setLink] = useState("");
   const [memo, setMemo] = useState("");
   const [extraLink, setExtraLink] = useState(""); // 추가 활동 (댓글/공감/공유 스크린샷)
+  const [screenshotFile, setScreenshotFile] = useState(null); // 인증 스크린샷
+  const [screenshotPreview, setScreenshotPreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState("calendar");
   const inp = { width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
@@ -541,12 +545,32 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
   const myChecked = Object.keys(myMissions).length;
   const pct = Math.round((myChecked / totalDays) * 100);
 
+  // 스크린샷 선택 핸들러
+  const handleScreenshot = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert("파일 크기는 5MB 이하만 가능합니다."); return; }
+    setScreenshotFile(file);
+    setScreenshotPreview(URL.createObjectURL(file));
+  };
+
   // 인증 제출
   const submit = async () => {
-    if (!link.trim() || !selDay) return; setBusy(true);
+    if ((!link.trim() && !screenshotFile) || !selDay) return; setBusy(true);
     try {
-      const m = await submitMission({ challenge_id: ch.id, uid: user.uid, nick: user.nick || "참가자", day: selDay, title: `Day ${selDay} 미션 인증`, body: memo.trim(), link: link.trim(), extra_link: extraLink.trim() || null });
-      setMissions(p => [m, ...p]); setLink(""); setMemo(""); setExtraLink(""); setSelDay(null);
+      let screenshotUrl = null;
+      if (screenshotFile) {
+        setUploading(true);
+        const ext = screenshotFile.name.split(".").pop();
+        const path = `challenge-missions/${ch.id}/day${selDay}_${user.uid}_${Date.now()}.${ext}`;
+        const { data: upData, error: upErr } = await supabase.storage.from("uploads").upload(path, screenshotFile, { contentType: screenshotFile.type, upsert: true });
+        if (upErr) throw upErr;
+        const { data: urlData } = supabase.storage.from("uploads").getPublicUrl(path);
+        screenshotUrl = urlData?.publicUrl || null;
+        setUploading(false);
+      }
+      const m = await submitMission({ challenge_id: ch.id, uid: user.uid, nick: user.nick || "참가자", day: selDay, title: `Day ${selDay} 미션 인증`, body: memo.trim(), link: link.trim() || screenshotUrl || "", extra_link: extraLink.trim() || null, screenshot_url: screenshotUrl });
+      setMissions(p => [m, ...p]); setLink(""); setMemo(""); setExtraLink(""); setScreenshotFile(null); setScreenshotPreview(null); setSelDay(null);
     } catch(e) { alert("등록 실패: " + e.message); }
     setBusy(false);
   };
@@ -677,13 +701,33 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                       {isWeekend(selDay) && <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.1)", padding: "2px 8px", borderRadius: 99 }}>주말 보너스 x2</span>}
                     </div>
                     <input value={link} onChange={e => setLink(e.target.value)} placeholder="블로그 글, 인스타 포스팅 URL 등" style={{ ...inp, marginBottom: 8 }} />
+
+                    {/* 스크린샷 업로드 */}
+                    <div style={{ marginBottom: 8 }}>
+                      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleScreenshot} style={{ display: "none" }} />
+                      <div onClick={() => fileInputRef.current?.click()}
+                        style={{ border: `2px dashed ${screenshotPreview ? PRIMARY : bdr}`, borderRadius: 12, padding: screenshotPreview ? 0 : "20px 16px", textAlign: "center", cursor: "pointer", background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa", overflow: "hidden", transition: "border-color 0.2s" }}>
+                        {screenshotPreview ? (
+                          <div style={{ position: "relative" }}>
+                            <img src={screenshotPreview} alt="preview" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
+                            <button onClick={e => { e.stopPropagation(); setScreenshotFile(null); setScreenshotPreview(null); }} style={{ position: "absolute", top: 8, right: 8, width: 24, height: 24, borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>x</button>
+                          </div>
+                        ) : (
+                          <>
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.5" style={{ display: "block", margin: "0 auto 8px" }}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            <div style={{ fontSize: 13, color: C.muted }}>인증 스크린샷 첨부 (선택, 최대 5MB)</div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
                     <input value={memo} onChange={e => setMemo(e.target.value)} placeholder="메모 (선택)" style={{ ...inp, marginBottom: 8 }} />
                     <div style={{ fontSize: 12, fontWeight: 600, color: "#f59e0b", marginBottom: 6, marginTop: 4 }}>추가 활동 (가산점 +0.5점)</div>
                     <input value={extraLink} onChange={e => setExtraLink(e.target.value)} placeholder="댓글/공감/공유 활동 스크린샷 or 링크 (선택)" style={{ ...inp, marginBottom: 12 }} />
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <button disabled={!link.trim() || busy} onClick={submit}
-                        style={{ padding: "11px 24px", borderRadius: 99, border: "none", background: link.trim() ? "#1A1A2E" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: link.trim() ? "#fff" : C.muted, fontSize: 14, fontWeight: 700, cursor: link.trim() ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
-                        {busy ? "등록 중..." : "인증하기"}
+                      <button disabled={(!link.trim() && !screenshotFile) || busy} onClick={submit}
+                        style={{ padding: "11px 24px", borderRadius: 99, border: "none", background: (link.trim() || screenshotFile) ? "#1A1A2E" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: (link.trim() || screenshotFile) ? "#fff" : C.muted, fontSize: 14, fontWeight: 700, cursor: (link.trim() || screenshotFile) ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+                        {uploading ? "업로드 중..." : busy ? "등록 중..." : "인증하기"}
                       </button>
                       <span style={{ fontSize: 11, color: C.muted }}>평일 1점 / 주말 2점 / 추가활동 +0.5점</span>
                     </div>
@@ -701,7 +745,8 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                         <div style={{ width: 28, height: 28, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(m.nick || "?")[0]}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{(m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</div>
-                          {m.link && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{m.link}</a>}
+                          {m.screenshot_url && <a href={m.screenshot_url} target="_blank" rel="noopener noreferrer"><img src={m.screenshot_url} alt="인증" style={{ width: 60, height: 40, objectFit: "cover", borderRadius: 6, marginTop: 4, display: "block" }} /></a>}
+                          {m.link && !m.link.includes("supabase.co/storage") && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{m.link}</a>}
                         </div>
                         <span style={{ fontSize: 11, color: C.muted, flexShrink: 0 }}>{new Date(m.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</span>
                         {user?.role === "admin" && (
