@@ -348,38 +348,14 @@ navItems.forEach((item) => {
 
 // 횟수 표시 (수동 글쓰기)
 async function updateWriteQuota() {
-  const el = $("writeQuotaInfo");
-  if (!el) return;
-  if (!state.loggedIn) { el.textContent = "로그인 후 이용 가능"; return; }
-  try {
-    const cfg = (await bridge.loadConfig()) || {};
-    const today = new Date().toISOString().slice(0, 10);
-    const used = cfg._manual_write_date === today ? (cfg._manual_write_used || 0) : 0;
-    const planKey = normalizeExePlan(state.user);
-    const limits = { trial: 3, starter: 5, pro: 20, premium: 99999, admin: 99999 };
-    const limit = limits[planKey] || 3;
-    const remaining = Math.max(0, limit - used);
-    el.textContent = limit >= 99999 ? `오늘 ${used}회 사용` : `오늘 남은 횟수: ${remaining}/${limit}회`;
-    el.style.color = remaining <= 1 && limit < 99999 ? "#ef4444" : "var(--text-dim)";
-  } catch { el.textContent = ""; }
+  // 기능별 표시 제거, 사이드바 상단만 업데이트
+  var el = $("writeQuotaInfo"); if (el) el.style.display = "none";
+  updateSidebarQuota();
 }
 
-// 횟수 표시 (카드뉴스)
 async function updateCardQuota() {
-  const el = $("cardQuotaInfo");
-  if (!el) return;
-  if (!state.loggedIn) { el.textContent = "로그인 후 이용 가능"; return; }
-  try {
-    const cfg = (await bridge.loadConfig()) || {};
-    const today = new Date().toISOString().slice(0, 10);
-    const used = cfg._cardnews_date === today ? (cfg._cardnews_used || 0) : 0;
-    const planKey = normalizeExePlan(state.user);
-    const limits = { trial: 2, starter: 3, pro: 10, premium: 99999, admin: 99999 };
-    const limit = limits[planKey] || 2;
-    const remaining = Math.max(0, limit - used);
-    el.textContent = limit >= 99999 ? `오늘 ${used}회 사용` : `오늘 남은 횟수: ${remaining}/${limit}회`;
-    el.style.color = remaining <= 1 && limit < 99999 ? "#ef4444" : "var(--text-dim)";
-  } catch { el.textContent = ""; }
+  var el = $("cardQuotaInfo"); if (el) el.style.display = "none";
+  updateSidebarQuota();
 }
 
 function goToPanel(name) {
@@ -930,10 +906,45 @@ bridge.onLog((text) => {
 });
 
 // ── 사이드바 유저 배지 ──
-function setUserBadge(text, state = "gray") {
-  const badge = $("userBadge");
-  badge.querySelector(".user-dot").className = "user-dot dot-" + state;
-  badge.querySelector(".user-text").textContent = text;
+function setUserBadge(text, dotState = "gray") {
+  var dotTop = $("userDotTop");
+  var nameTop = $("userNameTop");
+  var planTop = $("userPlanTop");
+  if (dotTop) dotTop.className = "user-dot dot-" + dotState;
+  if (nameTop) nameTop.textContent = text;
+  // 등급 표시
+  if (planTop && state.user) {
+    var u = state.user;
+    var planLabels = { admin: "관리자", trial: "체험판", starter: "Basic", pro: "Pro", premium: "Premium", business: "Business", member: "Free" };
+    var planKey = u.admin ? "admin" : (u.trial ? "trial" : (u.plan || "member").toLowerCase());
+    var label = planLabels[planKey] || u.plan || "Free";
+    planTop.textContent = label + " 플랜";
+    planTop.style.color = u.admin ? "#3b82f6" : "var(--text-dim)";
+  } else if (planTop) {
+    planTop.textContent = "";
+  }
+}
+
+// ── 사이드바 횟수 표시 업데이트 ──
+function updateSidebarQuota() {
+  var area = $("quotaBarArea");
+  if (!area) return;
+  if (!state.loggedIn || !state.user) { area.style.display = "none"; return; }
+  area.style.display = "";
+  var u = state.user;
+  var limit = u.monthly_limit || 5;
+  var used = u.monthly_used || 0;
+  if (u.trial) { limit = u.trial_limit || 5; used = u.trial_used || 0; }
+  if (u.admin) { limit = 99999; used = 0; }
+  var left = Math.max(0, limit - used);
+  var pct = limit >= 99999 ? 100 : Math.min(100, Math.round((left / limit) * 100));
+  $("quotaText").textContent = limit >= 99999 ? "무제한" : left + " / " + limit;
+  $("quotaBar").style.width = pct + "%";
+  $("quotaBar").style.background = pct < 20 ? "#ef4444" : pct < 50 ? "#f59e0b" : "var(--accent)";
+
+  // 수동 글쓰기 횟수 표시도 동기화
+  var wq = $("writeQuotaInfo");
+  if (wq) wq.textContent = limit >= 99999 ? "무제한" : "남은 횟수: " + left + " / " + limit + "회";
 }
 
 // ── 아바타 선택 (프로필 캐릭터) ──
@@ -1211,6 +1222,7 @@ function handleVerifyResult(r, email) {
   if (r.ok && r.result && r.result.status === "ok") {
     // 관리자 이메일 체크
     const isAdmin = isAdminAccount(email, r.result);
+    var serverQuota = r.result.quota || {};
     const data = {
       valid: true,
       email,
@@ -1222,16 +1234,19 @@ function handleVerifyResult(r, email) {
       trial_used: isAdmin ? 0 : Math.max(r.result.trial_used || 0, _trialUsedCache),
       trial_limit: isAdmin ? 999999 : (r.result.trial_limit || 10),
       admin: isAdmin,
+      monthly_used: serverQuota.used || 0,
+      monthly_limit: serverQuota.limit || 5,
     };
     state.loggedIn = true;
     state.user = data;
-    const remaining = data.trial ? Math.max(0, data.trial_limit - data.trial_used) : 0;
+    const remaining = data.trial
+      ? Math.max(0, data.trial_limit - data.trial_used)
+      : Math.max(0, data.monthly_limit - data.monthly_used);
     const badgeText = isAdmin
       ? `관리자 · ${data.nick || email}`
-      : data.trial
-        ? `체험 남은 ${remaining}회`
-        : `${data.plan} · ${data.nick || email}`;
+      : `${data.nick || email}`;
     setUserBadge(badgeText, "green");
+    updateSidebarQuota();
     renderPlanCard(data);
     addLog(isAdmin
       ? `[계정] 관리자 로그인 — 무제한`
@@ -1268,6 +1283,7 @@ async function handleLogout() {
   const loginCard = document.getElementById("loginCard");
   if (loginCard) loginCard.style.display = "";
   setUserBadge("로그인 필요", "gray");
+  updateSidebarQuota();
   addLog("[계정] 로그아웃됨");
 }
 
@@ -1654,6 +1670,8 @@ if ($("quickStartBtn")) $("quickStartBtn").addEventListener("click", async () =>
   if (!category) return showModal("알림", "메뉴명을 입력하세요.", "확인");
   if (!state.loggedIn) return showModal("알림", "먼저 메이킷 계정에 로그인하세요.", "확인");
   if (!(await canUseExperience("quick"))) return;
+  var _wq = await checkWriteLimit();
+  if (!_wq.canUse) return showModal("한도 초과", "이번 달 사용 한도를 모두 사용했습니다.", "구독하기", () => bridge.openExternal("https://snsmakeit.com/programs"));
 
   const customTitle = ($("quickTitle") && $("quickTitle").value.trim()) || "";
   const quickTemplate = ($("quickTemplate") && $("quickTemplate").value.trim()) || "";
@@ -4189,7 +4207,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // 칩 셋업 (이벤트 위임 — 수동 글쓰기 전용)
   function chipVal(id, fb) { return $(id)?.querySelector(".chip.active")?.dataset.value || fb; }
 
-  document.querySelector('[data-panel="manual-write"]')?.addEventListener("click", (e) => {
+  document.querySelector('section[data-panel="manual-write"]')?.addEventListener("click", (e) => {
     const chip = e.target.closest(".chip");
     if (!chip) return;
     const container = chip.closest(".chips");
@@ -4252,25 +4270,29 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 
   // 수동 글쓰기 횟수 관리
   const WRITE_LIMIT_KEY = "_manual_write_used";
-  const WRITE_LIMIT_DATE_KEY = "_manual_write_date";
-  const MANUAL_WRITE_LIMITS = { trial: 3, starter: 5, pro: 20, premium: 99999, admin: 99999 };
-
   async function checkWriteLimit() {
-    const cfg = (await bridge.loadConfig()) || {};
-    const today = new Date().toISOString().slice(0, 10);
-    if (cfg[WRITE_LIMIT_DATE_KEY] !== today) { cfg[WRITE_LIMIT_KEY] = 0; cfg[WRITE_LIMIT_DATE_KEY] = today; await bridge.saveConfig(cfg); }
-    const planKey = normalizeExePlan(state.user);
-    const limit = MANUAL_WRITE_LIMITS[planKey] || 3;
-    const used = cfg[WRITE_LIMIT_KEY] || 0;
-    return { canUse: used < limit, used, limit, remaining: Math.max(0, limit - used) };
+    if (!state.user) return { canUse: false, used: 0, limit: 0, remaining: 0 };
+    var u = state.user;
+    if (u.admin) return { canUse: true, used: 0, limit: 99999, remaining: 99999 };
+    var limit = u.trial ? (u.trial_limit || 5) : (u.monthly_limit || 5);
+    var used = u.trial ? (u.trial_used || 0) : (u.monthly_used || 0);
+    var remaining = Math.max(0, limit - used);
+    return { canUse: remaining > 0, used, limit, remaining };
   }
 
   async function markWriteUsed() {
-    const cfg = (await bridge.loadConfig()) || {};
-    const today = new Date().toISOString().slice(0, 10);
-    if (cfg[WRITE_LIMIT_DATE_KEY] !== today) { cfg[WRITE_LIMIT_KEY] = 0; cfg[WRITE_LIMIT_DATE_KEY] = today; }
-    cfg[WRITE_LIMIT_KEY] = (cfg[WRITE_LIMIT_KEY] || 0) + 1;
-    await bridge.saveConfig(cfg);
+    // 로컬 상태 업데이트 (사이드바 반영)
+    if (state.user) {
+      if (state.user.trial) { state.user.trial_used = (state.user.trial_used || 0) + 1; }
+      else { state.user.monthly_used = (state.user.monthly_used || 0) + 1; }
+    }
+    updateSidebarQuota();
+  }
+
+  // 횟수 차감 확인 모달
+  function showQuotaConfirm(featureName, onConfirm) {
+    var msg = featureName + " 기능을 실행하면 1회가 차감됩니다.\n진행하시겠습니까?";
+    showModal("횟수 차감 안내", msg, "진행", onConfirm);
   }
 
   // 글 생성
@@ -4282,8 +4304,14 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (!state.loggedIn) return showModal("로그인 필요", "먼저 메이킷 계정에 로그인해주세요.", "확인");
     const quota = await checkWriteLimit();
     if (!quota.canUse) {
-      return showModal("일일 한도 초과", `오늘의 수동 글쓰기 한도(${quota.limit}회)를 모두 사용했습니다.\n내일 다시 이용하거나 플랜을 업그레이드하세요.`, "구독하기", () => bridge.openExternal("https://snsmakeit.com/pricing"));
+      return showModal("월간 한도 초과", `이번 달 한도(${quota.limit}회)를 모두 사용했습니다.\n플랜을 업그레이드하세요.`, "구독하기", () => bridge.openExternal("https://snsmakeit.com/programs"));
     }
+
+    // 차감 확인
+    showQuotaConfirm("AI 글쓰기", () => doWriteGenerate(topic));
+  });
+
+  async function doWriteGenerate(topic) {
 
     const platform = chipVal("writePlatformChips", "naver");
     const subtype = chipVal("writeSubtypeChips", "info");
@@ -4448,11 +4476,26 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
       $("writeLoadingView").style.display = "none";
       $("writeResultView").style.display = "block";
       $("writeResultContent").innerHTML = rendered.replace(/\n/g, "<br>");
-      $("writeResultTitle").textContent = extractedTitle || (full.split("\n")[0].replace(/^#+\s*/, "").trim()).slice(0, 50) || "생성된 글";
+      $("writeResultContent").contentEditable = "true";
+      $("writeResultContent").style.outline = "none";
+      $("writeResultContent").style.minHeight = "200px";
+      var finalTitle = extractedTitle || (full.split("\n")[0].replace(/^#+\s*/, "").trim()).slice(0, 50) || "생성된 글";
+      $("writeResultTitle").textContent = finalTitle;
 
       // 횟수 차감 + 표시 업데이트
       await markWriteUsed();
       updateWriteQuota();
+
+      // 보관함 자동 저장
+      if (window._archiveSave) {
+        window._archiveSave({
+          type: "blog",
+          title: finalTitle,
+          theme: topic,
+          category: category,
+          preview: full.slice(0, 200).replace(/\[.*?\]/g, "").trim(),
+        });
+      }
 
       // 제목 추천 + SEO
       generateTitleSuggestions(topic, full);
@@ -4463,7 +4506,7 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
       $("writeInputView").style.display = "block";
       showModal("생성 실패", e.message, "확인");
     }
-  });
+  }
 
   // 제목 추천
   async function generateTitleSuggestions(topic, content) {
@@ -4503,17 +4546,30 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
     } catch {}
   }
 
-  // 복사
+  // 복사 (리치 텍스트 — 이미지+서식 유지)
   $("writeCopyBtn")?.addEventListener("click", () => {
-    navigator.clipboard.writeText($("writeResultContent")?.textContent || "").then(() => {
-      $("writeCopyBtn").textContent = "복사됨!"; setTimeout(() => { $("writeCopyBtn").textContent = "복사"; }, 2000);
-    });
+    const el = $("writeResultContent");
+    if (!el) return;
+    const html = el.innerHTML;
+    const text = el.innerText;
+    try {
+      const blob = new Blob([html], { type: "text/html" });
+      const textBlob = new Blob([text], { type: "text/plain" });
+      navigator.clipboard.write([
+        new ClipboardItem({ "text/html": blob, "text/plain": textBlob })
+      ]).then(() => {
+        $("writeCopyBtn").textContent = "복사됨!"; setTimeout(() => { $("writeCopyBtn").textContent = "복사"; }, 2000);
+      });
+    } catch {
+      navigator.clipboard.writeText(text).then(() => {
+        $("writeCopyBtn").textContent = "복사됨!"; setTimeout(() => { $("writeCopyBtn").textContent = "복사"; }, 2000);
+      });
+    }
   });
 
-  // HTML 복사 (티스토리용)
+  // HTML 소스 복사
   $("writeHtmlCopyBtn")?.addEventListener("click", () => {
-    const text = $("writeResultContent")?.textContent || "";
-    const html = text.replace(/^## (.+)$/gm, "<h3>$1</h3>").replace(/^### (.+)$/gm, "<h4>$1</h4>").replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>").replace(/\n/g, "<br>");
+    const html = $("writeResultContent")?.innerHTML || "";
     navigator.clipboard.writeText(html).then(() => {
       $("writeHtmlCopyBtn").textContent = "복사됨!"; setTimeout(() => { $("writeHtmlCopyBtn").textContent = "HTML 복사"; }, 2000);
     });

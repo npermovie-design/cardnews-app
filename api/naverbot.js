@@ -57,6 +57,9 @@ async function handleAccountVerify(req, res) {
       trialUsed = count ?? 0;
     }
 
+    // 월간 사용량 조회
+    const quota = await checkDailyQuota(result.uid, result.plan);
+
     return res.status(200).json({
       valid: true,
       user: {
@@ -70,6 +73,7 @@ async function handleAccountVerify(req, res) {
       trial_used: trialUsed,
       trial_limit: result.plan === "admin" ? 999999 : trialLimit,
       expires_at: result.expires_at,
+      quota: { used: quota.used, limit: quota.limit },
     });
   } catch (e) {
     return safeError(res, 500, "로그인 처리 실패", e);

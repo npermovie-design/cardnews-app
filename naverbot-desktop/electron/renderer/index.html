@@ -15,6 +15,25 @@
         <div class="brand-title">메이킷 SNS 자동화</div>
         <a class="brand-link" id="brandLink" href="#">snsmakeit.com</a>
       </div>
+      <!-- 사용자 + 등급 + 잔여 횟수 (상단) -->
+      <div id="sidebarUserArea" style="padding:10px 14px 8px;border-bottom:1px solid var(--border-soft);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <div class="user-dot dot-gray" id="userDotTop"></div>
+          <div style="flex:1;min-width:0;">
+            <div id="userNameTop" style="font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">로그인 필요</div>
+            <div id="userPlanTop" style="font-size:10px;color:var(--text-dim);margin-top:1px;"></div>
+          </div>
+        </div>
+        <div id="quotaBarArea" style="display:none;margin-top:6px;">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-bottom:3px;">
+            <span>남은 횟수</span>
+            <span id="quotaText">0 / 0</span>
+          </div>
+          <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;">
+            <div id="quotaBar" style="height:100%;background:var(--accent);border-radius:2px;width:0%;transition:width 0.3s;"></div>
+          </div>
+        </div>
+      </div>
       <nav class="sidebar-nav">
         <button class="nav-item active" data-panel="home">
           <span class="nav-icon nav-home"></span>홈
@@ -76,12 +95,7 @@
           <span class="nav-icon nav-info"></span>정보
         </button>
       </nav>
-      <div class="sidebar-footer">
-        <div class="user-badge" id="userBadge">
-          <div class="user-dot dot-gray"></div>
-          <div class="user-text">로그인 필요</div>
-        </div>
-      </div>
+      <div class="sidebar-footer"></div>
     </aside>
 
     <!-- ========== 메인 ========== -->
