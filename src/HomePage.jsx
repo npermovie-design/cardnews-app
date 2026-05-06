@@ -79,16 +79,16 @@ const ORBIT_ICONS = [
   { src: "/icon-x.svg", orbit: 0, angle: 270, size: 44 },
   // 궤도 1 (중간) — 5개, 72도 간격
   { src: "/icon-threads.png", orbit: 1, angle: 0, size: 42 },
-  { src: "/icon-linkedin.svg", orbit: 1, angle: 72, size: 40 },
-  { src: "/icon-tistory.png", orbit: 1, angle: 144, size: 38 },
-  { src: "/icon-facebook.svg", orbit: 1, angle: 216, size: 40 },
-  { src: "/icon-discord.svg", orbit: 1, angle: 288, size: 38 },
+  { src: "/icon-tistory.png", orbit: 1, angle: 72, size: 40 },
+  { src: "/icon-youtube.png", orbit: 1, angle: 144, size: 38 },
+  { src: "/icon-naver-cafe.webp", orbit: 1, angle: 216, size: 40 },
+  { src: "/icon-instagram.svg", orbit: 1, angle: 288, size: 38 },
   // 궤도 2 (바깥) — 5개, 72도 간격 (36도 오프셋)
-  { src: "/icon-naver-cafe.webp", orbit: 2, angle: 36, size: 36 },
-  { src: "/icon-tiktok.svg", orbit: 2, angle: 108, size: 34 },
+  { src: "/icon-naver-blog.png", orbit: 2, angle: 36, size: 36 },
+  { src: "/icon-threads.png", orbit: 2, angle: 108, size: 34 },
   { src: "/icon-youtube.png", orbit: 2, angle: 180, size: 36 },
-  { src: "/icon-instagram.svg", orbit: 2, angle: 252, size: 34 },
-  { src: "/icon-naver-blog.png", orbit: 2, angle: 324, size: 32 },
+  { src: "/icon-tistory.png", orbit: 2, angle: 252, size: 34 },
+  { src: "/icon-instagram.svg", orbit: 2, angle: 324, size: 32 },
 ];
 
 function OrbitIconsBg() {
@@ -305,7 +305,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
               ))}
             </div>
             <span style={{ fontSize: 14, fontWeight: 500, color: "#4a5568" }}>
-              {ko ? `${Math.max(userCount, 100).toLocaleString()}+ 대표님이 사용 중` : `${Math.max(userCount, 100).toLocaleString()}+ users joined`}
+              {ko ? `${Math.max(userCount, 100).toLocaleString()}+ 사용자가 함께하는 중` : `${Math.max(userCount, 100).toLocaleString()}+ users joined`}
             </span>
           </div>
         </div>
@@ -374,11 +374,13 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             <div className="hp-logo-track">
               {[
                 { src: "/icon-naver-blog.png", name: "네이버 블로그" },
+                { src: "/icon-naver-cafe.webp", name: "네이버 카페" },
                 { src: "/icon-instagram.svg", name: "Instagram" },
                 { src: "/icon-youtube.png", name: "YouTube" },
                 { src: "/icon-threads.png", name: "Threads" },
                 { src: "/icon-tistory.png", name: "Tistory" },
-                { src: "/icon-naver-blog.png", name: "네이버 카페" },
+                { src: "/icon-naver-blog.png", name: "네이버 블로그" },
+                { src: "/icon-naver-cafe.webp", name: "네이버 카페" },
                 { src: "/icon-instagram.svg", name: "Instagram" },
                 { src: "/icon-youtube.png", name: "YouTube" },
                 { src: "/icon-threads.png", name: "Threads" },
@@ -648,18 +650,18 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
           {(() => {
             const col1 = [
               { image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face", name: ko?"김** 대표님":"Kim, CEO", role: ko?"패션 쇼핑몰":"Fashion", text: ko?"블로그 작성 시간이 2시간에서 5분으로 줄었어요. 외주비 월 50만원 절약하고 있습니다.":"Blog writing dropped from 2hr to 5min." },
-              { image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", name: ko?"박** 팀장님":"Park, Lead", role: ko?"마케팅 대행사":"Agency", text: ko?"10개 클라이언트 블로그를 혼자 관리합니다. SEO 자동 반영이 강력해요.":"I manage 10 clients' blogs alone." },
-              { image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face", name: ko?"정** 실장님":"Jung, Dir", role: ko?"뷰티 브랜드":"Beauty", text: ko?"인스타, 블로그 콘텐츠를 30분 안에 완성해요. 전에는 하루종일 걸렸는데.":"30 min for all content." },
+              { image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face", name: ko?"박** 팀장님":"Park, Lead", role: ko?"마케팅 대행사":"Agency", text: ko?"여러 클라이언트 블로그를 혼자 관리합니다. 키워드 분석이 특히 유용해요.":"I manage multiple clients' blogs alone." },
+              { image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face", name: ko?"정** 실장님":"Jung, Dir", role: ko?"뷰티 브랜드":"Beauty", text: ko?"블로그 콘텐츠를 30분 안에 완성해요. 전에는 하루종일 걸렸는데.":"Blog content done in 30 min." },
             ];
             const col2 = [
-              { image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face", name: ko?"이** 크리에이터":"Lee, Creator", role: ko?"1인 크리에이터":"Solo Creator", text: ko?"인스타, 블로그, 스레드를 한 번에 만들어서 매일 발행 중. 팔로워 3배!":"All platforms at once. 3x followers!" },
-              { image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face", name: ko?"최** 마케터":"Choi, Mkt", role: ko?"IT 스타트업":"Startup", text: ko?"키워드 분석부터 글 생성까지 자동화돼서 다른 업무에 집중할 수 있어요.":"Automated from keywords to posts." },
-              { image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face", name: ko?"한** 대표":"Han, CEO", role: ko?"교육 플랫폼":"Education", text: ko?"쇼츠 영상까지 자동 생성돼서 유튜브 구독자가 2배로 늘었습니다.":"YouTube subs doubled with auto shorts." },
+              { image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face", name: ko?"이** 운영자":"Lee, Mgr", role: ko?"1인 사업자":"Solo Business", text: ko?"자동 발행 덕분에 매일 블로그에 글이 올라가요. 검색 노출이 확 늘었어요.":"Auto-publishing keeps my blog active daily." },
+              { image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face", name: ko?"최** 마케터":"Choi, Mkt", role: ko?"스타트업":"Startup", text: ko?"키워드 분석부터 글 작성까지 한 번에 돼서 다른 업무에 집중할 수 있어요.":"From keywords to posts, all at once." },
+              { image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face", name: ko?"한** 대표":"Han, CEO", role: ko?"교육 플랫폼":"Education", text: ko?"부트캠프에서 다른 사업자들과 함께 SNS 운영 노하우를 나누고 있어요.":"Learning SNS skills together in bootcamp." },
             ];
             const col3 = [
-              { image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop&crop=face", name: ko?"신** 매니저":"Shin, Mgr", role: ko?"쇼핑몰 운영":"E-commerce", text: ko?"상세페이지 제작이 10분이면 끝나요. 외주 맡기던 시절이 믿기지 않아요.":"Product pages in 10 min." },
-              { image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face", name: ko?"윤** 기획자":"Yoon, PM", role: ko?"콘텐츠 에이전시":"Content Agency", text: ko?"클라이언트별 톤 맞춤 글이 자동으로 나와서 수정만 하면 됩니다.":"Auto tone-matched drafts per client." },
-              { image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face", name: ko?"안** 프리랜서":"Ahn, Freelance", role: ko?"프리랜서":"Freelancer", text: ko?"혼자서도 대행사 수준의 콘텐츠를 만들 수 있게 됐어요. 수입 2배!":"Agency-level content solo. 2x income!" },
+              { image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop&crop=face", name: ko?"신** 매니저":"Shin, Mgr", role: ko?"쇼핑몰 운영":"E-commerce", text: ko?"드라이브에 사진만 올려두면 자동으로 블로그 글이 완성돼요. 진짜 편해요.":"Just upload photos to Drive, blog posts are auto-created." },
+              { image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face", name: ko?"윤** 기획자":"Yoon, PM", role: ko?"콘텐츠 에이전시":"Content Agency", text: ko?"클라이언트별 톤에 맞춘 글이 나와서 수정만 하면 됩니다.":"Tone-matched drafts per client." },
+              { image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face", name: ko?"안** 프리랜서":"Ahn, Freelance", role: ko?"프리랜서":"Freelancer", text: ko?"혼자서도 꾸준히 블로그를 운영할 수 있게 됐어요. 수입이 눈에 띄게 늘었어요.":"Now I can consistently run my blog solo." },
             ];
             return (
               <div style={{ display: "flex", justifyContent: "center", gap: 20, maxHeight: 700, overflow: "hidden", WebkitMaskImage: "linear-gradient(to bottom, transparent, black 10%, black 90%, transparent)" }}>
