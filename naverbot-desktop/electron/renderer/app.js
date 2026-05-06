@@ -3240,14 +3240,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function chipG(id,cb) { var w=$(id); if(!w) return; w.addEventListener("click",function(e){ var b=e.target.closest(".chip"); if(!b) return; w.querySelectorAll(".chip").forEach(function(c){c.classList.remove("active")}); b.classList.add("active"); cb(b.dataset.value); }); }
 
   chipG("veTypeChips",function(v){ ve.type=v; applyVeLayout(v); });
-  // NLE 스타일 비율 버튼
-  document.querySelectorAll(".ve-ratio-btn").forEach(function(btn){
-    btn.addEventListener("click",function(){
-      document.querySelectorAll(".ve-ratio-btn").forEach(function(b){ b.classList.remove("active"); b.style.background="transparent"; b.style.color="#94a3b8"; });
-      btn.classList.add("active"); btn.style.background="#3b82f6"; btn.style.color="#fff";
-      ve.type=btn.dataset.value; applyVeLayout(btn.dataset.value);
-    });
-  });
+  // 비율 라벨 업데이트
+  function updateRatioLabel() {
+    var label = $("veRatioLabel");
+    var labels = { landscape: "16:9 가로", portrait: "9:16 세로", square: "1:1 정사각" };
+    if (label) label.textContent = labels[ve.type] || ve.type;
+  }
 
   // 캔버스 기반 프리뷰 (비율별 크롭/포지셔닝)
   var _veCanvas = null;
@@ -3704,10 +3702,13 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           if (p.src) items.push({ thumb: p.src.tiny || p.src.small, full: p.src.medium, type: "photo" });
         });
       } else {
-        var r = await fetch("https://snsmakeit.com/api/proxy?action=pixabay&q=" + encodeURIComponent(q) + "&per_page=12&safesearch=true&image_type=photo");
+        // 영상 (Pixabay Videos)
+        var r = await fetch("https://snsmakeit.com/api/proxy?action=pixabay&q=" + encodeURIComponent(q) + "&per_page=12&safesearch=true&video=true");
         var d = await r.json();
         (d.hits || []).forEach(function(h) {
-          items.push({ thumb: h.previewURL, full: h.webformatURL, type: "photo" });
+          var thumb = h.videos?.tiny?.thumbnail || h.previewURL || "";
+          var videoUrl = h.videos?.small?.url || h.videos?.tiny?.url || "";
+          if (thumb) items.push({ thumb: thumb, full: videoUrl, type: "video" });
         });
       }
 
@@ -3760,9 +3761,6 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // 초기 탭 활성 스타일
   var firstTab=document.querySelector(".ve-tab-btn.active");
   if(firstTab){firstTab.style.color="#3b82f6";firstTab.style.borderBottomColor="#3b82f6";}
-  // 초기 비율 버튼 활성
-  var firstRatio=document.querySelector(".ve-ratio-btn.active");
-  if(firstRatio){firstRatio.style.background="#3b82f6";firstRatio.style.color="#fff";}
 
   // 줌
   var timelineZoom = 1;
@@ -4002,12 +4000,6 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     // 비율 설정 적용
     var initRatio = document.querySelector("#veInitRatioChips .chip.active");
     if(initRatio) ve.type = initRatio.dataset.value;
-    // 편집기 비율 버튼도 동기화
-    document.querySelectorAll(".ve-ratio-btn").forEach(function(b){
-      b.classList.toggle("active", b.dataset.value===ve.type);
-      b.style.background = b.dataset.value===ve.type ? "#3b82f6" : "transparent";
-      b.style.color = b.dataset.value===ve.type ? "#fff" : "#94a3b8";
-    });
     // 저장 폴더
     var od=$("veOutputDir"); if(od && od.value.trim()) ve._outputDir = od.value.trim();
 
@@ -4127,8 +4119,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       if (loadTxt) loadTxt.textContent = "자막 및 타임라인 준비 중...";
       setTimeout(function() {
         // 기본 비율 적용 + 캔버스 렌더 시작
-        var activeRatio = document.querySelector(".ve-ratio-btn.active");
-        applyVeLayout(activeRatio ? activeRatio.dataset.value : "landscape");
+        applyVeLayout(ve.type || "landscape");
+        updateRatioLabel();
         renderSubList(); renderTimeline();
         if (loadOv) loadOv.style.display = "none";
       }, 300);

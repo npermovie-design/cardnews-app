@@ -1360,7 +1360,7 @@ ipcMain.handle("video:removeSilence", async (_, { filePath, silences, outputDir 
   const filter = `${inputs}; ${concatV}concat=n=${keeps.length}:v=1:a=1[outv][outa]`;
 
   return new Promise((resolve) => {
-    const args = ["-y", "-i", filePath, "-filter_complex", filter, "-map", "[outv]", "-map", "[outa]", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-c:a", "aac", "-b:a", "128k", outPath];
+    const args = ["-y", "-threads", "2", "-i", filePath, "-filter_complex", filter, "-map", "[outv]", "-map", "[outa]", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28", "-c:a", "aac", "-b:a", "96k", "-r", "30", outPath];
     const proc = spawn(getFfmpegPath(), args, { windowsHide: true });
     let stderr = "";
     proc.stderr.on("data", d => { stderr += d.toString(); });
