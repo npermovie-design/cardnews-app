@@ -3771,6 +3771,33 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   var splitBtn=$("veSplitBtn"); if(splitBtn) splitBtn.addEventListener("click",function(){ splitClipAtPlayhead(); });
   var delClipBtn=$("veDeleteClipBtn"); if(delClipBtn) delClipBtn.addEventListener("click",function(){ deleteSelectedClip(); });
 
+  // 복사 (선택된 클립 복제)
+  var copyClipBtn=$("veCopyClipBtn"); if(copyClipBtn) copyClipBtn.addEventListener("click",function(){
+    if(_selectedClipIdx<0||_selectedClipIdx>=ve.subtitles.length) return;
+    var orig=ve.subtitles[_selectedClipIdx];
+    var copy=JSON.parse(JSON.stringify(orig));
+    var en=copy.end_seconds!=null?copy.end_seconds:(copy.end||0);
+    var st=copy.start_seconds!=null?copy.start_seconds:(copy.start||0);
+    var dur=en-st;
+    if(copy.start_seconds!=null){copy.start_seconds=en+0.1;copy.end_seconds=en+0.1+dur;}
+    else{copy.start=en+0.1;copy.end=en+0.1+dur;}
+    ve.subtitles.splice(_selectedClipIdx+1,0,copy);
+    renderSubList();renderTimeline();
+  });
+
+  // 자르기 (선택 구간만 남기기 - 시작~끝 트림)
+  var cropBtn=$("veCropBtn"); if(cropBtn) cropBtn.addEventListener("click",function(){
+    if(_selectedClipIdx<0) return showModal("알림","먼저 클립을 선택하세요.","확인");
+    var s=ve.subtitles[_selectedClipIdx];
+    var st=s.start_seconds!=null?s.start_seconds:(s.start||0);
+    var en=s.end_seconds!=null?s.end_seconds:(s.end||st+2);
+    showModal("자르기","선택된 클립 구간("+fmtTime(st)+"~"+fmtTime(en)+")만 남기고 나머지를 삭제합니다.\n진행하시겠습니까?","진행",function(){
+      ve.subtitles=[ve.subtitles[_selectedClipIdx]];
+      _selectedClipIdx=0;
+      renderSubList();renderTimeline();
+    });
+  });
+
   // AI 짤 자동 삽입
   var autoImgBtn=$("veAutoImageBtn"); if(autoImgBtn) autoImgBtn.addEventListener("click",async function(){
     if(!ve.subtitles.length){showModal("자막 필요","먼저 영상을 분석해주세요.","확인");return;}
