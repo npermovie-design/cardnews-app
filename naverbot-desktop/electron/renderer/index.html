@@ -1118,7 +1118,6 @@
               <button id="veDeleteClipBtn" title="삭제 (Del)" style="padding:5px 14px;font-size:12px;border:none;border-radius:5px;cursor:pointer;color:#f87171;background:transparent;font-weight:600;">삭제</button>
             </div>
             <button id="veAutoImageBtn" style="padding:5px 14px;font-size:12px;border:none;border-radius:6px;cursor:pointer;color:#cbd5e1;background:#2a2a4a;font-weight:600;">AI 짤 삽입</button>
-            <button id="veShortcutBtn" title="단축키 안내" style="padding:5px 10px;font-size:12px;border:none;border-radius:6px;cursor:pointer;color:#64748b;background:transparent;font-weight:600;">?</button>
             <button id="veExportBtn" style="padding:7px 22px;font-size:13px;font-weight:700;border:none;border-radius:8px;cursor:pointer;color:#fff;background:#3b82f6;">내보내기</button>
           </div>
 
@@ -1139,6 +1138,7 @@
               <div style="display:flex;align-items:center;gap:10px;padding:8px 0 2px;">
                 <button id="vePlayBtn" style="width:36px;height:36px;border-radius:50%;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">&#9654;</button>
                 <span id="veTimeDisplay" style="font-size:13px;color:#64748b;font-variant-numeric:tabular-nums;min-width:90px;">0:00 / 0:00</span>
+                <button id="veSpeedBtn" style="padding:4px 10px;font-size:11px;border:none;border-radius:4px;cursor:pointer;color:#94a3b8;background:#1e1e3a;font-weight:700;">1x</button>
                 <input type="range" id="veSeekBar" min="0" max="1000" value="0" style="flex:1;accent-color:#3b82f6;height:5px;">
               </div>
             </div>
@@ -1197,11 +1197,22 @@
                 </div>
                 <!-- 이미지 -->
                 <div id="veTabImage" class="ve-tab-content" style="display:none;">
-                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                    <div style="font-size:13px;font-weight:700;color:#e2e8f0;">오버레이 이미지</div>
-                    <button id="veAddImageBtn" style="padding:5px 14px;font-size:12px;border:none;border-radius:6px;cursor:pointer;color:#cbd5e1;background:#2a2a4a;font-weight:600;">+ 추가</button>
+                  <!-- 이미지/GIF 검색 -->
+                  <div style="display:flex;gap:4px;margin-bottom:8px;">
+                    <input type="text" id="veImgSearchInput" placeholder="이미지/GIF 검색..." style="flex:1;padding:6px 10px;font-size:12px;background:#0f0f23;border:1px solid #2a2a4a;border-radius:6px;color:#e2e8f0;outline:none;">
+                    <button id="veImgSearchBtn" style="padding:6px 12px;font-size:12px;border:none;border-radius:6px;cursor:pointer;color:#fff;background:#3b82f6;font-weight:600;">검색</button>
                   </div>
-                  <div id="veImageList" style="max-height:250px;overflow-y:auto;font-size:12px;color:#64748b;">없음</div>
+                  <div style="display:flex;gap:3px;margin-bottom:8px;">
+                    <button class="chip active" data-imgsrc="gif" style="flex:1;padding:5px;font-size:11px;">GIF</button>
+                    <button class="chip" data-imgsrc="pexels" style="flex:1;padding:5px;font-size:11px;">Pexels</button>
+                    <button class="chip" data-imgsrc="pixabay" style="flex:1;padding:5px;font-size:11px;">Pixabay</button>
+                  </div>
+                  <div id="veImgSearchResults" style="display:flex;flex-wrap:wrap;gap:4px;max-height:150px;overflow-y:auto;margin-bottom:8px;"></div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                    <div style="font-size:13px;font-weight:700;color:#e2e8f0;">삽입된 이미지</div>
+                    <button id="veAddImageBtn" style="padding:5px 14px;font-size:12px;border:none;border-radius:6px;cursor:pointer;color:#cbd5e1;background:#2a2a4a;font-weight:600;">+ 파일</button>
+                  </div>
+                  <div id="veImageList" style="max-height:150px;overflow-y:auto;font-size:12px;color:#64748b;">없음</div>
                   <!-- 선택된 이미지 속성 -->
                   <div id="veImageProps" style="display:none;margin-top:10px;padding:10px;background:#0f0f23;border-radius:6px;">
                     <div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">이미지 속성</div>
@@ -1221,7 +1232,7 @@
           <div style="background:#0a0a1a;border-top:1px solid #2a2a4a;flex-shrink:0;height:220px;display:flex;flex-direction:column;" id="veTimeline">
             <div style="display:flex;align-items:center;gap:8px;padding:5px 14px;background:#0f0f23;border-bottom:1px solid #1a1a3a;flex-shrink:0;">
               <span style="font-size:11px;color:#475569;font-weight:700;letter-spacing:0.05em;">TIMELINE</span>
-              <span style="font-size:10px;color:#334155;margin-left:6px;">Space 재생 | S 분할 | Del 삭제 | ← → 이동</span>
+              <button id="veShortcutBtn" style="padding:3px 10px;font-size:10px;border:none;border-radius:4px;cursor:pointer;color:#64748b;background:#1a1a3a;margin-left:6px;">단축키 안내</button>
               <div style="flex:1;"></div>
               <span id="veTimelinePos" style="font-size:12px;color:#475569;font-variant-numeric:tabular-nums;">00:00 / 00:00</span>
               <div style="display:flex;gap:2px;margin-left:8px;">
