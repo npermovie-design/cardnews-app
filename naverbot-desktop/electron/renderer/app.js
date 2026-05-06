@@ -4856,7 +4856,17 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 
   // 내보내기
   var exBtn=$("veExportBtn"); if(exBtn) exBtn.addEventListener("click",async function(){
-    if(!ve.filePath) return; goStep(4); setProg("veExportPct","veExportBar","veExportLabel",0,"렌더링 준비 중...");
+    if(!ve.filePath) return;
+    // 횟수 체크
+    if (!state.loggedIn) return showModal("로그인 필요", "먼저 메이킷 계정에 로그인해주세요.", "확인");
+    var wq = await checkWriteLimit();
+    if (!wq.canUse) return showModal("한도 초과", "이번 달 사용 한도를 모두 사용했습니다.", "구독하기", function(){ bridge.openExternal("https://snsmakeit.com/programs"); });
+    // 차감 확인
+    showModal("횟수 차감 안내", "내보내기를 실행하면 1회가 차감됩니다.\n진행하시겠습니까?", "진행", async function(){ await doExport(); });
+    return;
+  });
+  async function doExport(){
+    goStep(4); setProg("veExportPct","veExportBar","veExportLabel",0,"렌더링 준비 중...");
     try {
       var result;
       var aspectMap = { portrait: "9:16", landscape: "16:9", square: "1:1" };
@@ -4873,6 +4883,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,captionStyle:{fontSize:ve.subSize,color:ve.subColor},aspect:aspect,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null});
       }
       if(!result.ok) throw new Error(result.error||"렌더링 실패");
+      // 횟수 차감
+      await markWriteUsed();
       goStep(5); var s5=$("veStep5");
       if(ve.type==="shorts"&&result.results){
         s5.innerHTML="<div class='panel-header'><h1 style='font-size:18px;'>"+result.results.length+"개 쇼츠 완성</h1><p class='panel-sub'>파일을 확인하세요</p></div>"+
@@ -4884,7 +4896,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       }
       setTimeout(function(){var nb=$("veNewBtn");if(nb)nb.addEventListener("click",function(){goStep(1);ve.segments=[];ve.subtitles=[]})},100);
     } catch(e) { showModal("렌더링 실패",e.message||"오류","확인"); goStep(3); }
-  });
+  }
 
   var ecBtn=$("veExportCancel"); if(ecBtn) ecBtn.addEventListener("click",function(){bridge.videoCancel();goStep(3)});
 })();
