@@ -1212,15 +1212,17 @@
                 </div>
                 <!-- 클립 -->
                 <div id="veTabClip" class="ve-tab-content" style="display:none;">
-                  <div id="veShortsOpts">
-                    <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">클립 개수</div>
-                    <div class="chips" id="veClipCountChips" style="gap:4px;"><button class="chip" data-value="1" style="flex:1;padding:6px 0;font-size:12px;">1</button><button class="chip" data-value="2" style="flex:1;padding:6px 0;font-size:12px;">2</button><button class="chip active" data-value="3" style="flex:1;padding:6px 0;font-size:12px;">3</button><button class="chip" data-value="4" style="flex:1;padding:6px 0;font-size:12px;">4</button><button class="chip" data-value="5" style="flex:1;padding:6px 0;font-size:12px;">5</button></div>
-                  </div>
-                  <div id="veLongformOpts" style="display:none;margin-top:10px;"><div style="font-size:13px;color:#94a3b8;">전체 영상에 자막을 번인합니다.</div></div>
+                  <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">비디오 클립</div>
+                  <div id="veClipList" style="font-size:12px;color:#64748b;max-height:200px;overflow-y:auto;">분할하면 여기에 클립 목록이 표시됩니다.</div>
                   <div id="veSegmentsCard" style="margin-top:14px;">
                     <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">AI 하이라이트</div>
-                    <div id="veSegmentsList" style="font-size:12px;color:#64748b;max-height:300px;overflow-y:auto;"></div>
+                    <div id="veSegmentsList" style="font-size:12px;color:#64748b;max-height:200px;overflow-y:auto;"></div>
                   </div>
+                  <div id="veShortsOpts" style="display:none;">
+                    <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">숏폼 클립 개수</div>
+                    <div class="chips" id="veClipCountChips" style="gap:4px;"><button class="chip" data-value="1" style="flex:1;padding:6px 0;font-size:12px;">1</button><button class="chip" data-value="2" style="flex:1;padding:6px 0;font-size:12px;">2</button><button class="chip active" data-value="3" style="flex:1;padding:6px 0;font-size:12px;">3</button><button class="chip" data-value="4" style="flex:1;padding:6px 0;font-size:12px;">4</button><button class="chip" data-value="5" style="flex:1;padding:6px 0;font-size:12px;">5</button></div>
+                  </div>
+                  <div id="veLongformOpts" style="display:none;"></div>
                 </div>
                 <!-- 이미지 -->
                 <div id="veTabImage" class="ve-tab-content" style="display:none;">

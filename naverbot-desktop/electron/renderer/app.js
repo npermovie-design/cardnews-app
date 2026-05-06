@@ -3360,6 +3360,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               ctx.font = "bold " + fontSize + "px 'Pretendard', sans-serif";
               ctx.textAlign = "center";
               var tx = cw / 2;
+              var anim = sub._anim || subAnim || "none";
+              var subProgress = (video.currentTime - sst) / Math.max(0.1, sen - sst); // 0~1
+              // 애니메이션 효과
+              if (anim === "fade") { ctx.globalAlpha = Math.min(1, subProgress * 4); }
+              else if (anim === "bounce") { var bounce = Math.abs(Math.sin(subProgress * Math.PI * 3)) * 0.15; fontSize = Math.round(fontSize * (1 + bounce)); }
+              else if (anim === "typewriter") { sub = { text: (sub.text || "").slice(0, Math.floor((sub.text || "").length * Math.min(1, subProgress * 2))), _translated: sub._translated }; }
               var lines = [sub.text];
               // 두 줄 모드: 텍스트를 반으로 나눔
               if (_subLines === 2 && sub.text.length > 10) {
@@ -3380,10 +3386,26 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               lines.forEach(function(l) { var w = ctx.measureText(l).width; if (w > maxW) maxW = w; });
               ctx.fillStyle = "rgba(0,0,0,0.6)";
               ctx.fillRect(tx - maxW / 2 - 14, ty - fontSize + 4, maxW + 28, totalH + 12);
-              // 텍스트
-              ctx.fillStyle = col;
+              // 텍스트 + 애니메이션 효과
               lines.forEach(function(l, li) {
-                ctx.fillText(l, tx, ty + li * lineH);
+                if (anim === "highlight" || anim === "karaoke") {
+                  // 하이라이트/가라오케: 진행에 따라 글자 색상 변화
+                  var charProgress = Math.floor(l.length * Math.min(1, subProgress * 1.5));
+                  var highlighted = l.slice(0, charProgress);
+                  var remaining = l.slice(charProgress);
+                  var hlW = ctx.measureText(highlighted).width;
+                  var fullW = ctx.measureText(l).width;
+                  var startX = tx - fullW / 2;
+                  ctx.fillStyle = anim === "karaoke" ? "#FFFF00" : "#3b82f6";
+                  ctx.textAlign = "left";
+                  ctx.fillText(highlighted, startX, ty + li * lineH);
+                  ctx.fillStyle = col;
+                  ctx.fillText(remaining, startX + hlW, ty + li * lineH);
+                  ctx.textAlign = "center";
+                } else {
+                  ctx.fillStyle = col;
+                  ctx.fillText(l, tx, ty + li * lineH);
+                }
               });
               ctx.restore();
               break;
@@ -3910,7 +3932,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           var gifUrl = gif?.file?.sm?.gif?.url || gif?.file?.md?.gif?.url || gif?.file?.xs?.gif?.url || gif?.media_formats?.gif?.url || gif?.url || "";
           if(gifUrl){
             ve.overlays.push({
-              path:gifUrl, startTime:interval*(ki+1), endTime:interval*(ki+1)+eachDuration,
+              path:gifUrl, startTime:Math.min(dur-eachDuration,interval*(ki+1)), endTime:Math.min(dur,interval*(ki+1)+eachDuration),
               x:Math.round((cw-ovSize)/2), y:Math.round((ch-ovSize)/2), // 화면 중앙
               width:ovSize, height:ovSize, isUrl:true, type:"gif", opacity:1, borderRadius:12
             });
@@ -3925,7 +3947,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           var photo=pData.photos?pData.photos[0]:null;
           if(photo&&photo.src){
             ve.overlays.push({
-              path:photo.src.medium||photo.src.small, startTime:interval*(ki+1), endTime:interval*(ki+1)+eachDuration,
+              path:photo.src.medium||photo.src.small, startTime:Math.min(dur-eachDuration,interval*(ki+1)), endTime:Math.min(dur,interval*(ki+1)+eachDuration),
               x:Math.round((cw-ovSize)/2), y:Math.round((ch-ovSize)/2),
               width:ovSize, height:Math.round(ovSize*0.66), isUrl:true, type:"photo", opacity:1, borderRadius:12
             });
@@ -4012,7 +4034,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         });
       }
 
-      renderSubList(); renderTimeline(); renderVideoTrack(); renderAudioWaveform();
+      renderSubList(); renderTimeline(); renderVideoTrack(); renderClipList(); renderAudioWaveform();
       hideVeLoading();
 
       // 잘라낸 구간 상세
@@ -4230,6 +4252,28 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     });
   }
 
+  // 클립 목록 (클립 탭)
+  function renderClipList() {
+    var list = $("veClipList"); if (!list) return;
+    if (!ve.videoClips || ve.videoClips.length <= 1) {
+      list.innerHTML = "<div style='color:#475569;padding:8px 0;'>분할하면 여기에 클립 목록이 표시됩니다.</div>";
+      return;
+    }
+    list.innerHTML = ve.videoClips.map(function(c, i) {
+      return "<div style='display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #1e1e3a;cursor:pointer;' data-vci='" + i + "'>" +
+        "<span style='font-size:11px;font-weight:700;color:#3b82f6;min-width:30px;'>V" + (i + 1) + "</span>" +
+        "<span style='font-size:11px;color:#94a3b8;'>" + fmtTime(c.start) + " ~ " + fmtTime(c.end) + "</span>" +
+        "<span style='font-size:10px;color:#475569;margin-left:auto;'>" + (c.end - c.start).toFixed(1) + "초</span></div>";
+    }).join("");
+    list.querySelectorAll("[data-vci]").forEach(function(el) {
+      el.addEventListener("click", function() {
+        var idx = parseInt(el.dataset.vci);
+        var c = ve.videoClips[idx];
+        if (c) { var video = $("veVideo"); if (video) video.currentTime = c.start; _needsRedraw = true; }
+      });
+    });
+  }
+
   function renderImageTrack(){
     var track=$("veTrackImages"); if(!track) return;
     var dur=ve.duration||1;
@@ -4290,7 +4334,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         if (!ve.videoClips.length) {
           ve.videoClips = [{ start: 0, end: ve.duration || 1, label: "전체 영상" }];
         }
-        renderSubList(); renderTimeline(); renderVideoTrack();
+        renderSubList(); renderTimeline(); renderVideoTrack(); renderClipList();
         if (loadOv) loadOv.style.display = "none";
       }, 300);
     }, { once: true });
@@ -4439,13 +4483,13 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var ruler=$("veTimeRuler");
     var timeline=$("veTimeline");
     if(tracksArea){
-      tracksArea.style.transform = "scaleX(" + timelineZoom + ")";
-      tracksArea.style.transformOrigin = "left top";
-      tracksArea.style.width = (100 / timelineZoom) + "%";
+      tracksArea.style.transform = "";
+      tracksArea.style.width = (timelineZoom * 100) + "%";
+      tracksArea.style.minWidth = "100%";
     }
     if(ruler) {
-      ruler.style.transform = "scaleX(" + timelineZoom + ")";
-      ruler.style.transformOrigin = "left top";
+      ruler.style.width = (timelineZoom * 100) + "%";
+      ruler.style.minWidth = "100%";
     }
     if(timeline) { timeline.style.overflowX = "auto"; }
     _phCache.dirty = true;
@@ -4610,7 +4654,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       }
     }
     _selectedClipIdx = -1;
-    renderSubList(); renderTimeline(); renderVideoTrack();
+    renderSubList(); renderTimeline(); renderVideoTrack(); renderClipList();
   }
 
   // ── 클립 삭제 ──
@@ -4618,7 +4662,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (_selectedClipIdx < 0 || _selectedClipIdx >= ve.subtitles.length) return;
     ve.subtitles.splice(_selectedClipIdx, 1);
     _selectedClipIdx = -1;
-    renderSubList(); renderTimeline(); renderVideoTrack();
+    renderSubList(); renderTimeline(); renderVideoTrack(); renderClipList();
   }
 
   // ── 키보드 단축키 (영상 편집기 활성 시) ──
