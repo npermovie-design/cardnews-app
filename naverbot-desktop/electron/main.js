@@ -1334,7 +1334,7 @@ ipcMain.handle("video:detectSilence", async (_, { filePath, threshold, minDurati
   });
 });
 
-// ffmpeg 무음 구간 제거 (concat filter)
+// ffmpeg 무음 구간 제거 (segment split + concat demuxer = 재인코딩 없이 초고속)
 ipcMain.handle("video:removeSilence", async (_, { filePath, silences, outputDir }) => {
   if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: "파일 없음" };
   if (!silences || !silences.length) return { ok: false, error: "무음 구간 없음" };
@@ -1342,33 +1342,65 @@ ipcMain.handle("video:removeSilence", async (_, { filePath, silences, outputDir 
   const dir = outputDir || path.dirname(filePath);
   const ext = path.extname(filePath);
   const base = path.basename(filePath, ext);
+  const tmpDir = path.join(dir, "_tmp_silence_" + Date.now());
   const outPath = path.join(dir, base + "_nosilence" + ext);
 
+  try { fs.mkdirSync(tmpDir, { recursive: true }); } catch {}
+
   // 무음이 아닌 구간 추출
-  const duration = silences[silences.length - 1]?.end + 10 || 9999;
   const keeps = [];
   let cursor = 0;
   for (const s of silences) {
-    if (s.start > cursor + 0.1) keeps.push({ start: cursor, end: s.start });
+    if (s.start > cursor + 0.05) keeps.push({ start: cursor, end: s.start });
     cursor = s.end;
   }
-  keeps.push({ start: cursor, end: duration });
+  // probe로 실제 영상 길이
+  let totalDur = 9999;
+  try {
+    const probeResult = await new Promise(r => {
+      const p = spawn(getFfprobePath(), ["-v", "quiet", "-print_format", "json", "-show_format", filePath], { windowsHide: true });
+      let out = ""; p.stdout.on("data", d => out += d); p.on("close", () => { try { r(JSON.parse(out)); } catch { r(null); } });
+    });
+    if (probeResult?.format?.duration) totalDur = parseFloat(probeResult.format.duration);
+  } catch {}
+  if (cursor < totalDur - 0.1) keeps.push({ start: cursor, end: totalDur });
 
-  // filter_complex로 concat
-  const inputs = keeps.map((k, i) => `[0:v]trim=start=${k.start}:end=${k.end},setpts=PTS-STARTPTS[v${i}]; [0:a]atrim=start=${k.start}:end=${k.end},asetpts=PTS-STARTPTS[a${i}]`).join("; ");
-  const concatV = keeps.map((_, i) => `[v${i}][a${i}]`).join("");
-  const filter = `${inputs}; ${concatV}concat=n=${keeps.length}:v=1:a=1[outv][outa]`;
+  if (!keeps.length) return { ok: false, error: "유지할 구간 없음" };
+
+  // 각 구간을 -c copy로 빠르게 추출
+  const segFiles = [];
+  for (let i = 0; i < keeps.length; i++) {
+    const k = keeps[i];
+    const segPath = path.join(tmpDir, `seg_${String(i).padStart(3, "0")}${ext}`);
+    const dur = k.end - k.start;
+    await new Promise((resolve) => {
+      const args = ["-y", "-ss", String(k.start), "-i", filePath, "-t", String(dur), "-c", "copy", "-avoid_negative_ts", "make_zero", segPath];
+      const proc = spawn(getFfmpegPath(), args, { windowsHide: true });
+      proc.on("close", () => resolve());
+      proc.on("error", () => resolve());
+    });
+    if (fs.existsSync(segPath)) segFiles.push(segPath);
+  }
+
+  if (!segFiles.length) {
+    try { fs.rmSync(tmpDir, { recursive: true }); } catch {}
+    return { ok: false, error: "구간 추출 실패" };
+  }
+
+  // concat demuxer로 합치기 (재인코딩 없음)
+  const listPath = path.join(tmpDir, "list.txt");
+  fs.writeFileSync(listPath, segFiles.map(f => `file '${f.replace(/\\/g, "/")}'`).join("\n"));
 
   return new Promise((resolve) => {
-    const args = ["-y", "-threads", "2", "-i", filePath, "-filter_complex", filter, "-map", "[outv]", "-map", "[outa]", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "28", "-c:a", "aac", "-b:a", "96k", "-r", "30", outPath];
+    const args = ["-y", "-f", "concat", "-safe", "0", "-i", listPath, "-c", "copy", outPath];
     const proc = spawn(getFfmpegPath(), args, { windowsHide: true });
-    let stderr = "";
-    proc.stderr.on("data", d => { stderr += d.toString(); });
     proc.on("close", code => {
-      if (code === 0 && fs.existsSync(outPath)) resolve({ ok: true, outputPath: outPath });
-      else resolve({ ok: false, error: "렌더링 실패: " + stderr.slice(-200) });
+      // 임시 파일 정리
+      try { fs.rmSync(tmpDir, { recursive: true }); } catch {}
+      if (code === 0 && fs.existsSync(outPath)) resolve({ ok: true, outputPath: outPath, keeps });
+      else resolve({ ok: false, error: "합치기 실패" });
     });
-    proc.on("error", e => resolve({ ok: false, error: e.message }));
+    proc.on("error", e => { try { fs.rmSync(tmpDir, { recursive: true }); } catch {} resolve({ ok: false, error: e.message }); });
   });
 });
 

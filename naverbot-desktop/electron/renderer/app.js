@@ -3296,16 +3296,30 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 
   function startCanvasRender() {
     if (_veCanvasRAF) cancelAnimationFrame(_veCanvasRAF);
+    var _lastDrawTime = 0;
+    var _lastVideoTime = -1;
     function draw() {
       var video = $("veVideo");
       if (!video || !_veCanvas || !_veCanvasCtx) { _veCanvasRAF = requestAnimationFrame(draw); return; }
+
+      // 프레임 스킵: 30fps 제한 + 시간 변화 없으면 스킵
+      var now = performance.now();
+      var videoTime = Math.round(video.currentTime * 10); // 0.1초 단위
+      if (now - _lastDrawTime < 33 && videoTime === _lastVideoTime && !video.paused) {
+        _veCanvasRAF = requestAnimationFrame(draw); return;
+      }
+      // 정지 상태에서 시간 변화 없으면 완전 스킵 (CPU 절약)
+      if (video.paused && videoTime === _lastVideoTime) {
+        _veCanvasRAF = requestAnimationFrame(draw); return;
+      }
+      _lastDrawTime = now;
+      _lastVideoTime = videoTime;
+
       var ctx = _veCanvasCtx;
       var cw = _veCanvas.width, ch = _veCanvas.height;
 
-      // 비디오 프레임이 준비되지 않으면 이전 프레임 유지 (깜빡임 방지)
       if (video.readyState < 2) { _veCanvasRAF = requestAnimationFrame(draw); return; }
 
-      // 배경
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, cw, ch);
 
@@ -3378,7 +3392,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         if (ve.overlays && ve.overlays.length) {
           var t = video.currentTime;
           ve.overlays.forEach(function(ov) {
-            if (t >= ov.startTime && t <= ov.endTime && ov._img) {
+            if (t >= ov.startTime && t <= ov.endTime && ov._img && ov._img.complete && ov._img.naturalWidth > 0) {
               ctx.save();
               ctx.globalAlpha = ov.opacity != null ? ov.opacity : 1;
               var ox = ov.x || 0, oy = ov.y || 0, ow = ov.width || 120, oh = ov.height || 120;
@@ -3640,7 +3654,11 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     var video = $("veVideo");
     var dur = ve.duration || 1;
-    if (video && dur > 0) video.currentTime = pct * dur;
+    if (video && dur > 0) {
+      video.currentTime = pct * dur;
+      // 정지 상태에서도 프레임 강제 갱신
+      _lastVideoTime = -1;
+    }
   }
 
   // ── 숏폼 추천 설명 ──
@@ -3845,7 +3863,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var pctStr = prompt("짤 삽입 비율 (영상 길이 대비 %)\n예: 30 → 10분 영상에 약 3분 분량 짤 표시", "30");
     if(!pctStr) return;
     var insertPct = Math.max(5, Math.min(80, parseInt(pctStr) || 30));
-    autoImgBtn.disabled=true; autoImgBtn.textContent="AI 짤 삽입 중...";
+    autoImgBtn.disabled=true; var _origImgBtnHtml=autoImgBtn.innerHTML; autoImgBtn.innerHTML="삽입 중...";
     showVeLoading("AI 짤을 검색하고 삽입하는 중...");
     try{
       var text=ve.subtitles.map(function(s){return s.text}).join(" ");
@@ -3904,7 +3922,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       hideVeLoading();
       showModal("AI 짤 삽입 완료", inserted+"개 GIF/이미지가 삽입되었습니다.\n(영상의 "+insertPct+"% 비율)", "확인");
     }catch(e){hideVeLoading();showModal("실패",e.message||"AI 짤 삽입 실패","확인");}
-    autoImgBtn.disabled=false; autoImgBtn.textContent="AI 짤 삽입";
+    autoImgBtn.disabled=false; autoImgBtn.innerHTML=_origImgBtnHtml;
   });
   chipG("veClipCountChips",function(v){ve.clipCount=parseInt(v)});
   chipG("veSubChips",function(v){ve.subEnabled=v==="on"});
@@ -3928,7 +3946,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var silences=detectResult.silences||[];
       if(!silences.length){hideVeLoading();showModal("결과","무음 구간이 없습니다.","확인");silRunBtn.disabled=false;silRunBtn.textContent="무음 구간 자동 제거 실행";return;}
 
-      showVeLoading("영상에서 무음 구간을 잘라내는 중... ("+silences.length+"개 구간)");
+      showVeLoading("영상에서 무음 구간을 잘라내는 중...\n" + silences.length + "개 구간 · 재인코딩 없이 빠르게 처리합니다");
 
       // 2단계: ffmpeg로 무음 구간 제거한 영상 생성
       var removeResult=await bridge.videoRemoveSilence({filePath:ve.filePath,silences:silences,outputDir:ve._outputDir||null});
@@ -3962,10 +3980,24 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       });
       ve.duration = newDur;
 
-      // 잘라낸 구간 정보 저장
+      // 잘라낸 구간 정보 저장 + 비디오 클립 업데이트
       ve._removedSilences = silences;
+      // keeps 정보로 비디오 클립 재구성
+      if (removeResult.keeps) {
+        ve.videoClips = removeResult.keeps.map(function(k, i) {
+          return { start: k.start, end: k.end, label: "V" + (i + 1) };
+        });
+        // 새 영상 기준으로 클립 시간 재매핑
+        var cumulative = 0;
+        ve.videoClips.forEach(function(c) {
+          var dur = c.end - c.start;
+          c.start = cumulative;
+          c.end = cumulative + dur;
+          cumulative += dur;
+        });
+      }
 
-      renderSubList(); renderTimeline();
+      renderSubList(); renderTimeline(); renderVideoTrack();
       hideVeLoading();
 
       // 잘라낸 구간 상세
