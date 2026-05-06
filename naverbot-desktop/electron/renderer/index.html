@@ -1066,6 +1066,22 @@
             <div class="form">
               <button class="btn btn-outline btn-full" id="veSelectFile" style="margin-top:0;padding:20px;font-size:14px;">영상 파일 선택 (MP4, MOV, MKV, AVI)</button>
               <div id="veFileInfo" style="display:none;margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--bg-elev);font-size:12px;color:var(--text-sub);"></div>
+
+              <!-- 시퀀스 비율 설정 -->
+              <label style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text-sub);">시퀀스 비율</label>
+              <div class="chips" id="veInitRatioChips" style="margin-top:6px;">
+                <button class="chip active" data-value="landscape" style="flex:1;padding:10px 0;font-size:13px;">16:9 가로</button>
+                <button class="chip" data-value="portrait" style="flex:1;padding:10px 0;font-size:13px;">9:16 세로</button>
+                <button class="chip" data-value="square" style="flex:1;padding:10px 0;font-size:13px;">1:1 정사각</button>
+              </div>
+
+              <!-- 저장 폴더 설정 -->
+              <label style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text-sub);">저장 폴더</label>
+              <div style="display:flex;gap:6px;margin-top:6px;">
+                <input type="text" id="veOutputDir" placeholder="기본: 영상 파일과 같은 폴더" style="flex:1;font-size:12px;padding:8px 10px;">
+                <button class="btn btn-outline btn-sm" id="veSelectOutputDir" style="white-space:nowrap;">폴더 선택</button>
+              </div>
+
               <button class="btn btn-primary btn-full btn-lg" id="veAnalyzeBtn" style="margin-top:14px;" disabled>AI 분석 시작</button>
             </div>
           </div>
