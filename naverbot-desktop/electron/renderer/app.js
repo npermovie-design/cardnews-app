@@ -4031,6 +4031,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: 4000, messages: [{ role: "user", content: prompt }] })
       });
+      if (!res.ok) throw new Error("API 오류: " + res.status);
       var data = await res.json();
       var translated = (data.choices?.[0]?.message?.content || "").split("\n").filter(function(t) { return t.trim(); });
       // 번역된 자막을 _translated 필드에 저장
