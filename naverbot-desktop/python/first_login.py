@@ -18,17 +18,35 @@ if _SCRIPT_DIR not in sys.path:
     sys.path.insert(0, _SCRIPT_DIR)
 
 from playwright.sync_api import sync_playwright
-from naver_blog import get_profile_dir, launch_browser
+from naver_blog import _detect_browser_channel, USER_AGENT
+from secure_cookie_storage import save_naver_cookies
 
 USER_ID = sys.argv[1] if len(sys.argv) > 1 else "test_user"
 MAX_WAIT_SEC = 300  # 5분
 
-profile_dir = get_profile_dir(USER_ID)
-print(f"세션 저장 위치: {profile_dir}", flush=True)
+print("세션 저장 위치: OS keyring (DPAPI)", flush=True)
 
 with sync_playwright() as p:
-    context = launch_browser(p, profile_dir, headless=False)
-    page = context.pages[0] if context.pages else context.new_page()
+    channel = _detect_browser_channel()
+    launch_kwargs = {
+        "headless": False,
+        "args": [
+            "--disable-blink-features=AutomationControlled",
+            "--disable-dev-shm-usage",
+            "--no-sandbox",
+            "--window-position=0,0",
+        ],
+    }
+    if channel:
+        launch_kwargs["channel"] = channel
+
+    browser = p.chromium.launch(**launch_kwargs)
+    context = browser.new_context(
+        viewport={"width": 1280, "height": 900},
+        user_agent=USER_AGENT,
+        locale="ko-KR",
+    )
+    page = context.new_page()
     page.goto("https://nid.naver.com/nidlogin.login")
 
     print("", flush=True)
@@ -48,6 +66,7 @@ with sync_playwright() as p:
                 and "nid.naver.com/nidlogin" not in cur_url
                 and "nid.naver.com/user2" not in cur_url
                 and "nid.naver.com/login" not in cur_url):
+                save_naver_cookies(USER_ID, context.cookies())
                 print(f"\n로그인 감지됨! 현재 URL: {cur_url}", flush=True)
                 success = True
                 break
@@ -55,6 +74,7 @@ with sync_playwright() as p:
             cookies = context.cookies("https://naver.com")
             cookie_names = {c["name"] for c in cookies}
             if "NID_AUT" in cookie_names or "NID_SES" in cookie_names:
+                save_naver_cookies(USER_ID, cookies)
                 print(f"\n로그인 감지됨 (쿠키)! 현재 URL: {cur_url}", flush=True)
                 success = True
                 break
@@ -68,11 +88,16 @@ with sync_playwright() as p:
             page.wait_for_timeout(3000)
         except Exception:
             time.sleep(3)
+        save_naver_cookies(USER_ID, context.cookies())
         print("세션 저장 완료. 다음부터는 자동 로그인됩니다.", flush=True)
     else:
         print("5분 타임아웃. 로그인 안 됐거나 페이지 이동 안 됨.", flush=True)
 
     try:
         context.close()
+    except Exception:
+        pass
+    try:
+        browser.close()
     except Exception:
         pass

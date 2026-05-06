@@ -1592,9 +1592,94 @@ function makeReferralCodeFromUid(uid = "") {
   return `MK${clean.slice(0, 8).padEnd(8, "0")}`;
 }
 
+// ── 가입 어뷰징 방어: 이메일 검증 (N-HIGH-A1) ──
+const DISPOSABLE_DOMAINS_EXTENDED = new Set([
+  // 주요 일회용 이메일 서비스 (확장 목록)
+  "mailinator.com","temp-mail.org","guerrillamail.com","tempmail.email",
+  "10minutemail.com","yopmail.com","throwawaymail.com","fakemail.net",
+  "maildrop.cc","guerrillamail.info","grr.la","dispostable.com",
+  "sharklasers.com","guerrillamailblock.com","pokemail.net","spam4.me",
+  "trashmail.com","trashmail.me","mohmal.com","getnada.com",
+  "tempail.com","temp-mail.io","1secmail.com","tempmailo.com",
+  "emailondeck.com","guerrillamail.de","mailnesia.com","mailcatch.com",
+  "mintemail.com","tempr.email","throwaway.email","fake-box.com",
+  "mailnull.com","tempmailaddress.com","emailfake.com","crazymailing.com",
+  "mailtemp.net","trashmail.net","trashmail.org","tempinbox.com",
+  "mailforspam.com","safetymail.info","incognitomail.org","spamfree24.org",
+  "mytrashmail.com","mailexpire.com","guerrillamail.net","harakirimail.com",
+  "tempmails.com","10minutesemail.net","20minutemail.it","armyspy.com",
+  "cuvox.de","dayrep.com","einrot.com","fleckens.hu","gustr.com",
+  "jourrapide.com","rhyta.com","superrito.com","teleworm.us",
+  "tmpmail.net","tmpmail.org","mailsac.com","dropmail.me",
+  "meltmail.com","getairmail.com","filzmail.com","inboxbear.com",
+]);
+
+function normalizeEmailServer(email) {
+  const [raw, domain] = email.toLowerCase().trim().split("@");
+  if (!raw || !domain) return null;
+  let local = raw.split("+")[0]; // + alias 제거 (모든 도메인)
+  if (domain === "gmail.com" || domain === "googlemail.com") {
+    local = local.replace(/\./g, "");
+  }
+  return `${local}@${domain === "googlemail.com" ? "gmail.com" : domain}`;
+}
+
+async function handleValidateEmail(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "POST만 허용됩니다" });
+
+  // 가입 전용 엄격한 rate limit: IP당 5회/10분
+  const ip = req.headers?.["x-real-ip"] || req.headers?.["x-forwarded-for"]?.split(",")[0]?.trim() || "unknown";
+  if (!rateLimit(req, { limit: 5, windowMs: 600000, keyFn: () => `signup:${ip}` })) {
+    return res.status(429).json({ error: "가입 요청이 너무 많습니다. 잠시 후 다시 시도해주세요." });
+  }
+
+  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+  const email = String(body.email || "").trim().toLowerCase();
+
+  // 1) 기본 형식 검증
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+    return res.status(400).json({ ok: false, reason: "올바른 이메일 형식이 아닙니다" });
+  }
+
+  const domain = email.split("@")[1];
+
+  // 2) 일회용 이메일 차단
+  if (DISPOSABLE_DOMAINS_EXTENDED.has(domain)) {
+    return res.status(400).json({ ok: false, reason: "일회용 이메일은 가입할 수 없습니다" });
+  }
+
+  // 3) 이메일 정규화 후 기존 가입 여부 확인
+  const normalized = normalizeEmailServer(email);
+  if (!normalized) {
+    return res.status(400).json({ ok: false, reason: "올바른 이메일 형식이 아닙니다" });
+  }
+
+  const sb = getServiceClient();
+  if (!sb) return res.status(500).json({ error: "서버 설정 오류" });
+
+  // 정규화된 이메일 + 원본 이메일로 중복 확인
+  const { data: existing } = await sb
+    .from("users")
+    .select("uid")
+    .or(`email.eq.${normalized},email.eq.${email}`)
+    .limit(1);
+  if (existing?.length) {
+    return res.status(400).json({ ok: false, reason: "이미 가입된 이메일입니다" });
+  }
+
+  return res.status(200).json({ ok: true });
+}
+
 async function handleReferralSignup(req, res) {
   try {
     if (req.method !== "POST") return res.status(405).json({ error: "POST만 허용됩니다" });
+
+    // referral 어뷰징 방지: IP당 3회/1시간
+    const ip = req.headers?.["x-real-ip"] || req.headers?.["x-forwarded-for"]?.split(",")[0]?.trim() || "unknown";
+    if (!rateLimit(req, { limit: 3, windowMs: 3600000, keyFn: () => `referral:${ip}` })) {
+      return res.status(429).json({ error: "추천인 보상 요청이 너무 많습니다" });
+    }
+
     const sb = getServiceClient();
     if (!sb) return res.status(500).json({ error: "서버 설정 오류" });
 
@@ -1684,6 +1769,7 @@ const ACTION_MAP = {
   "track-log": handleTrackLog,
   "track-stats": handleTrackStats,
   "referral-signup": handleReferralSignup,
+  "validate-email": handleValidateEmail,
 };
 
 export default async function handler(req, res) {

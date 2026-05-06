@@ -61,3 +61,5 @@ naverbot-desktop/python/debug/
 naverbot-desktop/*.png
 naverbot-desktop/server-original/
 naverbot-desktop/electron/dist2/
+naverbot-desktop/electron/dist-installer/
+naverbot-desktop/electron/dist/

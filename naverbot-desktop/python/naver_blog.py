@@ -1,7 +1,7 @@
-"""네이버 블로그 자동 발행 모듈 (Playwright sync, 사용자별 세션 유지)
+"""네이버 블로그 자동 발행 모듈 (Playwright sync, keyring 세션 유지)
 
 메이킷 shorts-factory/naver_publisher.py 베이스로 다음을 보강:
-- launch_persistent_context로 사용자별 세션 영속화 (캡차 회피)
+- OS keyring 쿠키 복원으로 사용자별 세션 유지
 - async -> sync 변환 (Electron subprocess 호환)
 - 셀렉터 폴백 강화
 """
@@ -14,6 +14,11 @@ import tempfile
 import urllib.request
 from pathlib import Path
 from playwright.sync_api import sync_playwright, Page, BrowserContext, TimeoutError as PWTimeout
+
+try:
+    from secure_cookie_storage import load_naver_cookies
+except Exception:
+    load_naver_cookies = None
 
 logger = logging.getLogger("naver-blog")
 
@@ -85,29 +90,16 @@ def _detect_browser_channel():
 
 
 def launch_browser(pw, profile_dir, headless=True, **extra):
-    """Playwright 브라우저 launch 헬퍼. 번들 Chromium 없으면 시스템 Chrome/Edge 사용.
-    여러 전략으로 시도하여 최대한 실행되도록 함.
+    """Launch Playwright without a persistent profile.
 
-    ★ headless=False 강제: 인용구/스티커 등 UI 요소가 headless에서 작동 안 함.
-       대신 창을 화면 밖에 위치시켜 사용자에게 안 보이게 처리.
+    Naver cookies are restored from OS keyring so Chromium does not write NID_AUT
+    or NID_SES into profile SQLite files under APPDATA.
     """
-    # 이전 브라우저 프로세스의 lock 파일 제거 (충돌 방지)
-    profile_path = Path(profile_dir)
-    for lock_file in ["SingletonLock", "SingletonSocket", "SingletonCookie"]:
-        lf = profile_path / lock_file
-        if lf.exists():
-            try:
-                lf.unlink()
-            except Exception:
-                pass
+    user_id = Path(profile_dir).name
 
     channel = _detect_browser_channel()
     kwargs = dict(
-        user_data_dir=str(profile_dir),
         headless=False,  # 항상 headful (UI 요소 필요)
-        viewport={"width": 1280, "height": 900},
-        user_agent=USER_AGENT,
-        locale="ko-KR",
         args=[
             "--disable-blink-features=AutomationControlled",
             "--disable-dev-shm-usage",
@@ -119,38 +111,51 @@ def launch_browser(pw, profile_dir, headless=True, **extra):
         kwargs["channel"] = channel
     kwargs.update(extra)
 
+    browser = None
+
     # 1차 시도: 감지된 channel로 실행
     try:
-        return pw.chromium.launch_persistent_context(**kwargs)
+        browser = pw.chromium.launch(**kwargs)
     except Exception as e:
         logger.warning(f"1차 브라우저 실행 실패 (channel={channel}): {e}")
 
     # 2차 시도: channel 없이 기본 Chromium으로
-    if channel:
+    if browser is None and channel:
         kwargs.pop("channel", None)
         try:
-            return pw.chromium.launch_persistent_context(**kwargs)
+            browser = pw.chromium.launch(**kwargs)
         except Exception as e:
             logger.warning(f"2차 브라우저 실행 실패 (기본 Chromium): {e}")
 
     # 3차 시도: 시스템 Chrome으로 강제
-    for ch in ["chrome", "msedge"]:
-        kwargs["channel"] = ch
-        try:
-            return pw.chromium.launch_persistent_context(**kwargs)
-        except Exception:
-            continue
+    if browser is None:
+        for ch in ["chrome", "msedge"]:
+            kwargs["channel"] = ch
+            try:
+                browser = pw.chromium.launch(**kwargs)
+                break
+            except Exception:
+                continue
 
     # 4차 시도: persistent context 없이 일반 launch
-    logger.warning("persistent context 실패 → 일반 launch 시도")
-    kwargs.pop("user_data_dir", None)
-    kwargs.pop("channel", None)
-    browser = pw.chromium.launch(headless=headless, args=kwargs.get("args", []))
+    if browser is None:
+        logger.warning("브라우저 channel 실행 실패 → 기본 launch 시도")
+        kwargs.pop("channel", None)
+        browser = pw.chromium.launch(headless=headless, args=kwargs.get("args", []))
+
     ctx = browser.new_context(
         viewport={"width": 1280, "height": 900},
         user_agent=USER_AGENT,
         locale="ko-KR",
     )
+    if load_naver_cookies:
+        try:
+            cookies = load_naver_cookies(user_id)
+            if cookies:
+                ctx.add_cookies(cookies)
+                logger.info("keyring 쿠키 복원: %s개", len(cookies))
+        except Exception as e:
+            logger.warning("keyring 쿠키 복원 실패: %s", e)
     return ctx
 
 

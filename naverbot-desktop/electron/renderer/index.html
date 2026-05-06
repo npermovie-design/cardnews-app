@@ -127,12 +127,15 @@
           <h1>커뮤니티</h1>
           <p class="panel-sub">메이킷 사용자들과 정보를 공유하세요.</p>
         </div>
-        <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center;">
-          <button class="chip active" data-community-cat="info">정보공유</button>
-          <button class="chip" data-community-cat="qna">질문답변</button>
+        <div id="communityCatBar" style="display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;">
+          <div id="communityCatChips" style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="chip active" data-community-cat="info">정보공유</button>
+            <button class="chip" data-community-cat="qna">질문답변</button>
+          </div>
           <div style="flex:1;"></div>
           <button class="btn btn-primary btn-sm" id="communityWriteBtn" style="padding:8px 16px;font-size:12px;">글쓰기</button>
         </div>
+        <div id="communityTagBar" style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center;"></div>
         <!-- 글쓰기 폼 -->
         <div id="communityWriteForm" style="display:none;margin-bottom:16px;">
           <div class="card">

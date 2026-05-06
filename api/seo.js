@@ -216,6 +216,73 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY
 );
 
+const CRON_ACTIONS = new Set([
+  "cron-briefing",
+  "cron-social",
+  "cron-ai",
+  "cron-keyword",
+  "cron-daily-keywords",
+  "cron-info",
+  "cron-threads",
+  "cron-all",
+  "archive-auto-tag",
+  "bulk-index",
+]);
+
+const PUBLIC_ACTIONS = new Set([
+  "sitemap",
+  "rss",
+  "naver-verify",
+]);
+
+const USER_ACTIONS = new Set([
+  "index-now",
+]);
+
+const supabaseAuth = createClient(
+  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+  process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || "",
+  { auth: { persistSession: false, autoRefreshToken: false } }
+);
+
+async function authorizeSeoAction(req, res, action) {
+  if (CRON_ACTIONS.has(action)) {
+    const expected = process.env.CRON_SECRET ? `Bearer ${process.env.CRON_SECRET}` : "";
+    if (!expected) return res.status(500).json({ ok: false, error: "cron secret not configured" });
+    if (req.headers?.authorization !== expected) {
+      console.warn(`[/api/seo] cron auth failed: ${action} from ${req.headers?.["x-forwarded-for"] || ""}`);
+      return res.status(401).json({ ok: false, error: "cron secret required" });
+    }
+    return true;
+  }
+
+  if (USER_ACTIONS.has(action)) {
+    const jwt = req.headers?.authorization?.replace(/^Bearer\s+/i, "");
+    if (!jwt) return res.status(401).json({ error: "로그인 필요" });
+    const { data: { user }, error } = await supabaseAuth.auth.getUser(jwt);
+    if (error || !user) return res.status(401).json({ error: "유효하지 않은 토큰" });
+
+    if (action === "index-now") {
+      const rawUrl = String(req.query.url || "");
+      if (!rawUrl) return res.status(400).json({ error: "url 필요" });
+      try {
+        const u = rawUrl.startsWith("/")
+          ? new URL(rawUrl, "https://snsmakeit.com")
+          : new URL(rawUrl);
+        if (u.protocol !== "https:" || (u.hostname !== "snsmakeit.com" && !u.hostname.endsWith(".snsmakeit.com"))) {
+          return res.status(400).json({ error: "허용되지 않은 도메인" });
+        }
+      } catch {
+        return res.status(400).json({ error: "잘못된 URL" });
+      }
+    }
+    return true;
+  }
+
+  if (PUBLIC_ACTIONS.has(action)) return true;
+  return res.status(400).json({ error: "unknown action" });
+}
+
 function detectTag(images) {
   if (!Array.isArray(images) || images.length === 0) return "";
   const url = images[0].toLowerCase();
@@ -324,6 +391,10 @@ function handleNaverVerify(req, res) {
 // ── Router ──
 export default async function handler(req, res) {
   const action = req.query.action;
+  if (!action) return res.status(400).json({ error: "action 파라미터 필요" });
+
+  const authorized = await authorizeSeoAction(req, res, action);
+  if (authorized !== true) return authorized;
 
   switch (action) {
     case "sitemap":
@@ -355,7 +426,7 @@ export default async function handler(req, res) {
     case "naver-verify":
       return handleNaverVerify(req, res);
     default:
-      return res.status(400).json({ error: "action 파라미터 필요: sitemap|rss|archive-auto-tag|cron-briefing|cron-social|cron-ai|cron-keyword|cron-daily-keywords|cron-info|cron-all|cron-threads|index-now|bulk-index|naver-verify" });
+      return res.status(400).json({ error: "unknown action" });
   }
 }
 

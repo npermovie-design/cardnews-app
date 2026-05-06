@@ -2,7 +2,7 @@
 // - BrowserWindow 생성
 // - 설정 저장/로드
 // - Python runner.py 서브프로세스 실행
-// - Custom protocol makeit-sns:// 핸들링 (브라우저 OAuth 콜백)
+// - Loopback OAuth callback handling
 
 const { app, BrowserWindow, ipcMain, dialog, shell, protocol } = require("electron");
 const path = require("path");
@@ -30,17 +30,7 @@ if (IS_LOCAL_DEV_INSTANCE) {
   app.setName("메이킷 SNS자동화 Local");
 }
 
-// ── Custom protocol 등록 ──
-const PROTOCOL = "makeit-sns";
-if (!IS_LOCAL_DEV_INSTANCE && process.defaultApp) {
-  if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient(PROTOCOL, process.execPath, [path.resolve(process.argv[1])]);
-  }
-} else if (!IS_LOCAL_DEV_INSTANCE) {
-  app.setAsDefaultProtocolClient(PROTOCOL);
-}
-
-// ── Single instance ── (protocol deep link 처리)
+// ── Single instance ──
 if (!IS_LOCAL_DEV_INSTANCE) {
   const gotLock = app.requestSingleInstanceLock();
   if (!gotLock) {
@@ -398,9 +388,6 @@ app.whenReady().then(async () => {
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
-  // 초기 실행 시 process.argv에 protocol URL이 있으면 처리
-  handleProtocolArgs(process.argv);
-
   // electron-updater 설정
   setupAutoUpdater();
 
@@ -425,7 +412,7 @@ app.whenReady().then(async () => {
         noLink: true,
       });
       if (r.response === 0) {
-        shell.openExternal(data.download_url || "https://snsmakeit.com/automation");
+        shell.openExternal(data.download_url || "https://snsmakeit.com/programs");
       }
       app.quit();
     }
@@ -450,60 +437,6 @@ app.on("window-all-closed", () => {
   }
   closeAuthHttpServer();
   if (process.platform !== "darwin") app.quit();
-});
-
-// ── Protocol URL 파싱 + 렌더러에 전달 ──
-function parseProtocolUrl(url) {
-  try {
-    const u = new URL(url);
-    if (u.protocol !== `${PROTOCOL}:`) return null;
-    const params = {};
-    u.searchParams.forEach((v, k) => (params[k] = v));
-    return params;
-  } catch {
-    return null;
-  }
-}
-
-function handleAuthCallback(params) {
-  if (!params) return;
-  // URL params에 email/uid가 없으면 access_token JWT 디코드로 추출
-  if (params.access_token && (!params.email || !params.uid)) {
-    try {
-      const parts = params.access_token.split(".");
-      if (parts.length >= 2) {
-        const payload = JSON.parse(Buffer.from(parts[1], "base64").toString("utf8"));
-        if (!params.email) params.email = payload.email || "";
-        if (!params.uid) params.uid = payload.sub || "";
-      }
-    } catch (e) {
-      console.error("[auth] JWT decode 실패:", e);
-    }
-  }
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.focus();
-    mainWindow.webContents.send("auth:callback", params);
-  }
-  if (authWindow && !authWindow.isDestroyed()) {
-    authWindow.close();
-  }
-}
-
-function handleProtocolArgs(argv) {
-  const url = (argv || []).find((a) => typeof a === "string" && a.startsWith(`${PROTOCOL}://`));
-  if (url) handleAuthCallback(parseProtocolUrl(url));
-}
-
-app.on("second-instance", (event, argv) => {
-  // Windows: protocol 클릭 시 두 번째 인스턴스가 argv에 URL 갖고 시작됨
-  handleProtocolArgs(argv);
-});
-
-app.on("open-url", (event, url) => {
-  // macOS
-  event.preventDefault();
-  handleAuthCallback(parseProtocolUrl(url));
 });
 
 // ── IPC: 스케줄 (인앱 타이머 기반) ──
@@ -545,19 +478,23 @@ ipcMain.handle("schedule:clear", () => {
   return { ok: true, cleared: count };
 });
 
-// ── IPC: 체험 횟수 (별도 파일) ──
-const TRIAL_PATH = path.join(CONFIG_DIR, "trial_used.txt");
-ipcMain.handle("trial:get", () => {
+// ── IPC: 체험 횟수 (서버 기준) ──
+ipcMain.handle("trial:get", async () => {
+  const cfg = loadConfig();
+  if (!cfg?.makeit_access_token) return 0;
   try {
-    if (fs.existsSync(TRIAL_PATH)) return parseInt(fs.readFileSync(TRIAL_PATH, "utf8").trim()) || 0;
-  } catch {}
-  return 0;
+    const resp = await fetch("https://snsmakeit.com/api/naverbot?action=trial", {
+      headers: { Authorization: `Bearer ${cfg.makeit_access_token}` },
+      cache: "no-store",
+    });
+    const data = await resp.json();
+    return Number(data.used || 0);
+  } catch {
+    return 0;
+  }
 });
-ipcMain.handle("trial:set", (_, n) => {
-  try {
-    ensureConfigDir();
-    fs.writeFileSync(TRIAL_PATH, String(n), "utf8");
-  } catch {}
+ipcMain.handle("trial:set", async () => {
+  return { ok: false, error: "trial usage is server-managed" };
 });
 
 // ── IPC: 설정 ──
@@ -595,7 +532,7 @@ ipcMain.handle("app:checkUpdate", async () => {
       current_version: current,
       latest_version: latest,
       has_update: hasUpdate,
-      download_url: data.download_url || "https://snsmakeit.com/pricing",
+      download_url: data.download_url || "https://snsmakeit.com/programs",
       notes: data.notes || "",
       required: !!data.required,
     };
@@ -609,10 +546,14 @@ ipcMain.handle("app:checkUpdate", async () => {
 ipcMain.handle("password:save", async (_, { username, password, service }) => {
   const svc = service || "NaverBotSaaS";
   return new Promise((resolve) => {
-    const py = spawn(getPythonPath(), ["-c",
-      `import keyring, sys; keyring.set_password(sys.argv[1], sys.argv[2], sys.argv[3]); print('ok')`,
-      svc, username, password,
-    ], { env: getPythonEnv() });
+    const py = spawn(getPythonPath(), ["-c", `
+import keyring, sys, json
+data = json.loads(sys.stdin.read())
+keyring.set_password(data["service"], data["username"], data["password"])
+print("ok")
+`], { env: getPythonEnv() });
+    py.stdin.write(JSON.stringify({ service: svc, username, password }));
+    py.stdin.end();
     let out = "";
     let err = "";
     py.stdout.on("data", (d) => (out += d));
@@ -1069,7 +1010,7 @@ p { color:#6b7280; font-size:13px; line-height:1.6; }
 (async () => {
   try {
     const hash = window.location.hash.substring(1);
-    const params = new URLSearchParams(hash);
+    const params = new URLSearchParams(hash || window.location.search.substring(1));
     const access_token = params.get("access_token");
     const refresh_token = params.get("refresh_token") || "";
     const expires_at = params.get("expires_at") || "";
@@ -1107,6 +1048,15 @@ p { color:#6b7280; font-size:13px; line-height:1.6; }
       }
 
       if (parsed.pathname === "/token" && req.method === "POST") {
+        const origin = req.headers.origin || "";
+        const referer = req.headers.referer || "";
+        const allowedOrigin = `http://127.0.0.1:${AUTH_PORT}`;
+        if (origin !== allowedOrigin && !referer.startsWith(allowedOrigin + "/")) {
+          res.writeHead(403, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false, error: "Origin not allowed" }));
+          return;
+        }
+
         let body = "";
         req.on("data", (chunk) => (body += chunk));
         req.on("end", () => {
@@ -1164,9 +1114,10 @@ p { color:#6b7280; font-size:13px; line-height:1.6; }
 }
 
 // Google OAuth: 시스템 브라우저에서 Google 로그인
-ipcMain.on("auth:google", () => {
+ipcMain.on("auth:google", async () => {
+  await startAuthHttpServer();
   const SUPABASE_URL = "https://ckzjnpzadeovrasucjmu.supabase.co";
-  const redirectTo = "https://snsmakeit.com/naverbot-callback";
+  const redirectTo = `http://127.0.0.1:${AUTH_PORT}/callback`;
   const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
   shell.openExternal(authUrl);
 });

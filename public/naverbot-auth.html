@@ -197,7 +197,7 @@
     });
 
     const card = document.getElementById("card");
-    const PROTOCOL = "makeit-sns";
+    const LOOPBACK_CALLBACK = "http://127.0.0.1:54321/callback";
 
     function esc(s) {
       return String(s || "").replace(/[&<>"']/g, c =>
@@ -205,7 +205,7 @@
     }
 
     function buildCallbackUrl(session) {
-      const u = new URL(`${PROTOCOL}://auth`);
+      const u = new URL(LOOPBACK_CALLBACK);
       u.searchParams.set("access_token", session.access_token);
       if (session.refresh_token) u.searchParams.set("refresh_token", session.refresh_token);
       u.searchParams.set("email", session.user.email || "");
@@ -279,7 +279,7 @@
           const { error } = await client.auth.signInWithOAuth({
             provider: "google",
             options: {
-              redirectTo: window.location.origin + "/naverbot-auth.html",
+              redirectTo: LOOPBACK_CALLBACK,
               queryParams: { prompt: "select_account" },
             },
           });

@@ -1,6 +1,6 @@
 {
   "name": "makeit-sns-automation",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "메이킷 SNS 자동화 - SNS 콘텐츠 자동 발행 데스크톱 앱",
   "main": "main.js",
   "scripts": {
@@ -67,21 +67,16 @@
       "icon": "build/icon.png",
       "identity": null
     },
-    "protocols": [
-      {
-        "name": "메이킷 SNS 자동화",
-        "schemes": [
-          "makeit-sns"
-        ]
-      }
-    ],
     "publish": {
       "provider": "generic",
       "url": "https://snsmakeit.com/naverbot-releases"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh",
+      "warningsAsErrors": false
     }
   }
 }

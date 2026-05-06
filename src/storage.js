@@ -223,6 +223,18 @@ const DISPOSABLE_DOMAINS = [
   "maildrop.cc","guerrillamail.info","grr.la","dispostable.com",
   "sharklasers.com","guerrillamailblock.com","pokemail.net","spam4.me",
   "trashmail.com","trashmail.me","mohmal.com","getnada.com",
+  "tempail.com","temp-mail.io","1secmail.com","tempmailo.com",
+  "emailondeck.com","guerrillamail.de","mailnesia.com","mailcatch.com",
+  "mintemail.com","tempr.email","throwaway.email","fake-box.com",
+  "mailnull.com","tempmailaddress.com","emailfake.com","crazymailing.com",
+  "mailtemp.net","trashmail.net","trashmail.org","tempinbox.com",
+  "mailforspam.com","safetymail.info","incognitomail.org","spamfree24.org",
+  "mytrashmail.com","mailexpire.com","guerrillamail.net","harakirimail.com",
+  "tempmails.com","10minutesemail.net","20minutemail.it","armyspy.com",
+  "cuvox.de","dayrep.com","einrot.com","fleckens.hu","gustr.com",
+  "jourrapide.com","rhyta.com","superrito.com","teleworm.us",
+  "tmpmail.net","tmpmail.org","mailsac.com","dropmail.me",
+  "meltmail.com","getairmail.com","filzmail.com","inboxbear.com",
 ];
 
 function normalizeEmail(email) {
@@ -241,20 +253,34 @@ function isDisposableEmail(email) {
 
 // ── Auth: 이메일 회원가입 ─────────────────────────────────────────────────
 export async function fbRegister(email, pw, nick, captchaToken, referralCode = "") {
-  // 일회용 이메일 차단
+  // 클라이언트 사전 검증 (UX용)
   if (isDisposableEmail(email)) {
     throw new Error("일회용 이메일은 가입할 수 없습니다. 실제 이메일을 사용해주세요.");
   }
 
-  // 이메일 정규화 후 중복 체크 (Gmail +trick 방지)
-  const normalized = normalizeEmail(email);
-  const { data: existing } = await supabase
-    .from("users")
-    .select("uid")
-    .or(`email.eq.${normalized},email.eq.${email}`)
-    .limit(1);
-  if (existing && existing.length > 0) {
-    throw new Error("이미 가입된 이메일입니다.");
+  // 서버 사이드 이메일 검증 (어뷰징 방어 + 정규화 중복 체크 + disposable 차단)
+  try {
+    const vRes = await fetch("/api/sns?action=validate-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    const vData = await vRes.json();
+    if (!vRes.ok || vData.ok === false) {
+      throw new Error(vData.reason || vData.error || "이메일 검증에 실패했습니다.");
+    }
+  } catch (e) {
+    if (e.message && !e.message.includes("fetch")) throw e;
+    // 네트워크 오류 시 기존 클라이언트 검증으로 폴백
+    const normalized = normalizeEmail(email);
+    const { data: existing } = await supabase
+      .from("users")
+      .select("uid")
+      .or(`email.eq.${normalized},email.eq.${email}`)
+      .limit(1);
+    if (existing && existing.length > 0) {
+      throw new Error("이미 가입된 이메일입니다.");
+    }
   }
 
   const signUpOptions = { email, password: pw };

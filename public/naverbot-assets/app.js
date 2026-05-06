@@ -425,7 +425,7 @@ if ($("apBriefCategoryChips")) {
   });
 }
 
-// ── 체험 차감 (%APPDATA%/NaverBotSaaS/trial_used.txt — 별도 파일) ──
+// ── 체험 차감 (서버 기준 사용량) ──
 let _trialUsedCache = 0;
 async function _getTrialUsed() {
   _trialUsedCache = await bridge.getTrialUsed();
@@ -1002,7 +1002,7 @@ function collectConfig() {
 }
 
 // ── 메이킷 브라우저 로그인 ──
-// 버튼 클릭 시 브라우저 열림 → 로그인 완료 후 makeit-sns:// protocol로 복귀
+// 버튼 클릭 시 브라우저 열림 → 로그인 완료 후 loopback callback으로 복귀
 let _loginInProgress = false;
 
 function setLoginBtnState(loading) {

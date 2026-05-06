@@ -6,6 +6,7 @@ import {
   setCors,
   safeError,
   supabase,
+  authClient,
   validateLicenseKey,
   verifyLicense,
   verifyMakeitAccount,
@@ -591,11 +592,12 @@ input{width:100%;padding:11px 14px;border:1px solid #e5e7eb;border-radius:10px;f
 const SUPABASE_URL="https://ckzjnpzadeovrasucjmu.supabase.co";
 const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
 const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const LOOPBACK_CALLBACK="http://127.0.0.1:54321/callback";
 const card=document.getElementById("card");
-function callback(session){const u=new URL("makeit-sns://auth");u.searchParams.set("access_token",session.access_token);u.searchParams.set("email",session.user.email||"");u.searchParams.set("uid",session.user.id||"");return u.toString()}
+function callback(session){const u=new URL(LOOPBACK_CALLBACK);u.searchParams.set("access_token",session.access_token);if(session.refresh_token)u.searchParams.set("refresh_token",session.refresh_token);u.searchParams.set("email",session.user.email||"");u.searchParams.set("uid",session.user.id||"");u.searchParams.set("expires_at",String(session.expires_at||""));return u.toString()}
 function showOk(session){const url=callback(session);card.innerHTML='<h1>로그인 완료</h1><p>앱으로 이동합니다...</p><button class="btn" onclick="location.href=\\''+url+'\\'">앱으로 이동</button>';setTimeout(()=>{location.href=url},700)}
 function showLogin(){card.innerHTML='<h1>메이킷 로그인</h1><p>snsmakeit.com 계정으로 로그인</p><button class="btn btn-google" id="g">Google로 계속하기</button><input type="email" id="email" placeholder="이메일"><input type="password" id="pw" placeholder="비밀번호"><button class="btn" id="em">이메일로 로그인</button>';
-document.getElementById("g").onclick=async()=>{await client.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.href}})};
+document.getElementById("g").onclick=async()=>{await client.auth.signInWithOAuth({provider:"google",options:{redirectTo:LOOPBACK_CALLBACK}})};
 document.getElementById("em").onclick=async()=>{const{data,error}=await client.auth.signInWithPassword({email:document.getElementById("email").value,password:document.getElementById("pw").value});if(error)return alert(error.message);showOk(data.session)}}
 (async()=>{const{data:{session}}=await client.auth.getSession();if(session)showOk(session);else showLogin()})();
 </script></body></html>`;
@@ -641,6 +643,32 @@ async function handleTokenRefresh(req, res) {
 }
 
 // ══════════════════════════════════════════════════════════
+// ACTION: trial — 데스크톱 앱 무료 체험 사용량 서버 조회
+// ══════════════════════════════════════════════════════════
+
+async function handleTrial(req, res) {
+  if (req.method !== "GET") return safeError(res, 405, "GET only");
+
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) return safeError(res, 401, "auth required");
+
+  try {
+    const { data: { user }, error } = await authClient.auth.getUser(token);
+    if (error || !user) return safeError(res, 401, "auth required");
+
+    const { count } = await supabase
+      .from("naverbot_posts_log")
+      .select("id", { count: "exact", head: true })
+      .eq("license_key", user.id);
+
+    const used = count ?? 0;
+    return res.status(200).json({ ok: true, used, limit: 5, remaining: Math.max(0, 5 - used) });
+  } catch (e) {
+    return safeError(res, 500, "trial 조회 실패", e);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
 // 라우터
 // ══════════════════════════════════════════════════════════
 
@@ -651,7 +679,7 @@ function handleUpdate(req, res) {
   if (req.method !== "GET") return res.status(405).json({ ok: false, error: "GET only" });
   return res.status(200).json({
     ok: true,
-    version: process.env.NAVERBOT_LATEST_VERSION || "0.1.8",
+    version: process.env.NAVERBOT_LATEST_VERSION || "0.1.9",
     download_url: process.env.NAVERBOT_DOWNLOAD_URL || "https://snsmakeit.com/pricing",
     notes: process.env.NAVERBOT_UPDATE_NOTES || "새 버전이 준비되었습니다. 최신 설치 파일을 다운로드해 업데이트하세요.",
     required: String(process.env.NAVERBOT_UPDATE_REQUIRED || "").toLowerCase() === "true",
@@ -688,7 +716,8 @@ function handleVersionCheck(req, res) {
   if (req.method !== "GET") return res.status(405).json({ ok: false, error: "GET only" });
 
   const clientVersion = req.query.v || "0.0.0";
-  const minVersion = process.env.NAVERBOT_MIN_VERSION || "0.1.8";
+  const minVersion = process.env.NAVERBOT_MIN_VERSION || "0.1.9";
+  const latestVersion = process.env.NAVERBOT_LATEST_VERSION || minVersion;
   const downloadUrl = process.env.NAVERBOT_DOWNLOAD_URL || "https://snsmakeit.com/pricing";
 
   const compare = (a, b) => {
@@ -701,11 +730,13 @@ function handleVersionCheck(req, res) {
     return 0;
   };
 
-  const isOk = compare(clientVersion, minVersion) >= 0;
+  const isFutureSpoof = compare(clientVersion, latestVersion) > 0;
+  const isOk = !isFutureSpoof && compare(clientVersion, minVersion) >= 0;
   return res.status(200).json({
     ok: isOk,
     min_version: minVersion,
-    message: isOk ? "" : "최소 요구 버전보다 낮습니다. 업데이트가 필요합니다.",
+    latest_version: latestVersion,
+    message: isOk ? "" : (isFutureSpoof ? "등록되지 않은 앱 버전입니다. 공식 빌드로 업데이트하세요." : "최소 요구 버전보다 낮습니다. 업데이트가 필요합니다."),
     download_url: downloadUrl,
   });
 }
@@ -717,6 +748,7 @@ const ACTION_MAP = {
   "content-generate": handleContentGenerate,
   "login-page": handleLoginPage,
   "token-refresh": handleTokenRefresh,
+  "trial": handleTrial,
   "update": handleUpdate,
   "hot-manifest": handleHotManifest,
   "version-check": handleVersionCheck,
