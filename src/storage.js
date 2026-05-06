@@ -47,7 +47,7 @@ export const pointDeltaToUses = (delta = 0) => {
 // ── 이용 횟수 상수 (내부 저장 단위는 points 컬럼) ──────────────────────────
 export const POINTS = {
   SIGNUP:      5,      // 회원가입 보너스 5회
-  DAILY_LOGIN: 1,      // 일일 로그인 1회
+  DAILY_LOGIN: 0,      // 일일 로그인 보상 폐지
   REFERRAL_SIGNUP: 5,  // 추천코드 가입자 보상 5회
   REFERRAL_REFERRER: 10, // 추천한 회원 보상 10회
   POST_WRITE:  0,      // 게시글 작성 적립 폐지
@@ -89,7 +89,7 @@ export const PLANS = [
     points: 0,
     label: "무료",
     color: "#888",
-    features: ["가입 시 5회 지급", "비회원 5회 무료 체험", "매일 출석 +1회", "이용 횟수 소진 시 구독 필요"],
+    features: ["가입 시 5회 지급", "비회원 5회 무료 체험", "이용 횟수 소진 시 구독 필요"],
     btnLabel: "무료 체험",
     highlight: false,
   },
@@ -189,30 +189,19 @@ async function _fetchUserRow(uid) {
   return data;
 }
 
-// ── 내부 헬퍼: 일일 로그인 이용 횟수 처리 (fire-and-forget) ─────────────────
+// ── 내부 헬퍼: 일일 로그인 날짜 갱신 (보상 폐지, 날짜만 기록) ─────────────────
 function _handleDailyLogin(userData) {
   try {
     const today = new Date().toLocaleDateString("ko-KR");
     if (userData.last_login_date !== today) {
-      const newPoints = Math.max(0, (userData.points || 0) + POINTS.DAILY_LOGIN);
-      // 비동기로 처리, 로그인을 블로킹하지 않음
       (async () => {
         try {
-          const { error } = await supabase.from("users").update({ points: newPoints }).eq("uid", userData.uid);
-          if (!error) {
-            await supabase.from("point_history").insert({
-              uid: userData.uid, delta: POINTS.DAILY_LOGIN, reason: "일일 로그인 +1회",
-              balance: newPoints, created_at: new Date().toISOString(),
-            });
-          }
+          await supabase.from("users").update({ last_login_date: today }).eq("uid", userData.uid);
         } catch(e) {}
       })();
-      // 로컬 userData는 즉시 업데이트
-      userData = { ...userData, points: newPoints, last_login_date: today };
+      userData = { ...userData, last_login_date: today };
     }
-  } catch(e) {
-    /* daily login point processing failed */
-  }
+  } catch(e) {}
   return userData;
 }
 
@@ -574,39 +563,9 @@ export async function changePoints(uid, delta, reason) {
   }
 }
 
-// ── DB: 계정 공통 출석체크 ─────────────────────────────────────────────
-export async function fetchAttendance(uid) {
-  if (!uid) return [];
-  try {
-    const { data, error } = await supabase
-      .from("attendance_checks")
-      .select("check_date")
-      .eq("uid", uid)
-      .order("check_date", { ascending: true });
-    if (error) throw error;
-    return (data || []).map(r => r.check_date).filter(Boolean);
-  } catch {
-    return null;
-  }
-}
-
-export async function addAttendance(uid, checkDate, points, reason) {
-  if (!uid || !checkDate) return { ok: false, duplicate: false };
-  try {
-    const { error } = await supabase
-      .from("attendance_checks")
-      .insert({ uid, check_date: checkDate, points });
-    if (error) {
-      if (String(error.code) === "23505" || /duplicate|unique/i.test(error.message || "")) {
-        return { ok: false, duplicate: true };
-      }
-      throw error;
-    }
-    const newPoints = await changePoints(uid, points, reason);
-    return { ok: true, points: newPoints };
-  } catch {
-    return { ok: false, duplicate: false };
-  }
+// ── DB: 출석체크 (보상 폐지 — 하위 호환 stub) ─────────────────────────
+export async function fetchAttendance() { return []; }
+export async function addAttendance() { return { ok: false, duplicate: false };
 }
 
 // ── DB: 계정 공통 AI 보관함 ────────────────────────────────────────────

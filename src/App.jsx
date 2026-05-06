@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
-import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAuthUser, FREE_GUEST, fetchAttendance, processReferralSignup, ensureReferralCode, pointsToUses } from "./storage";
+import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAuthUser, FREE_GUEST, processReferralSignup, ensureReferralCode, pointsToUses } from "./storage";
 import { useI18n, LANGUAGES } from "./i18n.jsx";
 
 // 핵심 컴포넌트 (즉시 로드)
@@ -22,7 +22,6 @@ const LegalPage = lazy(() => import("./LegalPage").then(m => ({ default: m.Legal
 const BoardPage = lazy(() => import("./BoardPage"));
 const AdminPage = lazy(() => import("./AdminPage"));
 const MyPage = lazy(() => import("./MyPage"));
-const AttendanceModal = lazy(() => import("./AttendanceModal"));
 const EventPage = lazy(() => import("./EventPage.jsx"));
 const CasePage = lazy(() => import("./CasePage.jsx"));
 const AnalyzerPage = lazy(() => import("./AnalyzerPage.jsx"));
@@ -295,8 +294,6 @@ export default function App() {
   const [theme,      setTheme]      = useState(getSavedTheme);
   const [guardModal, setGuardModal] = useState(null); // { cost, onConfirm }
   const [showPointsModal, setShowPointsModal] = useState(false);
-  const [showAttendance, setShowAttendance] = useState(false);
-  const attendancePromptKey = useRef("");
   const [showWelcome, setShowWelcome] = useState(false);
   // 다운로드 팝업 비활성화 — 홈페이지 하단 배너로 대체
   const [showDownloadPopup, setShowDownloadPopup] = useState(false);
@@ -438,24 +435,6 @@ export default function App() {
     return () => { alive = false; };
   }, [user?.uid]);
 
-  useEffect(() => {
-    if (!user?.uid || showWelcome || showAttendance) return;
-    const todayKey = localDateKey();
-    const promptKey = `${user.uid}:${todayKey}`;
-    if (attendancePromptKey.current === promptKey) return;
-    let alive = true;
-    (async () => {
-      try {
-        const dates = await fetchAttendance(user.uid);
-        if (!alive) return;
-        if (Array.isArray(dates) && !dates.includes(todayKey)) {
-          attendancePromptKey.current = promptKey;
-          setShowAttendance(true);
-        }
-      } catch {}
-    })();
-    return () => { alive = false; };
-  }, [user?.uid, showWelcome, showAttendance]);
 
   // Supabase Auth 상태 감지
   useEffect(() => {
@@ -999,7 +978,6 @@ export default function App() {
           onGoPricing={() => { setShowWelcome(false); navigate("pricing"); }}
         />
       )}
-      {showAttendance && <Suspense fallback={null}><AttendanceModal user={user} isDark={theme==="dark"} onClose={() => setShowAttendance(false)} onUserUpdate={u => { setUserState(u); setLocalUser(u); }} /></Suspense>}
       {showPointsModal && (
         <div onClick={() => setShowPointsModal(false)} style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.65)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
           <div onClick={e => e.stopPropagation()} style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 22, padding: "clamp(20px,5vw,36px) clamp(16px,4vw,28px)", maxWidth: 380, width: "90%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.15)" }}>
@@ -1206,7 +1184,6 @@ export default function App() {
                   {/* 메뉴 */}
                   <div style={{ padding: "8px" }}>
                     {[
-                      { icon: "L", label: "출석체크", sub: "매일 로그인 +1회", action: () => { setShowAttendance(true); setProfileOpen(false); } },
                       { icon: "+", label: "플랜 업그레이드", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
                       { icon: "F", label: "내 보관함", sub: "생성한 글 보관", action: () => { navigate("ai"); setAiMenu("library"); setProfileOpen(false); } },
                       { icon: "U", label: "회원정보", sub: "프로필·이용 내역 확인", action: () => { navigate("mypage"); setProfileOpen(false); } },
@@ -1359,7 +1336,6 @@ export default function App() {
                   <button onClick={logout} style={{ padding: "7px 14px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12 }}>{t("logout")}</button>
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { setShowAttendance(true); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>{t("attendance")}</button>
                   <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none", background: "#3b82f6", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>플랜 보기</button>
                 </div>
               </div>

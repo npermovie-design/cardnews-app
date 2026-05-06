@@ -1330,17 +1330,15 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
         </div>
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
-            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입하면 <b style={{color:"#a5b4fc"}}>5회 보너스</b> + 매일 출석 적립 혜택을 받으세요!</>
+            ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입하면 <b style={{color:"#a5b4fc"}}>5회 보너스</b>를 받으세요!</>
             : <><b style={{color:text}}>{title}</b> 생성에 포인트가 필요해요.<br/>포인트를 충전하거나 관리자에게 문의해주세요.</>
           }
         </div>
         {/* 혜택 카드 */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:24 }}>
           {(isGuest ? [
-            { icon:"🎁", title:"회원가입 혜택", desc:"가입 즉시 5회 지급" },
-            { icon:"P", title:"매일 로그인", desc:"출석 체크 적립" },
-            { icon:"🔄", title:"일일 로그인", desc:"매일 3P 적립" },
-            { icon:"♾️", title:"AI 무제한", desc:"포인트 충전으로" },
+            { icon:"G", title:"회원가입 혜택", desc:"가입 즉시 5회 지급" },
+            { icon:"P", title:"플랜 구독", desc:"월 구독으로 대량 충전" },
           ] : [
             { icon:"💳", title:"포인트 충전" },
             { icon:"🔥", title:"Standard 플랜", desc:"$19.90 / 2,400P" },

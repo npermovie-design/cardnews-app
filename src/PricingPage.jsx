@@ -248,7 +248,7 @@ export function PricingPage({ navigate, C, user, onLogin }) {
       {/* 무료 체험 안내 (모바일 상단) */}
       <div className="pricing-free-banner" style={{ display: "none", background: isDark ? "rgba(16,185,129,0.08)" : "#f0fdf4", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 14, padding: "16px 20px", marginBottom: 24, textAlign: "center" }}>
         <div style={{ fontSize: 15, fontWeight: 800, color: isDark ? "#6ee7b7" : "#059669", marginBottom: 4 }}>무료로 시작할 수 있어요</div>
-        <div style={{ fontSize: 12, color: C.muted }}>가입 즉시 5회 지급 · 매일 출석 +1회 · 카드 등록 없음</div>
+        <div style={{ fontSize: 12, color: C.muted }}>가입 즉시 5회 지급 · 카드 등록 없음</div>
       </div>
       <style>{`.pricing-free-banner { display: none !important; } @media(max-width:768px) { .pricing-free-banner { display: block !important; } }`}</style>
 
@@ -426,7 +426,6 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(150px,45%),1fr))", gap: 12 }}>
           {[
             { action: "회원가입", count: "글쓰기 5회", desc: "가입 즉시 지급" },
-            { action: "매일 로그인", count: "+1회", desc: "출석 체크 시 적립" },
           ].map((item, i) => (
             <div key={i} style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", borderRadius: 14, padding: "18px 16px", textAlign: "center" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 4 }}>{item.action}</div>
