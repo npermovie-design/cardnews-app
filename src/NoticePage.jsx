@@ -22,6 +22,26 @@ const CAT_COLORS = {
 // 초기 업데이트 로그 데이터
 const INITIAL_NOTICES = [
   {
+    title: "v0.1.9 — 대규모 업데이트 + 통합 횟수제 도입",
+    body: "[프로그램 업데이트]\n- 새 버전 출시 시 모달 팝업으로 업데이트 안내\n- 설치 시 기존 버전 자동 감지/제거 후 설치\n- 커뮤니티 게시판: 홈페이지와 동일한 카테고리/태그 동적 로드\n- 커뮤니티 조회수 홈페이지 동기화\n- 커뮤니티 태그별 필터링 + 게시글 수 표시\n- 프로필 아바타 선택 (DiceBear 100종)\n- 뱃지 시스템 (관리자 지급 + 달성 뱃지)\n- 챌린지/부트캠프 게시판 연동\n- ffmpeg 분석 오류 수정\n\n[요금제 변경]\n- 글쓰기 + 디자인(카드뉴스/상세페이지) 통합 횟수제로 전환\n- Basic: 30회/월, Pro: 100회/월, Premium: 200회/월, Business: 무제한\n- 네이버봇 일일 한도 → 월간 한도 전환 (매월 1일 리셋)\n- 모든 AI 생성 기능이 동일한 풀에서 1회씩 차감\n\n[홈페이지]\n- 부트캠프 시스템 전면 개편 (비회원 신청, 모임/스터디 유형)\n- 관리자 멤버십 관리, 뱃지 시스템, 아바타 선택\n- SNS 계정 링크 다중 입력 (최대 5개)\n- 보안 패치 (DOMPurify XSS 방지, RLS 정책 강화)",
+    category: "update",
+    pinned: true,
+    created_at: "2026-05-06T11:00:00Z",
+  },
+  {
+    title: "요금제 통합 안내 — AI 생성 횟수제로 전환",
+    body: "기존 AI 글쓰기와 디자인(카드뉴스, 상세페이지) 횟수가 하나로 통합되었습니다.\n\n변경 내용:\n- Basic: 50회 → 30회/월\n- Pro: 200회 → 100회/월\n- Premium: 350회 → 200회/월\n- Business: 무제한 (변동 없음)\n\n글쓰기 1회 = 카드뉴스 1회 = 상세페이지 1회로 동일하게 차감됩니다.\n사용자가 글/디자인 비율을 자유롭게 조절할 수 있습니다.\n\n기존 구독자의 이번 달 남은 횟수는 유지됩니다.",
+    category: "notice",
+    pinned: false,
+    created_at: "2026-05-06T10:30:00Z",
+  },
+  {
+    title: "v0.1.8 — 빠른 시작 + 홈 대시보드 + 25건 업데이트",
+    body: "- 빠른 시작 모드 (테마+카테고리만 입력, 1개 바로 발행)\n- 홈 대시보드 (발행 통계 + 최근 글 + 운영 상태)\n- 진행 프로그레스바 (5단계 시각화)\n- 키워드 포인트 글색 + 강조 방식 선택\n- 다중 테마 순환 발행\n- 발행 시간 분산 (아침/점심/저녁)\n- 발행 실패 자동 재시도\n- 데스크톱 알림 (성공/실패)\n- 네이버 계정 선택 발행\n- 글 제목 직접 입력 옵션\n- 카테고리 선택 Playwright 네이티브 안정화\n- 14건 버그 수정",
+    category: "update",
+    created_at: "2026-04-28T12:00:00Z",
+  },
+  {
     title: "v0.1.5 — 발행 패널 카테고리/태그 수정",
     body: "- 카테고리 선택: 발행 패널에서만 처리하도록 수정\n- 태그 입력: 발행 패널 열린 후에 태그 입력하도록 변경\n- 기존 에디터 영역에서 카테고리/태그 찾기 실패 에러 해결",
     category: "update",
@@ -220,7 +240,7 @@ export default function NoticePage({ C, user, navigate }) {
           {isAdmin && (
             <button onClick={() => setShowWrite(true)} style={{
               padding: "10px 20px", borderRadius: 12, border: "none",
-              background: `linear-gradient(135deg, ${BRAND}, #ec4899)`, color: "#fff",
+              background: BRAND, color: "#fff",
               fontSize: 14, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap",
             }}>+ 공지 작성</button>
           )}
