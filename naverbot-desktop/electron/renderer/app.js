@@ -3603,6 +3603,69 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (video && dur > 0) video.currentTime = pct * dur;
   }
 
+  // ── 숏폼 추천 설명 ──
+  var _recommendDescs = {
+    hook: "첫 3초에 강렬한 질문이나 충격적 장면으로 시선을 잡고, 핵심 내용 전달 후 구독/좋아요 CTA로 마무리합니다. 가장 높은 조회수를 기록하는 패턴입니다.",
+    listicle: "3가지/5가지 형식으로 번호와 함께 핵심 포인트를 나열합니다. 시청자가 끝까지 볼 확률이 높고, 공유가 잘 됩니다.",
+    story: "문제 제기 → 해결 과정 → 결과/교훈 구조입니다. 감정 이입이 되어 완주율이 높습니다.",
+    "before-after": "변화 전후를 극적으로 대비시킵니다. 다이어트, 인테리어, 메이크업 등에 효과적입니다.",
+    tutorial: "단계별로 방법을 알려줍니다. 자막과 화살표로 시각적 가이드를 제공하면 저장률이 높아집니다."
+  };
+  document.querySelectorAll(".ve-recommend").forEach(function(card) {
+    card.addEventListener("click", function() {
+      var desc = $("veRecommendDesc");
+      if (desc) { desc.style.display = ""; desc.textContent = _recommendDescs[card.dataset.style] || ""; }
+    });
+  });
+
+  // ── 타임라인 리사이즈 ──
+  var _tlResizing = false, _tlStartY = 0, _tlStartH = 0;
+  var tlHandle = $("veTimelineResizeHandle");
+  if (tlHandle) {
+    tlHandle.addEventListener("mousedown", function(e) {
+      _tlResizing = true; _tlStartY = e.clientY;
+      var tl = $("veTimeline"); _tlStartH = tl ? tl.offsetHeight : 220;
+      e.preventDefault();
+    });
+  }
+  document.addEventListener("mousemove", function(e) {
+    if (!_tlResizing) return;
+    var dy = _tlStartY - e.clientY;
+    var tl = $("veTimeline");
+    if (tl) tl.style.height = Math.max(100, Math.min(500, _tlStartH + dy)) + "px";
+  });
+  document.addEventListener("mouseup", function() { _tlResizing = false; });
+
+  // ── 자막 개별 효과 ──
+  // 자막 목록에서 클릭 시 해당 자막의 개별 애니메이션 설정
+  function showSubEffectPopup(idx) {
+    var s = ve.subtitles[idx]; if (!s) return;
+    var effects = ["none", "fade", "highlight", "typewriter", "karaoke", "bounce"];
+    var labels = ["없음", "페이드", "하이라이트", "타이핑", "가라오케", "바운스"];
+    var current = s._anim || "none";
+    var html = effects.map(function(ef, i) {
+      var active = ef === current;
+      return "<button data-eff='" + ef + "' style='padding:6px 12px;font-size:12px;border:none;border-radius:6px;cursor:pointer;" +
+        "background:" + (active ? "#3b82f6" : "#1e1e3a") + ";color:" + (active ? "#fff" : "#94a3b8") + ";font-weight:600;'>" + labels[i] + "</button>";
+    }).join("");
+    showModal("자막 #" + (idx + 1) + " 효과", "", "닫기");
+    // 모달 메시지에 버튼 삽입
+    var msgEl = document.getElementById("modalMessage");
+    if (msgEl) {
+      msgEl.innerHTML = "<div style='font-size:12px;color:#64748b;margin-bottom:8px;'>\"" + escapeHtml((s.text || "").slice(0, 30)) + "\"</div>" +
+        "<div style='display:flex;flex-wrap:wrap;gap:4px;'>" + html + "</div>";
+      msgEl.querySelectorAll("[data-eff]").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          s._anim = btn.dataset.eff;
+          msgEl.querySelectorAll("[data-eff]").forEach(function(b) {
+            b.style.background = b.dataset.eff === s._anim ? "#3b82f6" : "#1e1e3a";
+            b.style.color = b.dataset.eff === s._anim ? "#fff" : "#94a3b8";
+          });
+        });
+      });
+    }
+  }
+
   // 이미지 검색 (GIF/Pexels/Pixabay)
   var _imgSearchSrc = "gif";
   document.querySelectorAll("[data-imgsrc]").forEach(function(btn) {
@@ -4134,13 +4197,18 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         "<button data-idx='"+i+"' class='ve-sub-del' style='border:none;background:none;color:#64748b;cursor:pointer;font-size:12px;padding:3px 6px;flex-shrink:0;font-weight:700;'>X</button></div>";
     }).join("");
 
-    // 클릭→시간 이동
+    // 클릭→시간 이동, 더블클릭→개별 효과
     list.querySelectorAll(".ve-sub-row").forEach(function(row){
       row.addEventListener("click",function(e){
         if(e.target.tagName==="INPUT"||e.target.tagName==="BUTTON") return;
         var idx=parseInt(row.dataset.idx);
         var s=ve.subtitles[idx]; if(!s) return;
         var video=$("veVideo"); if(video) video.currentTime=s.start_seconds!=null?s.start_seconds:(s.start||0);
+      });
+      row.addEventListener("dblclick",function(e){
+        if(e.target.tagName==="INPUT") return;
+        var idx=parseInt(row.dataset.idx);
+        showSubEffectPopup(idx);
       });
     });
     // 텍스트 수정

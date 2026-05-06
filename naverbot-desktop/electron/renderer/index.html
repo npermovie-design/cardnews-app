@@ -1060,7 +1060,34 @@
         <div id="veStep1">
           <div class="panel-header">
             <h1 style="font-size:18px;">영상 편집기</h1>
-            <p class="panel-sub">영상을 넣으면 AI가 분석하고, 숏폼 또는 롱폼으로 편집합니다</p>
+            <p class="panel-sub">영상을 넣으면 AI가 분석하고 자동 편집합니다</p>
+          </div>
+          <!-- 숏폼 추천 -->
+          <div class="card" style="margin-bottom:12px;padding:14px 16px;">
+            <div style="font-size:14px;font-weight:700;margin-bottom:10px;">요즘 잘 되는 숏폼 스타일</div>
+            <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;">
+              <div style="min-width:140px;padding:10px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);border-radius:10px;color:#fff;cursor:pointer;" class="ve-recommend" data-style="hook">
+                <div style="font-size:12px;font-weight:700;">훅 → 핵심 → CTA</div>
+                <div style="font-size:10px;opacity:0.8;margin-top:4px;">3초 안에 시선 잡기</div>
+              </div>
+              <div style="min-width:140px;padding:10px;background:linear-gradient(135deg,#f59e0b,#ef4444);border-radius:10px;color:#fff;cursor:pointer;" class="ve-recommend" data-style="listicle">
+                <div style="font-size:12px;font-weight:700;">리스트형 (3~5개)</div>
+                <div style="font-size:10px;opacity:0.8;margin-top:4px;">숫자+핵심 포인트</div>
+              </div>
+              <div style="min-width:140px;padding:10px;background:linear-gradient(135deg,#10b981,#3b82f6);border-radius:10px;color:#fff;cursor:pointer;" class="ve-recommend" data-style="story">
+                <div style="font-size:12px;font-weight:700;">스토리텔링</div>
+                <div style="font-size:10px;opacity:0.8;margin-top:4px;">문제→과정→결과</div>
+              </div>
+              <div style="min-width:140px;padding:10px;background:linear-gradient(135deg,#ec4899,#8b5cf6);border-radius:10px;color:#fff;cursor:pointer;" class="ve-recommend" data-style="before-after">
+                <div style="font-size:12px;font-weight:700;">비포/애프터</div>
+                <div style="font-size:10px;opacity:0.8;margin-top:4px;">변화를 극적으로</div>
+              </div>
+              <div style="min-width:140px;padding:10px;background:linear-gradient(135deg,#64748b,#334155);border-radius:10px;color:#fff;cursor:pointer;" class="ve-recommend" data-style="tutorial">
+                <div style="font-size:12px;font-weight:700;">튜토리얼/하우투</div>
+                <div style="font-size:10px;opacity:0.8;margin-top:4px;">단계별 설명</div>
+              </div>
+            </div>
+            <div id="veRecommendDesc" style="font-size:11px;color:var(--text-dim);margin-top:8px;display:none;padding:8px;background:var(--bg-elev);border-radius:6px;line-height:1.6;"></div>
           </div>
           <div class="card">
             <div class="form">
@@ -1228,6 +1255,10 @@
             </div>
           </div>
 
+          <!-- 리사이즈 핸들 -->
+          <div id="veTimelineResizeHandle" style="height:6px;background:#0f0f23;cursor:ns-resize;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+            <div style="width:40px;height:3px;background:#334155;border-radius:2px;"></div>
+          </div>
           <!-- 하단: 타임라인 -->
           <div style="background:#0a0a1a;border-top:1px solid #2a2a4a;flex-shrink:0;height:220px;display:flex;flex-direction:column;" id="veTimeline">
             <div style="display:flex;align-items:center;gap:8px;padding:5px 14px;background:#0f0f23;border-bottom:1px solid #1a1a3a;flex-shrink:0;">
