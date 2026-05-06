@@ -426,6 +426,7 @@ const UNLIMITED_PLANS = ["Agency"];
 export const PLAN_LIMITS = {
   "Basic":    { write: 30,  video: 10,  naver: 0 },
   "Pro":      { write: 100, video: 30,  naver: 3 },
+  "Premium":  { write: 200, video: 50,  naver: 6 },
   "Business": { write: 500, video: 100, naver: 10 },
   "Agency":   { write: 999, video: 999, naver: 99 },
 };

@@ -111,6 +111,7 @@ async function handleLicenseVerify(req, res) {
     const planLimits = {
       starter:  { max_accounts: 1, daily_posts: 5 },
       pro:      { max_accounts: 1, daily_posts: 3 },
+      premium:  { max_accounts: 1, daily_posts: 6 },
       business: { max_accounts: 3, daily_posts: 10 },
       agency:   { max_accounts: 5, daily_posts: 999 },
     };

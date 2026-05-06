@@ -35,6 +35,10 @@
       "python-bridge.js",
       "node_modules/**/*"
     ],
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**",
+      "node_modules/ffprobe-static/**"
+    ],
     "extraResources": [
       {
         "from": "../python",

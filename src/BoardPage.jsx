@@ -1671,7 +1671,9 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                               onMouseLeave={e=>{e.target.pause();e.target.currentTime=0;}}/>
                           : thumb
                           ? <img src={toThumb(thumb,480,270)} alt="" loading="eager" style={{width:"100%",height:"100%",objectFit:"cover",display:"block"}} onError={e=>{e.target.style.opacity="0.3";e.target.src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='1'%3E%3Crect x='3' y='3' width='18' height='18' rx='2'/%3E%3Cline x1='3' y1='3' x2='21' y2='21'/%3E%3C/svg%3E";}}/>
-                          : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36}}>{""}</div>
+                          : <div style={{width:"100%",height:"100%",display:"flex",alignItems:"center",justifyContent:"center",padding:12,textAlign:"center",fontSize:isMobile?12:13,fontWeight:700,color:C.text,lineHeight:1.4,background:isDark?"rgba(255,255,255,0.04)":"#f7f8fb"}}>
+                              <span style={{display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{p.title}</span>
+                            </div>
                         }
                         {today&&<span style={{position:"absolute",top:6,left:6,fontSize:9,background:"rgba(239,68,68,0.9)",color:"#fff",padding:"2px 6px",borderRadius:4,fontWeight:700}}>NEW</span>}
                         {/* 유료/무료 배지 */}
@@ -1682,8 +1684,8 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                           style={{position:"absolute",bottom:6,left:6,padding:"4px 9px",borderRadius:7,border:"none",background:"rgba(0,0,0,0.72)",color:"#fff",fontSize:12,cursor:"pointer",fontWeight:700}}
                           title="링크 공유">🔗</button>
                       </div>
-                      {/* 자료실이면 하단 텍스트 숨김, 그 외는 기존처럼 표시 */}
-                      {subCat!=="archive" && <div style={{padding:"10px 12px"}}>
+                      {/* 자료실은 이미지 중심으로 보이되, 직접 쓴 글처럼 썸네일이 없으면 제목 정보를 표시 */}
+                      {(subCat!=="archive" || !thumb) && <div style={{padding:"10px 12px"}}>
                         <div style={{fontSize:13,fontWeight:700,color:C.text,overflow:"hidden",textOverflow:"ellipsis",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical",lineHeight:1.4,marginBottom:6}}>
                           {p.tag&&<span style={{fontSize:10,padding:"1px 6px",borderRadius:4,background:(subInfo?.color||"#3b82f6")+"22",color:subInfo?.color||"#3b82f6",fontWeight:700,marginRight:5}}>{p.tag}</span>}
                           {p.title}

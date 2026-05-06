@@ -1230,9 +1230,9 @@ const ONE_OFF_POINTS = {
 
 // 구독 tier: product_name → { monthly, yearly } 지급 횟수 (구독자는 monthly_used 리셋 방식이므로 하위 호환용)
 const SUB_TIERS = {
-  "Basic":    { monthly: 50,   yearly: 600 },
-  "Pro":      { monthly: 200,  yearly: 2400 },
-  "Premium":  { monthly: 350,  yearly: 4200 },
+  "Basic":    { monthly: 30,   yearly: 360 },
+  "Pro":      { monthly: 100,  yearly: 1200 },
+  "Premium":  { monthly: 200,  yearly: 2400 },
   "Business": { monthly: 500,  yearly: 6000 },
   "Agency":   { monthly: 500,  yearly: 6000 },
 };
@@ -1256,7 +1256,7 @@ async function addPoints(uid, points, reason) {
 
 // 플랜별 월간 글쓰기 한도
 const PLAN_MONTHLY_LIMITS = {
-  "Basic": 50, "Pro": 200, "Premium": 350, "Business": 99999, "Agency": 99999,
+  "Basic": 30, "Pro": 100, "Premium": 200, "Business": 500, "Agency": 99999,
 };
 
 async function saveSubscription(subId, uid, productName, interval, status, attrs = {}) {
