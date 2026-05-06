@@ -247,7 +247,7 @@ export function HowToPage({ navigate, C }) {
     { label: "비회원", val: "5회 무료", color: "#888", bg: "rgba(0,0,0,0.04)" },
     { label: "회원가입", val: "+5회 지급", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
     { label: "매일 로그인", val: "+1회", color: "#10b981", bg: "rgba(16,185,129,0.06)" },
-    { label: "AI 글쓰기", val: "-1회", color: "#ef4444", bg: "rgba(239,68,68,0.05)" },
+    { label: "AI 생성 (글쓰기/디자인)", val: "-1회", color: "#ef4444", bg: "rgba(239,68,68,0.05)" },
   ];
 
   const FAQ = [

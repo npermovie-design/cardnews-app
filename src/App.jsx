@@ -141,14 +141,14 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
             +5회
           </div>
           <div style={{ fontSize: 12, color: "rgba(255,255,255,0.55)" }}>
-            {ko ? "AI 글쓰기 5회 분량" : "5 AI writes"}
+            {ko ? "AI 생성 5회 분량" : "5 AI credits"}
           </div>
         </div>
 
         {/* 혜택 리스트 */}
         <div style={{ textAlign: "left", marginBottom: 24 }}>
           {[
-            { icon: "1", text: ko ? "AI 글쓰기 1회 차감" : "AI writing uses 1 credit" },
+            { icon: "1", text: ko ? "AI 생성 1회 차감 (글쓰기/디자인)" : "AI generation uses 1 credit" },
             { icon: "2", text: ko ? "매일 로그인 +1회 적립" : "Daily login earns +1 credit" },
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
@@ -354,7 +354,7 @@ export default function App() {
         howto: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 카드뉴스, 상세페이지, 숏폼 편집까지 단계별로 안내합니다.",
         faq: "SNS메이킷의 AI 콘텐츠 생성, 요금제, 저작권, 계정 관련 자주 묻는 질문을 확인하세요.",
         ai: "AI로 블로그 글, 인스타그램 캡션, 카드뉴스, 상세페이지, 제품컷, 로고, 쇼츠 영상을 자동 생성하세요.",
-        pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 AI 글쓰기와 영상 편집을 이용하세요.",
+        pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 AI 생성(글쓰기+디자인)을 이용하세요.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류, 제휴 문의를 남겨주시면 빠르게 답변드립니다.",
         community: "SNS메이킷 커뮤니티. SNS 운영, AI 콘텐츠 제작, 마케팅 정보와 질문답변, 챌린지를 함께하세요.",
         programs: "SNS 운영에 필요한 자동화 도구, 템플릿, 무료 사진, 무료 영상 자료를 확인하세요.",
@@ -595,7 +595,7 @@ export default function App() {
     const descMap = {
       ko: {
         home: "키워드만 입력하면 AI가 블로그, 인스타그램, 쇼츠 콘텐츠 초안을 자동 생성합니다. 비회원 5회 무료, 가입 시 5회 지급.",
-        pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 AI 글쓰기와 영상 편집을 이용하세요.",
+        pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 AI 생성(글쓰기+디자인)을 이용하세요.",
         about: "SNS메이킷은 AI로 SNS 콘텐츠 제작 전 과정을 자동화하는 올인원 플랫폼입니다.",
         howto: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 숏폼 편집까지 단계별로 안내합니다.",
         ai: "AI로 블로그, 이미지, 숏폼 영상을 자동 생성하세요. 비회원 5회 무료.",
@@ -984,7 +984,7 @@ export default function App() {
             <div style={{ fontSize: "clamp(16px,4vw,19px)", fontWeight: 900, color: "#1a1730", marginBottom: 10 }}>무료 사용 횟수를 모두 사용했어요</div>
             <div style={{ fontSize: 13, color: "rgba(26,23,48,0.55)", lineHeight: 1.9, marginBottom: 26 }}>
               비회원은 AI 기능을 <b style={{ color: "#3b82f6" }}>{FREE_GUEST}회 무료</b>로 사용할 수 있어요.<br/>
-              로그인하면 <b style={{ color: "#3b82f6" }}>글쓰기 5회</b>가 즉시 지급됩니다!
+              로그인하면 <b style={{ color: "#3b82f6" }}>AI 생성 5회</b>가 즉시 지급됩니다!
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button onClick={() => { setShowPointsModal(false); navigate("login"); }}
@@ -1177,7 +1177,7 @@ export default function App() {
                         <div style={{ height: "100%", borderRadius: 4, width: Math.min(((user.points||0)/500)*100,100)+"%",
                           background: "#3b82f6" }} />
                       </div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 글쓰기 기준 {pointsToUses(user.points||0)}회 가능</div>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 생성 {pointsToUses(user.points||0)}회 가능</div>
                     </div>
                   </div>
                   {/* 메뉴 */}

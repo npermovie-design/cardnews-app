@@ -1804,7 +1804,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
               <div style={{padding:"14px 16px",borderBottom:"1px solid "+bdr}}>
                 <span style={{fontSize:13,fontWeight:800,color:C.text}}>횟수 적립</span>
               </div>
-              {[["AI 글쓰기","-1회"],["가입 즉시","+5회"],["매일 로그인","+1회"],["플랜 업그레이드","매월 충전"]].map(([a,p])=>(
+              {[["AI 생성 (글/디자인)","-1회"],["가입 즉시","+5회"],["매일 로그인","+1회"],["플랜 업그레이드","매월 충전"]].map(([a,p])=>(
                 <div key={a} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid "+bdr,fontSize:13}}>
                   <span style={{color:C.muted}}>{a}</span>
                   <span style={{fontWeight:700,color:p.startsWith("+")?"#4ade80":"#f87171"}}>{p}</span>
