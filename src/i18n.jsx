@@ -213,7 +213,7 @@ const T = {
     board_imageSizeError: "이미지는 20MB 이하만 가능합니다.",
     board_imageUploadFail: "이미지 업로드 실패",
     board_editPost: "글 수정", board_newPost: "새 글 작성",
-    board_postPointBonus: "글 등록 시 1P 적립!",
+    board_postPointBonus: "",
     board_selectCategory: "카테고리 선택",
     board_subCategory: "세부 카테고리", board_subCategoryOptional: "(선택)",
     board_allTag: "전체",

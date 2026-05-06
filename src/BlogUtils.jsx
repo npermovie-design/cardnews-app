@@ -1340,10 +1340,7 @@ function PointsExhausted({ isDark, isGuest, title, onLogin }) {
             { icon:"G", title:"회원가입 혜택", desc:"가입 즉시 5회 지급" },
             { icon:"P", title:"플랜 구독", desc:"월 구독으로 대량 충전" },
           ] : [
-            { icon:"💳", title:"포인트 충전" },
-            { icon:"🔥", title:"Standard 플랜", desc:"$19.90 / 2,400P" },
-            { icon:"P", title:"무료 적립", desc:"매일 로그인 적립" },
-            { icon:"💬", title:"관리자 문의", desc:"포인트 문의" },
+            { icon:"U", title:"플랜 업그레이드", desc:"더 많은 횟수 충전" },
           ]).map((item, i) => (
             <div key={i} style={{ background:card, border:`1px solid ${bdr}`, borderRadius:12, padding:"14px 12px" }}>
               <div style={{ fontSize:24, marginBottom:6 }}>{item.icon}</div>

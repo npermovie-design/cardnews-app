@@ -148,8 +148,7 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
         {/* 혜택 리스트 */}
         <div style={{ textAlign: "left", marginBottom: 24 }}>
           {[
-            { icon: "1", text: ko ? "AI 생성 1회 차감 (글쓰기/디자인)" : "AI generation uses 1 credit" },
-            { icon: "2", text: ko ? "매일 로그인 +1회 적립" : "Daily login earns +1 credit" },
+            { icon: "1", text: ko ? "콘텐츠 생성 1회 차감" : "Content generation uses 1 credit" },
           ].map((item, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
               <div style={{
@@ -351,12 +350,12 @@ export default function App() {
     };
     const descMap = {
       ko: {
-        home: "키워드만 입력하면 AI가 블로그, 인스타그램, 쇼츠 콘텐츠 초안을 자동 생성합니다. 비회원 5회 무료, 가입 시 5회 지급.",
-        about: "SNS메이킷은 블로그, 인스타그램, 쇼츠, 이미지 제작을 AI로 자동화하는 SNS 콘텐츠 올인원 플랫폼입니다.",
-        howto: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 카드뉴스, 상세페이지, 숏폼 편집까지 단계별로 안내합니다.",
-        faq: "SNS메이킷의 AI 콘텐츠 생성, 요금제, 저작권, 계정 관련 자주 묻는 질문을 확인하세요.",
-        ai: "AI로 블로그 글, 인스타그램 캡션, 카드뉴스, 상세페이지, 제품컷, 로고, 쇼츠 영상을 자동 생성하세요.",
-        pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 AI 생성(글쓰기+디자인)을 이용하세요.",
+        home: "블로그 글쓰기, 자동 발행, 키워드 분석까지. SNS 콘텐츠 관리를 쉽게 도와주는 올인원 플랫폼. 비회원 5회 무료.",
+        about: "SNS메이킷은 블로그 글쓰기, 자동 발행, 키워드 분석 등 SNS 콘텐츠 관리를 위한 올인원 플랫폼입니다.",
+        howto: "SNS메이킷 사용법 가이드. 블로그 글쓰기, 자동 발행, 키워드 분석까지 단계별로 안내합니다.",
+        faq: "SNS메이킷의 콘텐츠 생성, 요금제, 저작권, 계정 관련 자주 묻는 질문을 확인하세요.",
+        ai: "블로그 글, 인스타그램 캡션, 영상 편집까지 쉽게 생성하세요.",
+        pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 콘텐츠 생성과 자동 발행을 이용하세요.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류, 제휴 문의를 남겨주시면 빠르게 답변드립니다.",
         community: "SNS메이킷 커뮤니티. SNS 운영, AI 콘텐츠 제작, 마케팅 정보와 질문답변, 챌린지를 함께하세요.",
         programs: "SNS 운영에 필요한 자동화 도구, 템플릿, 무료 사진, 무료 영상 자료를 확인하세요.",
@@ -601,11 +600,11 @@ export default function App() {
     // 페이지별 meta description (SEO 최적화)
     const descMap = {
       ko: {
-        home: "키워드만 입력하면 AI가 블로그, 인스타그램, 쇼츠 콘텐츠 초안을 자동 생성합니다. 비회원 5회 무료, 가입 시 5회 지급.",
-        pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 AI 생성(글쓰기+디자인)을 이용하세요.",
-        about: "SNS메이킷은 AI로 SNS 콘텐츠 제작 전 과정을 자동화하는 올인원 플랫폼입니다.",
-        howto: "SNS메이킷 사용법 가이드. AI 글쓰기, 이미지 생성, 숏폼 편집까지 단계별로 안내합니다.",
-        ai: "AI로 블로그, 이미지, 숏폼 영상을 자동 생성하세요. 비회원 5회 무료.",
+        home: "블로그 글쓰기, 자동 발행, 키워드 분석까지. SNS 콘텐츠 관리를 쉽게 도와주는 올인원 플랫폼. 비회원 5회 무료.",
+        pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 콘텐츠 생성과 자동 발행을 이용하세요.",
+        about: "SNS메이킷은 SNS 콘텐츠 관리를 위한 올인원 플랫폼입니다.",
+        howto: "SNS메이킷 사용법 가이드. 블로그 글쓰기, 자동 발행까지 단계별로 안내합니다.",
+        ai: "블로그 글, 이미지, 영상을 쉽게 생성하세요. 비회원 5회 무료.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류 등 1:1 문의를 받고 있어요.",
         community: "SNS메이킷 커뮤니티. 마케터와 크리에이터를 위한 정보, Q&A, 자료실.",
         programs: "SNS 자동화봇으로 네이버 블로그 글 생성, 드라이브 자료 기반 발행, 자동 운영 흐름을 확인하세요.",
