@@ -1049,11 +1049,11 @@ export default function App() {
             <div style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.1)", borderRadius: 14, padding: "14px 18px", marginBottom: 22, display: "flex", justifyContent: "space-around", fontSize: 12, color: "rgba(26,23,48,0.5)" }}>
               <span>Windows 10/11</span>
               <span style={{ color: "rgba(26,23,48,0.15)" }}>|</span>
-              <span>v0.1.8</span>
+              <span>v0.1.9</span>
               <span style={{ color: "rgba(26,23,48,0.15)" }}>|</span>
-              <span>314MB</span>
+              <span>450MB</span>
             </div>
-            <a href="https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.8.exe"
+            <a href="https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.9.exe"
               onClick={() => setShowDownloadPopup(false)}
               style={{ display: "block", padding: "15px 24px", borderRadius: 14, background: "#3b82f6", color: "#fff", fontSize: 16, fontWeight: 900, textDecoration: "none", boxShadow: "none", marginBottom: 12, transition: "transform 0.15s" }}>
               Windows 무료 다운로드
