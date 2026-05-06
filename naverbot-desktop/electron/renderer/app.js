@@ -3861,12 +3861,10 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // AI 짤 자동 삽입
   var autoImgBtn=$("veAutoImageBtn"); if(autoImgBtn) autoImgBtn.addEventListener("click",async function(){
     if(!ve.subtitles.length){showModal("자막 필요","먼저 영상을 분석해주세요.","확인");return;}
-    // 삽입 비율 물어보기
-    var pctStr = prompt("짤 삽입 비율 (영상 길이 대비 %)\n예: 30 → 10분 영상에 약 3분 분량 짤 표시", "30");
-    if(!pctStr) return;
-    var insertPct = Math.max(5, Math.min(80, parseInt(pctStr) || 30));
+    // 삽입 비율 30% 고정 (프롬프트 제거 — Electron에서 prompt 차단 이슈)
+    var insertPct = 30;
     autoImgBtn.disabled=true; var _origImgBtnHtml=autoImgBtn.innerHTML; autoImgBtn.innerHTML="삽입 중...";
-    showVeLoading("AI 짤을 검색하고 삽입하는 중...");
+    showVeLoading("AI 짤을 검색하고 삽입하는 중...\n(GIF 우선, 영상의 " + insertPct + "% 비율)");
     try{
       var text=ve.subtitles.map(function(s){return s.text}).join(" ");
       var keywords=text.replace(/[^가-힣a-zA-Z\s]/g,"").split(/\s+/).filter(function(w){return w.length>=2});
