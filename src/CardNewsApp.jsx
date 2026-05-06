@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { changePoints, deleteLibraryItem, getAiUsage, setAiUsage, upsertLibraryItem } from "./storage";
+import { changePoints, deleteLibraryItem, getAiUsage, setAiUsage, upsertLibraryItem, useAiOnce, getAiLeft } from "./storage";
 import { callAI } from "./aiClient";
 import { useI18n } from "./i18n";
 
@@ -1365,8 +1365,8 @@ function PageMake(props) {
   let _ppts = props.user ? (props.user.points || 0) : 0;
   // 회원: uid 있고 포인트가 명확히 0이고 20회 초과한 경우만 소진 화면
   // 포인트 정보가 없거나(undefined) 로드 안된 경우 → 허용 (사용 가능으로 처리)
-  // 로그인 회원 = 차단 없음 (크레딧은 생성 시 차감), 비회원만 5회 초과 시 차단
-  let _pEx = props.user ? false : (_pused >= _plim);
+  // 회원: getAiLeft로 통합 횟수 체크, 비회원: 5회 초과 시 차단
+  let _pEx = props.user ? !getAiLeft(props.user).canUse : (_pused >= _plim);
 
   if (_pEx) {
     return (
@@ -1781,7 +1781,9 @@ export function CardNewsApp(props) {
       if (selPreset) { applyPreset(selPreset); }
       applyAutoCoverImage(parsed);
       setPage("edit"); consumeOne(user);
-      if (user && user.uid) { changePoints(user.uid, -1, "카드뉴스 생성").catch(function(e) {}); }
+      if (user && user.uid && props.onUserUpdate) {
+        useAiOnce(user, props.onUserUpdate, -1, "카드뉴스 생성", "write").catch(function(e) {});
+      }
       // 보관함 자동저장
       try {
         let _slides = parsed.slides || [];

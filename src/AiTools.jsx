@@ -6,7 +6,7 @@ import YtBlogGenerator from "./YtBlogGenerator";
 import SnsConnectionManager from "./SnsConnectionManager";
 import { InstaAutoReply, InstaAutoDM, TabHeader } from "./AiInstagram.jsx";
 import ViralityAnalyzer from "./ViralityAnalyzer.jsx";
-import { getAiUsage, setAiUsage, getAiLeft, FREE_MEMBER, FREE_GUEST, changePoints } from "./storage";
+import { getAiUsage, setAiUsage, getAiLeft, FREE_MEMBER, FREE_GUEST, changePoints, useAiOnce } from "./storage";
 
 /* ════════════════════════════════════════════════════════════
    AI 도구 모듈: RepurposePage, MarketingHub, FileTranscriber,
@@ -71,14 +71,9 @@ function RepurposePage({ isDark, user, onLoginRequest, onUserUpdate, showPointCo
     setError(""); setLoading(true); setResults(null);
 
     try {
-      // 포인트 차감 (35P - AI_SONNET)
-      const info = getAiLeft(user);
-      const freeLimit = user ? FREE_MEMBER : FREE_GUEST;
-      if (info.used >= freeLimit) {
-        const { changePoints } = await import("./storage");
-        const newPts = await changePoints(user.uid, -1, "콘텐츠 리퍼포징");
-        if (onUserUpdate) onUserUpdate({ ...user, points: newPts });
-      }
+      // 통합 횟수 차감
+      const canProceed = await useAiOnce(user, onUserUpdate || (() => {}), -1, "콘텐츠 리퍼포징", "write");
+      if (!canProceed) { setError("이용 횟수가 부족합니다. 플랜을 업그레이드해주세요."); setLoading(false); return; }
 
       const selectedFormats = FORMAT_LIST.filter(f => formats[f.id]);
       const formatInstructions = selectedFormats.map(f => {
@@ -505,12 +500,9 @@ ${fileContent.slice(0, 4000)}
       await callAIStream("claude-haiku-4-5", [{role:"user",content:prompt}], 4000, (accumulated) => {
         setResult(accumulated);
       });
-      // 포인트 차감
+      // 통합 횟수 차감
       if (user?.uid) {
-        try {
-          const { changePoints } = await import("./storage");
-          await changePoints(user.uid, -1, "파일 글 변환");
-        } catch {}
+        try { await useAiOnce(user, onUserUpdate || (() => {}), -1, "파일 글 변환", "write"); } catch {}
       }
     } catch (err) {
       setError("글 생성 중 오류: " + err.message);
