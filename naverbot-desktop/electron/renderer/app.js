@@ -3272,11 +3272,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (video) video.style.display = "none";
     _veCanvas.style.display = "block";
 
-    // 비율별 캔버스 크기
-    var sizes = { landscape: [1280, 720], portrait: [720, 1280], square: [720, 720] };
+    // 비율별 캔버스 크기 (프리뷰용 → 실제 표시 크기에 맞게 축소)
+    var sizes = { landscape: [854, 480], portrait: [480, 854], square: [480, 480] };
     var sz = sizes[mode] || sizes.landscape;
     _veCanvas.width = sz[0];
     _veCanvas.height = sz[1];
+    _needsRedraw = true;
 
     // 프리뷰 영역 크기 조정
     videoWrap.style.aspectRatio = "";
@@ -3298,27 +3299,29 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (_veCanvasRAF) cancelAnimationFrame(_veCanvasRAF);
     var _lastDrawTime = 0;
     var _lastVideoTime = -1;
+    var _needsRedraw = true; // 강제 리드로우 플래그
+
     function draw() {
       var video = $("veVideo");
       if (!video || !_veCanvas || !_veCanvasCtx) { _veCanvasRAF = requestAnimationFrame(draw); return; }
+      if (video.readyState < 2) { _veCanvasRAF = requestAnimationFrame(draw); return; }
 
-      // 프레임 스킵: 30fps 제한 + 시간 변화 없으면 스킵
       var now = performance.now();
-      var videoTime = Math.round(video.currentTime * 10); // 0.1초 단위
-      if (now - _lastDrawTime < 33 && videoTime === _lastVideoTime && !video.paused) {
+      var videoTime = Math.round(video.currentTime * 30); // 1/30초 단위
+
+      // 프레임 스킵: 시간 변화 없고 리드로우 불필요하면 완전 스킵
+      if (videoTime === _lastVideoTime && !_needsRedraw) {
         _veCanvasRAF = requestAnimationFrame(draw); return;
       }
-      // 정지 상태에서 시간 변화 없으면 완전 스킵 (CPU 절약)
-      if (video.paused && videoTime === _lastVideoTime) {
-        _veCanvasRAF = requestAnimationFrame(draw); return;
-      }
+      // 24fps 제한
+      if (now - _lastDrawTime < 41) { _veCanvasRAF = requestAnimationFrame(draw); return; }
+
       _lastDrawTime = now;
       _lastVideoTime = videoTime;
+      _needsRedraw = false;
 
       var ctx = _veCanvasCtx;
       var cw = _veCanvas.width, ch = _veCanvas.height;
-
-      if (video.readyState < 2) { _veCanvasRAF = requestAnimationFrame(draw); return; }
 
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, cw, ch);
@@ -3656,8 +3659,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var dur = ve.duration || 1;
     if (video && dur > 0) {
       video.currentTime = pct * dur;
-      // 정지 상태에서도 프레임 강제 갱신
-      _lastVideoTime = -1;
+      _needsRedraw = true;
     }
   }
 
@@ -3937,8 +3939,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   var silRunBtn=$("veSilenceRunBtn"); if(silRunBtn) silRunBtn.addEventListener("click",async function(){
     if(!ve.filePath){showModal("알림","먼저 영상을 불러와주세요.","확인");return;}
     silRunBtn.disabled=true; silRunBtn.textContent="무음 감지 중...";
-    // 전체화면 로딩
-    showVeLoading("무음 구간을 감지하고 있습니다...");
+    showVeLoading("무음 구간을 감지하고 있습니다...\n(영상 길이에 따라 10~30초 소요)");
 
     try{
       var detectResult=await bridge.videoDetectSilence({filePath:ve.filePath,threshold:-30,minDuration:_silenceThresh});
@@ -4287,8 +4288,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       else{video.play().catch(function(){});isPlaying=true;pb.innerHTML="&#10074;&#10074;";}
     };
 
-    // 시간 업데이트
+    // 시간 업데이트 (throttled)
+    var _lastTimeUpdate = 0;
     video.ontimeupdate=function(){
+      var now = performance.now();
+      if (now - _lastTimeUpdate < 100) return; // 100ms throttle (10fps)
+      _lastTimeUpdate = now;
       var cur=video.currentTime,dur=video.duration||ve.duration||1;
       if(seekBar&&!seekBar._dragging) seekBar.value=Math.round(cur/dur*1000);
       if(timeDisp) timeDisp.textContent=fmtTime(cur)+" / "+fmtTime(dur);
@@ -4415,23 +4420,21 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var blocks=$("veTimelineBlocks"); if(!blocks) return;
     var dur=ve.duration||1;
 
-    // 줌 적용: 트랙 내 모든 요소를 확대
+    // 줌 적용 (CSS transform — 리플로우 없음)
     var tracksArea=$("veTracksArea");
     var ruler=$("veTimeRuler");
     var timeline=$("veTimeline");
     if(tracksArea){
-      // 트랙 영역 내부 너비를 줌배율로
-      var lanes = tracksArea.querySelectorAll(".ve-track-lane");
-      lanes.forEach(function(lane) {
-        lane.style.transform = "scaleX(" + timelineZoom + ")";
-        lane.style.transformOrigin = "left center";
-      });
+      tracksArea.style.transform = "scaleX(" + timelineZoom + ")";
+      tracksArea.style.transformOrigin = "left top";
+      tracksArea.style.width = (100 / timelineZoom) + "%";
     }
     if(ruler) {
       ruler.style.transform = "scaleX(" + timelineZoom + ")";
-      ruler.style.transformOrigin = "left center";
+      ruler.style.transformOrigin = "left top";
     }
     if(timeline) { timeline.style.overflowX = "auto"; }
+    _phCache.dirty = true;
     if(!ve.subtitles.length){blocks.innerHTML="<div style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);'>자막 없음</div>";return;}
     var html="";
     ve.subtitles.forEach(function(s,i){
@@ -4636,26 +4639,35 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     }
   });
 
+  // 캐시: 플레이헤드 위치 계산용
+  var _phCache = { laneLeft: 0, laneWidth: 0, dirty: true };
   function updateTimelineHead(cur,dur){
-    // 글로벌 플레이헤드 (모든 트랙 관통)
     var playhead=$("vePlayhead");
     if(playhead){
-      var area=$("veTracksArea");
-      if(area){
-        var firstLane=area.querySelector(".ve-track-lane");
-        if(firstLane){
-          var areaRect=area.getBoundingClientRect();
-          var laneRect=firstLane.getBoundingClientRect();
-          var laneLeft=laneRect.left-areaRect.left;
-          var laneWidth=laneRect.width;
-          var px=laneLeft+(cur/dur)*laneWidth;
-          playhead.style.left=px+"px";
+      // 레이아웃 캐시 (리사이즈 시에만 갱신)
+      if (_phCache.dirty) {
+        var area=$("veTracksArea");
+        if(area){
+          var firstLane=area.querySelector(".ve-track-lane");
+          if(firstLane){
+            var areaRect=area.getBoundingClientRect();
+            var laneRect=firstLane.getBoundingClientRect();
+            _phCache.laneLeft=laneRect.left-areaRect.left;
+            _phCache.laneWidth=laneRect.width;
+            _phCache.dirty=false;
+          }
         }
       }
+      // transform으로 이동 (reflow 없음)
+      var px=_phCache.laneLeft+(cur/dur)*_phCache.laneWidth;
+      playhead.style.transform="translateX("+px+"px)";
+      playhead.style.left="0";
     }
     var posEl=$("veTimelinePos");
     if(posEl) posEl.textContent=fmtTime(cur)+" / "+fmtTime(dur);
   }
+  // 리사이즈 시 캐시 무효화
+  window.addEventListener("resize", function(){ _phCache.dirty=true; });
 
   // 모든 트랙 레인 클릭 → 재생 위치 이동
   document.querySelectorAll(".ve-track-lane").forEach(function(lane){
@@ -4706,18 +4718,39 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     el.innerHTML=html;
   }
 
+  var _prevActiveSubIdx = -1;
   function highlightActiveSub(t){
-    var list=$("veSubtitleList"); if(!list) return;
-    list.querySelectorAll(".ve-sub-row").forEach(function(row){
-      var idx=parseInt(row.dataset.idx);
-      var s=ve.subtitles[idx]; if(!s) return;
-      var st=s.start_seconds!=null?s.start_seconds:(s.start||0);
-      var en=s.end_seconds!=null?s.end_seconds:(s.end||st+2);
-      var active=t>=st-0.1&&t<=en+0.1;
-      row.style.background=active?"var(--accent-soft)":"transparent";
-      if(active&&!row._scrolled){row.scrollIntoView({block:"nearest"});row._scrolled=true;}
-      else if(!active) row._scrolled=false;
-    });
+    // 현재 활성 자막 찾기 (이진 탐색은 과하고, 이전 인덱스 근처만 확인)
+    var activeIdx = -1;
+    for (var i = Math.max(0, _prevActiveSubIdx - 1); i < ve.subtitles.length; i++) {
+      var s = ve.subtitles[i];
+      var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+      var en = s.end_seconds != null ? s.end_seconds : (s.end || st + 2);
+      if (t >= st - 0.1 && t <= en + 0.1) { activeIdx = i; break; }
+      if (st > t + 1) break; // 더 이상 볼 필요 없음
+    }
+    if (activeIdx === -1) {
+      // 처음부터 다시
+      for (var i = 0; i < ve.subtitles.length; i++) {
+        var s = ve.subtitles[i];
+        var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+        var en = s.end_seconds != null ? s.end_seconds : (s.end || st + 2);
+        if (t >= st - 0.1 && t <= en + 0.1) { activeIdx = i; break; }
+      }
+    }
+    if (activeIdx === _prevActiveSubIdx) return; // 변화 없으면 스킵
+    var list = $("veSubtitleList"); if (!list) return;
+    // 이전 활성 해제
+    if (_prevActiveSubIdx >= 0) {
+      var prev = list.querySelector('[data-idx="' + _prevActiveSubIdx + '"]');
+      if (prev) prev.style.background = "transparent";
+    }
+    // 새 활성 설정
+    if (activeIdx >= 0) {
+      var cur = list.querySelector('[data-idx="' + activeIdx + '"]');
+      if (cur) { cur.style.background = "rgba(59,130,246,0.1)"; cur.scrollIntoView({ block: "nearest", behavior: "auto" }); }
+    }
+    _prevActiveSubIdx = activeIdx;
   }
 
   // 내보내기
