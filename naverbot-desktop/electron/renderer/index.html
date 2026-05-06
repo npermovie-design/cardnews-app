@@ -1182,7 +1182,21 @@
                     <input type="color" id="veSubColor" value="#FFFFFF" style="width:28px;height:26px;border:1px solid #2a2a4a;border-radius:6px;cursor:pointer;padding:0;background:#16162e;">
                     <div class="chips" id="veSubColorChips" style="gap:3px;"><button class="chip" data-value="#FFFFFF" style="min-width:auto;padding:4px 10px;font-size:11px;">흰</button><button class="chip" data-value="#FFFF00" style="min-width:auto;padding:4px 10px;font-size:11px;">노</button><button class="chip" data-value="#00FF00" style="min-width:auto;padding:4px 10px;font-size:11px;">초</button><button class="chip" data-value="#FF6B6B" style="min-width:auto;padding:4px 10px;font-size:11px;">빨</button></div>
                   </div>
-                  <div style="font-size:12px;color:#64748b;margin-top:10px;margin-bottom:4px;">애니메이션</div>
+                  <div style="font-size:12px;color:#64748b;margin-top:10px;margin-bottom:4px;">자막 줄 수</div>
+                  <div class="chips" id="veSubLineChips" style="gap:3px;margin-bottom:8px;">
+                    <button class="chip active" data-value="1" style="flex:1;padding:5px 0;font-size:11px;">한 줄</button>
+                    <button class="chip" data-value="2" style="flex:1;padding:5px 0;font-size:11px;">두 줄</button>
+                  </div>
+                  <div style="font-size:12px;color:#64748b;margin-bottom:4px;">다국어 자막</div>
+                  <div class="chips" id="veSubLangChips" style="gap:3px;margin-bottom:8px;flex-wrap:wrap;">
+                    <button class="chip active" data-value="none" style="padding:5px 10px;font-size:11px;">없음</button>
+                    <button class="chip" data-value="en" style="padding:5px 10px;font-size:11px;">영어</button>
+                    <button class="chip" data-value="ja" style="padding:5px 10px;font-size:11px;">일본어</button>
+                    <button class="chip" data-value="zh" style="padding:5px 10px;font-size:11px;">중국어</button>
+                    <button class="chip" data-value="es" style="padding:5px 10px;font-size:11px;">스페인어</button>
+                  </div>
+                  <button id="veTranslateSubBtn" style="display:none;width:100%;padding:7px;font-size:12px;font-weight:700;border:none;border-radius:6px;cursor:pointer;color:#fff;background:#3b82f6;margin-bottom:8px;">번역 자막 생성</button>
+                  <div style="font-size:12px;color:#64748b;margin-top:2px;margin-bottom:4px;">애니메이션</div>
                   <div class="chips" id="veSubAnimChips" style="gap:3px;flex-wrap:wrap;"><button class="chip active" data-value="none" style="padding:4px 10px;font-size:11px;">없음</button><button class="chip" data-value="fade" style="padding:4px 10px;font-size:11px;">페이드</button><button class="chip" data-value="highlight" style="padding:4px 10px;font-size:11px;">하이라이트</button><button class="chip" data-value="typewriter" style="padding:4px 10px;font-size:11px;">타이핑</button><button class="chip" data-value="karaoke" style="padding:4px 10px;font-size:11px;">가라오케</button><button class="chip" data-value="bounce" style="padding:4px 10px;font-size:11px;">바운스</button></div>
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;margin-bottom:6px;">
                     <div style="font-size:13px;font-weight:700;color:#e2e8f0;">자막 목록</div>
