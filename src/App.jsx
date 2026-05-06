@@ -782,7 +782,6 @@ export default function App() {
     if (page === "programs") return <ProgramsPage C={C} navigate={navigate} user={user} onLogin={() => navigate("login")} initialProductId={programId} onProductIdChange={setProgramId} />;
     if (page === "notice") return <NoticePage C={C} navigate={navigate} user={user} />;
     if (page === "class") {
-      if (user?.role !== "admin" && user?.role !== "instructor") { navigate("home"); return null; }
       return <ClassPage C={C} navigate={navigate} user={user} theme={theme} />;
     }
     if (page === "challenge") return <ChallengePage C={C} navigate={navigate} user={user} theme={theme} onLoginRequest={() => navigate("login")} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} initialChallengeId={challengeId} />;

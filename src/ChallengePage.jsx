@@ -202,7 +202,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
                     <div style={{ display: "flex", alignItems: "center", gap: 16, paddingTop: 14, borderTop: "1px solid " + bdr, fontSize: 12, color: C.muted }}>
                       {[
                         [<svg key="c" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>, `${ch.duration || "10"}일`],
-                        [<svg key="u" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>, ch.host_name || `${ch.application_count || 0}명`],
+                        [<svg key="u" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>, `${ch.application_count || 0}명 참여`],
                         ...(ch.platform ? [[<svg key="p" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg>, ch.platform]] : []),
                       ].map(([icon, text], i) => (
                         <span key={i} style={{ display: "flex", alignItems: "center", gap: 5 }}>{icon}{text}</span>
@@ -279,6 +279,29 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             ))}
           </div>
 
+          {/* 참여자 현황 - 최상단 */}
+          {publicApps.length > 0 && (
+            <div style={{ marginBottom: 36, padding: "24px 20px", borderRadius: 20, background: isDark ? "rgba(255,255,255,0.03)" : "#f9fafb", border: "1px solid " + bdr }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                <h2 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: 0 }}>참여자 현황</h2>
+                <span style={{ fontSize: 14, fontWeight: 700, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "4px 14px", borderRadius: 99 }}>{publicApps.length}명 참여</span>
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                {publicApps.map(a => {
+                  const isConfirmed = a.status === "confirmed";
+                  const masked = (a.name || "?").slice(0, 1) + "*".repeat(Math.max(1, (a.name || "?").length - 1));
+                  return (
+                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, border: "1px solid " + bdr, background: card }}>
+                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: isConfirmed ? PRIMARY : "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(a.name || "?")[0]}</div>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{masked}</span>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: isConfirmed ? "#22c55e" : "#f59e0b", background: isConfirmed ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)", padding: "2px 8px", borderRadius: 99 }}>{isConfirmed ? "확정" : "대기중"}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* 빠른 이동 */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 36, padding: "16px 0", borderBottom: "1px solid " + bdr }}>
             {[
@@ -321,25 +344,6 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             {isAdmin && <button onClick={() => openAdmin(ch)} style={{ ...ctaBtn("transparent"), border: "1px solid " + bdr, color: C.muted, marginLeft: 12, boxShadow: "none" }}>관리자 보기</button>}
           </div>
 
-          {/* 참여자 현황 - 누구나 볼 수 있음 */}
-          {publicApps.length > 0 && (
-            <div style={{ marginTop: 48 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 6 }}>참여자 현황</h2>
-              <p style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>총 {publicApps.length}명 신청</p>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                {publicApps.map(a => {
-                  const isConfirmed = a.status === "confirmed";
-                  return (
-                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, border: "1px solid " + bdr, background: card }}>
-                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: isConfirmed ? PRIMARY : "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(a.name || "?")[0]}</div>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{a.name}</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: isConfirmed ? "#22c55e" : "#f59e0b", background: isConfirmed ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)", padding: "2px 8px", borderRadius: 99 }}>{isConfirmed ? "확정" : "대기중"}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* 공개 현황판 - 검색엔진 노출용 (누구나 열람 가능) */}
           <div id="public-board" />
@@ -696,7 +700,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                       <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid " + bdr }}>
                         <div style={{ width: 28, height: 28, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(m.nick || "?")[0]}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{m.nick}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{(m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</div>
                           {m.link && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{m.link}</a>}
                         </div>
                         <span style={{ fontSize: 11, color: C.muted, flexShrink: 0 }}>{new Date(m.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</span>
@@ -742,7 +746,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                             {idx < 3 ? ["1","2","3"][idx] : (mem.nick || "?")[0]}
                           </div>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{mem.nick}</div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{(mem.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (mem.nick || "?").length - 1))}</div>
                             <div style={{ fontSize: 12, color: C.muted }}>{mem.count}/{totalDays}일 인증 ({memberPct}%)</div>
                           </div>
                           <div style={{ textAlign: "right" }}>

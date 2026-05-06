@@ -276,17 +276,17 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
         {/* 메인 콘텐츠 */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "clamp(120px,16vw,180px) 20px clamp(40px,6vw,60px)", textAlign: "center", position: "relative", zIndex: 10 }}>
           <h1 style={{ fontSize: "clamp(38px,7vw,72px)", fontWeight: 700, color: "#1a1a1a", letterSpacing: "-0.02em", lineHeight: 1.1, margin: "0 0 24px", maxWidth: 700 }}>
-            {ko ? <>대표님들의<br/>SNS 발행 파트너</> : <>Your SNS<br/>publishing partner</>}
+            {ko ? <>네이버 블로그<br/>자동 발행 솔루션</> : <>Naver Blog<br/>Auto Publishing</>}
           </h1>
           <p style={{ fontSize: "clamp(16px,2vw,20px)", color: "#4a5568", lineHeight: 1.6, margin: "0 auto 32px", maxWidth: 520 }}>
-            {ko ? "AI가 블로그, 인스타, 쇼츠까지 만들어 드립니다. SNS, 지금 당장 시작해보세요." : "AI creates blog, Instagram, and Shorts. Start your SNS right now."}
+            {ko ? "AI가 글을 쓰고, 이미지를 넣고, 블로그에 발행까지. 데스크톱 프로그램 하나로 끝." : "AI writes, inserts images, and publishes to your blog. One desktop app does it all."}
           </p>
           <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 12 }}>
             <button onClick={goAi} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 18, fontWeight: 500, padding: "16px 36px", borderRadius: 99, border: "none", background: "#1a1a1a", color: "#fff", cursor: "pointer", fontFamily: "inherit", transition: "transform .15s" }}
               onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
               onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
             >
-              {ko ? "무료로 시작하기" : "Start free"}
+              {ko ? "무료 다운로드" : "Free download"}
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 10H13M13 10L10 7M13 10L10 13" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
             <button onClick={goPrice} style={{ fontSize: 18, fontWeight: 500, padding: "16px 36px", borderRadius: 99, border: "1px solid #cbd5e0", background: "transparent", color: "#1a1a1a", cursor: "pointer", fontFamily: "inherit", transition: "transform .15s" }}
@@ -353,7 +353,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
           <div className="hp-stats" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, textAlign: "center" }}>
             {[
               { num: 92, suffix: "%", label: ko ? "시간 절약" : "Time saved" },
-              { num: 20, suffix: "+", label: ko ? "지원 플랫폼" : "Platforms" },
+              { num: 180, suffix: "+", label: ko ? "다운로드" : "Downloads" },
               { num: 320, suffix: "+", label: ko ? "실시간 키워드" : "Keywords" },
             ].map((s, i) => (
               <div key={i}>
@@ -399,17 +399,17 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
       {/* ══════ 주요 기능 — 탭 전환 (Feature108 스타일) ══════ */}
       {(() => {
         const tabs = [
-          { id: "write", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>, label: ko ? "AI 글쓰기" : "AI Writing",
-            badge: "HOT", title: ko ? "블로그, SNS 글을 한 번에 완성" : "Blog & SNS posts created together",
-            desc: ko ? "키워드 하나만 입력하면 네이버 블로그, 인스타그램, 스레드, 유튜브 대본까지 AI가 자동으로 만들어 줍니다." : "One keyword generates drafts for Naver blog, Instagram, Threads, and YouTube scripts.",
-            btn: ko ? "AI 글쓰기 시작" : "Start AI writing", onClick: goAi,
+          { id: "auto", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>, label: ko ? "자동 발행" : "Auto Publish",
+            badge: "HOT", title: ko ? "테마만 입력하면 AI가 알아서 발행" : "Just enter a topic, AI publishes automatically",
+            desc: ko ? "주제 키워드만 입력하면 AI가 글 작성, 이미지 삽입, 카테고리 선택, 네이버 블로그 발행까지 전부 자동으로 처리합니다." : "Enter a keyword and AI handles writing, images, categories, and publishing to Naver Blog.",
+            btn: ko ? "프로그램 다운로드" : "Download program", onClick: goAi,
             visual: <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid " + BDR }}><img src="/hero-writing.png" alt="" style={{ width: "100%", display: "block" }} loading="lazy" /></div>,
           },
-          { id: "shorts", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="6" y="2" width="12" height="20" rx="3"/><polygon points="10,8 15,12 10,16" fill="currentColor" stroke="none"/></svg>, label: ko ? "쇼츠 제작" : "Shorts",
-            badge: "NEW", title: ko ? "쇼츠 제작부터 자동 발행까지" : "Shorts creation to auto-publishing",
-            desc: ko ? "유튜브 링크 하나로 쇼츠를 자동 생성하고, YouTube, Instagram, TikTok에 원클릭으로 발행하세요." : "Create shorts from YouTube, publish to YouTube, Instagram, TikTok with one click.",
-            btn: ko ? "쇼츠 만들기" : "Create Shorts", onClick: goAi,
-            visual: <div style={{ borderRadius: 16, background: DARK, aspectRatio: "16/10", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ textAlign: "center", color: "#fff" }}><svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ margin: "0 auto 8px" }}><rect x="3" y="5" width="18" height="14" rx="4" stroke="#fff" strokeWidth="1.5"/><polygon points="10,8.5 15,12 10,15.5" fill="#fff"/></svg><div style={{ fontSize: 14, fontWeight: 600 }}>{ko ? "유튜브 링크 -> 쇼츠 자동 생성" : "YouTube -> Auto Shorts"}</div></div></div>,
+          { id: "drive", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 6V2M8 6V4M16 6V4"/></svg>, label: ko ? "드라이브 연동" : "Drive Sync",
+            badge: "NEW", title: ko ? "구글 드라이브로 글감 자동 활용" : "Use Google Drive for auto content",
+            desc: ko ? "구글 드라이브 폴더를 연결하면 글감과 이미지를 자동으로 불러와 포스팅에 활용합니다. 사진 블로그도 자동화." : "Connect Google Drive to auto-import content and images for blog posts.",
+            btn: ko ? "자세히 보기" : "Learn more", onClick: goAi,
+            visual: <div style={{ borderRadius: 16, background: DARK, aspectRatio: "16/10", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ textAlign: "center", color: "#fff" }}><svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ margin: "0 auto 8px" }}><path d="M8 18L3 12L8 6M16 6L21 12L16 18" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg><div style={{ fontSize: 14, fontWeight: 600 }}>{ko ? "드라이브 폴더 -> 자동 포스팅" : "Drive folder -> Auto posting"}</div></div></div>,
           },
           { id: "keyword", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>, label: ko ? "키워드 분석" : "Keywords",
             title: ko ? "오늘 뜨는 키워드로 바로 글쓰기" : "Write with today's trending keywords",
@@ -429,7 +429,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
                     {ko ? "주요 기능" : "Key Features"}
                   </span>
                   <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 700, color: TEXT, letterSpacing: -0.5, margin: "0 0 12px", lineHeight: 1.2 }}>
-                    {ko ? "SNS 운영에 필요한 모든 것" : "Everything for SNS management"}
+                    {ko ? "블로그 자동화의 모든 것" : "Everything for blog automation"}
                   </h2>
                   <p style={{ fontSize: 16, color: SUB }}>{ko ? "탭을 눌러 각 기능을 확인하세요." : "Click each tab to explore features."}</p>
                 </div>
@@ -478,10 +478,10 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
         const [accIdx, setAccIdx] = useState(0);
         const accItems = [
           { title: ko ? "AI 글쓰기" : "AI Writing", img: "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=600&h=800&fit=crop&q=80" },
-          { title: ko ? "쇼츠 제작" : "Shorts", img: "https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=600&h=800&fit=crop&q=80" },
+          { title: ko ? "자동 발행" : "Auto Publish", img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=600&h=800&fit=crop&q=80" },
           { title: ko ? "키워드 분석" : "Keywords", img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=800&fit=crop&q=80" },
-          { title: ko ? "자동 발행" : "Publish", img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=600&h=800&fit=crop&q=80" },
-          { title: ko ? "카드뉴스" : "Card News", img: "https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=600&h=800&fit=crop&q=80" },
+          { title: ko ? "드라이브 연동" : "Drive Sync", img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&h=800&fit=crop&q=80" },
+          { title: ko ? "대시보드" : "Dashboard", img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=800&fit=crop&q=80" },
         ];
         return (
           <section className="hp-sec" style={{ padding: "clamp(80px,12vw,112px) clamp(20px,5vw,32px)", background: BG2 }}>
@@ -491,16 +491,16 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
                 <div className="hp-row-text" style={{ flex: "1 1 45%", minWidth: 0 }}>
                   <Reveal>
                     <h2 style={{ fontSize: "clamp(28px,4vw,44px)", fontWeight: 700, color: TEXT, letterSpacing: -1, margin: "0 0 16px", lineHeight: 1.15 }}>
-                      {ko ? <>SNS 운영의 모든 것,<br/>하나의 플랫폼에서</> : <>Everything for SNS,<br/>in one platform</>}
+                      {ko ? <>블로그 운영의 모든 것,<br/>데스크톱 하나로</> : <>Everything for blogging,<br/>one desktop app</>}
                     </h2>
                     <p style={{ fontSize: 16, color: SUB, lineHeight: 1.65, margin: "0 0 28px", maxWidth: 380 }}>
-                      {ko ? "글쓰기, 영상, 키워드, 발행까지. 복잡한 도구 없이 하나로 해결하세요." : "Writing, video, keywords, publishing. All in one."}
+                      {ko ? "AI 글쓰기, 이미지 삽입, 카테고리 선택, 발행까지. 프로그램 하나로 해결하세요." : "AI writing, images, categories, publishing. All in one program."}
                     </p>
                     <button onClick={goAi} style={{
                       position: "relative", overflow: "hidden",
                       fontSize: 15, fontWeight: 600, padding: "12px 28px", borderRadius: 24,
                       border: `1px solid ${P}30`, background: P, color: "#fff", cursor: "pointer", fontFamily: "inherit",
-                    }}>{ko ? "무료로 시작하기" : "Get started free"}</button>
+                    }}>{ko ? "무료 다운로드" : "Free download"}</button>
                   </Reveal>
                 </div>
                 {/* 오른쪽 아코디언 */}
@@ -713,7 +713,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
               {ko ? "지금 바로 시작하세요." : "Start right now."}
             </h2>
             <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.6, marginBottom: 32 }}>
-              {ko ? "SNS 자동화부터 부트캠프까지, 함께 성장하세요." : "From SNS automation to bootcamps, grow together."}
+              {ko ? "데스크톱 프로그램 하나로 네이버 블로그 자동화를 시작하세요." : "Start Naver blog automation with one desktop program."}
             </p>
             <button onClick={() => navigate("programs")} style={{
               position: "relative", overflow: "hidden",
@@ -727,8 +727,8 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
       {/* 모바일 하단 CTA */}
       <div className="mobile-sticky-cta" style={{ display: "none", position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 900, alignItems: "center", gap: 10, padding: "14px 16px", borderRadius: 14, background: "rgba(255,255,255,0.95)", border: "1px solid " + BDR, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", backdropFilter: "blur(16px)" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{ko ? "SNS 자동화" : "SNS Automation"}</div>
-          <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>{ko ? "제품 둘러보기" : "Explore products"}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{ko ? "블로그 자동화" : "Blog Automation"}</div>
+          <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>{ko ? "무료 다운로드" : "Free download"}</div>
         </div>
         <button onClick={() => navigate("programs")} style={{ flex: "0 0 auto", minHeight: 44, padding: "0 20px", borderRadius: 10, border: "none", background: P, color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{ko ? "보기" : "View"}</button>
       </div>

@@ -1215,17 +1215,29 @@ export default function ClassPage({ C, navigate, user, theme }) {
     return true;
   });
 
-  // 레슨 잠금 체크
+  // 로그인 유도 모달
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  // 레슨 잠금 체크 — 비회원도 목록/상세는 볼 수 있되, 시청은 로그인 필요
   const isLessonLocked = (course, lesson, index) => {
     if (lesson.isFreePreview) return false;
-    if (!user) return true;
+    if (!user) return false; // 비회원도 목록에서 잠금 표시 X (클릭 시 로그인 유도)
     if (course.pricing === "free") return false;
-    // 과제 잠금: 이전 강의에 과제가 있고 미제출이면 잠금
     for (let i = 0; i < index; i++) {
       const prev = course.lessons[i];
       if (prev.assignmentRequired && !completedAssignments[prev.id] && !progress[prev.id]?.assignment_submitted) return true;
     }
     return false;
+  };
+
+  // 레슨 선택 시 로그인 체크
+  const handleSelectLesson = (lesson, locked) => {
+    if (locked) return;
+    if (!user && !lesson.isFreePreview) {
+      setShowLoginPrompt(true);
+      return;
+    }
+    setSelectedLesson(lesson);
   };
 
   const handleSaveCourse = async (form) => {
@@ -1602,7 +1614,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
               const locked = isLessonLocked(course, l, i);
               const active = l.id === selectedLesson.id;
               return (
-                <div key={l.id} onClick={() => !locked && setSelectedLesson(l)}
+                <div key={l.id} onClick={() => handleSelectLesson(l, locked)}
                   style={{ padding: "12px 14px", cursor: locked ? "default" : "pointer", opacity: locked ? 0.35 : 1, background: active ? `${ACC}18` : "transparent", borderLeft: active ? `3px solid ${ACC}` : "3px solid transparent", transition: "all 0.12s" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     {progress[l.id]?.watched && <span style={{ color: "#22c55e", fontSize: 12, flexShrink: 0 }}>&#10003;</span>}
@@ -1618,6 +1630,19 @@ export default function ClassPage({ C, navigate, user, theme }) {
           </div>
         </div>
         {showAssignment && <AssignmentModal lesson={showAssignment} C={C} isDark={isDark} onClose={() => setShowAssignment(null)} onSubmit={handleAssignmentSubmit} user={user} classId={selectedCourse?.id} />}
+        {showLoginPrompt && (
+          <div onClick={() => setShowLoginPrompt(false)} style={{ position: "fixed", inset: 0, zIndex: 99999, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)" }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: isDark ? "#1a1a2e" : "#fff", borderRadius: 20, padding: "40px 32px", maxWidth: 380, width: "90%", textAlign: "center", boxShadow: "0 24px 64px rgba(0,0,0,0.3)" }}>
+              <div style={{ fontSize: 40, marginBottom: 16 }}>&#127891;</div>
+              <div style={{ fontSize: 20, fontWeight: 800, color: C.text, marginBottom: 8 }}>로그인이 필요합니다</div>
+              <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.7, marginBottom: 24 }}>강의를 시청하려면 로그인해주세요.<br/>회원가입은 무료이며 30초면 완료됩니다.</div>
+              <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                <button onClick={() => setShowLoginPrompt(false)} style={{ padding: "12px 24px", borderRadius: 12, border: "1px solid " + (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), background: "transparent", color: C.muted, fontSize: 14, fontWeight: 600, cursor: "pointer" }}>닫기</button>
+                <button onClick={() => { setShowLoginPrompt(false); navigate("login"); }} style={{ padding: "12px 28px", borderRadius: 12, border: "none", background: GRAD, color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(59,130,246,0.3)" }}>로그인 / 회원가입</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -1768,7 +1793,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
                 {lessons.length > 0 ? lessons.map((l, i) => {
                   const locked = isLessonLocked(course, l, i);
                   return (
-                    <div key={l.id} onClick={() => !locked && setSelectedLesson(l)}
+                    <div key={l.id} onClick={() => handleSelectLesson(l, locked)}
                       style={{ display: "flex", alignItems: "center", gap: 14, padding: "16px 18px", borderRadius: 14, border: "1px solid " + C.border, background: C.card, marginBottom: 8, cursor: locked ? "default" : "pointer", opacity: locked ? 0.45 : 1, transition: "all 0.15s" }}
                       onMouseEnter={e => { if (!locked) { e.currentTarget.style.borderColor=ACC; e.currentTarget.style.boxShadow=`0 4px 16px ${ACC}15`; }}}
                       onMouseLeave={e => { e.currentTarget.style.borderColor=C.border; e.currentTarget.style.boxShadow="none"; }}>
