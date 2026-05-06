@@ -156,7 +156,7 @@ function resetBoardSeoMeta() {
 export default function BoardPage({ user, C, onLoginRequest, initialCat, pendingPostId, onPendingPostClear, onNavigatePost, onUserUpdate }) {
   const { t } = useI18n();
   const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 768);
-  const [subCat,  setSubCat]  = useState(initialCat || "info");
+  const [subCat,  setSubCat]  = useState(initialCat || "all");
   const [subCats, setSubCats] = useState(DEFAULT_CATS);
   const [allTags, setAllTags] = useState({}); // { catId: [{id,label,color}] }
   const [posts,   setPostsS]  = useState([]);
@@ -427,7 +427,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const currentTags = allTags[subCat] || [];
 
   const filtered = useMemo(()=>{
-    let list = posts.filter(p=>p.cat===subCat||p.subCat===subCat);
+    let list = subCat === "all" ? posts.filter(p=>p.cat!=="archive"&&p.subCat!=="archive") : posts.filter(p=>p.cat===subCat||p.subCat===subCat);
     if(filterTag) {
       if(subCat==="archive" && ["video","photo","gif","music","collection"].includes(filterTag)) {
         list = list.filter(p => {
@@ -449,9 +449,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           :[...list].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
   },[posts,subCat,search,sort,filterTag]);
 
-  const hotPosts = useMemo(()=>
-    [...posts.filter(p=>p.cat===subCat||p.subCat===subCat)].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,10),
-  [posts,subCat]);
+  const hotPosts = useMemo(()=>{
+    const base = subCat === "all" ? posts.filter(p=>p.cat!=="archive"&&p.subCat!=="archive") : posts.filter(p=>p.cat===subCat||p.subCat===subCat);
+    return [...base].sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,10);
+  },[posts,subCat]);
   const hotPostsAll = useMemo(()=>
     [...posts].filter(p=>p.cat!=="sns_briefing"&&p.subCat!=="sns_briefing").sort((a,b)=>(b.views||0)-(a.views||0)).slice(0,10),
   [posts]);
@@ -1035,7 +1036,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       {/* 서브 카테고리 탭 */}
       {!loading && <div style={{borderBottom:"1px solid "+bdr,background:isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)"}}>
         <div style={{maxWidth:1100,margin:"0 auto",padding:"0 20px",display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
-          {subCats.filter(s=>s.id!=="archive").map(s=>(
+          {[{ id: "all", label: "전체", color: "#3b82f6" }, ...subCats.filter(s=>s.id!=="archive")].map(s=>(
             <button key={s.id} onClick={()=>{setSubCat(s.id);setSearch("");setPage(1);setView(null);setFilterTag("");setArchiveView("posts");}}
               style={{display:"flex",alignItems:"center",gap:8,padding:isMobile?"14px 16px":"16px 22px",borderRadius:0,border:"none",cursor:"pointer",
                 fontSize:isMobile?14:15,fontWeight:subCat===s.id?800:600,whiteSpace:"nowrap",minHeight:48,fontFamily:"inherit",
@@ -1043,7 +1044,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                 borderBottom:subCat===s.id?"3px solid "+s.color:"3px solid transparent",
                 transition:"all 0.12s"}}>
               {s.label}
-              <span style={{fontSize:12,fontWeight:700,opacity:0.75,background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)",padding:"3px 9px",borderRadius:12}}>{posts.filter(p=>p.cat===s.id||p.subCat===s.id).length}</span>
+              <span style={{fontSize:12,fontWeight:700,opacity:0.75,background:isDark?"rgba(255,255,255,0.08)":"rgba(0,0,0,0.06)",padding:"3px 9px",borderRadius:12}}>{s.id==="all"?posts.filter(p=>p.cat!=="archive"&&p.subCat!=="archive").length:posts.filter(p=>p.cat===s.id||p.subCat===s.id).length}</span>
             </button>
           ))}
           {user?.role==="admin" && (
