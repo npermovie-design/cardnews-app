@@ -88,7 +88,17 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   useEffect(() => {
     (async () => {
       try {
-        const data = await loadChallenges();
+        let data = await loadChallenges();
+        // 실제 신청자 수로 application_count 동기화
+        try {
+          const ids = data.map(c => c.id);
+          const { data: counts } = await supabase.from("challenge_applications").select("challenge_id").in("challenge_id", ids);
+          if (counts) {
+            const countMap = {};
+            counts.forEach(r => { countMap[r.challenge_id] = (countMap[r.challenge_id] || 0) + 1; });
+            data = data.map(c => ({ ...c, application_count: countMap[c.id] || 0 }));
+          }
+        } catch {}
         setChallenges(data);
         // URL에 challengeId가 있으면 해당 챌린지 바로 열기
         if (initialChallengeId) {
