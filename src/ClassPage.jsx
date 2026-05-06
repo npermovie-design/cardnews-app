@@ -904,12 +904,28 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
 // ═══════════════════════════════════════════════════════════
 //  ClassPage 메인
 // ═══════════════════════════════════════════════════════════
-export default function ClassPage({ C, navigate, user, theme }) {
+export default function ClassPage({ C, navigate, user, theme, initialCourseId, initialLessonId }) {
   const isDark = theme === "dark";
   const [courses, setCourses] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
   useEffect(() => {
-    loadAllCourses().then(data => { setCourses(data); setDbLoading(false); }).catch(() => setDbLoading(false));
+    loadAllCourses().then(data => {
+      setCourses(data);
+      // URL에 courseId가 있으면 해당 클래스 바로 열기
+      if (initialCourseId) {
+        const course = data.find(c => c.id === initialCourseId);
+        if (course) {
+          setSelectedCourse(course);
+          document.title = `${course.title} - SNS메이킷 클래스`;
+          // lessonId도 있으면 해당 강의 선택
+          if (initialLessonId && course.lessons) {
+            const lesson = course.lessons.find(l => l.id === initialLessonId);
+            if (lesson) setSelectedLesson(lesson);
+          }
+        }
+      }
+      setDbLoading(false);
+    }).catch(() => setDbLoading(false));
   }, []);
   const [filter, setFilter] = useState("all"); // all | vod | zoom | offline
   const [pricingFilter, setPricingFilter] = useState("all"); // all | free | paid
@@ -1238,6 +1254,10 @@ export default function ClassPage({ C, navigate, user, theme }) {
       return;
     }
     setSelectedLesson(lesson);
+    if (selectedCourse) {
+      window.history.pushState(null, "", "/class/" + selectedCourse.id + "/" + lesson.id);
+      document.title = `${lesson.title} - ${selectedCourse.title} | SNS메이킷 클래스`;
+    }
   };
 
   const handleSaveCourse = async (form) => {
@@ -1660,7 +1680,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
           {/* 배경 블러 이미지 */}
           {course.thumbnail && <div style={{ position: "absolute", inset: 0, background: `url(${course.thumbnail}) center/cover`, filter: "blur(40px) brightness(0.3)", opacity: 0.5 }} />}
           <div style={{ maxWidth: 1060, margin: "0 auto", position: "relative", zIndex: 1 }}>
-            <button onClick={() => { setSelectedCourse(null); setSelectedLesson(null); setDetailTab("intro"); }}
+            <button onClick={() => { setSelectedCourse(null); setSelectedLesson(null); setDetailTab("intro"); window.history.pushState(null, "", "/class"); document.title = "클래스 - SNS메이킷"; }}
               style={{ display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.7)", fontSize: 12, fontWeight: 600, cursor: "pointer", marginBottom: 20, fontFamily: "inherit", backdropFilter: "blur(4px)" }}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
               목록으로
@@ -2015,7 +2035,7 @@ export default function ClassPage({ C, navigate, user, theme }) {
       {/* 강의 카드 그리드 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(280px,100%),1fr))", gap: 16 }}>
         {filtered.map(course => (
-          <div key={course.id} onClick={() => setSelectedCourse(course)}
+          <div key={course.id} onClick={() => { setSelectedCourse(course); window.history.pushState(null, "", "/class/" + course.id); document.title = `${course.title} - SNS메이킷 클래스`; }}
             style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s" }}
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,0,0,0.06)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "none"; }}>

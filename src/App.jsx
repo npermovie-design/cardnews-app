@@ -290,6 +290,8 @@ export default function App() {
   const [pendingPostId, setPendingPostId] = useState(null);
   const [programId, setProgramId] = useState(null);
   const [challengeId, setChallengeId] = useState(null);
+  const [classId, setClassId] = useState(null);
+  const [classLessonId, setClassLessonId] = useState(null);
   const [aiMenu,     setAiMenu]     = useState("home");
   const [theme,      setTheme]      = useState(getSavedTheme);
   const [guardModal, setGuardModal] = useState(null); // { cost, onConfirm }
@@ -516,6 +518,11 @@ export default function App() {
     // /challenge/[id] → page=challenge, challengeId=id
     if (mainSeg === "challenge" && segments[1]) {
       setChallengeId(segments[1]);
+    }
+    // /class/[courseId]/[lessonId] → page=class
+    if (mainSeg === "class" && segments[1]) {
+      setClassId(segments[1]);
+      if (segments[2]) setClassLessonId(segments[2]);
     }
     if (mainSeg && mainSeg !== "home") setPage(mainSeg);
     if (mainSeg === "ai") setAiVisited(true);
@@ -782,7 +789,7 @@ export default function App() {
     if (page === "programs") return <ProgramsPage C={C} navigate={navigate} user={user} onLogin={() => navigate("login")} initialProductId={programId} onProductIdChange={setProgramId} />;
     if (page === "notice") return <NoticePage C={C} navigate={navigate} user={user} />;
     if (page === "class") {
-      return <ClassPage C={C} navigate={navigate} user={user} theme={theme} />;
+      return <ClassPage C={C} navigate={navigate} user={user} theme={theme} initialCourseId={classId} initialLessonId={classLessonId} />;
     }
     if (page === "challenge") return <ChallengePage C={C} navigate={navigate} user={user} theme={theme} onLoginRequest={() => navigate("login")} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} initialChallengeId={challengeId} />;
     if (page === "snsnews")  { navigate("community"); return null; }
