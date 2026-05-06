@@ -18,8 +18,8 @@ const PLANS = [
     id: "basic", name: "Basic",
     monthlyPrice: 9.9, yearlyPrice: 99,
     highlight: false, badge: null,
-    limits: { write: 50, naver: 0 },
-    features: ["AI 글쓰기 월 50회", "영상 생성 무제한", "20개+ SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석", "이메일 지원"],
+    limits: { write: 30, naver: 0 },
+    features: ["AI 생성 월 30회 (글쓰기+디자인)", "영상 생성 무제한", "20개+ SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석", "이메일 지원"],
     btnLabel: "시작하기",
     lsId: "8dca976c-3064-4d76-af4b-8743a10e9f9f",
     lsIdYearly: "6b3922c9-04e1-40f0-b295-75870a9e0b3f",
@@ -28,8 +28,8 @@ const PLANS = [
     id: "pro", name: "Pro",
     monthlyPrice: 19.9, yearlyPrice: 199,
     highlight: true, badge: "추천",
-    limits: { write: 200, naver: 3 },
-    features: ["AI 글쓰기 월 200회", "영상 생성 무제한", "자동발행 일 3회", "20개+ SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석", "이메일 지원"],
+    limits: { write: 100, naver: 3 },
+    features: ["AI 생성 월 100회 (글쓰기+디자인)", "영상 생성 무제한", "자동발행 일 3회", "20개+ SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석", "이메일 지원"],
     btnLabel: "시작하기",
     lsId: "81968d65-1482-4dd8-b3a2-88540bdba780",
     lsIdYearly: "ab2d967d-43bb-40a8-96c0-9fcfd6d9c62a",
@@ -39,7 +39,7 @@ const PLANS = [
     monthlyPrice: 39.9, yearlyPrice: 399,
     highlight: false, badge: "대량 생산",
     limits: { write: 99999, naver: 10 },
-    features: ["AI 글쓰기 무제한", "영상 생성 무제한", "자동발행 일 10회", "카페 발행 가능", "계정 3개", "20개+ SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석", "우선 고객 지원"],
+    features: ["AI 생성 무제한 (글쓰기+디자인)", "영상 생성 무제한", "자동발행 일 10회", "카페 발행 가능", "계정 3개", "20개+ SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석", "우선 고객 지원"],
     btnLabel: "시작하기",
     lsId: "",
     lsIdYearly: "",
@@ -47,11 +47,11 @@ const PLANS = [
 ];
 
 const LIMIT_LABELS = [
-  { key: "write", label: "AI 글쓰기" },
+  { key: "write", label: "AI 생성" },
 ];
 
 const COMPARE_ROWS = [
-  { label: "AI 글쓰기", vals: ["5회/월", "50회/월", "200회/월", "무제한"], types: ["num","num","num","highlight"] },
+  { label: "AI 생성 (글+디자인)", vals: ["5회/월", "30회/월", "100회/월", "무제한"], types: ["num","num","num","highlight"] },
   { label: "영상 생성", vals: ["3회/월", "무제한", "무제한", "무제한"], types: ["num","highlight","highlight","highlight"] },
   { label: "자동발행", vals: ["-", "체험", "일 3회", "일 10회"], types: ["no","num","num","highlight"] },
   { label: "카페 발행", vals: ["-", "-", "-", "✓"], types: ["no","no","no","yes"] },
@@ -74,7 +74,7 @@ const FAQ_LIST = [
   { q: "결제 수단은 무엇인가요?", a: "Visa, Mastercard, PayPal 등 해외 결제가 가능합니다. LemonSqueezy를 통해 안전하게 처리됩니다." },
   { q: "플랜 변경이나 취소는 어떻게 하나요?", a: "마이페이지에서 언제든 변경하거나 취소할 수 있습니다. 취소 시 현재 결제 주기가 끝날 때까지 이용 가능합니다." },
   { q: "횟수가 남으면 다음 달로 이월되나요?", a: "미사용 횟수는 다음 달로 이월되지 않습니다. 매월 결제일에 초기화됩니다." },
-  { q: "무료 플랜으로도 충분한가요?", a: "월 5회 AI 글쓰기를 무료로 체험할 수 있습니다. 본격적으로 콘텐츠를 제작하신다면 Basic 이상을 추천합니다." },
+  { q: "무료 플랜으로도 충분한가요?", a: "월 5회 AI 생성(글쓰기+디자인)을 무료로 체험할 수 있습니다. 본격적으로 콘텐츠를 제작하신다면 Basic 이상을 추천합니다." },
   { q: "NaverBot 자동발행이란?", a: "설정한 키워드를 기반으로 매일 자동으로 네이버 블로그에 글을 작성하고 발행하는 기능입니다. Pro 플랜 이상에서 사용 가능합니다." },
   { q: "환불 정책은 어떻게 되나요?", a: "구매 후 7일 이내 미사용 상태에서 요청 시 전액 환불이 가능합니다. 고객센터 문의하기를 통해 요청해주세요." },
   { q: "연간 결제 시 혜택이 있나요?", a: "연간 결제 시 약 17% 할인된 가격으로 이용하실 수 있습니다. 월간 대비 2개월분을 절약합니다." },

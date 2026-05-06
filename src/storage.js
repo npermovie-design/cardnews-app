@@ -473,9 +473,9 @@ const UNLIMITED_PLANS = ["Agency"];
 
 // 구독 플랜별 월간 한도 (PricingPage 기준)
 export const PLAN_LIMITS = {
-  "Basic":    { write: 50,  video: 99999, naver: 0 },
-  "Pro":      { write: 200, video: 99999, naver: 3 },
-  "Premium":  { write: 350, video: 99999, naver: 5 },
+  "Basic":    { write: 30,  video: 99999, naver: 0 },
+  "Pro":      { write: 100, video: 99999, naver: 3 },
+  "Premium":  { write: 200, video: 99999, naver: 5 },
   "Business": { write: 99999, video: 99999, naver: 10 },
   "Agency":   { write: 99999, video: 99999, naver: 99999 },
 };
