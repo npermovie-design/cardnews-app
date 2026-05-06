@@ -1317,3 +1317,30 @@ body {
 .aeo-bar.intro { background:var(--accent); opacity:.4; }
 .aeo-bar.body  { background:var(--border); }
 .aeo-bar.qa    { background:var(--accent); height:8px; }
+
+/* ── 영상 편집기 전체화면 모드 ── */
+.sidebar.ve-hidden { display: none !important; }
+.sidebar.ve-hidden + .main { margin-left: 0 !important; padding: 0 !important; overflow: hidden !important; }
+
+/* NLE 편집기: fixed 전체화면 오버레이 */
+#veStep3.ve-nle-active {
+  position: fixed !important;
+  top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100vh !important;
+  width: 100vw !important;
+  background: #1a1a2e !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+/* NLE 다크 테마 */
+#veStep3 .chip { background: #1a1a3a !important; color: #94a3b8 !important; border-color: #2a2a4a !important; }
+#veStep3 .chip.active { background: #3b82f6 !important; color: #fff !important; border-color: #3b82f6 !important; }
+#veStep3 .chips { gap: 3px; }
+#veStep3 input[type="range"] { accent-color: #3b82f6; }
+#veStep3 .ve-sub-row { border-color: #1a1a3a !important; }
+#veStep3 .ve-sub-row:hover { background: rgba(59,130,246,0.08) !important; }
