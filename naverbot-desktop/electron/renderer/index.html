@@ -1095,6 +1095,10 @@
               <button class="chip active" data-value="portrait" style="padding:5px 14px;font-size:11px;">9:16 세로</button>
               <button class="chip" data-value="square" style="padding:5px 14px;font-size:11px;">1:1</button>
             </div>
+            <div style="display:flex;gap:3px;border:1px solid var(--border-soft);border-radius:6px;padding:2px;">
+              <button class="btn btn-sm" id="veSplitBtn" title="분할 (S)" style="padding:4px 10px;font-size:10px;border:none;">분할</button>
+              <button class="btn btn-sm" id="veDeleteClipBtn" title="삭제 (Del)" style="padding:4px 10px;font-size:10px;border:none;color:#ef4444;">삭제</button>
+            </div>
             <button class="btn btn-sm" id="veAutoImageBtn" style="padding:5px 12px;font-size:11px;">AI 짤 삽입</button>
             <button class="btn btn-primary btn-sm" id="veExportBtn" style="padding:6px 18px;font-size:12px;">내보내기</button>
           </div>
@@ -1176,6 +1180,7 @@
             <!-- 타임라인 헤더 -->
             <div style="display:flex;align-items:center;gap:8px;padding:6px 12px;background:#161630;border-bottom:1px solid rgba(255,255,255,0.06);">
               <span style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;">Timeline</span>
+              <span style="font-size:8px;color:#475569;margin-left:8px;">Space=재생 S=분할 Del=삭제 ←→=이동</span>
               <div style="flex:1;"></div>
               <span id="veTimelinePos" style="font-size:10px;color:#64748b;font-variant-numeric:tabular-nums;">00:00 / 00:00</span>
               <div style="display:flex;gap:2px;margin-left:6px;">

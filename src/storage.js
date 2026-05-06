@@ -834,8 +834,8 @@ function postToRow(post) {
 }
 
 /** 전체 게시글 목록 가져오기 (content 제외 — 빠른 로딩 + 캐시) */
-const POSTS_CACHE_KEY = "nper_posts_cache";
-const POSTS_CACHE_TTL = 60000; // 1분 캐시
+const POSTS_CACHE_KEY = "nper_posts_cache_v2";
+const POSTS_CACHE_TTL = 30000; // 30초 캐시
 
 export async function getPostsFromDB() {
   // sessionStorage 캐시 확인 (1분 유효)

@@ -3279,6 +3279,10 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   if(zIn) zIn.addEventListener("click",function(){ timelineZoom=Math.min(5,timelineZoom*1.3); renderTimeline(); });
   if(zOut) zOut.addEventListener("click",function(){ timelineZoom=Math.max(0.5,timelineZoom/1.3); renderTimeline(); });
 
+  // 분할/삭제 버튼
+  var splitBtn=$("veSplitBtn"); if(splitBtn) splitBtn.addEventListener("click",function(){ splitClipAtPlayhead(); });
+  var delClipBtn=$("veDeleteClipBtn"); if(delClipBtn) delClipBtn.addEventListener("click",function(){ deleteSelectedClip(); });
+
   // AI 짤 자동 삽입
   var autoImgBtn=$("veAutoImageBtn"); if(autoImgBtn) autoImgBtn.addEventListener("click",async function(){
     if(!ve.subtitles.length){showModal("자막 필요","먼저 영상을 분석해주세요.","확인");return;}
@@ -3562,6 +3566,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       el.addEventListener("click",function(e){
         if(el._dragged) { el._dragged=false; return; }
         var idx=parseInt(el.dataset.idx);
+        selectClip(idx);
         var s=ve.subtitles[idx]; if(!s) return;
         var video=$("veVideo"); if(video) video.currentTime=s.start_seconds!=null?s.start_seconds:(s.start||0);
       });
@@ -3621,9 +3626,107 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         document.addEventListener("mouseup",onUp);
       });
     });
+    // 타임라인 빈 공간 클릭 → 재생 위치 이동
+    blocks.addEventListener("click", function(e) {
+      if (e.target.closest("[data-idx]")) return; // 클립 클릭은 무시
+      var rect = blocks.getBoundingClientRect();
+      var x = e.clientX - rect.left;
+      var pct = x / rect.width;
+      var video = $("veVideo");
+      if (video && dur > 0) video.currentTime = pct * dur;
+    });
+
     renderTimeRuler();
     renderAudioWaveform();
   }
+
+  // ── 선택된 클립 ──
+  var _selectedClipIdx = -1;
+  function selectClip(idx) {
+    _selectedClipIdx = idx;
+    // 하이라이트 표시
+    var blocks = $("veTimelineBlocks");
+    if (!blocks) return;
+    blocks.querySelectorAll("[data-idx]").forEach(function(el) {
+      var i = parseInt(el.dataset.idx);
+      el.style.outline = (i === idx) ? "2px solid #fff" : "none";
+      el.style.outlineOffset = (i === idx) ? "-1px" : "";
+    });
+    // 자막 목록에서도 하이라이트
+    var subList = $("veSubtitleList");
+    if (subList) {
+      subList.querySelectorAll("[data-sub-idx]").forEach(function(el) {
+        var i = parseInt(el.dataset.subIdx);
+        el.style.background = (i === idx) ? "rgba(59,130,246,0.15)" : "";
+      });
+    }
+  }
+
+  // ── 클립 분할 (현재 재생 위치에서 둘로 나누기) ──
+  function splitClipAtPlayhead() {
+    var video = $("veVideo");
+    if (!video || _selectedClipIdx < 0) return;
+    var cur = video.currentTime;
+    var s = ve.subtitles[_selectedClipIdx];
+    if (!s) return;
+    var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+    var en = s.end_seconds != null ? s.end_seconds : (s.end || st + 2);
+    // 재생 위치가 클립 범위 안에 있어야 분할 가능
+    if (cur <= st + 0.1 || cur >= en - 0.1) {
+      showModal("분할 불가", "재생 위치가 선택된 클립 범위 안에 있어야 합니다.", "확인");
+      return;
+    }
+    // 원본 클립을 앞쪽으로 수정
+    var text1 = (s.text || "").split(" ").slice(0, Math.ceil((s.text || "").split(" ").length * ((cur - st) / (en - st)))).join(" ") || s.text;
+    var text2 = (s.text || "").split(" ").slice(Math.ceil((s.text || "").split(" ").length * ((cur - st) / (en - st)))).join(" ") || "";
+    var newClip = { text: text2 };
+    if (s.start_seconds != null) { s.end_seconds = Math.round(cur * 100) / 100; newClip.start_seconds = Math.round(cur * 100) / 100; newClip.end_seconds = en; }
+    else { s.end = Math.round(cur * 100) / 100; newClip.start = Math.round(cur * 100) / 100; newClip.end = en; }
+    s.text = text1;
+    ve.subtitles.splice(_selectedClipIdx + 1, 0, newClip);
+    _selectedClipIdx = -1;
+    renderSubList(); renderTimeline();
+  }
+
+  // ── 클립 삭제 ──
+  function deleteSelectedClip() {
+    if (_selectedClipIdx < 0 || _selectedClipIdx >= ve.subtitles.length) return;
+    ve.subtitles.splice(_selectedClipIdx, 1);
+    _selectedClipIdx = -1;
+    renderSubList(); renderTimeline();
+  }
+
+  // ── 키보드 단축키 (영상 편집기 활성 시) ──
+  document.addEventListener("keydown", function(e) {
+    var panel = document.querySelector('section[data-panel="video-editor"]');
+    if (!panel || panel.classList.contains("hidden")) return;
+    var step3 = $("veStep3");
+    if (!step3 || step3.style.display === "none") return;
+    // 입력 필드에 포커스 중이면 무시
+    if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.contentEditable === "true") return;
+
+    if (e.code === "Space") {
+      e.preventDefault();
+      var pb = $("vePlayBtn");
+      if (pb) pb.click();
+    }
+    if (e.code === "KeyS" && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      splitClipAtPlayhead();
+    }
+    if (e.code === "Delete" || e.code === "Backspace") {
+      e.preventDefault();
+      deleteSelectedClip();
+    }
+    if (e.code === "ArrowLeft") {
+      e.preventDefault();
+      var v = $("veVideo"); if (v) v.currentTime = Math.max(0, v.currentTime - 1);
+    }
+    if (e.code === "ArrowRight") {
+      e.preventDefault();
+      var v = $("veVideo"); if (v) v.currentTime = Math.min(v.duration || 0, v.currentTime + 1);
+    }
+  });
 
   function updateTimelineHead(cur,dur){
     var head=$("veTimelineHead"); if(!head) return;
