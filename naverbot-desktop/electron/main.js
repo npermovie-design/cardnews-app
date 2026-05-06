@@ -1128,12 +1128,26 @@ ipcMain.on("auth:openExternal", (_, url) => shell.openExternal(url));
 // 영상 편집 — 로컬 ffmpeg 처리
 // ═══════════════════════════════════════════════════════════
 
+function asarUnpack(p) {
+  if (p && p.includes("app.asar") && !p.includes("app.asar.unpacked")) {
+    return p.replace("app.asar", "app.asar.unpacked");
+  }
+  return p;
+}
 function getFfmpegPath() {
-  try { const p = require("ffmpeg-static"); if (p && fs.existsSync(p)) return p; } catch {}
+  try {
+    let p = require("ffmpeg-static");
+    p = asarUnpack(p);
+    if (p && fs.existsSync(p)) return p;
+  } catch {}
   return "ffmpeg";
 }
 function getFfprobePath() {
-  try { const p = require("ffprobe-static"); if (p?.path && fs.existsSync(p.path)) return p.path; } catch {}
+  try {
+    let p = require("ffprobe-static")?.path;
+    p = asarUnpack(p);
+    if (p && fs.existsSync(p)) return p;
+  } catch {}
   return "ffprobe";
 }
 

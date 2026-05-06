@@ -328,14 +328,10 @@ navItems.forEach((item) => {
     navItems.forEach((n) => n.classList.toggle("active", n === item));
     panels.forEach((p) => p.classList.toggle("hidden", p.dataset.panel !== target));
 
-    // 영상 편집기: 숏폼/롱폼 자동 선택
-    if (target === "video-editor" && item.dataset.veType) {
-      var veType = item.dataset.veType;
-      var typeChips = document.querySelectorAll("#veTypeChips .chip");
-      typeChips.forEach(function(c) { c.classList.toggle("active", c.dataset.value === veType); });
-      // state 업데이트 트리거
-      var activeChip = document.querySelector('#veTypeChips .chip[data-value="' + veType + '"]');
-      if (activeChip) activeChip.click();
+    // 영상 편집기: 기본 비율 적용
+    if (target === "video-editor") {
+      var currentRatio = document.querySelector('#veTypeChips .chip.active');
+      if (currentRatio) applyVeLayout(currentRatio.dataset.value || "portrait");
     }
 
     // 패널별 진입 시 렌더링
@@ -3230,10 +3226,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function setProg(pId,bId,lId,pct,label) { var p=$(pId),b=$(bId),l=$(lId); if(p) p.textContent=pct+"%"; if(b) b.style.width=pct+"%"; if(l&&label) l.textContent=label; }
   function chipG(id,cb) { var w=$(id); if(!w) return; w.addEventListener("click",function(e){ var b=e.target.closest(".chip"); if(!b) return; w.querySelectorAll(".chip").forEach(function(c){c.classList.remove("active")}); b.classList.add("active"); cb(b.dataset.value); }); }
 
-  chipG("veTypeChips",function(v){ ve.type=v; var so=$("veShortsOpts"),lo=$("veLongformOpts"),sc=$("veSegmentsCard"); if(v==="shorts"){if(so)so.style.display="";if(lo)lo.style.display="none";if(sc)sc.style.display="";}else{if(so)so.style.display="none";if(lo)lo.style.display="";if(sc)sc.style.display="none";}
-    // 롱폼 vs 숏폼 레이아웃 전환
-    applyVeLayout(v);
-  });
+  chipG("veTypeChips",function(v){ ve.type=v; applyVeLayout(v); });
 
   function applyVeLayout(mode) {
     var layout = $("veMainLayout");
@@ -3243,25 +3236,27 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var settingsPanel = document.querySelector("#veStep3 > div:nth-child(2) > div:last-child");
     if (!layout) return;
 
-    if (mode === "longform") {
-      // 롱폼: 와이드 16:9 프리뷰, 넓은 타임라인
-      layout.style.height = "calc(100vh - 380px)";
-      if (videoWrap) { videoWrap.style.aspectRatio = "16/9"; videoWrap.style.background = "#000"; }
-      if (video) video.style.objectFit = "contain";
-      if (timeline) { timeline.style.padding = "10px 10px"; }
-      if (settingsPanel) settingsPanel.style.width = "240px";
-      // 자막 목록 더 크게
-      var subList = $("veSubtitleList");
-      if (subList) subList.style.maxHeight = "300px";
+    var ratios = { landscape: "16/9", portrait: "9/16", square: "1/1" };
+    var ratio = ratios[mode] || "16/9";
+    var isWide = mode === "landscape";
+
+    layout.style.height = isWide ? "calc(100vh - 380px)" : "calc(100vh - 320px)";
+    if (videoWrap) {
+      videoWrap.style.aspectRatio = ratio;
+      videoWrap.style.maxWidth = mode === "portrait" ? "280px" : "";
+      videoWrap.style.margin = mode === "portrait" ? "0 auto" : "";
+    }
+    if (video) video.style.objectFit = "contain";
+    if (settingsPanel) settingsPanel.style.width = isWide ? "240px" : "280px";
+    var subList = $("veSubtitleList");
+    if (subList) subList.style.maxHeight = isWide ? "300px" : "200px";
+
+    // 숏폼 옵션 / 롱폼 옵션 표시
+    var so=$("veShortsOpts"),lo=$("veLongformOpts"),sc=$("veSegmentsCard");
+    if (mode === "landscape") {
+      if(so) so.style.display="none"; if(lo) lo.style.display=""; if(sc) sc.style.display="none";
     } else {
-      // 숏폼: 세로 비율 프리뷰
-      layout.style.height = "calc(100vh - 320px)";
-      if (videoWrap) { videoWrap.style.aspectRatio = ""; videoWrap.style.background = "#0a0a0a"; }
-      if (video) video.style.objectFit = "contain";
-      if (timeline) { timeline.style.padding = "8px 10px"; }
-      if (settingsPanel) settingsPanel.style.width = "280px";
-      var subList = $("veSubtitleList");
-      if (subList) subList.style.maxHeight = "200px";
+      if(so) so.style.display=""; if(lo) lo.style.display="none"; if(sc) sc.style.display="";
     }
   }
 
@@ -3555,7 +3550,11 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var width=((en-st)/dur*100).toFixed(2)+"%";
       var colors=["#3b82f6","#8b5cf6","#10b981","#f59e0b","#ef4444","#ec4899"];
       var color=colors[i%colors.length];
-      html+="<div title='"+escapeHtml(s.text||"")+"' style='position:absolute;top:4px;bottom:4px;left:"+left+";width:"+width+";background:"+color+"40;border-left:2px solid "+color+";border-radius:3px;cursor:pointer;' data-idx='"+i+"'></div>";
+      html+="<div title='"+escapeHtml(s.text||"")+"' style='position:absolute;top:4px;bottom:4px;left:"+left+";width:"+width+";background:"+color+"40;border:1px solid "+color+"60;border-radius:3px;cursor:grab;display:flex;align-items:center;overflow:hidden;' data-idx='"+i+"'>" +
+        "<div class='trim-handle trim-left' style='width:6px;height:100%;cursor:col-resize;background:"+color+";border-radius:3px 0 0 3px;flex-shrink:0;opacity:0.8;'></div>" +
+        "<div style='flex:1;min-width:0;padding:0 4px;font-size:8px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;'>"+escapeHtml((s.text||"").slice(0,20))+"</div>" +
+        "<div class='trim-handle trim-right' style='width:6px;height:100%;cursor:col-resize;background:"+color+";border-radius:0 3px 3px 0;flex-shrink:0;opacity:0.8;'></div>" +
+        "</div>";
     });
     blocks.innerHTML=html;
     // 클릭→시간 이동 + 드래그로 타이밍 조절
@@ -3566,9 +3565,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         var s=ve.subtitles[idx]; if(!s) return;
         var video=$("veVideo"); if(video) video.currentTime=s.start_seconds!=null?s.start_seconds:(s.start||0);
       });
-      // 드래그: 블록을 좌우로 이동하여 시간 변경
+      // 드래그: 블록 이동 또는 양쪽 트림
       el.addEventListener("mousedown",function(e){
         e.preventDefault();
+        var target = e.target;
+        var isLeftTrim = target.classList.contains("trim-left");
+        var isRightTrim = target.classList.contains("trim-right");
         var idx=parseInt(el.dataset.idx);
         var s=ve.subtitles[idx]; if(!s) return;
         var dur=ve.duration||1;
@@ -3581,11 +3583,25 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         function onMove(ev){
           var dx=ev.clientX-startX;
           var dt=dx/rect.width*dur;
-          var newStart=Math.max(0,origStart+dt);
-          var newEnd=newStart+segDur;
-          if(newEnd>dur+0.5){newEnd=dur+0.5;newStart=newEnd-segDur;}
-          el.style.left=(newStart/dur*100).toFixed(2)+"%";
-          s._dragStart=newStart; s._dragEnd=newEnd;
+          if (isLeftTrim) {
+            // 왼쪽 트림: 시작점만 이동
+            var newStart=Math.max(0, Math.min(origEnd-0.2, origStart+dt));
+            el.style.left=(newStart/dur*100).toFixed(2)+"%";
+            el.style.width=((origEnd-newStart)/dur*100).toFixed(2)+"%";
+            s._dragStart=newStart; s._dragEnd=origEnd;
+          } else if (isRightTrim) {
+            // 오른쪽 트림: 끝점만 이동
+            var newEnd=Math.max(origStart+0.2, Math.min(dur, origEnd+dt));
+            el.style.width=((newEnd-origStart)/dur*100).toFixed(2)+"%";
+            s._dragStart=origStart; s._dragEnd=newEnd;
+          } else {
+            // 전체 이동
+            var newStart=Math.max(0,origStart+dt);
+            var newEnd=newStart+segDur;
+            if(newEnd>dur+0.5){newEnd=dur+0.5;newStart=newEnd-segDur;}
+            el.style.left=(newStart/dur*100).toFixed(2)+"%";
+            s._dragStart=newStart; s._dragEnd=newEnd;
+          }
         }
         function onUp(){
           document.removeEventListener("mousemove",onMove);
