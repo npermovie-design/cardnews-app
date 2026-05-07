@@ -3375,8 +3375,14 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               else if (anim === "shake") { var shk = Math.sin(subProgress * Math.PI * 12) * 2; ctx.translate(shk, 0); }
               else if (anim === "scale") { var sc = Math.min(1, subProgress * 3); ctx.translate(tx, ch - Math.round(ch * 0.08)); ctx.scale(sc, sc); ctx.translate(-tx, -(ch - Math.round(ch * 0.08))); }
               var displayText = _veEditIdx === si ? _veEditText : sub.text;
-              var lines = [displayText || ""];
-              if (_subLines === 2 && displayText && displayText.length > 10) {
+              // 최대 글자 수 기준 줄바꿈
+              var lines = [];
+              if (displayText && displayText.length > _subMaxChars) {
+                for (var ci = 0; ci < displayText.length; ci += _subMaxChars) {
+                  lines.push(displayText.slice(ci, ci + _subMaxChars));
+                }
+              } else { lines = [displayText || ""]; }
+              if (_subLines === 2 && displayText && displayText.length > 10 && lines.length === 1) {
                 var mid = Math.ceil(displayText.length / 2);
                 var sp = displayText.indexOf(" ", mid - 5);
                 if (sp > 0 && sp < mid + 5) { lines = [displayText.slice(0, sp), displayText.slice(sp + 1)]; }
@@ -3389,18 +3395,18 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               var ty = ch - totalH - Math.round(ch * 0.08);
               var maxW = 0;
               lines.forEach(function(l) { var w = ctx.measureText(l).width; if (w > maxW) maxW = w; });
-              ctx.textBaseline = "middle";
+              ctx.textBaseline = "top";
               // 배경 박스
               var bgMode = _subBg || "box";
               var bgColor = _subBgColor || "#000000";
               var bgOpacity = (_subBgOpacity != null ? _subBgOpacity : 60) / 100;
               var boxR = parseInt(_subRound || "4");
-              var padX = 16, padY = 10;
+              var padX = 16, padY = 8;
               if (bgMode !== "none") {
                 var bx = bgMode === "full" ? 0 : tx - maxW / 2 - padX;
                 var by = ty - padY;
                 var bw = bgMode === "full" ? cw : maxW + padX * 2;
-                var bh = totalH + padY * 2;
+                var bh = totalH + padY * 2 + 4;
                 var r2 = Math.min(boxR, bh / 2);
                 ctx.fillStyle = bgColor.replace(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i, function(_, r, g, b) {
                   return "rgba(" + parseInt(r, 16) + "," + parseInt(g, 16) + "," + parseInt(b, 16) + "," + bgOpacity + ")";
@@ -5122,9 +5128,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // 모든 트랙 레인 클릭 → 재생 위치 이동
   document.querySelectorAll(".ve-track-lane").forEach(function(lane){
     lane.addEventListener("click",function(e){
-      if(e.target.closest("[data-idx]")) return;
+      if(e.target.closest("[data-idx]") || e.target.closest("[data-vclip]")) return;
       var rect=lane.getBoundingClientRect();
-      var pct=(e.clientX-rect.left)/rect.width;
+      var clickX = e.clientX - rect.left;
+      // 줌 시 레인의 실제 폭은 scrollWidth
+      var laneW = lane.scrollWidth || rect.width;
+      var pct = clickX / rect.width; // 화면상 비율 → 실제 비율
       var video=$("veVideo");
       var dur=ve.duration||1;
       if(video && dur>0) video.currentTime=Math.max(0,Math.min(dur,pct*dur));
@@ -5158,12 +5167,23 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var rect = ruler.getBoundingClientRect();
       var pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
       var video = $("veVideo");
-      if (video && dur > 0) video.currentTime = Math.min(dur, pct * dur);
+      var d = ve.duration || 1;
+      if (video && d > 0) { video.currentTime = Math.min(d, pct * d); _needsRedraw = true; }
     }
     ruler.addEventListener("mousedown", function(e) { _rulerDragging = true; rulerSeek(e); });
     document.addEventListener("mousemove", function(e) { if (_rulerDragging) rulerSeek(e); });
     document.addEventListener("mouseup", function() { _rulerDragging = false; });
   }
+
+  // 자막 최대 글자 수
+  var _subMaxChars = 15;
+  var maxCharsSlider = $("veSubMaxChars");
+  if (maxCharsSlider) maxCharsSlider.addEventListener("input", function(e) {
+    _subMaxChars = parseInt(e.target.value);
+    var label = $("veSubMaxCharsLabel");
+    if (label) label.textContent = _subMaxChars + "자";
+    _needsRedraw = true;
+  });
 
   // 번역 자막 크기
   var _subTransSize = 24;
