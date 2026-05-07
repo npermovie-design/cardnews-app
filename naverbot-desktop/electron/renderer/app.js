@@ -3363,52 +3363,92 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               ctx.textAlign = "center";
               var tx = cw / 2;
               var anim = sub._anim || subAnim || "none";
-              var subProgress = (video.currentTime - sst) / Math.max(0.1, sen - sst); // 0~1
-              // 애니메이션 효과
+              var subProgress = (video.currentTime - sst) / Math.max(0.1, sen - sst);
+              // 애니메이션
               if (anim === "fade") { ctx.globalAlpha = Math.min(1, subProgress * 4); }
-              else if (anim === "bounce") { var bounce = Math.abs(Math.sin(subProgress * Math.PI * 3)) * 0.15; fontSize = Math.round(fontSize * (1 + bounce)); }
+              else if (anim === "bounce") { var bounce = Math.abs(Math.sin(subProgress * Math.PI * 3)) * 0.15; fontSize = Math.round(fontSize * (1 + bounce)); ctx.font = "bold " + fontSize + "px 'Pretendard', sans-serif"; }
               else if (anim === "typewriter") { sub = { text: (sub.text || "").slice(0, Math.floor((sub.text || "").length * Math.min(1, subProgress * 2))), _translated: sub._translated }; }
-              var lines = [sub.text];
-              // 두 줄 모드: 텍스트를 반으로 나눔
-              if (_subLines === 2 && sub.text.length > 10) {
-                var mid = Math.ceil(sub.text.length / 2);
-                var sp = sub.text.indexOf(" ", mid - 5);
-                if (sp > 0 && sp < mid + 5) { lines = [sub.text.slice(0, sp), sub.text.slice(sp + 1)]; }
-                else { lines = [sub.text.slice(0, mid), sub.text.slice(mid)]; }
+              else if (anim === "slide-up") { var slideOff = Math.max(0, (1 - subProgress * 5)) * fontSize * 2; ctx.translate(0, slideOff); ctx.globalAlpha = Math.min(1, subProgress * 5); }
+              else if (anim === "glow") { var glowAmt = 4 + Math.sin(subProgress * Math.PI * 4) * 8; ctx.shadowColor = col; ctx.shadowBlur = glowAmt; }
+              else if (anim === "shake") { var shk = Math.sin(subProgress * Math.PI * 12) * 2; ctx.translate(shk, 0); }
+              else if (anim === "scale") { var sc = Math.min(1, subProgress * 3); ctx.translate(tx, ch - Math.round(ch * 0.08)); ctx.scale(sc, sc); ctx.translate(-tx, -(ch - Math.round(ch * 0.08))); }
+              var displayText = _veEditIdx === si ? _veEditText : sub.text;
+              var lines = [displayText || ""];
+              if (_subLines === 2 && displayText && displayText.length > 10) {
+                var mid = Math.ceil(displayText.length / 2);
+                var sp = displayText.indexOf(" ", mid - 5);
+                if (sp > 0 && sp < mid + 5) { lines = [displayText.slice(0, sp), displayText.slice(sp + 1)]; }
+                else { lines = [displayText.slice(0, mid), displayText.slice(mid)]; }
               }
-              // 다국어 자막
-              if (_subLang !== "none" && sub._translated) {
-                lines.push(sub._translated);
-              }
+              if (_subLang !== "none" && sub._translated) { lines.push(sub._translated); }
               var lineH = fontSize * 1.3;
               var totalH = lines.length * lineH;
               var ty = ch - totalH - Math.round(ch * 0.08);
-              // 배경
               var maxW = 0;
               lines.forEach(function(l) { var w = ctx.measureText(l).width; if (w > maxW) maxW = w; });
-              ctx.fillStyle = "rgba(0,0,0,0.6)";
-              ctx.fillRect(tx - maxW / 2 - 14, ty - fontSize + 4, maxW + 28, totalH + 12);
-              // 텍스트 + 애니메이션 효과
+              // 배경 박스
+              var bgMode = _subBg || "box";
+              var bgColor = _subBgColor || "#000000";
+              var bgOpacity = (_subBgOpacity != null ? _subBgOpacity : 60) / 100;
+              var boxR = parseInt(_subRound || "4");
+              var padX = 14, padY = 6;
+              if (bgMode !== "none") {
+                var bx = bgMode === "full" ? 0 : tx - maxW / 2 - padX;
+                var by = ty - fontSize + 4;
+                var bw = bgMode === "full" ? cw : maxW + padX * 2;
+                var bh = totalH + padY * 2 + 4;
+                var r2 = Math.min(boxR, bh / 2);
+                ctx.fillStyle = bgColor.replace(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i, function(_, r, g, b) {
+                  return "rgba(" + parseInt(r, 16) + "," + parseInt(g, 16) + "," + parseInt(b, 16) + "," + bgOpacity + ")";
+                });
+                ctx.beginPath();
+                ctx.moveTo(bx + r2, by); ctx.lineTo(bx + bw - r2, by);
+                ctx.quadraticCurveTo(bx + bw, by, bx + bw, by + r2);
+                ctx.lineTo(bx + bw, by + bh - r2);
+                ctx.quadraticCurveTo(bx + bw, by + bh, bx + bw - r2, by + bh);
+                ctx.lineTo(bx + r2, by + bh);
+                ctx.quadraticCurveTo(bx, by + bh, bx, by + bh - r2);
+                ctx.lineTo(bx, by + r2);
+                ctx.quadraticCurveTo(bx, by, bx + r2, by);
+                ctx.closePath(); ctx.fill();
+              }
+              // 그림자
+              var shadowMode = _subShadow || "none";
+              if (shadowMode === "soft") { ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 6; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; }
+              else if (shadowMode === "hard") { ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 0; ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3; }
+              // 테두리
+              var strokeW = parseInt(_subStroke || "0");
+              var strokeCol = _subStrokeColor || "#000000";
+              // 텍스트
               lines.forEach(function(l, li) {
+                var ly = ty + li * lineH;
                 if (anim === "highlight" || anim === "karaoke") {
-                  // 하이라이트/가라오케: 진행에 따라 글자 색상 변화
                   var charProgress = Math.floor(l.length * Math.min(1, subProgress * 1.5));
                   var highlighted = l.slice(0, charProgress);
                   var remaining = l.slice(charProgress);
                   var hlW = ctx.measureText(highlighted).width;
                   var fullW = ctx.measureText(l).width;
                   var startX = tx - fullW / 2;
-                  ctx.fillStyle = anim === "karaoke" ? "#FFFF00" : "#3b82f6";
                   ctx.textAlign = "left";
-                  ctx.fillText(highlighted, startX, ty + li * lineH);
+                  if (strokeW > 0) { ctx.strokeStyle = strokeCol; ctx.lineWidth = strokeW; ctx.lineJoin = "round"; ctx.strokeText(l, startX, ly); }
+                  ctx.fillStyle = anim === "karaoke" ? "#FFFF00" : "#3b82f6";
+                  ctx.fillText(highlighted, startX, ly);
                   ctx.fillStyle = col;
-                  ctx.fillText(remaining, startX + hlW, ty + li * lineH);
+                  ctx.fillText(remaining, startX + hlW, ly);
                   ctx.textAlign = "center";
                 } else {
+                  if (strokeW > 0) { ctx.strokeStyle = strokeCol; ctx.lineWidth = strokeW; ctx.lineJoin = "round"; ctx.strokeText(l, tx, ly); }
                   ctx.fillStyle = col;
-                  ctx.fillText(l, tx, ty + li * lineH);
+                  ctx.fillText(l, tx, ly);
                 }
               });
+              // 인라인 편집 커서
+              if (_veEditIdx === si && _veEditCursorVisible) {
+                var editLine = lines[0] || "";
+                var cursorX = tx + ctx.measureText(editLine).width / 2 + 2;
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(cursorX, ty - fontSize + 8, 2, fontSize);
+              }
               ctx.restore();
               break;
             }
@@ -3515,17 +3555,24 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (!_veCanvas || e.target !== _veCanvas) return;
     var video = $("veVideo"); if (!video) return;
     var t = video.currentTime;
-    // 오버레이 더블클릭은 무시 (자막 편집만)
     var pos = canvasToLocal(e);
     var ov = findOverlayAt(pos.x, pos.y, t);
     if (ov) return;
-    for (var i = 0; i < ve.subtitles.length; i++) {
-      var tm = getSubTime(ve.subtitles[i]);
-      if (t >= tm.start - 0.05 && t <= tm.end + 0.05) {
-        showSubEditModal(i);
-        break;
+    // 인라인 편집 시작 (캔버스에서 직접 타이핑)
+    if (video.paused || true) { // 재생 중이어도 편집 가능
+      for (var i = 0; i < ve.subtitles.length; i++) {
+        var tm = getSubTime(ve.subtitles[i]);
+        if (t >= tm.start - 0.05 && t <= tm.end + 0.05) {
+          if (video && !video.paused) { video.pause(); }
+          startSubEdit(i);
+          break;
+        }
       }
     }
+  });
+  // 캔버스 외부 클릭 시 편집 종료
+  document.addEventListener("mousedown", function(e) {
+    if (_veEditIdx >= 0 && e.target !== _veCanvas) stopSubEdit();
   });
 
   // 자막 편집 모달 (텍스트 + 시간 수정)
@@ -4187,6 +4234,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         }
       } catch (sttErr) { console.warn("[무음제거] 자막 재생성 실패:", sttErr.message); }
 
+      // 연속 중복 자막 제거
+      ve.subtitles = ve.subtitles.filter(function(s, i) {
+        if (i === 0) return true;
+        return s.text !== ve.subtitles[i - 1].text;
+      });
+
       // ve.duration 초과 자막 자동 제거
       ve.subtitles = ve.subtitles.filter(function(s) {
         var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
@@ -4288,6 +4341,47 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   });
 
   chipG("veSubColorChips",function(v){ve.subColor=v;var el=$("veSubColor");if(el)el.value=v; _needsRedraw=true;});
+
+  // 자막 디자인 옵션
+  var _subStroke = "0", _subShadow = "none", _subBg = "box", _subRound = "4", _subStrokeColor = "#000000", _subBgColor = "#000000", _subBgOpacity = 60;
+  chipG("veSubStrokeChips", function(v) { _subStroke = v; _needsRedraw = true; });
+  chipG("veSubShadowChips", function(v) { _subShadow = v; _needsRedraw = true; });
+  chipG("veSubBgChips", function(v) { _subBg = v; _needsRedraw = true; });
+  chipG("veSubRoundChips", function(v) { _subRound = v; _needsRedraw = true; });
+  var strokeColorPicker = $("veSubStrokeColor");
+  if (strokeColorPicker) strokeColorPicker.addEventListener("input", function(e) { _subStrokeColor = e.target.value; _needsRedraw = true; });
+  var bgColorPicker = $("veSubBgColor");
+  if (bgColorPicker) bgColorPicker.addEventListener("input", function(e) { _subBgColor = e.target.value; _needsRedraw = true; });
+  var bgOpacitySlider = $("veSubBgOpacity");
+  if (bgOpacitySlider) bgOpacitySlider.addEventListener("input", function(e) { _subBgOpacity = parseInt(e.target.value); _needsRedraw = true; });
+
+  // 캔버스 인라인 자막 편집
+  var _veEditIdx = -1, _veEditText = "", _veEditCursorVisible = true;
+  var _veEditCursorTimer = null;
+  function startSubEdit(idx) {
+    if (idx < 0 || idx >= ve.subtitles.length) return;
+    _veEditIdx = idx;
+    _veEditText = ve.subtitles[idx].text || "";
+    _veEditCursorVisible = true;
+    if (_veEditCursorTimer) clearInterval(_veEditCursorTimer);
+    _veEditCursorTimer = setInterval(function() { _veEditCursorVisible = !_veEditCursorVisible; _needsRedraw = true; }, 500);
+    _needsRedraw = true;
+  }
+  function stopSubEdit() {
+    if (_veEditIdx >= 0 && _veEditIdx < ve.subtitles.length) {
+      ve.subtitles[_veEditIdx].text = _veEditText;
+      renderSubList();
+    }
+    _veEditIdx = -1; _veEditText = "";
+    if (_veEditCursorTimer) { clearInterval(_veEditCursorTimer); _veEditCursorTimer = null; }
+    _needsRedraw = true;
+  }
+  document.addEventListener("keydown", function(e) {
+    if (_veEditIdx < 0) return;
+    if (e.key === "Enter" || e.key === "Escape") { stopSubEdit(); e.preventDefault(); return; }
+    if (e.key === "Backspace") { _veEditText = _veEditText.slice(0, -1); _needsRedraw = true; e.preventDefault(); return; }
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) { _veEditText += e.key; _needsRedraw = true; e.preventDefault(); }
+  });
 
   // 자막 줄수
   var _subLines = 1;
@@ -4497,7 +4591,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     track.innerHTML=ve.overlays.map(function(ov,i){
       var left=(ov.startTime/dur*100).toFixed(2)+"%";
       var width=((ov.endTime-ov.startTime)/dur*100).toFixed(2)+"%";
-      return "<div style='position:absolute;top:3px;bottom:3px;left:"+left+";width:"+width+";background:#f59e0b80;border-left:2px solid #f59e0b;border-radius:3px;cursor:pointer;font-size:8px;color:#fff;padding:0 4px;overflow:hidden;white-space:nowrap;' title='이미지 "+(i+1)+"'>"+(i+1)+"</div>";
+      return "<div style='position:absolute;top:3px;bottom:3px;left:"+left+";width:"+width+";background:#3b82f640;border-left:2px solid #60a5fa;border-radius:3px;cursor:pointer;font-size:8px;color:#93c5fd;padding:0 4px;overflow:hidden;white-space:nowrap;' title='이미지 "+(i+1)+"'>"+(i+1)+"</div>";
     }).join("");
   }
 
@@ -4733,7 +4827,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       en = Math.min(en, dur);
       var left=(st/dur*100).toFixed(2)+"%";
       var width=((en-st)/dur*100).toFixed(2)+"%";
-      var colors=["#3b82f6","#8b5cf6","#10b981","#f59e0b","#ef4444","#ec4899"];
+      var colors=["#3b82f6","#2563eb","#1d4ed8","#60a5fa","#93c5fd","#1e40af"];
       var color=colors[i%colors.length];
       html+="<div title='"+escapeHtml(s.text||"")+"' style='position:absolute;top:4px;bottom:4px;left:"+left+";width:"+width+";background:"+color+"40;border:1px solid "+color+"60;border-radius:3px;cursor:grab;display:flex;align-items:center;overflow:hidden;' data-idx='"+i+"'>" +
         "<div class='trim-handle trim-left' style='width:6px;height:100%;cursor:col-resize;background:"+color+";border-radius:3px 0 0 3px;flex-shrink:0;opacity:0.8;'></div>" +
@@ -5005,7 +5099,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       ve.videoClips.forEach(function(c, i) {
         var left = (c.start / dur * 100).toFixed(2) + "%";
         var width = ((c.end - c.start) / dur * 100).toFixed(2) + "%";
-        var colors = ["rgba(99,102,241,0.5)", "rgba(79,82,211,0.5)", "rgba(119,122,251,0.5)"];
+        var colors = ["rgba(59,130,246,0.5)", "rgba(37,99,235,0.5)", "rgba(96,165,250,0.5)"];
         var color = colors[i % colors.length];
         // 구간 안에 웨이브폼 바
         var segDur = c.end - c.start;
@@ -5017,7 +5111,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           var bW = Math.max(1, (100 / barCount - 0.3)).toFixed(1) + "%";
           bars += "<div style='position:absolute;left:" + bLeft + ";width:" + bW + ";height:" + h + "px;background:" + color + ";bottom:" + (12 - h / 2) + "px;border-radius:1px;'></div>";
         }
-        html += "<div style='position:absolute;top:2px;bottom:2px;left:" + left + ";width:" + width + ";background:#0c0c2a;border-radius:3px;overflow:hidden;border:1px solid rgba(99,102,241,0.2);'>" + bars + "</div>";
+        html += "<div style='position:absolute;top:2px;bottom:2px;left:" + left + ";width:" + width + ";background:#0c0c2a;border-radius:3px;overflow:hidden;border:1px solid rgba(59,130,246,0.2);'>" + bars + "</div>";
       });
       el.innerHTML = html;
     } else {
