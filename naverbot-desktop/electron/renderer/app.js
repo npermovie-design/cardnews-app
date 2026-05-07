@@ -5020,8 +5020,16 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // ── 클립 분할 (현재 재생 위치에서 둘로 나누기) ──
   function splitClipAtPlayhead() {
     var video = $("veVideo");
-    if (!video || _selectedClipIdx < 0) return;
+    if (!video) return;
     var cur = video.currentTime;
+    // 선택된 클립이 없으면 현재 시간의 자막을 자동 선택
+    if (_selectedClipIdx < 0) {
+      for (var si = 0; si < ve.subtitles.length; si++) {
+        var tm = getSubTime(ve.subtitles[si]);
+        if (cur > tm.start + 0.1 && cur < tm.end - 0.1) { _selectedClipIdx = si; break; }
+      }
+      if (_selectedClipIdx < 0) { showModal("분할 불가", "분할할 자막 위에 재생 위치를 놓아주세요.", "확인"); return; }
+    }
     var s = ve.subtitles[_selectedClipIdx];
     if (!s) return;
     var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
@@ -5095,29 +5103,24 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     }
   });
 
-  // 캐시: 플레이헤드 위치 계산용
-  var _phCache = { laneLeft: 0, laneWidth: 0, dirty: true };
+  // 플레이헤드 위치 (매번 실측 — 줌/스크롤에 정확)
+  var _phCache = { dirty: true };
   function updateTimelineHead(cur,dur){
     var playhead=$("vePlayhead");
     if(playhead){
-      // 레이아웃 캐시 (리사이즈 시에만 갱신)
-      if (_phCache.dirty) {
-        var wrapper=$("veTimelineWrapper");
-        if(wrapper){
-          var firstLane=wrapper.querySelector(".ve-track-lane");
-          if(firstLane){
-            var wrapRect=wrapper.getBoundingClientRect();
-            var laneRect=firstLane.getBoundingClientRect();
-            _phCache.laneLeft=laneRect.left-wrapRect.left;
-            _phCache.laneWidth=laneRect.width;
-            _phCache.dirty=false;
-          }
+      var tracksArea=$("veTracksArea");
+      if(tracksArea){
+        var firstLane=tracksArea.querySelector(".ve-track-lane");
+        if(firstLane){
+          var areaRect=tracksArea.getBoundingClientRect();
+          var laneRect=firstLane.getBoundingClientRect();
+          var laneLeft=laneRect.left-areaRect.left;
+          var laneWidth=laneRect.width;
+          var px=laneLeft+(cur/Math.max(0.1,dur))*laneWidth;
+          playhead.style.transform="translateX("+px+"px)";
+          playhead.style.left="0";
         }
       }
-      // transform으로 이동 (reflow 없음)
-      var px=_phCache.laneLeft+(cur/Math.max(0.1,dur))*_phCache.laneWidth;
-      playhead.style.transform="translateX("+px+"px)";
-      playhead.style.left="0";
     }
     var posEl=$("veTimelinePos");
     if(posEl) posEl.textContent=fmtTime(cur)+" / "+fmtTime(dur);
