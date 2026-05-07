@@ -113,10 +113,10 @@ const CATEGORIES = [
 ];
 
 const AUTOMATION_DOWNLOAD = {
-  fileName: "메이킷 SNS자동화 Setup 0.1.9.exe",
-  url: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.9.exe",
-  size: "450MB",
-  version: "v0.1.9",
+  fileName: "SNSMakeIt-Setup-0.2.0.exe",
+  url: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/naverbot-releases/SNSMakeIt-Setup-0.2.0.exe",
+  size: "430MB",
+  version: "v0.2.0",
 };
 const AUTOMATION_DOWNLOAD_READY = Boolean(AUTOMATION_DOWNLOAD.url);
 
@@ -255,10 +255,10 @@ const DEMO_PRODUCTS = [
     id: 1, title: "SNS 자동화 봇 v0.1.9",
     desc: "테마만 입력하면 AI가 네이버 블로그 글을 자동 생성하고, 카테고리 선택부터 이미지 삽입, 발행까지 한 번에 처리합니다. 빠른 시작 모드로 1분 안에 첫 발행이 가능합니다.",
     category: "automation", price: 0, priceLabel: "무료",
-    version: "v0.1.9", platform: "Windows 10/11",
-    fileSize: "450MB", downloadCount: 180, viewCount: 420,
-    tags: ["자동화", "블로그", "네이버", "SEO", "AEO"],
-    downloadUrl: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.9.exe",
+    version: "v0.2.0", platform: "Windows 10/11",
+    fileSize: "430MB", downloadCount: 180, viewCount: 420,
+    tags: ["자동화", "블로그", "네이버", "SEO", "AEO", "영상편집"],
+    downloadUrl: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/naverbot-releases/SNSMakeIt-Setup-0.2.0.exe",
     thumbnail: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/uploads/automation-thumb.png",
     detailContent: [
       { type: "heading", value: "SNS 자동화 봇이란?" },
