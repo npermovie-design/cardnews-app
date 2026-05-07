@@ -63,3 +63,6 @@ naverbot-desktop/server-original/
 naverbot-desktop/electron/dist2/
 naverbot-desktop/electron/dist-installer/
 naverbot-desktop/electron/dist/
+naverbot-desktop/electron/distFinal/
+naverbot-desktop/electron/dist[0-9]*/
+naverbot-desktop/electron/distX/
