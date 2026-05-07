@@ -3481,20 +3481,28 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var ov = $("veLoadingOverlay"); if (ov) ov.style.display = "none";
   }
 
+  // 자막 시간 읽기 헬퍼 (시간 형식 통일)
+  function getSubTime(s) {
+    var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+    var en = s.end_seconds != null ? s.end_seconds : (s.end || st + 2);
+    return { start: st, end: en };
+  }
+  function setSubTime(s, start, end) {
+    if (s.start_seconds != null) { s.start_seconds = start; s.end_seconds = end; }
+    else { s.start = start; s.end = end; }
+  }
+
   // 캔버스 클릭 → 자막 선택, 더블클릭 → 편집
   document.addEventListener("click", function(e) {
     if (!_veCanvas || e.target !== _veCanvas) return;
     var video = $("veVideo"); if (!video) return;
     var t = video.currentTime;
-    // 오버레이가 아닌 경우에만 자막 선택
     var pos = canvasToLocal(e);
     var ov = findOverlayAt(pos.x, pos.y, t);
-    if (ov) return; // 오버레이 클릭은 다른 핸들러에서 처리
+    if (ov) return;
     for (var i = 0; i < ve.subtitles.length; i++) {
-      var s = ve.subtitles[i];
-      var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
-      var en = s.end_seconds != null ? s.end_seconds : (s.end || st + 2);
-      if (t >= st - 0.1 && t <= en + 0.1) {
+      var tm = getSubTime(ve.subtitles[i]);
+      if (t >= tm.start - 0.05 && t <= tm.end + 0.05) {
         selectClip(i);
         break;
       }
@@ -3505,17 +3513,52 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (!_veCanvas || e.target !== _veCanvas) return;
     var video = $("veVideo"); if (!video) return;
     var t = video.currentTime;
+    // 오버레이 더블클릭은 무시 (자막 편집만)
+    var pos = canvasToLocal(e);
+    var ov = findOverlayAt(pos.x, pos.y, t);
+    if (ov) return;
     for (var i = 0; i < ve.subtitles.length; i++) {
-      var s = ve.subtitles[i];
-      var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
-      var en = s.end_seconds != null ? s.end_seconds : (s.end || st + 2);
-      if (t >= st - 0.1 && t <= en + 0.1) {
-        var newText = prompt("자막 수정:", s.text || "");
-        if (newText !== null) { s.text = newText; renderSubList(); }
+      var tm = getSubTime(ve.subtitles[i]);
+      if (t >= tm.start - 0.05 && t <= tm.end + 0.05) {
+        showSubEditModal(i);
         break;
       }
     }
   });
+
+  // 자막 편집 모달 (텍스트 + 시간 수정)
+  function showSubEditModal(idx) {
+    var s = ve.subtitles[idx]; if (!s) return;
+    var tm = getSubTime(s);
+    var modalMsg = document.getElementById("modalMessage");
+    showModal("자막 편집 (#" + (idx+1) + ")", "", "저장", function() {
+      var txtInput = document.getElementById("_subEditText");
+      var stInput = document.getElementById("_subEditStart");
+      var enInput = document.getElementById("_subEditEnd");
+      if (txtInput) s.text = txtInput.value;
+      if (stInput && enInput) {
+        var newSt = parseFloat(stInput.value);
+        var newEn = parseFloat(enInput.value);
+        if (!isNaN(newSt) && !isNaN(newEn) && newEn > newSt) setSubTime(s, newSt, newEn);
+      }
+      renderSubList(); _needsRedraw = true;
+    });
+    if (modalMsg) {
+      modalMsg.innerHTML =
+        '<div style="margin-bottom:10px;">' +
+        '<label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px;">자막 텍스트</label>' +
+        '<input id="_subEditText" type="text" value="' + escapeHtml(s.text || "") + '" style="width:100%;padding:8px;border:1px solid #334155;border-radius:6px;background:#0f0f23;color:#e2e8f0;font-size:14px;box-sizing:border-box;">' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;">' +
+        '<div style="flex:1;"><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px;">시작 (초)</label>' +
+        '<input id="_subEditStart" type="number" step="0.1" value="' + tm.start.toFixed(2) + '" style="width:100%;padding:8px;border:1px solid #334155;border-radius:6px;background:#0f0f23;color:#e2e8f0;font-size:14px;box-sizing:border-box;"></div>' +
+        '<div style="flex:1;"><label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:4px;">종료 (초)</label>' +
+        '<input id="_subEditEnd" type="number" step="0.1" value="' + tm.end.toFixed(2) + '" style="width:100%;padding:8px;border:1px solid #334155;border-radius:6px;background:#0f0f23;color:#e2e8f0;font-size:14px;box-sizing:border-box;"></div>' +
+        '</div>';
+      // 포커스
+      setTimeout(function() { var ti = document.getElementById("_subEditText"); if(ti) ti.focus(); }, 100);
+    }
+  }
 
   // 오버레이 이미지 프리로드
   function preloadOverlayImages() {
@@ -3908,60 +3951,86 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     showVeLoading("AI 짤을 검색하고 삽입하는 중...\n(GIF 우선, 영상의 " + insertPct + "% 비율)");
     try{
       var text=ve.subtitles.map(function(s){return s.text}).join(" ");
-      var keywords=text.replace(/[^가-힣a-zA-Z\s]/g,"").split(/\s+/).filter(function(w){return w.length>=2});
+      // 숫자 포함 키워드 추출 (한글/영문/숫자)
+      var keywords=text.replace(/[^가-힣a-zA-Z0-9\s]/g,"").split(/\s+/).filter(function(w){return w.length>=2});
       var unique=[]; var seen={};
-      keywords.forEach(function(k){ if(!seen[k]&&unique.length<10){seen[k]=true;unique.push(k);} });
+      keywords.forEach(function(k){ if(!seen[k]&&unique.length<15){seen[k]=true;unique.push(k);} });
       keywords=unique;
       var dur=ve.duration||60;
-      // 삽입 비율 기반 계산: 30% → 10분 영상에 3분 분량
       var totalInsertTime = dur * (insertPct / 100);
-      var eachDuration = 4; // 각 짤 4초
+      var eachDuration = 4;
       var insertCount = Math.max(1, Math.round(totalInsertTime / eachDuration));
       var interval = dur / (insertCount + 1);
       var cw = _veCanvas ? _veCanvas.width : 720;
       var ch = _veCanvas ? _veCanvas.height : 1280;
-      var ovSize = Math.round(Math.min(cw, ch) * 0.25); // 화면의 25%
+      var ovSize = Math.round(Math.min(cw, ch) * 0.25);
       ve.overlays=[];
-      var inserted=0;
+      var inserted=0, failed=0;
+      var usedUrls = {};
+      // 위치 분산: 4개 코너 + 중앙을 순환
+      var positions = [
+        { x: Math.round(cw * 0.05), y: Math.round(ch * 0.05) },
+        { x: Math.round(cw - ovSize - cw * 0.05), y: Math.round(ch * 0.05) },
+        { x: Math.round(cw * 0.05), y: Math.round(ch - ovSize - ch * 0.15) },
+        { x: Math.round(cw - ovSize - cw * 0.05), y: Math.round(ch - ovSize - ch * 0.15) },
+        { x: Math.round((cw - ovSize) / 2), y: Math.round((ch - ovSize) / 2) }
+      ];
 
       for(var ki=0;ki<insertCount;ki++){
         var kw = keywords[ki % keywords.length] || "재밌는";
+        var pos = positions[ki % positions.length];
+        // 진행률 표시
+        setUpdateProgress && typeof setUpdateProgress === "function" ? null :
+          (function() { var lt = $("veLoadingText"); if(lt) lt.textContent = "AI 짤 검색 중... (" + (ki+1) + "/" + insertCount + ")"; })();
+        var lt2 = document.getElementById("veLoadingText");
+        if (lt2) lt2.textContent = "AI 짤 검색 중... (" + (ki+1) + "/" + insertCount + ")";
         try{
-          var gResp=await fetch("https://snsmakeit.com/api/proxy?action=klipy&path=gifs/search&q="+encodeURIComponent(kw)+"&per_page=5&locale=ko_KR");
+          var gResp=await fetch("https://snsmakeit.com/api/proxy?action=klipy&path=gifs/search&q="+encodeURIComponent(kw)+"&per_page=8&locale=ko_KR");
           var gData=await gResp.json();
           var gifs=(gData.data?.data||gData.data||[]);
-          var gif=gifs[Math.floor(Math.random()*Math.min(5,gifs.length))];
-          // Klipy 응답: file.sm.gif.url 또는 file.md.gif.url
-          var gifUrl = gif?.file?.sm?.gif?.url || gif?.file?.md?.gif?.url || gif?.file?.xs?.gif?.url || gif?.media_formats?.gif?.url || gif?.url || "";
+          // 중복 방지: 사용하지 않은 GIF 선택
+          var gifUrl = "";
+          for (var gi = 0; gi < gifs.length && !gifUrl; gi++) {
+            var g = gifs[gi];
+            var url = g?.file?.sm?.gif?.url || g?.file?.md?.gif?.url || g?.file?.xs?.gif?.url || g?.media_formats?.gif?.url || g?.url || "";
+            if (url && !usedUrls[url]) { gifUrl = url; usedUrls[url] = true; }
+          }
           if(gifUrl){
             ve.overlays.push({
               path:gifUrl, startTime:Math.min(dur-eachDuration,interval*(ki+1)), endTime:Math.min(dur,interval*(ki+1)+eachDuration),
-              x:Math.round((cw-ovSize)/2), y:Math.round((ch-ovSize)/2), // 화면 중앙
+              x:pos.x, y:pos.y,
               width:ovSize, height:ovSize, isUrl:true, type:"gif", opacity:1, borderRadius:12
             });
             inserted++;
             continue;
           }
-        }catch(e){}
+        }catch(e){ console.warn("[AI짤] GIF 검색 실패:", kw, e.message); }
         // GIF 실패 시 Pexels 사진
         try{
-          var pResp=await fetch("https://snsmakeit.com/api/proxy?action=pexels&path=v1/search&query="+encodeURIComponent(kw)+"&per_page=1");
+          var pResp=await fetch("https://snsmakeit.com/api/proxy?action=pexels&path=v1/search&query="+encodeURIComponent(kw)+"&per_page=3");
           var pData=await pResp.json();
-          var photo=pData.photos?pData.photos[0]:null;
+          var photos = pData.photos || [];
+          var photo = null;
+          for (var pi = 0; pi < photos.length && !photo; pi++) {
+            var pUrl = photos[pi]?.src?.medium || photos[pi]?.src?.small || "";
+            if (pUrl && !usedUrls[pUrl]) { photo = photos[pi]; usedUrls[pUrl] = true; }
+          }
           if(photo&&photo.src){
             ve.overlays.push({
               path:photo.src.medium||photo.src.small, startTime:Math.min(dur-eachDuration,interval*(ki+1)), endTime:Math.min(dur,interval*(ki+1)+eachDuration),
-              x:Math.round((cw-ovSize)/2), y:Math.round((ch-ovSize)/2),
+              x:pos.x, y:pos.y,
               width:ovSize, height:Math.round(ovSize*0.66), isUrl:true, type:"photo", opacity:1, borderRadius:12
             });
             inserted++;
-          }
-        }catch(e){}
+          } else { failed++; }
+        }catch(e){ console.warn("[AI짤] 사진 검색 실패:", kw, e.message); failed++; }
       }
 
       preloadOverlayImages(); renderImageList(); renderImageTrack();
       hideVeLoading();
-      showModal("AI 짤 삽입 완료", inserted+"개 GIF/이미지가 삽입되었습니다.\n(영상의 "+insertPct+"% 비율)", "확인");
+      var resultMsg = inserted+"개 GIF/이미지가 삽입되었습니다.\n(영상의 "+insertPct+"% 비율)";
+      if (failed > 0) resultMsg += "\n\n" + failed + "개는 검색 결과가 없어 건너뛰었습니다.";
+      showModal("AI 짤 삽입 완료", resultMsg, "확인");
     }catch(e){hideVeLoading();showModal("실패",e.message||"AI 짤 삽입 실패","확인");}
     autoImgBtn.disabled=false; autoImgBtn.innerHTML=_origImgBtnHtml;
   }
@@ -4039,10 +4108,14 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         var origSt = s.start_seconds != null ? s.start_seconds : (s.start || 0);
         var origEn = s.end_seconds != null ? s.end_seconds : (s.end || origSt + 2);
 
-        // 무음 구간에 완전히 포함된 자막 → 삭제
+        // 무음 구간과 겹치는 자막 처리
         var inSilence = false;
         for (var si3 = 0; si3 < silences.length; si3++) {
+          // 완전히 무음 안에 있는 자막 → 삭제
           if (origSt >= silences[si3].start && origEn <= silences[si3].end) { inSilence = true; break; }
+          // 자막의 대부분(70%+)이 무음에 겹치면 → 삭제
+          var overlap = Math.max(0, Math.min(origEn, silences[si3].end) - Math.max(origSt, silences[si3].start));
+          if (overlap / (origEn - origSt) > 0.7) { inSilence = true; break; }
         }
         if (inSilence) return;
 
@@ -4086,8 +4159,11 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       showModal("무음제거 완료",
         silences.length + "개 무음 구간 제거 (총 " + totalCut.toFixed(1) + "초)\n" +
         "원본: " + fmtTime(ve._prevDuration) + " → 결과: " + fmtTime(newDur) + "\n\n" +
-        "되돌리기 하려면 '되돌리기' 버튼을 누르세요.",
+        "자막 정확도를 높이려면 '자막 재생성' 버튼을 눌러주세요.",
         "확인");
+      // 자막 재생성 버튼 표시
+      var regenBtn = $("veSubRegenBtn");
+      if (regenBtn) regenBtn.style.display = "";
     }catch(e){
       hideVeLoading();
       showModal("무음제거 실패",e.message||"오류","확인");
@@ -4112,6 +4188,43 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     silUndoBtn.style.display = "none";
     showModal("되돌리기 완료", "원본 영상으로 복원되었습니다.", "확인");
   });
+  // 자막 재생성 (무음제거 후 Whisper STT 재실행)
+  var subRegenBtn = $("veSubRegenBtn");
+  if (subRegenBtn) subRegenBtn.addEventListener("click", async function() {
+    if (!ve.filePath) { showModal("알림", "영상 파일이 없습니다.", "확인"); return; }
+    subRegenBtn.disabled = true; subRegenBtn.textContent = "자막 재생성 중...";
+    showVeLoading("무음 제거된 영상에서 자막을 다시 생성합니다...\n(Whisper AI 음성 인식 재실행)");
+    try {
+      var result = await bridge.videoUploadAndAnalyze(ve.filePath, 5);
+      if (!result.ok) throw new Error(result.error || "자막 재생성 실패");
+      var aD = result.analyzeData;
+      ve.subtitles = [];
+      var fs2 = aD.all_subs || aD.full_transcript;
+      if (fs2 && Array.isArray(fs2)) ve.subtitles = fs2;
+      if (!ve.subtitles.length) {
+        (aD.segments || []).forEach(function(seg) {
+          if (seg.subtitles && seg.subtitles.length) {
+            ve.subtitles = ve.subtitles.concat(seg.subtitles);
+          } else if (seg.script) {
+            var ss = seg.start_seconds || 0, se = seg.end_seconds || ve.duration;
+            var ch = seg.script.match(/.{1,18}/g) || [];
+            var cd = (se - ss) / Math.max(1, ch.length);
+            ch.forEach(function(t, i) {
+              ve.subtitles.push({ start: ss + i * cd, end: ss + (i + 1) * cd, text: t.trim() });
+            });
+          }
+        });
+      }
+      renderSubList(); renderTimeline();
+      hideVeLoading();
+      showModal("자막 재생성 완료", ve.subtitles.length + "개 자막이 새로 생성되었습니다.", "확인");
+    } catch (e) {
+      hideVeLoading();
+      showModal("자막 재생성 실패", e.message || "오류", "확인");
+    }
+    subRegenBtn.disabled = false; subRegenBtn.textContent = "자막 재생성 (STT)";
+  });
+
   chipG("veSubColorChips",function(v){ve.subColor=v;var el=$("veSubColor");if(el)el.value=v; _needsRedraw=true;});
 
   // 자막 줄수
