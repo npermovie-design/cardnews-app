@@ -3295,11 +3295,13 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     }
   }
 
+  var _needsRedraw = true; // 캔버스 리드로우 플래그 (전역 공유)
+
   function startCanvasRender() {
     if (_veCanvasRAF) cancelAnimationFrame(_veCanvasRAF);
     var _lastDrawTime = 0;
     var _lastVideoTime = -1;
-    var _needsRedraw = true; // 강제 리드로우 플래그
+    _needsRedraw = true;
 
     function draw() {
       var video = $("veVideo");
@@ -3387,17 +3389,18 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               var ty = ch - totalH - Math.round(ch * 0.08);
               var maxW = 0;
               lines.forEach(function(l) { var w = ctx.measureText(l).width; if (w > maxW) maxW = w; });
+              ctx.textBaseline = "middle";
               // 배경 박스
               var bgMode = _subBg || "box";
               var bgColor = _subBgColor || "#000000";
               var bgOpacity = (_subBgOpacity != null ? _subBgOpacity : 60) / 100;
               var boxR = parseInt(_subRound || "4");
-              var padX = 14, padY = 6;
+              var padX = 16, padY = 10;
               if (bgMode !== "none") {
                 var bx = bgMode === "full" ? 0 : tx - maxW / 2 - padX;
-                var by = ty - fontSize + 4;
+                var by = ty - padY;
                 var bw = bgMode === "full" ? cw : maxW + padX * 2;
-                var bh = totalH + padY * 2 + 4;
+                var bh = totalH + padY * 2;
                 var r2 = Math.min(boxR, bh / 2);
                 ctx.fillStyle = bgColor.replace(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i, function(_, r, g, b) {
                   return "rgba(" + parseInt(r, 16) + "," + parseInt(g, 16) + "," + parseInt(b, 16) + "," + bgOpacity + ")";
@@ -3707,16 +3710,10 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     _selectedOv = ov;
     if (ov) {
       ov._selected = true;
-      // 속성 패널 표시
-      var props = $("veImageProps");
-      if (props) {
-        props.style.display = "";
-        $("veImgSize").value = ov.width || 150;
-        $("veImgOpacity").value = Math.round((ov.opacity || 1) * 100);
-        $("veImgOpacityLabel").textContent = Math.round((ov.opacity || 1) * 100) + "%";
-        $("veImgRadius").value = ov.borderRadius || 0;
-      }
+      showOvOptions(ov);
+      var props = $("veImageProps"); if (props) { props.style.display = ""; }
     } else {
+      showOvOptions(null);
       var props = $("veImageProps"); if (props) props.style.display = "none";
     }
   });
@@ -3964,19 +3961,22 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function zoomTimeline(newZoom) {
     var video = $("veVideo");
     var wrapper = $("veTimelineWrapper");
-    var tracksArea = $("veTracksArea");
-    var oldZoom = timelineZoom;
     timelineZoom = Math.max(0.5, Math.min(10, newZoom));
     renderTimeline();
-    // 플레이헤드 위치 기준으로 스크롤 유지
-    if (video && wrapper && tracksArea) {
+    _phCache.dirty = true;
+    // 플레이헤드 위치 기준으로 스크롤 (빨간바 중심)
+    if (video && wrapper) {
       var pct = video.currentTime / (ve.duration || 1);
-      var scrollTarget = pct * tracksArea.scrollWidth - wrapper.clientWidth / 2;
-      wrapper.scrollLeft = Math.max(0, scrollTarget);
+      var lane = wrapper.querySelector(".ve-track-lane");
+      if (lane) {
+        var laneW = lane.scrollWidth;
+        var scrollTarget = pct * laneW - wrapper.clientWidth / 2;
+        wrapper.scrollLeft = Math.max(0, scrollTarget);
+      }
     }
   }
-  if(zIn) zIn.addEventListener("click",function(){ zoomTimeline(timelineZoom * 1.8); });
-  if(zOut) zOut.addEventListener("click",function(){ zoomTimeline(timelineZoom / 1.8); });
+  if(zIn) zIn.addEventListener("click",function(){ zoomTimeline(timelineZoom * 2); });
+  if(zOut) zOut.addEventListener("click",function(){ zoomTimeline(timelineZoom / 2); });
 
   // 분할/삭제 버튼
   var splitBtn=$("veSplitBtn"); if(splitBtn) splitBtn.addEventListener("click",function(){ splitClipAtPlayhead(); });
@@ -4046,12 +4046,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var interval = dur / (insertCount + 1);
       var cw = _veCanvas ? _veCanvas.width : 720;
       var ch = _veCanvas ? _veCanvas.height : 1280;
-      var ovSize = Math.round(Math.min(cw, ch) * 0.25);
+      var ovSize = Math.round(Math.min(cw, ch) * 0.45);
       ve.overlays=[];
       var inserted=0, failed=0;
       var usedUrls = {};
-      // 위치: 화면 상단 중앙
-      var centerPos = { x: Math.round((cw - ovSize) / 2), y: Math.round(ch * 0.05) };
+      // 위치: 화면 정중앙
+      var centerPos = { x: Math.round((cw - ovSize) / 2), y: Math.round((ch - ovSize) / 2) };
 
       for(var ki=0;ki<insertCount;ki++){
         var kw = keywords[ki % keywords.length] || "재밌는";
@@ -4341,6 +4341,46 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     subRegenBtn.disabled = false; subRegenBtn.textContent = "자막 재생성 (STT)";
   });
 
+  // 이미지 옵션 탭 (선택된 오버레이)
+  function showOvOptions(ov) {
+    var panel = $("veOvSelected"), empty = $("veOvEmpty");
+    if (!ov) { if(panel) panel.style.display="none"; if(empty) empty.style.display=""; return; }
+    if(panel) panel.style.display=""; if(empty) empty.style.display="none";
+    var sz=$("veOvSize"); if(sz){sz.value=ov.width||120; var lbl=$("veOvSizeLabel");if(lbl)lbl.textContent=ov.width||120;}
+    var op=$("veOvOpacity"); if(op){op.value=Math.round((ov.opacity!=null?ov.opacity:1)*100); var lbl2=$("veOvOpacityLabel");if(lbl2)lbl2.textContent=Math.round((ov.opacity!=null?ov.opacity:1)*100)+"%";}
+    // 탭 전환
+    document.querySelectorAll(".ve-tab-btn").forEach(function(b){b.classList.remove("active");b.style.borderBottomColor="transparent";b.style.color="#94a3b8";});
+    var clipTab=document.querySelector('[data-ve-tab="clip"]');
+    if(clipTab){clipTab.classList.add("active");clipTab.style.borderBottomColor="#3b82f6";clipTab.style.color="#e2e8f0";}
+    document.querySelectorAll(".ve-tab-content").forEach(function(c){c.style.display="none";});
+    var tc=$("veTabClip"); if(tc)tc.style.display="";
+  }
+  var ovSizeSlider=$("veOvSize"); if(ovSizeSlider) ovSizeSlider.addEventListener("input",function(){
+    if(!_selectedOv) return;
+    var v=parseInt(ovSizeSlider.value);var ratio=_selectedOv.height/(_selectedOv.width||1);
+    _selectedOv.width=v;_selectedOv.height=Math.round(v*ratio);
+    var lbl=$("veOvSizeLabel");if(lbl)lbl.textContent=v;
+    _needsRedraw=true;
+  });
+  var ovOpSlider=$("veOvOpacity"); if(ovOpSlider) ovOpSlider.addEventListener("input",function(){
+    if(!_selectedOv) return;
+    _selectedOv.opacity=parseInt(ovOpSlider.value)/100;
+    var lbl=$("veOvOpacityLabel");if(lbl)lbl.textContent=ovOpSlider.value+"%";
+    _needsRedraw=true;
+  });
+  chipG("veOvShapeChips",function(v){ if(!_selectedOv) return; _selectedOv.borderRadius=v==="50"?999:parseInt(v); _needsRedraw=true; });
+  chipG("veOvAnimChips",function(v){ if(!_selectedOv) return; _selectedOv._anim=v; _needsRedraw=true; });
+  var ovDelBtn=$("veOvDeleteBtn"); if(ovDelBtn) ovDelBtn.addEventListener("click",function(){
+    if(!_selectedOv) return;
+    var idx=ve.overlays.indexOf(_selectedOv);
+    if(idx>=0) ve.overlays.splice(idx,1);
+    _selectedOv=null; showOvOptions(null);
+    renderImageList(); renderImageTrack(); _needsRedraw=true;
+  });
+
+  // 오버레이 선택 시 이미지 탭으로 전환
+  var _origOvSelect = null;
+
   // 도구바: 자막 재생성 버튼
   var subRegenBtn2 = $("veSubRegenBtn2");
   if (subRegenBtn2) subRegenBtn2.addEventListener("click", function() {
@@ -4615,7 +4655,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     track.innerHTML=ve.overlays.map(function(ov,i){
       var left=(ov.startTime/dur*100).toFixed(2)+"%";
       var width=((ov.endTime-ov.startTime)/dur*100).toFixed(2)+"%";
-      return "<div style='position:absolute;top:3px;bottom:3px;left:"+left+";width:"+width+";background:#3b82f650;border:1px solid #3b82f670;border-radius:3px;cursor:pointer;font-size:10px;color:#93c5fd;padding:0 4px;overflow:hidden;white-space:nowrap;display:flex;align-items:center;justify-content:center;' title='이미지 "+(i+1)+"'>"+(i+1)+"</div>";
+      return "<div style='position:absolute;top:3px;bottom:3px;left:"+left+";width:"+width+";background:#8b5cf650;border:1px solid #8b5cf670;border-radius:3px;cursor:pointer;font-size:10px;color:#c4b5fd;padding:0 4px;overflow:hidden;white-space:nowrap;display:flex;align-items:center;justify-content:center;' title='이미지 "+(i+1)+"'>"+(i+1)+"</div>";
     }).join("");
   }
 
@@ -4851,7 +4891,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       en = Math.min(en, dur);
       var left=(st/dur*100).toFixed(2)+"%";
       var width=((en-st)/dur*100).toFixed(2)+"%";
-      var colors=["#3b82f6","#2563eb","#1d4ed8","#60a5fa","#93c5fd","#1e40af"];
+      // 자막(T1) - 시안/틸 계열
+      var colors=["#06b6d4","#0891b2","#0e7490","#22d3ee","#67e8f9","#155e75"];
       var color=colors[i%colors.length];
       html+="<div title='"+escapeHtml(s.text||"")+"' style='position:absolute;top:4px;bottom:4px;left:"+left+";width:"+width+";background:"+color+"50;border:1px solid "+color+"70;border-radius:3px;cursor:grab;display:flex;align-items:center;justify-content:center;overflow:hidden;' data-idx='"+i+"'>" +
         "<div class='trim-handle trim-left' style='width:5px;height:100%;cursor:col-resize;background:"+color+";border-radius:3px 0 0 3px;flex-shrink:0;opacity:0;transition:opacity 0.15s;'></div>" +
@@ -5144,7 +5185,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       ve.videoClips.forEach(function(c, i) {
         var left = (c.start / dur * 100).toFixed(2) + "%";
         var width = ((c.end - c.start) / dur * 100).toFixed(2) + "%";
-        var colors = ["rgba(59,130,246,0.5)", "rgba(37,99,235,0.5)", "rgba(96,165,250,0.5)"];
+        // 오디오(A1) - 인디고 계열
+        var colors = ["rgba(99,102,241,0.5)", "rgba(79,70,229,0.5)", "rgba(129,140,248,0.5)"];
         var color = colors[i % colors.length];
         // 구간 안에 웨이브폼 바
         var segDur = c.end - c.start;

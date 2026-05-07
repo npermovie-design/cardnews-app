@@ -1164,7 +1164,7 @@
             <div style="width:280px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;background:#16162e;border-left:1px solid #2a2a4a;">
               <div style="display:flex;gap:0;border-bottom:1px solid #2a2a4a;">
                 <button class="ve-tab-btn active" data-ve-tab="sub" style="flex:1;padding:10px 0;font-size:13px;font-weight:700;border:none;background:transparent;color:#94a3b8;cursor:pointer;border-bottom:2px solid transparent;">자막</button>
-                <button class="ve-tab-btn" data-ve-tab="clip" style="flex:1;padding:10px 0;font-size:13px;font-weight:700;border:none;background:transparent;color:#94a3b8;cursor:pointer;border-bottom:2px solid transparent;">클립</button>
+                <button class="ve-tab-btn" data-ve-tab="clip" style="flex:1;padding:10px 0;font-size:13px;font-weight:700;border:none;background:transparent;color:#94a3b8;cursor:pointer;border-bottom:2px solid transparent;">이미지</button>
                 <button class="ve-tab-btn" data-ve-tab="image" style="flex:1;padding:10px 0;font-size:13px;font-weight:700;border:none;background:transparent;color:#94a3b8;cursor:pointer;border-bottom:2px solid transparent;">라이브러리</button>
               </div>
               <!-- AI 자동생성 도구 바 -->
@@ -1256,17 +1256,47 @@
                 </div>
                 <!-- 클립 -->
                 <div id="veTabClip" class="ve-tab-content" style="display:none;">
-                  <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">비디오 클립</div>
-                  <div id="veClipList" style="font-size:12px;color:#64748b;max-height:200px;overflow-y:auto;">분할하면 여기에 클립 목록이 표시됩니다.</div>
-                  <div id="veSegmentsCard" style="margin-top:14px;">
+                  <div id="veOvSelected" style="display:none;">
+                    <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:10px;">선택된 이미지</div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+                      <span style="font-size:13px;color:#94a3b8;">크기</span>
+                      <input type="range" id="veOvSize" min="30" max="500" value="120" style="flex:1;accent-color:#3b82f6;height:5px;">
+                      <span id="veOvSizeLabel" style="font-size:13px;color:#e2e8f0;min-width:36px;">120</span>
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;">
+                      <span style="font-size:13px;color:#94a3b8;">투명도</span>
+                      <input type="range" id="veOvOpacity" min="10" max="100" value="100" style="flex:1;accent-color:#3b82f6;height:5px;">
+                      <span id="veOvOpacityLabel" style="font-size:13px;color:#e2e8f0;min-width:36px;">100%</span>
+                    </div>
+                    <div style="font-size:12px;color:#64748b;margin-bottom:4px;">모양</div>
+                    <div class="chips" id="veOvShapeChips" style="gap:3px;margin-bottom:10px;">
+                      <button class="chip active" data-value="0" style="padding:5px 10px;font-size:12px;">사각</button>
+                      <button class="chip" data-value="12" style="padding:5px 10px;font-size:12px;">둥글게</button>
+                      <button class="chip" data-value="50" style="padding:5px 10px;font-size:12px;">원형</button>
+                    </div>
+                    <div style="font-size:12px;color:#64748b;margin-bottom:4px;">애니메이션</div>
+                    <div class="chips" id="veOvAnimChips" style="gap:3px;flex-wrap:wrap;margin-bottom:10px;">
+                      <button class="chip active" data-value="none" style="padding:5px 10px;font-size:12px;">없음</button>
+                      <button class="chip" data-value="fade" style="padding:5px 10px;font-size:12px;">페이드</button>
+                      <button class="chip" data-value="zoom" style="padding:5px 10px;font-size:12px;">확대</button>
+                      <button class="chip" data-value="slide" style="padding:5px 10px;font-size:12px;">슬라이드</button>
+                      <button class="chip" data-value="rotate" style="padding:5px 10px;font-size:12px;">회전</button>
+                    </div>
+                    <button id="veOvDeleteBtn" style="width:100%;padding:8px;font-size:13px;font-weight:700;border:none;border-radius:6px;cursor:pointer;color:#fff;background:#ef4444;">선택 이미지 삭제</button>
+                  </div>
+                  <div id="veOvEmpty" style="color:#475569;padding:20px 0;text-align:center;font-size:13px;">
+                    캔버스에서 이미지를 클릭하면<br>여기서 옵션을 수정할 수 있습니다.
+                  </div>
+                  <div id="veImageList" style="margin-top:10px;font-size:12px;"></div>
+                  <div id="veSegmentsCard" style="margin-top:14px;display:none;">
                     <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">AI 하이라이트</div>
                     <div id="veSegmentsList" style="font-size:12px;color:#64748b;max-height:200px;overflow-y:auto;"></div>
                   </div>
                   <div id="veShortsOpts" style="display:none;">
-                    <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">숏폼 클립 개수</div>
                     <div class="chips" id="veClipCountChips" style="gap:4px;"><button class="chip" data-value="1" style="flex:1;padding:6px 0;font-size:12px;">1</button><button class="chip" data-value="2" style="flex:1;padding:6px 0;font-size:12px;">2</button><button class="chip active" data-value="3" style="flex:1;padding:6px 0;font-size:12px;">3</button><button class="chip" data-value="4" style="flex:1;padding:6px 0;font-size:12px;">4</button><button class="chip" data-value="5" style="flex:1;padding:6px 0;font-size:12px;">5</button></div>
                   </div>
                   <div id="veLongformOpts" style="display:none;"></div>
+                  <div id="veClipList" style="display:none;"></div>
                 </div>
                 <!-- 이미지 -->
                 <div id="veTabImage" class="ve-tab-content" style="display:none;">
