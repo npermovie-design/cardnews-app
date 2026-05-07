@@ -2,6 +2,8 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 contextBridge.exposeInMainWorld("nbBridge", {
+  // 로컬 개발 모드 플래그
+  isLocalDev: process.env.NAVERBOT_LOCAL_DEV === "1",
   // 설정
   loadConfig: () => ipcRenderer.invoke("config:load"),
   saveConfig: (cfg) => ipcRenderer.invoke("config:save", cfg),

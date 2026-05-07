@@ -3459,12 +3459,34 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
                 lyOffset += curLineH;
                 if (isTransLine) { ctx.font = "bold " + fontSize + "px 'Pretendard', sans-serif"; }
               });
+              // 선택된 자막 라운딩 박스
+              if (_selectedClipIdx === si) {
+                ctx.strokeStyle = "#3b82f6";
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 3]);
+                var selBx = tx - maxW / 2 - padX - 2;
+                var selBy = ty - padY - 2;
+                var selBw = maxW + padX * 2 + 4;
+                var selBh = lyOffset + padY * 2 + 8;
+                var selR = Math.min(8, selBh / 2);
+                ctx.beginPath();
+                ctx.moveTo(selBx + selR, selBy); ctx.lineTo(selBx + selBw - selR, selBy);
+                ctx.quadraticCurveTo(selBx + selBw, selBy, selBx + selBw, selBy + selR);
+                ctx.lineTo(selBx + selBw, selBy + selBh - selR);
+                ctx.quadraticCurveTo(selBx + selBw, selBy + selBh, selBx + selBw - selR, selBy + selBh);
+                ctx.lineTo(selBx + selR, selBy + selBh);
+                ctx.quadraticCurveTo(selBx, selBy + selBh, selBx, selBy + selBh - selR);
+                ctx.lineTo(selBx, selBy + selR);
+                ctx.quadraticCurveTo(selBx, selBy, selBx + selR, selBy);
+                ctx.closePath(); ctx.stroke();
+                ctx.setLineDash([]);
+              }
               // 인라인 편집 커서
               if (_veEditIdx === si && _veEditCursorVisible) {
                 var editLine = lines[0] || "";
                 var cursorX = tx + ctx.measureText(editLine).width / 2 + 2;
                 ctx.fillStyle = "#fff";
-                ctx.fillRect(cursorX, ty - fontSize + 8, 2, fontSize);
+                ctx.fillRect(cursorX, ty, 2, fontSize);
               }
               ctx.restore();
               break;
@@ -5276,11 +5298,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // 내보내기
   var exBtn=$("veExportBtn"); if(exBtn) exBtn.addEventListener("click",async function(){
     if(!ve.filePath) return;
+    // 로컬 개발 모드는 바로 내보내기
+    if (window.nbBridge && window.nbBridge.isLocalDev) { await doExport(); return; }
     // 횟수 체크
     if (!state.loggedIn) return showModal("로그인 필요", "먼저 메이킷 계정에 로그인해주세요.", "확인");
     var wq = await checkWriteLimit();
     if (!wq.canUse) return showModal("한도 초과", "이번 달 사용 한도를 모두 사용했습니다.", "구독하기", function(){ bridge.openExternal("https://snsmakeit.com/programs"); });
-    // 차감 확인
     showModal("횟수 차감 안내", "내보내기를 실행하면 1회가 차감됩니다.\n진행하시겠습니까?", "진행", async function(){ await doExport(); });
     return;
   });
