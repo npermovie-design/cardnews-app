@@ -1201,8 +1201,9 @@
                     <span id="veSubSizeLabel" style="color:#e2e8f0;font-weight:600;font-size:13px;min-width:36px;">38px</span>
                   </div>
                   <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
+                    <div style="font-size:12px;color:#94a3b8;min-width:20px;">색</div>
                     <input type="color" id="veSubColor" value="#FFFFFF" style="width:28px;height:26px;border:1px solid #2a2a4a;border-radius:5px;cursor:pointer;padding:0;background:#16162e;">
-                    <div class="chips" id="veSubColorChips" style="gap:3px;flex:1;"><button class="chip" data-value="#FFFFFF" style="padding:5px 10px;font-size:12px;">흰</button><button class="chip" data-value="#FFFF00" style="padding:5px 10px;font-size:12px;">노</button><button class="chip" data-value="#00FF00" style="padding:5px 10px;font-size:12px;">초</button><button class="chip" data-value="#FF6B6B" style="padding:5px 10px;font-size:12px;">빨</button></div>
+                    <div class="chips" id="veSubColorChips" style="gap:3px;flex:1;"><button class="chip" data-value="#FFFFFF" style="padding:4px;font-size:0;width:24px;height:24px;border-radius:50%;background:#FFFFFF;border:2px solid #333;"></button><button class="chip" data-value="#FFFF00" style="padding:4px;font-size:0;width:24px;height:24px;border-radius:50%;background:#FFFF00;border:2px solid #333;"></button><button class="chip" data-value="#00FF00" style="padding:4px;font-size:0;width:24px;height:24px;border-radius:50%;background:#00FF00;border:2px solid #333;"></button><button class="chip" data-value="#FF6B6B" style="padding:4px;font-size:0;width:24px;height:24px;border-radius:50%;background:#FF6B6B;border:2px solid #333;"></button><button class="chip" data-value="#60A5FA" style="padding:4px;font-size:0;width:24px;height:24px;border-radius:50%;background:#60A5FA;border:2px solid #333;"></button></div>
                     <div class="chips" id="veSubLineChips" style="gap:3px;"><button class="chip active" data-value="1" style="padding:5px 10px;font-size:12px;">1줄</button><button class="chip" data-value="2" style="padding:5px 10px;font-size:12px;">2줄</button></div>
                   </div>
 
@@ -1337,7 +1338,7 @@
                 <button id="veZoomIn" style="border:none;background:#1a1a3a;color:#64748b;width:28px;height:24px;border-radius:4px;cursor:pointer;font-size:15px;line-height:1;">+</button>
               </div>
             </div>
-            <div id="veTimelineWrapper" style="position:relative;display:flex;flex-direction:column;flex:1;overflow:hidden;">
+            <div id="veTimelineWrapper" style="position:relative;display:flex;flex-direction:column;flex:1;overflow-x:auto;overflow-y:hidden;">
               <div id="vePlayhead" style="position:absolute;top:0;bottom:0;width:2px;background:#ff4444;z-index:20;left:0;pointer-events:none;will-change:transform;">
                 <div style="width:10px;height:10px;background:#ff4444;border-radius:2px;position:absolute;top:0;left:-4px;clip-path:polygon(0 0,100% 0,50% 100%);"></div>
               </div>

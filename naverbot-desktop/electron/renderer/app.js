@@ -3961,8 +3961,22 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // 줌
   var timelineZoom = 1;
   var zIn=$("veZoomIn"),zOut=$("veZoomOut");
-  if(zIn) zIn.addEventListener("click",function(){ timelineZoom=Math.min(5,timelineZoom*1.3); renderTimeline(); });
-  if(zOut) zOut.addEventListener("click",function(){ timelineZoom=Math.max(0.5,timelineZoom/1.3); renderTimeline(); });
+  function zoomTimeline(newZoom) {
+    var video = $("veVideo");
+    var wrapper = $("veTimelineWrapper");
+    var tracksArea = $("veTracksArea");
+    var oldZoom = timelineZoom;
+    timelineZoom = Math.max(0.5, Math.min(10, newZoom));
+    renderTimeline();
+    // 플레이헤드 위치 기준으로 스크롤 유지
+    if (video && wrapper && tracksArea) {
+      var pct = video.currentTime / (ve.duration || 1);
+      var scrollTarget = pct * tracksArea.scrollWidth - wrapper.clientWidth / 2;
+      wrapper.scrollLeft = Math.max(0, scrollTarget);
+    }
+  }
+  if(zIn) zIn.addEventListener("click",function(){ zoomTimeline(timelineZoom * 1.8); });
+  if(zOut) zOut.addEventListener("click",function(){ zoomTimeline(timelineZoom / 1.8); });
 
   // 분할/삭제 버튼
   var splitBtn=$("veSplitBtn"); if(splitBtn) splitBtn.addEventListener("click",function(){ splitClipAtPlayhead(); });
@@ -4036,8 +4050,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       ve.overlays=[];
       var inserted=0, failed=0;
       var usedUrls = {};
-      // 위치: 항상 화면 중앙
-      var centerPos = { x: Math.round((cw - ovSize) / 2), y: Math.round((ch - ovSize) / 2) };
+      // 위치: 화면 상단 중앙
+      var centerPos = { x: Math.round((cw - ovSize) / 2), y: Math.round(ch * 0.05) };
 
       for(var ki=0;ki<insertCount;ki++){
         var kw = keywords[ki % keywords.length] || "재밌는";
@@ -4481,6 +4495,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       ve.segments=(aD.segments||[]).slice(0,5); ve.subtitles=[];
       var fs2=aD.all_subs||aD.full_transcript; if(fs2&&Array.isArray(fs2)) ve.subtitles=fs2;
       if(!ve.subtitles.length) ve.segments.forEach(function(seg){if(seg.subtitles&&seg.subtitles.length){ve.subtitles=ve.subtitles.concat(seg.subtitles);}else if(seg.script){var ss=seg.start_seconds||0,se=seg.end_seconds||ve.duration,ch=seg.script.match(/.{1,18}/g)||[],cd=(se-ss)/Math.max(1,ch.length);ch.forEach(function(t,i){ve.subtitles.push({start:ss+i*cd,end:ss+(i+1)*cd,text:t.trim()})});}});
+      // 연속 중복 자막 제거
+      ve.subtitles = ve.subtitles.filter(function(s, i) { return i === 0 || s.text !== ve.subtitles[i - 1].text; });
       renderSegs(); setProg("veAnalyzePct","veAnalyzeBar","veAnalyzeLabel",100,"분석 완료!");
       setTimeout(function(){goStep(3);var fn=$("veFileName2");if(fn) fn.textContent=ve.filePath.split(/[\\/]/).pop(); initEditor();},500);
     } catch(e) { showModal("분석 실패",e.message||"서버 연결 확인","확인"); goStep(1); }
@@ -4551,10 +4567,10 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var colors = ["#2563eb", "#1d4ed8", "#1e40af", "#3b82f6"];
       var color = colors[i % colors.length];
       return "<div data-vclip='" + i + "' style='position:absolute;top:2px;bottom:2px;left:" + left + ";width:" + width +
-        ";background:" + color + ";border-radius:3px;cursor:grab;display:flex;align-items:center;overflow:hidden;border:1px solid " + color + "80;'>" +
-        "<div class='trim-handle trim-left' style='width:5px;height:100%;cursor:col-resize;background:#60a5fa;flex-shrink:0;opacity:0.8;'></div>" +
-        "<div style='flex:1;padding:0 4px;font-size:9px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;'>" + (c.label || "V" + (i + 1)) + "</div>" +
-        "<div class='trim-handle trim-right' style='width:5px;height:100%;cursor:col-resize;background:#60a5fa;flex-shrink:0;opacity:0.8;'></div></div>";
+        ";background:" + color + ";border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid " + color + "80;'>" +
+        "<div class='trim-handle trim-left' style='width:5px;height:100%;cursor:col-resize;background:#60a5fa;flex-shrink:0;opacity:0;transition:opacity 0.15s;'></div>" +
+        "<div style='flex:1;padding:0 2px;font-size:10px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;text-align:center;'>" + (c.label || "V" + (i + 1)) + "</div>" +
+        "<div class='trim-handle trim-right' style='width:5px;height:100%;cursor:col-resize;background:#60a5fa;flex-shrink:0;opacity:0;transition:opacity 0.15s;'></div></div>";
     }).join("");
 
     // 비디오 클립 클릭/드래그
@@ -4599,7 +4615,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     track.innerHTML=ve.overlays.map(function(ov,i){
       var left=(ov.startTime/dur*100).toFixed(2)+"%";
       var width=((ov.endTime-ov.startTime)/dur*100).toFixed(2)+"%";
-      return "<div style='position:absolute;top:3px;bottom:3px;left:"+left+";width:"+width+";background:#3b82f640;border-left:2px solid #60a5fa;border-radius:3px;cursor:pointer;font-size:8px;color:#93c5fd;padding:0 4px;overflow:hidden;white-space:nowrap;' title='이미지 "+(i+1)+"'>"+(i+1)+"</div>";
+      return "<div style='position:absolute;top:3px;bottom:3px;left:"+left+";width:"+width+";background:#3b82f650;border:1px solid #3b82f670;border-radius:3px;cursor:pointer;font-size:10px;color:#93c5fd;padding:0 4px;overflow:hidden;white-space:nowrap;display:flex;align-items:center;justify-content:center;' title='이미지 "+(i+1)+"'>"+(i+1)+"</div>";
     }).join("");
   }
 
