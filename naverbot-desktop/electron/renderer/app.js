@@ -5383,10 +5383,57 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var aspect = aspectMap[ve.type] || "16:9";
       var isPortrait = ve.type === "portrait" || ve.type === "square";
 
-      if (isPortrait && ve.segments.length > 0) {
-        var clips=ve.segments.slice(0,ve.clipCount).map(function(s){return Object.assign({},s,{title:s.hook||s.hook_text||s.title||"",subtitles:ve.subEnabled?(s.subtitles||[]):[]})});
-        if(!clips.length) throw new Error("하이라이트 구간 없음");
-        result=await bridge.videoRenderShorts({inputPath:ve.filePath,clips:clips,outputDir:ve._outputDir||null,template:"minimal",subtitlesEnabled:ve.subEnabled,aspect:aspect,silenceRemove:ve.silenceRemove});
+      if (isPortrait) {
+        // 세로/정사각: 하이라이트 자동 생성 (segments 없으면 자막 기반)
+        var clips = [];
+        if (ve.segments.length > 0) {
+          clips = ve.segments.slice(0, ve.clipCount || 5).map(function(s) {
+            return Object.assign({}, s, { title: s.hook || s.hook_text || s.title || "", subtitles: ve.subEnabled ? (s.subtitles || []) : [] });
+          });
+        } else if (ve.subtitles.length > 0) {
+          // 자막 기반 자동 하이라이트: 균등 5구간
+          var totalDur = ve.duration || 1;
+          var clipCount = Math.min(5, Math.max(1, Math.floor(totalDur / 30)));
+          var clipDur = Math.min(60, totalDur / clipCount);
+          for (var ci = 0; ci < clipCount; ci++) {
+            var cStart = ci * clipDur;
+            var cEnd = Math.min(cStart + clipDur, totalDur);
+            var clipSubs = ve.subtitles.filter(function(s) {
+              var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+              return st >= cStart && st < cEnd;
+            });
+            var hookText = clipSubs.length ? clipSubs[0].text : "하이라이트 " + (ci + 1);
+            clips.push({
+              start_seconds: cStart, end_seconds: cEnd,
+              hook: hookText, title: "쇼츠 " + (ci + 1) + ": " + hookText.slice(0, 20),
+              score: Math.floor(70 + Math.random() * 20),
+              subtitles: ve.subEnabled ? clipSubs : []
+            });
+          }
+        }
+        if (!clips.length) throw new Error("하이라이트 구간 없음");
+        // AI 제목/설명 생성
+        setProg("veExportPct", "veExportBar", "veExportLabel", 5, "AI가 쇼츠 제목을 생성하고 있습니다...");
+        try {
+          var allText = clips.map(function(c, i) { return (i + 1) + ". " + (c.subtitles || []).map(function(s) { return s.text; }).join(" ").slice(0, 100); }).join("\n");
+          var titleRes = await fetch("https://snsmakeit.com/api/ai-proxy", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: 1000, messages: [{ role: "user", content: "다음 영상 구간별 내용으로 각각 유튜브 쇼츠 제목(15자 이내)과 설명(30자 이내)을 만들어줘. 각 줄에 '제목|설명' 형식으로 출력해:\n\n" + allText }] })
+          });
+          if (titleRes.ok) {
+            var titleData = await titleRes.json();
+            var titleLines = (titleData.choices?.[0]?.message?.content || "").split("\n").filter(function(l) { return l.includes("|"); });
+            titleLines.forEach(function(line, i) {
+              if (clips[i]) {
+                var parts = line.split("|");
+                clips[i].title = (parts[0] || "").replace(/^\d+\.\s*/, "").trim();
+                clips[i].description = (parts[1] || "").trim();
+              }
+            });
+          }
+        } catch (e) { console.warn("[쇼츠] AI 제목 생성 실패:", e); }
+        setProg("veExportPct", "veExportBar", "veExportLabel", 10, "쇼츠 렌더링 중...");
+        result = await bridge.videoRenderShorts({ inputPath: ve.filePath, clips: clips, outputDir: ve._outputDir || null, template: "minimal", subtitlesEnabled: ve.subEnabled, aspect: aspect, silenceRemove: ve.silenceRemove });
       } else {
         result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15},aspect:aspect,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null});
       }
@@ -5394,10 +5441,15 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       // 횟수 차감 (로컬 dev 모드는 스킵)
       if (!skipCharge && typeof markWriteUsed === "function") await markWriteUsed();
       goStep(5); var s5=$("veStep5");
-      if(ve.type==="shorts"&&result.results){
-        s5.innerHTML="<div class='panel-header'><h1 style='font-size:18px;'>"+result.results.length+"개 쇼츠 완성</h1><p class='panel-sub'>파일을 확인하세요</p></div>"+
-          result.results.map(function(r){var dir=r.path.replace(/\\/g,"/").split("/").slice(0,-1).join("/");return "<div class='card' style='display:flex;align-items:center;justify-content:space-between;'><div><div style='font-size:14px;font-weight:700;'>Short "+(r.index+1)+"</div><div style='font-size:11px;color:var(--text-dim);margin-top:2px;'>"+escapeHtml(r.filename)+"</div></div><button class='btn btn-outline btn-sm' onclick=\"bridge.openExternal('file:///"+dir+"')\">폴더 열기</button></div>"}).join("")+
-          "<button class='btn btn-primary btn-full' style='margin-top:12px;' id='veNewBtn'>새 영상</button>";
+      if(isPortrait&&result.results){
+        s5.innerHTML="<div class='panel-header'><h1 style='font-size:18px;'>"+result.results.length+"개 쇼츠 완성</h1><p class='panel-sub'>AI가 생성한 제목과 설명이 포함됩니다</p></div>"+
+          result.results.map(function(r,ri){
+            var dir=r.path.replace(/\\/g,"/").split("/").slice(0,-1).join("/");
+            var clip=clips[ri]||{};
+            return "<div class='card' style='padding:12px;'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;'><div style='font-size:14px;font-weight:700;'>"+escapeHtml(clip.title||("쇼츠 "+(ri+1)))+"</div><button class='btn btn-outline btn-sm' onclick=\"bridge.openExternal('file:///"+dir+"')\">폴더</button></div>"+(clip.description?"<div style='font-size:12px;color:var(--text-dim);margin-bottom:4px;'>"+escapeHtml(clip.description)+"</div>":"")+"<div style='font-size:10px;color:#475569;'>"+escapeHtml(r.filename)+"</div></div>";
+          }).join("")+
+          "<button class='btn btn-outline btn-full' style='margin-top:8px;' id='veBackToEdit'>편집화면으로 돌아가기</button>"+
+          "<button class='btn btn-primary btn-full' style='margin-top:8px;' id='veNewBtn'>새 영상</button>";
       } else {
         var dir=(result.outputPath||"").replace(/\\/g,"/").split("/").slice(0,-1).join("/");
         s5.innerHTML="<div class='card' style='text-align:center;padding:24px;'><div style='font-size:18px;font-weight:800;margin-bottom:8px;'>편집 완료</div><div style='font-size:12px;color:var(--text-dim);margin-bottom:16px;'>"+ve.subtitles.length+"개 자막 입혀짐</div><button class='btn btn-primary btn-full' onclick=\"bridge.openExternal('file:///"+dir+"')\">폴더 열기</button><button class='btn btn-outline btn-full' style='margin-top:8px;' id='veBackToEdit'>편집화면으로 돌아가기</button><button class='btn btn-outline btn-full' style='margin-top:8px;' id='veNewBtn'>새 영상</button></div>";
