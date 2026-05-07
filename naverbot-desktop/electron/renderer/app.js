@@ -4186,6 +4186,17 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         }
       } catch (sttErr) { console.warn("[무음제거] 자막 재생성 실패:", sttErr.message); }
 
+      // ve.duration 초과 자막 자동 제거
+      ve.subtitles = ve.subtitles.filter(function(s) {
+        var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+        return st < newDur;
+      });
+      // 자막 끝 시간도 duration으로 클램핑
+      ve.subtitles.forEach(function(s) {
+        if (s.end_seconds != null && s.end_seconds > newDur) s.end_seconds = newDur;
+        if (s.end != null && s.end > newDur) s.end = newDur;
+      });
+
       renderSubList(); renderTimeline();
       hideVeLoading();
       showModal("무음제거 + 자막 재생성 완료",
@@ -4254,18 +4265,25 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     subRegenBtn.disabled = false; subRegenBtn.textContent = "자막 재생성 (STT)";
   });
 
-  // 자막 패널 내 자막 재생성 버튼 (veSubRegenBtn2)
+  // 도구바: 자막 재생성 버튼
   var subRegenBtn2 = $("veSubRegenBtn2");
   if (subRegenBtn2) subRegenBtn2.addEventListener("click", function() {
     var btn = $("veSubRegenBtn");
-    if (btn) btn.click(); // 기존 재생성 로직 재활용
+    if (btn) btn.click();
   });
 
-  // 자막 패널 내 무음 제거 버튼 (veSilenceQuickBtn)
+  // 도구바: 무음 제거 버튼
   var silQuickBtn = $("veSilenceQuickBtn");
   if (silQuickBtn) silQuickBtn.addEventListener("click", function() {
     var btn = $("veSilenceRunBtn");
-    if (btn) btn.click(); // 기존 무음제거 로직 재활용
+    if (btn) btn.click();
+  });
+
+  // 도구바: AI 짤 버튼
+  var aiGifQuickBtn = $("veAiGifQuickBtn");
+  if (aiGifQuickBtn) aiGifQuickBtn.addEventListener("click", function() {
+    var btn = $("veAutoImageBtn");
+    if (btn) btn.click();
   });
 
   chipG("veSubColorChips",function(v){ve.subColor=v;var el=$("veSubColor");if(el)el.value=v; _needsRedraw=true;});
@@ -4560,6 +4578,17 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       highlightActiveSub(cur);
     };
     video.onended=function(){isPlaying=false;if(pb)pb.innerHTML="&#9654;";};
+    // ve.duration 지점에서 강제 정지 (onpause보다 정확)
+    video.addEventListener("playing", function checkEnd() {
+      var checkInterval = setInterval(function() {
+        if (!video || video.paused) { clearInterval(checkInterval); return; }
+        if (video.currentTime >= (ve.duration || 9999)) {
+          video.pause(); video.currentTime = ve.duration;
+          isPlaying = false; if(pb) pb.innerHTML = "&#9654;";
+          clearInterval(checkInterval);
+        }
+      }, 100);
+    });
 
     // 시크바
     if(seekBar){
