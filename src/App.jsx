@@ -5,7 +5,6 @@ import { useI18n, LANGUAGES } from "./i18n.jsx";
 
 // 핵심 컴포넌트 (즉시 로드)
 const HomePage = lazy(() => import("./HomePage"));
-import AuthModal from "./AuthModal";
 import AuthPage from "./AuthPage";
 import Footer from "./Footer.jsx";
 
@@ -29,7 +28,6 @@ const ProgramsPage = lazy(() => import("./ProgramsPage.jsx"));
 const NoticePage = lazy(() => import("./NoticePage.jsx"));
 const ClassPage = lazy(() => import("./ClassPage.jsx"));
 const ChallengePage = lazy(() => import("./ChallengePage.jsx"));
-const InfographicVideoPage = lazy(() => import("./InfographicVideo.jsx"));
 
 // 로딩 폴백
 const PageLoader = () => (
@@ -40,51 +38,6 @@ const PageLoader = () => (
     </div>
   </div>
 );
-
-// 접속자 카운트 훅 (Supabase online_users 테이블)
-function useOnlineCount() {
-  const [count, setCount] = useState(0);
-  useEffect(() => {
-    let cancelled = false;
-    // 브라우저 세션 기반 고정 ID (탭 단위)
-    const myId = sessionStorage.getItem("nper_oid") || (() => { const id = "u_" + Math.random().toString(36).slice(2, 10); sessionStorage.setItem("nper_oid", id); return id; })();
-    const device = /Mobi|Android/i.test(navigator.userAgent) ? "mobile" : "desktop";
-    async function hb() {
-      if (cancelled) return;
-      try {
-        // 내 heartbeat 업데이트
-        await supabase.from("online_users").upsert({ id: myId, device, last_seen: new Date().toISOString() }, { onConflict: "id" });
-        // 3분 이상 지난 오래된 레코드 삭제
-        const cutoff = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-        await supabase.from("online_users").delete().lt("last_seen", cutoff);
-        // 현재 접속자 카운트
-        const { count: cnt } = await supabase.from("online_users").select("*", { count: "exact", head: true });
-        if (!cancelled && cnt != null) setCount(cnt);
-      } catch(e) {
-        // 폴백: localStorage
-        if (cancelled) return;
-        try {
-          const KEY = "nper_online_users";
-          const raw = JSON.parse(localStorage.getItem(KEY) || "{}");
-          const now = Date.now();
-          raw[myId] = now;
-          Object.keys(raw).forEach(k => { if (now - raw[k] > 180000) delete raw[k]; });
-          localStorage.setItem(KEY, JSON.stringify(raw));
-          if (!cancelled) setCount(Object.keys(raw).length);
-        } catch {}
-      }
-    }
-    hb();
-    const t = setInterval(hb, 45000);
-    return () => {
-      cancelled = true;
-      clearInterval(t);
-      supabase.from("online_users").delete().eq("id", myId).then(() => {}).catch(() => {});
-    };
-  }, []);
-  return count;
-}
-
 
 /* ── 신규 가입자 환영 모달 ── */
 function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
@@ -282,7 +235,6 @@ export default function App() {
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-  const [showAuth,   setShowAuth]   = useState(false);
   const [openMenu,   setOpenMenu]   = useState(null); // "snsWrite"|"snsImage"|"imageGen"|"board"
   const [profileOpen, setProfileOpen] = useState(false);
   const [boardCat,   setBoardCat]   = useState("info");
@@ -296,8 +248,6 @@ export default function App() {
   const [guardModal, setGuardModal] = useState(null); // { cost, onConfirm }
   const [showPointsModal, setShowPointsModal] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
-  // 다운로드 팝업 비활성화 — 홈페이지 하단 배너로 대체
-  const [showDownloadPopup, setShowDownloadPopup] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const langRef = useRef(null);
   const { t, lang, setLang } = useI18n();
@@ -308,12 +258,8 @@ export default function App() {
   const dropMenuRef   = useRef(null);
   const profileRef    = useRef(null);
   const isLoggingOut  = useRef(false);
-  const onlineCount   = useOnlineCount();
-
   // 현재 테마 팔레트
   const C = THEMES[theme];
-
-  const toggleTheme = () => {};
 
   useEffect(() => {
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
@@ -667,7 +613,7 @@ export default function App() {
   };
 
   const handleAuth = u => {
-    setLocalUser(u); setUserState(u); setShowAuth(false);
+    setLocalUser(u); setUserState(u);
     // 신규 가입자 환영 모달
     try {
       if (localStorage.getItem("nper_just_registered") === "1") {
@@ -1010,45 +956,6 @@ export default function App() {
         </div>
       )}
 
-      {/* ── 다운로드 유도 팝업 ── */}
-      {showDownloadPopup && (
-        <div onClick={() => setShowDownloadPopup(false)} style={{ position: "fixed", inset: 0, zIndex: 99998, background: "rgba(0,0,0,0.55)", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(6px)", animation: "fadeIn 0.2s ease" }}>
-          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 24, padding: "clamp(24px,5vw,40px) clamp(20px,4vw,32px)", maxWidth: 420, width: "90%", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.1)", position: "relative", animation: "fadeIn 0.25s ease" }}>
-            <button onClick={() => setShowDownloadPopup(false)} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", fontSize: 20, color: "rgba(26,23,48,0.3)", cursor: "pointer", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 8 }} aria-label="닫기">&times;</button>
-            <div style={{ width: 64, height: 64, borderRadius: 18, background: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", fontSize: 28, color: "#fff", fontWeight: 900, boxShadow: "none" }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </div>
-            <div style={{ fontSize: "clamp(18px,4.5vw,22px)", fontWeight: 900, color: "#1a1730", marginBottom: 8 }}>
-              SNS 자동화 프로그램
-            </div>
-            <div style={{ fontSize: "clamp(12px,3vw,14px)", color: "rgba(26,23,48,0.5)", marginBottom: 18, lineHeight: 1.7 }}>
-              블로그 글 작성부터 발행까지<br/>AI가 자동으로 처리합니다
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginBottom: 22 }}>
-              {["AI 글 작성", "자동 발행", "SEO 최적화", "다중 테마"].map(t => (
-                <span key={t} style={{ padding: "6px 14px", borderRadius: 99, background: "rgba(59,130,246,0.08)", color: "#3b82f6", fontSize: 12, fontWeight: 700 }}>{t}</span>
-              ))}
-            </div>
-            <div style={{ background: "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.1)", borderRadius: 14, padding: "14px 18px", marginBottom: 22, display: "flex", justifyContent: "space-around", fontSize: 12, color: "rgba(26,23,48,0.5)" }}>
-              <span>Windows 10/11</span>
-              <span style={{ color: "rgba(26,23,48,0.15)" }}>|</span>
-              <span>v0.1.9</span>
-              <span style={{ color: "rgba(26,23,48,0.15)" }}>|</span>
-              <span>450MB</span>
-            </div>
-            <a href="https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/programs/files/SNS_Setup_0.1.9.exe"
-              onClick={() => setShowDownloadPopup(false)}
-              style={{ display: "block", padding: "15px 24px", borderRadius: 14, background: "#3b82f6", color: "#fff", fontSize: 16, fontWeight: 900, textDecoration: "none", boxShadow: "none", marginBottom: 12, transition: "transform 0.15s" }}>
-              Windows 무료 다운로드
-            </a>
-            <div style={{ display: "flex", justifyContent: "center", gap: 16, fontSize: 12, color: "rgba(26,23,48,0.35)" }}>
-              <button onClick={() => setShowDownloadPopup(false)} style={{ background: "none", border: "none", color: "rgba(26,23,48,0.35)", fontSize: 12, cursor: "pointer", padding: "8px 4px" }}>닫기</button>
-              <button onClick={() => { localStorage.setItem("nper_download_popup_dismissed", String(Date.now())); setShowDownloadPopup(false); }} style={{ background: "none", border: "none", color: "rgba(26,23,48,0.35)", fontSize: 12, cursor: "pointer", padding: "8px 4px" }}>오늘 하루 그만보기</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── 네비게이션 ── */}
       <nav role="navigation" aria-label="메인 네비게이션" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, height: 60,
@@ -1073,7 +980,6 @@ export default function App() {
           <NavBtn id="home" label={t("home")} />
           <NavBtn id="programs" label="제품" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
-          <NavBtn id="class" label="클래스" />
           {/* 부트캠프 */}
           <button onClick={() => navigate("challenge")}
             style={{ padding: "8px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 14, fontWeight: page==="challenge" ? 700 : 500, background: page==="challenge" ? "rgba(59,130,246,0.08)" : "transparent", color: page==="challenge" ? "#3b82f6" : C.muted, transition: "all 0.15s", fontFamily: "inherit" }}>
@@ -1292,7 +1198,6 @@ export default function App() {
           {[
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
             { id: "programs", label: "제품", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
-            { id: "class", label: "클래스", onClick: () => { navigate("class"); setMobileOpen(false); }, active: page==="class" },
             { id: "challenge", label: "부트캠프", onClick: () => { navigate("challenge"); setMobileOpen(false); }, active: page==="challenge" },
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
           ].map(m => (

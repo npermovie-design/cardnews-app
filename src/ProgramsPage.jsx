@@ -1,10 +1,20 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "./storage";
-import { createClient } from "@supabase/supabase-js";
+import { getAuthToken, supabase } from "./storage";
 
-// 관리자용 supabase 클라이언트 (programs 테이블 RLS 우회)
-const ADMIN_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkxMDg1NywiZXhwIjoyMDg5NDg2ODU3fQ.gfWezarKfomCrT74eiH0CGoYfg8Ow6RGlR3_svdfstE";
-const adminSupabase = createClient(import.meta.env.VITE_SUPABASE_URL, ADMIN_SB_KEY);
+async function adminProgramApi(subAction, payload = {}) {
+  const token = await getAuthToken();
+  const res = await fetch(`/api/sns?action=admin&sub_action=${subAction}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "관리자 요청 실패");
+  return data;
+}
 
 function updateMeta(property, content) {
   let el = document.querySelector(`meta[property="${property}"]`);
@@ -444,13 +454,9 @@ function ProgramUploadModal({ C, onClose, onSave, editItem, isMobile }) {
       };
 
       if (editItem?.dbId) {
-        // 수정
-        const { error: dbErr } = await adminSupabase.from("programs").update(productData).eq("id", editItem.dbId);
-        if (dbErr) throw dbErr;
+        await adminProgramApi("program_update", { id: editItem.dbId, productData });
       } else {
-        // 신규 등록
-        const { error: dbErr } = await adminSupabase.from("programs").insert(productData);
-        if (dbErr) throw dbErr;
+        await adminProgramApi("program_create", { productData });
       }
 
       onSave();

@@ -594,8 +594,8 @@ h1{font-size:22px;margin-bottom:10px}p{color:#6b7280;margin-bottom:20px}
 input{width:100%;padding:11px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;margin-top:10px}
 </style></head><body><div class="card" id="card"><div>로딩 중...</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
-const SUPABASE_URL="https://ckzjnpzadeovrasucjmu.supabase.co";
-const SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
+const SUPABASE_URL="__SUPABASE_URL__";
+const SUPABASE_ANON_KEY="__SUPABASE_ANON_KEY__";
 const client=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
 const LOOPBACK_CALLBACK="http://127.0.0.1:54321/callback";
 const card=document.getElementById("card");
@@ -612,7 +612,9 @@ function handleLoginPage(req, res) {
   res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
 
-  const html = loadHtml() || INLINE_HTML;
+  const html = (loadHtml() || INLINE_HTML)
+    .replaceAll("__SUPABASE_URL__", process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "")
+    .replaceAll("__SUPABASE_ANON_KEY__", process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || "");
   return res.status(200).send(html);
 }
 

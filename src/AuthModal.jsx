@@ -257,12 +257,11 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
               <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.8 }}>
                 {ko ? <>
                   · 가입 즉시 <b style={{ color: C.text }}>5회</b> 지급<br/>
-                  · 매일 로그인 시 <b style={{ color: C.text }}>+1회</b><br/>
+                  · 카드 등록 없이 무료 체험 가능<br/>
                   · 플랜 업그레이드로 더 많은 AI 생성
                 </> : <>
                   · <b style={{ color: C.text }}>5 credits</b> on signup<br/>
-                  · <b style={{ color: C.text }}>+1 credit</b> per post (up to 10/day)<br/>
-                  · <b style={{ color: C.text }}>+1 credit</b> daily login<br/>
+                  · Free trial without card registration<br/>
                   · More AI generations with plan upgrades
                 </>}
               </div>

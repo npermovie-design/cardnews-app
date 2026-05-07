@@ -953,7 +953,7 @@ export async function migrateLocalPostsToDB() {
 
     // 배치 insert (50개씩)
     for (let i = 0; i < toInsert.length; i += 50) {
-      const batch = toInsert.slice(i, i + 50);
+      const batch = toInsert.slice(i, i + 50).map(postToRow);
       await supabase.from("posts").insert(batch);
     }
     return toInsert.length;

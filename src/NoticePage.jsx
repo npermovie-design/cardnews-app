@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { createClient } from "@supabase/supabase-js";
-
-const ADMIN_SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzkxMDg1NywiZXhwIjoyMDg5NDg2ODU3fQ.gfWezarKfomCrT74eiH0CGoYfg8Ow6RGlR3_svdfstE";
-const adminSupabase = createClient(import.meta.env.VITE_SUPABASE_URL, ADMIN_SB_KEY);
+import { getAuthToken, supabase } from "./storage";
 
 const BRAND = "#3b82f6";
 
@@ -91,7 +88,6 @@ export default function NoticePage({ C, user, navigate }) {
   const [showWrite, setShowWrite] = useState(false);
   const [form, setForm] = useState({ title: "", body: "", category: "notice", pinned: false });
   const [saving, setSaving] = useState(false);
-  const [dbReady, setDbReady] = useState(false);
   const isAdmin = user?.role === "admin";
 
   useEffect(() => {
@@ -100,7 +96,7 @@ export default function NoticePage({ C, user, navigate }) {
 
   const loadNotices = async () => {
     try {
-      const { data, error } = await adminSupabase
+      const { data, error } = await supabase
         .from("notices")
         .select("*")
         .order("pinned", { ascending: false })
@@ -112,40 +108,37 @@ export default function NoticePage({ C, user, navigate }) {
       }
       if (data && data.length > 0) {
         setNotices(data);
-        setDbReady(true);
-      } else if (data && data.length === 0) {
-        // 테이블은 있지만 빈 경우 → 초기 데이터 시드
-        setDbReady(true);
-        await seedInitialData();
       }
     } catch (e) {
       console.log("Failed to load notices:", e);
     }
   };
 
-  const seedInitialData = async () => {
-    try {
-      const { error } = await adminSupabase.from("notices").insert(INITIAL_NOTICES);
-      if (!error) {
-        const { data } = await adminSupabase.from("notices").select("*").order("pinned", { ascending: false }).order("created_at", { ascending: false });
-        if (data) setNotices(data);
-      }
-    } catch (e) {
-      console.log("Seed failed:", e);
-    }
+  const adminNoticeApi = async (subAction, payload = {}) => {
+    const token = await getAuthToken();
+    const res = await fetch(`/api/sns?action=admin&sub_action=${subAction}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "관리자 API 요청 실패");
+    return data;
   };
 
   const handleSave = async () => {
     if (!form.title.trim() || !form.body.trim()) return alert("제목과 내용을 입력하세요.");
     setSaving(true);
     try {
-      const { error } = await adminSupabase.from("notices").insert([{
+      await adminNoticeApi("notice_create", {
         title: form.title,
         body: form.body,
         category: form.category,
         pinned: form.pinned,
-      }]);
-      if (error) throw error;
+      });
       setForm({ title: "", body: "", category: "notice", pinned: false });
       setShowWrite(false);
       await loadNotices();
@@ -157,7 +150,7 @@ export default function NoticePage({ C, user, navigate }) {
 
   const handleDelete = async (id) => {
     if (!confirm("정말 삭제하시겠습니까?")) return;
-    await adminSupabase.from("notices").delete().eq("id", id);
+    await adminNoticeApi("notice_delete", { id });
     setSelectedNotice(null);
     await loadNotices();
   };

@@ -12,7 +12,7 @@ const PAGE_META = {
   community: { title: "커뮤니티 - SNS메이킷", description: "SNS메이킷 커뮤니티. SNS 운영, AI 콘텐츠 제작, 마케팅 정보와 질문답변을 공유하세요." },
   programs: { title: "자료실 - SNS메이킷", description: "SNS 운영에 필요한 자동화 도구, 템플릿, 무료 사진, 무료 영상 자료를 확인하세요." },
   newsletter: { title: "뉴스레터 - SNS메이킷", description: "SNS 마케팅 최신 트렌드와 인사이트를 매주 받아보세요." },
-  pricing: { title: "가격정책 - SNS메이킷", description: "SNS메이킷 가격정책. 가입 시 5회 지급, Basic 월 50회, Pro 월 200회, Business 월 500회 제공." },
+  pricing: { title: "가격정책 - SNS메이킷", description: "SNS메이킷 가격정책. 가입 시 5회 지급, Basic 월 30회, Pro 월 100회, Business 월 500회 제공." },
   about: { title: "소개 - SNS메이킷", description: "SNS메이킷은 블로그, 인스타그램, 쇼츠, 이미지 제작을 AI로 자동화하는 SNS 콘텐츠 올인원 플랫폼입니다." },
   ai: { title: "AI 생성기 - SNS메이킷", description: "AI로 블로그 글, 인스타그램 캡션, 카드뉴스, 상세페이지, 제품컷, 로고, 쇼츠 영상을 자동 생성하세요." },
   contact: { title: "문의하기 - SNS메이킷", description: "SNS메이킷 문의하기. 결제, 기능, 오류, 제휴 문의를 남겨주시면 빠르게 답변드립니다." },
@@ -38,6 +38,13 @@ const AI_META = {
 };
 
 const PRIVATE_PATHS = new Set(["login", "mypage", "profile", "xk9m2p4q7", "admin"]);
+
+function supabaseRestHeaders() {
+  if (!SB_KEY) return {};
+  const headers = { apikey: SB_KEY };
+  if (String(SB_KEY).startsWith("eyJ")) headers.Authorization = `Bearer ${SB_KEY}`;
+  return headers;
+}
 
 function slugifyKo(input, fallback = "content") {
   const slug = stripMdHtml(input || "")
@@ -119,7 +126,7 @@ async function sbQuery(table, query) {
   if (!SB_URL || !SB_KEY) return null;
   try {
     const res = await fetch(`${SB_URL}/rest/v1/${table}?${query}`, {
-      headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+      headers: supabaseRestHeaders(),
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -174,12 +181,12 @@ export default async function handler(req) {
     description = `SNS메이킷 ${catNames[segments[1]] || "커뮤니티"} 게시판입니다. 최신 글을 확인하세요.`;
     // 카테고리 페이지: 최근 게시글 50개 링크 제공 (크롤러 내부링크)
     try {
-      const catFilter = segments[1] === "info" ? "" : `&subCat=eq.${segments[1]}`;
+      const catFilter = segments[1] ? `&subCat=eq.${segments[1]}` : "";
       const catData = await sbQuery("posts", `select=id,title,subCat,created_at&order=created_at.desc&limit=50${catFilter}`);
       // sbQuery는 단일 객체 반환이므로 배열 쿼리 별도 처리
       if (SB_URL && SB_KEY) {
         const r = await fetch(`${SB_URL}/rest/v1/posts?select=id,title,subCat,created_at&order=created_at.desc&limit=50${catFilter}`, {
-          headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` },
+          headers: supabaseRestHeaders(),
         });
         if (r.ok) catPosts = await r.json();
       }

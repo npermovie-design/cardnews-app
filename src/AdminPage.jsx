@@ -92,7 +92,7 @@ export default function AdminPage({ C, user: adminUser }) {
   const [postSearch, setPostSearch] = useState("");
   const [dailySignups, setDailySignups] = useState([]);
   const [dailyAiUsage, setDailyAiUsage] = useState([]);
-  // ── 관리자 API 호출 헬퍼 (service_role 키로 RLS 우회) ──
+  // ── 관리자 API 호출 헬퍼 ──
   const adminApi = async (action, extra = "") => {
     const uid = adminUser?.uid || "";
     const token = await getAuthToken();
@@ -1707,7 +1707,14 @@ function MembershipTab({ C, isDark }) {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState("");
-  const PLANS = ["Free", "Starter", "Pro", "Business", "Enterprise"];
+  const PLANS = ["Free", "Basic", "Pro", "Premium", "Business", "Agency"];
+  const PLAN_MONTHLY_LIMITS = {
+    Basic: 30,
+    Pro: 100,
+    Premium: 200,
+    Business: 500,
+    Agency: 99999,
+  };
 
   useEffect(() => {
     (async () => {
@@ -1729,11 +1736,12 @@ function MembershipTab({ C, isDark }) {
       setSubs(p => p.filter(s => s.uid !== uid));
     } else {
       const existing = subs.find(s => s.uid === uid);
+      const monthlyLimit = PLAN_MONTHLY_LIMITS[plan] || 0;
       if (existing) {
-        await supabase.from("subscriptions").update({ product_name: plan, status: "active", monthly_limit: plan === "Enterprise" ? 9999 : plan === "Business" ? 500 : plan === "Pro" ? 999 : 30, updated_at: new Date().toISOString() }).eq("id", existing.id);
+        await supabase.from("subscriptions").update({ product_name: plan, status: "active", monthly_limit: monthlyLimit, updated_at: new Date().toISOString() }).eq("id", existing.id);
         setSubs(p => p.map(s => s.uid === uid ? { ...s, product_name: plan, status: "active" } : s));
       } else {
-        const row = { uid, product_name: plan, status: "active", monthly_limit: plan === "Enterprise" ? 9999 : plan === "Business" ? 500 : plan === "Pro" ? 999 : 30, updated_at: new Date().toISOString() };
+        const row = { uid, product_name: plan, status: "active", monthly_limit: monthlyLimit, updated_at: new Date().toISOString() };
         const { data } = await supabase.from("subscriptions").insert(row).select().single();
         if (data) setSubs(p => [...p, data]);
       }

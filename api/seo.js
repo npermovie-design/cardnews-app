@@ -49,30 +49,32 @@ async function handleSitemap(req, res) {
     { url: "/pricing", priority: "0.8", freq: "monthly", langs: true, lastmod: "2026-04-17" },
     { url: "/ai", priority: "0.9", freq: "weekly", langs: true, lastmod: today },
     { url: "/programs", priority: "0.8", freq: "weekly", lastmod: today },
-    { url: "/snsnews", priority: "0.8", freq: "daily", lastmod: today },
     { url: "/community/info", priority: "0.7", freq: "daily", lastmod: today },
     { url: "/community/qna", priority: "0.7", freq: "daily", lastmod: today },
-    { url: "/community/free", priority: "0.7", freq: "daily", lastmod: today },
-    { url: "/community/review", priority: "0.7", freq: "daily", lastmod: today },
-    { url: "/community/sns_briefing", priority: "0.7", freq: "daily", lastmod: today },
     { url: "/contact", priority: "0.5", freq: "monthly", lastmod: "2026-03-15" },
     { url: "/event", priority: "0.6", freq: "weekly", lastmod: "2026-04-17" },
     { url: "/legal", priority: "0.3", freq: "yearly" },
-    { url: "/library", priority: "0.6", freq: "weekly" },
   ];
 
   // Supabase에서 게시글 가져오기
   let postUrls = [];
   try {
-    const sb = createClient(
-      process.env.VITE_SUPABASE_URL,
-      process.env.VITE_SUPABASE_KEY
-    );
-    if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_KEY) {
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseKey) {
       console.log("Sitemap: Supabase env vars missing");
-      return;
+      return res.status(500).send("Supabase env vars missing");
     }
-    const { data: posts, error } = await sb.from("posts").select("id,title,subCat,created_at").order("id", { ascending: false }).limit(5000);
+    const sb = createClient(
+      supabaseUrl,
+      supabaseKey,
+      { auth: { persistSession: false, autoRefreshToken: false } }
+    );
+    const { data: posts, error } = await sb
+      .from("posts")
+      .select("id,title,subCat,created_at")
+      .order("created_at", { ascending: false })
+      .limit(2000);
     if (error) console.log("Sitemap Supabase error:", error.message);
     if (posts && posts.length) {
       const now = Date.now();

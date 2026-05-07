@@ -1528,6 +1528,93 @@ async function handleAdmin(req, res) {
       return res.status(200).json({ count: count || 0 });
     }
 
+    if (action === "notice_create") {
+      const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+      const title = String(body.title || "").trim();
+      const noticeBody = String(body.body || "").trim();
+      const category = ["update", "notice", "event"].includes(body.category) ? body.category : "notice";
+      if (!title || !noticeBody) return res.status(400).json({ error: "제목과 내용 필요" });
+      const { data, error } = await sb.from("notices").insert({
+        title,
+        body: noticeBody,
+        category,
+        pinned: Boolean(body.pinned),
+      }).select("*").single();
+      if (error) throw error;
+      return res.status(200).json({ notice: data });
+    }
+
+    if (action === "notice_delete") {
+      const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+      const id = body.id || req.query.id;
+      if (!id) return res.status(400).json({ error: "id 필요" });
+      const { error } = await sb.from("notices").delete().eq("id", id);
+      if (error) throw error;
+      return res.status(200).json({ success: true });
+    }
+
+    if (action === "posts_upsert") {
+      const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+      const posts = Array.isArray(body.posts) ? body.posts.slice(0, 500) : [];
+      if (!posts.length) return res.status(400).json({ error: "posts 필요" });
+      const now = new Date().toISOString();
+      const rows = posts
+        .map(p => ({
+          id: String(p.id || "").trim(),
+          title: String(p.title || "").trim(),
+          content: String(p.body || p.content || ""),
+          author: String(p.nick || p.author || "").trim(),
+          author_uid: String(p.uid || p.author_uid || ""),
+          cat: String(p.cat || "info").trim(),
+          tag: String(p.tag || "").trim(),
+          subCat: String(p.subCat || p.cat || "info").trim(),
+          views: Number(p.views || 0),
+          likes: Number(p.likes || 0),
+          created_at: p.created_at && !Number.isNaN(Date.parse(p.created_at)) ? p.created_at : now,
+          images: Array.isArray(p.images) ? p.images : [],
+          comments: Array.isArray(p.comments) ? p.comments : [],
+        }))
+        .filter(p => p.id && p.title);
+      if (!rows.length) return res.status(400).json({ error: "유효한 게시글 없음" });
+      const { error } = await sb.from("posts").upsert(rows, { onConflict: "id" });
+      if (error) throw error;
+      return res.status(200).json({ success: true, count: rows.length });
+    }
+
+    if (action === "program_create" || action === "program_update") {
+      const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+      const raw = body.productData || {};
+      const productData = {
+        title: String(raw.title || "").trim(),
+        desc: String(raw.desc || "").trim(),
+        category: String(raw.category || "tool").trim(),
+        price: Number(raw.price || 0),
+        price_label: String(raw.price_label || "").trim(),
+        version: String(raw.version || "").trim(),
+        platform: String(raw.platform || "").trim(),
+        file_size: String(raw.file_size || "").trim(),
+        tags: Array.isArray(raw.tags) ? raw.tags.map(t => String(t).trim()).filter(Boolean).slice(0, 20) : [],
+        thumbnail: raw.thumbnail || null,
+        download_url: raw.download_url || null,
+        download_count: Number(raw.download_count || 0),
+        view_count: Number(raw.view_count || 0),
+        detail_content: Array.isArray(raw.detail_content) ? raw.detail_content : [],
+      };
+      if (!productData.title || !productData.desc) return res.status(400).json({ error: "프로그램 이름과 설명 필요" });
+
+      if (action === "program_update") {
+        const id = body.id || req.query.id;
+        if (!id) return res.status(400).json({ error: "id 필요" });
+        const { data, error } = await sb.from("programs").update(productData).eq("id", id).select("*").single();
+        if (error) throw error;
+        return res.status(200).json({ program: data });
+      }
+
+      const { data, error } = await sb.from("programs").insert(productData).select("*").single();
+      if (error) throw error;
+      return res.status(200).json({ program: data });
+    }
+
     return res.status(400).json({ error: "알 수 없는 admin action" });
   } catch (e) {
     return res.status(500).json({ error: e.message || "서버 오류" });

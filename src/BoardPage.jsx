@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { getPosts, setPosts, changePoints, getPostsFromDB, getPostByIdFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB, uploadFileToStorage, supabase } from "./storage";
+import { getAuthToken, getPosts, setPosts, changePoints, getPostsFromDB, getPostByIdFromDB, savePostToDB, updatePostInDB, deletePostFromDB, migrateLocalPostsToDB, uploadFileToStorage, supabase } from "./storage";
 import { useI18n } from "./i18n.jsx";
 import { KlipyButton } from "./KlipyPicker";
 import ShareButton, { ShareRow } from "./ShareButton";
@@ -110,6 +110,29 @@ function postPath(post, catId) {
   return `/community/${catId}/post-${post.id}/${slugifyKo(post.title || post.body || post.content, "post")}`;
 }
 
+function postSortTime(post) {
+  const byCreated = Date.parse(post?.created_at || "");
+  if (Number.isFinite(byCreated)) return byCreated;
+  const byId = Number(post?.id);
+  return Number.isFinite(byId) ? byId : 0;
+}
+
+async function adminUpsertPosts(posts) {
+  const token = await getAuthToken();
+  if (!token || !Array.isArray(posts) || posts.length === 0) return 0;
+  const res = await fetch("/api/sns?action=admin&sub_action=posts_upsert", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ posts }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "게시글 동기화 실패");
+  return data.count || 0;
+}
+
 function updatePostSeoMeta(post, catId) {
   if (!post) return;
   const catName = CAT_LABEL_MAP[catId] || "커뮤니티";
@@ -174,6 +197,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
   const [showCatMgr, setShowCatMgr] = useState(false);
   const [hoverPreview, setHoverPreview] = useState(null); // { post, x, y }
   const archiveFileRef = useRef(null);
+  const localSyncTried = useRef(false);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
   const [archiveUploadFile, setArchiveUploadFile] = useState(null);
   const [archiveForm, setArchiveForm] = useState({title:"",desc:"",priceType:"free",price:"",visibility:"all"});
@@ -299,7 +323,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
     showToast(`${uploaded}개 자료가 등록됐어요!`, "success");
     setBulkUploading(false);
-    try { const db = await getPostsFromDB(); if(db?.length) { setPostsS(db.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0))); setPosts(db); } } catch{}
+    try { const db = await getPostsFromDB(); if(db?.length) { const sortedDb = [...db].sort((a,b)=>postSortTime(b)-postSortTime(a)); setPostsS(sortedDb); setPosts(sortedDb); } } catch{}
   };
   const snippetCache = useRef({}); // postId → snippet text
   const hoverTimer = useRef(null);
@@ -366,7 +390,10 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
           const localPosts = getPosts();
           const dbIds = new Set(dbData.map(p => String(p.id)));
           const localOnly = localPosts.filter(p => !dbIds.has(String(p.id)));
-          const merged = [...localOnly, ...dbData].sort((a, b) => b.id - a.id);
+          if (user?.role === "admin" && localOnly.length > 0) {
+            adminUpsertPosts(localOnly).catch(() => {});
+          }
+          const merged = [...localOnly, ...dbData].sort((a, b) => postSortTime(b) - postSortTime(a));
           setPostsS(merged);
           setPosts(merged);
         }
@@ -374,6 +401,28 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
       finally { setLoading(false); }
     })();
   }, []);
+
+  useEffect(() => {
+    if (user?.role !== "admin" || localSyncTried.current) return;
+    localSyncTried.current = true;
+    (async () => {
+      const localPosts = getPosts();
+      if (!localPosts.length) return;
+      const dbData = await getPostsFromDB();
+      const dbIds = new Set((dbData || []).map(p => String(p.id)));
+      const localOnly = localPosts.filter(p => !dbIds.has(String(p.id)));
+      if (!localOnly.length) return;
+      const count = await adminUpsertPosts(localOnly);
+      if (count > 0) {
+        try { sessionStorage.removeItem("nper_posts_cache_v2"); } catch {}
+        const fresh = await getPostsFromDB();
+        const merged = [...fresh].sort((a, b) => postSortTime(b) - postSortTime(a));
+        setPostsS(merged);
+        setPosts(merged);
+        showToast(`${count}개 로컬 글을 서버에 동기화했어요`, "success");
+      }
+    })().catch(() => {});
+  }, [user?.role]);
 
   // URL에서 특정 게시글 직접 열기
   useEffect(()=>{
@@ -446,7 +495,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     if(search.trim()){ const q=search.toLowerCase(); list=list.filter(p=>p.title.toLowerCase().includes(q)||(p.nick||"").toLowerCase().includes(q)); }
     return sort==="views"?[...list].sort((a,b)=>(b.views||0)-(a.views||0))
           :sort==="likes"?[...list].sort((a,b)=>(b.likes||0)-(a.likes||0))
-          :[...list].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+          :[...list].sort((a,b)=>postSortTime(b)-postSortTime(a));
   },[posts,subCat,search,sort,filterTag]);
 
   const hotPosts = useMemo(()=>{
@@ -459,7 +508,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
 
   // 자료실 탭: 첨부파일 있는 전체 게시물 + 필터태그 적용
   const archiveFiltered = useMemo(()=>{
-    let list = posts.filter(p=>(p.cat==="archive"||p.subCat==="archive") && (p.images||[]).length>0);
+    let list = posts.filter(p=>(p.cat==="archive"||p.subCat==="archive"));
     if(filterTag && ["video","photo","gif","music","collection"].includes(filterTag)) {
       list = list.filter(p => {
         const imgs = p.images || [];
@@ -474,7 +523,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
     if(search.trim()){const q=search.toLowerCase();list=list.filter(p=>p.title.toLowerCase().includes(q)||(p.nick||"").toLowerCase().includes(q));}
     return sort==="views"?[...list].sort((a,b)=>(b.views||0)-(a.views||0))
           :sort==="likes"?[...list].sort((a,b)=>(b.likes||0)-(a.likes||0))
-          :[...list].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+          :[...list].sort((a,b)=>postSortTime(b)-postSortTime(a));
   },[posts,search,sort,filterTag]);
 
   const isArchivePostsView = false; // 자료실도 일반 게시판 리스트로 표시
@@ -1282,7 +1331,7 @@ export default function BoardPage({ user, C, onLoginRequest, initialCat, pending
                           priceType: archiveForm.priceType, price: archiveForm.price,
                         });
                         showToast("자료가 등록됐어요!","success");
-                        try { const db = await getPostsFromDB(); if(db?.length) { setPostsS(db.sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0))); setPosts(db); } } catch{}
+                        try { const db = await getPostsFromDB(); if(db?.length) { const sortedDb = [...db].sort((a,b)=>postSortTime(b)-postSortTime(a)); setPostsS(sortedDb); setPosts(sortedDb); } } catch{}
                       } catch(e){ alert("업로드 실패: "+e.message); }
                       setShowArchiveModal(false); setArchiveUploadFile(null); setArchiveThumb(null);
                       setArchiveForm({title:"",desc:"",priceType:"free",price:"",visibility:"all"});
