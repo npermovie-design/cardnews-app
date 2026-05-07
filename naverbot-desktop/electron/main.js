@@ -27,7 +27,7 @@ const PROD_CONFIG_DIR = path.join(APPDATA_ROOT, "NaverBotSaaS");
 const PROD_CONFIG_PATH = path.join(PROD_CONFIG_DIR, "config.json");
 
 if (IS_LOCAL_DEV_INSTANCE) {
-  app.setName("메이킷 SNS자동화 Local");
+  app.setName("SNS메이킷 Local");
 }
 
 // ── Single instance ──
@@ -362,7 +362,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
     },
-    title: "메이킷 SNS 자동화",
+    title: "SNS메이킷",
     backgroundColor: "#f9fafb",
   });
 

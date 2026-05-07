@@ -3392,7 +3392,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               if (_subLang !== "none" && sub._translated) { _transLineIdx = lines.length; lines.push(sub._translated); }
               var lineH = fontSize * 1.3;
               var totalH = lines.length * lineH;
-              var ty = ch - totalH - Math.round(ch * 0.08);
+              var ty = Math.round((ch - totalH) / 2);
               var maxW = 0;
               lines.forEach(function(l) { var w = ctx.measureText(l).width; if (w > maxW) maxW = w; });
               ctx.textBaseline = "top";
@@ -3483,8 +3483,10 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               }
               // 인라인 편집 커서
               if (_veEditIdx === si && _veEditCursorVisible) {
-                var editLine = lines[0] || "";
-                var cursorX = tx + ctx.measureText(editLine).width / 2 + 2;
+                var beforeCursor = _veEditText.slice(0, _veEditCursorPos);
+                var fullW2 = ctx.measureText(_veEditText).width;
+                var curW = ctx.measureText(beforeCursor).width;
+                var cursorX = tx - fullW2 / 2 + curW;
                 ctx.fillStyle = "#fff";
                 ctx.fillRect(cursorX, ty, 2, fontSize);
               }
@@ -4448,10 +4450,16 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // 캔버스 인라인 자막 편집
   var _veEditIdx = -1, _veEditText = "", _veEditCursorVisible = true;
   var _veEditCursorTimer = null;
-  function startSubEdit(idx) {
+  function startSubEdit(idx, cursorPos) {
     if (idx < 0 || idx >= ve.subtitles.length) return;
     _veEditIdx = idx;
     _veEditText = ve.subtitles[idx].text || "";
+    // cursorPos가 있으면 해당 위치까지만 (뒤는 나중에 타이핑)
+    if (cursorPos != null && cursorPos >= 0 && cursorPos < _veEditText.length) {
+      _veEditCursorPos = cursorPos;
+    } else {
+      _veEditCursorPos = _veEditText.length;
+    }
     _veEditCursorVisible = true;
     if (_veEditCursorTimer) clearInterval(_veEditCursorTimer);
     _veEditCursorTimer = setInterval(function() { _veEditCursorVisible = !_veEditCursorVisible; _needsRedraw = true; }, 500);
@@ -4466,11 +4474,30 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (_veEditCursorTimer) { clearInterval(_veEditCursorTimer); _veEditCursorTimer = null; }
     _needsRedraw = true;
   }
+  var _veEditCursorPos = 0;
   document.addEventListener("keydown", function(e) {
     if (_veEditIdx < 0) return;
     if (e.key === "Enter" || e.key === "Escape") { stopSubEdit(); e.preventDefault(); return; }
-    if (e.key === "Backspace") { _veEditText = _veEditText.slice(0, -1); _needsRedraw = true; e.preventDefault(); return; }
-    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) { _veEditText += e.key; _needsRedraw = true; e.preventDefault(); }
+    if (e.key === "ArrowLeft") { _veEditCursorPos = Math.max(0, _veEditCursorPos - 1); _needsRedraw = true; e.preventDefault(); return; }
+    if (e.key === "ArrowRight") { _veEditCursorPos = Math.min(_veEditText.length, _veEditCursorPos + 1); _needsRedraw = true; e.preventDefault(); return; }
+    if (e.key === "Backspace") {
+      if (_veEditCursorPos > 0) {
+        _veEditText = _veEditText.slice(0, _veEditCursorPos - 1) + _veEditText.slice(_veEditCursorPos);
+        _veEditCursorPos--;
+      }
+      _needsRedraw = true; e.preventDefault(); return;
+    }
+    if (e.key === "Delete") {
+      if (_veEditCursorPos < _veEditText.length) {
+        _veEditText = _veEditText.slice(0, _veEditCursorPos) + _veEditText.slice(_veEditCursorPos + 1);
+      }
+      _needsRedraw = true; e.preventDefault(); return;
+    }
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+      _veEditText = _veEditText.slice(0, _veEditCursorPos) + e.key + _veEditText.slice(_veEditCursorPos);
+      _veEditCursorPos++;
+      _needsRedraw = true; e.preventDefault();
+    }
   });
 
   // 자막 줄수
@@ -5087,10 +5114,20 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 
   // ── 클립 삭제 ──
   function deleteSelectedClip() {
-    if (_selectedClipIdx < 0 || _selectedClipIdx >= ve.subtitles.length) return;
+    // 선택 없으면 현재 시간 자막 자동 선택
+    if (_selectedClipIdx < 0) {
+      var video = $("veVideo"); if (!video) return;
+      var cur = video.currentTime;
+      for (var di = 0; di < ve.subtitles.length; di++) {
+        var tm = getSubTime(ve.subtitles[di]);
+        if (cur >= tm.start - 0.1 && cur <= tm.end + 0.1) { _selectedClipIdx = di; break; }
+      }
+    }
+    if (_selectedClipIdx < 0 || _selectedClipIdx >= ve.subtitles.length) { showModal("알림", "삭제할 자막을 선택하세요.", "확인"); return; }
     ve.subtitles.splice(_selectedClipIdx, 1);
     _selectedClipIdx = -1;
     renderSubList(); renderTimeline(); renderVideoTrack(); renderClipList();
+    _needsRedraw = true;
   }
 
   // ── 키보드 단축키 (영상 편집기 활성 시) ──
@@ -5298,8 +5335,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // 내보내기
   var exBtn=$("veExportBtn"); if(exBtn) exBtn.addEventListener("click",async function(){
     if(!ve.filePath) return;
-    // 로컬 개발 모드는 바로 내보내기
-    if (window.nbBridge && window.nbBridge.isLocalDev) { await doExport(); return; }
+    // 로컬 개발 모드는 바로 내보내기 (횟수 차감 스킵)
+    if (window.nbBridge && window.nbBridge.isLocalDev) { await doExport(true); return; }
     // 횟수 체크
     if (!state.loggedIn) return showModal("로그인 필요", "먼저 메이킷 계정에 로그인해주세요.", "확인");
     var wq = await checkWriteLimit();
@@ -5307,7 +5344,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     showModal("횟수 차감 안내", "내보내기를 실행하면 1회가 차감됩니다.\n진행하시겠습니까?", "진행", async function(){ await doExport(); });
     return;
   });
-  async function doExport(){
+  async function doExport(skipCharge){
     goStep(4); setProg("veExportPct","veExportBar","veExportLabel",0,"렌더링 준비 중...");
     try {
       var result;
@@ -5316,17 +5353,15 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var isPortrait = ve.type === "portrait" || ve.type === "square";
 
       if (isPortrait && ve.segments.length > 0) {
-        // 세로/정사각: 숏폼 렌더
         var clips=ve.segments.slice(0,ve.clipCount).map(function(s){return Object.assign({},s,{title:s.hook||s.hook_text||s.title||"",subtitles:ve.subEnabled?(s.subtitles||[]):[]})});
         if(!clips.length) throw new Error("하이라이트 구간 없음");
         result=await bridge.videoRenderShorts({inputPath:ve.filePath,clips:clips,outputDir:ve._outputDir||null,template:"minimal",subtitlesEnabled:ve.subEnabled,aspect:aspect,silenceRemove:ve.silenceRemove});
       } else {
-        // 가로/전체: 롱폼 렌더
         result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,captionStyle:{fontSize:ve.subSize,color:ve.subColor},aspect:aspect,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null});
       }
       if(!result.ok) throw new Error(result.error||"렌더링 실패");
-      // 횟수 차감
-      await markWriteUsed();
+      // 횟수 차감 (로컬 dev 모드는 스킵)
+      if (!skipCharge && typeof markWriteUsed === "function") await markWriteUsed();
       goStep(5); var s5=$("veStep5");
       if(ve.type==="shorts"&&result.results){
         s5.innerHTML="<div class='panel-header'><h1 style='font-size:18px;'>"+result.results.length+"개 쇼츠 완성</h1><p class='panel-sub'>파일을 확인하세요</p></div>"+
