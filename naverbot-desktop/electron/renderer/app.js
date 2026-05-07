@@ -4079,8 +4079,6 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       ve.filePath = removeResult.outputPath;
       var video = $("veVideo");
       if (video) { video.src = "file:///" + ve.filePath.replace(/\\/g, "/"); video.load(); }
-      var info = await bridge.videoProbe(ve.filePath);
-      var newDur = info.ok ? info.duration : ve.duration;
 
       // keep 구간 계산 (무음이 아닌 구간 = 실제 남는 영상)
       var keeps2 = [];
@@ -4090,6 +4088,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         cur2 = silences[si2].end;
       }
       if (cur2 < (ve._prevDuration || 9999) - 0.1) keeps2.push({ origStart: cur2, origEnd: ve._prevDuration || 9999 });
+
+      // keeps 합계로 실제 duration 계산 (probe가 부정확하므로)
+      var newDur = keeps2.reduce(function(a, k) { return a + (k.origEnd - k.origStart); }, 0);
 
       // 각 keep의 새 영상에서의 시작 시간
       var cumT = 0;
