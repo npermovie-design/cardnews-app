@@ -3392,7 +3392,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               if (_subLang !== "none" && sub._translated) { _transLineIdx = lines.length; lines.push(sub._translated); }
               var lineH = fontSize * 1.3;
               var totalH = lines.length * lineH;
-              var ty = Math.round((ch - totalH) / 2);
+              // 자막 위치 (기본 하단 12%, 드래그로 변경 가능)
+              var subY = sub._y != null ? sub._y : ch - totalH - Math.round(ch * 0.12);
+              var ty = subY;
               var maxW = 0;
               lines.forEach(function(l) { var w = ctx.measureText(l).width; if (w > maxW) maxW = w; });
               ctx.textBaseline = "top";
@@ -3698,10 +3700,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     return null;
   }
 
+  var _dragSub = null, _dragSubOffY = 0;
   document.addEventListener("mousedown", function(e) {
     if (!_veCanvas || e.target !== _veCanvas) return;
     var video = $("veVideo"); if (!video) return;
     var pos = canvasToLocal(e);
+    // 오버레이 드래그
     var ov = findOverlayAt(pos.x, pos.y, video.currentTime);
     if (ov) {
       e.preventDefault();
@@ -3709,23 +3713,40 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       _dragOffX = pos.x - ov.x;
       _dragOffY = pos.y - ov.y;
       _veCanvas.style.cursor = "grabbing";
+      return;
+    }
+    // 자막 드래그 (선택된 자막 위치 이동)
+    var t = video.currentTime;
+    for (var si = 0; si < ve.subtitles.length; si++) {
+      var stm = getSubTime(ve.subtitles[si]);
+      if (t >= stm.start - 0.05 && t <= stm.end + 0.05 && ve.subtitles[si].text) {
+        _dragSub = ve.subtitles[si];
+        var subY = _dragSub._y != null ? _dragSub._y : _veCanvas.height - Math.round(_veCanvas.height * 0.12);
+        _dragSubOffY = pos.y - subY;
+        _veCanvas.style.cursor = "grab";
+        e.preventDefault();
+        break;
+      }
     }
   });
 
   document.addEventListener("mousemove", function(e) {
-    if (!_dragOv || !_veCanvas) return;
-    var pos = canvasToLocal(e);
-    _dragOv.x = Math.max(0, Math.min(_veCanvas.width - (_dragOv.width || 120), pos.x - _dragOffX));
-    _dragOv.y = Math.max(0, Math.min(_veCanvas.height - (_dragOv.height || 120), pos.y - _dragOffY));
-    _needsRedraw = true; // 드래그 시 캔버스 즉시 업데이트
+    if (_dragOv && _veCanvas) {
+      var pos = canvasToLocal(e);
+      _dragOv.x = Math.max(0, Math.min(_veCanvas.width - (_dragOv.width || 120), pos.x - _dragOffX));
+      _dragOv.y = Math.max(0, Math.min(_veCanvas.height - (_dragOv.height || 120), pos.y - _dragOffY));
+      _needsRedraw = true;
+    }
+    if (_dragSub && _veCanvas) {
+      var pos = canvasToLocal(e);
+      _dragSub._y = Math.max(10, Math.min(_veCanvas.height - 40, pos.y - _dragSubOffY));
+      _needsRedraw = true;
+    }
   });
 
   document.addEventListener("mouseup", function() {
-    if (_dragOv) {
-      _dragOv = null;
-      if (_veCanvas) _veCanvas.style.cursor = "";
-      renderImageList();
-    }
+    if (_dragOv) { _dragOv = null; if (_veCanvas) _veCanvas.style.cursor = ""; renderImageList(); }
+    if (_dragSub) { _dragSub = null; if (_veCanvas) _veCanvas.style.cursor = ""; }
   });
 
   // 캔버스 클릭으로 오버레이 선택
@@ -4261,7 +4282,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var totalCut = silences.reduce(function(a, s) { return a + (s.end - s.start); }, 0);
 
       // 자막 자동 재생성 (무음제거된 영상에서 Whisper STT 재실행)
-      showVeLoading("무음 제거 완료! 새 영상에서 자막을 다시 생성합니다...\n(Whisper AI 음성 인식 재실행)");
+      showVeLoading("자막을 새로 생성하고 있습니다...");
       try {
         var sttResult = await bridge.videoUploadAndAnalyze(ve.filePath, 5);
         if (sttResult.ok) {
@@ -4286,10 +4307,20 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         }
       } catch (sttErr) { console.warn("[무음제거] 자막 재생성 실패:", sttErr.message); }
 
-      // 연속 중복 자막 제거
-      ve.subtitles = ve.subtitles.filter(function(s, i) {
+      // 연속 중복 + 유사 중복 자막 제거
+      ve.subtitles = ve.subtitles.filter(function(s, i, arr) {
         if (i === 0) return true;
-        return s.text !== ve.subtitles[i - 1].text;
+        var prev = arr[i - 1];
+        if (s.text === prev.text) return false;
+        if (s.text && prev.text) {
+          var shorter = s.text.length < prev.text.length ? s.text : prev.text;
+          var longer = s.text.length >= prev.text.length ? s.text : prev.text;
+          if (longer.indexOf(shorter) >= 0) {
+            var gap = (s.start_seconds || s.start || 0) - (prev.end_seconds || prev.end || 0);
+            if (gap < 0.5) return false;
+          }
+        }
+        return true;
       });
 
       // ve.duration 초과 자막 자동 제거
@@ -4339,7 +4370,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   if (subRegenBtn) subRegenBtn.addEventListener("click", async function() {
     if (!ve.filePath) { showModal("알림", "영상 파일이 없습니다.", "확인"); return; }
     subRegenBtn.disabled = true; subRegenBtn.textContent = "자막 재생성 중...";
-    showVeLoading("무음 제거된 영상에서 자막을 다시 생성합니다...\n(Whisper AI 음성 인식 재실행)");
+    showVeLoading("자막을 새로 생성하고 있습니다...");
     try {
       var result = await bridge.videoUploadAndAnalyze(ve.filePath, 5);
       if (!result.ok) throw new Error(result.error || "자막 재생성 실패");
@@ -5357,7 +5388,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         if(!clips.length) throw new Error("하이라이트 구간 없음");
         result=await bridge.videoRenderShorts({inputPath:ve.filePath,clips:clips,outputDir:ve._outputDir||null,template:"minimal",subtitlesEnabled:ve.subEnabled,aspect:aspect,silenceRemove:ve.silenceRemove});
       } else {
-        result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,captionStyle:{fontSize:ve.subSize,color:ve.subColor},aspect:aspect,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null});
+        result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15},aspect:aspect,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null});
       }
       if(!result.ok) throw new Error(result.error||"렌더링 실패");
       // 횟수 차감 (로컬 dev 모드는 스킵)
@@ -5369,9 +5400,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           "<button class='btn btn-primary btn-full' style='margin-top:12px;' id='veNewBtn'>새 영상</button>";
       } else {
         var dir=(result.outputPath||"").replace(/\\/g,"/").split("/").slice(0,-1).join("/");
-        s5.innerHTML="<div class='card' style='text-align:center;padding:24px;'><div style='font-size:18px;font-weight:800;margin-bottom:8px;'>편집 완료</div><div style='font-size:12px;color:var(--text-dim);margin-bottom:16px;'>"+ve.subtitles.length+"개 자막 입혀짐</div><button class='btn btn-primary btn-full' onclick=\"bridge.openExternal('file:///"+dir+"')\">폴더 열기</button><button class='btn btn-outline btn-full' style='margin-top:8px;' id='veNewBtn'>새 영상</button></div>";
+        s5.innerHTML="<div class='card' style='text-align:center;padding:24px;'><div style='font-size:18px;font-weight:800;margin-bottom:8px;'>편집 완료</div><div style='font-size:12px;color:var(--text-dim);margin-bottom:16px;'>"+ve.subtitles.length+"개 자막 입혀짐</div><button class='btn btn-primary btn-full' onclick=\"bridge.openExternal('file:///"+dir+"')\">폴더 열기</button><button class='btn btn-outline btn-full' style='margin-top:8px;' id='veBackToEdit'>편집화면으로 돌아가기</button><button class='btn btn-outline btn-full' style='margin-top:8px;' id='veNewBtn'>새 영상</button></div>";
       }
-      setTimeout(function(){var nb=$("veNewBtn");if(nb)nb.addEventListener("click",function(){goStep(1);ve.segments=[];ve.subtitles=[]})},100);
+      setTimeout(function(){
+        var nb=$("veNewBtn");if(nb)nb.addEventListener("click",function(){goStep(1);ve.segments=[];ve.subtitles=[]});
+        var bb=$("veBackToEdit");if(bb)bb.addEventListener("click",function(){goStep(3);});
+      },100);
     } catch(e) { showModal("렌더링 실패",e.message||"오류","확인"); goStep(3); }
   }
 
