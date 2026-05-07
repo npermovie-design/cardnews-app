@@ -6,6 +6,10 @@
   <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   <link rel="stylesheet" href="style.css">
   <script src="avatars.js"></script>
+  <style>
+    [data-idx]:hover .trim-handle, [data-idx][style*="outline"] .trim-handle { opacity:0.9 !important; }
+    #veTimeRuler { cursor:pointer; }
+  </style>
 </head>
 <body>
   <div class="app">
@@ -1165,9 +1169,9 @@
               </div>
               <!-- AI 자동생성 도구 바 -->
               <div style="display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid #2a2a4a;background:#12122a;">
-                <button id="veSubRegenBtn2" style="flex:1;padding:6px 0;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#2563eb;">자막 재생성</button>
-                <button id="veSilenceQuickBtn" style="flex:1;padding:6px 0;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#1d4ed8;">무음 제거</button>
-                <button id="veAiGifQuickBtn" style="flex:1;padding:6px 0;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#1e40af;">AI 짤</button>
+                <button id="veSubRegenBtn2" style="flex:1;padding:8px 0;font-size:12px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#2563eb;">자막 재생성</button>
+                <button id="veSilenceQuickBtn" style="flex:1;padding:8px 0;font-size:12px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#1d4ed8;">무음 제거</button>
+                <button id="veAiGifQuickBtn" style="flex:1;padding:8px 0;font-size:12px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#1e40af;">AI 짤</button>
               </div>
               <div style="flex:1;overflow-y:auto;padding:12px;">
                 <!-- 자막 -->
@@ -1191,51 +1195,56 @@
                   </div>
 
                   <!-- 기본 설정 (항상 표시) -->
-                  <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
-                    <div style="font-size:11px;color:#64748b;min-width:28px;">크기</div>
-                    <input type="range" id="veSubSize" min="16" max="56" value="38" style="flex:1;accent-color:#3b82f6;height:4px;">
-                    <span id="veSubSizeLabel" style="color:#e2e8f0;font-weight:600;font-size:11px;min-width:30px;">38px</span>
+                  <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                    <div style="font-size:13px;color:#94a3b8;min-width:28px;">크기</div>
+                    <input type="range" id="veSubSize" min="16" max="56" value="38" style="flex:1;accent-color:#3b82f6;height:5px;">
+                    <span id="veSubSizeLabel" style="color:#e2e8f0;font-weight:600;font-size:13px;min-width:36px;">38px</span>
                   </div>
-                  <div style="display:flex;gap:4px;align-items:center;margin-bottom:8px;">
-                    <input type="color" id="veSubColor" value="#FFFFFF" style="width:24px;height:22px;border:1px solid #2a2a4a;border-radius:4px;cursor:pointer;padding:0;background:#16162e;">
-                    <div class="chips" id="veSubColorChips" style="gap:2px;flex:1;"><button class="chip" data-value="#FFFFFF" style="padding:3px 8px;font-size:10px;">흰</button><button class="chip" data-value="#FFFF00" style="padding:3px 8px;font-size:10px;">노</button><button class="chip" data-value="#00FF00" style="padding:3px 8px;font-size:10px;">초</button><button class="chip" data-value="#FF6B6B" style="padding:3px 8px;font-size:10px;">빨</button></div>
-                    <div class="chips" id="veSubLineChips" style="gap:2px;"><button class="chip active" data-value="1" style="padding:3px 8px;font-size:10px;">1줄</button><button class="chip" data-value="2" style="padding:3px 8px;font-size:10px;">2줄</button></div>
+                  <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
+                    <input type="color" id="veSubColor" value="#FFFFFF" style="width:28px;height:26px;border:1px solid #2a2a4a;border-radius:5px;cursor:pointer;padding:0;background:#16162e;">
+                    <div class="chips" id="veSubColorChips" style="gap:3px;flex:1;"><button class="chip" data-value="#FFFFFF" style="padding:5px 10px;font-size:12px;">흰</button><button class="chip" data-value="#FFFF00" style="padding:5px 10px;font-size:12px;">노</button><button class="chip" data-value="#00FF00" style="padding:5px 10px;font-size:12px;">초</button><button class="chip" data-value="#FF6B6B" style="padding:5px 10px;font-size:12px;">빨</button></div>
+                    <div class="chips" id="veSubLineChips" style="gap:3px;"><button class="chip active" data-value="1" style="padding:5px 10px;font-size:12px;">1줄</button><button class="chip" data-value="2" style="padding:5px 10px;font-size:12px;">2줄</button></div>
                   </div>
 
                   <!-- 접이식: 스타일 -->
                   <details class="ve-section" style="margin-bottom:6px;">
-                    <summary style="font-size:11px;font-weight:700;color:#94a3b8;cursor:pointer;padding:6px 0;border-top:1px solid #1e1e3a;user-select:none;">스타일</summary>
+                    <summary style="font-size:13px;font-weight:700;color:#94a3b8;cursor:pointer;padding:8px 0;border-top:1px solid #1e1e3a;user-select:none;">스타일</summary>
                     <div style="padding:4px 0 8px;">
-                      <div style="display:flex;gap:4px;margin-bottom:5px;">
-                        <div style="flex:1;"><div style="font-size:10px;color:#475569;margin-bottom:2px;">테두리</div><div class="chips" id="veSubStrokeChips" style="gap:2px;"><button class="chip active" data-value="0" style="padding:2px 5px;font-size:9px;">없음</button><button class="chip" data-value="2" style="padding:2px 5px;font-size:9px;">얇게</button><button class="chip" data-value="4" style="padding:2px 5px;font-size:9px;">굵게</button></div></div>
-                        <div style="flex:1;"><div style="font-size:10px;color:#475569;margin-bottom:2px;">그림자</div><div class="chips" id="veSubShadowChips" style="gap:2px;"><button class="chip active" data-value="none" style="padding:2px 5px;font-size:9px;">없음</button><button class="chip" data-value="soft" style="padding:2px 5px;font-size:9px;">부드럽게</button><button class="chip" data-value="hard" style="padding:2px 5px;font-size:9px;">강하게</button></div></div>
+                      <div style="display:flex;gap:6px;margin-bottom:6px;">
+                        <div style="flex:1;"><div style="font-size:12px;color:#64748b;margin-bottom:3px;">테두리</div><div class="chips" id="veSubStrokeChips" style="gap:3px;"><button class="chip active" data-value="0" style="padding:4px 8px;font-size:12px;">없음</button><button class="chip" data-value="2" style="padding:4px 8px;font-size:12px;">얇게</button><button class="chip" data-value="4" style="padding:4px 8px;font-size:12px;">굵게</button></div></div>
+                        <div style="flex:1;"><div style="font-size:12px;color:#64748b;margin-bottom:3px;">그림자</div><div class="chips" id="veSubShadowChips" style="gap:3px;"><button class="chip active" data-value="none" style="padding:4px 6px;font-size:12px;">없음</button><button class="chip" data-value="soft" style="padding:4px 6px;font-size:12px;">부드럽게</button><button class="chip" data-value="hard" style="padding:4px 6px;font-size:12px;">강하게</button></div></div>
                       </div>
-                      <div style="display:flex;gap:4px;margin-bottom:5px;">
-                        <div style="flex:1;"><div style="font-size:10px;color:#475569;margin-bottom:2px;">배경</div><div class="chips" id="veSubBgChips" style="gap:2px;"><button class="chip active" data-value="box" style="padding:2px 5px;font-size:9px;">박스</button><button class="chip" data-value="none" style="padding:2px 5px;font-size:9px;">없음</button><button class="chip" data-value="full" style="padding:2px 5px;font-size:9px;">전체</button></div></div>
-                        <div style="flex:1;"><div style="font-size:10px;color:#475569;margin-bottom:2px;">둥글기</div><div class="chips" id="veSubRoundChips" style="gap:2px;"><button class="chip active" data-value="4" style="padding:2px 5px;font-size:9px;">약간</button><button class="chip" data-value="12" style="padding:2px 5px;font-size:9px;">둥글게</button><button class="chip" data-value="24" style="padding:2px 5px;font-size:9px;">알약</button></div></div>
+                      <div style="display:flex;gap:6px;margin-bottom:6px;">
+                        <div style="flex:1;"><div style="font-size:12px;color:#64748b;margin-bottom:3px;">배경</div><div class="chips" id="veSubBgChips" style="gap:3px;"><button class="chip active" data-value="box" style="padding:4px 8px;font-size:12px;">박스</button><button class="chip" data-value="none" style="padding:4px 8px;font-size:12px;">없음</button><button class="chip" data-value="full" style="padding:4px 8px;font-size:12px;">전체</button></div></div>
+                        <div style="flex:1;"><div style="font-size:12px;color:#64748b;margin-bottom:3px;">둥글기</div><div class="chips" id="veSubRoundChips" style="gap:3px;"><button class="chip active" data-value="0" style="padding:4px 6px;font-size:12px;">없음</button><button class="chip" data-value="4" style="padding:4px 6px;font-size:12px;">약간</button><button class="chip" data-value="12" style="padding:4px 6px;font-size:12px;">둥글게</button><button class="chip" data-value="24" style="padding:4px 6px;font-size:12px;">알약</button></div></div>
                       </div>
-                      <div style="display:flex;gap:4px;align-items:center;">
-                        <span style="font-size:9px;color:#475569;">테두리</span><input type="color" id="veSubStrokeColor" value="#000000" style="width:20px;height:18px;border:1px solid #2a2a4a;border-radius:3px;cursor:pointer;padding:0;background:#16162e;">
-                        <span style="font-size:9px;color:#475569;">배경</span><input type="color" id="veSubBgColor" value="#000000" style="width:20px;height:18px;border:1px solid #2a2a4a;border-radius:3px;cursor:pointer;padding:0;background:#16162e;">
-                        <input type="range" id="veSubBgOpacity" min="0" max="100" value="60" style="flex:1;accent-color:#3b82f6;height:3px;" title="배경 투명도">
+                      <div style="display:flex;gap:6px;align-items:center;">
+                        <span style="font-size:12px;color:#64748b;">테두리</span><input type="color" id="veSubStrokeColor" value="#000000" style="width:24px;height:22px;border:1px solid #2a2a4a;border-radius:4px;cursor:pointer;padding:0;background:#16162e;">
+                        <span style="font-size:12px;color:#64748b;">배경</span><input type="color" id="veSubBgColor" value="#000000" style="width:24px;height:22px;border:1px solid #2a2a4a;border-radius:4px;cursor:pointer;padding:0;background:#16162e;">
+                        <input type="range" id="veSubBgOpacity" min="0" max="100" value="60" style="flex:1;accent-color:#3b82f6;height:4px;" title="배경 투명도">
                       </div>
                     </div>
                   </details>
 
                   <!-- 접이식: 애니메이션 -->
                   <details class="ve-section" style="margin-bottom:6px;">
-                    <summary style="font-size:11px;font-weight:700;color:#94a3b8;cursor:pointer;padding:6px 0;border-top:1px solid #1e1e3a;user-select:none;">애니메이션</summary>
+                    <summary style="font-size:13px;font-weight:700;color:#94a3b8;cursor:pointer;padding:8px 0;border-top:1px solid #1e1e3a;user-select:none;">애니메이션</summary>
                     <div style="padding:4px 0 8px;">
-                      <div class="chips" id="veSubAnimChips" style="gap:2px;flex-wrap:wrap;"><button class="chip active" data-value="none" style="padding:3px 7px;font-size:10px;">없음</button><button class="chip" data-value="fade" style="padding:3px 7px;font-size:10px;">페이드</button><button class="chip" data-value="highlight" style="padding:3px 7px;font-size:10px;">하이라이트</button><button class="chip" data-value="typewriter" style="padding:3px 7px;font-size:10px;">타이핑</button><button class="chip" data-value="karaoke" style="padding:3px 7px;font-size:10px;">가라오케</button><button class="chip" data-value="bounce" style="padding:3px 7px;font-size:10px;">바운스</button><button class="chip" data-value="slide-up" style="padding:3px 7px;font-size:10px;">슬라이드</button><button class="chip" data-value="glow" style="padding:3px 7px;font-size:10px;">글로우</button><button class="chip" data-value="shake" style="padding:3px 7px;font-size:10px;">흔들기</button><button class="chip" data-value="scale" style="padding:3px 7px;font-size:10px;">확대</button></div>
+                      <div class="chips" id="veSubAnimChips" style="gap:3px;flex-wrap:wrap;"><button class="chip active" data-value="none" style="padding:5px 10px;font-size:12px;">없음</button><button class="chip" data-value="fade" style="padding:5px 10px;font-size:12px;">페이드</button><button class="chip" data-value="highlight" style="padding:5px 10px;font-size:12px;">하이라이트</button><button class="chip" data-value="typewriter" style="padding:5px 10px;font-size:12px;">타이핑</button><button class="chip" data-value="karaoke" style="padding:5px 10px;font-size:12px;">가라오케</button><button class="chip" data-value="bounce" style="padding:5px 10px;font-size:12px;">바운스</button><button class="chip" data-value="slide-up" style="padding:5px 10px;font-size:12px;">슬라이드</button><button class="chip" data-value="glow" style="padding:5px 10px;font-size:12px;">글로우</button><button class="chip" data-value="shake" style="padding:5px 10px;font-size:12px;">흔들기</button><button class="chip" data-value="scale" style="padding:5px 10px;font-size:12px;">확대</button></div>
                     </div>
                   </details>
 
                   <!-- 접이식: 다국어 -->
                   <details class="ve-section" style="margin-bottom:6px;">
-                    <summary style="font-size:11px;font-weight:700;color:#94a3b8;cursor:pointer;padding:6px 0;border-top:1px solid #1e1e3a;user-select:none;">다국어 자막</summary>
+                    <summary style="font-size:13px;font-weight:700;color:#94a3b8;cursor:pointer;padding:8px 0;border-top:1px solid #1e1e3a;user-select:none;">다국어 자막</summary>
                     <div style="padding:4px 0 8px;">
-                      <div class="chips" id="veSubLangChips" style="gap:2px;flex-wrap:wrap;margin-bottom:6px;"><button class="chip active" data-value="none" style="padding:3px 8px;font-size:10px;">없음</button><button class="chip" data-value="en" style="padding:3px 8px;font-size:10px;">영어</button><button class="chip" data-value="ja" style="padding:3px 8px;font-size:10px;">일본어</button><button class="chip" data-value="zh" style="padding:3px 8px;font-size:10px;">중국어</button><button class="chip" data-value="es" style="padding:3px 8px;font-size:10px;">스페인어</button></div>
-                      <button id="veTranslateSubBtn" style="display:none;width:100%;padding:6px;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#3b82f6;">번역 자막 생성</button>
+                      <div class="chips" id="veSubLangChips" style="gap:3px;flex-wrap:wrap;margin-bottom:8px;"><button class="chip active" data-value="none" style="padding:5px 10px;font-size:12px;">없음</button><button class="chip" data-value="en" style="padding:5px 10px;font-size:12px;">영어</button><button class="chip" data-value="ja" style="padding:5px 10px;font-size:12px;">일본어</button><button class="chip" data-value="zh" style="padding:5px 10px;font-size:12px;">중국어</button><button class="chip" data-value="es" style="padding:5px 10px;font-size:12px;">스페인어</button></div>
+                      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+                        <span style="font-size:13px;color:#64748b;">번역 크기</span>
+                        <input type="range" id="veSubTransSize" min="12" max="40" value="24" style="flex:1;accent-color:#3b82f6;height:5px;">
+                        <span id="veSubTransSizeLabel" style="color:#e2e8f0;font-weight:600;font-size:13px;min-width:36px;">24px</span>
+                      </div>
+                      <button id="veTranslateSubBtn" style="display:none;width:100%;padding:8px;font-size:13px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#3b82f6;">번역 자막 생성</button>
                     </div>
                   </details>
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;margin-bottom:6px;">

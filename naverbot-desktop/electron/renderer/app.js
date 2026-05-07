@@ -3380,7 +3380,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
                 if (sp > 0 && sp < mid + 5) { lines = [displayText.slice(0, sp), displayText.slice(sp + 1)]; }
                 else { lines = [displayText.slice(0, mid), displayText.slice(mid)]; }
               }
-              if (_subLang !== "none" && sub._translated) { lines.push(sub._translated); }
+              var _transLineIdx = -1;
+              if (_subLang !== "none" && sub._translated) { _transLineIdx = lines.length; lines.push(sub._translated); }
               var lineH = fontSize * 1.3;
               var totalH = lines.length * lineH;
               var ty = ch - totalH - Math.round(ch * 0.08);
@@ -3420,8 +3421,13 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               var strokeW = parseInt(_subStroke || "0");
               var strokeCol = _subStrokeColor || "#000000";
               // 텍스트
+              var lyOffset = 0;
               lines.forEach(function(l, li) {
-                var ly = ty + li * lineH;
+                var isTransLine = (li === _transLineIdx);
+                var curFontSize = isTransLine ? Math.round((_subTransSize || 24) * cw / 1280) : fontSize;
+                if (isTransLine) { ctx.font = "bold " + curFontSize + "px 'Pretendard', sans-serif"; }
+                var curLineH = isTransLine ? curFontSize * 1.3 : lineH;
+                var ly = ty + lyOffset;
                 if (anim === "highlight" || anim === "karaoke") {
                   var charProgress = Math.floor(l.length * Math.min(1, subProgress * 1.5));
                   var highlighted = l.slice(0, charProgress);
@@ -3438,9 +3444,11 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
                   ctx.textAlign = "center";
                 } else {
                   if (strokeW > 0) { ctx.strokeStyle = strokeCol; ctx.lineWidth = strokeW; ctx.lineJoin = "round"; ctx.strokeText(l, tx, ly); }
-                  ctx.fillStyle = col;
+                  ctx.fillStyle = isTransLine ? "#d1d5db" : col;
                   ctx.fillText(l, tx, ly);
                 }
+                lyOffset += curLineH;
+                if (isTransLine) { ctx.font = "bold " + fontSize + "px 'Pretendard', sans-serif"; }
               });
               // 인라인 편집 커서
               if (_veEditIdx === si && _veEditCursorVisible) {
@@ -4829,10 +4837,10 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var width=((en-st)/dur*100).toFixed(2)+"%";
       var colors=["#3b82f6","#2563eb","#1d4ed8","#60a5fa","#93c5fd","#1e40af"];
       var color=colors[i%colors.length];
-      html+="<div title='"+escapeHtml(s.text||"")+"' style='position:absolute;top:4px;bottom:4px;left:"+left+";width:"+width+";background:"+color+"40;border:1px solid "+color+"60;border-radius:3px;cursor:grab;display:flex;align-items:center;overflow:hidden;' data-idx='"+i+"'>" +
-        "<div class='trim-handle trim-left' style='width:6px;height:100%;cursor:col-resize;background:"+color+";border-radius:3px 0 0 3px;flex-shrink:0;opacity:0.8;'></div>" +
-        "<div style='flex:1;min-width:0;padding:0 4px;font-size:8px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;'>"+escapeHtml((s.text||"").slice(0,20))+"</div>" +
-        "<div class='trim-handle trim-right' style='width:6px;height:100%;cursor:col-resize;background:"+color+";border-radius:0 3px 3px 0;flex-shrink:0;opacity:0.8;'></div>" +
+      html+="<div title='"+escapeHtml(s.text||"")+"' style='position:absolute;top:4px;bottom:4px;left:"+left+";width:"+width+";background:"+color+"50;border:1px solid "+color+"70;border-radius:3px;cursor:grab;display:flex;align-items:center;justify-content:center;overflow:hidden;' data-idx='"+i+"'>" +
+        "<div class='trim-handle trim-left' style='width:5px;height:100%;cursor:col-resize;background:"+color+";border-radius:3px 0 0 3px;flex-shrink:0;opacity:0;transition:opacity 0.15s;'></div>" +
+        "<div style='flex:1;min-width:0;padding:0 2px;font-size:10px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;text-align:center;line-height:1;'>"+escapeHtml((s.text||"").slice(0,15))+"</div>" +
+        "<div class='trim-handle trim-right' style='width:5px;height:100%;cursor:col-resize;background:"+color+";border-radius:0 3px 3px 0;flex-shrink:0;opacity:0;transition:opacity 0.15s;'></div>" +
         "</div>";
     });
     blocks.innerHTML=html;
@@ -5087,7 +5095,28 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       html+="</div>";
     }
     ruler.innerHTML=html;
+    // 시간 눈금 바 클릭/드래그 스크러빙
+    var _rulerDragging = false;
+    function rulerSeek(e) {
+      var rect = ruler.getBoundingClientRect();
+      var pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      var video = $("veVideo");
+      if (video && dur > 0) video.currentTime = Math.min(dur, pct * dur);
+    }
+    ruler.addEventListener("mousedown", function(e) { _rulerDragging = true; rulerSeek(e); });
+    document.addEventListener("mousemove", function(e) { if (_rulerDragging) rulerSeek(e); });
+    document.addEventListener("mouseup", function() { _rulerDragging = false; });
   }
+
+  // 번역 자막 크기
+  var _subTransSize = 24;
+  var transSlider = $("veSubTransSize");
+  if (transSlider) transSlider.addEventListener("input", function(e) {
+    _subTransSize = parseInt(e.target.value);
+    var label = $("veSubTransSizeLabel");
+    if (label) label.textContent = _subTransSize + "px";
+    _needsRedraw = true;
+  });
 
   function renderAudioWaveform(){
     var el=$("veTrackAudio"); if(!el) return;
