@@ -3247,11 +3247,27 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (label) label.textContent = labels[ve.type] || ve.type;
   }
 
-  // 캔버스 기반 프리뷰 (비율별 크롭/포지셔닝)
+  // ── 전역 변수 선언 (스코프 통합) ──
   var _veCanvas = null;
   var _veCanvasCtx = null;
   var _veRatio = "landscape";
   var _veCanvasRAF = null;
+  var _needsRedraw = true;
+  // _subMaxChars 상단 선언됨
+  var _subStroke = "0", _subShadow = "none", _subBg = "box", _subRound = "0";
+  var _subStrokeColor = "#000000", _subBgColor = "#000000", _subBgOpacity = 60;
+  var _subLines = 1, _subLang = "none", _subTransSize = 24;
+  var subAnim = "none";
+  // _selectedClipIdx 상단 선언됨
+  var _veEditIdx = -1, _veEditText = "", _veEditCursorVisible = true, _veEditCursorPos = 0;
+  // _veEditCursorTimer 상단 선언됨
+  var timelineZoom = 1;
+  var playInterval = null, isPlaying = false;
+  var _eventsAttached = false;
+
+  function stopCanvasRender() {
+    if (_veCanvasRAF) { cancelAnimationFrame(_veCanvasRAF); _veCanvasRAF = null; }
+  }
 
   function applyVeLayout(mode) {
     _veRatio = mode;
@@ -3294,8 +3310,6 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       if(so) so.style.display=""; if(lo) lo.style.display="none"; if(sc) sc.style.display="";
     }
   }
-
-  var _needsRedraw = true; // 캔버스 리드로우 플래그 (전역 공유)
 
   function startCanvasRender() {
     if (_veCanvasRAF) cancelAnimationFrame(_veCanvasRAF);
@@ -4007,7 +4021,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   if(firstTab){firstTab.style.color="#3b82f6";firstTab.style.borderBottomColor="#3b82f6";}
 
   // 줌
-  var timelineZoom = 1;
+  // timelineZoom은 상단에서 선언됨
   var zIn=$("veZoomIn"),zOut=$("veZoomOut");
   function zoomTimeline(newZoom) {
     var video = $("veVideo");
@@ -4466,7 +4480,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   chipG("veSubColorChips",function(v){ve.subColor=v;var el=$("veSubColor");if(el)el.value=v; _needsRedraw=true;});
 
   // 자막 디자인 옵션
-  var _subStroke = "0", _subShadow = "none", _subBg = "box", _subRound = "4", _subStrokeColor = "#000000", _subBgColor = "#000000", _subBgOpacity = 60;
+  // 자막 디자인 변수는 상단에서 선언됨
   chipG("veSubStrokeChips", function(v) { _subStroke = v; _needsRedraw = true; });
   chipG("veSubShadowChips", function(v) { _subShadow = v; _needsRedraw = true; });
   chipG("veSubBgChips", function(v) { _subBg = v; _needsRedraw = true; });
@@ -4479,8 +4493,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   if (bgOpacitySlider) bgOpacitySlider.addEventListener("input", function(e) { _subBgOpacity = parseInt(e.target.value); _needsRedraw = true; });
 
   // 캔버스 인라인 자막 편집
-  var _veEditIdx = -1, _veEditText = "", _veEditCursorVisible = true;
-  var _veEditCursorTimer = null;
+  // _veEditIdx 상단 선언됨
+  // _veEditCursorTimer 상단 선언됨
   function startSubEdit(idx, cursorPos) {
     if (idx < 0 || idx >= ve.subtitles.length) return;
     _veEditIdx = idx;
@@ -4505,7 +4519,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (_veEditCursorTimer) { clearInterval(_veEditCursorTimer); _veEditCursorTimer = null; }
     _needsRedraw = true;
   }
-  var _veEditCursorPos = 0;
+  // _veEditCursorPos 상단 선언됨
   document.addEventListener("keydown", function(e) {
     if (_veEditIdx < 0) return;
     if (e.key === "Enter" || e.key === "Escape") { stopSubEdit(); e.preventDefault(); return; }
@@ -4532,11 +4546,11 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   });
 
   // 자막 줄수
-  var _subLines = 1;
+  // _subLines 상단 선언됨
   chipG("veSubLineChips", function(v) { _subLines = parseInt(v); _needsRedraw=true; });
 
   // 다국어 자막
-  var _subLang = "none";
+  // _subLang 상단 선언됨
   chipG("veSubLangChips", function(v) {
     _subLang = v;
     var btn = $("veTranslateSubBtn");
@@ -4754,7 +4768,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   });
 
   // ── 편집기 초기화 (Step3 진입 시) ──
-  var playInterval=null, isPlaying=false, subAnim="none";
+  // playInterval, isPlaying, subAnim 상단 선언됨
   chipG("veSubAnimChips",function(v){subAnim=v; _needsRedraw=true;});
 
   function stopPlayback(){var v=$("veVideo");if(v){v.pause();v.src="";}isPlaying=false;if(playInterval){clearInterval(playInterval);playInterval=null;} var pb=$("vePlayBtn");if(pb)pb.innerHTML="&#9654;"; stopCanvasRender();}
@@ -5067,7 +5081,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   }
 
   // ── 선택된 클립 ──
-  var _selectedClipIdx = -1;
+  // _selectedClipIdx 상단 선언됨
   function selectClip(idx) {
     _selectedClipIdx = idx;
     var blocks = $("veTimelineBlocks");
@@ -5254,22 +5268,25 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       html+="</div>";
     }
     ruler.innerHTML=html;
-    // 시간 눈금 바 클릭/드래그 스크러빙
-    var _rulerDragging = false;
-    function rulerSeek(e) {
-      var rect = ruler.getBoundingClientRect();
-      var pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-      var video = $("veVideo");
-      var d = ve.duration || 1;
-      if (video && d > 0) { video.currentTime = Math.min(d, pct * d); _needsRedraw = true; }
+    // 시간 눈금 바 클릭/드래그 스크러빙 (한 번만 등록)
+    if (!ruler._scrubAttached) {
+      ruler._scrubAttached = true;
+      var _rulerDragging = false;
+      function rulerSeek(e) {
+        var rect = ruler.getBoundingClientRect();
+        var pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        var video = $("veVideo");
+        var d = ve.duration || 1;
+        if (video && d > 0) { video.currentTime = Math.min(d, pct * d); _needsRedraw = true; }
+      }
+      ruler.addEventListener("mousedown", function(e) { _rulerDragging = true; rulerSeek(e); });
+      document.addEventListener("mousemove", function(e) { if (_rulerDragging) rulerSeek(e); });
+      document.addEventListener("mouseup", function() { _rulerDragging = false; });
     }
-    ruler.addEventListener("mousedown", function(e) { _rulerDragging = true; rulerSeek(e); });
-    document.addEventListener("mousemove", function(e) { if (_rulerDragging) rulerSeek(e); });
-    document.addEventListener("mouseup", function() { _rulerDragging = false; });
   }
 
   // 자막 최대 글자 수
-  var _subMaxChars = 15;
+  // _subMaxChars 상단 선언됨
   var maxCharsSlider = $("veSubMaxChars");
   if (maxCharsSlider) maxCharsSlider.addEventListener("input", function(e) {
     _subMaxChars = parseInt(e.target.value);
@@ -5279,7 +5296,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   });
 
   // 번역 자막 크기
-  var _subTransSize = 24;
+  // _subTransSize 상단 선언됨
   var transSlider = $("veSubTransSize");
   if (transSlider) transSlider.addEventListener("input", function(e) {
     _subTransSize = parseInt(e.target.value);
