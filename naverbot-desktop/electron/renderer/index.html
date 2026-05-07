@@ -1205,7 +1205,11 @@
                   <button id="veTranslateSubBtn" style="display:none;width:100%;padding:7px;font-size:12px;font-weight:700;border:none;border-radius:6px;cursor:pointer;color:#fff;background:#3b82f6;margin-bottom:8px;">번역 자막 생성</button>
                   <div style="font-size:12px;color:#64748b;margin-top:2px;margin-bottom:4px;">애니메이션</div>
                   <div class="chips" id="veSubAnimChips" style="gap:3px;flex-wrap:wrap;"><button class="chip active" data-value="none" style="padding:4px 10px;font-size:11px;">없음</button><button class="chip" data-value="fade" style="padding:4px 10px;font-size:11px;">페이드</button><button class="chip" data-value="highlight" style="padding:4px 10px;font-size:11px;">하이라이트</button><button class="chip" data-value="typewriter" style="padding:4px 10px;font-size:11px;">타이핑</button><button class="chip" data-value="karaoke" style="padding:4px 10px;font-size:11px;">가라오케</button><button class="chip" data-value="bounce" style="padding:4px 10px;font-size:11px;">바운스</button></div>
-                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;margin-bottom:6px;">
+                  <div style="display:flex;gap:6px;margin-top:10px;margin-bottom:6px;">
+                    <button id="veSubRegenBtn2" style="flex:1;padding:6px;font-size:11px;font-weight:700;border:none;border-radius:6px;cursor:pointer;color:#fff;background:#10b981;">자막 재생성</button>
+                    <button id="veSilenceQuickBtn" style="flex:1;padding:6px;font-size:11px;font-weight:700;border:none;border-radius:6px;cursor:pointer;color:#fff;background:#6366f1;">무음 제거</button>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;margin-bottom:6px;">
                     <div style="font-size:13px;font-weight:700;color:#e2e8f0;">자막 목록</div>
                     <span id="veSubCount" style="font-size:11px;color:#64748b;">0개</span>
                   </div>
@@ -1295,14 +1299,15 @@
                 <button id="veZoomIn" style="border:none;background:#1a1a3a;color:#64748b;width:28px;height:24px;border-radius:4px;cursor:pointer;font-size:15px;line-height:1;">+</button>
               </div>
             </div>
+            <div id="veTimelineWrapper" style="position:relative;display:flex;flex-direction:column;flex:1;overflow:hidden;">
+              <div id="vePlayhead" style="position:absolute;top:0;bottom:0;width:2px;background:#ff4444;z-index:20;left:0;pointer-events:none;will-change:transform;">
+                <div style="width:10px;height:10px;background:#ff4444;border-radius:2px;position:absolute;top:0;left:-4px;clip-path:polygon(0 0,100% 0,50% 100%);"></div>
+              </div>
             <div style="display:flex;align-items:center;gap:6px;padding:0 12px;flex-shrink:0;">
               <span style="width:50px;"></span>
               <div id="veTimeRuler" style="flex:1;position:relative;height:22px;border-bottom:1px solid #1a1a3a;overflow:hidden;"></div>
             </div>
             <div id="veTracksArea" style="position:relative;padding:0 12px;flex:1;overflow-y:auto;">
-              <div id="vePlayhead" style="position:absolute;top:-26px;bottom:0;width:2px;background:#ff4444;z-index:10;left:0;pointer-events:none;will-change:transform;">
-                <div style="width:10px;height:10px;background:#ff4444;border-radius:2px;position:absolute;top:0;left:-4px;clip-path:polygon(0 0,100% 0,50% 100%);"></div>
-              </div>
               <div style="display:flex;align-items:center;gap:6px;padding:3px 0;">
                 <span style="font-size:11px;color:#64748b;width:50px;text-align:right;font-weight:700;">V1</span>
                 <div class="ve-track-lane" style="flex:1;position:relative;height:44px;background:#0c0c1e;border-radius:4px;overflow:hidden;cursor:pointer;border:1px solid #1a1a3a;">
@@ -1322,6 +1327,7 @@
                 <div id="veTrackImages" class="ve-track-lane" style="flex:1;position:relative;height:40px;background:#0c0c1e;border-radius:4px;overflow:hidden;cursor:pointer;border:1px solid #1a1a3a;"></div>
               </div>
             </div>
+            </div><!-- /veTimelineWrapper -->
           </div>
         </div>
 

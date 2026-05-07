@@ -3986,7 +3986,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 
       for(var ki=0;ki<insertCount;ki++){
         var kw = keywords[ki % keywords.length] || "재밌는";
-        var pos = positions[ki % positions.length];
+        // centerPos 사용 (중앙 배치)
         // 진행률 표시
         setUpdateProgress && typeof setUpdateProgress === "function" ? null :
           (function() { var lt = $("veLoadingText"); if(lt) lt.textContent = "AI 짤 검색 중... (" + (ki+1) + "/" + insertCount + ")"; })();
@@ -4252,6 +4252,20 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       showModal("자막 재생성 실패", e.message || "오류", "확인");
     }
     subRegenBtn.disabled = false; subRegenBtn.textContent = "자막 재생성 (STT)";
+  });
+
+  // 자막 패널 내 자막 재생성 버튼 (veSubRegenBtn2)
+  var subRegenBtn2 = $("veSubRegenBtn2");
+  if (subRegenBtn2) subRegenBtn2.addEventListener("click", function() {
+    var btn = $("veSubRegenBtn");
+    if (btn) btn.click(); // 기존 재생성 로직 재활용
+  });
+
+  // 자막 패널 내 무음 제거 버튼 (veSilenceQuickBtn)
+  var silQuickBtn = $("veSilenceQuickBtn");
+  if (silQuickBtn) silQuickBtn.addEventListener("click", function() {
+    var btn = $("veSilenceRunBtn");
+    if (btn) btn.click(); // 기존 무음제거 로직 재활용
   });
 
   chipG("veSubColorChips",function(v){ve.subColor=v;var el=$("veSubColor");if(el)el.value=v; _needsRedraw=true;});
@@ -4684,6 +4698,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     ve.subtitles.forEach(function(s,i){
       var st=s.start_seconds!=null?s.start_seconds:(s.start||0);
       var en=s.end_seconds!=null?s.end_seconds:(s.end||st+2);
+      // 영상 끝 이후 자막은 스킵
+      if (st >= dur) return;
+      en = Math.min(en, dur);
       var left=(st/dur*100).toFixed(2)+"%";
       var width=((en-st)/dur*100).toFixed(2)+"%";
       var colors=["#3b82f6","#8b5cf6","#10b981","#f59e0b","#ef4444","#ec4899"];
@@ -4890,20 +4907,20 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if(playhead){
       // 레이아웃 캐시 (리사이즈 시에만 갱신)
       if (_phCache.dirty) {
-        var area=$("veTracksArea");
-        if(area){
-          var firstLane=area.querySelector(".ve-track-lane");
+        var wrapper=$("veTimelineWrapper");
+        if(wrapper){
+          var firstLane=wrapper.querySelector(".ve-track-lane");
           if(firstLane){
-            var areaRect=area.getBoundingClientRect();
+            var wrapRect=wrapper.getBoundingClientRect();
             var laneRect=firstLane.getBoundingClientRect();
-            _phCache.laneLeft=laneRect.left-areaRect.left;
+            _phCache.laneLeft=laneRect.left-wrapRect.left;
             _phCache.laneWidth=laneRect.width;
             _phCache.dirty=false;
           }
         }
       }
       // transform으로 이동 (reflow 없음)
-      var px=_phCache.laneLeft+(cur/dur)*_phCache.laneWidth;
+      var px=_phCache.laneLeft+(cur/Math.max(0.1,dur))*_phCache.laneWidth;
       playhead.style.transform="translateX("+px+"px)";
       playhead.style.left="0";
     }
