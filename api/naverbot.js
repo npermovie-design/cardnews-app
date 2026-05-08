@@ -11,6 +11,7 @@ import {
   verifyLicense,
   verifyMakeitAccount,
   checkDailyQuota,
+  getPlanFeatureLimits,
 } from "../lib/naverbot/index.js";
 import { buildBlogPrompt, splitBodyByImageMarkers } from "../lib/naverbot/prompts.js";
 import { fetchRecentTrends, trendsToPromptText } from "../lib/naverbot/trends.js";
@@ -43,7 +44,7 @@ async function handleAccountVerify(req, res) {
 
     const { data: userRow } = await supabase
       .from("users")
-      .select("nick, role")
+      .select("nick, role, points, monthly_used_write, monthly_used_video")
       .eq("uid", result.uid)
       .maybeSingle();
 
@@ -57,8 +58,13 @@ async function handleAccountVerify(req, res) {
       trialUsed = count ?? 0;
     }
 
-    // 월간 사용량 조회
-    const quota = await checkDailyQuota(result.uid, result.plan);
+    const limits = getPlanFeatureLimits(result.plan);
+    const writeQuota = result.plan === "member"
+      ? { used: 0, limit: Math.max(0, Number(userRow?.points ?? result.points ?? 0)), exceeded: Math.max(0, Number(userRow?.points ?? result.points ?? 0)) <= 0 }
+      : { used: Number(userRow?.monthly_used_write || 0), limit: limits.write || 0 };
+    const videoQuota = (result.plan === "member" || result.plan === "free")
+      ? { used: 0, limit: Math.max(0, Number(userRow?.points ?? result.points ?? 0)) }
+      : { used: Number(userRow?.monthly_used_video || 0), limit: limits.video || 0 };
 
     return res.status(200).json({
       valid: true,
@@ -72,8 +78,16 @@ async function handleAccountVerify(req, res) {
       trial: result.trial || false,
       trial_used: trialUsed,
       trial_limit: result.plan === "admin" ? 999999 : trialLimit,
+      remaining_count: Math.max(0, Number(userRow?.points ?? result.points ?? 0)),
       expires_at: result.expires_at,
-      quota: { used: quota.used, limit: quota.limit },
+      grant_type: result.grant_type || "",
+      limits,
+      quota: { used: writeQuota.used, limit: writeQuota.limit, feature: "write" },
+      video_quota: { used: videoQuota.used, limit: videoQuota.limit, feature: "video" },
+      usage: {
+        write: { used: writeQuota.used, limit: writeQuota.limit },
+        video: { used: videoQuota.used, limit: videoQuota.limit },
+      },
     });
   } catch (e) {
     return safeError(res, 500, "로그인 처리 실패", e);
@@ -108,21 +122,17 @@ async function handleLicenseVerify(req, res) {
     }
 
     // 플랜별 제한
-    const planLimits = {
-      starter:  { max_accounts: 1, daily_posts: 5 },
-      pro:      { max_accounts: 1, daily_posts: 3 },
-      premium:  { max_accounts: 1, daily_posts: 6 },
-      business: { max_accounts: 3, daily_posts: 10 },
-      agency:   { max_accounts: 5, daily_posts: 999 },
-    };
-    const limits = planLimits[result.license.plan] || planLimits.starter;
+    const featureLimits = getPlanFeatureLimits(result.license.plan);
 
     return res.status(200).json({
       valid: true,
       plan: result.license.plan,
       expires_at: result.license.expires_at,
-      max_accounts: limits.max_accounts,
-      daily_posts: limits.daily_posts,
+      max_accounts: featureLimits.accounts,
+      daily_posts: featureLimits.autopilotDaily,
+      monthly_posts: featureLimits.write,
+      monthly_videos: featureLimits.video,
+      limits: featureLimits,
     });
   } catch (e) {
     return safeError(res, 500, "검증 실패", e);
@@ -284,6 +294,54 @@ function validateInput(b) {
   if (b.user_prompt && b.user_prompt.length > 8000) errors.push("user_prompt 8000자 초과");
 
   return errors;
+}
+
+function isPointQuotaPlan(plan) {
+  return plan === "member" || plan === "free";
+}
+
+function isMonthlyQuotaPlan(plan) {
+  return !["admin", "trial", "member", "free"].includes(plan);
+}
+
+async function checkWriteQuotaForAccount(uid, plan, isAdmin) {
+  if (isAdmin) return { used: 0, limit: 999999, exceeded: false };
+  if (!isMonthlyQuotaPlan(plan)) return checkDailyQuota(uid, plan);
+
+  const limits = getPlanFeatureLimits(plan);
+  const { data: userRow, error } = await supabase
+    .from("users")
+    .select("monthly_used_write")
+    .eq("uid", uid)
+    .maybeSingle();
+  if (error) throw error;
+
+  const used = Math.max(0, Number(userRow?.monthly_used_write || 0));
+  const limit = Math.max(0, Number(limits.write || 0));
+  return { used, limit, exceeded: limit <= 0 || used >= limit, trial: false, feature: "write" };
+}
+
+async function chargeWriteQuotaForAccount(uid, plan) {
+  if (!isMonthlyQuotaPlan(plan)) return null;
+
+  const { data: quotaResult, error } = await supabase.rpc("use_monthly_quota", {
+    p_uid: uid,
+    p_cost: 1,
+    p_reason: "NaverBot 콘텐츠 생성",
+    p_feature: "write",
+  });
+  if (error) throw error;
+
+  const qr = typeof quotaResult === "string" ? JSON.parse(quotaResult) : quotaResult;
+  if (!qr?.ok) {
+    const err = new Error(qr?.error || "monthly_quota_failed");
+    err.quota = qr;
+    throw err;
+  }
+  return {
+    used: Number(qr.monthly_used ?? qr.used ?? 0),
+    limit: Number(qr.monthly_limit ?? qr.limit ?? 0),
+  };
 }
 
 function stripMarkdown(text) {
@@ -452,11 +510,16 @@ async function handleContentGenerate(req, res) {
   const resolvedEmail = (authResult.email || email || "").toLowerCase();
   const isAdmin = authResult.plan === "admin" || authResult.role === "admin" || ADMIN_EMAILS.includes(resolvedEmail);
 
-  const quota = await checkDailyQuota(userKey, authResult.plan);
+  let quota;
+  try {
+    quota = await checkWriteQuotaForAccount(userKey, authResult.plan, isAdmin);
+  } catch (e) {
+    return safeError(res, 500, "사용량 확인 실패", e);
+  }
   if (quota.exceeded && !isAdmin) {
     return res.status(429).json({
       ok: false,
-      error: `일일 한도 초과 (${quota.used}/${quota.limit})`,
+      error: `한도 초과 (${quota.used}/${quota.limit})`,
     });
   }
 
@@ -551,6 +614,32 @@ async function handleContentGenerate(req, res) {
     });
   if (logError) console.error("[naverbot] 로그 실패:", logError.message);
 
+  let remainingPointQuota = null;
+  let chargedMonthlyQuota = null;
+  if (!isAdmin && isPointQuotaPlan(authResult.plan)) {
+    const { data: newPoints, error: pointError } = await supabase.rpc("change_points_atomic", {
+      p_uid: userKey,
+      p_delta: -1,
+      p_reason: "NaverBot 콘텐츠 생성",
+    });
+    if (pointError) {
+      console.error("[naverbot] 회원 잔여 횟수 차감 실패:", pointError.message);
+    } else {
+      remainingPointQuota = Math.max(0, Number(newPoints || 0));
+    }
+  } else if (!isAdmin && isMonthlyQuotaPlan(authResult.plan)) {
+    try {
+      chargedMonthlyQuota = await chargeWriteQuotaForAccount(userKey, authResult.plan);
+    } catch (e) {
+      console.error("[naverbot] 월간 글쓰기 횟수 차감 실패:", e?.message || e);
+      return res.status(429).json({
+        ok: false,
+        error: "월간 한도 초과 또는 차감 실패",
+        quota: e?.quota || null,
+      });
+    }
+  }
+
   // 본문 마지막에 해시태그 블록 추가
   if (parsed.tags.length) {
     const hashtagText = parsed.tags.map(t => "#" + t.replace(/\s+/g, "")).join(" ");
@@ -563,7 +652,9 @@ async function handleContentGenerate(req, res) {
     blocks,
     tags: parsed.tags,
     trends_used: trends.length,
-    quota: { used: quota.used + 1, limit: quota.limit },
+    quota: remainingPointQuota !== null
+      ? { used: 0, limit: remainingPointQuota }
+      : (chargedMonthlyQuota || { used: quota.used + 1, limit: quota.limit }),
   });
 }
 
@@ -686,8 +777,8 @@ function handleUpdate(req, res) {
   if (req.method !== "GET") return res.status(405).json({ ok: false, error: "GET only" });
   return res.status(200).json({
     ok: true,
-    version: process.env.NAVERBOT_LATEST_VERSION || "0.1.9",
-    download_url: process.env.NAVERBOT_DOWNLOAD_URL || "https://snsmakeit.com/pricing",
+    version: String(process.env.NAVERBOT_LATEST_VERSION || "0.2.0").trim(),
+    download_url: String(process.env.NAVERBOT_DOWNLOAD_URL || "https://snsmakeit.com/pricing").trim(),
     notes: process.env.NAVERBOT_UPDATE_NOTES || "새 버전이 준비되었습니다. 최신 설치 파일을 다운로드해 업데이트하세요.",
     required: String(process.env.NAVERBOT_UPDATE_REQUIRED || "").toLowerCase() === "true",
   });
@@ -700,7 +791,7 @@ function handleHotManifest(req, res) {
   if (req.method !== "GET") return res.status(405).json({ ok: false, error: "GET only" });
 
   const baseUrl = "https://snsmakeit.com/naverbot-assets";
-  const version = process.env.NAVERBOT_RENDERER_VERSION || "0";
+  const version = String(process.env.NAVERBOT_RENDERER_VERSION || "0").trim();
 
   // version이 "0"이면 핫 업데이트 비활성 (배포 전)
   if (version === "0") {
@@ -712,6 +803,7 @@ function handleHotManifest(req, res) {
     files: [
       { name: "style.css", url: `${baseUrl}/style.css?v=${version}` },
       { name: "app.js", url: `${baseUrl}/app.js?v=${version}` },
+      { name: "cardnews.js", url: `${baseUrl}/cardnews.js?v=${version}` },
     ],
   });
 }
@@ -723,9 +815,9 @@ function handleVersionCheck(req, res) {
   if (req.method !== "GET") return res.status(405).json({ ok: false, error: "GET only" });
 
   const clientVersion = req.query.v || "0.0.0";
-  const minVersion = process.env.NAVERBOT_MIN_VERSION || "0.1.9";
-  const latestVersion = process.env.NAVERBOT_LATEST_VERSION || minVersion;
-  const downloadUrl = process.env.NAVERBOT_DOWNLOAD_URL || "https://snsmakeit.com/pricing";
+  const minVersion = String(process.env.NAVERBOT_MIN_VERSION || "0.2.0").trim();
+  const latestVersion = String(process.env.NAVERBOT_LATEST_VERSION || minVersion).trim();
+  const downloadUrl = String(process.env.NAVERBOT_DOWNLOAD_URL || "https://snsmakeit.com/pricing").trim();
 
   const compare = (a, b) => {
     const pa = String(a).split(".").map(n => parseInt(n, 10) || 0);
@@ -748,6 +840,90 @@ function handleVersionCheck(req, res) {
   });
 }
 
+// ══════════════════════════════════════════════════════════
+// ACTION: use-quota — 데스크톱 앱에서 횟수 차감 + 잔여 횟수 반환
+// ══════════════════════════════════════════════════════════
+
+async function handleUseQuota(req, res) {
+  if (req.method !== "POST") return safeError(res, 405, "POST only");
+
+  const { access_token, reason, feature = "write" } = req.body || {};
+  if (!access_token) return safeError(res, 400, "인증 정보 필요");
+  const normalizedFeature = ["write", "video"].includes(String(feature)) ? String(feature) : "write";
+
+  try {
+    const result = await verifyMakeitAccount({ accessToken: access_token });
+    if (!result.ok) return res.status(200).json({ ok: false, error: result.reason });
+
+    const uid = result.uid;
+    const plan = result.plan;
+    const isAdmin = plan === "admin";
+
+    if (isAdmin) {
+      return res.status(200).json({ ok: true, remaining: 999999 });
+    }
+
+    if (plan === "trial") {
+      const limits = getPlanFeatureLimits("trial");
+      const usedColumn = normalizedFeature === "video" ? "monthly_used_video" : "monthly_used_write";
+      const limit = Math.max(0, Number(limits[normalizedFeature] || 0));
+      const { data: userRow, error: readErr } = await supabase
+        .from("users")
+        .select(usedColumn)
+        .eq("uid", uid)
+        .maybeSingle();
+      if (readErr) return safeError(res, 500, "체험 횟수 확인 실패", readErr);
+
+      const used = Math.max(0, Number(userRow?.[usedColumn] || 0));
+      if (limit <= 0 || used + 1 > limit) {
+        return res.status(200).json({ ok: false, error: "월간 한도 초과", feature: normalizedFeature, monthly_used: used, monthly_limit: limit });
+      }
+
+      const newUsed = used + 1;
+      const { error: updateErr } = await supabase
+        .from("users")
+        .update({ [usedColumn]: newUsed })
+        .eq("uid", uid);
+      if (updateErr) return safeError(res, 500, "체험 횟수 차감 실패", updateErr);
+
+      return res.status(200).json({ ok: true, feature: normalizedFeature, monthly_used: newUsed, monthly_limit: limit });
+    }
+
+    if (plan === "member" || plan === "free") {
+      // 비구독 회원: points 차감
+      const { data: newPoints, error } = await supabase.rpc("change_points_atomic", {
+        p_uid: uid,
+        p_delta: -1,
+        p_reason: reason || (normalizedFeature === "video" ? "데스크톱 영상 편집" : "데스크톱 콘텐츠 생성"),
+      });
+      if (error) {
+        if (error.message?.includes("insufficient") || error.message?.includes("잔액")) {
+          return res.status(200).json({ ok: false, error: "횟수 부족", remaining: 0 });
+        }
+        return safeError(res, 500, "횟수 차감 실패", error);
+      }
+      return res.status(200).json({ ok: true, remaining: Math.max(0, Number(newPoints || 0)) });
+    }
+
+    // 구독자: 월간 횟수 차감
+    const { data: quotaResult, error: qErr } = await supabase.rpc("use_monthly_quota", {
+      p_uid: uid,
+      p_cost: 1,
+      p_reason: reason || (normalizedFeature === "video" ? "데스크톱 영상 편집" : "데스크톱 콘텐츠 생성"),
+      p_feature: normalizedFeature,
+    });
+    if (qErr) return safeError(res, 500, "월간 횟수 차감 실패", qErr);
+
+    const qr = typeof quotaResult === "string" ? JSON.parse(quotaResult) : quotaResult;
+    if (!qr.ok) {
+      return res.status(200).json({ ok: false, error: qr.error || "월간 한도 초과", feature: qr.feature || normalizedFeature, monthly_used: qr.monthly_used ?? qr.used, monthly_limit: qr.monthly_limit ?? qr.limit });
+    }
+    return res.status(200).json({ ok: true, feature: qr.feature || normalizedFeature, monthly_used: qr.monthly_used, monthly_limit: qr.monthly_limit });
+  } catch (e) {
+    return safeError(res, 500, "횟수 처리 실패", e);
+  }
+}
+
 const ACTION_MAP = {
   "account-verify": handleAccountVerify,
   "license-verify": handleLicenseVerify,
@@ -759,6 +935,7 @@ const ACTION_MAP = {
   "update": handleUpdate,
   "hot-manifest": handleHotManifest,
   "version-check": handleVersionCheck,
+  "use-quota": handleUseQuota,
 };
 
 import { rateLimit as _rl } from "../lib/security.js";
