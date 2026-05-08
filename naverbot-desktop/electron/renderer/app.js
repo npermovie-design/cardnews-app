@@ -5022,7 +5022,17 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       if(!ve.subtitles.length) ve.segments.forEach(function(seg){if(seg.subtitles&&seg.subtitles.length){ve.subtitles=ve.subtitles.concat(seg.subtitles);}else if(seg.script){var ss=seg.start_seconds||0,se=seg.end_seconds||ve.duration,ch=seg.script.match(/.{1,18}/g)||[],cd=(se-ss)/Math.max(1,ch.length);ch.forEach(function(t,i){ve.subtitles.push({start:ss+i*cd,end:ss+(i+1)*cd,text:t.trim()})});}});
       // 연속 중복 자막 제거
       ve.subtitles = ve.subtitles.filter(function(s, i) { return i === 0 || s.text !== ve.subtitles[i - 1].text; });
-      renderSegs(); buildShortsRecommendations(); renderShortsPlanList(); setProg("veAnalyzePct","veAnalyzeBar","veAnalyzeLabel",100,"분석 완료!");
+      renderSegs();
+      // 숏폼 모드: AI로 하이라이트 구간 추출
+      if (isShortsMode() && ve.subtitles.length > 0) {
+        setProg("veAnalyzePct","veAnalyzeBar","veAnalyzeLabel",85,"AI가 숏폼 하이라이트를 분석 중...");
+        try {
+          await buildShortsRecommendationsAI();
+        } catch(e) { console.warn("[AI Shorts]", e); buildShortsRecommendationsFallback(); }
+      } else {
+        buildShortsRecommendations();
+      }
+      renderShortsPlanList(); setProg("veAnalyzePct","veAnalyzeBar","veAnalyzeLabel",100,"분석 완료!");
       setTimeout(function(){goStep(3);var fn=$("veFileName2");if(fn) fn.textContent=ve.filePath.split(/[\\/]/).pop(); initEditor();},500);
     } catch(e) { showModal("분석 실패",e.message||"서버 연결 확인","확인"); goStep(1); }
   });
@@ -5079,14 +5089,72 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       wrap.querySelectorAll(".chip").forEach(function(btn) { btn.classList.toggle("active", parseInt(btn.dataset.value) === ve.clipDuration); });
     });
   }
-  function buildShortsRecommendations() {
+  // AI 기반 숏폼 하이라이트 추출 (OpusClip 방식)
+  var _aiShortsCache = null;
+  async function buildShortsRecommendationsAI() {
+    if (!ve.subtitles || !ve.subtitles.length) { buildShortsRecommendationsFallback(); return; }
+    // 자막을 SRT 형식으로 변환
+    var srtText = ve.subtitles.map(function(s, i) {
+      var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+      var en = s.end_seconds != null ? s.end_seconds : (s.end || st + 2);
+      var fmt = function(t) { var h=Math.floor(t/3600); var m=Math.floor((t%3600)/60); var sec=Math.floor(t%60); var ms=Math.round((t%1)*1000); return String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0")+","+String(ms).padStart(3,"0"); };
+      return (i+1) + "\n" + fmt(st) + " --> " + fmt(en) + "\n" + (s.text || "");
+    }).join("\n\n");
+
+    var target = Math.max(15, Math.min(180, parseInt(ve.clipDuration || 45)));
+    var genre = ve._genre || "auto";
+    var genreHint = genre === "auto" ? "" : "\n영상 장르: " + genre;
+
+    try {
+      var res = await fetch("https://snsmakeit.com/api/ai-proxy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5",
+          max_tokens: 4096,
+          messages: [{
+            role: "user",
+            content: "너는 유튜브 숏폼 전문 편집 전략가야. 아래 자막에서 조회수가 높을 구간을 " + ve.clipCount + "개 찾아줘." + genreHint + "\n\n요구사항:\n- 각 구간은 약 " + target + "초 길이\n- 강력한 훅이 시작점에 있어야 함\n- 자기완결적 스토리 (해당 구간만으로 내용 완성)\n- 구간끼리 겹치면 안 됨\n- 영상 전체를 골고루 활용\n- start_seconds/end_seconds는 자막 타임스탬프 기준\n- 문장이 끝나는 지점에서 끊어야 함\n\n반드시 JSON 배열만 응답:\n[{\"start_seconds\":0,\"end_seconds\":30,\"hook_text\":\"훅 문장\",\"seo_title\":\"제목\",\"reason\":\"선정 이유\",\"score\":95}]\n\n자막:\n" + srtText.slice(0, 8000)
+          }]
+        })
+      });
+      if (!res.ok) throw new Error("API " + res.status);
+      var data = await res.json();
+      var text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+      if (text.startsWith("```")) { text = text.split("\n", 2)[1] || text; text = text.replace(/```\s*$/, ""); }
+      var segments = JSON.parse(text);
+      if (!Array.isArray(segments) || !segments.length) throw new Error("empty");
+
+      segments.sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
+      ve.recommendedClips = segments.slice(0, ve.clipCount).map(function(c, idx) {
+        var subs = getSubsInRange(c.start_seconds || 0, c.end_seconds || 30);
+        return {
+          start_seconds: c.start_seconds || 0,
+          end_seconds: c.end_seconds || 30,
+          hook: (c.hook_text || "").slice(0, 34),
+          title: c.seo_title || ("쇼츠 " + (idx + 1)),
+          description: c.reason || "",
+          score: c.score || 80,
+          reason: c.reason || "",
+          subtitles: subs,
+        };
+      });
+      _aiShortsCache = ve.recommendedClips;
+    } catch (e) {
+      console.warn("[AI Shorts] fallback:", e.message);
+      buildShortsRecommendationsFallback();
+    }
+  }
+
+  // 폴백: 기존 로컬 계산 방식
+  function buildShortsRecommendationsFallback() {
     var target = Math.max(15, Math.min(90, parseInt(ve.clipDuration || 45)));
     var duration = Math.max(1, ve.duration || 0);
     var candidates = [];
     if (ve.subtitles && ve.subtitles.length) {
       for (var i = 0; i < ve.subtitles.length; i += Math.max(1, Math.floor(target / 12))) {
         var start = Math.max(0, getSubStart(ve.subtitles[i]) - 1);
-        var end = Math.min(duration || start + target, start + target);
+        var end = Math.min(duration, start + target);
         var subs = getSubsInRange(start, end);
         if (!subs.length) continue;
         var text = subs.map(function(s) { return s.text || ""; }).join(" ").trim();
@@ -5101,23 +5169,6 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         });
       }
     }
-    (ve.segments || []).forEach(function(seg) {
-      var ss = Number(seg.start_seconds || 0);
-      var center = ss + Math.max(1, Number(seg.end_seconds || ss + target) - ss) / 2;
-      var start = Math.max(0, center - target / 2);
-      var end = Math.min(duration || start + target, start + target);
-      var subs = getSubsInRange(start, end);
-      var text = subs.map(function(s) { return s.text || ""; }).join(" ") || (seg.hook || seg.hook_text || seg.title || "");
-      candidates.push({
-        start_seconds: Math.round(start * 100) / 100,
-        end_seconds: Math.round(end * 100) / 100,
-        hook: (seg.hook || seg.hook_text || text || "추천 구간").slice(0, 34),
-        title: seg.title || "추천 숏폼 " + (candidates.length + 1),
-        score: Math.max(Number(seg.score || 0), scoreShortsText(text, subs.length, end - start)),
-        reason: reasonForShorts(text, candidates.length),
-        subtitles: subs,
-      });
-    });
     candidates.sort(function(a, b) { return b.score - a.score; });
     var selected = [];
     candidates.forEach(function(c) {
@@ -5125,19 +5176,21 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       if (!selected.some(function(s) { return rangesOverlap(s, c); })) selected.push(c);
     });
     if (!selected.length && duration > 0) {
-      var usableStart = duration > target * 2 ? Math.min(Math.max(8, duration * 0.08), Math.max(0, duration - target)) : 0;
-      var usableEnd = Math.max(usableStart + target, duration - Math.min(target * 0.4, 20));
-      var usableSpan = Math.max(0, usableEnd - usableStart - target);
       for (var ci = 0; ci < ve.clipCount; ci++) {
-        var ratio = ve.clipCount <= 1 ? 0.5 : ci / (ve.clipCount - 1);
-        var st = Math.min(Math.max(0, duration - target), usableStart + usableSpan * ratio);
+        var st = Math.min(Math.max(0, duration - target), (duration / ve.clipCount) * ci);
         var en = Math.min(duration, st + target);
-        selected.push({ start_seconds: st, end_seconds: en, hook: "자동 구간 " + (ci + 1), title: "추천 숏폼 " + (ci + 1), score: 60, reason: "자막이 부족해 영상 길이를 기준으로 나눈 구간입니다.", subtitles: getSubsInRange(st, en) });
+        selected.push({ start_seconds: st, end_seconds: en, hook: "자동 구간 " + (ci + 1), title: "추천 숏폼 " + (ci + 1), score: 60, reason: "자막 기반 자동 분할", subtitles: getSubsInRange(st, en) });
       }
     }
     ve.recommendedClips = selected.slice(0, ve.clipCount).map(function(c, idx) {
       return Object.assign({}, c, { title: "쇼츠 " + (idx + 1) + ": " + (c.hook || "추천 구간").slice(0, 18) });
     });
+  }
+
+  // 동기 호출용 래퍼 (기존 코드 호환)
+  function buildShortsRecommendations() {
+    if (_aiShortsCache) { ve.recommendedClips = _aiShortsCache; return; }
+    buildShortsRecommendationsFallback();
   }
   function isShortsMode() {
     return ve.type === "portrait" || ve.type === "square";
