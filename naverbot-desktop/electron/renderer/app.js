@@ -22,7 +22,7 @@ function showUpdateOverlay(message = "업데이트 중입니다...") {
         <h2 style="font-size:20px;font-weight:700;color:#333;margin-bottom:8px;" id="updateTitle">${message}</h2>
         <p style="font-size:13px;color:#6b7280;line-height:1.6;" id="updateSub">최신 화면으로 업데이트하고 있습니다.<br>잠시만 기다려주세요.</p>
         <div style="margin-top:20px;width:200px;height:4px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-left:auto;margin-right:auto;">
-          <div id="updateProgressBar" style="width:30%;height:100%;background:linear-gradient(90deg,#3b82f6,#60a5fa);
+          <div id="updateProgressBar" style="width:30%;height:100%;background:#2563eb;
             border-radius:4px;transition:width .3s;"></div>
         </div>
       </div>
@@ -85,7 +85,7 @@ function showExeUpdateModal(info) {
       display:flex;align-items:center;justify-content:center;font-family:'Pretendard',sans-serif;">
       <div style="background:#fff;border-radius:16px;padding:36px 32px;max-width:400px;width:90%;
         box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;animation:modalIn .3s ease;">
-        <div style="width:56px;height:56px;margin:0 auto 16px;background:linear-gradient(135deg,#3b82f6,#2563eb);
+        <div style="width:56px;height:56px;margin:0 auto 16px;background:#2563eb;
           border-radius:14px;display:flex;align-items:center;justify-content:center;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -96,7 +96,7 @@ function showExeUpdateModal(info) {
           현재 <strong style="color:#111;">v${info.current_version}</strong> &rarr; 최신 <strong style="color:#3b82f6;">v${info.latest_version}</strong>
         </p>
         ${info.notes ? `<p style="font-size:13px;color:#9ca3af;margin:0 0 20px;line-height:1.5;">${info.notes}</p>` : '<div style="height:14px;"></div>'}
-        <button id="exeUpdateDownloadBtn" style="width:100%;padding:12px;background:linear-gradient(135deg,#3b82f6,#2563eb);
+        <button id="exeUpdateDownloadBtn" style="width:100%;padding:12px;background:#2563eb;
           color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;
           transition:transform .15s,box-shadow .15s;box-shadow:0 4px 14px rgba(59,130,246,.4);"
           onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,.5)'"
@@ -1516,7 +1516,7 @@ $("aboutWeb").addEventListener("click", (e) => {
 // ── Pro 체험 버튼 ──
 if ($("proTrialBtn")) {
   $("proTrialBtn").addEventListener("click", function() {
-    bridge.openExternal("https://snsmakeit.com/pricing");
+    bridge.openExternal("https://snsmakeit.com/contact?subject=pro-trial");
   });
 }
 
@@ -3474,7 +3474,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 (function initVideoEditor() {
   if (!bridge.videoSelectFile) return;
   var API_URL = "https://shorts-factory-r33o.onrender.com";
-  var ve = { filePath:null, fileInfo:null, fileId:null, segments:[], subtitles:[], videoClips:[], type:"shorts", clipCount:3, subEnabled:true, silenceRemove:false, subSize:38, subColor:"#FFFFFF", duration:0 };
+  var ve = { filePath:null, fileInfo:null, fileId:null, segments:[], subtitles:[], videoClips:[], recommendedClips:[], type:"landscape", clipCount:3, clipDuration:45, subEnabled:true, silenceRemove:false, subSize:38, subColor:"#FFFFFF", duration:0 };
 
   function goStep(n) {
     // 편집 화면(Step3)에서 나갈 때 타이머/렌더 루프 정리
@@ -3501,7 +3501,6 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function setProg(pId,bId,lId,pct,label) { var p=Math.max(0,Math.min(100,isNaN(pct)?0:Math.round(pct))); var el=$(pId),b=$(bId),l=$(lId); if(el) el.textContent=p+"%"; if(b) b.style.width=p+"%"; if(l&&label) l.textContent=label; }
   function chipG(id,cb) { var w=$(id); if(!w) return; w.addEventListener("click",function(e){ var b=e.target.closest(".chip"); if(!b) return; w.querySelectorAll(".chip").forEach(function(c){c.classList.remove("active")}); b.classList.add("active"); cb(b.dataset.value); }); }
 
-  chipG("veTypeChips",function(v){ ve.type=v; applyVeLayout(v); });
   // 비율 라벨 업데이트
   function updateRatioLabel() {
     var label = $("veRatioLabel");
@@ -3515,14 +3514,14 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   var _veRatio = "landscape";
   var _veCanvasRAF = null;
   var _needsRedraw = true;
-  // _subMaxChars 상단 선언됨
+  var _subMaxChars = 15;
   var _subStroke = "0", _subShadow = "none", _subBg = "box", _subRound = "0";
   var _subStrokeColor = "#000000", _subBgColor = "#000000", _subBgOpacity = 60;
   var _subLines = 1, _subLang = "none", _subTransSize = 24;
   var subAnim = "none";
-  // _selectedClipIdx 상단 선언됨
+  var _selectedClipIdx = -1;
   var _veEditIdx = -1, _veEditText = "", _veEditCursorVisible = true, _veEditCursorPos = 0;
-  // _veEditCursorTimer 상단 선언됨
+  var _veEditCursorTimer = null;
   var timelineZoom = 1;
   var playInterval = null, isPlaying = false;
   var _eventsAttached = false;
@@ -3615,14 +3614,27 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           var dw = vw * scale, dh = vh * scale;
           ctx.drawImage(video, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
         } else if (_veRatio === "portrait") {
-          var scale = ch / vh;
-          var dw = vw * scale, dh = ch;
-          var sx = (dw - cw) / 2;
-          ctx.drawImage(video, -sx, 0, dw, dh);
+          var bgScale = Math.max(cw / vw, ch / vh);
+          var bgW = vw * bgScale, bgH = vh * bgScale;
+          ctx.save();
+          ctx.filter = "blur(12px)";
+          ctx.globalAlpha = 0.75;
+          ctx.drawImage(video, (cw - bgW) / 2, (ch - bgH) / 2, bgW, bgH);
+          ctx.restore();
+          var fgScale = Math.min(cw / vw, ch / vh);
+          var fgW = vw * fgScale, fgH = vh * fgScale;
+          ctx.drawImage(video, (cw - fgW) / 2, (ch - fgH) / 2, fgW, fgH);
         } else {
-          var minDim = Math.min(vw, vh);
-          var sx = (vw - minDim) / 2, sy = (vh - minDim) / 2;
-          ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, cw, ch);
+          var bgScale2 = Math.max(cw / vw, ch / vh);
+          var bgW2 = vw * bgScale2, bgH2 = vh * bgScale2;
+          ctx.save();
+          ctx.filter = "blur(10px)";
+          ctx.globalAlpha = 0.75;
+          ctx.drawImage(video, (cw - bgW2) / 2, (ch - bgH2) / 2, bgW2, bgH2);
+          ctx.restore();
+          var fgScale2 = Math.min(cw / vw, ch / vh);
+          var fgW2 = vw * fgScale2, fgH2 = vh * fgScale2;
+          ctx.drawImage(video, (cw - fgW2) / 2, (ch - fgH2) / 2, fgW2, fgH2);
         }
 
         // 자막 캔버스 위 직접 그리기
@@ -4441,7 +4453,10 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     }catch(e){hideVeLoading();showModal("실패",e.message||"AI 짤 삽입 실패","확인");}
     autoImgBtn.disabled=false; autoImgBtn.innerHTML=_origImgBtnHtml;
   }
-  chipG("veClipCountChips",function(v){ve.clipCount=parseInt(v)});
+  chipG("veClipCountChips",function(v){ve.clipCount=parseInt(v); syncShortsControls(); renderShortsPlanList();});
+  chipG("veClipCountChipsStart",function(v){ve.clipCount=parseInt(v); syncShortsControls(); renderShortsPlanList();});
+  chipG("veClipDurationChips",function(v){ve.clipDuration=parseInt(v); syncShortsControls(); renderShortsPlanList();});
+  chipG("veClipDurationChipsEdit",function(v){ve.clipDuration=parseInt(v); syncShortsControls(); renderShortsPlanList();});
   chipG("veSubChips",function(v){ve.subEnabled=v==="on"; _needsRedraw=true;});
   chipG("veSilenceChips",function(v){
     ve.silenceRemove=v==="on";
@@ -4877,7 +4892,11 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   chipG("veInitRatioChips", function(v) {
     ve.type = v;
     var rec = $("veShortsRecommend");
-    if (rec) rec.style.display = (v === "portrait") ? "" : "none";
+    var plan = $("veShortsPlanInput");
+    var isShorts = v === "portrait" || v === "square";
+    if (rec) rec.style.display = isShorts ? "" : "none";
+    if (plan) plan.style.display = isShorts ? "" : "none";
+    renderShortsPlanList();
   });
 
   // 저장 폴더 선택
@@ -4907,7 +4926,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       if(!ve.subtitles.length) ve.segments.forEach(function(seg){if(seg.subtitles&&seg.subtitles.length){ve.subtitles=ve.subtitles.concat(seg.subtitles);}else if(seg.script){var ss=seg.start_seconds||0,se=seg.end_seconds||ve.duration,ch=seg.script.match(/.{1,18}/g)||[],cd=(se-ss)/Math.max(1,ch.length);ch.forEach(function(t,i){ve.subtitles.push({start:ss+i*cd,end:ss+(i+1)*cd,text:t.trim()})});}});
       // 연속 중복 자막 제거
       ve.subtitles = ve.subtitles.filter(function(s, i) { return i === 0 || s.text !== ve.subtitles[i - 1].text; });
-      renderSegs(); setProg("veAnalyzePct","veAnalyzeBar","veAnalyzeLabel",100,"분석 완료!");
+      renderSegs(); buildShortsRecommendations(); renderShortsPlanList(); setProg("veAnalyzePct","veAnalyzeBar","veAnalyzeLabel",100,"분석 완료!");
       setTimeout(function(){goStep(3);var fn=$("veFileName2");if(fn) fn.textContent=ve.filePath.split(/[\\/]/).pop(); initEditor();},500);
     } catch(e) { showModal("분석 실패",e.message||"서버 연결 확인","확인"); goStep(1); }
   });
@@ -4925,6 +4944,151 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         "<div style='font-size:10px;color:var(--text-dim);margin-top:2px;'>"+fT(s.start_seconds||0)+" ~ "+fT(s.end_seconds||0)+"</div></div>"+
         "<div style='padding:3px 8px;border-radius:6px;background:"+(sc>=70?"rgba(16,185,129,0.1)":"rgba(251,191,36,0.1)")+";font-size:11px;font-weight:700;color:"+(sc>=70?"#10b981":"#f59e0b")+";'>"+sc+"점</div></div>";
     }).join("");
+  }
+
+  function getSubStart(s) { return Number(s.start_seconds != null ? s.start_seconds : (s.start || 0)); }
+  function getSubEnd(s) { return Number(s.end_seconds != null ? s.end_seconds : (s.end || getSubStart(s) + 2)); }
+  function getSubsInRange(start, end) {
+    return (ve.subtitles || []).filter(function(s) {
+      var st = getSubStart(s), en = getSubEnd(s);
+      return en > start && st < end;
+    });
+  }
+  function scoreShortsText(text, subCount, duration) {
+    var score = Math.min(35, subCount * 4);
+    if (/[?？]/.test(text)) score += 12;
+    if (/\d|가지|방법|이유|비밀|실수|꿀팁|핵심|문제|해결|절대|꼭|바로|충격|주의/.test(text)) score += 18;
+    if (/하지만|그런데|그래서|결국|왜냐하면|사실|반대로|중요한/.test(text)) score += 10;
+    if (duration >= 20 && duration <= 60) score += 10;
+    if (text.length >= 40) score += 8;
+    return Math.max(55, Math.min(98, Math.round(score + 35)));
+  }
+  function reasonForShorts(text, idx) {
+    if (/[?？]/.test(text)) return "질문형 훅이 있어 첫 3초 이탈 방지에 유리합니다.";
+    if (/\d|가지|방법|이유|꿀팁|핵심/.test(text)) return "리스트/팁 구조라 짧은 숏폼으로 이해하기 쉽습니다.";
+    if (/하지만|그런데|결국|문제|해결/.test(text)) return "문제 제기와 전환점이 있어 완주율을 기대할 수 있습니다.";
+    return idx === 0 ? "영상 초반 핵심 구간이라 도입 숏폼으로 쓰기 좋습니다." : "문맥이 끊기지 않고 자막 밀도가 적당한 구간입니다.";
+  }
+  function rangesOverlap(a, b) {
+    var overlap = Math.max(0, Math.min(a.end_seconds, b.end_seconds) - Math.max(a.start_seconds, b.start_seconds));
+    return overlap > Math.min(a.end_seconds - a.start_seconds, b.end_seconds - b.start_seconds) * 0.35;
+  }
+  function syncShortsControls() {
+    ["veClipCountChips", "veClipCountChipsStart"].forEach(function(id) {
+      var wrap = $(id); if (!wrap) return;
+      wrap.querySelectorAll(".chip").forEach(function(btn) { btn.classList.toggle("active", parseInt(btn.dataset.value) === ve.clipCount); });
+    });
+    ["veClipDurationChips", "veClipDurationChipsEdit"].forEach(function(id) {
+      var wrap = $(id); if (!wrap) return;
+      wrap.querySelectorAll(".chip").forEach(function(btn) { btn.classList.toggle("active", parseInt(btn.dataset.value) === ve.clipDuration); });
+    });
+  }
+  function buildShortsRecommendations() {
+    var target = Math.max(15, Math.min(90, parseInt(ve.clipDuration || 45)));
+    var duration = Math.max(1, ve.duration || 0);
+    var candidates = [];
+    if (ve.subtitles && ve.subtitles.length) {
+      for (var i = 0; i < ve.subtitles.length; i += Math.max(1, Math.floor(target / 12))) {
+        var start = Math.max(0, getSubStart(ve.subtitles[i]) - 1);
+        var end = Math.min(duration || start + target, start + target);
+        var subs = getSubsInRange(start, end);
+        if (!subs.length) continue;
+        var text = subs.map(function(s) { return s.text || ""; }).join(" ").trim();
+        candidates.push({
+          start_seconds: Math.round(start * 100) / 100,
+          end_seconds: Math.round(end * 100) / 100,
+          hook: text.slice(0, 34) || "추천 구간",
+          title: "추천 숏폼 " + (candidates.length + 1),
+          score: scoreShortsText(text, subs.length, end - start),
+          reason: reasonForShorts(text, candidates.length),
+          subtitles: subs,
+        });
+      }
+    }
+    (ve.segments || []).forEach(function(seg) {
+      var ss = Number(seg.start_seconds || 0);
+      var center = ss + Math.max(1, Number(seg.end_seconds || ss + target) - ss) / 2;
+      var start = Math.max(0, center - target / 2);
+      var end = Math.min(duration || start + target, start + target);
+      var subs = getSubsInRange(start, end);
+      var text = subs.map(function(s) { return s.text || ""; }).join(" ") || (seg.hook || seg.hook_text || seg.title || "");
+      candidates.push({
+        start_seconds: Math.round(start * 100) / 100,
+        end_seconds: Math.round(end * 100) / 100,
+        hook: (seg.hook || seg.hook_text || text || "추천 구간").slice(0, 34),
+        title: seg.title || "추천 숏폼 " + (candidates.length + 1),
+        score: Math.max(Number(seg.score || 0), scoreShortsText(text, subs.length, end - start)),
+        reason: reasonForShorts(text, candidates.length),
+        subtitles: subs,
+      });
+    });
+    candidates.sort(function(a, b) { return b.score - a.score; });
+    var selected = [];
+    candidates.forEach(function(c) {
+      if (selected.length >= ve.clipCount) return;
+      if (!selected.some(function(s) { return rangesOverlap(s, c); })) selected.push(c);
+    });
+    if (!selected.length && duration > 0) {
+      var usableStart = duration > target * 2 ? Math.min(Math.max(8, duration * 0.08), Math.max(0, duration - target)) : 0;
+      var usableEnd = Math.max(usableStart + target, duration - Math.min(target * 0.4, 20));
+      var usableSpan = Math.max(0, usableEnd - usableStart - target);
+      for (var ci = 0; ci < ve.clipCount; ci++) {
+        var ratio = ve.clipCount <= 1 ? 0.5 : ci / (ve.clipCount - 1);
+        var st = Math.min(Math.max(0, duration - target), usableStart + usableSpan * ratio);
+        var en = Math.min(duration, st + target);
+        selected.push({ start_seconds: st, end_seconds: en, hook: "자동 구간 " + (ci + 1), title: "추천 숏폼 " + (ci + 1), score: 60, reason: "자막이 부족해 영상 길이를 기준으로 나눈 구간입니다.", subtitles: getSubsInRange(st, en) });
+      }
+    }
+    ve.recommendedClips = selected.slice(0, ve.clipCount).map(function(c, idx) {
+      return Object.assign({}, c, { title: "쇼츠 " + (idx + 1) + ": " + (c.hook || "추천 구간").slice(0, 18) });
+    });
+  }
+  function isShortsMode() {
+    return ve.type === "portrait" || ve.type === "square";
+  }
+  function syncShortsVideoClips() {
+    if (!isShortsMode()) return;
+    buildShortsRecommendations();
+    ve.videoClips = (ve.recommendedClips || []).map(function(c, idx) {
+      return {
+        start: Number(c.start_seconds || 0),
+        end: Number(c.end_seconds || (c.start_seconds || 0) + (ve.clipDuration || 45)),
+        label: "쇼츠 " + (idx + 1),
+        title: c.title || c.hook || ("쇼츠 " + (idx + 1)),
+        score: c.score || 0,
+        reason: c.reason || "",
+        _shorts: true
+      };
+    });
+  }
+  function renderShortsPlanList() {
+    var list = $("veShortsPlanList"); if (!list) return;
+    syncShortsControls();
+    if (ve.type !== "portrait" && ve.type !== "square") {
+      list.innerHTML = "<div style='color:#64748b;padding:8px 0;'>세로 또는 정사각 비율을 선택하면 숏폼 후보가 표시됩니다.</div>";
+      return;
+    }
+    buildShortsRecommendations();
+    syncShortsVideoClips();
+    if (!ve.recommendedClips.length) {
+      list.innerHTML = "<div style='color:#64748b;padding:8px 0;'>분석 후 추천 숏폼 리스트가 자동으로 표시됩니다.</div>";
+      return;
+    }
+    list.innerHTML = ve.recommendedClips.map(function(c, i) {
+      var dur = Math.max(0, c.end_seconds - c.start_seconds);
+      return "<div data-short-idx='" + i + "' style='padding:10px 8px;border:1px solid #1e1e3a;border-radius:8px;margin-bottom:6px;background:#101026;cursor:pointer;'>" +
+        "<div style='display:flex;align-items:center;gap:8px;margin-bottom:5px;'><span style='width:22px;height:22px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;'>" + (i + 1) + "</span>" +
+        "<div style='flex:1;min-width:0;font-size:12px;font-weight:800;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml(c.hook || c.title || "추천 구간") + "</div>" +
+        "<span style='font-size:11px;font-weight:800;color:#22c55e;'>" + Math.round(c.score || 0) + "점</span></div>" +
+        "<div style='font-size:11px;color:#94a3b8;margin-bottom:4px;'>" + fmtTime(c.start_seconds) + " ~ " + fmtTime(c.end_seconds) + " · 약 " + Math.round(dur) + "초</div>" +
+        "<div style='font-size:11px;color:#64748b;line-height:1.45;'>" + escapeHtml(c.reason || "") + "</div></div>";
+    }).join("");
+    list.querySelectorAll("[data-short-idx]").forEach(function(el) {
+      el.addEventListener("click", function() {
+        var c = ve.recommendedClips[parseInt(el.dataset.shortIdx)];
+        var video = $("veVideo"); if (video && c) video.currentTime = c.start_seconds;
+      });
+    });
   }
 
   ve.overlays = []; // {path, startTime, endTime, x, y, width, height}
@@ -4966,8 +5130,35 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var track = $("veTrackVideo");
     if (!track) return;
     var dur = ve.duration || 1;
+    if (isShortsMode() && ve.recommendedClips && ve.recommendedClips.length) {
+      syncShortsVideoClips();
+      var totalShortDur = ve.videoClips.reduce(function(sum, c) { return sum + Math.max(0.5, c.end - c.start); }, 0) || 1;
+      var cursor = 0;
+      track.style.cssText = "position:absolute;inset:0;";
+      track.innerHTML = ve.videoClips.map(function(c, i) {
+        var clipDur = Math.max(0.5, c.end - c.start);
+        var left = (cursor / totalShortDur * 100).toFixed(2) + "%";
+        var width = (clipDur / totalShortDur * 100).toFixed(2) + "%";
+        cursor += clipDur;
+        var colors = ["#2563eb", "#1d4ed8", "#1e40af", "#3b82f6"];
+        var color = colors[i % colors.length];
+        return "<div data-vclip='" + i + "' title='" + escapeHtml(c.title || c.label) + "' style='position:absolute;top:2px;bottom:2px;left:" + left + ";width:" + width +
+          ";background:" + color + ";border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid " + color + "99;'>" +
+          "<div style='flex:1;min-width:0;padding:0 4px;font-size:10px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;text-align:center;font-weight:800;'>" + escapeHtml(c.label || ("쇼츠 " + (i + 1))) + "</div></div>";
+      }).join("");
+      track.querySelectorAll("[data-vclip]").forEach(function(el) {
+        el.addEventListener("click", function() {
+          var idx = parseInt(el.dataset.vclip);
+          track.querySelectorAll("[data-vclip]").forEach(function(e) { e.style.outline = "none"; e.style.boxShadow = "none"; });
+          el.style.outline = "2px solid #93c5fd"; el.style.boxShadow = "0 0 8px rgba(59,130,246,0.55)";
+          var c = ve.videoClips[idx];
+          if (c) { var video = $("veVideo"); if (video) video.currentTime = c.start; }
+        });
+      });
+      return;
+    }
     if (!ve.videoClips || !ve.videoClips.length) {
-      track.style.cssText = "position:absolute;inset:1px;background:linear-gradient(90deg,#1e40af,#2563eb,#1e40af);border-radius:2px;opacity:0.9;";
+      track.style.cssText = "position:absolute;inset:1px;background:#2563eb;border-radius:2px;opacity:0.9;";
       return;
     }
     track.style.cssText = "position:absolute;inset:0;";
@@ -4999,6 +5190,24 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // 클립 목록 (클립 탭)
   function renderClipList() {
     var list = $("veClipList"); if (!list) return;
+    if (isShortsMode() && ve.recommendedClips && ve.recommendedClips.length) {
+      syncShortsVideoClips();
+      list.style.display = "";
+      list.innerHTML = ve.videoClips.map(function(c, i) {
+        return "<div style='padding:8px 6px;border:1px solid #1e1e3a;border-radius:8px;margin-bottom:6px;cursor:pointer;background:#101026;' data-vci='" + i + "'>" +
+          "<div style='display:flex;align-items:center;gap:8px;margin-bottom:4px;'><span style='font-size:11px;font-weight:900;color:#60a5fa;min-width:38px;'>쇼츠 " + (i + 1) + "</span>" +
+          "<span style='font-size:12px;font-weight:800;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml(c.title || c.label || "") + "</span></div>" +
+          "<div style='font-size:11px;color:#94a3b8;'>" + fmtTime(c.start) + " ~ " + fmtTime(c.end) + " · " + Math.round(c.end - c.start) + "초 · " + Math.round(c.score || 0) + "점</div>" +
+          (c.reason ? "<div style='font-size:11px;color:#64748b;line-height:1.45;margin-top:4px;'>" + escapeHtml(c.reason) + "</div>" : "") + "</div>";
+      }).join("");
+      list.querySelectorAll("[data-vci]").forEach(function(el) {
+        el.addEventListener("click", function() {
+          var c = ve.videoClips[parseInt(el.dataset.vci)];
+          if (c) { var video = $("veVideo"); if (video) video.currentTime = c.start; _needsRedraw = true; }
+        });
+      });
+      return;
+    }
     if (!ve.videoClips || ve.videoClips.length <= 1) {
       list.innerHTML = "<div style='color:#475569;padding:8px 0;'>분할하면 여기에 클립 목록이 표시됩니다.</div>";
       return;
@@ -5030,9 +5239,22 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   }
 
   var bkBtn=$("veBackToUpload"); if(bkBtn) bkBtn.addEventListener("click",function(){
-    // 보관함에 편집 작업 저장
+    // 보관함에 편집 작업 저장 (다시 열기용 데이터 포함)
     if(ve.filePath && ve.subtitles.length && window._archiveSave) {
-      window._archiveSave({ type:"video", title: ve.filePath.split(/[\\/]/).pop(), preview: ve.subtitles.length+"개 자막 · "+fmtTime(ve.duration||0) });
+      window._archiveSave({
+        type: "video",
+        title: ve.filePath.split(/[\\/]/).pop(),
+        preview: ve.subtitles.length+"개 자막 · "+fmtTime(ve.duration||0),
+        data: {
+          filePath: ve.filePath,
+          subtitles: ve.subtitles,
+          duration: ve.duration,
+          type: ve.type,
+          subSize: ve.subSize,
+          subColor: ve.subColor,
+          subEnabled: ve.subEnabled,
+        }
+      });
     }
     goStep(1);ve.segments=[];ve.subtitles=[];ve.overlays=[];stopPlayback();document.querySelector(".sidebar")?.classList.remove("ve-hidden");
   });
@@ -5086,13 +5308,29 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       _veLoadDone = true;
       if (loadTxt) loadTxt.textContent = "자막 및 타임라인 준비 중...";
       setTimeout(function() {
-        applyVeLayout(ve.type || "landscape");
-        updateRatioLabel();
-        if (!ve.videoClips.length) {
-          ve.videoClips = [{ start: 0, end: ve.duration || 1, label: "전체 영상" }];
+        try {
+          var mediaDuration = Number(video.duration || 0);
+          if ((!ve.duration || ve.duration <= 0) && mediaDuration > 0) ve.duration = mediaDuration;
+          applyVeLayout(ve.type || "landscape");
+          updateRatioLabel();
+          if (!ve.videoClips.length) {
+            ve.videoClips = [{ start: 0, end: ve.duration || mediaDuration || 1, label: "전체 영상" }];
+          }
+          renderSubList();
+          renderTimeline();
+          renderVideoTrack();
+          renderClipList();
+          renderShortsPlanList();
+        } catch (err) {
+          console.error("[VideoEditor] timeline init failed:", err);
+          showModal(
+            "타임라인 준비 실패",
+            "자막과 타임라인을 준비하는 중 오류가 발생했습니다.\n편집 화면은 열어두었으니 다른 영상으로 다시 시도하거나 자막을 다시 생성해주세요.\n\n" + (err && err.message ? err.message : ""),
+            "확인"
+          );
+        } finally {
+          if (loadOv) loadOv.style.display = "none";
         }
-        renderSubList(); renderTimeline(); renderVideoTrack(); renderClipList();
-        if (loadOv) loadOv.style.display = "none";
       }, 300);
     }
     video.addEventListener("loadeddata", function onLoaded() {
@@ -5201,8 +5439,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var chars=Math.floor(text.length*Math.min(1,elapsed/Math.max(0.5,dur*0.6)));
       text=text.slice(0,chars);
     } else if(subAnim==="karaoke"){
-      var pct=Math.min(100,elapsed/Math.max(0.1,dur)*120);
-      style+="background:linear-gradient(90deg,#FFD700 "+pct+"%,"+col+" "+pct+"%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;";
+      style+="color:#2563eb;";
     } else if(subAnim==="bounce"){
       var sc=elapsed<0.2?0.5+elapsed*2.5:elapsed<0.35?1.1-(elapsed-0.2)*0.67:1;
       style+="display:inline-block;transform:scale("+sc+");";
@@ -5261,6 +5498,33 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function renderTimeline(){
     var blocks=$("veTimelineBlocks"); if(!blocks) return;
     var dur=ve.duration||1;
+    var timelineSubs = ve.subtitles || [];
+    var shortsTimelineMode = isShortsMode() && ve.videoClips && ve.videoClips.length && ve.videoClips.some(function(c) { return c._shorts; });
+    if (shortsTimelineMode) {
+      var mapped = [];
+      var offset = 0;
+      ve.videoClips.forEach(function(c, ci) {
+        var clipDur = Math.max(0.5, c.end - c.start);
+        (ve.subtitles || []).forEach(function(s, si) {
+          var st0 = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+          var en0 = s.end_seconds != null ? s.end_seconds : (s.end || st0 + 2);
+          if (en0 <= c.start || st0 >= c.end) return;
+          var st = Math.max(c.start, st0);
+          var en = Math.min(c.end, en0);
+          mapped.push(Object.assign({}, s, {
+            _origIdx: si,
+            _sourceStart: st,
+            _sourceEnd: en,
+            _shortsClip: ci,
+            start_seconds: offset + (st - c.start),
+            end_seconds: offset + (en - c.start)
+          }));
+        });
+        offset += clipDur;
+      });
+      timelineSubs = mapped;
+      dur = offset || 1;
+    }
 
     // 줌 적용 (CSS transform — 리플로우 없음)
     var tracksArea=$("veTracksArea");
@@ -5277,9 +5541,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     }
     if(timeline) { timeline.style.overflowX = "auto"; }
     _phCache.dirty = true;
-    if(!ve.subtitles.length){blocks.innerHTML="<div style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);'>자막 없음</div>";return;}
+    if(!timelineSubs.length){blocks.innerHTML="<div style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);'>자막 없음</div>";return;}
     var html="";
-    ve.subtitles.forEach(function(s,i){
+    timelineSubs.forEach(function(s,i){
       var st=s.start_seconds!=null?s.start_seconds:(s.start||0);
       var en=s.end_seconds!=null?s.end_seconds:(s.end||st+2);
       // 영상 끝 이후 자막은 스킵
@@ -5290,7 +5554,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       // 자막(T1) - 시안/틸 계열
       var colors=["#06b6d4","#0891b2","#0e7490","#22d3ee","#67e8f9","#155e75"];
       var color=colors[i%colors.length];
-      html+="<div title='"+escapeHtml(s.text||"")+"' style='position:absolute;top:4px;bottom:4px;left:"+left+";width:"+width+";background:"+color+"50;border:1px solid "+color+"70;border-radius:3px;cursor:grab;display:flex;align-items:center;justify-content:center;overflow:hidden;' data-idx='"+i+"'>" +
+      var origIdx = s._origIdx != null ? s._origIdx : i;
+      html+="<div title='"+escapeHtml(s.text||"")+"' style='position:absolute;top:4px;bottom:4px;left:"+left+";width:"+width+";background:"+color+"50;border:1px solid "+color+"70;border-radius:3px;cursor:"+(shortsTimelineMode?"pointer":"grab")+";display:flex;align-items:center;justify-content:center;overflow:hidden;' data-idx='"+origIdx+"' data-source-start='"+(s._sourceStart != null ? s._sourceStart : st)+"'>" +
         "<div class='trim-handle trim-left' style='width:5px;height:100%;cursor:col-resize;background:"+color+";border-radius:3px 0 0 3px;flex-shrink:0;opacity:0;transition:opacity 0.15s;'></div>" +
         "<div style='flex:1;min-width:0;padding:0 2px;font-size:10px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;text-align:center;line-height:1;'>"+escapeHtml((s.text||"").slice(0,15))+"</div>" +
         "<div class='trim-handle trim-right' style='width:5px;height:100%;cursor:col-resize;background:"+color+";border-radius:0 3px 3px 0;flex-shrink:0;opacity:0;transition:opacity 0.15s;'></div>" +
@@ -5304,10 +5569,11 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         var idx=parseInt(el.dataset.idx);
         selectClip(idx);
         var s=ve.subtitles[idx]; if(!s) return;
-        var video=$("veVideo"); if(video) video.currentTime=s.start_seconds!=null?s.start_seconds:(s.start||0);
+        var video=$("veVideo"); if(video) video.currentTime=parseFloat(el.dataset.sourceStart || (s.start_seconds!=null?s.start_seconds:(s.start||0)));
       });
       // 드래그: 블록 이동 또는 양쪽 트림
       el.addEventListener("mousedown",function(e){
+        if (shortsTimelineMode) return;
         e.preventDefault();
         var target = e.target;
         var isLeftTrim = target.classList.contains("trim-left");
@@ -5614,14 +5880,21 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     // 비디오 클립이 있으면 같은 구간으로 오디오도 잘라서 표시
     if (ve.videoClips && ve.videoClips.length > 1) {
       var html = "";
+      var totalShortDur = 0;
+      if (isShortsMode()) {
+        syncShortsVideoClips();
+        totalShortDur = ve.videoClips.reduce(function(sum, c) { return sum + Math.max(0.5, c.end - c.start); }, 0) || 1;
+      }
+      var cursor = 0;
       ve.videoClips.forEach(function(c, i) {
-        var left = (c.start / dur * 100).toFixed(2) + "%";
-        var width = ((c.end - c.start) / dur * 100).toFixed(2) + "%";
+        var segDur = Math.max(0.5, c.end - c.start);
+        var left = isShortsMode() ? (cursor / totalShortDur * 100).toFixed(2) + "%" : (c.start / dur * 100).toFixed(2) + "%";
+        var width = isShortsMode() ? (segDur / totalShortDur * 100).toFixed(2) + "%" : ((c.end - c.start) / dur * 100).toFixed(2) + "%";
+        cursor += segDur;
         // 오디오(A1) - 인디고 계열
         var colors = ["rgba(99,102,241,0.5)", "rgba(79,70,229,0.5)", "rgba(129,140,248,0.5)"];
         var color = colors[i % colors.length];
         // 구간 안에 웨이브폼 바
-        var segDur = c.end - c.start;
         var barCount = Math.max(5, Math.floor(segDur * 3));
         var bars = "";
         for (var b = 0; b < barCount; b++) {
@@ -5703,12 +5976,19 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var result;
       var aspectMap = { portrait: "9:16", landscape: "16:9", square: "1:1" };
       var aspect = aspectMap[ve.type] || "16:9";
+      var outputResolution = (($("veExportRes") || {}).value || "1080");
+      if (outputResolution === "original") outputResolution = "1080";
       var isPortrait = ve.type === "portrait" || ve.type === "square";
 
       if (isPortrait) {
         // 세로/정사각: 하이라이트 자동 생성 (segments 없으면 자막 기반)
         var clips = [];
-        if (ve.segments.length > 0) {
+        buildShortsRecommendations();
+        if (ve.recommendedClips && ve.recommendedClips.length > 0) {
+          clips = ve.recommendedClips.slice(0, ve.clipCount || 5).map(function(s) {
+            return Object.assign({}, s, { subtitles: ve.subEnabled ? (s.subtitles || getSubsInRange(s.start_seconds || 0, s.end_seconds || 0)) : [] });
+          });
+        } else if (ve.segments.length > 0) {
           clips = ve.segments.slice(0, ve.clipCount || 5).map(function(s) {
             return Object.assign({}, s, { title: s.hook || s.hook_text || s.title || "", subtitles: ve.subEnabled ? (s.subtitles || []) : [] });
           });
@@ -5756,9 +6036,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           }
         } catch (e) { console.warn("[쇼츠] AI 제목 생성 실패:", e); }
         setProg("veExportPct", "veExportBar", "veExportLabel", 10, "쇼츠 렌더링 중...");
-        result = await bridge.videoRenderShorts({ inputPath: ve.filePath, clips: clips, outputDir: ve._outputDir || null, template: "minimal", subtitlesEnabled: ve.subEnabled, aspect: aspect, silenceRemove: ve.silenceRemove });
+        result = await bridge.videoRenderShorts({ inputPath: ve.filePath, clips: clips, outputDir: ve._outputDir || null, template: "minimal", subtitlesEnabled: ve.subEnabled, aspect: aspect, outputResolution: outputResolution, silenceRemove: ve.silenceRemove, captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1} });
       } else {
-        result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15},aspect:aspect,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null});
+        result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1},aspect:aspect,outputResolution:outputResolution,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null});
       }
       if(!result.ok) throw new Error(result.error||"렌더링 실패");
       // 횟수 차감 (로컬 dev 모드는 스킵)
@@ -5783,7 +6063,16 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           if(ve.overlays)ve.overlays.forEach(function(ov){if(ov._img&&ov._isGif&&ov._img.parentNode)ov._img.parentNode.removeChild(ov._img);ov._img=null;});
           goStep(1);ve.segments=[];ve.subtitles=[];ve.overlays=[];
         });
-        var bb=$("veBackToEdit");if(bb)bb.addEventListener("click",function(){goStep(3);});
+        var bb=$("veBackToEdit");if(bb)bb.addEventListener("click",function(){
+          goStep(3);
+          // 편집기 복원: 영상이 비어있으면 다시 로드
+          var video=$("veVideo");
+          if(video && (!video.src || video.src === "" || video.src === "about:blank")) {
+            video.src = "file:///" + ve.filePath.replace(/\\/g,"/");
+            video.load();
+          }
+          startCanvasRender();
+        });
       },100);
     } catch(e) { if(e.name!=="AbortError") showModal("렌더링 실패",e.message||"오류","확인"); goStep(3); _exportAbort=null; }
   }
@@ -6802,6 +7091,23 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
         if (!item) return;
         if (item.url) {
           bridge.openExternal(item.url);
+        } else if (item.type === "video" && item.data && item.data.filePath) {
+          // 영상 편집기로 이동 + 데이터 복원
+          goToPanel("video-editor");
+          setTimeout(function() {
+            ve.filePath = item.data.filePath;
+            ve.subtitles = item.data.subtitles || [];
+            ve.duration = item.data.duration || 0;
+            ve.type = item.data.type || "landscape";
+            ve.subSize = item.data.subSize || 38;
+            ve.subColor = item.data.subColor || "#FFFFFF";
+            ve.subEnabled = item.data.subEnabled !== false;
+            ve.segments = [];
+            ve.overlays = [];
+            goStep(3);
+            var fn = $("veFileName2"); if (fn) fn.textContent = ve.filePath.split(/[\\/]/).pop();
+            initEditor();
+          }, 300);
         } else if (item.type === "blog") {
           // 글쓰기 패널로 이동 + 테마 복원
           document.querySelectorAll(".nav-item").forEach(function(n) { n.classList.remove("active"); });
