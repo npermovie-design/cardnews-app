@@ -1598,9 +1598,14 @@ function killVideoProcess() {
   videoProcess = null;
 }
 
+// drawtext 텍스트 이스케이프 (ffmpeg용)
+function escDrawtext(text) {
+  return String(text || "").replace(/\\/g, "\\\\\\\\").replace(/'/g, "'\\''").replace(/:/g, "\\:").replace(/;/g, "\\;");
+}
+
 ipcMain.handle("video:renderShorts", async (_, opts) => {
   if (videoProcess) return { ok: false, error: "이미 렌더링 중입니다. 취소 후 다시 시도해주세요." };
-  const { inputPath, clips, outputDir, template, subtitlesEnabled, aspect, captionStyle, outputResolution } = opts;
+  const { inputPath, clips, outputDir, template, subtitlesEnabled, aspect, captionStyle, outputResolution, brandName, brandLogo } = opts;
   if (!inputPath || !fs.existsSync(inputPath)) return { ok: false, error: "입력 파일 없음" };
   if (!clips || !clips.length) return { ok: false, error: "렌더링할 클립이 없습니다" };
 
@@ -1628,21 +1633,52 @@ ipcMain.handle("video:renderShorts", async (_, opts) => {
 
     // ffmpeg 필터
     const filters = buildVideoLayoutFilters(aspect || "9:16", outputResolution || "1080");
+    const outputSize = getOutputSize(aspect || "9:16", outputResolution || "1080");
 
     // 자막
     if (subtitlesEnabled && clip.subtitles?.length) {
       const cs = captionStyle || {};
-      const outputSize = getOutputSize(aspect || "9:16", outputResolution || "1080");
       const fontSize = Math.max(8, Math.round((cs.fontSize || 38) * 0.375));
       const marginV = Math.round(fontSize * 2.5);
       filters.push(buildSubFilter(srtPath, fontSize, cs.color || "#FFFFFF", Object.assign({}, cs, { marginV, outputWidth: outputSize.width, outputHeight: outputSize.height })));
     }
 
+    // 제목 오버레이 (첫 3초, 페이드인/아웃)
+    const hookText = clip.title || clip.hook || "";
+    const descText = clip.description || "";
+    if (hookText) {
+      const titleSize = Math.max(10, Math.round(outputSize.width * 0.035));
+      const descSize = Math.max(8, Math.round(outputSize.width * 0.022));
+      const titleY = Math.round(outputSize.height * 0.12);
+      // 제목 배경 박스 + 텍스트 (0~3초, 페이드)
+      filters.push(`drawtext=text='${escDrawtext(hookText)}':fontfile='C\\:/Windows/Fonts/malgunbd.ttf':fontsize=${titleSize}:fontcolor=white:x=(w-tw)/2:y=${titleY}:enable='between(t,0.3,3)':alpha='if(lt(t,0.8),t/0.5,if(gt(t,2.5),(3-t)/0.5,1))':box=1:boxcolor=black@0.5:boxborderw=12`);
+      if (descText) {
+        filters.push(`drawtext=text='${escDrawtext(descText)}':fontfile='C\\:/Windows/Fonts/malgun.ttf':fontsize=${descSize}:fontcolor=white@0.8:x=(w-tw)/2:y=${titleY + titleSize + 10}:enable='between(t,0.5,3)':alpha='if(lt(t,1),t/0.5-1,if(gt(t,2.5),(3-t)/0.5,1))'`);
+      }
+    }
+
+    // 브랜드 워터마크 (전체 구간, 우상단)
+    if (brandName) {
+      const brandSize = Math.max(7, Math.round(outputSize.width * 0.018));
+      filters.push(`drawtext=text='${escDrawtext(brandName)}':fontfile='C\\:/Windows/Fonts/malgunbd.ttf':fontsize=${brandSize}:fontcolor=white@0.6:x=w-tw-20:y=20`);
+    }
+
     filters.push(`fade=t=in:st=0:d=0.5,fade=t=out:st=${Math.max(0, duration - 0.5).toFixed(2)}:d=0.5`);
 
-    const args = ["-ss", String(Math.max(0, ss)), "-to", String(se + 0.3), "-i", inputPath,
-      "-vf", filters.join(","), "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
-      "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", "-y", outPath];
+    const args = ["-ss", String(Math.max(0, ss)), "-to", String(se + 0.3), "-i", inputPath];
+    // 로고 이미지 오버레이
+    if (brandLogo && fs.existsSync(brandLogo)) {
+      const logoH = Math.round(outputSize.height * 0.04);
+      args.push("-i", brandLogo);
+      // 로고를 리사이즈 후 우상단에 오버레이 (영상 필터 뒤에)
+      const vfStr = filters.join(",");
+      const logoFilter = `[1:v]scale=-1:${logoH}[logo];[0:v]${vfStr}[main];[main][logo]overlay=W-w-20:20`;
+      args.push("-filter_complex", logoFilter);
+    } else {
+      args.push("-vf", filters.join(","));
+    }
+    args.push("-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+      "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", "-y", outPath);
 
     // 실행
     const ok = await new Promise((resolve) => {

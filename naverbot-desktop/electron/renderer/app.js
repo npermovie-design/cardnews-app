@@ -4458,6 +4458,77 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   chipG("veClipDurationChips",function(v){ve.clipDuration=parseInt(v); syncShortsControls(); renderShortsPlanList();});
   chipG("veClipDurationChipsEdit",function(v){ve.clipDuration=parseInt(v); syncShortsControls(); renderShortsPlanList();});
   chipG("veSubChips",function(v){ve.subEnabled=v==="on"; _needsRedraw=true;});
+
+  // 자막 프리셋 정의
+  var CAPTION_PRESETS = [
+    { name:"기본", color:"#FFFFFF", bg:"box", bgColor:"#000000", bgOpacity:60, stroke:0, shadow:"none", anim:"none", round:4, label:"기본 자막" },
+    { name:"카라오케", color:"#FFFFFF", bg:"none", bgColor:"#000", bgOpacity:0, stroke:0, shadow:"none", anim:"karaoke", round:0, label:"노래방 스타일" },
+    { name:"팝라인", color:"#00FF00", bg:"box", bgColor:"#000000", bgOpacity:80, stroke:2, strokeColor:"#000", shadow:"none", anim:"highlight", round:8, label:"강조 팝" },
+    { name:"미니멀", color:"#FFFFFF", bg:"none", bgColor:"#000", bgOpacity:0, stroke:3, strokeColor:"#000000", shadow:"soft", anim:"fade", round:0, label:"깔끔한 스타일" },
+    { name:"네온", color:"#FF6B6B", bg:"none", bgColor:"#000", bgOpacity:0, stroke:0, shadow:"none", anim:"glow", round:0, label:"글로우 효과" },
+    { name:"바운스", color:"#FFFF00", bg:"box", bgColor:"#1a1a2e", bgOpacity:70, stroke:0, shadow:"none", anim:"bounce", round:12, label:"통통 튀는" },
+    { name:"타이핑", color:"#FFFFFF", bg:"box", bgColor:"#000000", bgOpacity:50, stroke:0, shadow:"none", anim:"typewriter", round:4, label:"타자기 효과" },
+    { name:"슬라이드", color:"#60A5FA", bg:"none", bgColor:"#000", bgOpacity:0, stroke:2, strokeColor:"#000", shadow:"hard", anim:"slide-up", round:0, label:"아래서 올라옴" },
+    { name:"시네마", color:"#FFFFFF", bg:"full", bgColor:"#000000", bgOpacity:40, stroke:0, shadow:"none", anim:"fade", round:0, label:"전체 배경" },
+  ];
+
+  // 프리셋 카드 렌더링
+  var presetContainer = $("veCaptionPresets");
+  if (presetContainer) {
+    presetContainer.innerHTML = CAPTION_PRESETS.map(function(p, i) {
+      var previewBg = p.bg === "none" ? "transparent" : (p.bgColor + (p.bgOpacity > 50 ? "" : "80"));
+      var borderCol = p.bg === "none" ? "transparent" : p.bgColor;
+      return "<div class='caption-preset-card' data-preset='" + i + "' style='cursor:pointer;padding:8px 4px;border-radius:8px;border:2px solid #2a2a4a;background:#0f0f23;text-align:center;transition:all 0.15s;" + (i === 0 ? "border-color:#3b82f6;" : "") + "'>" +
+        "<div style='height:32px;display:flex;align-items:center;justify-content:center;margin-bottom:4px;'>" +
+        "<span style='font-size:11px;font-weight:800;color:" + p.color + ";" +
+        (p.bg !== "none" ? "background:" + p.bgColor + ";padding:2px 6px;border-radius:" + p.round + "px;opacity:0.9;" : "") +
+        (p.stroke > 0 ? "text-shadow:-1px -1px 0 " + (p.strokeColor || "#000") + ",1px -1px 0 " + (p.strokeColor || "#000") + ",-1px 1px 0 " + (p.strokeColor || "#000") + ",1px 1px 0 " + (p.strokeColor || "#000") + ";" : "") +
+        (p.shadow === "soft" ? "text-shadow:2px 2px 4px rgba(0,0,0,0.5);" : p.shadow === "hard" ? "text-shadow:3px 3px 0 rgba(0,0,0,0.9);" : "") +
+        "'>예시 자막</span>" +
+        "</div>" +
+        "<div style='font-size:10px;color:#64748b;'>" + p.name + "</div>" +
+        "</div>";
+    }).join("");
+
+    presetContainer.addEventListener("click", function(e) {
+      var card = e.target.closest("[data-preset]");
+      if (!card) return;
+      var idx = parseInt(card.dataset.preset);
+      var p = CAPTION_PRESETS[idx];
+      if (!p) return;
+      // 스타일 적용
+      ve.subColor = p.color;
+      _subBg = p.bg;
+      _subBgColor = p.bgColor;
+      _subBgOpacity = p.bgOpacity;
+      _subStroke = String(p.stroke || 0);
+      _subStrokeColor = p.strokeColor || "#000000";
+      _subShadow = p.shadow || "none";
+      _subRound = String(p.round || 0);
+      subAnim = p.anim || "none";
+      _needsRedraw = true;
+      // UI 동기화
+      var cp = $("veSubColor"); if (cp) cp.value = p.color;
+      var bgCp = $("veSubBgColor"); if (bgCp) bgCp.value = p.bgColor;
+      var bgOp = $("veSubBgOpacity"); if (bgOp) bgOp.value = p.bgOpacity;
+      var stCp = $("veSubStrokeColor"); if (stCp) stCp.value = p.strokeColor || "#000000";
+      // 칩 동기화
+      syncChip("veSubStrokeChips", String(p.stroke || 0));
+      syncChip("veSubShadowChips", p.shadow || "none");
+      syncChip("veSubBgChips", p.bg);
+      syncChip("veSubRoundChips", String(p.round || 0));
+      syncChip("veSubAnimChips", p.anim || "none");
+      syncChip("veSubColorChips", p.color);
+      // 카드 선택 표시
+      presetContainer.querySelectorAll(".caption-preset-card").forEach(function(c) { c.style.borderColor = "#2a2a4a"; });
+      card.style.borderColor = "#3b82f6";
+    });
+  }
+
+  function syncChip(id, value) {
+    var wrap = $(id); if (!wrap) return;
+    wrap.querySelectorAll(".chip").forEach(function(c) { c.classList.toggle("active", c.dataset.value === value); });
+  }
   chipG("veSilenceChips",function(v){
     ve.silenceRemove=v==="on";
     var opts=$("veSilenceOpts"); if(opts) opts.style.display=v==="on"?"":"none";
@@ -4904,6 +4975,31 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     try {
       var r = await bridge.videoSelectSaveDir();
       if(r && r.ok && r.dirPath) { $("veOutputDir").value = r.dirPath; ve._outputDir = r.dirPath; }
+    } catch(e) {}
+  });
+
+  // 장르 선택
+  chipG("veGenreChips", function(v) { ve._genre = v; });
+
+  // 처리 구간 슬라이더
+  var rsStart = $("veRangeSliderStart"), rsEnd = $("veRangeSliderEnd");
+  function updateRangeLabels() {
+    var dur = ve.duration || 1;
+    var s = Math.round(dur * (rsStart ? rsStart.value / 100 : 0));
+    var e = Math.round(dur * (rsEnd ? rsEnd.value / 100 : 1));
+    ve._rangeStart = s; ve._rangeEnd = e;
+    var fmt = function(t) { var m = Math.floor(t/60); var sec = Math.floor(t%60); return m + ":" + String(sec).padStart(2,"0"); };
+    if ($("veRangeStart")) $("veRangeStart").value = fmt(s);
+    if ($("veRangeEnd")) $("veRangeEnd").value = fmt(e);
+  }
+  if (rsStart) rsStart.addEventListener("input", updateRangeLabels);
+  if (rsEnd) rsEnd.addEventListener("input", updateRangeLabels);
+
+  // 브랜드 로고 선택
+  var logoBtn=$("veBrandLogoBtn"); if(logoBtn) logoBtn.addEventListener("click",async function(){
+    try {
+      var r = await bridge.videoSelectImage();
+      if(r && r.ok && r.filePath) { $("veBrandLogo").value = r.filePath; }
     } catch(e) {}
   });
 
@@ -6036,7 +6132,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           }
         } catch (e) { console.warn("[쇼츠] AI 제목 생성 실패:", e); }
         setProg("veExportPct", "veExportBar", "veExportLabel", 10, "쇼츠 렌더링 중...");
-        result = await bridge.videoRenderShorts({ inputPath: ve.filePath, clips: clips, outputDir: ve._outputDir || null, template: "minimal", subtitlesEnabled: ve.subEnabled, aspect: aspect, outputResolution: outputResolution, silenceRemove: ve.silenceRemove, captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1} });
+        var _brandName = ($("veBrandName") || {}).value || "";
+        var _brandLogo = ($("veBrandLogo") || {}).value || "";
+        result = await bridge.videoRenderShorts({ inputPath: ve.filePath, clips: clips, outputDir: ve._outputDir || null, template: "minimal", subtitlesEnabled: ve.subEnabled, aspect: aspect, outputResolution: outputResolution, silenceRemove: ve.silenceRemove, brandName: _brandName, brandLogo: _brandLogo, captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1} });
       } else {
         result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1},aspect:aspect,outputResolution:outputResolution,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null});
       }
@@ -6045,14 +6143,52 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       if (!skipCharge && typeof markFeatureUsed === "function") await markFeatureUsed("video", "데스크톱 영상 편집");
       goStep(5); var s5=$("veStep5");
       if(isPortrait&&result.results){
-        s5.innerHTML="<div class='panel-header'><h1 style='font-size:18px;'>"+result.results.length+"개 쇼츠 완성</h1><p class='panel-sub'>AI가 생성한 제목과 설명이 포함됩니다</p></div>"+
-          result.results.map(function(r,ri){
-            var dir=r.path.replace(/\\/g,"/").split("/").slice(0,-1).join("/");
-            var clip=clips[ri]||{};
-            return "<div class='card' style='padding:12px;'><div style='display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;'><div style='font-size:14px;font-weight:700;'>"+escapeHtml(clip.title||("쇼츠 "+(ri+1)))+"</div><button class='btn btn-outline btn-sm' onclick=\"bridge.openExternal('file:///"+dir+"')\">폴더</button></div>"+(clip.description?"<div style='font-size:12px;color:var(--text-dim);margin-bottom:4px;'>"+escapeHtml(clip.description)+"</div>":"")+"<div style='font-size:10px;color:#475569;'>"+escapeHtml(r.filename)+"</div></div>";
-          }).join("")+
-          "<button class='btn btn-outline btn-full' style='margin-top:8px;' id='veBackToEdit'>편집화면으로 돌아가기</button>"+
-          "<button class='btn btn-primary btn-full' style='margin-top:8px;' id='veNewBtn'>새 영상</button>";
+        s5.innerHTML = "<div style='display:flex;gap:16px;height:calc(100vh - 120px);'>" +
+          "<div style='width:220px;flex-shrink:0;overflow-y:auto;padding-right:8px;'>" +
+          "<div style='font-size:15px;font-weight:800;color:var(--text);margin-bottom:12px;'>생성된 쇼츠 (" + result.results.length + ")</div>" +
+          result.results.map(function(r, ri) {
+            var clip = clips[ri] || {};
+            var dur = Math.round((clip.end_seconds || 0) - (clip.start_seconds || 0));
+            var fmtDur = Math.floor(dur/60) + ":" + String(dur%60).padStart(2,"0");
+            return "<div class='shorts-result-item' data-ri='" + ri + "' style='cursor:pointer;padding:10px;border-radius:10px;border:2px solid " + (ri === 0 ? "#3b82f6" : "var(--border-soft)") + ";margin-bottom:8px;background:var(--bg-elev);transition:border-color 0.15s;'>" +
+              "<div style='display:flex;align-items:center;gap:8px;margin-bottom:5px;'>" +
+              "<div style='width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#3b82f6,#2563eb);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:12px;flex-shrink:0;'>" + (ri+1) + "</div>" +
+              "<div style='flex:1;min-width:0;'>" +
+              "<div style='font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml(clip.title || ("쇼츠 " + (ri+1))) + "</div>" +
+              "<div style='font-size:10px;color:var(--text-dim);'>" + fmtDur + "</div>" +
+              "</div></div>" +
+              "<div style='display:flex;gap:4px;'>" +
+              "<button class='btn btn-primary btn-sm shorts-folder-btn' data-dir='" + escapeHtml(r.path.replace(/\\/g,"/").split("/").slice(0,-1).join("/")) + "' style='flex:1;font-size:10px;padding:4px 0;'>폴더 열기</button>" +
+              "</div></div>";
+          }).join("") +
+          "</div>" +
+          "<div style='flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;'>" +
+          "<video id='veResultPreview' controls style='max-height:60vh;max-width:100%;border-radius:12px;background:#000;' src='file:///" + result.results[0].path.replace(/\\/g,"/") + "'></video>" +
+          "<div style='margin-top:12px;text-align:center;'>" +
+          "<div id='veResultTitle' style='font-size:16px;font-weight:800;color:var(--text);'>" + escapeHtml(clips[0]?.title || "쇼츠 1") + "</div>" +
+          "<div id='veResultDesc' style='font-size:12px;color:var(--text-dim);margin-top:4px;'>" + escapeHtml(clips[0]?.description || "") + "</div>" +
+          "</div>" +
+          "<div style='display:flex;gap:8px;margin-top:16px;'>" +
+          "<button class='btn btn-outline' id='veBackToEdit'>편집화면으로 돌아가기</button>" +
+          "<button class='btn btn-primary' id='veNewBtn'>새 영상</button>" +
+          "</div></div></div>";
+        setTimeout(function() {
+          s5.querySelectorAll(".shorts-result-item").forEach(function(el) {
+            el.addEventListener("click", function(e) {
+              if (e.target.closest(".shorts-folder-btn")) return;
+              var ri = parseInt(el.dataset.ri);
+              var r = result.results[ri]; var clip = clips[ri] || {};
+              var vid = $("veResultPreview"); if (vid) { vid.src = "file:///" + r.path.replace(/\\/g, "/"); vid.play(); }
+              var t = $("veResultTitle"); if (t) t.textContent = clip.title || ("쇼츠 " + (ri+1));
+              var d = $("veResultDesc"); if (d) d.textContent = clip.description || "";
+              s5.querySelectorAll(".shorts-result-item").forEach(function(c) { c.style.borderColor = "var(--border-soft)"; });
+              el.style.borderColor = "#3b82f6";
+            });
+          });
+          s5.querySelectorAll(".shorts-folder-btn").forEach(function(btn) {
+            btn.addEventListener("click", function() { bridge.openExternal("file:///" + btn.dataset.dir); });
+          });
+        }, 100);
       } else {
         var dir=(result.outputPath||"").replace(/\\/g,"/").split("/").slice(0,-1).join("/");
         s5.innerHTML="<div class='card' style='text-align:center;padding:24px;'><div style='font-size:18px;font-weight:800;margin-bottom:8px;'>편집 완료</div><div style='font-size:12px;color:var(--text-dim);margin-bottom:16px;'>"+ve.subtitles.length+"개 자막 입혀짐</div><button class='btn btn-primary btn-full' onclick=\"bridge.openExternal('file:///"+dir+"')\">폴더 열기</button><button class='btn btn-outline btn-full' style='margin-top:8px;' id='veBackToEdit'>편집화면으로 돌아가기</button><button class='btn btn-outline btn-full' style='margin-top:8px;' id='veNewBtn'>새 영상</button></div>";

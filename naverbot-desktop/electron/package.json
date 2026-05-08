@@ -27,6 +27,7 @@
     "directories": {
       "output": "dist"
     },
+    "artifactName": "SNSMakeIt-Setup-${version}.${ext}",
     "files": [
       "main.js",
       "preload.js",
@@ -73,7 +74,7 @@
     },
     "publish": {
       "provider": "generic",
-      "url": "https://snsmakeit.com/naverbot-releases"
+      "url": "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/naverbot-releases"
     },
     "nsis": {
       "oneClick": false,
