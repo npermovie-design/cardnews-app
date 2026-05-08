@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getPosts, getMembers, saveMembers, supabase, changePoints, getPostsFromDB, deletePostFromDB, getAuthToken } from "./storage";
-import { Btn, Inp } from "./UI";
+import { Btn } from "./UI";
 
 /* ── 게시판 카테고리/태그 CRUD ── */
 const DEFAULT_BOARD_CATS = [
@@ -60,13 +60,11 @@ function getDriveThumb(url) {
   return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w400` : null;
 }
 
-const ADMIN_PW = import.meta.env.VITE_ADMIN_PW || "";
 const FREE_GUEST  = 5;
 const FREE_MEMBER = 5;
 
 export default function AdminPage({ C, user: adminUser }) {
   const isAdminRole = adminUser?.role === "admin";
-  const [pw, setPw]        = useState("");
   const [auth, setAuth]    = useState(isAdminRole);
   const [tab, setTab]      = useState("stats");
   const [sideOpen, setSideOpen] = useState(false);
@@ -92,6 +90,10 @@ export default function AdminPage({ C, user: adminUser }) {
   const [postSearch, setPostSearch] = useState("");
   const [dailySignups, setDailySignups] = useState([]);
   const [dailyAiUsage, setDailyAiUsage] = useState([]);
+
+  useEffect(() => {
+    setAuth(Boolean(isAdminRole));
+  }, [isAdminRole]);
   // ── 관리자 API 호출 헬퍼 ──
   const adminApi = async (action, extra = "") => {
     const uid = adminUser?.uid || "";
@@ -370,9 +372,8 @@ export default function AdminPage({ C, user: adminUser }) {
     try { return JSON.parse(localStorage.getItem("nper_ai_usage") || "{}"); } catch { return {}; }
   };
 
-  // 관리자 인증: role='admin' 필수 + 비밀번호 이중 체크 (role='admin'이면 비밀번호 스킵)
+  // 관리자 인증: 서버 API에서 role='admin'을 다시 검증한다.
   if (!auth) {
-    // role이 admin이 아닌 경우 접근 완전 차단
     if (!isAdminRole) return (
       <div style={{ maxWidth: 400, margin: "80px auto", padding: "0 24px" }}>
         <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "36px 32px", boxShadow: C.shadow, textAlign: "center" }}>
@@ -382,23 +383,7 @@ export default function AdminPage({ C, user: adminUser }) {
         </div>
       </div>
     );
-    // role='admin'인데 auth가 false인 경우 (비밀번호 이중 인증)
-    return (
-      <div style={{ maxWidth: 400, margin: "80px auto", padding: "0 24px" }}>
-        <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "36px 32px", boxShadow: C.shadow }}>
-          <div style={{ textAlign: "center", marginBottom: 24 }}>
-            <div style={{ fontSize: 36, marginBottom: 8 }}>🔐</div>
-            <h2 style={{ color: C.text, fontSize: 20, fontWeight: 900 }}>관리자 로그인</h2>
-            <p style={{ color: C.muted, fontSize: 13, marginTop: 6 }}>관리자 비밀번호를 입력해 주세요.</p>
-          </div>
-          <Inp C={C} type="password" placeholder="관리자 비밀번호" value={pw}
-            onChange={e => setPw(e.target.value)}
-            onKeyDown={e => { if (e.key === "Enter" && ADMIN_PW && pw === ADMIN_PW) setAuth(true); }}
-            style={{ marginBottom: 12 }} />
-          <Btn C={C} onClick={() => { if (ADMIN_PW && pw === ADMIN_PW) setAuth(true); else alert("비밀번호가 틀렸습니다."); }} full>확인</Btn>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const filteredMembers = search.trim()
@@ -1253,7 +1238,7 @@ export default function AdminPage({ C, user: adminUser }) {
       {tab === "visitors" && <VisitorAnalyticsTab C={C} isDark={isDark} />}
 
       {/* ── 멤버십 관리 ── */}
-      {tab === "membership" && <MembershipTab C={C} isDark={isDark} />}
+      {tab === "membership" && <MembershipTab C={C} isDark={isDark} adminApi={adminApi} />}
       </main>
     </div>
   );
@@ -1701,7 +1686,7 @@ function VisitorAnalyticsTab({ C, isDark }) {
 }
 
 /* ═══ 멤버십 관리 탭 ═══ */
-function MembershipTab({ C, isDark }) {
+function MembershipTab({ C, isDark, adminApi }) {
   const [members, setMembers] = useState([]);
   const [subs, setSubs] = useState([]);
   const [search, setSearch] = useState("");
@@ -1709,26 +1694,51 @@ function MembershipTab({ C, isDark }) {
   const [msg, setMsg] = useState("");
   const PLANS = ["Free", "Basic", "Pro", "Premium", "Business", "Agency"];
   const PLAN_MONTHLY_LIMITS = {
+    Free: 5,
     Basic: 30,
-    Pro: 100,
-    Premium: 200,
-    Business: 500,
+    Starter: 30,
+    Pro: 200,
+    Premium: 700,
+    Business: 700,
     Agency: 99999,
   };
 
   useEffect(() => {
     (async () => {
-      const [{ data: u }, { data: s }] = await Promise.all([
-        supabase.from("users").select("uid,email,nick,role").order("created_at", { ascending: false }),
-        supabase.from("subscriptions").select("*").in("status", ["active", "on_trial"]),
-      ]);
-      setMembers(u || []);
-      setSubs(s || []);
+      try {
+        const data = await adminApi("members");
+        const allMembers = data.members || [];
+        allMembers.sort((a, b) => new Date(b.join_date || 0) - new Date(a.join_date || 0));
+        setMembers(allMembers);
+      } catch(e) { console.error("멤버십 회원 로드 실패:", e); }
+      try {
+        const { data: s } = await supabase.from("subscriptions").select("*").in("status", ["active", "on_trial"]);
+        setSubs(s || []);
+      } catch {}
       setLoading(false);
     })();
   }, []);
 
   const getSub = (uid) => subs.find(s => s.uid === uid);
+
+  const grantProTrial = async (member) => {
+    if (!window.confirm(`${member.email || member.nick || "선택 회원"}에게 Pro 7일 체험권을 부여할까요?`)) return;
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { error } = await supabase.from("program_trials").insert({
+      uid: member.uid,
+      email: member.email,
+      plan: "pro",
+      status: "active",
+      expires_at: expiresAt,
+      note: "관리자 지급 Pro 7일 체험권",
+    });
+    if (error) {
+      setMsg(`체험권 지급 실패: ${error.message}`);
+    } else {
+      setMsg("관리자 Pro 7일 체험권 부여 완료");
+    }
+    setTimeout(() => setMsg(""), 3000);
+  };
 
   const setPlan = async (uid, plan) => {
     if (plan === "Free") {
@@ -1787,6 +1797,10 @@ function MembershipTab({ C, isDark }) {
                 style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
                 {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
+              <button onClick={() => grantProTrial(m)}
+                style={{ padding: "7px 10px", borderRadius: 6, border: `1px solid ${bdr}`, background: isDark ? "rgba(59,130,246,0.16)" : "rgba(59,130,246,0.08)", color: "#2563eb", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                Pro 7일 체험 부여
+              </button>
             </div>
           );
         })}

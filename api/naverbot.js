@@ -59,12 +59,18 @@ async function handleAccountVerify(req, res) {
     }
 
     const limits = getPlanFeatureLimits(result.plan);
+    const existingPoints = Math.max(0, Number(userRow?.points ?? result.points ?? 0));
+    const isProgramTrial = result.grant_type === "program_trial";
     const writeQuota = result.plan === "member"
-      ? { used: 0, limit: Math.max(0, Number(userRow?.points ?? result.points ?? 0)), exceeded: Math.max(0, Number(userRow?.points ?? result.points ?? 0)) <= 0 }
-      : { used: Number(userRow?.monthly_used_write || 0), limit: limits.write || 0 };
+      ? { used: 0, limit: existingPoints, exceeded: existingPoints <= 0 }
+      : isProgramTrial
+        ? { used: Number(userRow?.monthly_used_write || 0), limit: (limits.write || 0) + existingPoints }
+        : { used: Number(userRow?.monthly_used_write || 0), limit: limits.write || 0 };
     const videoQuota = (result.plan === "member" || result.plan === "free")
-      ? { used: 0, limit: Math.max(0, Number(userRow?.points ?? result.points ?? 0)) }
-      : { used: Number(userRow?.monthly_used_video || 0), limit: limits.video || 0 };
+      ? { used: 0, limit: existingPoints }
+      : isProgramTrial
+        ? { used: Number(userRow?.monthly_used_video || 0), limit: (limits.video || 0) + existingPoints }
+        : { used: Number(userRow?.monthly_used_video || 0), limit: limits.video || 0 };
 
     return res.status(200).json({
       valid: true,
