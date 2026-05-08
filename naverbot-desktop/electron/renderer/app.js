@@ -175,33 +175,56 @@ const EXE_PLAN_RULES = {
     label: "무료 체험",
     maxPostsPerRun: 3,
     maxDurationDays: 7,
-    canSchedule: true,
+    monthlyWriteLimit: 5,
+    monthlyVideoLimit: 3,
+    dailyAutoPosts: 0,
+    canSchedule: false,
     canCafe: false,
-    desc: "블로그 자동 운영 7일 체험 · 1회 3개 · 카페 제한",
+    desc: "콘텐츠 생성 5회 · 영상 3회 · 자동 발행 체험",
+  },
+  member: {
+    label: "회원",
+    maxPostsPerRun: 1,
+    maxDurationDays: 0,
+    monthlyWriteLimit: 0,
+    monthlyVideoLimit: 0,
+    dailyAutoPosts: 0,
+    canSchedule: false,
+    canCafe: false,
+    desc: "보유한 잔여 횟수 안에서 이용할 수 있습니다.",
   },
   starter: {
     label: "Basic",
     maxPostsPerRun: 5,
     maxDurationDays: 30,
-    canSchedule: true,
+    monthlyWriteLimit: 30,
+    monthlyVideoLimit: 10,
+    dailyAutoPosts: 0,
+    canSchedule: false,
     canCafe: false,
-    desc: "블로그 자동 운영 · 1회 최대 5개 · 카페 제한",
+    desc: "콘텐츠 생성 월 30회 · 영상 월 10회 · 자동 발행 체험",
   },
   pro: {
     label: "Pro",
     maxPostsPerRun: 3,
     maxDurationDays: 0,
+    monthlyWriteLimit: 200,
+    monthlyVideoLimit: 99999,
+    dailyAutoPosts: 3,
     canSchedule: true,
     canCafe: false,
-    desc: "블로그 자동 운영 · 하루 최대 3개 · 카페 제한",
+    desc: "콘텐츠 생성 월 200회 · 영상 제한 없음 · 자동 발행 하루 3개",
   },
   premium: {
     label: "Business",
     maxPostsPerRun: 10,
     maxDurationDays: 0,
+    monthlyWriteLimit: 700,
+    monthlyVideoLimit: 99999,
+    dailyAutoPosts: 10,
     canSchedule: true,
     canCafe: true,
-    desc: "블로그/카페 자동 운영 · 하루 최대 10개",
+    desc: "콘텐츠 생성 월 700회 · 영상 제한 없음 · 자동 발행 하루 10개",
   },
   admin: {
     label: "Admin",
@@ -223,6 +246,7 @@ function normalizeExePlan(user) {
   const role = String(user?.role || "").toLowerCase();
   if (user?.admin || role === "admin" || plan === "admin") return "admin";
   if (user?.trial || plan === "trial" || !plan) return "trial";
+  if (["member", "free"].includes(plan)) return "member";
   if (["premium", "business", "agency"].includes(plan)) return "premium";
   if (["pro"].includes(plan)) return "pro";
   return "starter";
@@ -230,6 +254,28 @@ function normalizeExePlan(user) {
 
 function getExePlanRules(user = state.user) {
   return EXE_PLAN_RULES[normalizeExePlan(user)] || EXE_PLAN_RULES.trial;
+}
+
+function getFeatureQuota(feature = "write", user = state.user) {
+  if (!user) return { canUse: false, used: 0, limit: 0, remaining: 0, feature };
+  if (user.admin) return { canUse: true, used: 0, limit: 99999, remaining: 99999, feature };
+  if (user.trial) {
+    const rules = getExePlanRules(user);
+    const limit = feature === "video" ? (rules.monthlyVideoLimit || 3) : (user.trial_limit || rules.monthlyWriteLimit || 5);
+    const used = feature === "video"
+      ? Number(user.monthly_used_video || user.trial_video_used || 0)
+      : Number(user.monthly_used || user.trial_used || 0);
+    return { canUse: limit - used > 0, used, limit, remaining: Math.max(0, limit - used), feature };
+  }
+  if (feature === "video") {
+    const rules = getExePlanRules(user);
+    const limit = Number(user.monthly_video_limit || rules.monthlyVideoLimit || 0);
+    const used = Number(user.monthly_used_video || 0);
+    return { canUse: limit - used > 0, used, limit, remaining: Math.max(0, limit - used), feature };
+  }
+  const limit = Number(user.monthly_limit || 0);
+  const used = Number(user.monthly_used || 0);
+  return { canUse: limit - used > 0, used, limit, remaining: Math.max(0, limit - used), feature };
 }
 
 function isExperienceLimitedUser(user = state.user) {
@@ -244,16 +290,31 @@ function formatPlanName(planKey, rawPlan = "") {
 }
 
 function renderPlanFeatures(rules, user = state.user) {
-  const postLimit = rules.maxPostsPerRun > 0 ? `1회 ${rules.maxPostsPerRun}개` : "제한 없음";
-  const autoText = isExperienceLimitedUser(user) ? "체험 1회" : (rules.maxDurationDays > 0 ? `${rules.maxDurationDays}일` : "제한 없음");
+  const planKey = normalizeExePlan(user);
+  const isMemberCountPlan = planKey === "member";
+  const memberLimit = Number(user?.monthly_limit || 0);
+  const memberUsed = Number(user?.monthly_used || 0);
+  const memberLeft = Math.max(0, memberLimit - memberUsed);
+  const videoQuota = getFeatureQuota("video", user);
+  const postLimit = isMemberCountPlan
+    ? `잔여 ${memberLeft}회`
+    : (rules.monthlyWriteLimit ? `월 ${rules.monthlyWriteLimit}회` : "제한 없음");
+  const videoLimit = isMemberCountPlan
+    ? "잔여 횟수 사용"
+    : (videoQuota.limit && videoQuota.limit < 99999 ? `잔여 ${videoQuota.remaining} / ${videoQuota.limit}회` : "제한 없음");
+  const autoText = rules.dailyAutoPosts > 0 ? `하루 ${rules.dailyAutoPosts}개` : "체험";
   return `
     <div class="plan-feature-grid">
       <div class="plan-feature">
-        <div class="plan-feature-label">발행 한도</div>
+        <div class="plan-feature-label">콘텐츠 생성</div>
         <div class="plan-feature-value">${escapeHtml(postLimit)}</div>
       </div>
       <div class="plan-feature">
-        <div class="plan-feature-label">자동 운영</div>
+        <div class="plan-feature-label">영상 생성</div>
+        <div class="plan-feature-value">${escapeHtml(videoLimit)}</div>
+      </div>
+      <div class="plan-feature">
+        <div class="plan-feature-label">자동 발행</div>
         <div class="plan-feature-value">${escapeHtml(autoText)}</div>
       </div>
       <div class="plan-feature">
@@ -299,6 +360,11 @@ function isNaverAccountReady() {
   return !!nid;
 }
 
+function openNavGroupFor(item) {
+  const group = item?.closest?.(".nav-group");
+  if (group) group.open = true;
+}
+
 navItems.forEach((item) => {
   item.addEventListener("click", () => {
     const target = item.dataset.panel;
@@ -325,12 +391,15 @@ navItems.forEach((item) => {
       return;
     }
 
+    openNavGroupFor(item);
     navItems.forEach((n) => n.classList.toggle("active", n === item));
     panels.forEach((p) => p.classList.toggle("hidden", p.dataset.panel !== target));
 
-    // 영상 편집기: Step1은 사이드바 유지, Step3 진입 시에만 숨김
+    // 영상 편집기: 떠날 때 렌더 루프/재생 멈춤, Step1은 사이드바 유지
     if (target !== "video-editor") {
       document.querySelector(".sidebar")?.classList.remove("ve-hidden");
+      // 캔버스 렌더 루프 + 재생 중지 (배터리/CPU 절약)
+      if (typeof window._veStopPlayback === "function") window._veStopPlayback();
     }
 
     // 패널별 진입 시 렌더링
@@ -355,7 +424,10 @@ async function updateCardQuota() {
 
 function goToPanel(name) {
   const btn = document.querySelector(`.nav-item[data-panel="${name}"]`);
-  if (btn) btn.click();
+  if (btn) {
+    openNavGroupFor(btn);
+    btn.click();
+  }
 }
 
 
@@ -370,11 +442,20 @@ function renderPricingPanel() {
   const rules = getExePlanRules(state.user);
   const planLabel = formatPlanName(planKey, state.user.plan);
   const expiresText = state.user.expires_at ? ` · 만료 ${new Date(state.user.expires_at).toLocaleDateString("ko-KR")}` : "";
-  const postLimit = isExperienceLimitedUser() ? "즉시 발행 체험 5회" : (rules.maxPostsPerRun > 0 ? `1회 최대 ${rules.maxPostsPerRun}개` : "제한 없음");
+  const memberLimit = Number(state.user?.monthly_limit || 0);
+  const memberUsed = Number(state.user?.monthly_used || 0);
+  const memberLeft = Math.max(0, memberLimit - memberUsed);
+  const postLimit = planKey === "member"
+    ? `잔여 횟수 ${memberLeft}회`
+    : (rules.monthlyWriteLimit ? `콘텐츠 생성 월 ${rules.monthlyWriteLimit}회` : "제한 없음");
+  const videoLimit = planKey === "member"
+    ? "AI 생성은 잔여 횟수에서 차감"
+    : (rules.monthlyVideoLimit >= 99999 ? "영상 생성 제한 없음" : `영상 생성 월 ${rules.monthlyVideoLimit || 0}회`);
+  const autoLimit = rules.dailyAutoPosts > 0 ? `자동 발행 하루 ${rules.dailyAutoPosts}개` : "자동 발행 체험";
   box.innerHTML = `
     <strong>${escapeHtml(planLabel)}</strong>${escapeHtml(expiresText)}<br>
     ${escapeHtml(rules.desc)}<br>
-    발행 한도: ${escapeHtml(postLimit)} · 카페 발행: ${rules.canCafe ? "가능" : "Business 이상"} · 예약 발행: ${rules.canSchedule ? "가능" : "제한"}
+    ${escapeHtml(postLimit)} · ${escapeHtml(videoLimit)} · ${escapeHtml(autoLimit)} · 카페 발행: ${rules.canCafe ? "가능" : "Business 이상"}
   `;
 }
 
@@ -541,7 +622,7 @@ async function canUseExperience(kind) {
   const limit = EXPERIENCE_LIMITS[kind] || 0;
   if (usage[kind] < limit) return true;
 
-  const label = kind === "quick" ? "즉시 발행 10회" : "자동 운영 3회";
+  const label = kind === "quick" ? "자동 발행 체험" : "자동 운영 체험";
   showModal(
     "Pro 플랜 필요",
     `${label} 체험을 모두 사용했습니다.\n이후 자동 발행은 Pro 이상 플랜에서 이용할 수 있습니다.`,
@@ -700,7 +781,7 @@ function _friendlyError(err) {
     [/제목 입력 실패/i, "글 제목을 입력하지 못했습니다. 네이버 에디터 로딩이 느릴 수 있으니 다시 시도해주세요."],
     [/본문 입력 실패/i, "글 본문을 입력하지 못했습니다. 에디터 로딩 지연이 원인일 수 있습니다."],
     [/네트워크 오류/i, "인터넷 연결을 확인해주세요. 서버와 통신할 수 없습니다."],
-    [/일일 한도/i, "오늘의 발행 한도에 도달했습니다. 내일 다시 시도하거나 플랜을 업그레이드하세요."],
+    [/일일 한도|한도 초과/i, "사용 가능한 횟수를 모두 사용했습니다. 잔여 횟수나 구독 상태를 확인하세요."],
     [/라이선스/i, "구독이 만료되었거나 비활성 상태입니다. snsmakeit.com에서 구독을 확인해주세요."],
     [/글 생성 실패/i, "AI 글 생성에 실패했습니다. 잠시 후 다시 시도해주세요."],
     [/timeout|시간 초과|TIMEOUT/i, "작업 시간이 초과되었습니다. 인터넷 속도를 확인하고 다시 시도해주세요."],
@@ -910,7 +991,7 @@ function setUserBadge(text, dotState = "gray") {
   // 등급 표시
   if (planTop && state.user) {
     var u = state.user;
-    var planLabels = { admin: "관리자", trial: "체험판", starter: "Basic", pro: "Pro", premium: "Premium", business: "Business", member: "Free" };
+    var planLabels = { admin: "관리자", trial: "체험판", starter: "Basic", pro: "Pro", premium: "Business", business: "Business", member: "회원" };
     var planKey = u.admin ? "admin" : (u.trial ? "trial" : (u.plan || "member").toLowerCase());
     var label = planLabels[planKey] || u.plan || "Free";
     planTop.textContent = label + " 플랜";
@@ -929,7 +1010,7 @@ function updateSidebarQuota() {
   var u = state.user;
   var limit = u.monthly_limit || 5;
   var used = u.monthly_used || 0;
-  if (u.trial) { limit = u.trial_limit || 5; used = u.trial_used || 0; }
+  if (u.trial) { limit = u.trial_limit || 5; used = u.monthly_used || u.trial_used || 0; }
   if (u.admin) { limit = 99999; used = 0; }
   var left = Math.max(0, limit - used);
   var pct = limit >= 99999 ? 100 : Math.min(100, Math.round((left / limit) * 100));
@@ -940,6 +1021,92 @@ function updateSidebarQuota() {
   // 수동 글쓰기 횟수 표시도 동기화
   var wq = $("writeQuotaInfo");
   if (wq) wq.textContent = limit >= 99999 ? "무제한" : "남은 횟수: " + left + " / " + limit + "회";
+}
+
+// ── 전역 횟수 관리 (기능별: 글쓰기 / 영상 편집) ──
+async function checkWriteLimit() {
+  return getFeatureQuota("write");
+}
+
+async function checkVideoLimit() {
+  return getFeatureQuota("video");
+}
+
+async function markFeatureUsed(feature = "write", reason = "데스크톱 콘텐츠 생성") {
+  if (!state.user) return;
+  if (state.user.admin) { updateSidebarQuota(); return; }
+  // 서버에 횟수 차감 → 잔여 횟수 동기화
+  try {
+    const cfg = (await bridge.loadConfig()) || {};
+    const token = cfg.makeit_access_token;
+    if (token) {
+      const res = await fetch("https://snsmakeit.com/api/naverbot?action=use-quota", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access_token: token, feature, reason }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        if (typeof data.remaining === "number") {
+          state.user.monthly_limit = data.remaining;
+          state.user.monthly_used = 0;
+        }
+        if (typeof data.monthly_used === "number") {
+          if ((data.feature || feature) === "video") {
+            state.user.monthly_used_video = data.monthly_used;
+            state.user.monthly_video_limit = data.monthly_limit || state.user.monthly_video_limit;
+          } else {
+            state.user.monthly_used = data.monthly_used;
+            state.user.monthly_limit = data.monthly_limit || state.user.monthly_limit;
+          }
+        }
+      } else if (data.error === "횟수 부족" || data.error === "월간 한도 초과") {
+        if (feature === "video") state.user.monthly_used_video = state.user.monthly_video_limit;
+        else state.user.monthly_used = state.user.monthly_limit;
+      }
+    } else {
+      if (feature === "video") state.user.monthly_used_video = (state.user.monthly_used_video || 0) + 1;
+      else state.user.monthly_used = (state.user.monthly_used || 0) + 1;
+    }
+  } catch (e) {
+    console.warn("[quota] 서버 차감 실패, 로컬 차감:", e);
+    if (feature === "video") state.user.monthly_used_video = (state.user.monthly_used_video || 0) + 1;
+    else state.user.monthly_used = (state.user.monthly_used || 0) + 1;
+  }
+  updateSidebarQuota();
+  renderPlanCard(state.user);
+}
+
+async function markWriteUsed() {
+  return markFeatureUsed("write", "데스크톱 글쓰기");
+}
+
+// 서버에서 최신 잔여 횟수를 가져와 UI 동기화 (발행 완료 후 호출)
+async function syncQuotaFromServer() {
+  if (!state.user || state.user.admin) return;
+  try {
+    const r = await bridge.verifyAccount();
+    if (r.ok && r.result && r.result.status === "ok") {
+      const sq = r.result.quota || {};
+      const vq = r.result.video_quota || r.result.usage?.video || {};
+      const rc = r.result.remaining_count;
+      const plan = r.result.plan || state.user.plan;
+      const planLower = String(plan).toLowerCase();
+      if (["member", "free"].includes(planLower)) {
+        state.user.monthly_limit = Math.max(0, Number(rc ?? sq.limit ?? 0));
+        state.user.monthly_used = 0;
+      } else {
+        state.user.monthly_used = Number(sq.used || 0);
+        state.user.monthly_limit = Number(sq.limit || state.user.monthly_limit);
+        state.user.monthly_used_video = Number(vq.used || state.user.monthly_used_video || 0);
+        state.user.monthly_video_limit = Number(vq.limit || state.user.monthly_video_limit || getExePlanRules(state.user).monthlyVideoLimit || 0);
+      }
+      updateSidebarQuota();
+      renderPlanCard(state.user);
+    }
+  } catch (e) {
+    console.warn("[quota] 서버 동기화 실패:", e);
+  }
 }
 
 // ── 아바타 선택 (프로필 캐릭터) ──
@@ -1007,8 +1174,8 @@ function renderPlanCard(data) {
   const avatar = initialOf(nick);
   const rules = getExePlanRules(data);
   const expiresText = data.expires_at ? `만료 ${new Date(data.expires_at).toLocaleDateString("ko-KR")}` : "";
-  const experienceText = isExperienceLimitedUser(data)
-    ? `<div class="plan-desc">체험 범위: 즉시 발행 ${EXPERIENCE_LIMITS.quick}회 · 자동 운영 ${EXPERIENCE_LIMITS.autopilot}회 · 이후 Pro 필요</div>`
+  const experienceText = data.trial
+    ? `<div class="plan-desc">무료 체험은 남은 횟수 안에서 사용할 수 있습니다. 구독하면 월간 횟수가 적용됩니다.</div>`
     : "";
   if (data.trial) {
     const remaining = Math.max(0, data.trial_limit - data.trial_used);
@@ -1033,7 +1200,30 @@ function renderPlanCard(data) {
         <button class="btn btn-outline btn-sm" id="logoutBtn">로그아웃</button>
       </div>
     `;
+  } else if (planKey === "member") {
+    const memberRemaining = Math.max(0, (data.monthly_limit || 0) - (data.monthly_used || 0));
+    card.innerHTML = `
+      <div class="plan-summary-head">
+        <div class="user-card compact">
+          <div class="avatar">${escapeHtml(avatar)}</div>
+          <div class="user-info">
+            <div class="user-name">${escapeHtml(nick)}</div>
+            <div class="user-email">${escapeHtml(email)}</div>
+          </div>
+        </div>
+        <div class="plan-badge" style="background:#64748b;color:#fff;">Free</div>
+      </div>
+      <div class="plan-title">Free 플랜</div>
+      <div class="plan-desc">잔여 횟수 <strong style="color:#3b82f6;">${memberRemaining}회</strong> · 구독하면 월간 횟수가 적용됩니다.</div>
+      ${renderPlanFeatures(rules, data)}
+      <div class="plan-actions">
+        <button class="btn btn-primary btn-sm" id="subscribeBtn">구독하기</button>
+        <button class="btn btn-outline btn-sm" id="refreshBtn">새로고침</button>
+        <button class="btn btn-outline btn-sm" id="logoutBtn">로그아웃</button>
+      </div>
+    `;
   } else {
+    const subRemaining = Math.max(0, (data.monthly_limit || 0) - (data.monthly_used || 0));
     card.innerHTML = `
       <div class="plan-summary-head">
         <div class="user-card compact">
@@ -1046,7 +1236,7 @@ function renderPlanCard(data) {
         <div class="plan-badge active">${escapeHtml(planLabel)}</div>
       </div>
       <div class="plan-title">${escapeHtml(planLabel)} 플랜 활성</div>
-      <div class="plan-desc">${escapeHtml(rules.desc)}${expiresText ? " · " + escapeHtml(expiresText) : ""}</div>
+      <div class="plan-desc">${escapeHtml(rules.desc)}${expiresText ? " · " + escapeHtml(expiresText) : ""} · 잔여 <strong style="color:#3b82f6;">${subRemaining}회</strong></div>
       ${experienceText}
       ${renderPlanFeatures(rules, data)}
       <div class="plan-actions">
@@ -1068,6 +1258,13 @@ function renderPlanCard(data) {
   const mgrBtn = card.querySelector("#managePricingBtn");
   if (mgrBtn) mgrBtn.addEventListener("click", () => bridge.openExternal("https://snsmakeit.com/mypage"));
   renderPricingPanel();
+
+  // Pro 체험 배너 표시/숨김
+  var trialBanner = $("proTrialBanner");
+  if (trialBanner) {
+    var showTrial = data && data.valid && !data.admin && !data.trial && (planKey === "member");
+    trialBanner.style.display = showTrial ? "" : "none";
+  }
 }
 
 // 기존 plan 카드 제거 (중복 방지)
@@ -1218,6 +1415,8 @@ function handleVerifyResult(r, email) {
     // 관리자 이메일 체크
     const isAdmin = isAdminAccount(email, r.result);
     var serverQuota = r.result.quota || {};
+    var serverVideoQuota = r.result.video_quota || r.result.usage?.video || {};
+    var serverLimits = r.result.limits || {};
     const data = {
       valid: true,
       email,
@@ -1227,15 +1426,18 @@ function handleVerifyResult(r, email) {
       expires_at: r.result.expires_at || "",
       trial: isAdmin ? false : !!r.result.trial,
       trial_used: isAdmin ? 0 : Math.max(r.result.trial_used || 0, _trialUsedCache),
-      trial_limit: isAdmin ? 999999 : (r.result.trial_limit || 10),
+      trial_limit: isAdmin ? 999999 : (r.result.trial_limit || 5),
       admin: isAdmin,
-      monthly_used: serverQuota.used || 0,
-      monthly_limit: serverQuota.limit || 5,
+      monthly_used: Number(serverQuota.used || 0),
+      monthly_limit: Number(serverQuota.limit ?? r.result.remaining_count ?? 5),
+      monthly_used_video: Number(serverVideoQuota.used || 0),
+      monthly_video_limit: Number(serverVideoQuota.limit ?? serverLimits.video ?? getExePlanRules({ plan: r.result.plan }).monthlyVideoLimit ?? 0),
+      plan_limits: serverLimits,
     };
     state.loggedIn = true;
     state.user = data;
     const remaining = data.trial
-      ? Math.max(0, data.trial_limit - data.trial_used)
+      ? Math.max(0, data.trial_limit - data.monthly_used)
       : Math.max(0, data.monthly_limit - data.monthly_used);
     const badgeText = isAdmin
       ? `관리자 · ${data.nick || email}`
@@ -1247,7 +1449,7 @@ function handleVerifyResult(r, email) {
       ? `[계정] 관리자 로그인 — 무제한`
       : data.trial
         ? `[계정] 체험 모드 — ${data.trial_used}/${data.trial_limit} 사용`
-        : `[계정] 로그인 성공 — ${data.plan} 플랜`);
+        : `[계정] 로그인 성공 — ${data.plan} 플랜 · 잔여 ${remaining}회`);
   } else {
     // 관리자면 verify 실패해도 로그인 유지
     if (state.user && state.user.admin) {
@@ -1310,6 +1512,48 @@ $("aboutWeb").addEventListener("click", (e) => {
   e.preventDefault();
   bridge.openExternal("https://snsmakeit.com/");
 });
+
+// ── Pro 체험 버튼 ──
+if ($("proTrialBtn")) {
+  $("proTrialBtn").addEventListener("click", function() {
+    bridge.openExternal("https://snsmakeit.com/pricing");
+  });
+}
+
+// ── 홈 소식/도움 카드 클릭 → 패널 이동 ──
+document.querySelectorAll(".home-news-card[data-goto]").forEach(function(card) {
+  card.addEventListener("click", function() {
+    goToPanel(card.getAttribute("data-goto"));
+  });
+});
+
+// ── 홈 소식 미리보기 로드 ──
+(async function loadHomeNewsPreviews() {
+  try {
+    // 공지사항 미리보기
+    const noticeEl = $("homeNoticePreview");
+    if (noticeEl) {
+      const noticeItems = document.querySelectorAll('section[data-panel="notice"] .card');
+      if (noticeItems.length > 0) {
+        var html = "";
+        for (var i = 0; i < Math.min(2, noticeItems.length); i++) {
+          var title = noticeItems[i].querySelector('[style*="font-weight:700"]');
+          var date = noticeItems[i].querySelector('[style*="font-size:11px"]');
+          if (title) html += '<div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">' + (title.nextElementSibling ? title.nextElementSibling.textContent.substring(0, 30) : title.textContent) + '</span>' + (date ? '<span style="font-size:10px;color:var(--text-dim);flex-shrink:0;margin-left:8px;">' + date.textContent + '</span>' : '') + '</div>';
+        }
+        noticeEl.innerHTML = html || '<div style="color:var(--text-dim);">공지사항이 없습니다.</div>';
+      } else {
+        noticeEl.innerHTML = '<div style="color:var(--text-dim);">공지사항이 없습니다.</div>';
+      }
+    }
+    // 커뮤니티 미리보기
+    var communityEl = $("homeCommunityPreview");
+    if (communityEl) communityEl.innerHTML = '<div style="color:var(--text-dim);">커뮤니티에서 다른 사용자와 소통하세요.</div>';
+    // 챌린지 미리보기
+    var challengeEl = $("homeChallengePreview");
+    if (challengeEl) challengeEl.innerHTML = '<div style="color:var(--text-dim);">SNS 챌린지에 참여해보세요.</div>';
+  } catch(e) { console.warn("[HomeNews]", e); }
+})();
 
 // ── 잡담방 ──
 async function loadChat() {
@@ -1726,6 +1970,7 @@ if ($("quickStartBtn")) $("quickStartBtn").addEventListener("click", async () =>
       }
       if (sp.length > 0) bridge.openExternal(sp[sp.length-1].url);
       notify(`발행 완료 (${sp.length}개)`, sp.map(p=>p.title||p.topic).join(", "), sp.length>0 ? ()=>bridge.openExternal(sp[sp.length-1].url) : null);
+      syncQuotaFromServer();
     } else {
       const err = (r.result && r.result.message) || r.error || "실패";
       playSound("fail");
@@ -2323,6 +2568,7 @@ $("startAutopilotBtn").addEventListener("click", async () => {
         lastUrl ? () => bridge.openExternal(lastUrl) : null
       );
       addLog(`[자동 운영] ${r.result.message || "완료"}`);
+      syncQuotaFromServer();
       // 각 글 링크를 로그에 표시
       for (const p of posts) {
         if (p.url) {
@@ -2814,6 +3060,7 @@ if ($("runCafeBtn")) {
       addPublishHistory({ title: r.result.title, url: r.result.post_url, naver_id: naverId, type: "cafe" });
       playSound("success");
       showModal("카페 발행 완료", `글이 성공적으로 발행되었습니다.\n\n제목: ${r.result.title || ""}`, "확인");
+      syncQuotaFromServer();
       // 발행된 글 URL을 브라우저에서 자동 열기
       if (r.result.post_url) bridge.openExternal(r.result.post_url);
     } else {
@@ -2920,7 +3167,11 @@ bridge.loadConfig().then(async cfg => {
       role: isAdminBoot ? "admin" : "",
       trial: isAdminBoot ? false : !cfg._cached_plan,
       trial_used: cachedUsed,
-      trial_limit: isAdminBoot ? 999999 : 10,
+      trial_limit: isAdminBoot ? 999999 : 5,
+      monthly_used: Number(cfg._cached_monthly_used || 0),
+      monthly_limit: Number(cfg._cached_monthly_limit || 5),
+      monthly_used_video: Number(cfg._cached_monthly_used_video || 0),
+      monthly_video_limit: Number(cfg._cached_monthly_video_limit || 0),
       admin: isAdminBoot,
     };
     setUserBadge(isAdminBoot ? `관리자 · ${nick}` : nick, "green");
@@ -2960,6 +3211,10 @@ bridge.loadConfig().then(async cfg => {
         _setTrialUsed(maxUsed);
         c._cached_trial_used = maxUsed;
         c._cached_plan = r.result.plan || "";
+        c._cached_monthly_used = r.result.quota?.used || 0;
+        c._cached_monthly_limit = r.result.quota?.limit ?? r.result.remaining_count ?? 5;
+        c._cached_monthly_used_video = r.result.video_quota?.used || r.result.usage?.video?.used || 0;
+        c._cached_monthly_video_limit = r.result.video_quota?.limit || r.result.usage?.video?.limit || r.result.limits?.video || 0;
         await bridge.saveConfig(c);
       }
     }
@@ -3222,11 +3477,18 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   var ve = { filePath:null, fileInfo:null, fileId:null, segments:[], subtitles:[], videoClips:[], type:"shorts", clipCount:3, subEnabled:true, silenceRemove:false, subSize:38, subColor:"#FFFFFF", duration:0 };
 
   function goStep(n) {
+    // 편집 화면(Step3)에서 나갈 때 타이머/렌더 루프 정리
+    if (n !== 3) {
+      if (typeof _veEditCursorTimer !== "undefined" && _veEditCursorTimer) { clearInterval(_veEditCursorTimer); _veEditCursorTimer = null; }
+      if (typeof playInterval !== "undefined" && playInterval) { clearInterval(playInterval); playInterval = null; }
+      stopCanvasRender();
+      isPlaying = false;
+    }
     for (var i=1;i<=5;i++) {
       var el=$("veStep"+i);
       if(!el) continue;
       if(i===n) {
-        el.style.display = (i===3) ? "" : "";
+        el.style.display = "";
         if(i===3) el.classList.add("ve-nle-active");
       } else {
         el.style.display="none";
@@ -3236,7 +3498,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if(n===3) { document.querySelector(".sidebar")?.classList.add("ve-hidden"); }
     else { document.querySelector(".sidebar")?.classList.remove("ve-hidden"); }
   }
-  function setProg(pId,bId,lId,pct,label) { var p=$(pId),b=$(bId),l=$(lId); if(p) p.textContent=pct+"%"; if(b) b.style.width=pct+"%"; if(l&&label) l.textContent=label; }
+  function setProg(pId,bId,lId,pct,label) { var p=Math.max(0,Math.min(100,isNaN(pct)?0:Math.round(pct))); var el=$(pId),b=$(bId),l=$(lId); if(el) el.textContent=p+"%"; if(b) b.style.width=p+"%"; if(l&&label) l.textContent=label; }
   function chipG(id,cb) { var w=$(id); if(!w) return; w.addEventListener("click",function(e){ var b=e.target.closest(".chip"); if(!b) return; w.querySelectorAll(".chip").forEach(function(c){c.classList.remove("active")}); b.classList.add("active"); cb(b.dataset.value); }); }
 
   chipG("veTypeChips",function(v){ ve.type=v; applyVeLayout(v); });
@@ -3554,9 +3816,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     draw();
   }
 
-  function stopCanvasRender() {
-    if (_veCanvasRAF) { cancelAnimationFrame(_veCanvasRAF); _veCanvasRAF = null; }
-  }
+  // (stopCanvasRender는 상단에서 정의됨)
 
   // 전체화면 로딩 (조작 완전 차단)
   function showVeLoading(msg) {
@@ -4112,6 +4372,11 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var cw = _veCanvas ? _veCanvas.width : 720;
       var ch = _veCanvas ? _veCanvas.height : 1280;
       var ovSize = Math.round(Math.min(cw, ch) * 0.45);
+      // 기존 오버레이 GIF DOM 정리
+      if (ve.overlays) ve.overlays.forEach(function(ov) {
+        if (ov._img && ov._isGif && ov._img.parentNode) ov._img.parentNode.removeChild(ov._img);
+        ov._img = null;
+      });
       ve.overlays=[];
       var inserted=0, failed=0;
       var usedUrls = {};
@@ -4447,6 +4712,11 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   chipG("veOvAnimChips",function(v){ if(!_selectedOv) return; _selectedOv._anim=v; _needsRedraw=true; });
   var ovDelBtn=$("veOvDeleteBtn"); if(ovDelBtn) ovDelBtn.addEventListener("click",function(){
     if(!_selectedOv) return;
+    // GIF DOM 요소 정리 (메모리 누수 방지)
+    if (_selectedOv._img && _selectedOv._isGif && _selectedOv._img.parentNode) {
+      _selectedOv._img.parentNode.removeChild(_selectedOv._img);
+    }
+    _selectedOv._img = null;
     var idx=ve.overlays.indexOf(_selectedOv);
     if(idx>=0) ve.overlays.splice(idx,1);
     _selectedOv=null; showOvOptions(null);
@@ -4772,6 +5042,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   chipG("veSubAnimChips",function(v){subAnim=v; _needsRedraw=true;});
 
   function stopPlayback(){var v=$("veVideo");if(v){v.pause();v.src="";}isPlaying=false;if(playInterval){clearInterval(playInterval);playInterval=null;} var pb=$("vePlayBtn");if(pb)pb.innerHTML="&#9654;"; stopCanvasRender();}
+  window._veStopPlayback = stopPlayback; // 전역 접근 (탭 전환 시 사용)
 
   function initEditor(){
     var video=$("veVideo"); if(!video||!ve.filePath) return;
@@ -4796,22 +5067,47 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     video.load();
     isPlaying=false;
 
+    // 영상 로드 실패 처리
+    video.addEventListener("error", function onError() {
+      video.removeEventListener("error", onError);
+      if (loadOv) loadOv.style.display = "none";
+      var errMsg = "영상 파일을 불러올 수 없습니다.";
+      if (video.error) {
+        var codes = { 1: "로드 중단됨", 2: "네트워크 오류", 3: "디코딩 실패 (지원되지 않는 형식)", 4: "지원되지 않는 영상 형식" };
+        errMsg += "\n(" + (codes[video.error.code] || "코드 " + video.error.code) + ")";
+      }
+      showModal("영상 로드 실패", errMsg, "확인");
+    }, { once: true });
+
     // 영상 로드 완료 시 자막 준비 → 로딩 숨김
-    video.addEventListener("loadeddata", function onLoaded() {
-      video.removeEventListener("loadeddata", onLoaded);
+    var _veLoadDone = false;
+    function onVideoReady() {
+      if (_veLoadDone) return;
+      _veLoadDone = true;
       if (loadTxt) loadTxt.textContent = "자막 및 타임라인 준비 중...";
       setTimeout(function() {
-        // 기본 비율 적용 + 캔버스 렌더 시작
         applyVeLayout(ve.type || "landscape");
         updateRatioLabel();
-        // 비디오 클립 초기화 (전체 영상 = 1클립)
         if (!ve.videoClips.length) {
           ve.videoClips = [{ start: 0, end: ve.duration || 1, label: "전체 영상" }];
         }
         renderSubList(); renderTimeline(); renderVideoTrack(); renderClipList();
         if (loadOv) loadOv.style.display = "none";
       }, 300);
+    }
+    video.addEventListener("loadeddata", function onLoaded() {
+      video.removeEventListener("loadeddata", onLoaded);
+      onVideoReady();
     }, { once: true });
+    // 타임아웃: 15초 후에도 loadeddata 안 오면 강제 진행
+    setTimeout(function() {
+      if (!_veLoadDone) {
+        console.warn("[VideoEditor] loadeddata timeout — forcing init");
+        if (video.readyState >= 1) { onVideoReady(); return; }
+        if (loadOv) loadOv.style.display = "none";
+        showModal("영상 로드 지연", "영상 로드에 시간이 오래 걸립니다.\n파일 형식을 확인하거나 다른 영상을 시도해주세요.", "확인");
+      }
+    }, 15000);
     var pb=$("vePlayBtn"),seekBar=$("veSeekBar"),timeDisp=$("veTimeDisplay");
 
     // 재생/정지
@@ -5044,6 +5340,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
             var newStart=Math.max(0,origStart+dt);
             var newEnd=newStart+segDur;
             if(newEnd>dur+0.5){newEnd=dur+0.5;newStart=newEnd-segDur;}
+            newStart=Math.max(0,newStart); // 음수 방지
+            newEnd=Math.max(newStart+0.1,newEnd);
             el.style.left=(newStart/dur*100).toFixed(2)+"%";
             s._dragStart=newStart; s._dragEnd=newEnd;
           }
@@ -5066,15 +5364,19 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         document.addEventListener("mouseup",onUp);
       });
     });
-    // 타임라인 빈 공간 클릭 → 재생 위치 이동
-    blocks.addEventListener("click", function(e) {
-      if (e.target.closest("[data-idx]")) return; // 클립 클릭은 무시
-      var rect = blocks.getBoundingClientRect();
-      var x = e.clientX - rect.left;
-      var pct = x / rect.width;
-      var video = $("veVideo");
-      if (video && dur > 0) video.currentTime = pct * dur;
-    });
+    // 타임라인 빈 공간 클릭 → 재생 위치 이동 (중복 방지)
+    if (!blocks._clickBound) {
+      blocks._clickBound = true;
+      blocks.addEventListener("click", function(e) {
+        if (e.target.closest("[data-idx]")) return;
+        var rect = blocks.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var pct = x / rect.width;
+        var video = $("veVideo");
+        var d = ve.duration || 1;
+        if (video && d > 0) video.currentTime = pct * d;
+      });
+    }
 
     renderTimeRuler();
     renderAudioWaveform();
@@ -5387,13 +5689,16 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (window.nbBridge && window.nbBridge.isLocalDev) { await doExport(true); return; }
     // 횟수 체크
     if (!state.loggedIn) return showModal("로그인 필요", "먼저 메이킷 계정에 로그인해주세요.", "확인");
-    var wq = await checkWriteLimit();
-    if (!wq.canUse) return showModal("한도 초과", "이번 달 사용 한도를 모두 사용했습니다.", "구독하기", function(){ bridge.openExternal("https://snsmakeit.com/programs"); });
-    showModal("횟수 차감 안내", "내보내기를 실행하면 1회가 차감됩니다.\n진행하시겠습니까?", "진행", async function(){ await doExport(); });
+    var vq = await checkVideoLimit();
+    if (!vq.canUse) return showModal("영상 한도 초과", "이번 달 영상 편집 한도(" + vq.limit + "회)를 모두 사용했습니다.\n플랜을 업그레이드하면 더 많이 사용할 수 있습니다.", "구독하기", function(){ bridge.openExternal("https://snsmakeit.com/programs"); });
+    var videoLeftText = vq.limit >= 99999 ? "제한 없음" : (vq.remaining + " / " + vq.limit + "회");
+    showModal("횟수 차감 안내", "내보내기를 실행하면 영상 편집 1회가 차감됩니다.\n남은 영상 횟수: " + videoLeftText + "\n진행하시겠습니까?", "진행", async function(){ await doExport(); });
     return;
   });
+  var _exportAbort = null; // 내보내기 취소용 AbortController
   async function doExport(skipCharge){
     goStep(4); setProg("veExportPct","veExportBar","veExportLabel",0,"렌더링 준비 중...");
+    _exportAbort = new AbortController();
     try {
       var result;
       var aspectMap = { portrait: "9:16", landscape: "16:9", square: "1:1" };
@@ -5435,7 +5740,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           var allText = clips.map(function(c, i) { return (i + 1) + ". " + (c.subtitles || []).map(function(s) { return s.text; }).join(" ").slice(0, 100); }).join("\n");
           var titleRes = await fetch("https://snsmakeit.com/api/ai-proxy", {
             method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: 1000, messages: [{ role: "user", content: "다음 영상 구간별 내용으로 각각 유튜브 쇼츠 제목(15자 이내)과 설명(30자 이내)을 만들어줘. 각 줄에 '제목|설명' 형식으로 출력해:\n\n" + allText }] })
+            body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: 1000, messages: [{ role: "user", content: "다음 영상 구간별 내용으로 각각 유튜브 쇼츠 제목(15자 이내)과 설명(30자 이내)을 만들어줘. 각 줄에 '제목|설명' 형식으로 출력해:\n\n" + allText }] }),
+            signal: _exportAbort.signal
           });
           if (titleRes.ok) {
             var titleData = await titleRes.json();
@@ -5456,7 +5762,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       }
       if(!result.ok) throw new Error(result.error||"렌더링 실패");
       // 횟수 차감 (로컬 dev 모드는 스킵)
-      if (!skipCharge && typeof markWriteUsed === "function") await markWriteUsed();
+      if (!skipCharge && typeof markFeatureUsed === "function") await markFeatureUsed("video", "데스크톱 영상 편집");
       goStep(5); var s5=$("veStep5");
       if(isPortrait&&result.results){
         s5.innerHTML="<div class='panel-header'><h1 style='font-size:18px;'>"+result.results.length+"개 쇼츠 완성</h1><p class='panel-sub'>AI가 생성한 제목과 설명이 포함됩니다</p></div>"+
@@ -5472,13 +5778,21 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         s5.innerHTML="<div class='card' style='text-align:center;padding:24px;'><div style='font-size:18px;font-weight:800;margin-bottom:8px;'>편집 완료</div><div style='font-size:12px;color:var(--text-dim);margin-bottom:16px;'>"+ve.subtitles.length+"개 자막 입혀짐</div><button class='btn btn-primary btn-full' onclick=\"bridge.openExternal('file:///"+dir+"')\">폴더 열기</button><button class='btn btn-outline btn-full' style='margin-top:8px;' id='veBackToEdit'>편집화면으로 돌아가기</button><button class='btn btn-outline btn-full' style='margin-top:8px;' id='veNewBtn'>새 영상</button></div>";
       }
       setTimeout(function(){
-        var nb=$("veNewBtn");if(nb)nb.addEventListener("click",function(){goStep(1);ve.segments=[];ve.subtitles=[]});
+        var nb=$("veNewBtn");if(nb)nb.addEventListener("click",function(){
+          // 오버레이 GIF DOM 정리
+          if(ve.overlays)ve.overlays.forEach(function(ov){if(ov._img&&ov._isGif&&ov._img.parentNode)ov._img.parentNode.removeChild(ov._img);ov._img=null;});
+          goStep(1);ve.segments=[];ve.subtitles=[];ve.overlays=[];
+        });
         var bb=$("veBackToEdit");if(bb)bb.addEventListener("click",function(){goStep(3);});
       },100);
-    } catch(e) { showModal("렌더링 실패",e.message||"오류","확인"); goStep(3); }
+    } catch(e) { if(e.name!=="AbortError") showModal("렌더링 실패",e.message||"오류","확인"); goStep(3); _exportAbort=null; }
   }
 
-  var ecBtn=$("veExportCancel"); if(ecBtn) ecBtn.addEventListener("click",function(){bridge.videoCancel();goStep(3)});
+  var ecBtn=$("veExportCancel"); if(ecBtn) ecBtn.addEventListener("click",function(){
+    if(_exportAbort) { _exportAbort.abort(); _exportAbort=null; }
+    bridge.videoCancel();
+    goStep(3);
+  });
 })();
 
 // ══════════════════════════════════════════════════════════
@@ -5486,7 +5800,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 // ══════════════════════════════════════════════════════════
 (function initCommunity() {
   var SB_URL = "https://ckzjnpzadeovrasucjmu.supabase.co";
-  var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
+  var SB_KEY = "sb_publishable_TRn4PuhwKeH5yhkCJmL8JQ_Ee3HXQnf";
   var currentCat = "info";
   var currentTag = "";
   var posts = [];
@@ -5836,7 +6150,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 // ══════════════════════════════════════════════════════════
 (function initChallenge() {
   var SB_URL = "https://ckzjnpzadeovrasucjmu.supabase.co";
-  var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
+  var SB_KEY = "sb_publishable_TRn4PuhwKeH5yhkCJmL8JQ_Ee3HXQnf";
   var challenges = [];
   var currentCh = null;
 
@@ -6054,24 +6368,6 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 
   // 수동 글쓰기 횟수 관리
   const WRITE_LIMIT_KEY = "_manual_write_used";
-  async function checkWriteLimit() {
-    if (!state.user) return { canUse: false, used: 0, limit: 0, remaining: 0 };
-    var u = state.user;
-    if (u.admin) return { canUse: true, used: 0, limit: 99999, remaining: 99999 };
-    var limit = u.trial ? (u.trial_limit || 5) : (u.monthly_limit || 5);
-    var used = u.trial ? (u.trial_used || 0) : (u.monthly_used || 0);
-    var remaining = Math.max(0, limit - used);
-    return { canUse: remaining > 0, used, limit, remaining };
-  }
-
-  async function markWriteUsed() {
-    // 로컬 상태 업데이트 (사이드바 반영)
-    if (state.user) {
-      if (state.user.trial) { state.user.trial_used = (state.user.trial_used || 0) + 1; }
-      else { state.user.monthly_used = (state.user.monthly_used || 0) + 1; }
-    }
-    updateSidebarQuota();
-  }
 
   // 횟수 차감 확인 모달
   function showQuotaConfirm(featureName, onConfirm) {
