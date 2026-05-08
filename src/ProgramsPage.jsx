@@ -113,10 +113,10 @@ const CATEGORIES = [
 ];
 
 const AUTOMATION_DOWNLOAD = {
-  fileName: "SNSMakeIt-Setup-0.2.2.exe",
-  url: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/naverbot-releases/SNSMakeIt-Setup-0.2.2.exe",
+  fileName: "SNSMakeIt-Setup-0.2.3.exe",
+  url: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/naverbot-releases/SNSMakeIt-Setup-0.2.3.exe",
   size: "430MB",
-  version: "v0.2.2",
+  version: "v0.2.3",
 };
 const AUTOMATION_DOWNLOAD_READY = Boolean(AUTOMATION_DOWNLOAD.url);
 
@@ -252,23 +252,23 @@ const INTERACTIVE_FLOW = [
 
 const DEMO_PRODUCTS = [
   {
-    id: 1, title: "SNS 자동화 봇 v0.2.2",
+    id: 1, title: "SNS 자동화 봇 v0.2.3",
     desc: "테마만 입력하면 AI가 네이버 블로그 글을 자동 생성하고, 카테고리 선택부터 이미지 삽입, 발행까지 한 번에 처리합니다. 빠른 시작 모드로 1분 안에 첫 발행이 가능합니다.",
     category: "automation", price: 0, priceLabel: "무료",
-    version: "v0.2.2", platform: "Windows 10/11",
+    version: "v0.2.3", platform: "Windows 10/11",
     fileSize: "430MB", downloadCount: 180, viewCount: 420,
     tags: ["자동화", "블로그", "네이버", "SEO", "AEO", "영상편집"],
-    downloadUrl: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/naverbot-releases/SNSMakeIt-Setup-0.2.2.exe",
+    downloadUrl: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/naverbot-releases/SNSMakeIt-Setup-0.2.3.exe",
     thumbnail: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/uploads/automation-thumb.png",
     detailContent: [
       { type: "heading", value: "SNS 자동화 봇이란?" },
       { type: "text", value: "반복적인 네이버 블로그 운영을 자동화하는 데스크톱 프로그램입니다.\n주제를 입력하면 AI가 글 구조를 잡고 본문을 작성한 뒤, 인용구, 소제목, 이미지, 스티커를 포함해 발행 가능한 형태로 정리합니다.\n매일 비슷한 작업을 반복하는 운영자, 마케터, 1인 사업자에게 적합합니다." },
       { type: "divider" },
-      { type: "heading", value: "v0.2.2 주요 기능" },
+      { type: "heading", value: "v0.2.3 주요 기능" },
       { type: "text", value: "- 빠른 시작 모드: 테마와 카테고리만 입력하면 1개 바로 발행\n- AI 글 자동 생성: 최신 뉴스/트렌드 분석 후 SEO 최적화 본문 작성\n- 다중 테마 순환: 쉼표로 여러 테마 입력 시 순환하며 발행\n- 키워드 포인트 글색: 주제 키워드에 강조 색상 자동 적용 (글색/배경색/둘다 선택)\n- 카테고리 자동 선택: 네이버 블로그 카테고리 정확 매칭 후 발행\n- 참고 글 분석: URL을 분석해 구성, 인용구, 색상, 이미지 흐름 반영\n- 인용구 스타일 6종: 따옴표, 버티컬 라인, 말풍선, 포스트잇, 프레임 등\n- GIF/이미지/스티커 삽입: 본문 흐름에 맞춘 미디어 배치\n- 발행 시간 분산: 아침/점심/저녁 또는 오전/오후 시간대 분산 옵션\n- 발행 실패 자동 재시도: 실패한 글을 1회 자동 재시도\n- 홈 대시보드: 발행 통계, 최근 발행 글, 자동 운영 상태 한눈에\n- 진행 프로그레스바: 5단계 시각화 (계정 확인 > 글 생성 > 에디터 > 본문 입력 > 발행)\n- 데스크톱 알림: 발행 성공/실패 시 Windows 알림\n- 로그 URL 클릭: 발행된 글 URL을 로그에서 바로 열기\n- 네이버 계정 선택: 다중 계정 중 발행할 계정 선택\n- 글 제목 직접 입력: AI 제목 대신 원하는 제목으로 발행\n- 프리셋 저장: 자주 쓰는 설정 저장/불러오기" },
       { type: "divider" },
-      { type: "heading", value: "v0.2.2 변경 내역" },
-      { type: "text", value: "v0.2.2 신규:\n- 업데이트 알림: 새 버전 출시 시 모달 팝업으로 안내\n- 설치 시 기존 버전 자동 감지/제거 후 설치\n- 커뮤니티 게시판: 홈페이지와 동일한 카테고리/태그 동적 로드\n- 커뮤니티 조회수 홈페이지 동기화\n- 커뮤니티 태그별 필터링 + 게시글 수 표시\n- 롱폼 편집기 NLE 스타일 리디자인\n- 프로필 아바타 선택 (DiceBear 100종)\n- 뱃지 시스템 (관리자 지급 + 달성 뱃지)\n- 챌린지 게시판 Electron 연동\n\nv0.1.8 기능:\n- 빠른 시작, 홈 대시보드, 프로그레스바\n- AI 글 자동 생성 + SEO 최적화\n- 다중 테마 순환, 키워드 포인트 글색\n- 카테고리 자동 선택, 참고 글 분석\n- 인용구 6종, GIF/이미지/스티커 삽입\n- 발행 시간 분산, 자동 재시도, 데스크톱 알림\n- 네이버 계정 선택, 글 제목 직접 입력, 프리셋 저장" },
+      { type: "heading", value: "v0.2.3 변경 내역" },
+      { type: "text", value: "v0.2.3 신규:\n- 업데이트 알림: 새 버전 출시 시 모달 팝업으로 안내\n- 설치 시 기존 버전 자동 감지/제거 후 설치\n- 커뮤니티 게시판: 홈페이지와 동일한 카테고리/태그 동적 로드\n- 커뮤니티 조회수 홈페이지 동기화\n- 커뮤니티 태그별 필터링 + 게시글 수 표시\n- 롱폼 편집기 NLE 스타일 리디자인\n- 프로필 아바타 선택 (DiceBear 100종)\n- 뱃지 시스템 (관리자 지급 + 달성 뱃지)\n- 챌린지 게시판 Electron 연동\n\nv0.1.8 기능:\n- 빠른 시작, 홈 대시보드, 프로그레스바\n- AI 글 자동 생성 + SEO 최적화\n- 다중 테마 순환, 키워드 포인트 글색\n- 카테고리 자동 선택, 참고 글 분석\n- 인용구 6종, GIF/이미지/스티커 삽입\n- 발행 시간 분산, 자동 재시도, 데스크톱 알림\n- 네이버 계정 선택, 글 제목 직접 입력, 프리셋 저장" },
       { type: "divider" },
       { type: "heading", value: "시스템 요구사항" },
       { type: "text", value: "- Windows 10/11 (64-bit)\n- 8GB RAM 이상 권장\n- 인터넷 연결 필수\n- 네이버 계정 필요\n- Python/Playwright 별도 설치 불필요 (내장)" },

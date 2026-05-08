@@ -1,6 +1,6 @@
 {
   "name": "makeit-sns-automation",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "SNS메이킷 - SNS 콘텐츠 자동 발행 데스크톱 앱",
   "main": "main.js",
   "scripts": {
