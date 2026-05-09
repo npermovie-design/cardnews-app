@@ -25,15 +25,14 @@
   --primary-bg:  #eff6ff;
   --primary-border:#bfdbfe;
 
-  --pink:        #60a5fa;
-  --pink-soft:   #dbeafe;
+  /* --pink, --pink-soft 제거 (미사용 + 이름이 실제 파란색과 불일치) */
 
   --success:     #10b981;
   --success-soft:#d1fae5;
   --danger:      #ef4444;
   --warn:        #f59e0b;
 
-  --gradient:    #3b82f6;
+  /* --gradient 제거 (미사용 + 단색이라 이름 불일치) */
 
   --radius:      14px;
   --radius-sm:   10px;
@@ -61,18 +60,20 @@ body {
 /* ── Layout ─────────────────────────────────────────────── */
 .app {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 248px 1fr;
   height: 100vh;
+  min-height: 0;
 }
 
 .sidebar {
   background: var(--bg-sidebar);
   border-right: 1px solid var(--border-soft);
-  padding: 20px 14px 14px;
+  padding: 18px 14px 14px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  min-height: 0;
 }
 .sidebar::before {
   content: '';
@@ -81,21 +82,22 @@ body {
   left: 0;
   right: 0;
   height: 120px;
-  background: linear-gradient(180deg, rgba(59,130,246,0.03) 0%, transparent 100%);
+  background: rgba(59,130,246,0.03);
   pointer-events: none;
 }
 
 .sidebar-header {
-  padding: 6px 12px 16px;
+  padding: 6px 12px 14px;
   border-bottom: 1px solid var(--border-soft);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   position: relative;
+  flex: 0 0 auto;
 }
 
 .brand-title {
   font-size: 16px;
   font-weight: 800;
-  color: #3b82f6;
+  color: var(--accent);
   letter-spacing: -0.02em;
 }
 
@@ -113,13 +115,18 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 2px;
+  scrollbar-width: thin;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  padding: 12px 14px;
+  padding: 11px 14px;
   background: transparent;
   border: none;
   color: var(--text-sub);
@@ -140,7 +147,7 @@ body {
 
 .nav-item.active {
   background: rgba(59, 130, 246, 0.08);
-  color: #3b82f6;
+  color: var(--accent);
   font-weight: 800;
 }
 
@@ -227,9 +234,7 @@ body {
 }
 
 .sidebar-footer {
-  padding: 14px 8px 4px;
-  border-top: 1px solid var(--border-soft);
-  margin-top: auto;
+  display: none;
 }
 
 .user-badge {
@@ -436,13 +441,13 @@ body {
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-primary {
-  background: #3b82f6;
+  background: var(--accent);
   border-color: transparent;
   color: var(--accent-on);
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
 }
 .btn-primary:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--accent-hov);
   border-color: transparent;
   box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
   transform: translateY(-1px);
@@ -454,7 +459,7 @@ body {
   color: var(--accent);
 }
 .btn-outline:hover:not(:disabled) {
-  background: #bfdbfe;
+  background: var(--primary-border);
   border-color: var(--accent);
 }
 
@@ -642,7 +647,7 @@ body {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #3b82f6;
+  background: var(--accent);
   color: #fff;
   display: flex;
   align-items: center;
@@ -1084,21 +1089,94 @@ body {
   text-align: center;
 }
 
-/* ── Nav group label ───────────────────────────────────── */
-.nav-group-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 16px 14px 6px;
-  margin-top: 4px;
+/* ── Nav groups ────────────────────────────────────────── */
+.nav-group {
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.62);
+  overflow: hidden;
 }
-.nav-sub { padding-left: 24px; }
+.nav-group summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 14px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
+  user-select: none;
+}
+.nav-group summary::-webkit-details-marker { display: none; }
+.nav-group summary::after {
+  content: "›";
+  font-size: 18px;
+  line-height: 1;
+  color: var(--text-dim);
+  transform: rotate(90deg);
+  transition: transform 0.15s ease;
+}
+.nav-group:not([open]) summary::after {
+  transform: rotate(0deg);
+}
+.nav-group .nav-item {
+  width: calc(100% - 12px);
+  margin: 0 6px 6px;
+}
+.nav-group .nav-item:first-of-type {
+  margin-top: 0;
+}
+.nav-sub { padding-left: 14px; }
 .nav-item[disabled] {
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+@media (max-height: 760px) {
+  .sidebar {
+    padding: 14px 12px 12px;
+  }
+  .sidebar-header {
+    padding: 4px 10px 10px;
+    margin-bottom: 8px;
+  }
+  .sidebar-nav {
+    gap: 6px;
+  }
+  .nav-item {
+    min-height: 42px;
+    padding: 10px 13px;
+  }
+  .nav-group summary {
+    min-height: 42px;
+    padding: 10px 13px;
+  }
+  .user-badge {
+    padding: 7px 8px;
+  }
+  .user-text {
+    font-size: 12px;
+  }
+}
+
+@media (max-height: 640px) {
+  .brand-link {
+    display: none;
+  }
+  .sidebar-header {
+    margin-bottom: 6px;
+  }
+  .nav-item {
+    min-height: 40px;
+    padding: 9px 12px;
+  }
+  .nav-group summary {
+    min-height: 40px;
+    padding: 9px 12px;
+  }
 }
 
 /* ── Mode cards (발행 방식 선택) ────────────────────────── */
@@ -1337,10 +1415,45 @@ body {
   overflow: hidden !important;
 }
 
-/* NLE 다크 테마 */
-#veStep3 .chip { background: #1a1a3a !important; color: #94a3b8 !important; border-color: #2a2a4a !important; }
-#veStep3 .chip.active { background: #3b82f6 !important; color: #fff !important; border-color: #3b82f6 !important; }
+/* NLE 다크 테마 (캡컷 틸 — index.html <style>에서 상세 정의) */
 #veStep3 .chips { gap: 3px; }
-#veStep3 input[type="range"] { accent-color: #3b82f6; }
-#veStep3 .ve-sub-row { border-color: #1a1a3a !important; }
-#veStep3 .ve-sub-row:hover { background: rgba(59,130,246,0.08) !important; }
+#veStep3 .ve-sub-row { border-color: #1a1a3a !important; transition: background 0.1s; }
+#veStep3 .ve-sub-row:hover { background: rgba(0,191,165,0.08) !important; }
+
+/* NLE 도구바 버튼 호버 */
+#veStep3 button[id$="Btn"]:not(.chip):hover,
+#veStep3 button[id$="Btn2"]:hover,
+#veStep3 button[title]:hover { filter: brightness(1.2); }
+
+/* 트랙 레인 호버 */
+.ve-track-lane:hover { border-color: #334155 !important; }
+.ve-track-lane { transition: border-color 0.15s; }
+
+/* 타임라인 리사이즈 핸들 호버 */
+#veTimelineResizeHandle:hover { background: #1a1a3a; }
+#veTimelineResizeHandle:hover div { background: #4db6ac; }
+
+/* 재생 버튼 호버 — index.html에서 --ve-accent-hover로 정의됨 */
+#vePlayBtn { transition: all 0.15s; }
+
+/* 내보내기 버튼 호버 — index.html에서 --ve-accent-hover로 정의됨 */
+#veExportBtn { transition: background 0.15s; }
+
+/* 내보내기 프로그레스 애니메이션 */
+#veExportBar, #veAnalyzeBar {
+  transition: width 0.5s ease;
+  background: #00bfa5 !important;
+}
+
+/* 프리뷰 영역 둥근 모서리 */
+#veVideoWrap { border: 1px solid #2a2a4a; }
+
+/* 속성 패널 스크롤바 */
+#veStep3 ::-webkit-scrollbar { width: 5px; height: 5px; }
+#veStep3 ::-webkit-scrollbar-track { background: transparent; }
+#veStep3 ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+#veStep3 ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+/* details 토글 애니메이션 */
+#veStep3 details summary::before { content: '\25B6'; display: inline-block; margin-right: 6px; font-size: 9px; transition: transform 0.2s; }
+#veStep3 details[open] summary::before { transform: rotate(90deg); }

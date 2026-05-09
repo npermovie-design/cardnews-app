@@ -352,11 +352,13 @@ let mainWindow = null;
 function createWindow() {
   const { screen } = require("electron");
   const { width: screenW, height: screenH } = screen.getPrimaryDisplay().workAreaSize;
+  const winW = Math.min(Math.round(screenW * 0.92), screenW);
+  const winH = Math.min(Math.round(screenH * 0.92), screenH);
   mainWindow = new BrowserWindow({
-    width: Math.min(1200, screenW),
-    height: screenH,
+    width: winW,
+    height: winH,
     minWidth: 900,
-    minHeight: 700,
+    minHeight: 500,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -899,13 +901,16 @@ ipcMain.handle("app:installExeUpdate", () => {
   return { ok: true };
 });
 
-// ── IPC: 외부 링크 ──
+// ── IPC: 외부 링크 (URL 검증 포함) ──
 ipcMain.handle("shell:openExternal", (_, url) => {
+  if (!url || typeof url !== "string") return;
   // file:// 경로면 shell.openPath 사용 (폴더/파일 열기)
-  if (url && url.startsWith("file:///")) {
+  if (url.startsWith("file:///")) {
     const localPath = decodeURIComponent(url.replace("file:///", "")).replace(/\//g, path.sep);
     return shell.openPath(localPath);
   }
+  // http/https만 허용 (javascript:, smb:, ftp: 등 차단)
+  if (!url.startsWith("http://") && !url.startsWith("https://")) return;
   return shell.openExternal(url);
 });
 
@@ -1124,7 +1129,11 @@ ipcMain.on("auth:google", async () => {
   shell.openExternal(authUrl);
 });
 
-ipcMain.on("auth:openExternal", (_, url) => shell.openExternal(url));
+ipcMain.on("auth:openExternal", (_, url) => {
+  if (url && typeof url === "string" && (url.startsWith("http://") || url.startsWith("https://"))) {
+    shell.openExternal(url);
+  }
+});
 
 // ═══════════════════════════════════════════════════════════
 // 영상 편집 — 로컬 ffmpeg 처리
@@ -1346,6 +1355,64 @@ ipcMain.handle("video:selectSaveDir", async () => {
   return { ok: true, dirPath: r.filePaths[0] };
 });
 
+ipcMain.handle("video:selectSaveFile", async (_, { defaultName }) => {
+  const r = await dialog.showSaveDialog(mainWindow, {
+    defaultPath: defaultName || "영상.mp4",
+    filters: [{ name: "MP4 영상", extensions: ["mp4"] }],
+  });
+  if (r.canceled || !r.filePath) return { ok: false };
+  return { ok: true, filePath: r.filePath, dirPath: path.dirname(r.filePath), fileName: path.basename(r.filePath) };
+});
+
+// ── 프로젝트 저장/불러오기 ──
+const PROJECTS_DIR = path.join(app.getPath("userData"), "projects");
+try { fs.mkdirSync(PROJECTS_DIR, { recursive: true }); } catch {}
+
+ipcMain.handle("project:save", async (_, data) => {
+  try {
+    const id = data.id || ("proj_" + Date.now());
+    const filePath = path.join(PROJECTS_DIR, id + ".json");
+    fs.writeFileSync(filePath, JSON.stringify({ ...data, id, savedAt: new Date().toISOString() }, null, 2), "utf8");
+    return { ok: true, id };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+
+ipcMain.handle("project:list", async () => {
+  try {
+    const files = fs.readdirSync(PROJECTS_DIR).filter(f => f.endsWith(".json")).sort().reverse();
+    const projects = [];
+    for (const f of files.slice(0, 50)) {
+      try {
+        const raw = fs.readFileSync(path.join(PROJECTS_DIR, f), "utf8");
+        const p = JSON.parse(raw);
+        projects.push({ id: p.id, name: p.name || p.fileName || "프로젝트", fileName: p.fileName, filePath: p.filePath, savedAt: p.savedAt, duration: p.duration, type: p.type, subtitleCount: p.subtitles?.length || 0 });
+      } catch {}
+    }
+    return { ok: true, projects };
+  } catch (e) { return { ok: false, projects: [], error: e.message }; }
+});
+
+ipcMain.handle("project:load", async (_, id) => {
+  try {
+    const filePath = path.join(PROJECTS_DIR, id + ".json");
+    if (!fs.existsSync(filePath)) return { ok: false, error: "프로젝트 파일 없음" };
+    const data = JSON.parse(fs.readFileSync(filePath, "utf8"));
+    // 원본 영상 파일 존재 확인
+    if (data.filePath && !fs.existsSync(data.filePath)) {
+      return { ok: false, error: "원본 영상 파일을 찾을 수 없습니다:\n" + data.filePath };
+    }
+    return { ok: true, data };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+
+ipcMain.handle("project:delete", async (_, id) => {
+  try {
+    const filePath = path.join(PROJECTS_DIR, id + ".json");
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    return { ok: true };
+  } catch (e) { return { ok: false, error: e.message }; }
+});
+
 // ffmpeg 무음 감지
 ipcMain.handle("video:detectSilence", async (_, { filePath, threshold, minDuration }) => {
   if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: "파일 없음" };
@@ -1432,15 +1499,19 @@ ipcMain.handle("video:removeSilence", async (_, { filePath, silences, outputDir 
     if (!keeps.length) { cleanupTmp(); return { ok: false, error: "유지할 구간 없음" }; }
 
     // 각 구간을 -c copy로 빠르게 추출
+    // 말 반복 방지: 각 구간 시작에 0.08초 패딩 추가 (키프레임 겹침으로 인한 반복 제거)
     const segFiles = [];
     for (let i = 0; i < keeps.length; i++) {
       const k = keeps[i];
       const segPath = path.join(tmpDir, `seg_${String(i).padStart(3, "0")}${ext}`);
-      const dur = k.end - k.start;
+      // 첫 번째 구간은 패딩 없이, 나머지는 시작점을 0.08초 뒤로 밀어 말 겹침 방지
+      const pad = i === 0 ? 0 : 0.08;
+      const start = k.start + pad;
+      const dur = k.end - start;
       if (dur < 0.05) continue; // 너무 짧은 구간 스킵
 
       const segOk = await new Promise((resolve) => {
-        const args = ["-y", "-ss", String(k.start), "-i", filePath, "-t", String(dur), "-c", "copy", "-avoid_negative_ts", "make_zero", segPath];
+        const args = ["-y", "-ss", String(start), "-i", filePath, "-t", String(dur), "-c", "copy", "-avoid_negative_ts", "make_zero", segPath];
         const proc = spawn(getFfmpegPath(), args, { windowsHide: true });
         let segErr = "";
         proc.stderr.on("data", d => { segErr += d.toString(); });
@@ -1605,7 +1676,7 @@ function escDrawtext(text) {
 
 ipcMain.handle("video:renderShorts", async (_, opts) => {
   if (videoProcess) return { ok: false, error: "이미 렌더링 중입니다. 취소 후 다시 시도해주세요." };
-  const { inputPath, clips, outputDir, template, subtitlesEnabled, aspect, captionStyle, outputResolution, brandName, brandLogo } = opts;
+  const { inputPath, clips, outputDir, outputFileName, template, subtitlesEnabled, aspect, captionStyle, outputResolution, brandName, brandLogo } = opts;
   if (!inputPath || !fs.existsSync(inputPath)) return { ok: false, error: "입력 파일 없음" };
   if (!clips || !clips.length) return { ok: false, error: "렌더링할 클립이 없습니다" };
 
@@ -1622,7 +1693,9 @@ ipcMain.handle("video:renderShorts", async (_, opts) => {
     const duration = se - ss;
     if (duration <= 0) continue;
 
-    const outName = `short_${ci + 1}_${Date.now()}.mp4`;
+    const outName = clips.length === 1 && outputFileName
+      ? outputFileName
+      : (outputFileName ? outputFileName.replace(/\.mp4$/i, `_${ci + 1}.mp4`) : `short_${ci + 1}_${Date.now()}.mp4`);
     const outPath = path.join(saveDir, outName);
 
     // SRT
@@ -1635,11 +1708,11 @@ ipcMain.handle("video:renderShorts", async (_, opts) => {
     const filters = buildVideoLayoutFilters(aspect || "9:16", outputResolution || "1080");
     const outputSize = getOutputSize(aspect || "9:16", outputResolution || "1080");
 
-    // 자막
+    // 자막 — fontSize는 프리뷰(캔버스 기준 1280px)와 동일 비율로 출력 해상도에 맞춤
     if (subtitlesEnabled && clip.subtitles?.length) {
       const cs = captionStyle || {};
-      const fontSize = Math.max(8, Math.round((cs.fontSize || 38) * 0.375));
-      const marginV = Math.round(fontSize * 2.5);
+      const fontSize = Math.max(10, Math.round((cs.fontSize || 38) * outputSize.width / 1280));
+      const marginV = Math.max(24, Math.round(outputSize.height * 0.12));
       filters.push(buildSubFilter(srtPath, fontSize, cs.color || "#FFFFFF", Object.assign({}, cs, { marginV, outputWidth: outputSize.width, outputHeight: outputSize.height })));
     }
 
@@ -1721,12 +1794,13 @@ ipcMain.handle("video:renderShorts", async (_, opts) => {
 // 롱폼 렌더링 (로컬 ffmpeg)
 ipcMain.handle("video:renderLongform", async (_, opts) => {
   if (videoProcess) return { ok: false, error: "이미 렌더링 중입니다. 취소 후 다시 시도해주세요." };
-  const { inputPath, subtitles, subtitlesEnabled, captionStyle, outputDir, aspect, outputResolution } = opts;
+  const { inputPath, subtitles, subtitlesEnabled, captionStyle, outputDir, outputFileName, aspect, outputResolution } = opts;
   if (!inputPath || !fs.existsSync(inputPath)) return { ok: false, error: "입력 파일 없음" };
 
   const jobId = ++_videoJobId;
   const saveDir = outputDir || path.dirname(inputPath);
-  const outPath = path.join(saveDir, `longform_sub_${Date.now()}.mp4`);
+  const outName = outputFileName || `longform_sub_${Date.now()}.mp4`;
+  const outPath = path.join(saveDir, outName);
 
   const args = ["-i", inputPath];
   let srtCleanup = null;
@@ -1738,12 +1812,10 @@ ipcMain.handle("video:renderLongform", async (_, opts) => {
     writeSrt(srtPath, subtitles, 0, captionStyle || {});
     const cs = captionStyle || {};
     const outputSize = getOutputSize(aspect || "16:9", outputResolution || "1080");
-    // ASS FontSize는 기본 PlayRes 384x288 기준 → 편집기 px을 ASS 단위로 변환
-    // 편집기: fontSize = subSize * canvasW / 1280 (실제 ~22px on 730px canvas)
-    // ASS 변환: editorSize * 0.375 ≈ 14 (1080p 기준 편집기와 동일 비율)
-    const fontSize = Math.max(8, Math.round((cs.fontSize || 38) * 0.375));
+    // fontSize는 프리뷰(캔버스 기준 1280px)와 동일 비율로 출력 해상도에 맞춤
+    const fontSize = Math.max(10, Math.round((cs.fontSize || 38) * outputSize.width / 1280));
     const fontColor = cs.color || "#FFFFFF";
-    const marginV = Math.round(fontSize * 2.5);
+    const marginV = Math.max(24, Math.round(outputSize.height * 0.12));
     filters.push(buildSubFilter(srtPath, fontSize, fontColor, Object.assign({}, cs, { marginV, outputWidth: outputSize.width, outputHeight: outputSize.height })));
     srtCleanup = srtPath;
   }

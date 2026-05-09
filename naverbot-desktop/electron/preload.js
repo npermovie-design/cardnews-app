@@ -18,9 +18,9 @@ contextBridge.exposeInMainWorld("nbBridge", {
   checkExeUpdate: () => ipcRenderer.invoke("app:checkExeUpdate"),
   downloadExeUpdate: () => ipcRenderer.invoke("app:downloadExeUpdate"),
   installExeUpdate: () => ipcRenderer.invoke("app:installExeUpdate"),
-  onExeUpdateAvailable: (cb) => ipcRenderer.on("exe-update:available", (_, d) => cb(d)),
-  onExeUpdateProgress: (cb) => ipcRenderer.on("exe-update:progress", (_, d) => cb(d)),
-  onExeUpdateDownloaded: (cb) => ipcRenderer.on("exe-update:downloaded", (_, d) => cb(d)),
+  onExeUpdateAvailable: (cb) => { ipcRenderer.removeAllListeners("exe-update:available"); ipcRenderer.on("exe-update:available", (_, d) => cb(d)); },
+  onExeUpdateProgress: (cb) => { ipcRenderer.removeAllListeners("exe-update:progress"); ipcRenderer.on("exe-update:progress", (_, d) => cb(d)); },
+  onExeUpdateDownloaded: (cb) => { ipcRenderer.removeAllListeners("exe-update:downloaded"); ipcRenderer.on("exe-update:downloaded", (_, d) => cb(d)); },
 
   // 비밀번호 (service: NaverBotSaaS | NaverBotSaaS_Makeit)
   savePassword: (username, password, service) =>
@@ -45,6 +45,7 @@ contextBridge.exposeInMainWorld("nbBridge", {
   isBotRunning: () => ipcRenderer.invoke("bot:isRunning"),
   runAnalyze: (url) => ipcRenderer.invoke("bot:analyze-ref", url),
   onLog: (cb) => {
+    ipcRenderer.removeAllListeners("bot:log");
     ipcRenderer.on("bot:log", (_, text) => cb(text));
   },
 
@@ -55,18 +56,20 @@ contextBridge.exposeInMainWorld("nbBridge", {
   // 스케줄 (인앱 타이머)
   createSchedule: (times) => ipcRenderer.invoke("schedule:create", times),
   clearSchedule: () => ipcRenderer.invoke("schedule:clear"),
-  onScheduleTrigger: (cb) => ipcRenderer.on("schedule:trigger", (_, time) => cb(time)),
+  onScheduleTrigger: (cb) => { ipcRenderer.removeAllListeners("schedule:trigger"); ipcRenderer.on("schedule:trigger", (_, time) => cb(time)); },
 
   // 외부 링크
   openExternal: (url) => ipcRenderer.invoke("shell:openExternal", url),
 
   // Custom protocol 콜백 (브라우저 로그인 완료 시 호출됨)
   onAuthCallback: (cb) => {
+    ipcRenderer.removeAllListeners("auth:callback");
     ipcRenderer.on("auth:callback", (_, params) => cb(params));
   },
 
   // 로그인 창 닫힘 콜백
   onAuthWindowClosed: (cb) => {
+    ipcRenderer.removeAllListeners("auth:windowClosed");
     ipcRenderer.on("auth:windowClosed", () => cb());
   },
 
@@ -87,7 +90,18 @@ contextBridge.exposeInMainWorld("nbBridge", {
   videoRenderLongform: (opts) => ipcRenderer.invoke("video:renderLongform", opts),
   videoCancel: () => ipcRenderer.invoke("video:cancel"),
   videoSelectSaveDir: () => ipcRenderer.invoke("video:selectSaveDir"),
+  videoSelectSaveFile: (opts) => ipcRenderer.invoke("video:selectSaveFile", opts || {}),
+  // 프로젝트 저장/불러오기
+  projectSave: (data) => ipcRenderer.invoke("project:save", data),
+  projectList: () => ipcRenderer.invoke("project:list"),
+  projectLoad: (id) => ipcRenderer.invoke("project:load", id),
+  projectDelete: (id) => ipcRenderer.invoke("project:delete", id),
   videoDetectSilence: (opts) => ipcRenderer.invoke("video:detectSilence", opts),
   videoRemoveSilence: (opts) => ipcRenderer.invoke("video:removeSilence", opts),
-  onVideoProgress: (cb) => ipcRenderer.on("video:progress", (_, d) => cb(d)),
+  onVideoProgress: (cb) => {
+    const handler = (_, d) => cb(d);
+    ipcRenderer.on("video:progress", handler);
+    return () => ipcRenderer.removeListener("video:progress", handler);
+  },
+  offVideoProgress: () => ipcRenderer.removeAllListeners("video:progress"),
 });

@@ -662,7 +662,12 @@ function showModal(title, message, btnText = "확인", onConfirm = null) {
     document.getElementById("modalCancel").addEventListener("click", () => overlay.style.display = "none");
   }
   document.getElementById("modalTitle").textContent = title;
-  document.getElementById("modalMessage").textContent = message;
+  // HTML 콘텐츠 지원: <로 시작하면 innerHTML, 아니면 textContent
+  if (typeof message === "string" && message.trim().startsWith("<")) {
+    document.getElementById("modalMessage").innerHTML = message;
+  } else {
+    document.getElementById("modalMessage").textContent = message;
+  }
   const confirmBtn = document.getElementById("modalConfirm");
   confirmBtn.textContent = btnText;
   confirmBtn.onclick = () => {
@@ -670,6 +675,11 @@ function showModal(title, message, btnText = "확인", onConfirm = null) {
     if (onConfirm) onConfirm();
   };
   overlay.style.display = "flex";
+}
+
+function closeModal() {
+  var overlay = document.getElementById("modalOverlay");
+  if (overlay) overlay.style.display = "none";
 }
 
 function showModalAsync(title, message, btnText = "확인") {
@@ -1663,11 +1673,12 @@ if (feedbackCatChips) {
     feedbackCat = btn.dataset.value;
     feedbackCatChips.querySelectorAll("button").forEach((b) => {
       const active = b.dataset.value === feedbackCat;
-      b.style.border = active ? "1.5px solid #3b82f6" : "1px solid #e5e7eb";
-      b.style.background = active ? "#3b82f615" : "transparent";
-      b.style.color = active ? "#3b82f6" : "#888";
-      b.style.fontWeight = active ? "700" : "500";
       b.className = active ? "chip active" : "chip";
+      // CSS .chip / .chip.active 클래스로 스타일 처리 (인라인 제거)
+      b.style.border = "";
+      b.style.background = "";
+      b.style.color = "";
+      b.style.fontWeight = "";
     });
   });
 }
@@ -3222,9 +3233,10 @@ bridge.loadConfig().then(async cfg => {
 });
 
 // ══════════════════════════════════════════════
-//  키워드 분석 도구
+//  키워드 분석 도구 (HTML 패널 미구현 — 비활성화)
 // ══════════════════════════════════════════════
-(function initKeywordAnalysis() {
+/* eslint-disable */
+(function initKeywordAnalysis_DISABLED() { return; /* 데드코드 — HTML에 keyword-analysis 패널 없음 */
   const API_BASE = "https://snsmakeit.com/api";
   let kaCategory = "all";
 
@@ -3475,7 +3487,121 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   if (!bridge.videoSelectFile) return;
   var API_URL = "https://shorts-factory-r33o.onrender.com";
   var ve = { filePath:null, fileInfo:null, fileId:null, segments:[], subtitles:[], videoClips:[], recommendedClips:[], type:"landscape", clipCount:3, clipDuration:45, subEnabled:true, silenceRemove:false, subSize:38, subColor:"#FFFFFF", duration:0 };
+  // 보관함에서 영상 복원 시 접근할 수 있도록 window에 노출
+  window._ve = ve;
 
+  // ── 프로젝트 저장 ──
+  async function saveProject() {
+    if (!ve.filePath) return;
+    var name = ve.filePath.replace(/\\/g,"/").split("/").pop().replace(/\.[^.]+$/,"");
+    var data = {
+      id: ve._projectId || ("proj_" + Date.now()),
+      name: name,
+      fileName: ve.filePath.replace(/\\/g,"/").split("/").pop(),
+      filePath: ve.filePath,
+      duration: ve.duration,
+      type: ve.type,
+      subtitles: ve.subtitles,
+      segments: ve.segments,
+      videoClips: ve.videoClips,
+      recommendedClips: ve.recommendedClips,
+      clipCount: ve.clipCount,
+      clipDuration: ve.clipDuration,
+      subEnabled: ve.subEnabled,
+      silenceRemove: ve.silenceRemove,
+      subSize: ve.subSize,
+      subColor: ve.subColor,
+      overlays: (ve.overlays || []).map(function(ov) {
+        return { x:ov.x, y:ov.y, w:ov.w, h:ov.h, src:ov._originalSrc||ov.src, startTime:ov.startTime, endTime:ov.endTime, shape:ov.shape, opacity:ov.opacity, anim:ov.anim, _isGif:ov._isGif };
+      }),
+      style: {
+        subMaxChars: _subMaxChars, subStroke: _subStroke, subShadow: _subShadow,
+        subBg: _subBg, subRound: _subRound, subStrokeColor: _subStrokeColor,
+        subBgColor: _subBgColor, subBgOpacity: _subBgOpacity,
+        subLines: _subLines, subLang: _subLang, subTransSize: _subTransSize, subAnim: subAnim
+      }
+    };
+    var r = await bridge.projectSave(data);
+    if (r && r.ok) {
+      ve._projectId = r.id;
+      showModal("프로젝트 저장", "편집 상태가 저장되었습니다.\n나중에 보관함에서 불러올 수 있습니다.", "확인");
+    }
+  }
+
+  // ── 프로젝트 불러오기 ──
+  async function loadProject(id) {
+    var r = await bridge.projectLoad(id);
+    if (!r || !r.ok) { showModal("불러오기 실패", r ? r.error : "알 수 없는 오류", "확인"); return; }
+    var d = r.data;
+    ve.filePath = d.filePath;
+    ve.duration = d.duration || 0;
+    ve.type = d.type || "landscape";
+    ve.subtitles = d.subtitles || [];
+    ve.segments = d.segments || [];
+    ve.videoClips = d.videoClips || [];
+    ve.recommendedClips = d.recommendedClips || [];
+    ve.clipCount = d.clipCount || 3;
+    ve.clipDuration = d.clipDuration || 45;
+    ve.subEnabled = d.subEnabled !== false;
+    ve.silenceRemove = !!d.silenceRemove;
+    ve.subSize = d.subSize || 38;
+    ve.subColor = d.subColor || "#FFFFFF";
+    ve.overlays = (d.overlays || []).map(function(ov) { ov._originalSrc = ov.src; return ov; });
+    ve._projectId = d.id;
+    if (d.style) {
+      _subMaxChars = d.style.subMaxChars || 15;
+      _subStroke = d.style.subStroke || "0";
+      _subShadow = d.style.subShadow || "none";
+      _subBg = d.style.subBg || "box";
+      _subRound = d.style.subRound || "0";
+      _subStrokeColor = d.style.subStrokeColor || "#000000";
+      _subBgColor = d.style.subBgColor || "#000000";
+      _subBgOpacity = d.style.subBgOpacity != null ? d.style.subBgOpacity : 60;
+      _subLines = d.style.subLines || 1;
+      _subLang = d.style.subLang || "none";
+      _subTransSize = d.style.subTransSize || 24;
+      subAnim = d.style.subAnim || "none";
+    }
+    // UI 복원
+    if ($("veSubSize")) $("veSubSize").value = ve.subSize;
+    if ($("veSubSizeLabel")) $("veSubSizeLabel").textContent = ve.subSize + "px";
+    if ($("veSubColor")) $("veSubColor").value = ve.subColor;
+    if ($("veSubMaxChars")) $("veSubMaxChars").value = _subMaxChars;
+    if ($("veSubMaxCharsLabel")) $("veSubMaxCharsLabel").textContent = _subMaxChars + "자";
+    if ($("veFileName2")) $("veFileName2").textContent = d.fileName || "";
+    goStep(3);
+    initEditor();
+  }
+
+  // ── 프로젝트 목록 표시 ──
+  async function showProjectList() {
+    var r = await bridge.projectList();
+    if (!r || !r.ok || !r.projects.length) { showModal("보관함", "저장된 프로젝트가 없습니다.", "확인"); return; }
+    var html = '<div style="max-height:400px;overflow-y:auto;">';
+    r.projects.forEach(function(p) {
+      var date = p.savedAt ? new Date(p.savedAt).toLocaleString("ko-KR") : "";
+      var dur = p.duration ? Math.floor(p.duration/60) + ":" + String(Math.floor(p.duration%60)).padStart(2,"0") : "";
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s;" onmouseenter="this.style.background=\'rgba(0,191,165,0.08)\'" onmouseleave="this.style.background=\'transparent\'" onclick="window._veLoadProject(\'' + p.id + '\')">'
+        + '<div style="width:40px;height:28px;background:#1e1e36;border-radius:4px;display:flex;align-items:center;justify-content:center;">'
+        + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00bfa5" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (p.name || p.fileName || "프로젝트") + '</div>'
+        + '<div style="font-size:11px;color:var(--text-dim);">' + date + (dur ? " / " + dur : "") + (p.subtitleCount ? " / 자막 " + p.subtitleCount + "개" : "") + '</div>'
+        + '</div>'
+        + '<button onclick="event.stopPropagation();window._veDeleteProject(\'' + p.id + '\')" style="padding:4px 8px;font-size:10px;border:1px solid #ef4444;background:transparent;color:#ef4444;border-radius:4px;cursor:pointer;">삭제</button>'
+        + '</div>';
+    });
+    html += '</div>';
+    showModal("프로젝트 보관함", html, "닫기");
+  }
+  window._veLoadProject = function(id) { closeModal(); loadProject(id); };
+  window._veDeleteProject = async function(id) {
+    await bridge.projectDelete(id);
+    closeModal();
+    showProjectList();
+  };
+
+  window._goStep = goStep;
   function goStep(n) {
     // 편집 화면(Step3)에서 나갈 때 타이머/렌더 루프 정리
     if (n !== 3) {
@@ -3649,14 +3775,14 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               var col = ve.subColor || "#FFFFFF";
               var fontSize = Math.round(sz * cw / 1280);
               ctx.save();
-              ctx.font = "bold " + fontSize + "px 'Pretendard', sans-serif";
+              ctx.font = "bold " + fontSize + "px 'Malgun Gothic', 'Pretendard', sans-serif";
               ctx.textAlign = "center";
               var tx = cw / 2;
               var anim = sub._anim || subAnim || "none";
               var subProgress = (video.currentTime - sst) / Math.max(0.1, sen - sst);
               // 애니메이션
               if (anim === "fade") { ctx.globalAlpha = Math.min(1, subProgress * 4); }
-              else if (anim === "bounce") { var bounce = Math.abs(Math.sin(subProgress * Math.PI * 3)) * 0.15; fontSize = Math.round(fontSize * (1 + bounce)); ctx.font = "bold " + fontSize + "px 'Pretendard', sans-serif"; }
+              else if (anim === "bounce") { var bounce = Math.abs(Math.sin(subProgress * Math.PI * 3)) * 0.15; fontSize = Math.round(fontSize * (1 + bounce)); ctx.font = "bold " + fontSize + "px 'Malgun Gothic', 'Pretendard', sans-serif"; }
               else if (anim === "typewriter") { sub = { text: (sub.text || "").slice(0, Math.floor((sub.text || "").length * Math.min(1, subProgress * 2))), _translated: sub._translated }; }
               else if (anim === "slide-up") { var slideOff = Math.max(0, (1 - subProgress * 5)) * fontSize * 2; ctx.translate(0, slideOff); ctx.globalAlpha = Math.min(1, subProgress * 5); }
               else if (anim === "glow") { var glowAmt = 4 + Math.sin(subProgress * Math.PI * 4) * 8; ctx.shadowColor = col; ctx.shadowBlur = glowAmt; }
@@ -3724,7 +3850,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               lines.forEach(function(l, li) {
                 var isTransLine = (li === _transLineIdx);
                 var curFontSize = isTransLine ? Math.round((_subTransSize || 24) * cw / 1280) : fontSize;
-                if (isTransLine) { ctx.font = "bold " + curFontSize + "px 'Pretendard', sans-serif"; }
+                if (isTransLine) { ctx.font = "bold " + curFontSize + "px 'Malgun Gothic', 'Pretendard', sans-serif"; }
                 var curLineH = isTransLine ? curFontSize * 1.3 : lineH;
                 var ly = ty + lyOffset;
                 if (anim === "highlight" || anim === "karaoke") {
@@ -3736,7 +3862,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
                   var startX = tx - fullW / 2;
                   ctx.textAlign = "left";
                   if (strokeW > 0) { ctx.strokeStyle = strokeCol; ctx.lineWidth = strokeW; ctx.lineJoin = "round"; ctx.strokeText(l, startX, ly); }
-                  ctx.fillStyle = anim === "karaoke" ? "#FFFF00" : "#3b82f6";
+                  ctx.fillStyle = anim === "karaoke" ? "#FFFF00" : "#00bfa5";
                   ctx.fillText(highlighted, startX, ly);
                   ctx.fillStyle = col;
                   ctx.fillText(remaining, startX + hlW, ly);
@@ -3751,7 +3877,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               });
               // 선택된 자막 라운딩 박스
               if (_selectedClipIdx === si) {
-                ctx.strokeStyle = "#3b82f6";
+                ctx.strokeStyle = "#00bfa5";
                 ctx.lineWidth = 2;
                 ctx.setLineDash([6, 3]);
                 var selBx = tx - maxW / 2 - padX - 2;
@@ -3810,7 +3936,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               ctx.drawImage(ov._img, ox, oy, ow, oh);
               // 선택된 오버레이면 테두리 표시
               if (ov === _dragOv || ov._selected) {
-                ctx.strokeStyle = "#3b82f6"; ctx.lineWidth = 3; ctx.setLineDash([6, 3]);
+                ctx.strokeStyle = "#00bfa5"; ctx.lineWidth = 3; ctx.setLineDash([6, 3]);
                 ctx.strokeRect(ox, oy, ow, oh);
                 ctx.setLineDash([]);
                 // 리사이즈 핸들
@@ -3837,7 +3963,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       ov = document.createElement("div");
       ov.id = "veLoadingOverlay";
       ov.style.cssText = "position:fixed;inset:0;background:rgba(10,10,26,0.95);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:wait;";
-      ov.innerHTML = '<div style="width:56px;height:56px;border:4px solid #1e293b;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.7s linear infinite;"></div>' +
+      ov.innerHTML = '<div style="width:56px;height:56px;border:4px solid #1e293b;border-top-color:#00bfa5;border-radius:50%;animation:spin 0.7s linear infinite;"></div>' +
         '<div id="veLoadingText" style="color:#e2e8f0;font-size:16px;margin-top:20px;font-weight:700;text-align:center;max-width:400px;line-height:1.6;"></div>' +
         '<div id="veLoadingSub" style="color:#64748b;font-size:12px;margin-top:8px;text-align:center;"></div>';
       document.body.appendChild(ov);
@@ -4177,7 +4303,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var html = effects.map(function(ef, i) {
       var active = ef === current;
       return "<button data-eff='" + ef + "' style='padding:6px 12px;font-size:12px;border:none;border-radius:6px;cursor:pointer;" +
-        "background:" + (active ? "#3b82f6" : "#1e1e3a") + ";color:" + (active ? "#fff" : "#94a3b8") + ";font-weight:600;'>" + labels[i] + "</button>";
+        "background:" + (active ? "#00bfa5" : "#1e1e3a") + ";color:" + (active ? "#fff" : "#94a3b8") + ";font-weight:600;'>" + labels[i] + "</button>";
     }).join("");
     showModal("자막 #" + (idx + 1) + " 효과", "", "닫기");
     // 모달 메시지에 버튼 삽입
@@ -4189,7 +4315,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         btn.addEventListener("click", function() {
           s._anim = btn.dataset.eff;
           msgEl.querySelectorAll("[data-eff]").forEach(function(b) {
-            b.style.background = b.dataset.eff === s._anim ? "#3b82f6" : "#1e1e3a";
+            b.style.background = b.dataset.eff === s._anim ? "#00bfa5" : "#1e1e3a";
             b.style.color = b.dataset.eff === s._anim ? "#fff" : "#94a3b8";
           });
         });
@@ -4245,7 +4371,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       if (!items.length) { results.innerHTML = "<div style='color:#64748b;font-size:11px;padding:8px;'>결과 없음</div>"; return; }
 
       results.innerHTML = items.map(function(it, i) {
-        return "<img src='" + it.thumb + "' data-full='" + it.full + "' data-type='" + it.type + "' style='width:60px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;' onmouseover=\"this.style.borderColor='#3b82f6'\" onmouseout=\"this.style.borderColor='transparent'\">";
+        return "<img src='" + it.thumb + "' data-full='" + it.full + "' data-type='" + it.type + "' style='width:60px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;' onmouseover=\"this.style.borderColor='#00bfa5'\" onmouseout=\"this.style.borderColor='transparent'\">";
       }).join("");
 
       // 클릭 시 타임라인에 삽입
@@ -4272,25 +4398,38 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     }
   });
 
-  // 탭 전환
-  document.querySelectorAll(".ve-tab-btn").forEach(function(btn){
-    btn.addEventListener("click",function(){
-      document.querySelectorAll(".ve-tab-btn").forEach(function(b){
-        b.classList.remove("active");
-        b.style.color="#94a3b8"; b.style.borderBottomColor="transparent";
-      });
-      btn.classList.add("active");
-      btn.style.color="#3b82f6"; btn.style.borderBottomColor="#3b82f6";
-      document.querySelectorAll(".ve-tab-content").forEach(function(t){t.style.display="none"});
-      var tab = btn.dataset.veTab;
-      if(tab==="sub") $("veTabSub").style.display="";
-      else if(tab==="clip") $("veTabClip").style.display="";
-      else if(tab==="image") $("veTabImage").style.display="";
+  // 탭 전환 (좌측 사이드바 + 숨겨진 탭 버튼 동기화)
+  var vePanelTitles = {sub:"자막", clip:"이미지", image:"미디어"};
+  function veActivateTab(tab) {
+    // 숨겨진 탭 버튼 동기화
+    document.querySelectorAll(".ve-tab-btn").forEach(function(b){
+      b.classList.remove("active");
     });
+    var matchBtn = document.querySelector('.ve-tab-btn[data-ve-tab="'+tab+'"]');
+    if(matchBtn) matchBtn.classList.add("active");
+    // 좌측 사이드바 아이콘 동기화
+    document.querySelectorAll(".ve-sidebar-icon[data-ve-tab]").forEach(function(b){
+      b.classList.remove("active");
+    });
+    var matchIcon = document.querySelector('.ve-sidebar-icon[data-ve-tab="'+tab+'"]');
+    if(matchIcon) matchIcon.classList.add("active");
+    // 탭 콘텐츠 전환
+    document.querySelectorAll(".ve-tab-content").forEach(function(t){t.style.display="none"});
+    if(tab==="sub") $("veTabSub").style.display="";
+    else if(tab==="clip") $("veTabClip").style.display="";
+    else if(tab==="image") $("veTabImage").style.display="";
+    // 패널 타이틀 업데이트
+    var pt=$("vePanelTitle");
+    if(pt) pt.textContent = vePanelTitles[tab] || tab;
+  }
+  // 숨겨진 탭 버튼 클릭
+  document.querySelectorAll(".ve-tab-btn").forEach(function(btn){
+    btn.addEventListener("click",function(){ veActivateTab(btn.dataset.veTab); });
   });
-  // 초기 탭 활성 스타일
-  var firstTab=document.querySelector(".ve-tab-btn.active");
-  if(firstTab){firstTab.style.color="#3b82f6";firstTab.style.borderBottomColor="#3b82f6";}
+  // 좌측 사이드바 아이콘 클릭
+  document.querySelectorAll(".ve-sidebar-icon[data-ve-tab]").forEach(function(btn){
+    btn.addEventListener("click",function(){ veActivateTab(btn.dataset.veTab); });
+  });
 
   // 줌
   // timelineZoom은 상단에서 선언됨
@@ -4478,7 +4617,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     presetContainer.innerHTML = CAPTION_PRESETS.map(function(p, i) {
       var previewBg = p.bg === "none" ? "transparent" : (p.bgColor + (p.bgOpacity > 50 ? "" : "80"));
       var borderCol = p.bg === "none" ? "transparent" : p.bgColor;
-      return "<div class='caption-preset-card' data-preset='" + i + "' style='cursor:pointer;padding:8px 4px;border-radius:8px;border:2px solid #2a2a4a;background:#0f0f23;text-align:center;transition:all 0.15s;" + (i === 0 ? "border-color:#3b82f6;" : "") + "'>" +
+      return "<div class='caption-preset-card' data-preset='" + i + "' style='cursor:pointer;padding:8px 4px;border-radius:8px;border:2px solid #2a2a4a;background:#0f0f23;text-align:center;transition:all 0.15s;" + (i === 0 ? "border-color:#00bfa5;" : "") + "'>" +
         "<div style='height:32px;display:flex;align-items:center;justify-content:center;margin-bottom:4px;'>" +
         "<span style='font-size:11px;font-weight:800;color:" + p.color + ";" +
         (p.bg !== "none" ? "background:" + p.bgColor + ";padding:2px 6px;border-radius:" + p.round + "px;opacity:0.9;" : "") +
@@ -4521,7 +4660,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       syncChip("veSubColorChips", p.color);
       // 카드 선택 표시
       presetContainer.querySelectorAll(".caption-preset-card").forEach(function(c) { c.style.borderColor = "#2a2a4a"; });
-      card.style.borderColor = "#3b82f6";
+      card.style.borderColor = "#00bfa5";
     });
   }
 
@@ -4757,6 +4896,25 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           }
         });
       }
+      // 연속 중복 + 유사 중복 + 시간 겹침 자막 제거
+      ve.subtitles = ve.subtitles.filter(function(s, i, arr) {
+        if (i === 0) return true;
+        var prev = arr[i - 1];
+        var sst = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+        var pst = prev.start_seconds != null ? prev.start_seconds : (prev.start || 0);
+        var pen = prev.end_seconds != null ? prev.end_seconds : (prev.end || pst + 2);
+        if (s.text === prev.text) return false;
+        if (Math.abs(sst - pst) < 0.3) return false;
+        if (s.text && prev.text) {
+          var shorter = s.text.length < prev.text.length ? s.text : prev.text;
+          var longer = s.text.length >= prev.text.length ? s.text : prev.text;
+          if (longer.indexOf(shorter) >= 0) {
+            var gap = sst - pen;
+            if (gap < 0.5) return false;
+          }
+        }
+        return true;
+      });
       renderSubList(); renderTimeline();
       hideVeLoading();
       showModal("자막 재생성 완료", ve.subtitles.length + "개 자막이 새로 생성되었습니다.", "확인");
@@ -4764,7 +4922,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       hideVeLoading();
       showModal("자막 재생성 실패", e.message || "오류", "확인");
     }
-    subRegenBtn.disabled = false; subRegenBtn.textContent = "자막 재생성 (STT)";
+    subRegenBtn.disabled = false; subRegenBtn.textContent = "자막 재생성";
   });
 
   // 이미지 옵션 탭 (선택된 오버레이)
@@ -4775,11 +4933,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var sz=$("veOvSize"); if(sz){sz.value=ov.width||120; var lbl=$("veOvSizeLabel");if(lbl)lbl.textContent=ov.width||120;}
     var op=$("veOvOpacity"); if(op){op.value=Math.round((ov.opacity!=null?ov.opacity:1)*100); var lbl2=$("veOvOpacityLabel");if(lbl2)lbl2.textContent=Math.round((ov.opacity!=null?ov.opacity:1)*100)+"%";}
     // 탭 전환
-    document.querySelectorAll(".ve-tab-btn").forEach(function(b){b.classList.remove("active");b.style.borderBottomColor="transparent";b.style.color="#94a3b8";});
-    var clipTab=document.querySelector('[data-ve-tab="clip"]');
-    if(clipTab){clipTab.classList.add("active");clipTab.style.borderBottomColor="#3b82f6";clipTab.style.color="#e2e8f0";}
-    document.querySelectorAll(".ve-tab-content").forEach(function(c){c.style.display="none";});
-    var tc=$("veTabClip"); if(tc)tc.style.display="";
+    veActivateTab("clip");
   }
   var ovSizeSlider=$("veOvSize"); if(ovSizeSlider) ovSizeSlider.addEventListener("input",function(){
     if(!_selectedOv) return;
@@ -5020,8 +5174,28 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       ve.segments=(aD.segments||[]).slice(0,5); ve.subtitles=[];
       var fs2=aD.all_subs||aD.full_transcript; if(fs2&&Array.isArray(fs2)) ve.subtitles=fs2;
       if(!ve.subtitles.length) ve.segments.forEach(function(seg){if(seg.subtitles&&seg.subtitles.length){ve.subtitles=ve.subtitles.concat(seg.subtitles);}else if(seg.script){var ss=seg.start_seconds||0,se=seg.end_seconds||ve.duration,ch=seg.script.match(/.{1,18}/g)||[],cd=(se-ss)/Math.max(1,ch.length);ch.forEach(function(t,i){ve.subtitles.push({start:ss+i*cd,end:ss+(i+1)*cd,text:t.trim()})});}});
-      // 연속 중복 자막 제거
-      ve.subtitles = ve.subtitles.filter(function(s, i) { return i === 0 || s.text !== ve.subtitles[i - 1].text; });
+      // 연속 중복 + 유사 중복 + 시간 겹침 자막 제거
+      ve.subtitles = ve.subtitles.filter(function(s, i, arr) {
+        if (i === 0) return true;
+        var prev = arr[i - 1];
+        var sst = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+        var pst = prev.start_seconds != null ? prev.start_seconds : (prev.start || 0);
+        var pen = prev.end_seconds != null ? prev.end_seconds : (prev.end || pst + 2);
+        // 완전 동일 텍스트
+        if (s.text === prev.text) return false;
+        // 시간이 거의 같은 구간에 있는 자막 (0.3초 이내 시작)
+        if (Math.abs(sst - pst) < 0.3) return false;
+        // 한쪽이 다른 쪽을 포함하고 간격이 0.5초 미만이면 중복
+        if (s.text && prev.text) {
+          var shorter = s.text.length < prev.text.length ? s.text : prev.text;
+          var longer = s.text.length >= prev.text.length ? s.text : prev.text;
+          if (longer.indexOf(shorter) >= 0) {
+            var gap = sst - pen;
+            if (gap < 0.5) return false;
+          }
+        }
+        return true;
+      });
       renderSegs();
       // 숏폼 모드: AI로 하이라이트 구간 추출
       if (isShortsMode() && ve.subtitles.length > 0) {
@@ -5226,7 +5400,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     list.innerHTML = ve.recommendedClips.map(function(c, i) {
       var dur = Math.max(0, c.end_seconds - c.start_seconds);
       return "<div data-short-idx='" + i + "' style='padding:10px 8px;border:1px solid #1e1e3a;border-radius:8px;margin-bottom:6px;background:#101026;cursor:pointer;'>" +
-        "<div style='display:flex;align-items:center;gap:8px;margin-bottom:5px;'><span style='width:22px;height:22px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;'>" + (i + 1) + "</span>" +
+        "<div style='display:flex;align-items:center;gap:8px;margin-bottom:5px;'><span style='width:22px;height:22px;border-radius:50%;background:#00bfa5;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;'>" + (i + 1) + "</span>" +
         "<div style='flex:1;min-width:0;font-size:12px;font-weight:800;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml(c.hook || c.title || "추천 구간") + "</div>" +
         "<span style='font-size:11px;font-weight:800;color:#22c55e;'>" + Math.round(c.score || 0) + "점</span></div>" +
         "<div style='font-size:11px;color:#94a3b8;margin-bottom:4px;'>" + fmtTime(c.start_seconds) + " ~ " + fmtTime(c.end_seconds) + " · 약 " + Math.round(dur) + "초</div>" +
@@ -5289,7 +5463,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         var left = (cursor / totalShortDur * 100).toFixed(2) + "%";
         var width = (clipDur / totalShortDur * 100).toFixed(2) + "%";
         cursor += clipDur;
-        var colors = ["#2563eb", "#1d4ed8", "#1e40af", "#3b82f6"];
+        var colors = ["#009688", "#00897b", "#00796b", "#00bfa5"];
         var color = colors[i % colors.length];
         return "<div data-vclip='" + i + "' title='" + escapeHtml(c.title || c.label) + "' style='position:absolute;top:2px;bottom:2px;left:" + left + ";width:" + width +
           ";background:" + color + ";border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid " + color + "99;'>" +
@@ -5299,7 +5473,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         el.addEventListener("click", function() {
           var idx = parseInt(el.dataset.vclip);
           track.querySelectorAll("[data-vclip]").forEach(function(e) { e.style.outline = "none"; e.style.boxShadow = "none"; });
-          el.style.outline = "2px solid #93c5fd"; el.style.boxShadow = "0 0 8px rgba(59,130,246,0.55)";
+          el.style.outline = "2px solid #80cbc4"; el.style.boxShadow = "0 0 8px rgba(0,191,165,0.55)";
           var c = ve.videoClips[idx];
           if (c) { var video = $("veVideo"); if (video) video.currentTime = c.start; }
         });
@@ -5307,20 +5481,20 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       return;
     }
     if (!ve.videoClips || !ve.videoClips.length) {
-      track.style.cssText = "position:absolute;inset:1px;background:#2563eb;border-radius:2px;opacity:0.9;";
+      track.style.cssText = "position:absolute;inset:1px;background:#009688;border-radius:2px;opacity:0.9;";
       return;
     }
     track.style.cssText = "position:absolute;inset:0;";
     track.innerHTML = ve.videoClips.map(function(c, i) {
       var left = (c.start / dur * 100).toFixed(2) + "%";
       var width = ((c.end - c.start) / dur * 100).toFixed(2) + "%";
-      var colors = ["#2563eb", "#1d4ed8", "#1e40af", "#3b82f6"];
+      var colors = ["#009688", "#00897b", "#00796b", "#00bfa5"];
       var color = colors[i % colors.length];
       return "<div data-vclip='" + i + "' style='position:absolute;top:2px;bottom:2px;left:" + left + ";width:" + width +
         ";background:" + color + ";border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid " + color + "80;'>" +
-        "<div class='trim-handle trim-left' style='width:5px;height:100%;cursor:col-resize;background:#60a5fa;flex-shrink:0;opacity:0;transition:opacity 0.15s;'></div>" +
+        "<div class='trim-handle trim-left' style='width:5px;height:100%;cursor:col-resize;background:#4db6ac;flex-shrink:0;opacity:0;transition:opacity 0.15s;'></div>" +
         "<div style='flex:1;padding:0 2px;font-size:10px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;text-align:center;'>" + (c.label || "V" + (i + 1)) + "</div>" +
-        "<div class='trim-handle trim-right' style='width:5px;height:100%;cursor:col-resize;background:#60a5fa;flex-shrink:0;opacity:0;transition:opacity 0.15s;'></div></div>";
+        "<div class='trim-handle trim-right' style='width:5px;height:100%;cursor:col-resize;background:#4db6ac;flex-shrink:0;opacity:0;transition:opacity 0.15s;'></div></div>";
     }).join("");
 
     // 비디오 클립 클릭/드래그
@@ -5329,7 +5503,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         var idx = parseInt(el.dataset.vclip);
         // 비디오 클립 선택 표시
         track.querySelectorAll("[data-vclip]").forEach(function(e) { e.style.outline = "none"; e.style.boxShadow = "none"; });
-        el.style.outline = "2px solid #3b82f6"; el.style.boxShadow = "0 0 8px rgba(59,130,246,0.4)";
+        el.style.outline = "2px solid #00bfa5"; el.style.boxShadow = "0 0 8px rgba(0,191,165,0.4)";
         var c = ve.videoClips[idx];
         if (c) { var video = $("veVideo"); if (video) video.currentTime = c.start; }
       });
@@ -5344,7 +5518,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       list.style.display = "";
       list.innerHTML = ve.videoClips.map(function(c, i) {
         return "<div style='padding:8px 6px;border:1px solid #1e1e3a;border-radius:8px;margin-bottom:6px;cursor:pointer;background:#101026;' data-vci='" + i + "'>" +
-          "<div style='display:flex;align-items:center;gap:8px;margin-bottom:4px;'><span style='font-size:11px;font-weight:900;color:#60a5fa;min-width:38px;'>쇼츠 " + (i + 1) + "</span>" +
+          "<div style='display:flex;align-items:center;gap:8px;margin-bottom:4px;'><span style='font-size:11px;font-weight:900;color:#4db6ac;min-width:38px;'>쇼츠 " + (i + 1) + "</span>" +
           "<span style='font-size:12px;font-weight:800;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml(c.title || c.label || "") + "</span></div>" +
           "<div style='font-size:11px;color:#94a3b8;'>" + fmtTime(c.start) + " ~ " + fmtTime(c.end) + " · " + Math.round(c.end - c.start) + "초 · " + Math.round(c.score || 0) + "점</div>" +
           (c.reason ? "<div style='font-size:11px;color:#64748b;line-height:1.45;margin-top:4px;'>" + escapeHtml(c.reason) + "</div>" : "") + "</div>";
@@ -5363,7 +5537,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     }
     list.innerHTML = ve.videoClips.map(function(c, i) {
       return "<div style='display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #1e1e3a;cursor:pointer;' data-vci='" + i + "'>" +
-        "<span style='font-size:11px;font-weight:700;color:#3b82f6;min-width:30px;'>V" + (i + 1) + "</span>" +
+        "<span style='font-size:11px;font-weight:700;color:#00bfa5;min-width:30px;'>V" + (i + 1) + "</span>" +
         "<span style='font-size:11px;color:#94a3b8;'>" + fmtTime(c.start) + " ~ " + fmtTime(c.end) + "</span>" +
         "<span style='font-size:10px;color:#475569;margin-left:auto;'>" + (c.end - c.start).toFixed(1) + "초</span></div>";
     }).join("");
@@ -5415,6 +5589,14 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function stopPlayback(){var v=$("veVideo");if(v){v.pause();v.src="";}isPlaying=false;if(playInterval){clearInterval(playInterval);playInterval=null;} var pb=$("vePlayBtn");if(pb)pb.innerHTML="&#9654;"; stopCanvasRender();}
   window._veStopPlayback = stopPlayback; // 전역 접근 (탭 전환 시 사용)
 
+  // ── 프로젝트 저장 버튼 ──
+  var saveBtn = $("veSaveProjectBtn"); if (saveBtn) saveBtn.addEventListener("click", function() { saveProject(); });
+  // ── 프로젝트 보관함 버튼 ──
+  var projListBtn = $("veProjectListBtn"); if (projListBtn) projListBtn.addEventListener("click", function() { showProjectList(); });
+  // ── Ctrl+S 단축키 ──
+  document.addEventListener("keydown", function(e) { if ((e.ctrlKey || e.metaKey) && e.key === "s" && ve.filePath) { e.preventDefault(); saveProject(); } });
+
+  window._initEditor = initEditor;
   function initEditor(){
     var video=$("veVideo"); if(!video||!ve.filePath) return;
 
@@ -5425,7 +5607,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       loadOv = document.createElement("div");
       loadOv.id = "veLoadingOverlay";
       loadOv.style.cssText = "position:absolute;inset:0;background:rgba(10,10,26,0.95);z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;";
-      loadOv.innerHTML = '<div style="width:48px;height:48px;border:3px solid #334155;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.7s linear infinite;"></div>' +
+      loadOv.innerHTML = '<div style="width:48px;height:48px;border:3px solid #334155;border-top-color:#00bfa5;border-radius:50%;animation:spin 0.7s linear infinite;"></div>' +
         '<div id="veLoadingText" style="color:#94a3b8;font-size:15px;margin-top:16px;font-weight:600;">영상을 불러오는 중...</div>';
       $("veStep3").appendChild(loadOv);
       loadTxt = $("veLoadingText");
@@ -5521,16 +5703,21 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     };
     video.onended=function(){isPlaying=false;if(pb)pb.innerHTML="&#9654;";};
     // ve.duration 지점에서 강제 정지 (onpause보다 정확)
-    video.addEventListener("playing", function checkEnd() {
-      var checkInterval = setInterval(function() {
-        if (!video || video.paused) { clearInterval(checkInterval); return; }
+    // 기존 리스너 정리 후 새로 등록 (initEditor 반복 호출 시 누수 방지)
+    if (video._checkEndHandler) video.removeEventListener("playing", video._checkEndHandler);
+    if (video._checkEndInterval) clearInterval(video._checkEndInterval);
+    video._checkEndHandler = function checkEnd() {
+      if (video._checkEndInterval) clearInterval(video._checkEndInterval);
+      video._checkEndInterval = setInterval(function() {
+        if (!video || video.paused) { clearInterval(video._checkEndInterval); video._checkEndInterval = null; return; }
         if (video.currentTime >= (ve.duration || 9999)) {
           video.pause(); video.currentTime = ve.duration;
           isPlaying = false; if(pb) pb.innerHTML = "&#9654;";
-          clearInterval(checkInterval);
+          clearInterval(video._checkEndInterval); video._checkEndInterval = null;
         }
       }, 100);
-    });
+    };
+    video.addEventListener("playing", video._checkEndHandler);
 
     // 시크바
     if(seekBar){
@@ -5545,7 +5732,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if($("veSubCount")) $("veSubCount").textContent=ve.subtitles.length+"개";
   }
 
-  function fmtTime(s){var m=Math.floor(s/60);var sec=Math.floor(s%60);return m+":"+String(sec).padStart(2,"0");}
+  // fmtTime은 라인 6148에서 시간(hour) 포함 버전으로 정의됨
 
   // ── 자막 오버레이 (캔버스에서 그리므로 div는 숨김) ──
   function renderSubOverlay(t){
@@ -5588,7 +5775,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var chars=Math.floor(text.length*Math.min(1,elapsed/Math.max(0.5,dur*0.6)));
       text=text.slice(0,chars);
     } else if(subAnim==="karaoke"){
-      style+="color:#2563eb;";
+      style+="color:#00bfa5;";
     } else if(subAnim==="bounce"){
       var sc=elapsed<0.2?0.5+elapsed*2.5:elapsed<0.35?1.1-(elapsed-0.2)*0.67:1;
       style+="display:inline-block;transform:scale("+sc+");";
@@ -5605,7 +5792,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     list.innerHTML=ve.subtitles.map(function(s,i){
       var st=s.start_seconds!=null?s.start_seconds:(s.start||0);
       return "<div class='ve-sub-row' data-idx='"+i+"' data-sub-idx='"+i+"' style='display:flex;gap:6px;padding:6px 6px;border-bottom:1px solid #1e1e3a;cursor:pointer;align-items:center;transition:background 0.15s;border-radius:3px;'>" +
-        "<span style='font-size:11px;font-weight:700;color:#3b82f6;min-width:40px;font-variant-numeric:tabular-nums;'>"+fmtTime(st)+"</span>"+
+        "<span style='font-size:11px;font-weight:700;color:#00bfa5;min-width:40px;font-variant-numeric:tabular-nums;'>"+fmtTime(st)+"</span>"+
         "<input type='text' value='"+escapeHtml(s.text||"")+"' data-idx='"+i+"' class='ve-sub-edit' style='flex:1;border:none;background:transparent;color:#e2e8f0;font-size:12px;outline:none;padding:3px 6px;font-family:inherit;min-width:0;border-radius:4px;' onfocus=\"this.style.background='#1e1e3a'\" onblur=\"this.style.background='transparent'\">" +
         "<button data-idx='"+i+"' class='ve-sub-del' style='border:none;background:none;color:#64748b;cursor:pointer;font-size:12px;padding:3px 6px;flex-shrink:0;font-weight:700;'>X</button></div>";
     }).join("");
@@ -5805,15 +5992,15 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (!blocks) return;
     blocks.querySelectorAll("[data-idx]").forEach(function(el) {
       var i = parseInt(el.dataset.idx);
-      el.style.outline = (i === idx) ? "2px solid #3b82f6" : "none";
+      el.style.outline = (i === idx) ? "2px solid #00bfa5" : "none";
       el.style.outlineOffset = (i === idx) ? "-1px" : "";
-      el.style.boxShadow = (i === idx) ? "0 0 8px rgba(59,130,246,0.4)" : "none";
+      el.style.boxShadow = (i === idx) ? "0 0 8px rgba(0,191,165,0.4)" : "none";
     });
     var subList = $("veSubtitleList");
     if (subList) {
       subList.querySelectorAll("[data-sub-idx]").forEach(function(el) {
         var i = parseInt(el.dataset.subIdx);
-        el.style.background = (i === idx) ? "rgba(59,130,246,0.15)" : "";
+        el.style.background = (i === idx) ? "rgba(0,191,165,0.15)" : "";
       });
     }
     // 선택 정보 표시
@@ -6052,7 +6239,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           var bW = Math.max(1, (100 / barCount - 0.3)).toFixed(1) + "%";
           bars += "<div style='position:absolute;left:" + bLeft + ";width:" + bW + ";height:" + h + "px;background:" + color + ";bottom:" + (12 - h / 2) + "px;border-radius:1px;'></div>";
         }
-        html += "<div style='position:absolute;top:2px;bottom:2px;left:" + left + ";width:" + width + ";background:#0c0c2a;border-radius:3px;overflow:hidden;border:1px solid rgba(59,130,246,0.2);'>" + bars + "</div>";
+        html += "<div style='position:absolute;top:2px;bottom:2px;left:" + left + ";width:" + width + ";background:#0c0c2a;border-radius:3px;overflow:hidden;border:1px solid rgba(0,191,165,0.15);'>" + bars + "</div>";
       });
       el.innerHTML = html;
     } else {
@@ -6099,7 +6286,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     // 새 활성 설정
     if (activeIdx >= 0) {
       var cur = list.querySelector('[data-idx="' + activeIdx + '"]');
-      if (cur) { cur.style.background = "rgba(59,130,246,0.1)"; cur.scrollIntoView({ block: "nearest", behavior: "auto" }); }
+      if (cur) { cur.style.background = "rgba(0,191,165,0.1)"; cur.scrollIntoView({ block: "nearest", behavior: "auto" }); }
     }
     _prevActiveSubIdx = activeIdx;
   }
@@ -6107,6 +6294,16 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // 내보내기
   var exBtn=$("veExportBtn"); if(exBtn) exBtn.addEventListener("click",async function(){
     if(!ve.filePath) return;
+    // 저장 위치/파일명 선택
+    var baseName = ve.filePath.replace(/\\/g,"/").split("/").pop().replace(/\.[^.]+$/,"");
+    var isPortraitMode = ve.type === "portrait" || ve.type === "square";
+    var defaultName = (isPortraitMode ? "short_" : "longform_") + baseName + ".mp4";
+    try {
+      var saveResult = await bridge.videoSelectSaveFile({ defaultName: defaultName });
+      if (!saveResult || !saveResult.ok) return; // 취소됨
+      ve._outputDir = saveResult.dirPath;
+      ve._outputFileName = saveResult.fileName;
+    } catch(e) { /* 폴백: 원본 폴더에 자동 저장 */ }
     // 로컬 개발 모드는 바로 내보내기 (횟수 차감 스킵)
     if (window.nbBridge && window.nbBridge.isLocalDev) { await doExport(true); return; }
     // 횟수 체크
@@ -6187,9 +6384,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         setProg("veExportPct", "veExportBar", "veExportLabel", 10, "쇼츠 렌더링 중...");
         var _brandName = ($("veBrandName") || {}).value || "";
         var _brandLogo = ($("veBrandLogo") || {}).value || "";
-        result = await bridge.videoRenderShorts({ inputPath: ve.filePath, clips: clips, outputDir: ve._outputDir || null, template: "minimal", subtitlesEnabled: ve.subEnabled, aspect: aspect, outputResolution: outputResolution, silenceRemove: ve.silenceRemove, brandName: _brandName, brandLogo: _brandLogo, captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1} });
+        result = await bridge.videoRenderShorts({ inputPath: ve.filePath, clips: clips, outputDir: ve._outputDir || null, outputFileName: ve._outputFileName || null, template: "minimal", subtitlesEnabled: ve.subEnabled, aspect: aspect, outputResolution: outputResolution, silenceRemove: ve.silenceRemove, brandName: _brandName, brandLogo: _brandLogo, captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1} });
       } else {
-        result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1},aspect:aspect,outputResolution:outputResolution,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null});
+        result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1},aspect:aspect,outputResolution:outputResolution,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null,outputFileName:ve._outputFileName||null});
       }
       if(!result.ok) throw new Error(result.error||"렌더링 실패");
       // 횟수 차감 (로컬 dev 모드는 스킵)
@@ -6203,9 +6400,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
             var clip = clips[ri] || {};
             var dur = Math.round((clip.end_seconds || 0) - (clip.start_seconds || 0));
             var fmtDur = Math.floor(dur/60) + ":" + String(dur%60).padStart(2,"0");
-            return "<div class='shorts-result-item' data-ri='" + ri + "' style='cursor:pointer;padding:10px;border-radius:10px;border:2px solid " + (ri === 0 ? "#3b82f6" : "var(--border-soft)") + ";margin-bottom:8px;background:var(--bg-elev);transition:border-color 0.15s;'>" +
+            return "<div class='shorts-result-item' data-ri='" + ri + "' style='cursor:pointer;padding:10px;border-radius:10px;border:2px solid " + (ri === 0 ? "#00bfa5" : "var(--border-soft)") + ";margin-bottom:8px;background:var(--bg-elev);transition:border-color 0.15s;'>" +
               "<div style='display:flex;align-items:center;gap:8px;margin-bottom:5px;'>" +
-              "<div style='width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#3b82f6,#2563eb);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:12px;flex-shrink:0;'>" + (ri+1) + "</div>" +
+              "<div style='width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#00bfa5,#009688);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:12px;flex-shrink:0;'>" + (ri+1) + "</div>" +
               "<div style='flex:1;min-width:0;'>" +
               "<div style='font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml(clip.title || ("쇼츠 " + (ri+1))) + "</div>" +
               "<div style='font-size:10px;color:var(--text-dim);'>" + fmtDur + "</div>" +
@@ -6235,7 +6432,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               var t = $("veResultTitle"); if (t) t.textContent = clip.title || ("쇼츠 " + (ri+1));
               var d = $("veResultDesc"); if (d) d.textContent = clip.description || "";
               s5.querySelectorAll(".shorts-result-item").forEach(function(c) { c.style.borderColor = "var(--border-soft)"; });
-              el.style.borderColor = "#3b82f6";
+              el.style.borderColor = "#00bfa5";
             });
           });
           s5.querySelectorAll(".shorts-folder-btn").forEach(function(btn) {
@@ -6533,7 +6730,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           "<h2 style='font-size:20px;font-weight:700;margin-bottom:8px;'>" + escapeHtml(p.title || "") + "</h2>" +
           "<div style='font-size:12px;color:var(--text-dim);'>" + escapeHtml(p.author || "") + " · " + date + " · 조회 " + ((p.views || 0) + 1) + " · 좋아요 " + (p.likes || 0) + "</div>" +
           "</div>" +
-          "<div style='font-size:14px;line-height:1.8;color:var(--text-sub);word-break:break-word;'>" + body + "</div>";
+          "<div style='font-size:14px;line-height:1.8;color:var(--text-sub);word-break:break-word;'>" + body.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "") + "</div>";
       }).catch(function() {
         if (content) content.innerHTML = "<div style='color:var(--danger);'>게시글을 불러올 수 없습니다.</div>";
       });
@@ -7281,21 +7478,22 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
         if (item.url) {
           bridge.openExternal(item.url);
         } else if (item.type === "video" && item.data && item.data.filePath) {
-          // 영상 편집기로 이동 + 데이터 복원
+          // 영상 편집기로 이동 + 데이터 복원 (window._ve/_goStep/_initEditor로 접근)
           goToPanel("video-editor");
           setTimeout(function() {
-            ve.filePath = item.data.filePath;
-            ve.subtitles = item.data.subtitles || [];
-            ve.duration = item.data.duration || 0;
-            ve.type = item.data.type || "landscape";
-            ve.subSize = item.data.subSize || 38;
-            ve.subColor = item.data.subColor || "#FFFFFF";
-            ve.subEnabled = item.data.subEnabled !== false;
-            ve.segments = [];
-            ve.overlays = [];
-            goStep(3);
-            var fn = $("veFileName2"); if (fn) fn.textContent = ve.filePath.split(/[\\/]/).pop();
-            initEditor();
+            var _v = window._ve; if (!_v) return;
+            _v.filePath = item.data.filePath;
+            _v.subtitles = item.data.subtitles || [];
+            _v.duration = item.data.duration || 0;
+            _v.type = item.data.type || "landscape";
+            _v.subSize = item.data.subSize || 38;
+            _v.subColor = item.data.subColor || "#FFFFFF";
+            _v.subEnabled = item.data.subEnabled !== false;
+            _v.segments = [];
+            _v.overlays = [];
+            if (window._goStep) window._goStep(3);
+            var fn = $("veFileName2"); if (fn) fn.textContent = _v.filePath.split(/[\\/]/).pop();
+            if (window._initEditor) window._initEditor();
           }, 300);
         } else if (item.type === "blog") {
           // 글쓰기 패널로 이동 + 테마 복원
