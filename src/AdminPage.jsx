@@ -90,6 +90,14 @@ export default function AdminPage({ C, user: adminUser }) {
   const [postSearch, setPostSearch] = useState("");
   const [dailySignups, setDailySignups] = useState([]);
   const [dailyAiUsage, setDailyAiUsage] = useState([]);
+  // ── 통합 회원관리: 구독/체험권/횟수내역 ──
+  const [subs, setSubs] = useState([]);
+  const [trials, setTrials] = useState([]);
+  const [expandedUid, setExpandedUid] = useState(null);
+  const [memberHistory, setMemberHistory] = useState({});
+  const [historyLoading, setHistoryLoading] = useState({});
+  const PLAN_LIST = ["Free", "Basic", "Pro", "Premium", "Business", "Agency"];
+  const PLAN_LIMITS = { Free: 5, Basic: 30, Pro: 200, Premium: 700, Business: 700, Agency: 99999 };
 
   useEffect(() => {
     setAuth(Boolean(isAdminRole));
@@ -176,9 +184,72 @@ export default function AdminPage({ C, user: adminUser }) {
     setAiLogsLoading(false);
   };
 
+  // ── 구독/체험권 로드 ──
+  const loadSubs = async () => {
+    try {
+      const { data: s } = await supabase.from("subscriptions").select("*").in("status", ["active", "on_trial"]);
+      setSubs(s || []);
+    } catch {}
+  };
+  const loadTrials = async () => {
+    try {
+      const { data: t } = await supabase.from("program_trials").select("id, uid, email, plan, status, created_at, expires_at, note").order("expires_at", { ascending: false });
+      setTrials(t || []);
+    } catch {}
+  };
+  const getSub = (uid) => subs.find(s => s.uid === uid);
+  const getTrial = (member) => {
+    const email = String(member.email || "").toLowerCase();
+    return trials.find(t => t.status === "active" && new Date(t.expires_at).getTime() > Date.now() && (t.uid === member.uid || String(t.email || "").toLowerCase() === email));
+  };
+  const setPlan = async (uid, plan) => {
+    if (plan === "Free") {
+      await supabase.from("subscriptions").delete().eq("uid", uid);
+      setSubs(p => p.filter(s => s.uid !== uid));
+    } else {
+      const existing = subs.find(s => s.uid === uid);
+      const monthlyLimit = PLAN_LIMITS[plan] || 0;
+      if (existing) {
+        await supabase.from("subscriptions").update({ product_name: plan, status: "active", monthly_limit: monthlyLimit, updated_at: new Date().toISOString() }).eq("id", existing.id);
+        setSubs(p => p.map(s => s.uid === uid ? { ...s, product_name: plan, status: "active" } : s));
+      } else {
+        const row = { uid, product_name: plan, status: "active", monthly_limit: monthlyLimit, updated_at: new Date().toISOString() };
+        const { data } = await supabase.from("subscriptions").insert(row).select().single();
+        if (data) setSubs(p => [...p, data]);
+      }
+    }
+    showToast(`${plan} 플랜 적용 완료`);
+  };
+  const grantProTrial = async (member) => {
+    if (!window.confirm(`${member.email || member.nick || "선택 회원"}에게 Pro 한 달 체험권을 부여할까요?`)) return;
+    const expiresAt = new Date();
+    expiresAt.setMonth(expiresAt.getMonth() + 1);
+    const { data: trial, error } = await supabase.from("program_trials").insert({ uid: member.uid, email: member.email, plan: "pro", status: "active", expires_at: expiresAt.toISOString(), note: "관리자 지급 Pro 한 달 체험권" }).select("id, uid, email, plan, status, created_at, expires_at, note").single();
+    if (error) { showToast(`체험권 지급 실패: ${error.message}`); } else {
+      if (trial) setTrials(prev => [trial, ...prev.filter(t => t.id !== trial.id)]);
+      showToast("Pro 한 달 체험권 부여 완료");
+    }
+  };
+  // ── 회원별 횟수 내역 로드 ──
+  const loadMemberHistory = async (uid) => {
+    if (memberHistory[uid]) return;
+    setHistoryLoading(p => ({ ...p, [uid]: true }));
+    try {
+      const { data } = await supabase.from("point_history").select("*").eq("uid", uid).order("created_at", { ascending: false }).limit(30);
+      setMemberHistory(p => ({ ...p, [uid]: data || [] }));
+    } catch {}
+    setHistoryLoading(p => ({ ...p, [uid]: false }));
+  };
+  const toggleExpand = (uid) => {
+    if (expandedUid === uid) { setExpandedUid(null); return; }
+    setExpandedUid(uid);
+    loadMemberHistory(uid);
+  };
+
   useEffect(() => {
     if (auth) {
       loadMembers(); loadVideos(); loadPosts(); loadBoardCats(); loadAiLogs(); loadDailySignups(); loadDailyAiUsage();
+      loadSubs(); loadTrials();
       adminApi("online_count").then(d=>setOnlineCount(d.count||0)).catch(()=>{});
     }
   }, [auth]);
@@ -396,21 +467,20 @@ export default function AdminPage({ C, user: adminUser }) {
   const panelBorder = isDark ? "rgba(255,255,255,0.08)" : "#e6e8f0";
   const subtleBg = isDark ? "rgba(255,255,255,0.035)" : "#f8f9fc";
   const activeBg = isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)";
-  const adminTitle = {stats:"통계 대시보드", visitors:"접속 분석", members:"회원 관리", membership:"멤버십 관리", pointHistory:"횟수 내역", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백"}[tab] || tab;
+  const adminTitle = {stats:"통계 대시보드", visitors:"접속 분석", members:"회원 관리", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백"}[tab] || tab;
   const adminDesc = {
     stats: "회원, 게시글, AI 사용량을 한 화면에서 확인합니다.",
     visitors: "유입 경로와 접속 데이터를 점검합니다.",
-    members: "회원 정보, 잔여 횟수, 위험 작업을 관리합니다.",
-    pointHistory: "횟수 지급과 사용 내역을 추적합니다.",
+    members: "회원 정보, 멤버십, 횟수 내역을 통합 관리합니다.",
     guest: "비회원 AI 사용량을 관리합니다.",
     posts: "커뮤니티 게시글을 검수하고 정리합니다.",
     board: "게시판 카테고리와 태그를 관리합니다.",
     inquiries: "고객 문의 상태와 답변을 처리합니다.",
     appFeedback: "앱 피드백을 확인하고 상태를 변경합니다.",
-    membership: "회원별 구독 플랜을 지정하고 관리합니다.",
   }[tab] || "관리자 작업을 처리합니다.";
   const refreshAdminData = () => {
     loadMembers(); loadPosts(); loadAiLogs(); loadDailySignups(); loadDailyAiUsage();
+    loadSubs(); loadTrials();
     adminApi("online_count").then(d=>setOnlineCount(d.count||0)).catch(()=>{});
     if (tab === "board") loadBoardCats();
     showToast("관리자 데이터 새로고침 완료");
@@ -464,7 +534,7 @@ export default function AdminPage({ C, user: adminUser }) {
         {/* 메뉴 그룹 */}
         {[
           { group: "대시보드", items: [["stats", "S", "통계"], ["visitors", "V", "접속 분석"]] },
-          { group: "회원", items: [["members", "M", "회원 관리"], ["membership", "P", "멤버십"], ["pointHistory", "H", "횟수 내역"], ["guest", "G", "비회원"]] },
+          { group: "회원", items: [["members", "M", "회원 관리"], ["guest", "G", "비회원"]] },
           { group: "콘텐츠", items: [["posts", "T", "게시글"], ["board", "B", "게시판"]] },
           { group: "고객", items: [["inquiries", "Q", "문의"], ["appFeedback", "F", "앱 피드백"]] },
         ].map(({ group, items }) => (
@@ -796,6 +866,11 @@ export default function AdminPage({ C, user: adminUser }) {
             const uid = m.uid || m.id || "";
             const mUsed = usage["member_" + uid] || 0;
             const ptVal = ptInputs[uid] || "";
+            const sub = getSub(uid);
+            const trial = getTrial(m);
+            const currentPlan = sub?.product_name || "Free";
+            const isExpanded = expandedUid === uid;
+            const hist = memberHistory[uid] || [];
             return (
               <div key={m.uid||m.id} style={{ background: panelBg, border: "1px solid " + panelBorder, borderRadius: 12, padding: "14px 16px", marginBottom: 8, boxShadow: isDark ? "none" : "0 4px 12px rgba(15,23,42,0.03)" }}>
                 {/* 회원 기본 정보 */}
@@ -812,10 +887,16 @@ export default function AdminPage({ C, user: adminUser }) {
                           color: m.role === "admin" ? "#fbbf24" : m.role === "instructor" ? "#22c55e" : C.purpleL }}>
                           {m.role === "admin" ? "관리자" : m.role === "instructor" ? "강사" : "일반회원"}
                         </span>
+                        <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 5, fontWeight: 700,
+                          background: currentPlan === "Free" ? "rgba(0,0,0,0.04)" : "rgba(59,130,246,0.1)",
+                          color: currentPlan === "Free" ? C.muted : "#3b82f6" }}>
+                          {currentPlan}
+                        </span>
                       </div>
                       <div style={{ fontSize: 12, color: C.muted }}>{m.email}</div>
                       <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
                         가입 {(m.join_date || m.created_at) ? new Date(m.join_date || m.created_at).toLocaleDateString("ko-KR") : "-"} · AI 사용 {mUsed}회
+                        {trial && <span style={{ color: "#2563eb", fontWeight: 700 }}> · Pro 체험 ~{new Date(trial.expires_at).toLocaleDateString("ko-KR")}</span>}
                       </div>
                     </div>
                   </div>
@@ -824,6 +905,19 @@ export default function AdminPage({ C, user: adminUser }) {
                     <div style={{ fontSize: 22, fontWeight: 900, color: C.purpleL }}>{Math.floor((m.points||0))}회</div>
                     <div style={{ fontSize: 11, color: C.muted }}>잔여 횟수</div>
                   </div>
+                </div>
+
+                {/* 멤버십 플랜 변경 */}
+                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: C.muted }}>플랜</span>
+                  <select value={currentPlan} onChange={e => setPlan(uid, e.target.value)}
+                    style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: inputBg, color: C.text, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
+                    {PLAN_LIST.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <button onClick={() => grantProTrial(m)}
+                    style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${bdr}`, background: isDark ? "rgba(59,130,246,0.16)" : "rgba(59,130,246,0.08)", color: "#2563eb", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                    Pro 체험 부여
+                  </button>
                 </div>
 
                 {/* 횟수 관리 — 컴팩트 */}
@@ -887,7 +981,42 @@ export default function AdminPage({ C, user: adminUser }) {
                       회원 탈퇴
                     </button>
                   )}
+                  <div style={{ width: 1, height: 16, background: bdr, margin: "0 2px" }} />
+                  <button onClick={() => toggleExpand(uid)} style={{ padding: "5px 10px", borderRadius: 7, border: `1px solid ${bdr}`, background: isExpanded ? "rgba(59,130,246,0.1)" : "transparent", color: isExpanded ? "#3b82f6" : C.muted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                    {isExpanded ? "내역 접기" : "횟수 내역"}
+                  </button>
                 </div>
+
+                {/* 횟수 내역 (펼침) */}
+                {isExpanded && (
+                  <div style={{ marginTop: 12, padding: "12px 14px", background: subtleBg, borderRadius: 10, border: `1px solid ${panelBorder}` }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: C.text, marginBottom: 8 }}>최근 횟수 내역</div>
+                    {historyLoading[uid] && <div style={{ fontSize: 12, color: C.muted }}>불러오는 중...</div>}
+                    {!historyLoading[uid] && hist.length === 0 && <div style={{ fontSize: 12, color: C.muted }}>내역이 없습니다</div>}
+                    {!historyLoading[uid] && hist.length > 0 && (
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                        <thead>
+                          <tr style={{ borderBottom: `1px solid ${panelBorder}` }}>
+                            <th style={{ padding: "4px 6px", textAlign: "left", color: C.muted, fontWeight: 600 }}>날짜</th>
+                            <th style={{ padding: "4px 6px", textAlign: "right", color: C.muted, fontWeight: 600 }}>변동</th>
+                            <th style={{ padding: "4px 6px", textAlign: "right", color: C.muted, fontWeight: 600 }}>잔액</th>
+                            <th style={{ padding: "4px 6px", textAlign: "left", color: C.muted, fontWeight: 600 }}>사유</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {hist.map((h, i) => (
+                            <tr key={i} style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.03)" : "#f3f4f6"}` }}>
+                              <td style={{ padding: "4px 6px", color: C.muted, whiteSpace: "nowrap" }}>{new Date(h.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
+                              <td style={{ padding: "4px 6px", textAlign: "right", fontWeight: 700, color: h.delta > 0 ? "#10b981" : h.delta < 0 ? "#ef4444" : C.muted }}>{h.delta > 0 ? "+" : ""}{h.delta}</td>
+                              <td style={{ padding: "4px 6px", textAlign: "right", color: C.text, fontWeight: 600 }}>{(h.balance || 0).toLocaleString()}</td>
+                              <td style={{ padding: "4px 6px", color: C.muted, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis" }}>{h.reason}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1228,8 +1357,7 @@ export default function AdminPage({ C, user: adminUser }) {
       {tab === "inquiries" && <InquiryManager C={C} isDark={isDark} />}
     {/* 나머지 탭들은 pointHistory 등 아래에서 계속... → 1340줄 부근 */}
 
-      {/* ── 횟수 내역 ── */}
-      {tab === "pointHistory" && <PointHistoryTab C={C} isDark={isDark} members={members} />}
+      {/* pointHistory / membership 탭은 회원관리에 통합됨 */}
 
       {/* ── 앱 피드백 ── */}
       {tab === "appFeedback" && <AppFeedbackTab C={C} isDark={isDark} />}
@@ -1237,8 +1365,6 @@ export default function AdminPage({ C, user: adminUser }) {
       {/* ── 접속 분석 ── */}
       {tab === "visitors" && <VisitorAnalyticsTab C={C} isDark={isDark} />}
 
-      {/* ── 멤버십 관리 ── */}
-      {tab === "membership" && <MembershipTab C={C} isDark={isDark} adminApi={adminApi} />}
       </main>
     </div>
   );
@@ -1362,64 +1488,6 @@ function InquiryManager({ C, isDark }) {
   );
 }
 
-function PointHistoryTab({ C, isDark, members = [] }) {
-  const [history, setHistory] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [filterUid, setFilterUid] = React.useState("");
-
-  React.useEffect(() => {
-    (async () => {
-      try {
-        const { data } = await (await import("./storage")).supabase
-          .from("point_history").select("*").order("created_at", { ascending: false }).limit(200);
-        setHistory(data || []);
-      } catch {}
-      setLoading(false);
-    })();
-  }, []);
-
-  const getName = (uid) => {
-    const m = members.find(u => u.uid === uid);
-    if (m) return m.nick || m.email?.split("@")[0] || "?";
-    return uid?.slice(0, 8) + "...";
-  };
-  const filtered = filterUid ? history.filter(h => getName(h.uid).toLowerCase().includes(filterUid.toLowerCase()) || h.reason?.toLowerCase().includes(filterUid.toLowerCase())) : history;
-
-  return (
-    <div>
-      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
-        <div style={{ fontSize:15, fontWeight:800, color:C.text }}>횟수 사용 내역 ({filtered.length}건)</div>
-        <input value={filterUid} onChange={e => setFilterUid(e.target.value)} placeholder="닉네임 또는 사유 검색"
-          style={{ padding:"8px 12px", borderRadius:8, border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:"transparent", color:C.text, fontSize:12, outline:"none", width:200 }} />
-      </div>
-      {loading && <div style={{ color:C.muted }}>로딩 중...</div>}
-      <div style={{ overflowX:"auto" }}>
-        <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
-          <thead>
-            <tr style={{ borderBottom:`2px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}` }}>
-              <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:700 }}>날짜</th>
-              <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:700 }}>회원</th>
-              <th style={{ padding:"8px 10px", textAlign:"right", color:C.muted, fontWeight:700 }}>변동</th>
-              <th style={{ padding:"8px 10px", textAlign:"right", color:C.muted, fontWeight:700 }}>잔액</th>
-              <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:700 }}>사유</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map((h, i) => (
-              <tr key={i} style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.05)":"#f3f4f6"}` }}>
-                <td style={{ padding:"8px 10px", color:C.muted, whiteSpace:"nowrap" }}>{new Date(h.created_at).toLocaleString("ko-KR", {month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}</td>
-                <td style={{ padding:"8px 10px", color:C.text, fontSize:12, maxWidth:140, overflow:"hidden", textOverflow:"ellipsis" }} title={h.uid}>{getName(h.uid)}</td>
-                <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, color: h.delta > 0 ? "#10b981" : h.delta < 0 ? "#ef4444" : C.muted }}>{h.delta > 0 ? "+" : ""}{h.delta}</td>
-                <td style={{ padding:"8px 10px", textAlign:"right", color:C.text, fontWeight:600 }}>{(h.balance||0).toLocaleString()}</td>
-                <td style={{ padding:"8px 10px", color:C.muted, maxWidth:200, overflow:"hidden", textOverflow:"ellipsis" }}>{h.reason}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
 
 function AppFeedbackTab({ C, isDark }) {
   const [feedbacks, setFeedbacks] = React.useState([]);
@@ -1685,126 +1753,3 @@ function VisitorAnalyticsTab({ C, isDark }) {
   );
 }
 
-/* ═══ 멤버십 관리 탭 ═══ */
-function MembershipTab({ C, isDark, adminApi }) {
-  const [members, setMembers] = useState([]);
-  const [subs, setSubs] = useState([]);
-  const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [msg, setMsg] = useState("");
-  const PLANS = ["Free", "Basic", "Pro", "Premium", "Business", "Agency"];
-  const PLAN_MONTHLY_LIMITS = {
-    Free: 5,
-    Basic: 30,
-    Starter: 30,
-    Pro: 200,
-    Premium: 700,
-    Business: 700,
-    Agency: 99999,
-  };
-
-  useEffect(() => {
-    (async () => {
-      try {
-        const data = await adminApi("members");
-        const allMembers = data.members || [];
-        allMembers.sort((a, b) => new Date(b.join_date || 0) - new Date(a.join_date || 0));
-        setMembers(allMembers);
-      } catch(e) { console.error("멤버십 회원 로드 실패:", e); }
-      try {
-        const { data: s } = await supabase.from("subscriptions").select("*").in("status", ["active", "on_trial"]);
-        setSubs(s || []);
-      } catch {}
-      setLoading(false);
-    })();
-  }, []);
-
-  const getSub = (uid) => subs.find(s => s.uid === uid);
-
-  const grantProTrial = async (member) => {
-    if (!window.confirm(`${member.email || member.nick || "선택 회원"}에게 Pro 7일 체험권을 부여할까요?`)) return;
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    const { error } = await supabase.from("program_trials").insert({
-      uid: member.uid,
-      email: member.email,
-      plan: "pro",
-      status: "active",
-      expires_at: expiresAt,
-      note: "관리자 지급 Pro 7일 체험권",
-    });
-    if (error) {
-      setMsg(`체험권 지급 실패: ${error.message}`);
-    } else {
-      setMsg("관리자 Pro 7일 체험권 부여 완료");
-    }
-    setTimeout(() => setMsg(""), 3000);
-  };
-
-  const setPlan = async (uid, plan) => {
-    if (plan === "Free") {
-      await supabase.from("subscriptions").delete().eq("uid", uid);
-      setSubs(p => p.filter(s => s.uid !== uid));
-    } else {
-      const existing = subs.find(s => s.uid === uid);
-      const monthlyLimit = PLAN_MONTHLY_LIMITS[plan] || 0;
-      if (existing) {
-        await supabase.from("subscriptions").update({ product_name: plan, status: "active", monthly_limit: monthlyLimit, updated_at: new Date().toISOString() }).eq("id", existing.id);
-        setSubs(p => p.map(s => s.uid === uid ? { ...s, product_name: plan, status: "active" } : s));
-      } else {
-        const row = { uid, product_name: plan, status: "active", monthly_limit: monthlyLimit, updated_at: new Date().toISOString() };
-        const { data } = await supabase.from("subscriptions").insert(row).select().single();
-        if (data) setSubs(p => [...p, data]);
-      }
-    }
-    setMsg(`${plan} 플랜 적용 완료`);
-    setTimeout(() => setMsg(""), 2000);
-  };
-
-  const filtered = members.filter(m => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (m.email || "").toLowerCase().includes(q) || (m.nick || "").toLowerCase().includes(q);
-  });
-
-  const bdr = isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb";
-  const card = isDark ? "rgba(255,255,255,0.04)" : "#fff";
-  const inp = { width: "100%", padding: "10px 14px", borderRadius: 8, border: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.06)" : "#f9fafb", color: C.text, fontSize: 13, outline: "none", fontFamily: "inherit" };
-
-  if (loading) return <div style={{ padding: 40, textAlign: "center", color: C.muted }}>불러오는 중...</div>;
-
-  return (
-    <div>
-      <h2 style={{ fontSize: 18, fontWeight: 800, color: C.text, marginBottom: 16 }}>멤버십 관리</h2>
-
-      {msg && <div style={{ padding: "10px 16px", borderRadius: 8, background: "rgba(34,197,94,0.1)", color: "#22c55e", fontSize: 13, fontWeight: 600, marginBottom: 12 }}>{msg}</div>}
-
-      <input value={search} onChange={e => setSearch(e.target.value)} placeholder="이메일 또는 닉네임 검색" style={{ ...inp, marginBottom: 16 }} />
-
-      <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>총 {filtered.length}명</div>
-
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {filtered.slice(0, 50).map(m => {
-          const sub = getSub(m.uid);
-          const currentPlan = sub?.product_name || "Free";
-          return (
-            <div key={m.uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 10, border: `1px solid ${bdr}`, background: card }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.nick || "-"}</div>
-                <div style={{ fontSize: 11, color: C.muted }}>{m.email}</div>
-              </div>
-              <span style={{ fontSize: 11, fontWeight: 700, color: currentPlan === "Free" ? C.muted : "#3b82f6", background: currentPlan === "Free" ? "transparent" : "rgba(59,130,246,0.1)", padding: "3px 10px", borderRadius: 99 }}>{currentPlan}</span>
-              <select value={currentPlan} onChange={e => setPlan(m.uid, e.target.value)}
-                style={{ padding: "6px 10px", borderRadius: 6, border: `1px solid ${bdr}`, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
-                {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-              <button onClick={() => grantProTrial(m)}
-                style={{ padding: "7px 10px", borderRadius: 6, border: `1px solid ${bdr}`, background: isDark ? "rgba(59,130,246,0.16)" : "rgba(59,130,246,0.08)", color: "#2563eb", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                Pro 7일 체험 부여
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
