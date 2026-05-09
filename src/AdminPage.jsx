@@ -856,170 +856,203 @@ export default function AdminPage({ C, user: adminUser }) {
               style={{ padding: "10px 14px", borderRadius: 9, border: "1px solid " + panelBorder, background: subtleBg, color: C.text, fontSize: 13, outline: "none", width: 260 }} />
           </div>
 
-          {loadingMembers && <div style={{ textAlign:"center", padding:"60px 0", color:C.muted }}>⏳ 회원 목록 불러오는 중...</div>}
+          {loadingMembers && <div style={{ textAlign:"center", padding:"60px 0", color:C.muted }}>회원 목록 불러오는 중...</div>}
           {!loadingMembers && filteredMembers.length === 0 && (
             <div style={{ textAlign: "center", padding: "60px 0", color: C.muted }}>
               {search ? "검색 결과가 없어요" : "가입한 회원이 없어요"}
             </div>
           )}
-          {!loadingMembers && filteredMembers.map(m => {
-            const uid = m.uid || m.id || "";
-            const mUsed = usage["member_" + uid] || 0;
-            const ptVal = ptInputs[uid] || "";
-            const sub = getSub(uid);
-            const trial = getTrial(m);
-            const currentPlan = sub?.product_name || "Free";
-            const isExpanded = expandedUid === uid;
-            const hist = memberHistory[uid] || [];
-            return (
-              <div key={m.uid||m.id} style={{ background: panelBg, border: "1px solid " + panelBorder, borderRadius: 12, padding: "14px 16px", marginBottom: 8, boxShadow: isDark ? "none" : "0 4px 12px rgba(15,23,42,0.03)" }}>
-                {/* 회원 기본 정보 */}
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 42, height: 42, borderRadius: 12, background: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
-                      {(m.nick||"?")[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{m.nick}</span>
-                        <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 5, fontWeight: 700,
-                          background: m.role === "admin" ? "rgba(251,191,36,0.12)" : m.role === "instructor" ? "rgba(34,197,94,0.12)" : "rgba(0,0,0,0.06)",
-                          color: m.role === "admin" ? "#fbbf24" : m.role === "instructor" ? "#22c55e" : C.purpleL }}>
-                          {m.role === "admin" ? "관리자" : m.role === "instructor" ? "강사" : "일반회원"}
-                        </span>
-                        <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 5, fontWeight: 700,
-                          background: currentPlan === "Free" ? "rgba(0,0,0,0.04)" : "rgba(59,130,246,0.1)",
-                          color: currentPlan === "Free" ? C.muted : "#3b82f6" }}>
-                          {currentPlan}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 12, color: C.muted }}>{m.email}</div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>
-                        가입 {(m.join_date || m.created_at) ? new Date(m.join_date || m.created_at).toLocaleDateString("ko-KR") : "-"} · AI 사용 {mUsed}회
-                        {trial && <span style={{ color: "#2563eb", fontWeight: 700 }}> · Pro 체험 ~{new Date(trial.expires_at).toLocaleDateString("ko-KR")}</span>}
-                      </div>
-                    </div>
-                  </div>
-                  {/* 잔여 횟수 */}
-                  <div style={{ textAlign: "right", padding: "8px 12px", borderRadius: 10, background: subtleBg, border: `1px solid ${panelBorder}` }}>
-                    <div style={{ fontSize: 22, fontWeight: 900, color: C.purpleL }}>{Math.floor((m.points||0))}회</div>
-                    <div style={{ fontSize: 11, color: C.muted }}>잔여 횟수</div>
-                  </div>
-                </div>
 
-                {/* 멤버십 플랜 변경 */}
-                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 10, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: C.muted }}>플랜</span>
-                  <select value={currentPlan} onChange={e => setPlan(uid, e.target.value)}
-                    style={{ padding: "4px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: inputBg, color: C.text, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
-                    {PLAN_LIST.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                  <button onClick={() => grantProTrial(m)}
-                    style={{ padding: "4px 10px", borderRadius: 6, border: `1px solid ${bdr}`, background: isDark ? "rgba(59,130,246,0.16)" : "rgba(59,130,246,0.08)", color: "#2563eb", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                    Pro 체험 부여
-                  </button>
-                </div>
+          {/* 테이블 헤더 */}
+          {!loadingMembers && filteredMembers.length > 0 && (
+            <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 12, overflow: "hidden" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 80px", gap: 0, padding: "10px 16px", borderBottom: `2px solid ${panelBorder}`, fontSize: 11, fontWeight: 700, color: C.muted }}>
+                <span>회원</span>
+                <span style={{ textAlign: "center" }}>플랜</span>
+                <span style={{ textAlign: "center" }}>잔여 횟수</span>
+                <span style={{ textAlign: "center" }}>가입일</span>
+                <span style={{ textAlign: "center" }}>관리</span>
+              </div>
 
-                {/* 횟수 관리 — 컴팩트 */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-                  {/* 지급 */}
-                  <div style={{ background: subtleBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "10px 12px" }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: C.purpleL, marginBottom: 6 }}>지급</div>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                      {[5, 10, 20, 50].map(n => (
-                        <button key={n} onClick={() => grantPoints(uid, n)} style={{
-                          padding: "4px 8px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 700,
-                          border: "1px solid rgba(0,0,0,0.06)", background: "rgba(0,0,0,0.06)", color: C.purpleL }}>
-                          +{n}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {/* 차감 */}
-                  <div style={{ background: subtleBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "10px 12px" }}>
-                    <div style={{ fontSize: 11, fontWeight: 800, color: "#ef4444", marginBottom: 6 }}>차감</div>
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                      {[5, 10, 20, 50].map(n => (
-                        <button key={n} onClick={() => deductPoints(uid, n)} style={{
-                          padding: "4px 8px", borderRadius: 6, fontSize: 11, cursor: "pointer", fontWeight: 700,
-                          border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#ef4444" }}>
-                          -{n}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                {/* 직접 입력 + 액션 */}
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
-                  <input value={ptVal} type="number" placeholder="횟수"
-                    onChange={e => setPtInputs(p => ({ ...p, [uid]: e.target.value }))}
-                    style={{ width: 70, padding: "5px 8px", borderRadius: 7, border: "1px solid " + bdr, background: inputBg, color: C.text, fontSize: 11, outline: "none" }} />
-                  <button onClick={() => grantPoints(uid, ptVal)} style={{ padding: "5px 10px", borderRadius: 7, border: "none", background: C.purpleL, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>지급</button>
-                  <button onClick={() => deductPoints(uid, ptVal)} style={{ padding: "5px 10px", borderRadius: 7, border: "none", background: "#ef4444", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>차감</button>
-                  <button onClick={() => setPoints(uid, ptVal)} style={{ padding: "5px 10px", borderRadius: 7, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 11, cursor: "pointer" }}>설정</button>
-                  <div style={{ width: 1, height: 16, background: bdr, margin: "0 2px" }} />
-                  <button onClick={() => resetPoints(uid)} style={{ padding: "5px 10px", borderRadius: 7, border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.06)", color: "#f59e0b", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>초기화</button>
-                  <button onClick={() => resetMemberUsage(uid)} style={{ padding: "5px 10px", borderRadius: 7, border: "1px solid rgba(0,0,0,0.06)", background: "rgba(0,0,0,0.06)", color: C.purpleL, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>AI초기화</button>
-                  {m.role !== "admin" && (
-                    <button onClick={async () => {
-                      const newRole = m.role === "instructor" ? "member" : "instructor";
-                      const label = newRole === "instructor" ? "강사 권한을 부여" : "강사 권한을 해제";
-                      if (!window.confirm(`${m.nick}님에게 ${label}할까요?`)) return;
-                      try {
-                        await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&role=${newRole}`);
-                        await supabase.from("users").update({ role: newRole }).eq("uid", uid);
-                        setMembers2(prev => prev.map(x => x.uid === uid ? { ...x, role: newRole } : x));
-                        showToast(`${m.nick} → ${newRole === "instructor" ? "강사" : "일반회원"} 변경 완료`);
-                      } catch(e) { showToast("오류: " + e.message); }
+              {filteredMembers.map(m => {
+                const uid = m.uid || m.id || "";
+                const ptVal = ptInputs[uid] || "";
+                const sub = getSub(uid);
+                const trial = getTrial(m);
+                const currentPlan = sub?.product_name || "Free";
+                const isExpanded = expandedUid === uid;
+                const hist = memberHistory[uid] || [];
+                const roleBg = m.role === "admin" ? "rgba(251,191,36,0.12)" : m.role === "instructor" ? "rgba(34,197,94,0.12)" : "transparent";
+                const roleColor = m.role === "admin" ? "#fbbf24" : m.role === "instructor" ? "#22c55e" : C.muted;
+                const roleLabel = m.role === "admin" ? "관리자" : m.role === "instructor" ? "강사" : "";
+                const planColor = currentPlan === "Free" ? C.muted : "#3b82f6";
+                const planBg = currentPlan === "Free" ? (isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)") : "rgba(59,130,246,0.1)";
+
+                return (
+                  <div key={uid}>
+                    {/* 한 줄 요약 행 */}
+                    <div onClick={() => toggleExpand(uid)} style={{
+                      display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 80px", gap: 0, padding: "12px 16px", alignItems: "center",
+                      borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.04)" : "#f3f4f6"}`,
+                      cursor: "pointer", transition: "background 0.15s",
+                      background: isExpanded ? (isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.03)") : "transparent",
                     }}
-                      style={{ padding: "5px 10px", borderRadius: 7, border: m.role === "instructor" ? "1px solid rgba(34,197,94,0.3)" : "1px solid rgba(0,0,0,0.06)", background: m.role === "instructor" ? "rgba(34,197,94,0.08)" : "rgba(0,0,0,0.06)", color: m.role === "instructor" ? "#22c55e" : C.purpleL, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                      {m.role === "instructor" ? "강사 해제" : "강사 부여"}
-                    </button>
-                  )}
-                  {m.role !== "admin" && (
-                    <button onClick={() => deleteMember(uid, m.nick)} style={{ padding: "5px 10px", borderRadius: 7, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)", color: "#ef4444", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                      회원 탈퇴
-                    </button>
-                  )}
-                  <div style={{ width: 1, height: 16, background: bdr, margin: "0 2px" }} />
-                  <button onClick={() => toggleExpand(uid)} style={{ padding: "5px 10px", borderRadius: 7, border: `1px solid ${bdr}`, background: isExpanded ? "rgba(59,130,246,0.1)" : "transparent", color: isExpanded ? "#3b82f6" : C.muted, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
-                    {isExpanded ? "내역 접기" : "횟수 내역"}
-                  </button>
-                </div>
+                      onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.03)" : "#f9fafb"; }}
+                      onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.background = "transparent"; }}
+                    >
+                      {/* 회원 정보 */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 8, background: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
+                          {(m.nick||"?")[0].toUpperCase()}
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.nick || "-"}</span>
+                            {roleLabel && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 700, background: roleBg, color: roleColor }}>{roleLabel}</span>}
+                          </div>
+                          <div style={{ fontSize: 11, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.email}</div>
+                        </div>
+                      </div>
+                      {/* 플랜 */}
+                      <div style={{ textAlign: "center" }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: planBg, color: planColor }}>{currentPlan}</span>
+                        {trial && <div style={{ fontSize: 9, color: "#2563eb", fontWeight: 600, marginTop: 2 }}>체험 중</div>}
+                      </div>
+                      {/* 잔여 횟수 */}
+                      <div style={{ textAlign: "center", fontSize: 15, fontWeight: 800, color: C.purpleL }}>{Math.floor(m.points || 0)}<span style={{ fontSize: 11, fontWeight: 500, color: C.muted }}>회</span></div>
+                      {/* 가입일 */}
+                      <div style={{ textAlign: "center", fontSize: 11, color: C.muted }}>
+                        {(m.join_date || m.created_at) ? new Date(m.join_date || m.created_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric" }) : "-"}
+                      </div>
+                      {/* 펼치기 화살표 */}
+                      <div style={{ textAlign: "center" }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isExpanded ? "#3b82f6" : C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                          style={{ transition: "transform 0.2s", transform: isExpanded ? "rotate(180deg)" : "rotate(0)" }}>
+                          <polyline points="6 9 12 15 18 9" />
+                        </svg>
+                      </div>
+                    </div>
 
-                {/* 횟수 내역 (펼침) */}
-                {isExpanded && (
-                  <div style={{ marginTop: 12, padding: "12px 14px", background: subtleBg, borderRadius: 10, border: `1px solid ${panelBorder}` }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: C.text, marginBottom: 8 }}>최근 횟수 내역</div>
-                    {historyLoading[uid] && <div style={{ fontSize: 12, color: C.muted }}>불러오는 중...</div>}
-                    {!historyLoading[uid] && hist.length === 0 && <div style={{ fontSize: 12, color: C.muted }}>내역이 없습니다</div>}
-                    {!historyLoading[uid] && hist.length > 0 && (
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
-                        <thead>
-                          <tr style={{ borderBottom: `1px solid ${panelBorder}` }}>
-                            <th style={{ padding: "4px 6px", textAlign: "left", color: C.muted, fontWeight: 600 }}>날짜</th>
-                            <th style={{ padding: "4px 6px", textAlign: "right", color: C.muted, fontWeight: 600 }}>변동</th>
-                            <th style={{ padding: "4px 6px", textAlign: "right", color: C.muted, fontWeight: 600 }}>잔액</th>
-                            <th style={{ padding: "4px 6px", textAlign: "left", color: C.muted, fontWeight: 600 }}>사유</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {hist.map((h, i) => (
-                            <tr key={i} style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.03)" : "#f3f4f6"}` }}>
-                              <td style={{ padding: "4px 6px", color: C.muted, whiteSpace: "nowrap" }}>{new Date(h.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
-                              <td style={{ padding: "4px 6px", textAlign: "right", fontWeight: 700, color: h.delta > 0 ? "#10b981" : h.delta < 0 ? "#ef4444" : C.muted }}>{h.delta > 0 ? "+" : ""}{h.delta}</td>
-                              <td style={{ padding: "4px 6px", textAlign: "right", color: C.text, fontWeight: 600 }}>{(h.balance || 0).toLocaleString()}</td>
-                              <td style={{ padding: "4px 6px", color: C.muted, maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis" }}>{h.reason}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                    {/* 펼침 상세 패널 */}
+                    {isExpanded && (
+                      <div style={{ padding: "16px 20px 20px", background: isDark ? "rgba(59,130,246,0.04)" : "rgba(59,130,246,0.02)", borderBottom: `2px solid ${isDark ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.1)"}` }}>
+                        {/* 상단: 3열 정보 카드 */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
+                          {/* 멤버십 */}
+                          <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "12px 14px" }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>멤버십</div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                              <select value={currentPlan} onChange={e => { e.stopPropagation(); setPlan(uid, e.target.value); }}
+                                style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: inputBg, color: C.text, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                                {PLAN_LIST.map(p => <option key={p} value={p}>{p}</option>)}
+                              </select>
+                            </div>
+                            <button onClick={e => { e.stopPropagation(); grantProTrial(m); }}
+                              style={{ width: "100%", padding: "6px 0", borderRadius: 6, border: `1px solid ${bdr}`, background: isDark ? "rgba(59,130,246,0.12)" : "rgba(59,130,246,0.06)", color: "#2563eb", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                              Pro 체험 부여
+                            </button>
+                            {trial && <div style={{ fontSize: 10, color: "#2563eb", marginTop: 6, fontWeight: 600 }}>~{new Date(trial.expires_at).toLocaleDateString("ko-KR")} 까지</div>}
+                          </div>
+
+                          {/* 횟수 관리 */}
+                          <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "12px 14px" }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>횟수 관리</div>
+                            <div style={{ display: "flex", gap: 3, marginBottom: 6 }}>
+                              {[5, 10, 20, 50].map(n => (
+                                <button key={n} onClick={e => { e.stopPropagation(); grantPoints(uid, n); }} style={{
+                                  flex: 1, padding: "5px 0", borderRadius: 5, fontSize: 11, cursor: "pointer", fontWeight: 700,
+                                  border: "none", background: isDark ? "rgba(59,130,246,0.12)" : "rgba(59,130,246,0.08)", color: "#3b82f6" }}>
+                                  +{n}
+                                </button>
+                              ))}
+                            </div>
+                            <div style={{ display: "flex", gap: 3, marginBottom: 8 }}>
+                              {[5, 10, 20, 50].map(n => (
+                                <button key={n} onClick={e => { e.stopPropagation(); deductPoints(uid, n); }} style={{
+                                  flex: 1, padding: "5px 0", borderRadius: 5, fontSize: 11, cursor: "pointer", fontWeight: 700,
+                                  border: "none", background: "rgba(239,68,68,0.08)", color: "#ef4444" }}>
+                                  -{n}
+                                </button>
+                              ))}
+                            </div>
+                            <div style={{ display: "flex", gap: 4 }}>
+                              <input value={ptVal} type="number" placeholder="직접 입력"
+                                onClick={e => e.stopPropagation()}
+                                onChange={e => setPtInputs(p => ({ ...p, [uid]: e.target.value }))}
+                                style={{ flex: 1, padding: "5px 8px", borderRadius: 5, border: `1px solid ${bdr}`, background: inputBg, color: C.text, fontSize: 11, outline: "none" }} />
+                              <button onClick={e => { e.stopPropagation(); grantPoints(uid, ptVal); }} style={{ padding: "5px 8px", borderRadius: 5, border: "none", background: "#3b82f6", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>지급</button>
+                              <button onClick={e => { e.stopPropagation(); deductPoints(uid, ptVal); }} style={{ padding: "5px 8px", borderRadius: 5, border: "none", background: "#ef4444", color: "#fff", fontSize: 10, fontWeight: 700, cursor: "pointer" }}>차감</button>
+                              <button onClick={e => { e.stopPropagation(); setPoints(uid, ptVal); }} style={{ padding: "5px 8px", borderRadius: 5, border: `1px solid ${bdr}`, background: "transparent", color: C.muted, fontSize: 10, cursor: "pointer" }}>설정</button>
+                            </div>
+                          </div>
+
+                          {/* 위험 작업 */}
+                          <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "12px 14px" }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>계정 관리</div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                              <button onClick={e => { e.stopPropagation(); resetPoints(uid); }} style={{ width: "100%", padding: "6px 0", borderRadius: 6, border: `1px solid rgba(251,191,36,0.25)`, background: "rgba(251,191,36,0.06)", color: "#f59e0b", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>횟수 초기화</button>
+                              <button onClick={e => { e.stopPropagation(); resetMemberUsage(uid); }} style={{ width: "100%", padding: "6px 0", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: C.purpleL, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>AI 사용량 초기화</button>
+                              {m.role !== "admin" && (
+                                <button onClick={async e => {
+                                  e.stopPropagation();
+                                  const newRole = m.role === "instructor" ? "member" : "instructor";
+                                  const label = newRole === "instructor" ? "강사 권한을 부여" : "강사 권한을 해제";
+                                  if (!window.confirm(`${m.nick}님에게 ${label}할까요?`)) return;
+                                  try {
+                                    await adminApi("update_points", `&uid=${encodeURIComponent(uid)}&role=${newRole}`);
+                                    await supabase.from("users").update({ role: newRole }).eq("uid", uid);
+                                    setMembers2(prev => prev.map(x => x.uid === uid ? { ...x, role: newRole } : x));
+                                    showToast(`${m.nick} → ${newRole === "instructor" ? "강사" : "일반회원"} 변경 완료`);
+                                  } catch(err) { showToast("오류: " + err.message); }
+                                }}
+                                  style={{ width: "100%", padding: "6px 0", borderRadius: 6, border: `1px solid ${m.role === "instructor" ? "rgba(34,197,94,0.25)" : bdr}`, background: m.role === "instructor" ? "rgba(34,197,94,0.06)" : "transparent", color: m.role === "instructor" ? "#22c55e" : C.purpleL, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>
+                                  {m.role === "instructor" ? "강사 해제" : "강사 부여"}
+                                </button>
+                              )}
+                              {m.role !== "admin" && (
+                                <button onClick={e => { e.stopPropagation(); deleteMember(uid, m.nick); }} style={{ width: "100%", padding: "6px 0", borderRadius: 6, border: "1px solid rgba(239,68,68,0.25)", background: "rgba(239,68,68,0.04)", color: "#ef4444", fontSize: 11, fontWeight: 600, cursor: "pointer", marginTop: 4 }}>회원 탈퇴</button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 하단: 횟수 내역 테이블 */}
+                        <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "12px 14px" }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>최근 횟수 내역</div>
+                          {historyLoading[uid] && <div style={{ fontSize: 11, color: C.muted, padding: "8px 0" }}>불러오는 중...</div>}
+                          {!historyLoading[uid] && hist.length === 0 && <div style={{ fontSize: 11, color: C.muted, padding: "8px 0" }}>내역이 없습니다</div>}
+                          {!historyLoading[uid] && hist.length > 0 && (
+                            <div style={{ overflowX: "auto" }}>
+                              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                                <thead>
+                                  <tr style={{ borderBottom: `1px solid ${panelBorder}` }}>
+                                    <th style={{ padding: "5px 8px", textAlign: "left", color: C.muted, fontWeight: 600 }}>날짜</th>
+                                    <th style={{ padding: "5px 8px", textAlign: "left", color: C.muted, fontWeight: 600 }}>사유</th>
+                                    <th style={{ padding: "5px 8px", textAlign: "right", color: C.muted, fontWeight: 600 }}>변동</th>
+                                    <th style={{ padding: "5px 8px", textAlign: "right", color: C.muted, fontWeight: 600 }}>잔액</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {hist.map((h, i) => (
+                                    <tr key={i} style={{ borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.03)" : "#f3f4f6"}` }}>
+                                      <td style={{ padding: "5px 8px", color: C.muted, whiteSpace: "nowrap" }}>{new Date(h.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
+                                      <td style={{ padding: "5px 8px", color: C.text, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{h.reason}</td>
+                                      <td style={{ padding: "5px 8px", textAlign: "right", fontWeight: 700, color: h.delta > 0 ? "#10b981" : h.delta < 0 ? "#ef4444" : C.muted }}>{h.delta > 0 ? "+" : ""}{h.delta}</td>
+                                      <td style={{ padding: "5px 8px", textAlign: "right", color: C.text, fontWeight: 600 }}>{(h.balance || 0).toLocaleString()}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
