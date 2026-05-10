@@ -43,7 +43,7 @@
     initFabric();
     var ratio = RATIOS[($("cardRatio") || {}).value] || RATIOS["1:1"];
     var W = ratio[0], H = ratio[1];
-    var bgColor = $("cardBgColor") ? $("cardBgColor").value : "#1c1c1e";
+    var bgColor = slide._darkBg || ($("cardBgColor") ? $("cardBgColor").value : "#0a0a0a");
     var textColor = "#ffffff";
     var brand = getBrandName();
 
@@ -51,42 +51,121 @@
 
     function addTexts() {
       var layout = slide._layoutType || "center";
-      var titleY, bodyY, subY;
+      var accentColors = ["#c8ff00", "#ff8c00", "#ff4444", "#00bfa5", "#ffd700"];
+      var accentColor = accentColors[slide.index ? (slide.index % accentColors.length) : 0];
+      var F = "'Malgun Gothic', sans-serif";
 
-      // 레이아웃별 텍스트 위치 (캡컷 참고 — 다양한 배치)
       if (layout === "cover") {
-        subY = 0.50; titleY = 0.56; bodyY = 0.75;
-      } else if (layout === "bottom") {
-        subY = 0.60; titleY = 0.66; bodyY = 0.80;
-      } else if (layout === "top") {
-        subY = 0.08; titleY = 0.14; bodyY = 0.32;
+        // 표지: 하단에 큰 제목 + 부제목 위에
+        if (slide.subtitle) {
+          fc.add(new fabric.Textbox(slide.subtitle, {
+            left: W * 0.08, top: H * 0.52, width: W * 0.84,
+            fontSize: 15, fill: accentColor, fontWeight: "700", fontFamily: F, lineHeight: 1.3,
+          }));
+        }
+        fc.add(new fabric.Textbox(slide.title || "", {
+          left: W * 0.08, top: H * 0.58, width: W * 0.84,
+          fontSize: 36, fill: textColor, fontWeight: "900", fontFamily: F, lineHeight: 1.2,
+        }));
+      } else if (layout === "photo-text") {
+        // 사진(상단 60%) + 텍스트(하단 40%)
+        if (slide.subtitle) {
+          fc.add(new fabric.Textbox(slide.subtitle, {
+            left: W * 0.08, top: H * 0.62, width: W * 0.84,
+            fontSize: 13, fill: textColor, opacity: 0.6, fontWeight: "600", fontFamily: F, lineHeight: 1.4,
+          }));
+        }
+        fc.add(new fabric.Textbox(slide.title || "", {
+          left: W * 0.08, top: H * 0.68, width: W * 0.84,
+          fontSize: 26, fill: textColor, fontWeight: "900", fontFamily: F, lineHeight: 1.25,
+        }));
+        if (slide.body) {
+          fc.add(new fabric.Textbox(slide.body, {
+            left: W * 0.08, top: H * 0.82, width: W * 0.84,
+            fontSize: 12, fill: textColor, opacity: 0.7, fontWeight: "400", fontFamily: F, lineHeight: 1.6,
+          }));
+        }
+      } else if (layout === "text-dark") {
+        // 텍스트 전용 다크 슬라이드 (참고: 어두운 배경 + 큰 텍스트)
+        if (slide.subtitle) {
+          fc.add(new fabric.Textbox(slide.subtitle, {
+            left: W * 0.1, top: H * 0.12, width: W * 0.8,
+            fontSize: 16, fill: textColor, fontWeight: "800", fontFamily: F, lineHeight: 1.4,
+          }));
+        }
+        fc.add(new fabric.Textbox(slide.title || "", {
+          left: W * 0.1, top: H * 0.22, width: W * 0.8,
+          fontSize: 28, fill: accentColor, fontWeight: "900", fontFamily: F, lineHeight: 1.3,
+        }));
+        if (slide.body) {
+          fc.add(new fabric.Textbox(slide.body, {
+            left: W * 0.1, top: H * 0.42, width: W * 0.8,
+            fontSize: 14, fill: textColor, opacity: 0.85, fontWeight: "400", fontFamily: F, lineHeight: 1.8,
+          }));
+        }
+        // 하단 강조 문구
+        if (slide.highlight) {
+          fc.add(new fabric.Textbox(slide.highlight, {
+            left: W * 0.1, top: H * 0.82, width: W * 0.8,
+            fontSize: 22, fill: accentColor, fontWeight: "900", fontFamily: F, lineHeight: 1.3,
+          }));
+        }
+      } else if (layout === "list") {
+        // 리스트 스타일 (참고: 체크리스트/불릿 목록)
+        fc.add(new fabric.Textbox(slide.subtitle || "", {
+          left: W * 0.1, top: H * 0.08, width: W * 0.8,
+          fontSize: 13, fill: textColor, opacity: 0.6, fontWeight: "600", fontFamily: F,
+        }));
+        fc.add(new fabric.Textbox(slide.title || "", {
+          left: W * 0.1, top: H * 0.14, width: W * 0.8,
+          fontSize: 24, fill: accentColor, fontWeight: "900", fontFamily: F, lineHeight: 1.3,
+        }));
+        if (slide.body) {
+          // 본문을 줄 단위로 분리해서 불릿 추가
+          var bodyWithBullets = (slide.body || "").split("\n").map(function(line) {
+            return line.trim() ? "\u25CB  " + line.trim() : "";
+          }).filter(Boolean).join("\n");
+          fc.add(new fabric.Textbox(bodyWithBullets || slide.body, {
+            left: W * 0.1, top: H * 0.30, width: W * 0.8,
+            fontSize: 14, fill: textColor, fontWeight: "500", fontFamily: F, lineHeight: 2.0,
+          }));
+        }
+        if (slide.highlight) {
+          fc.add(new fabric.Textbox(slide.highlight, {
+            left: W * 0.1, top: H * 0.85, width: W * 0.8,
+            fontSize: 20, fill: accentColor, fontWeight: "900", fontFamily: F,
+          }));
+        }
       } else if (layout === "cta") {
-        subY = 0.30; titleY = 0.38; bodyY = 0.55;
+        // CTA (마지막 장): 큰 인용 텍스트
+        fc.add(new fabric.Textbox(slide.title || "", {
+          left: W * 0.08, top: H * 0.55, width: W * 0.84,
+          fontSize: 32, fill: textColor, fontWeight: "900", fontFamily: F, lineHeight: 1.25, textAlign: "center",
+        }));
+        if (slide.body) {
+          fc.add(new fabric.Textbox(slide.body, {
+            left: W * 0.08, top: H * 0.78, width: W * 0.84,
+            fontSize: 13, fill: textColor, opacity: 0.6, fontWeight: "400", fontFamily: F, lineHeight: 1.6, textAlign: "center",
+          }));
+        }
       } else {
-        subY = 0.35; titleY = 0.42; bodyY = 0.58;
-      }
-
-      // 부제목
-      if (slide.subtitle) {
-        fc.add(new fabric.Textbox(slide.subtitle, {
-          left: W * 0.09, top: H * subY, width: W * 0.82,
-          fontSize: 14, fill: textColor, opacity: 0.6, fontWeight: "600",
-          fontFamily: "'Malgun Gothic', sans-serif", lineHeight: 1.4,
+        // 기본 (center): 중앙 배치
+        if (slide.subtitle) {
+          fc.add(new fabric.Textbox(slide.subtitle, {
+            left: W * 0.09, top: H * 0.35, width: W * 0.82,
+            fontSize: 14, fill: textColor, opacity: 0.6, fontWeight: "600", fontFamily: F, lineHeight: 1.4,
+          }));
+        }
+        fc.add(new fabric.Textbox(slide.title || "", {
+          left: W * 0.09, top: H * 0.42, width: W * 0.82,
+          fontSize: 28, fill: textColor, fontWeight: "900", fontFamily: F, lineHeight: 1.3,
         }));
-      }
-      // 제목
-      fc.add(new fabric.Textbox(slide.title || "제목을 입력하세요", {
-        left: W * 0.09, top: H * (slide.subtitle ? titleY : titleY - 0.05), width: W * 0.82,
-        fontSize: slide.isHookCover ? 34 : 28, fill: textColor, fontWeight: "900",
-        fontFamily: "'Malgun Gothic', sans-serif", lineHeight: 1.3,
-      }));
-      // 본문
-      if (slide.body) {
-        fc.add(new fabric.Textbox(slide.body, {
-          left: W * 0.09, top: H * bodyY, width: W * 0.82,
-          fontSize: 13, fill: textColor, opacity: 0.85, fontWeight: "400",
-          fontFamily: "'Malgun Gothic', sans-serif", lineHeight: 1.7,
-        }));
+        if (slide.body) {
+          fc.add(new fabric.Textbox(slide.body, {
+            left: W * 0.09, top: H * 0.58, width: W * 0.82,
+            fontSize: 13, fill: textColor, opacity: 0.85, fontWeight: "400", fontFamily: F, lineHeight: 1.7,
+          }));
+        }
       }
       // 하이라이트
       if (slide.highlight) {
@@ -182,6 +261,15 @@
       addTexts();
     }
   }
+
+  // ─── 빠른 색상 칩 ───
+  document.querySelectorAll(".card-color-chip").forEach(function(chip) {
+    chip.addEventListener("click", function() {
+      var color = chip.dataset.color;
+      if ($("cardBgColor")) $("cardBgColor").value = color;
+      if (fc) { fc.setBackgroundColor(color, fc.renderAll.bind(fc)); }
+    });
+  });
 
   // ─── 슬라이드 저장/로드 ───
   function saveCurrentSlide() {
@@ -379,11 +467,20 @@
         $("cardLoadingMsg").textContent = "이미지 " + (si + 1) + "/" + rawSlides.length + " 검색 중...";
       }
 
-      // Fabric 슬라이드 배열 생성 (모든 슬라이드에 배경 이미지)
+      // Fabric 슬라이드 배열 생성 (다양한 레이아웃 + 배경 이미지)
+      var layoutCycle = ["photo-text", "text-dark", "photo-text", "list", "text-dark", "photo-text"];
+      var darkBgColors = ["#0a0a0a", "#1a2e1a", "#1a1a2e", "#2e1a1a", "#0a0a0a", "#1e1e1e"];
       slides = rawSlides.map(function(s, i) {
         if (i === 0) { s.isHookCover = true; s.badge = s.badge || "저장 필수"; }
-        s._layoutType = i === 0 ? "cover" : (i === rawSlides.length - 1 ? "cta" : ["bottom", "center", "top"][i % 3]);
-        return { json: null, bgUrl: imageUrls[i] || null, data: s };
+        s.index = i;
+        if (i === 0) s._layoutType = "cover";
+        else if (i === rawSlides.length - 1) s._layoutType = "cta";
+        else s._layoutType = layoutCycle[(i - 1) % layoutCycle.length];
+        // text-dark / list 슬라이드는 배경 이미지 없이 다크 배경
+        if (s._layoutType === "text-dark" || s._layoutType === "list") {
+          s._darkBg = darkBgColors[i % darkBgColors.length];
+        }
+        return { json: null, bgUrl: (s._layoutType === "text-dark" || s._layoutType === "list") ? null : (imageUrls[i] || null), data: s };
       });
       currentIdx = 0;
 

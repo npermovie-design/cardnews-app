@@ -1016,19 +1016,31 @@ ipcMain.handle("media:deleteFile", async (_, filePath) => {
 ipcMain.handle("media:getMakeitFiles", (_, cat) => {
   const fs = require("fs");
   const base = "D:/홈페이지/SNS메이킷/메이킷_자료실";
-  let dir;
-  if (cat === "photo") {
-    dir = path.join(base, "사진");
-  } else if (cat === "video") {
-    dir = path.join(base, "영상");
-  } else {
-    dir = path.join(base, "영상", cat);
-  }
-  if (!fs.existsSync(dir)) return [];
-  // mov 제외, mp4/webm만 허용
   const exts = /\.(jpg|jpeg|png|gif|webp|mp4|webm|svg)$/i;
-  const files = fs.readdirSync(dir).filter(f => exts.test(f) && !f.startsWith("_"));
-  return files.map(f => ({ name: f, path: path.join(dir, f) }));
+  let results = [];
+
+  function scanDir(dir, prefix) {
+    if (!fs.existsSync(dir)) return;
+    fs.readdirSync(dir).forEach(f => {
+      if (f.startsWith("_")) return;
+      const full = path.join(dir, f);
+      const stat = fs.statSync(full);
+      if (stat.isDirectory()) {
+        scanDir(full, (prefix ? prefix + "/" : "") + f);
+      } else if (exts.test(f)) {
+        results.push({ name: (prefix ? prefix + "/" : "") + f, path: full });
+      }
+    });
+  }
+
+  if (cat === "photo") {
+    scanDir(path.join(base, "사진"), "");
+  } else if (cat === "video") {
+    scanDir(path.join(base, "영상"), "");
+  } else {
+    scanDir(path.join(base, "영상", cat), "");
+  }
+  return results;
 });
 
 // ── IPC: 로컬 파일 → data URL 변환 (미리보기용) ──

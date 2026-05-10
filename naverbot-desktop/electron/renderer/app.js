@@ -1616,7 +1616,76 @@ if ($("proTrialBtn")) {
   });
 }
 
-// ── 홈 소식/도움 카드 클릭 → 패널 이동 ──
+// ── 커뮤니티 허브 — innerHTML 복제 방식 ──
+var _hubCurrentTab = "notice";
+
+document.querySelectorAll(".hub-tab-btn").forEach(function(btn) {
+  btn.addEventListener("click", function() {
+    document.querySelectorAll(".hub-tab-btn").forEach(function(t) {
+      t.classList.remove("active"); t.style.color = "var(--text-dim)"; t.style.borderBottomColor = "transparent";
+    });
+    btn.classList.add("active"); btn.style.color = "var(--accent)"; btn.style.borderBottomColor = "var(--accent)";
+    _hubCurrentTab = btn.dataset.hubPanel;
+    _loadHubTab(_hubCurrentTab);
+  });
+});
+
+function _loadHubTab(name) {
+  var container = document.getElementById("hubInlineContent");
+  if (!container) return;
+  container.innerHTML = "<div style='color:var(--text-dim);padding:30px;text-align:center;'>불러오는 중...</div>";
+
+  var srcPanel = document.querySelector('section[data-panel="' + name + '"]');
+  if (!srcPanel) { container.innerHTML = "<div style='color:var(--text-dim);padding:30px;text-align:center;'>콘텐츠 없음</div>"; return; }
+
+  // 원본 패널을 화면 밖에서 잠깐 렌더링 (데이터 로드 트리거)
+  srcPanel.classList.remove("hidden");
+  srcPanel.style.cssText = "position:fixed;left:-9999px;top:0;width:900px;opacity:0;pointer-events:none;z-index:-1;";
+
+  setTimeout(function() {
+    // 헤더 제외한 내용 복제 (innerHTML 복사)
+    var html = "";
+    Array.from(srcPanel.children).forEach(function(el) {
+      if (el.classList.contains("panel-header")) return;
+      html += el.outerHTML;
+    });
+    container.innerHTML = html || "<div style='color:var(--text-dim);padding:30px;text-align:center;'>콘텐츠가 없습니다.</div>";
+
+    // 원본 패널 다시 숨기기
+    srcPanel.style.cssText = "";
+    srcPanel.classList.add("hidden");
+  }, 800);
+}
+
+// 허브 열릴 때 현재 탭 로드
+var _hubEl = document.querySelector('[data-panel="news-hub"]');
+if (_hubEl) {
+  new MutationObserver(function() {
+    if (!_hubEl.classList.contains("hidden")) {
+      setTimeout(function() { _loadHubTab(_hubCurrentTab); }, 50);
+    }
+  }).observe(_hubEl, { attributes: true, attributeFilter: ["class"] });
+}
+
+// ── 홈 소식 탭 전환 ──
+document.querySelectorAll(".home-tab").forEach(function(tab) {
+  tab.addEventListener("click", function() {
+    document.querySelectorAll(".home-tab").forEach(function(t) {
+      t.classList.remove("active");
+      t.style.color = "var(--text-dim)";
+      t.style.borderBottomColor = "transparent";
+    });
+    tab.classList.add("active");
+    tab.style.color = "var(--accent)";
+    tab.style.borderBottomColor = "var(--accent)";
+    document.querySelectorAll(".home-tab-content").forEach(function(c) { c.style.display = "none"; });
+    var target = tab.dataset.homeTab;
+    var content = document.querySelector('[data-home-tab-content="' + target + '"]');
+    if (content) content.style.display = "";
+  });
+});
+
+// ── 홈 소식 카드 클릭 → 패널 이동 ──
 document.querySelectorAll(".home-news-card[data-goto]").forEach(function(card) {
   card.addEventListener("click", function() {
     goToPanel(card.getAttribute("data-goto"));
@@ -1991,14 +2060,43 @@ if ($("modeAutopilot")) $("modeAutopilot").addEventListener("click", async () =>
   renderAutopilotAccountList();
 });
 if ($("modeDriveAutopilot")) $("modeDriveAutopilot").addEventListener("click", () => {
-  if (isExperienceLimitedUser()) {
-    return showModal("Pro 플랜 필요", "구글 드라이브 자료 기반 자동 운영은 Pro 이상 플랜에서 이용할 수 있습니다.", "Pro 구독하기", () => bridge.openExternal("https://snsmakeit.com/pricing"));
-  }
   showBlogMode("drive-autopilot");
   renderAutopilotAccountList();
 });
 
+// 드라이브 토글 칩 (자동운영 Step1 내)
+if ($("driveSourceToggle")) {
+  $("driveSourceToggle").addEventListener("click", function(e) {
+    var btn = e.target.closest(".chip"); if (!btn) return;
+    $("driveSourceToggle").querySelectorAll(".chip").forEach(function(b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    var val = btn.dataset.value;
+    blogAutopilotSourceMode = val === "drive" ? "drive" : "normal";
+    if ($("driveSourceSection")) $("driveSourceSection").style.display = val === "drive" ? "" : "none";
+  });
+}
+
 // ── 빠른 시작 ──
+// 발행 대상 (블로그/카페) 탭 전환
+var _publishTarget = "blog";
+document.querySelectorAll(".publish-target-tab").forEach(function(tab) {
+  tab.addEventListener("click", function() {
+    document.querySelectorAll(".publish-target-tab").forEach(function(t) {
+      t.classList.remove("active");
+      t.style.color = "var(--text-dim)";
+      t.style.borderBottomColor = "transparent";
+    });
+    tab.classList.add("active");
+    tab.style.color = tab.dataset.target === "cafe" ? "#16a34a" : "var(--accent)";
+    tab.style.borderBottomColor = tab.dataset.target === "cafe" ? "#22c55e" : "var(--accent)";
+    _publishTarget = tab.dataset.target;
+    var blogSec = $("blogQuickSection");
+    var cafeSec = $("cafeQuickSection");
+    if (blogSec) blogSec.style.display = _publishTarget === "blog" ? "" : "none";
+    if (cafeSec) cafeSec.style.display = _publishTarget === "cafe" ? "" : "none";
+  });
+});
+
 if ($("quickStartBtn")) $("quickStartBtn").addEventListener("click", async () => {
   const theme = ($("quickTheme") && $("quickTheme").value.trim()) || "";
   const category = ($("quickCategory") && $("quickCategory").value.trim()) || "";
@@ -2804,12 +2902,38 @@ async function restoreAutopilotStatus() {
 // ═══════════════════════════════════════════════
 // ── 카페 모드 선택 + 단계별 마법사 ──
 // ═══════════════════════════════════════════════
+window.showCafeMode = showCafeMode;
 function showCafeMode(mode) {
   if ($("cafeModeSelect")) $("cafeModeSelect").style.display = mode ? "none" : "";
   if ($("cafeAutopilotView")) $("cafeAutopilotView").style.display = mode === "autopilot" ? "" : "none";
 }
 if ($("cafeModeAutopilot")) $("cafeModeAutopilot").addEventListener("click", () => showCafeMode("autopilot"));
-if ($("cafeAutopilotBackBtn")) $("cafeAutopilotBackBtn").addEventListener("click", () => showCafeMode(null));
+// 자동 글쓰기 > 카페 자동 운영 / 수동 글쓰기 (MutationObserver로 동적 바인딩)
+function bindModeCards() {
+  var cafeCard = $("modeCafeAutopilot");
+  if (cafeCard && !cafeCard._bound) {
+    cafeCard._bound = true;
+    cafeCard.style.cursor = "pointer";
+    cafeCard.addEventListener("click", function() { goToPanel("naver-cafe"); setTimeout(function() { showCafeMode("autopilot"); }, 100); });
+  }
+  var manualCard = $("modeManualWrite");
+  if (manualCard && !manualCard._bound) {
+    manualCard._bound = true;
+    manualCard.style.cursor = "pointer";
+    manualCard.addEventListener("click", function() { goToPanel("manual-write"); });
+  }
+}
+bindModeCards();
+// 탭 전환 시 다시 바인딩
+document.querySelectorAll(".publish-target-tab").forEach(function(t) {
+  t.addEventListener("click", function() { setTimeout(bindModeCards, 50); });
+});
+if ($("cafeAutopilotBackBtn")) $("cafeAutopilotBackBtn").addEventListener("click", () => {
+  showCafeMode(null);
+  // 글쓰기 패널로 돌아가기 (카페 탭 상태 유지)
+  document.querySelectorAll('.panel').forEach(function(p){p.classList.add('hidden')});
+  document.querySelector('[data-panel=naver-blog]').classList.remove('hidden');
+});
 
 // 카페 단계 전환
 let cafeCurrentStep = 1;

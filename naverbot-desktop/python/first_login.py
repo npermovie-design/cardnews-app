@@ -35,6 +35,8 @@ with sync_playwright() as p:
             "--disable-dev-shm-usage",
             "--no-sandbox",
             "--window-position=0,0",
+            "--disable-infobars",
+            "--excludeSwitches=enable-automation",
         ],
     }
     if channel:
@@ -46,6 +48,11 @@ with sync_playwright() as p:
         user_agent=USER_AGENT,
         locale="ko-KR",
     )
+    # 봇 감지 우회: navigator.webdriver 숨기기
+    context.add_init_script("""
+        Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+        window.chrome = { runtime: {} };
+    """)
     page = context.new_page()
     page.goto("https://nid.naver.com/nidlogin.login")
 
@@ -61,23 +68,36 @@ with sync_playwright() as p:
     while time.time() - start < MAX_WAIT_SEC:
         try:
             cur_url = page.url
-            # 로그인 페이지/2차인증 페이지가 아니면 성공
-            if ("nidlogin" not in cur_url
-                and "nid.naver.com/nidlogin" not in cur_url
+            # 1) URL로 감지 — 로그인 페이지를 벗어났으면 성공
+            left_login = (
+                "nid.naver.com/nidlogin" not in cur_url
                 and "nid.naver.com/user2" not in cur_url
-                and "nid.naver.com/login" not in cur_url):
-                save_naver_cookies(USER_ID, context.cookies())
+                and "nid.naver.com/login" not in cur_url
+            )
+            on_naver = "naver.com" in cur_url and left_login
+            if on_naver:
+                # 쿠키 수집 후 저장
+                try:
+                    all_cookies = context.cookies()
+                    naver_cookies = [c for c in all_cookies if "naver.com" in (c.get("domain",""))]
+                    save_naver_cookies(USER_ID, naver_cookies if naver_cookies else all_cookies)
+                except Exception:
+                    pass
                 print(f"\n로그인 감지됨! 현재 URL: {cur_url}", flush=True)
                 success = True
                 break
-            # 쿠키로도 감지 (NID_AUT 또는 NID_SES 존재 시)
-            cookies = context.cookies("https://naver.com")
-            cookie_names = {c["name"] for c in cookies}
-            if "NID_AUT" in cookie_names or "NID_SES" in cookie_names:
-                save_naver_cookies(USER_ID, cookies)
-                print(f"\n로그인 감지됨 (쿠키)! 현재 URL: {cur_url}", flush=True)
-                success = True
-                break
+            # 2) 쿠키로 감지 (URL이 아직 로그인 페이지지만 쿠키가 생겼으면)
+            try:
+                all_cookies = context.cookies()
+                cookie_names = {c["name"] for c in all_cookies}
+                if "NID_AUT" in cookie_names or "NID_SES" in cookie_names:
+                    naver_cookies = [c for c in all_cookies if "naver.com" in (c.get("domain",""))]
+                    save_naver_cookies(USER_ID, naver_cookies if naver_cookies else all_cookies)
+                    print(f"\n로그인 감지됨 (쿠키)! 현재 URL: {cur_url}", flush=True)
+                    success = True
+                    break
+            except Exception:
+                pass
         except Exception:
             pass
         time.sleep(2)

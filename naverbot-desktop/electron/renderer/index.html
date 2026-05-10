@@ -212,20 +212,22 @@
   <div class="app">
     <!-- ========== 사이드바 ========== -->
     <aside class="sidebar">
-      <div class="sidebar-header">
+      <div class="sidebar-header" style="border-bottom:1px solid var(--border);margin-bottom:0;padding-bottom:12px;">
         <div class="brand-title">SNS메이킷</div>
         <a class="brand-link" id="brandLink" href="#">snsmakeit.com</a>
       </div>
-      <!-- 사용자 + 등급 + 잔여 횟수 (상단) -->
-      <div id="sidebarUserArea" style="padding:10px 14px 8px;border-bottom:1px solid var(--border-soft);">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <div class="user-dot dot-gray" id="userDotTop"></div>
+      <!-- 사용자 + 등급 + 잔여 횟수 -->
+      <div id="sidebarUserArea" style="padding:10px 14px 10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="user-dot dot-gray" id="userDotTop" style="flex-shrink:0;"></div>
           <div style="flex:1;min-width:0;">
-            <div id="userNameTop" style="font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">로그인 필요</div>
-            <div id="userPlanTop" style="font-size:10px;color:var(--text-dim);margin-top:1px;"></div>
+            <div style="display:flex;align-items:baseline;gap:6px;">
+              <span id="userNameTop" style="font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">로그인 필요</span>
+              <span id="userPlanTop" style="font-size:10px;color:var(--text-dim);white-space:nowrap;"></span>
+            </div>
           </div>
         </div>
-        <div id="quotaBarArea" style="display:none;margin-top:6px;">
+        <div id="quotaBarArea" style="display:none;margin-top:8px;">
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-bottom:3px;">
             <span>남은 횟수</span>
             <span id="quotaText">0 / 0</span>
@@ -239,23 +241,23 @@
         <button class="nav-item active" data-panel="home">
           <span class="nav-icon nav-home"></span>홈
         </button>
-        <!-- 핵심 기능 -->
-        <button class="nav-item" data-panel="naver-blog">
-          <span class="nav-icon nav-blog"></span>글쓰기
+        <button class="nav-item" data-panel="news-hub">
+          <span class="nav-icon nav-community"></span>커뮤니티
         </button>
-        <button class="nav-item" data-panel="cardnews">
-          <span class="nav-icon nav-card"></span>카드뉴스
+        <button class="nav-item" data-panel="naver-account">
+          <span class="nav-icon nav-account"></span>계정 설정
         </button>
-        <button class="nav-item" data-panel="video-editor">
-          <span class="nav-icon nav-ve"></span>영상 편집
-        </button>
-        <button class="nav-item" data-panel="naver-cafe">
-          <span class="nav-icon nav-cafe"></span>카페
-        </button>
-        <details class="nav-group">
-          <summary>설정</summary>
-          <button class="nav-item nav-sub" data-panel="naver-account">
-            <span class="nav-icon nav-account"></span>계정 설정
+        <div style="height:1px;background:var(--border-soft);margin:4px 14px;"></div>
+        <details class="nav-group" open>
+          <summary>콘텐츠 제작</summary>
+          <button class="nav-item nav-sub" data-panel="naver-blog">
+            <span class="nav-icon nav-blog"></span>글쓰기
+          </button>
+          <button class="nav-item nav-sub" data-panel="cardnews">
+            <span class="nav-icon nav-card"></span>카드뉴스
+          </button>
+          <button class="nav-item nav-sub" data-panel="video-editor">
+            <span class="nav-icon nav-ve"></span>영상 편집
           </button>
         </details>
         <details class="nav-group">
@@ -285,20 +287,11 @@
             <span class="nav-icon nav-log"></span>실행 로그
           </button>
         </details>
+        <button class="nav-item nav-sub" data-panel="chat" style="display:none;">
+          <span class="nav-icon nav-chat"></span>잡담방
+        </button>
         <details class="nav-group">
-          <summary>소식</summary>
-          <button class="nav-item nav-sub" data-panel="notice">
-            <span class="nav-icon nav-notice"></span>공지사항
-          </button>
-          <button class="nav-item nav-sub" data-panel="community">
-            <span class="nav-icon nav-community"></span>커뮤니티
-          </button>
-          <button class="nav-item nav-sub" data-panel="chat" style="display:none;">
-            <span class="nav-icon nav-chat"></span>잡담방
-          </button>
-          <button class="nav-item nav-sub" data-panel="challenge">
-            <span class="nav-icon nav-challenge"></span>챌린지
-          </button>
+          <summary>기타</summary>
           <button class="nav-item nav-sub" data-panel="pricing">
             <span class="nav-icon nav-pricing"></span>가격정책
           </button>
@@ -499,6 +492,8 @@
           <div class="plan-desc" id="planDesc">로그인 후 구독 상태가 표시됩니다.</div>
         </div>
 
+        <!-- 계정 설정은 사이드바 메뉴로 이동 -->
+
         <!-- 7일 Pro 체험권 안내 (관리자 부여 대상자 안내) -->
         <div class="card" id="proTrialBanner" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;position:relative;overflow:hidden;">
           <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:#2563eb;border-radius:50%;opacity:0.08;"></div>
@@ -516,98 +511,19 @@
           </div>
         </div>
 
-        <!-- 대시보드 -->
+        <!-- 대시보드 (숨김 — 자동화 현황에 통합, JS 호환용) -->
         <div id="homeDashboard" style="display:none;">
-          <div class="panel-header" style="margin-top:24px;">
-            <h1 style="font-size:18px;">발행 현황</h1>
-          </div>
-
-          <!-- 통계 카드 -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
-            <div class="card" style="text-align:center;padding:14px 10px;">
-              <div style="font-size:22px;font-weight:800;color:var(--accent);" id="dashWeekCount">0</div>
-              <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">이번 주 발행</div>
-            </div>
-            <div class="card" style="text-align:center;padding:14px 10px;">
-              <div style="font-size:22px;font-weight:800;color:var(--success);" id="dashSuccessRate">-</div>
-              <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">성공률</div>
-            </div>
-            <div class="card" style="text-align:center;padding:14px 10px;">
-              <div style="font-size:22px;font-weight:800;color:var(--text);" id="dashTotalCount">0</div>
-              <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">전체 발행</div>
-            </div>
-          </div>
-
-          <!-- 자동 운영 상태 -->
-          <div class="card" id="dashAutopilotStatus" style="display:none;margin-bottom:16px;">
-            <div class="card-header">
-              <h3>자동 운영</h3>
-              <div id="dashApBadge" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--success-soft);color:#065f46;">운영 중</div>
-            </div>
-            <div id="dashApInfo" style="font-size:13px;line-height:1.7;color:var(--text-sub);"></div>
-          </div>
-
-          <!-- 최근 발행 글 -->
-          <div class="card">
-            <div class="card-header"><h3>최근 발행</h3></div>
-            <div id="dashRecentPosts" style="font-size:13px;">
-              <div style="color:var(--text-dim);padding:8px 0;">발행 이력이 없습니다.</div>
-            </div>
+          <div style="display:none;">
+            <span id="dashWeekCount">0</span><span id="dashSuccessRate">-</span><span id="dashTotalCount">0</span>
+            <div id="dashAutopilotStatus"><div id="dashApBadge"></div><div id="dashApInfo"></div></div>
+            <div id="dashRecentPosts"></div>
           </div>
         </div>
-
-        <!-- 소식/도움 섹션 (홈 하단 고정) -->
-        <div style="margin-top:28px;">
-          <div class="panel-header">
-            <h1 style="font-size:18px;">소식 / 도움</h1>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
-            <!-- 공지사항 -->
-            <div class="card home-news-card" data-goto="notice" style="cursor:pointer;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <div style="width:32px;height:32px;border-radius:8px;background:#2563eb;display:flex;align-items:center;justify-content:center;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-                  </div>
-                  <span style="font-size:14px;font-weight:700;color:var(--text);">공지사항</span>
-                </div>
-                <span style="font-size:11px;color:var(--accent);font-weight:600;cursor:pointer;" class="home-news-more">더보기 &rsaquo;</span>
-              </div>
-              <div id="homeNoticePreview" style="font-size:12px;color:var(--text-sub);line-height:1.6;">
-                <div style="color:var(--text-dim);">불러오는 중...</div>
-              </div>
-            </div>
-            <!-- 커뮤니티 -->
-            <div class="card home-news-card" data-goto="community" style="cursor:pointer;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <div style="width:32px;height:32px;border-radius:8px;background:#1d4ed8;display:flex;align-items:center;justify-content:center;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-                  </div>
-                  <span style="font-size:14px;font-weight:700;color:var(--text);">커뮤니티</span>
-                </div>
-                <span style="font-size:11px;color:var(--accent);font-weight:600;cursor:pointer;" class="home-news-more">더보기 &rsaquo;</span>
-              </div>
-              <div id="homeCommunityPreview" style="font-size:12px;color:var(--text-sub);line-height:1.6;">
-                <div style="color:var(--text-dim);">불러오는 중...</div>
-              </div>
-            </div>
-            <!-- SNS 챌린지 -->
-            <div class="card home-news-card" data-goto="challenge" style="cursor:pointer;">
-              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <div style="width:32px;height:32px;border-radius:8px;background:#3b82f6;display:flex;align-items:center;justify-content:center;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-                  </div>
-                  <span style="font-size:14px;font-weight:700;color:var(--text);">SNS 챌린지</span>
-                </div>
-                <span style="font-size:11px;color:var(--accent);font-weight:600;cursor:pointer;" class="home-news-more">더보기 &rsaquo;</span>
-              </div>
-              <div id="homeChallengePreview" style="font-size:12px;color:var(--text-sub);line-height:1.6;">
-                <div style="color:var(--text-dim);">불러오는 중...</div>
-              </div>
-            </div>
-          </div>
+        <!-- 홈 소식 미리보기 (숨김 — JS 호환용) -->
+        <div style="display:none;">
+          <div id="homeNoticePreview"></div>
+          <div id="homeCommunityPreview"></div>
+          <div id="homeChallengePreview"></div>
         </div>
       </section>
 
@@ -729,7 +645,7 @@
       <section class="panel hidden" data-panel="naver-blog">
         <div class="panel-header">
           <h1>글쓰기</h1>
-          <p class="panel-sub">블로그 글을 AI로 생성하고 자동/수동으로 발행합니다.</p>
+          <p class="panel-sub">AI가 글 생성부터 네이버 발행까지 자동으로 진행합니다.</p>
         </div>
 
         <!-- 발행 방식 선택 (첫 화면) -->
@@ -741,37 +657,65 @@
               그 이상 작성 시 네이버 저품질 판정을 받을 수 있으며, 이로 인한 불이익은 책임지지 않습니다.
             </div>
           </div>
-          <!-- 빠른 시작 -->
-          <div class="card" style="background:#eff6ff;border:2px solid var(--accent);margin-bottom:16px;padding:20px;">
-            <div style="font-size:16px;font-weight:800;color:var(--accent);margin-bottom:8px;">빠른 시작</div>
-            <div style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">키워드와 메뉴명만 입력하면 나머지는 AI가 알아서 설정합니다.</div>
-            <div class="form">
-              <div style="display:flex;gap:8px;">
-                <input type="text" id="quickTheme" placeholder="키워드 (예: 부동산 투자, 건강관리)" style="flex:2;">
-                <input type="text" id="quickCategory" placeholder="메뉴명" style="flex:1;">
+          <!-- 발행 대상 선택 -->
+          <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border-soft);">
+            <button class="publish-target-tab active" data-target="blog" style="flex:1;padding:12px 0;font-size:15px;font-weight:800;border:none;background:transparent;color:var(--accent);cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;transition:all 0.15s;">블로그</button>
+            <button class="publish-target-tab" data-target="cafe" style="flex:1;padding:12px 0;font-size:15px;font-weight:800;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s;">카페</button>
+          </div>
+
+          <!-- 블로그 모드 선택 -->
+          <div id="blogQuickSection">
+            <div class="mode-cards">
+              <div class="mode-card" id="modeAutopilot" style="border:2px solid var(--accent);position:relative;">
+                <div style="position:absolute;top:-1px;right:12px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:0 0 6px 6px;">추천</div>
+                <div class="mode-card-title" style="color:var(--accent);">블로그 자동 운영</div>
+                <div class="mode-card-desc">키워드, 스타일, 분량, 인용구 등 세부 설정으로 블로그에 자동 발행합니다.</div>
               </div>
-              <input type="text" id="quickTitle" placeholder="글 제목 직접 입력 (비우면 AI 자동 생성)" style="margin-top:8px;">
-              <input type="text" id="quickTemplate" placeholder="네이버 블로그 템플릿 이름 (선택)" style="margin-top:8px;">
-              <button class="btn btn-primary btn-full btn-lg" id="quickStartBtn" style="margin-top:10px;">1개 바로 발행</button>
+              <div class="mode-card" id="modeManualWrite" onclick="document.querySelectorAll('.panel').forEach(function(p){p.classList.add('hidden')});document.querySelector('[data-panel=manual-write]').classList.remove('hidden');" style="cursor:pointer;">
+                <div class="mode-card-title">수동 글쓰기</div>
+                <div class="mode-card-desc">원하는 주제로 글을 직접 작성하고, 수정 후 발행합니다.</div>
+              </div>
+            </div>
+            <!-- 빠른시작 숨김 (기존 JS 호환용) -->
+            <div style="display:none;">
+              <input type="text" id="quickTheme"><input type="text" id="quickCategory">
+              <input type="text" id="quickTitle"><input type="text" id="quickTemplate">
+              <button id="quickStartBtn"></button>
             </div>
           </div>
 
-          <div style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:12px;">또는 상세 설정으로 발행하기</div>
-
-          <div class="mode-cards">
-            <div class="mode-card" id="modeManualWrite" onclick="goToPanel('manual-write')">
-              <div class="mode-card-title">수동 글쓰기</div>
-              <div class="mode-card-desc">원하는 주제로 글을 작성하고, 직접 수정 후 발행합니다.</div>
+          <!-- 카페 모드 선택 -->
+          <div id="cafeQuickSection" style="display:none;">
+            <!-- 카페 지금 발행 -->
+            <div class="card" style="background:#f0fdf4;border:2px solid #22c55e;margin-bottom:16px;padding:20px;">
+              <div style="font-size:16px;font-weight:800;color:#16a34a;margin-bottom:8px;">카페 지금 발행</div>
+              <div style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">카페 정보와 키워드를 입력하면 AI가 글을 생성하고 바로 발행합니다.</div>
+              <div class="form">
+                <div style="display:flex;gap:8px;">
+                  <input type="text" id="quickCafeId" placeholder="카페 URL 이름 (예: test123)" style="flex:1;">
+                  <input type="text" id="quickCafeNumber" placeholder="카페 번호" style="flex:1;">
+                </div>
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                  <input type="text" id="quickCafeMenuId" placeholder="게시판 번호" style="flex:1;">
+                  <input type="text" id="quickCafeBoardName" placeholder="게시판 이름" style="flex:1;">
+                </div>
+                <input type="text" id="quickCafeTheme" placeholder="키워드 (예: 경제 뉴스, 부동산)" style="margin-top:8px;">
+                <button class="btn btn-full btn-lg" id="quickCafeStartBtn" style="margin-top:10px;background:#22c55e;color:#fff;border:none;font-weight:700;border-radius:10px;padding:14px;font-size:15px;cursor:pointer;">1개 바로 발행</button>
+              </div>
             </div>
-            <div class="mode-card" id="modeAutopilot">
-              <div class="mode-card-title">자동 운영</div>
-              <div class="mode-card-desc">키워드, 스타일, 분량, 인용구 등 세부 설정으로 자동 발행합니다.</div>
-            </div>
-            <div class="mode-card" id="modeDriveAutopilot">
-              <div class="mode-card-title">원하는 사진으로 자동 운영</div>
-              <div class="mode-card-desc">구글 드라이브 폴더의 자료와 사진을 불러와 본문에 함께 넣어 발행합니다.</div>
+            <div style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:12px;">또는 상세 설정으로 발행하기</div>
+            <div class="mode-cards">
+              <div class="mode-card" id="modeCafeAutopilot" onclick="document.querySelectorAll('.panel').forEach(function(p){p.classList.add('hidden')});document.querySelector('[data-panel=naver-cafe]').classList.remove('hidden');setTimeout(function(){showCafeMode('autopilot')},100);" style="cursor:pointer;">
+                <div class="mode-card-title">카페 자동 운영</div>
+                <div class="mode-card-desc">키워드를 설정하면 매일 자동으로 카페에 글을 발행합니다.</div>
+              </div>
             </div>
           </div>
+
+          <!-- 숨김 호환용 -->
+          <div id="modeDriveAutopilot" style="display:none;"></div>
+          <div id="publishTargetChips" style="display:none;"><button class="chip active" data-value="blog"></button></div>
+          <div id="cafeQuickSettings" style="display:none;"></div>
         </div>
 
         <!-- 자동 운영 화면 -->
@@ -805,8 +749,15 @@
                 <textarea id="autopilotPrompt" rows="3" placeholder="예: 이미지 먼저 보여주고, 짧은 문단으로 쉽게 써줘. 핵심 단어는 굵게 강조해줘." style="padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;background:var(--bg-elev);color:var(--text);"></textarea>
                 <div class="form-hint">영상처럼 이미지가 먼저 나오고, 짧은 문단과 핵심 강조가 있는 글 방식으로 기본 작성됩니다.</div>
 
+                <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border-soft);">
+                  <label>사진/자료 가져오기 <span class="optional">(선택)</span></label>
+                  <div class="chips" id="driveSourceToggle" style="margin-bottom:10px;">
+                    <button class="chip active" data-value="none">사용 안함</button>
+                    <button class="chip" data-value="drive">구글 드라이브</button>
+                  </div>
+                </div>
                 <div id="driveSourceSection" style="display:none;">
-                  <label>구글 드라이브 자료 폴더 <span class="req">*</span></label>
+                  <label>구글 드라이브 폴더 링크</label>
                   <input type="text" id="driveFolderUrl" placeholder="예: https://drive.google.com/drive/folders/...">
                   <div class="row">
                     <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:12px;color:var(--text-sub);">
@@ -1373,6 +1324,20 @@
         <div id="mkResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;">
           <div style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);font-size:14px;">카테고리를 선택하세요.</div>
         </div>
+      </section>
+
+      <!-- 커뮤니티 허브 — 기존 패널을 탭으로 전환 표시 -->
+      <section class="panel hidden" data-panel="news-hub">
+        <div class="panel-header">
+          <h1>커뮤니티</h1>
+          <p class="panel-sub">공지사항, 커뮤니티, 부트캠프를 한 곳에서 확인하세요.</p>
+        </div>
+        <div style="display:flex;gap:0;border-bottom:2px solid var(--border-soft);margin-bottom:16px;">
+          <button class="hub-tab-btn active" data-hub-panel="notice" style="flex:1;padding:12px 0;font-size:14px;font-weight:700;border:none;background:transparent;color:var(--accent);cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;">공지사항</button>
+          <button class="hub-tab-btn" data-hub-panel="community" style="flex:1;padding:12px 0;font-size:14px;font-weight:700;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">커뮤니티</button>
+          <button class="hub-tab-btn" data-hub-panel="challenge" style="flex:1;padding:12px 0;font-size:14px;font-weight:700;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">부트캠프</button>
+        </div>
+        <div id="hubInlineContent"></div>
       </section>
 
       <!-- 보관함 패널 -->
@@ -2221,60 +2186,89 @@
           </div>
         </div>
 
-        <!-- ③ 편집/결과 -->
+        <!-- ③ 편집/결과 (캔바/미리캔버스 스타일) -->
         <div id="cardResultView" style="display:none;">
-          <!-- 상단 액션 -->
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-            <h3 style="margin:0;font-size:16px;font-weight:700;">슬라이드 편집</h3>
+          <!-- 상단 헤더 바 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:8px 0;border-bottom:1px solid var(--border-soft);">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button class="btn btn-outline btn-sm" id="cardRetryBtn" style="padding:6px 12px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <h3 style="margin:0;font-size:15px;font-weight:700;">슬라이드 편집</h3>
+            </div>
             <div style="display:flex;gap:6px;">
-              <button class="btn btn-outline btn-sm" id="cardAddSlideBtn">슬라이드 추가</button>
-              <button class="btn btn-primary btn-sm" id="cardDownloadAllBtn">전체 다운로드</button>
-              <button class="btn btn-outline btn-sm" id="cardRetryBtn">처음부터</button>
+              <button class="btn btn-outline btn-sm" id="cardAddSlideBtn" style="font-size:12px;">+ 슬라이드</button>
+              <button class="btn btn-primary btn-sm" id="cardDownloadAllBtn" style="font-size:12px;padding:8px 16px;">전체 다운로드</button>
             </div>
           </div>
 
-          <!-- 슬라이드 탭 -->
-          <div class="chips" id="cardSlideTabs" style="margin-bottom:10px;flex-wrap:wrap;"></div>
+          <!-- 슬라이드 탭 (미리캔버스 스타일 — 가로 스크롤) -->
+          <div style="overflow-x:auto;margin-bottom:12px;padding-bottom:4px;">
+            <div class="chips" id="cardSlideTabs" style="flex-wrap:nowrap;gap:4px;"></div>
+          </div>
 
-          <!-- Fabric 캔버스 에디터 -->
-          <div style="display:flex;gap:14px;align-items:start;">
-            <!-- 좌측: 캔버스 -->
-            <div style="flex:1;text-align:center;">
-              <div style="display:inline-block;position:relative;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.2);">
+          <!-- 에디터 영역 (좌측 도구 + 중앙 캔버스 + 우측 속성) -->
+          <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg-elev);min-height:560px;">
+
+            <!-- 좌측: 도구 사이드바 -->
+            <div style="width:52px;flex-shrink:0;background:#f8f9fc;border-right:1px solid var(--border-soft);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:4px;">
+              <button class="btn btn-outline btn-sm" id="cardAddTitleBtn" title="제목 추가" style="width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+              </button>
+              <button class="btn btn-outline btn-sm" id="cardAddBodyBtn" title="본문 추가" style="width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+              </button>
+              <button class="btn btn-outline btn-sm" id="cardAddBadgeBtn" title="뱃지 추가" style="width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="8" width="18" height="8" rx="4"/></svg>
+              </button>
+              <div style="height:1px;width:28px;background:var(--border-soft);margin:4px 0;"></div>
+              <button class="btn btn-outline btn-sm" id="cardSearchBgBtn" title="배경 사진" style="width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </button>
+              <input type="color" id="cardBgColor" value="#0a0a0a" title="배경색" style="width:32px;height:32px;border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:1px;">
+            </div>
+
+            <!-- 중앙: 캔버스 -->
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;background:#e5e5e5;padding:20px;min-height:500px;">
+              <div style="display:inline-block;position:relative;border-radius:4px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.15);">
                 <canvas id="cardFabricCanvas"></canvas>
               </div>
             </div>
+
             <!-- 우측: 속성 패널 -->
-            <div style="width:240px;flex-shrink:0;">
-              <div class="card form" style="padding:14px;">
-                <label style="font-size:12px;margin:0 0 6px;">배경</label>
-                <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
-                  <input type="color" id="cardBgColor" value="#1c1c1e" style="width:32px;height:28px;border:1px solid var(--border);border-radius:4px;cursor:pointer;">
-                  <button class="btn btn-outline btn-sm" id="cardSearchBgBtn" style="font-size:11px;">사진 검색</button>
-                </div>
+            <div style="width:200px;flex-shrink:0;background:#fafbfc;border-left:1px solid var(--border-soft);padding:14px;overflow-y:auto;">
+              <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:10px;">선택 요소</div>
 
-                <label style="font-size:12px;margin:0 0 6px;">텍스트 추가</label>
-                <div style="display:flex;gap:4px;margin-bottom:8px;">
-                  <button class="btn btn-outline btn-sm" id="cardAddTitleBtn" style="font-size:11px;">제목</button>
-                  <button class="btn btn-outline btn-sm" id="cardAddBodyBtn" style="font-size:11px;">본문</button>
-                  <button class="btn btn-outline btn-sm" id="cardAddBadgeBtn" style="font-size:11px;">뱃지</button>
-                </div>
+              <div style="margin-bottom:12px;">
+                <label style="font-size:11px;color:var(--text-sub);margin-bottom:4px;display:block;">글자 색상</label>
+                <input type="color" id="cardSelColor" value="#ffffff" style="width:100%;height:28px;border:1px solid var(--border);border-radius:4px;cursor:pointer;">
+              </div>
 
-                <label style="font-size:12px;margin:0 0 6px;">선택 요소</label>
-                <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
-                  <label style="font-size:11px;margin:0;">색상</label>
-                  <input type="color" id="cardSelColor" value="#ffffff" style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;cursor:pointer;">
-                  <label style="font-size:11px;margin:0;">크기</label>
-                  <input type="number" id="cardSelSize" value="28" min="8" max="120" style="width:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;">
-                </div>
-                <div style="display:flex;gap:4px;margin-bottom:8px;">
-                  <button class="btn btn-outline btn-sm" id="cardSelBold" style="font-size:11px;font-weight:900;">B</button>
-                  <button class="btn btn-outline btn-sm" id="cardSelDelete" style="font-size:11px;color:#ef4444;">삭제</button>
-                  <button class="btn btn-outline btn-sm" id="cardSelDuplicate" style="font-size:11px;">복제</button>
-                </div>
+              <div style="margin-bottom:12px;">
+                <label style="font-size:11px;color:var(--text-sub);margin-bottom:4px;display:block;">글자 크기</label>
+                <input type="number" id="cardSelSize" value="28" min="8" max="120" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;">
+              </div>
 
-                <label style="font-size:12px;margin:0 0 6px;">오버레이</label>
-                <input type="range" id="cardOverlay" min="0" max="80" value="50" style="width:100%;">
+              <div style="display:flex;gap:4px;margin-bottom:14px;">
+                <button class="btn btn-outline btn-sm" id="cardSelBold" style="flex:1;font-size:12px;font-weight:900;padding:6px 0;">B</button>
+                <button class="btn btn-outline btn-sm" id="cardSelDuplicate" style="flex:1;font-size:11px;padding:6px 0;">복제</button>
+                <button class="btn btn-outline btn-sm" id="cardSelDelete" style="flex:1;font-size:11px;padding:6px 0;color:#ef4444;">삭제</button>
+              </div>
+
+              <div style="height:1px;background:var(--border-soft);margin:10px 0;"></div>
+
+              <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">오버레이 강도</div>
+              <input type="range" id="cardOverlay" min="0" max="80" value="60" style="width:100%;">
+
+              <div style="height:1px;background:var(--border-soft);margin:12px 0;"></div>
+
+              <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">빠른 색상</div>
+              <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:8px;">
+                <div class="card-color-chip" data-color="#0a0a0a" style="width:100%;aspect-ratio:1;background:#0a0a0a;border-radius:4px;cursor:pointer;border:1px solid var(--border);"></div>
+                <div class="card-color-chip" data-color="#1a2e1a" style="width:100%;aspect-ratio:1;background:#1a2e1a;border-radius:4px;cursor:pointer;border:1px solid var(--border);"></div>
+                <div class="card-color-chip" data-color="#1a1a2e" style="width:100%;aspect-ratio:1;background:#1a1a2e;border-radius:4px;cursor:pointer;border:1px solid var(--border);"></div>
+                <div class="card-color-chip" data-color="#cc0000" style="width:100%;aspect-ratio:1;background:#cc0000;border-radius:4px;cursor:pointer;border:1px solid var(--border);"></div>
+                <div class="card-color-chip" data-color="#ffffff" style="width:100%;aspect-ratio:1;background:#ffffff;border-radius:4px;cursor:pointer;border:1px solid var(--border);"></div>
               </div>
             </div>
           </div>
