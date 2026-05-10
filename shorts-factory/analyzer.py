@@ -99,7 +99,7 @@ def analyze_subtitles(subtitle_text: str, durations: list[int] | None = None, ma
     "end_seconds": 55.0,
     "hook_text": "임팩트 있는 훅 문장",
     "reason": "이 구간을 선정한 이유 (상세하게)",
-    "script_body": "구간의 핵심 내용 요약",
+    "script_body": "이 쇼츠의 본문/설명으로 바로 사용할 수 있는 2~3문장 내용. 영상 구간의 핵심 메시지, 시청자가 얻는 것, 댓글/저장 유도 문장을 포함",
     "structure_type": "60s_follow",
     "viral_factors": ["강력한 호기심 유발", "감정적 반전", "실용적 정보"],
     "audience_hook": "시청자의 어떤 심리를 자극하는지",

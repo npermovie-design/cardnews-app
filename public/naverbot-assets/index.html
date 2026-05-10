@@ -42,59 +42,64 @@
         <button class="nav-item active" data-panel="home">
           <span class="nav-icon nav-home"></span>홈
         </button>
-        <button class="nav-item nav-sub" data-panel="notice">
-          <span class="nav-icon nav-notice"></span>공지사항
-        </button>
-        <button class="nav-item nav-sub" data-panel="community">
-          <span class="nav-icon nav-community"></span>커뮤니티
-        </button>
-        <!-- 잡담방 제거됨 -->
-        <button class="nav-item nav-sub hidden" data-panel="chat" style="display:none;">
-          <span class="nav-icon nav-chat"></span>잡담방
-        </button>
-        <button class="nav-item nav-sub" data-panel="challenge">
-          <span class="nav-icon nav-challenge"></span>SNS 챌린지
-        </button>
-        <button class="nav-item nav-sub" data-panel="pricing">
-          <span class="nav-icon nav-pricing"></span>가격정책
-        </button>
-        <div class="nav-group-label">SNS</div>
-        <button class="nav-item nav-sub" data-panel="naver-account">
-          <span class="nav-icon nav-account"></span>계정 설정
-        </button>
-        <button class="nav-item nav-sub" data-panel="manual-write">
-          <span class="nav-icon nav-write"></span>수동 글쓰기
-        </button>
-        <button class="nav-item nav-sub" data-panel="naver-blog">
-          <span class="nav-icon nav-blog"></span>자동 글쓰기
-        </button>
-        <button class="nav-item nav-sub" data-panel="naver-cafe">
-          <span class="nav-icon nav-cafe"></span>카페
-        </button>
-        <div class="nav-group-label" style="margin-top:8px;">디자인</div>
-        <button class="nav-item nav-sub" data-panel="cardnews">
-          <span class="nav-icon nav-card"></span>카드뉴스
-        </button>
-        <div class="nav-group-label" style="margin-top:8px;">영상</div>
-        <button class="nav-item nav-sub" data-panel="video-editor">
-          <span class="nav-icon nav-ve"></span>영상 편집
-        </button>
-        <div class="nav-group-label" style="margin-top:8px;">관리</div>
-        <button class="nav-item nav-sub" data-panel="archive">
-          <span class="nav-icon nav-archive"></span>보관함
-        </button>
-        <button class="nav-item nav-sub" data-panel="calendar">
-          <span class="nav-icon nav-calendar"></span>자동화 현황
-        </button>
-        <button class="nav-item nav-sub" data-panel="execlog">
-          <span class="nav-icon nav-log"></span>실행 로그
-        </button>
-        <button class="nav-item nav-sub" data-panel="feedback">
-          <span class="nav-icon nav-feedback"></span>문의하기
-        </button>
-        <button class="nav-item nav-sub" data-panel="about">
-          <span class="nav-icon nav-info"></span>정보
-        </button>
+        <details class="nav-group" open>
+          <summary>콘텐츠 제작</summary>
+          <button class="nav-item nav-sub" data-panel="naver-account">
+            <span class="nav-icon nav-account"></span>계정 설정
+          </button>
+          <button class="nav-item nav-sub" data-panel="manual-write">
+            <span class="nav-icon nav-write"></span>수동 글쓰기
+          </button>
+          <button class="nav-item nav-sub" data-panel="naver-blog">
+            <span class="nav-icon nav-blog"></span>자동 글쓰기
+          </button>
+          <button class="nav-item nav-sub" data-panel="cardnews">
+            <span class="nav-icon nav-card"></span>카드뉴스
+          </button>
+          <button class="nav-item nav-sub" data-panel="video-editor">
+            <span class="nav-icon nav-ve"></span>영상 편집
+          </button>
+          <button class="nav-item nav-sub" data-panel="naver-cafe">
+            <span class="nav-icon nav-cafe"></span>카페
+          </button>
+        </details>
+        <details class="nav-group">
+          <summary>운영 관리</summary>
+          <button class="nav-item nav-sub" data-panel="archive">
+            <span class="nav-icon nav-archive"></span>보관함
+          </button>
+          <button class="nav-item nav-sub" data-panel="calendar">
+            <span class="nav-icon nav-calendar"></span>자동화 현황
+          </button>
+          <button class="nav-item nav-sub" data-panel="execlog">
+            <span class="nav-icon nav-log"></span>실행 로그
+          </button>
+        </details>
+        <details class="nav-group">
+          <summary>소식/도움</summary>
+          <button class="nav-item nav-sub" data-panel="notice">
+            <span class="nav-icon nav-notice"></span>공지사항
+          </button>
+          <button class="nav-item nav-sub" data-panel="community">
+            <span class="nav-icon nav-community"></span>커뮤니티
+          </button>
+          <!-- 잡담방 제거됨 -->
+          <button class="nav-item nav-sub hidden" data-panel="chat" style="display:none;">
+            <span class="nav-icon nav-chat"></span>잡담방
+          </button>
+          <button class="nav-item nav-sub" data-panel="challenge">
+            <span class="nav-icon nav-challenge"></span>SNS 챌린지
+          </button>
+          <button class="nav-item nav-sub" data-panel="pricing">
+            <span class="nav-icon nav-pricing"></span>가격정책
+          </button>
+          <button class="nav-item nav-sub" data-panel="feedback">
+            <span class="nav-icon nav-feedback"></span>문의하기
+          </button>
+          <button class="nav-item nav-sub" data-panel="about">
+            <span class="nav-icon nav-info"></span>정보
+          </button>
+        </details>
       </nav>
       <div class="sidebar-footer"></div>
     </aside>
@@ -269,6 +274,23 @@
           <div class="plan-desc" id="planDesc">로그인 후 구독 상태가 표시됩니다.</div>
         </div>
 
+        <!-- 7일 Pro 체험권 안내 (관리자 부여 대상자 안내) -->
+        <div class="card" id="proTrialBanner" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;position:relative;overflow:hidden;">
+          <div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;background:#2563eb;border-radius:50%;opacity:0.08;"></div>
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div style="width:44px;height:44px;border-radius:12px;background:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div style="flex:1;">
+              <div style="font-size:15px;font-weight:800;color:#1e3a5f;margin-bottom:3px;">Pro 7일 체험권</div>
+              <div style="font-size:12px;color:#3b6ca8;line-height:1.5;">체험권은 관리자가 대상 회원에게 직접 부여합니다. 필요하면 문의를 남겨주세요.</div>
+            </div>
+            <button id="proTrialBtn" style="padding:10px 20px;border-radius:10px;background:#2563eb;color:#fff;font-size:13px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(59,130,246,0.3);">
+              체험권 문의
+            </button>
+          </div>
+        </div>
+
         <!-- 대시보드 -->
         <div id="homeDashboard" style="display:none;">
           <div class="panel-header" style="margin-top:24px;">
@@ -321,11 +343,11 @@
           <div class="pricing-card">
             <div class="plan-badge">Basic</div>
             <div class="pricing-title">Basic</div>
-            <div class="pricing-desc">블로그 자동 발행을 가볍게 시작하는 플랜</div>
+            <div class="pricing-desc">콘텐츠 제작을 가볍게 시작하는 플랜</div>
             <div class="pricing-features">
-              <div><strong>즉시 발행</strong><span>체험 10회</span></div>
-              <div><strong>자동 운영</strong><span>체험 3회</span></div>
-              <div><strong>1회 발행</strong><span>최대 5개</span></div>
+              <div><strong>콘텐츠 생성</strong><span>월 30회</span></div>
+              <div><strong>영상 생성</strong><span>월 10회</span></div>
+              <div><strong>자동 발행</strong><span>체험</span></div>
               <div><strong>카페 발행</strong><span>제한</span></div>
             </div>
             <button class="btn btn-outline btn-full pricingOpenBtn">구독 페이지 보기</button>
@@ -334,11 +356,11 @@
           <div class="pricing-card featured">
             <div class="plan-badge active">Pro</div>
             <div class="pricing-title">Pro</div>
-            <div class="pricing-desc">블로그 자동 운영 권장 플랜</div>
+            <div class="pricing-desc">자동 발행까지 함께 쓰는 권장 플랜</div>
             <div class="pricing-features">
-              <div><strong>블로그 발행</strong><span>하루 3개</span></div>
-              <div><strong>자동 운영</strong><span>무제한</span></div>
-              <div><strong>예약 발행</strong><span>가능</span></div>
+              <div><strong>콘텐츠 생성</strong><span>월 200회</span></div>
+              <div><strong>영상 생성</strong><span>제한 없음</span></div>
+              <div><strong>자동 발행</strong><span>하루 3개</span></div>
               <div><strong>카페 발행</strong><span>Business 이상</span></div>
             </div>
             <button class="btn btn-primary btn-full pricingOpenBtn">구독 페이지 보기</button>
@@ -347,12 +369,13 @@
           <div class="pricing-card">
             <div class="plan-badge active">Business</div>
             <div class="pricing-title">Business</div>
-            <div class="pricing-desc">블로그와 카페를 함께 운영하는 플랜</div>
+            <div class="pricing-desc">대량 발행과 카페 운영까지 필요한 팀</div>
             <div class="pricing-features">
-              <div><strong>블로그 발행</strong><span>하루 10개</span></div>
-              <div><strong>자동 운영</strong><span>무제한</span></div>
+              <div><strong>콘텐츠 생성</strong><span>월 700회</span></div>
+              <div><strong>영상 생성</strong><span>제한 없음</span></div>
+              <div><strong>자동 발행</strong><span>하루 10개</span></div>
               <div><strong>카페 발행</strong><span>가능</span></div>
-              <div><strong>예약 발행</strong><span>가능</span></div>
+              <div><strong>계정</strong><span>3개</span></div>
             </div>
             <button class="btn btn-outline btn-full pricingOpenBtn">구독 페이지 보기</button>
           </div>
@@ -440,7 +463,7 @@
             </div>
           </div>
           <!-- 빠른 시작 -->
-          <div class="card" style="background:linear-gradient(135deg,#f0ecff,#e8f4fd);border:2px solid var(--accent);margin-bottom:16px;padding:20px;">
+          <div class="card" style="background:#eff6ff;border:2px solid var(--accent);margin-bottom:16px;padding:20px;">
             <div style="font-size:16px;font-weight:800;color:var(--accent);margin-bottom:8px;">빠른 시작</div>
             <div style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">키워드와 메뉴명만 입력하면 나머지는 AI가 알아서 설정합니다.</div>
             <div class="form">
@@ -457,13 +480,9 @@
           <div style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:12px;">또는 상세 설정으로 발행하기</div>
 
           <div class="mode-cards">
-            <div class="mode-card" id="modeAutopilot">
+            <div class="mode-card" id="modeAutopilot" style="width:100%;">
               <div class="mode-card-title">자동 운영</div>
-              <div class="mode-card-desc">키워드, 스타일, 분량, 인용구 등 세부 설정으로 자동 발행합니다.</div>
-            </div>
-            <div class="mode-card" id="modeDriveAutopilot">
-              <div class="mode-card-title">원하는 사진으로 자동 운영</div>
-              <div class="mode-card-desc">구글 드라이브 폴더의 자료와 사진을 불러와 본문에 함께 넣어 발행합니다.</div>
+              <div class="mode-card-desc">키워드, 스타일, 분량, 인용구 등 세부 설정으로 자동 발행합니다. 구글 드라이브 사진/자료도 함께 사용할 수 있습니다.</div>
             </div>
           </div>
         </div>
@@ -499,7 +518,14 @@
                 <textarea id="autopilotPrompt" rows="3" placeholder="예: 이미지 먼저 보여주고, 짧은 문단으로 쉽게 써줘. 핵심 단어는 굵게 강조해줘." style="padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;background:var(--bg-elev);color:var(--text);"></textarea>
                 <div class="form-hint">영상처럼 이미지가 먼저 나오고, 짧은 문단과 핵심 강조가 있는 글 방식으로 기본 작성됩니다.</div>
 
-                <div id="driveSourceSection" style="display:none;">
+                <div style="margin-top:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg-elev);">
+                  <label style="display:flex;align-items:center;gap:8px;margin:0;font-size:13px;font-weight:700;color:var(--text);cursor:pointer;">
+                    <input type="checkbox" id="driveToggle" style="width:auto;accent-color:var(--accent);">
+                    구글 드라이브 사진/자료 사용
+                  </label>
+                  <div class="form-hint" style="margin-top:4px;">원하는 사진과 자료를 구글 드라이브에서 불러와 본문에 함께 넣습니다. (Pro 이상)</div>
+                </div>
+                <div id="driveSourceSection" style="display:none;margin-top:10px;">
                   <label>구글 드라이브 자료 폴더 <span class="req">*</span></label>
                   <input type="text" id="driveFolderUrl" placeholder="예: https://drive.google.com/drive/folders/...">
                   <div class="row">
@@ -627,7 +653,7 @@
                 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px;" id="apColorModeChips">
                   <button class="chip color-mode-preview active" data-value="text">
                     <div style="font-size:10px;line-height:1.5;">일반 텍스트 <span style="color:#2DB400;font-weight:700;">키워드</span> 텍스트</div>
-                    <div style="font-size:9px;color:var(--text-dim);margin-top:2px;">글색 (포인트)</div>
+                    <div style="font-size:9px;color:var(--text-dim);margin-top:2px;">글색 강조</div>
                   </button>
                   <button class="chip color-mode-preview" data-value="bg">
                     <div style="font-size:10px;line-height:1.5;">일반 텍스트 <span style="background:#2DB400;color:#fff;padding:0 3px;border-radius:2px;">키워드</span> 텍스트</div>
@@ -1009,7 +1035,7 @@
           <!-- 입력 영역 -->
           <div style="border-top:1px solid #f0f0f0;padding:14px 20px;display:flex;gap:8px;align-items:flex-end;">
             <textarea id="chatInput" rows="2" placeholder="메시지를 입력하세요..." style="flex:1;resize:none;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:13px;font-family:inherit;outline:none;min-height:42px;max-height:100px;"></textarea>
-            <button id="chatSendBtn" style="padding:10px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,#3b82f6,#60a5fa);color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;height:42px;">전송</button>
+            <button id="chatSendBtn" style="padding:10px 20px;border-radius:10px;border:none;background:#2563eb;color:#fff;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;height:42px;">전송</button>
           </div>
         </div>
       </section>
@@ -1077,6 +1103,15 @@
                 <button class="chip active" data-value="landscape" style="flex:1;padding:10px 0;font-size:13px;">16:9 가로</button>
                 <button class="chip" data-value="portrait" style="flex:1;padding:10px 0;font-size:13px;">9:16 세로</button>
                 <button class="chip" data-value="square" style="flex:1;padding:10px 0;font-size:13px;">1:1 정사각</button>
+              </div>
+
+              <div id="veShortsPlanInput" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-elev);">
+                <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:8px;">숏폼 자동 생성 설정</div>
+                <label style="font-size:12px;font-weight:700;color:var(--text-sub);">만들 개수</label>
+                <div class="chips" id="veClipCountChipsStart" style="gap:4px;margin-top:6px;margin-bottom:10px;"><button class="chip" data-value="1" style="flex:1;padding:7px 0;font-size:12px;">1개</button><button class="chip" data-value="2" style="flex:1;padding:7px 0;font-size:12px;">2개</button><button class="chip active" data-value="3" style="flex:1;padding:7px 0;font-size:12px;">3개</button><button class="chip" data-value="4" style="flex:1;padding:7px 0;font-size:12px;">4개</button><button class="chip" data-value="5" style="flex:1;padding:7px 0;font-size:12px;">5개</button></div>
+                <label style="font-size:12px;font-weight:700;color:var(--text-sub);">숏폼 길이</label>
+                <div class="chips" id="veClipDurationChips" style="gap:4px;margin-top:6px;"><button class="chip" data-value="15" style="flex:1;padding:7px 0;font-size:12px;">15초</button><button class="chip" data-value="30" style="flex:1;padding:7px 0;font-size:12px;">30초</button><button class="chip active" data-value="45" style="flex:1;padding:7px 0;font-size:12px;">45초</button><button class="chip" data-value="60" style="flex:1;padding:7px 0;font-size:12px;">1분</button><button class="chip" data-value="90" style="flex:1;padding:7px 0;font-size:12px;">1분30초</button></div>
+                <div style="font-size:11px;color:var(--text-dim);line-height:1.5;margin-top:8px;">AI가 선택한 길이에 맞춰 조회 가능성이 높은 구간을 자동 추천합니다.</div>
               </div>
 
               <!-- 저장 폴더 설정 -->
@@ -1289,13 +1324,16 @@
                   <div id="veOvEmpty" style="color:#475569;padding:20px 0;text-align:center;font-size:13px;">
                     캔버스에서 이미지를 클릭하면<br>여기서 옵션을 수정할 수 있습니다.
                   </div>
-                  <div id="veImageList" style="display:none;"></div>
                   <div id="veSegmentsCard" style="margin-top:14px;display:none;">
                     <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">AI 하이라이트</div>
                     <div id="veSegmentsList" style="font-size:12px;color:#64748b;max-height:200px;overflow-y:auto;"></div>
                   </div>
                   <div id="veShortsOpts" style="display:none;">
+                    <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">숏폼 생성 설정</div>
                     <div class="chips" id="veClipCountChips" style="gap:4px;"><button class="chip" data-value="1" style="flex:1;padding:6px 0;font-size:12px;">1</button><button class="chip" data-value="2" style="flex:1;padding:6px 0;font-size:12px;">2</button><button class="chip active" data-value="3" style="flex:1;padding:6px 0;font-size:12px;">3</button><button class="chip" data-value="4" style="flex:1;padding:6px 0;font-size:12px;">4</button><button class="chip" data-value="5" style="flex:1;padding:6px 0;font-size:12px;">5</button></div>
+                    <div class="chips" id="veClipDurationChipsEdit" style="gap:4px;margin-top:6px;"><button class="chip" data-value="15" style="flex:1;padding:6px 0;font-size:12px;">15초</button><button class="chip" data-value="30" style="flex:1;padding:6px 0;font-size:12px;">30초</button><button class="chip active" data-value="45" style="flex:1;padding:6px 0;font-size:12px;">45초</button><button class="chip" data-value="60" style="flex:1;padding:6px 0;font-size:12px;">1분</button><button class="chip" data-value="90" style="flex:1;padding:6px 0;font-size:12px;">1:30</button></div>
+                    <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin:12px 0 6px;">AI 추천 숏폼 리스트</div>
+                    <div id="veShortsPlanList" style="font-size:12px;color:#64748b;max-height:260px;overflow-y:auto;"></div>
                   </div>
                   <div id="veLongformOpts" style="display:none;"></div>
                   <div id="veClipList" style="display:none;"></div>
@@ -1317,7 +1355,7 @@
                     <div style="font-size:13px;font-weight:700;color:#e2e8f0;">삽입된 이미지</div>
                     <button id="veAddImageBtn" style="padding:5px 14px;font-size:12px;border:none;border-radius:6px;cursor:pointer;color:#cbd5e1;background:#2a2a4a;font-weight:600;">+ 파일</button>
                   </div>
-                  <div id="veImageList" style="max-height:150px;overflow-y:auto;font-size:12px;color:#64748b;">없음</div>
+                  <div id="veImageList" style="max-height:220px;overflow-y:auto;font-size:12px;color:#64748b;">없음</div>
                   <!-- 선택된 이미지 속성 -->
                   <div id="veImageProps" style="display:none;margin-top:10px;padding:10px;background:#0f0f23;border-radius:6px;">
                     <div style="font-size:12px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">이미지 속성</div>
@@ -1391,7 +1429,7 @@
               <div style="display:flex;align-items:center;gap:6px;padding:3px 0;">
                 <span style="font-size:11px;color:#3b82f6;width:50px;text-align:right;font-weight:700;">V1</span>
                 <div class="ve-track-lane" style="flex:1;position:relative;height:44px;background:#0c0c1e;border-radius:4px;overflow:hidden;cursor:pointer;border:1px solid #1a1a3a;">
-                  <div id="veTrackVideo" style="position:absolute;inset:1px;background:linear-gradient(90deg,#1e40af,#2563eb,#1e40af);border-radius:3px;opacity:0.9;"></div>
+                  <div id="veTrackVideo" style="position:absolute;inset:1px;background:#2563eb;border-radius:3px;opacity:0.9;"></div>
                 </div>
               </div>
               <div style="display:flex;align-items:center;gap:6px;padding:3px 0;">

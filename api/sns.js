@@ -141,6 +141,8 @@ async function handlePublish(req, res) {
   try {
     const { uid, platform, title, content, tags, visibility = "public", scheduledTime, imageUrl } = req.body;
     if (!uid || !platform || !content) return res.status(400).json({ error: "필수 파라미터 누락 (uid, platform, content)" });
+    const authUid = await requireAuth(req, res, uid);
+    if (!authUid) return;
 
     // 연결 정보 조회
     const { data: conn, error: connErr } = await supabase
@@ -307,6 +309,8 @@ async function handleMultiPublish(req, res) {
   try {
     const { uid, title, description, firstComment, contentType, platforms: platformsJson, fileUrl } = req.body;
     if (!uid) return res.status(400).json({ error: "uid 필수" });
+    const authUid = await requireAuth(req, res, uid);
+    if (!authUid) return;
 
     let platforms;
     try { platforms = typeof platformsJson === "string" ? JSON.parse(platformsJson) : platformsJson; }
@@ -662,9 +666,8 @@ async function handlePublishHistory(req, res) {
 
   const uid = req.query.uid;
   if (!uid) return res.status(400).json({ error: "uid 필수" });
-  // Bearer token uid 검증
-  const authUid = await verifyUid(req);
-  if (authUid && authUid !== uid) return res.status(403).json({ error: "권한 없음" });
+  const authUid = await requireAuth(req, res, uid);
+  if (!authUid) return;
 
   const limit = parseInt(req.query.limit) || 50;
   const offset = parseInt(req.query.offset) || 0;
@@ -702,8 +705,8 @@ async function handlePublishHistory(req, res) {
 async function handleConnections(req, res) {
   const uid = req.query.uid || req.body?.uid;
   if (!uid) return res.status(400).json({ error: "uid 필수" });
-  const authUid = await verifyUid(req);
-  if (authUid && authUid !== uid) return res.status(403).json({ error: "권한 없음" });
+  const authUid = await requireAuth(req, res, uid);
+  if (!authUid) return;
 
   // GET: 연결된 플랫폼 목록
   if (req.method === "GET") {
@@ -844,6 +847,8 @@ async function handleAuthMeta(req, res) {
     // 인증 URL 생성
     if (!APP_ID && !IG_APP_ID) return res.status(500).json({ error: "META_APP_ID 또는 INSTAGRAM_APP_ID 환경변수 미설정" });
     const { uid, platform = "threads" } = req.query;
+    const authUid = await requireAuth(req, res, uid);
+    if (!authUid) return;
     const scopes = platform === "threads"
       ? "threads_basic,threads_content_publish"
       : "instagram_business_basic,instagram_business_content_publish,instagram_business_manage_messages,instagram_business_manage_comments";
@@ -928,12 +933,14 @@ async function handleAuthGoogle(req, res) {
     // 인증 URL 생성
     if (!CLIENT_ID) return res.status(500).json({ error: "GOOGLE_CLIENT_ID 환경변수 미설정" });
     const uid = req.query.uid;
+    const authUid = await requireAuth(req, res, uid);
+    if (!authUid) return;
     const scopes = [
       "https://www.googleapis.com/auth/youtube.upload",
       "https://www.googleapis.com/auth/youtube",
       "https://www.googleapis.com/auth/youtube.readonly",
     ].join(" ");
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&access_type=offline&prompt=consent&state=${uid}`;
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${encodeURIComponent(scopes)}&access_type=offline&prompt=consent&state=${signState(uid)}`;
     return res.status(200).json({ authUrl });
   }
 
@@ -953,8 +960,8 @@ async function handleAuthTiktok(req, res) {
 
     // 콜백 처리
     if (code) {
-      const uid = state;
-      if (!uid) return res.redirect(302, "/ai/blog_write?sns_error=" + encodeURIComponent("사용자 정보 없음"));
+      const uid = verifyState(state);
+      if (!uid) return res.redirect(302, "/ai/blog_write?sns_error=" + encodeURIComponent("인증 상태 검증 실패"));
 
       try {
         // 1) Authorization code → Access Token 교환
@@ -1013,8 +1020,10 @@ async function handleAuthTiktok(req, res) {
     // 인증 URL 생성
     if (!CLIENT_KEY) return res.status(500).json({ error: "TIKTOK_CLIENT_KEY 환경변수 미설정" });
     const uid = req.query.uid;
+    const authUid = await requireAuth(req, res, uid);
+    if (!authUid) return;
     const scopes = "user.info.basic,video.publish,video.upload";
-    const csrfState = uid;
+    const csrfState = signState(uid);
     const authUrl = `https://www.tiktok.com/v2/auth/authorize/?client_key=${CLIENT_KEY}&scope=${scopes}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&state=${csrfState}`;
     return res.status(200).json({ authUrl });
   }
@@ -1084,7 +1093,9 @@ async function handleAuthTistory(req, res) {
     // 인증 URL 생성
     if (!CLIENT_ID) return res.status(500).json({ error: "TISTORY_CLIENT_ID 환경변수 미설정" });
     const uid = req.query.uid;
-    const authUrl = `https://www.tistory.com/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&state=${uid}`;
+    const authUid = await requireAuth(req, res, uid);
+    if (!authUid) return;
+    const authUrl = `https://www.tistory.com/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&state=${signState(uid)}`;
     return res.status(200).json({ authUrl });
   }
 
@@ -1099,6 +1110,8 @@ async function handleThreadsMedia(req, res) {
 
   const { uid } = req.query;
   if (!uid) return res.status(400).json({ error: "uid 필수" });
+  const authUid = await requireAuth(req, res, uid);
+  if (!authUid) return;
 
   try {
     // 스레드 연동 정보 조회
@@ -1231,9 +1244,9 @@ const ONE_OFF_POINTS = {
 // 구독 tier: product_name → { monthly, yearly } 지급 횟수 (구독자는 monthly_used 리셋 방식이므로 하위 호환용)
 const SUB_TIERS = {
   "Basic":    { monthly: 30,   yearly: 360 },
-  "Pro":      { monthly: 100,  yearly: 1200 },
-  "Premium":  { monthly: 200,  yearly: 2400 },
-  "Business": { monthly: 500,  yearly: 6000 },
+  "Pro":      { monthly: 200,  yearly: 2400 },
+  "Premium":  { monthly: 700,  yearly: 8400 },
+  "Business": { monthly: 700,  yearly: 8400 },
   "Agency":   { monthly: 500,  yearly: 6000 },
 };
 
@@ -1256,7 +1269,7 @@ async function addPoints(uid, points, reason) {
 
 // 플랜별 월간 글쓰기 한도
 const PLAN_MONTHLY_LIMITS = {
-  "Basic": 30, "Pro": 100, "Premium": 200, "Business": 500, "Agency": 99999,
+  "Free": 5, "Basic": 30, "Starter": 30, "Pro": 200, "Premium": 700, "Business": 700, "Agency": 99999,
 };
 
 async function saveSubscription(subId, uid, productName, interval, status, attrs = {}) {
@@ -1302,7 +1315,7 @@ async function handleWebhookLemonsqueezy(req, res) {
     if (signature) {
       const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
       const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
-      if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
+      if (signature.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) {
         console.error("[LS] HMAC signature mismatch");
         return res.status(401).json({ error: "Unauthorized" });
       }

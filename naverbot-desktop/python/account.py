@@ -36,6 +36,8 @@ class AccountStatus:
     trial: bool = False
     trial_used: int = 0
     trial_limit: int = 5
+    remaining_count: int = 0
+    quota: dict = None
     error: str = ""
 
 
@@ -76,6 +78,8 @@ def verify_account(
             trial=bool(data.get("trial")),
             trial_used=int(data.get("trial_used", 0)),
             trial_limit=int(data.get("trial_limit", 5)),
+            remaining_count=int(data.get("remaining_count", 0)),
+            quota=data.get("quota") or {},
         )
     except requests.RequestException as e:
         return AccountStatus(valid=False, error=f"네트워크 오류: {e}")

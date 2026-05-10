@@ -2,6 +2,7 @@
 // POST /api/simplecut?action=check-email
 
 import { createClient } from "@supabase/supabase-js";
+import { rateLimit } from "../lib/security.js";
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
@@ -26,6 +27,9 @@ export default async function handler(req, res) {
 
   if (action === "check-email") {
     if (req.method !== "POST") return res.status(405).json({ error: "POST only" });
+    if (!rateLimit(req, { limit: 10, windowMs: 60_000 })) {
+      return res.status(429).json({ exists: false, message: "잠시 후 다시 시도해주세요." });
+    }
 
     const { email } = req.body || {};
     if (!email) return res.status(400).json({ exists: false, message: "이메일을 입력하세요" });

@@ -1858,6 +1858,8 @@ def main() -> int:
             "trial": acc.trial,
             "trial_used": acc.trial_used,
             "trial_limit": acc.trial_limit,
+            "remaining_count": acc.remaining_count,
+            "quota": acc.quota or {},
             "error": acc.error,
         })
         return 0 if acc.valid else 1

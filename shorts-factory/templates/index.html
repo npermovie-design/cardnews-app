@@ -450,7 +450,7 @@ async function doAnalyze(){
     try{
         const controller=new AbortController();
         const timeout=setTimeout(()=>controller.abort(),600000); // 10분 타임아웃
-        const ar=await fetch(`/analyze/${fileId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({max_chars:mc}),signal:controller.signal});
+        const ar=await fetch(`/analyze/${fileId}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({max_chars:mc,max_segments:5}),signal:controller.signal});
         clearTimeout(timeout);
         stopElapsed();
         if(!ar.ok){const e=await ar.json().catch(()=>({}));throw new Error(e.detail||'분석 실패 ('+ar.status+')')}
@@ -508,6 +508,8 @@ function renderSegments(){
         const cost=dur<=15?5:dur<=30?10:dur<=60?20:30;
         const vf=(s.viral_factors||[]).map(f=>`<span class="tag" style="background:${st.cl}15;color:${st.cl}">${esc(f)}</span>`).join('');
         const d=document.createElement('div');d.className='seg-card';
+        const title=s.seo_title||s.hook_text||`Short ${i+1}`;
+        const body=s.script_body||'';
         d.innerHTML=`<label style="display:flex;gap:12px;cursor:pointer;align-items:flex-start">
             <input type="checkbox" class="seg-check" data-idx="${i}" checked style="width:18px;height:18px;accent-color:var(--acc);margin-top:2px;flex-shrink:0">
             <div style="flex:1;min-width:0">
@@ -518,7 +520,8 @@ function renderSegments(){
                     <span class="muted">${cost}P</span>
                     <span style="margin-left:auto;font-size:14px;font-weight:800;color:#f59e0b">${s.score}점</span>
                 </div>
-                <div style="font-size:14px;font-weight:700;margin-bottom:4px">${esc(s.hook_text)}</div>
+                <div style="font-size:14px;font-weight:800;margin-bottom:4px">${esc(title)}</div>
+                ${body?`<div style="font-size:12px;color:var(--text);line-height:1.6;margin-bottom:6px;background:var(--ibg);border:1px solid var(--bdr);border-radius:8px;padding:8px">${esc(body)}</div>`:''}
                 <div class="muted" style="line-height:1.6;margin-bottom:6px">${esc(s.reason)}</div>
                 ${vf?`<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">${vf}</div>`:''}
                 ${s.audience_hook?`<div class="muted" style="font-size:10px">🎯 ${esc(s.audience_hook)}</div>`:''}
@@ -535,7 +538,19 @@ function updateEditBtn(){
 // Edit
 $('btnToEdit').addEventListener('click',()=>{
     const idx=[...document.querySelectorAll('.seg-check:checked')].map(c=>+c.dataset.idx);
-    editClips=idx.map(i=>{const s=segments[i];return{start_seconds:s.start_seconds,end_seconds:s.end_seconds,title:s.hook_text||'',subtitle_text:'',subtitles:s.subtitles?s.subtitles.map(x=>({...x})):[]}});
+    editClips=idx.map(i=>{const s=segments[i];return{
+        start_seconds:s.start_seconds,
+        end_seconds:s.end_seconds,
+        title:s.seo_title||s.hook_text||`Short ${i+1}`,
+        subtitle_text:s.hook_text||'',
+        hook_text:s.hook_text||'',
+        seo_title:s.seo_title||'',
+        script_body:s.script_body||'',
+        reason:s.reason||'',
+        viral_factors:s.viral_factors||[],
+        audience_hook:s.audience_hook||'',
+        subtitles:s.subtitles?s.subtitles.map(x=>({...x})):[]
+    }});
     currentEditIdx=0;renderEditTabs();loadClipToEditor();showStep('edit');
 });
 
@@ -615,11 +630,15 @@ $('btnGenerate').addEventListener('click',async()=>{
                         const r=$(`gen-${data.index}`);if(r)r.innerHTML=`<div class="row"><div style="width:14px;height:14px;border-radius:50%;background:#4ade80"></div><span style="font-size:13px;font-weight:600;color:#4ade80">Short ${data.index+1} 완료</span></div>`;
                         const url=`/outputs/${fileId}/${data.filename}`;$('resultSection').style.display='';
                         const tab=document.createElement('div');tab.className='card';tab.style.cssText='padding:12px;cursor:pointer;transition:all 0.15s;border-left:3px solid transparent';
-                        tab.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--text)">Short ${data.index+1}</div><div class="muted" style="font-size:11px">완료 ✓</div>`;
+                        const clip=editClips[data.index]||{};
+                        tab.innerHTML=`<div style="font-size:13px;font-weight:700;color:var(--text)">${esc(clip.title||`Short ${data.index+1}`)}</div><div class="muted" style="font-size:11px">완료 ✓</div>`;
                         tab.addEventListener('click',()=>{$('previewTabs').querySelectorAll('.card').forEach(t=>{t.style.borderLeftColor='transparent';t.style.background='var(--card)'});tab.style.borderLeftColor='var(--acc)';tab.style.background='var(--accbg)';$('previewPlayer').src=url});
                         $('previewTabs').appendChild(tab);if($('previewTabs').children.length===1){tab.style.borderLeftColor='var(--acc)';tab.style.background='var(--accbg)';$('previewPlayer').src=url}
                         const g=document.createElement('div');g.className='card';g.style.padding='14px';
-                        g.innerHTML=`<div style="font-size:13px;font-weight:700;margin-bottom:8px">Short ${data.index+1}</div>
+                        const clipTitle=clip.title||`Short ${data.index+1}`;
+                        const clipBody=clip.script_body||(clip.subtitles||[]).map(s=>s.text).join(' ');
+                        g.innerHTML=`<div style="font-size:13px;font-weight:800;margin-bottom:4px">${esc(clipTitle)}</div>
+                            ${clipBody?`<div class="muted" style="font-size:12px;line-height:1.6;margin-bottom:10px">${esc(clipBody)}</div>`:''}
                             <a href="${url}" download="${data.filename}" class="btn btn-primary" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px;padding:10px;font-size:13px">영상 다운로드</a>
                             <div style="display:flex;gap:6px;margin-bottom:8px">
                                 <a href="/api/subtitles/${fileId}/${data.index}?format=srt" download class="btn-ghost" style="flex:1;text-align:center;text-decoration:none;padding:7px">SRT 자막</a>

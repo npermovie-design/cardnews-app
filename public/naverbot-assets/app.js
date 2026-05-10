@@ -22,7 +22,7 @@ function showUpdateOverlay(message = "업데이트 중입니다...") {
         <h2 style="font-size:20px;font-weight:700;color:#333;margin-bottom:8px;" id="updateTitle">${message}</h2>
         <p style="font-size:13px;color:#6b7280;line-height:1.6;" id="updateSub">최신 화면으로 업데이트하고 있습니다.<br>잠시만 기다려주세요.</p>
         <div style="margin-top:20px;width:200px;height:4px;background:#e5e7eb;border-radius:4px;overflow:hidden;margin-left:auto;margin-right:auto;">
-          <div id="updateProgressBar" style="width:30%;height:100%;background:linear-gradient(90deg,#3b82f6,#60a5fa);
+          <div id="updateProgressBar" style="width:30%;height:100%;background:#2563eb;
             border-radius:4px;transition:width .3s;"></div>
         </div>
       </div>
@@ -85,7 +85,7 @@ function showExeUpdateModal(info) {
       display:flex;align-items:center;justify-content:center;font-family:'Pretendard',sans-serif;">
       <div style="background:#fff;border-radius:16px;padding:36px 32px;max-width:400px;width:90%;
         box-shadow:0 20px 60px rgba(0,0,0,.3);text-align:center;animation:modalIn .3s ease;">
-        <div style="width:56px;height:56px;margin:0 auto 16px;background:linear-gradient(135deg,#3b82f6,#2563eb);
+        <div style="width:56px;height:56px;margin:0 auto 16px;background:#2563eb;
           border-radius:14px;display:flex;align-items:center;justify-content:center;">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -96,7 +96,7 @@ function showExeUpdateModal(info) {
           현재 <strong style="color:#111;">v${info.current_version}</strong> &rarr; 최신 <strong style="color:#3b82f6;">v${info.latest_version}</strong>
         </p>
         ${info.notes ? `<p style="font-size:13px;color:#9ca3af;margin:0 0 20px;line-height:1.5;">${info.notes}</p>` : '<div style="height:14px;"></div>'}
-        <button id="exeUpdateDownloadBtn" style="width:100%;padding:12px;background:linear-gradient(135deg,#3b82f6,#2563eb);
+        <button id="exeUpdateDownloadBtn" style="width:100%;padding:12px;background:#2563eb;
           color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;
           transition:transform .15s,box-shadow .15s;box-shadow:0 4px 14px rgba(59,130,246,.4);"
           onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(59,130,246,.5)'"
@@ -175,33 +175,56 @@ const EXE_PLAN_RULES = {
     label: "무료 체험",
     maxPostsPerRun: 3,
     maxDurationDays: 7,
-    canSchedule: true,
+    monthlyWriteLimit: 5,
+    monthlyVideoLimit: 3,
+    dailyAutoPosts: 0,
+    canSchedule: false,
     canCafe: false,
-    desc: "블로그 자동 운영 7일 체험 · 1회 3개 · 카페 제한",
+    desc: "콘텐츠 생성 5회 · 영상 3회 · 자동 발행 체험",
+  },
+  member: {
+    label: "회원",
+    maxPostsPerRun: 1,
+    maxDurationDays: 0,
+    monthlyWriteLimit: 0,
+    monthlyVideoLimit: 0,
+    dailyAutoPosts: 0,
+    canSchedule: false,
+    canCafe: false,
+    desc: "보유한 잔여 횟수 안에서 이용할 수 있습니다.",
   },
   starter: {
     label: "Basic",
     maxPostsPerRun: 5,
     maxDurationDays: 30,
-    canSchedule: true,
+    monthlyWriteLimit: 30,
+    monthlyVideoLimit: 10,
+    dailyAutoPosts: 0,
+    canSchedule: false,
     canCafe: false,
-    desc: "블로그 자동 운영 · 1회 최대 5개 · 카페 제한",
+    desc: "콘텐츠 생성 월 30회 · 영상 월 10회 · 자동 발행 체험",
   },
   pro: {
     label: "Pro",
     maxPostsPerRun: 3,
     maxDurationDays: 0,
+    monthlyWriteLimit: 200,
+    monthlyVideoLimit: 99999,
+    dailyAutoPosts: 3,
     canSchedule: true,
     canCafe: false,
-    desc: "블로그 자동 운영 · 하루 최대 3개 · 카페 제한",
+    desc: "콘텐츠 생성 월 200회 · 영상 제한 없음 · 자동 발행 하루 3개",
   },
   premium: {
     label: "Business",
     maxPostsPerRun: 10,
     maxDurationDays: 0,
+    monthlyWriteLimit: 700,
+    monthlyVideoLimit: 99999,
+    dailyAutoPosts: 10,
     canSchedule: true,
     canCafe: true,
-    desc: "블로그/카페 자동 운영 · 하루 최대 10개",
+    desc: "콘텐츠 생성 월 700회 · 영상 제한 없음 · 자동 발행 하루 10개",
   },
   admin: {
     label: "Admin",
@@ -223,6 +246,7 @@ function normalizeExePlan(user) {
   const role = String(user?.role || "").toLowerCase();
   if (user?.admin || role === "admin" || plan === "admin") return "admin";
   if (user?.trial || plan === "trial" || !plan) return "trial";
+  if (["member", "free"].includes(plan)) return "member";
   if (["premium", "business", "agency"].includes(plan)) return "premium";
   if (["pro"].includes(plan)) return "pro";
   return "starter";
@@ -230,6 +254,79 @@ function normalizeExePlan(user) {
 
 function getExePlanRules(user = state.user) {
   return EXE_PLAN_RULES[normalizeExePlan(user)] || EXE_PLAN_RULES.trial;
+}
+
+function getFeatureQuota(feature = "write", user = state.user) {
+  if (!user) return { canUse: false, used: 0, limit: 0, remaining: 0, feature };
+  if (user.admin) return { canUse: true, used: 0, limit: 99999, remaining: 99999, feature };
+  if (user.trial) {
+    const rules = getExePlanRules(user);
+    const limit = feature === "video" ? (rules.monthlyVideoLimit || 3) : (user.trial_limit || rules.monthlyWriteLimit || 5);
+    const used = feature === "video"
+      ? Number(user.monthly_used_video || user.trial_video_used || 0)
+      : Number(user.monthly_used || user.trial_used || 0);
+    return { canUse: limit - used > 0, used, limit, remaining: Math.max(0, limit - used), feature };
+  }
+  if (feature === "video") {
+    const rules = getExePlanRules(user);
+    const limit = Number(user.monthly_video_limit || rules.monthlyVideoLimit || 0);
+    const used = Number(user.monthly_used_video || 0);
+    return { canUse: limit - used > 0, used, limit, remaining: Math.max(0, limit - used), feature };
+  }
+  const limit = Number(user.monthly_limit || 0);
+  const used = Number(user.monthly_used || 0);
+  return { canUse: limit - used > 0, used, limit, remaining: Math.max(0, limit - used), feature };
+}
+
+async function checkVideoLimit() {
+  return getFeatureQuota("video");
+}
+
+async function checkWriteLimit() {
+  return getFeatureQuota("write");
+}
+
+async function markFeatureUsed(feature = "write", reason = "데스크톱 콘텐츠 생성") {
+  if (!state.user) return;
+  if (state.user.admin) { updateSidebarQuota(); return; }
+  try {
+    const cfg = (await bridge.loadConfig()) || {};
+    const token = cfg.makeit_access_token;
+    if (token) {
+      const res = await fetch("https://snsmakeit.com/api/naverbot?action=use-quota", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ access_token: token, feature, reason }),
+      });
+      const data = await res.json();
+      if (data.ok && typeof data.monthly_used === "number") {
+        if ((data.feature || feature) === "video") {
+          state.user.monthly_used_video = data.monthly_used;
+          state.user.monthly_video_limit = data.monthly_limit || state.user.monthly_video_limit;
+        } else {
+          state.user.monthly_used = data.monthly_used;
+          state.user.monthly_limit = data.monthly_limit || state.user.monthly_limit;
+        }
+      } else if (data.ok && typeof data.remaining === "number") {
+        state.user.monthly_limit = data.remaining;
+        state.user.monthly_used = 0;
+      }
+    } else if (feature === "video") {
+      state.user.monthly_used_video = (state.user.monthly_used_video || 0) + 1;
+    } else {
+      state.user.monthly_used = (state.user.monthly_used || 0) + 1;
+    }
+  } catch (e) {
+    console.warn("[quota] 서버 차감 실패, 로컬 차감:", e);
+    if (feature === "video") state.user.monthly_used_video = (state.user.monthly_used_video || 0) + 1;
+    else state.user.monthly_used = (state.user.monthly_used || 0) + 1;
+  }
+  updateSidebarQuota();
+  renderPlanCard(state.user);
+}
+
+async function markWriteUsed() {
+  return markFeatureUsed("write", "데스크톱 글쓰기");
 }
 
 function isExperienceLimitedUser(user = state.user) {
@@ -244,16 +341,31 @@ function formatPlanName(planKey, rawPlan = "") {
 }
 
 function renderPlanFeatures(rules, user = state.user) {
-  const postLimit = rules.maxPostsPerRun > 0 ? `1회 ${rules.maxPostsPerRun}개` : "제한 없음";
-  const autoText = isExperienceLimitedUser(user) ? "체험 1회" : (rules.maxDurationDays > 0 ? `${rules.maxDurationDays}일` : "제한 없음");
+  const planKey = normalizeExePlan(user);
+  const isMemberCountPlan = planKey === "member";
+  const memberLimit = Number(user?.monthly_limit || 0);
+  const memberUsed = Number(user?.monthly_used || 0);
+  const memberLeft = Math.max(0, memberLimit - memberUsed);
+  const videoQuota = getFeatureQuota("video", user);
+  const postLimit = isMemberCountPlan
+    ? `잔여 ${memberLeft}회`
+    : (rules.monthlyWriteLimit ? `월 ${rules.monthlyWriteLimit}회` : "제한 없음");
+  const videoLimit = isMemberCountPlan
+    ? "잔여 횟수 사용"
+    : (videoQuota.limit && videoQuota.limit < 99999 ? `잔여 ${videoQuota.remaining} / ${videoQuota.limit}회` : "제한 없음");
+  const autoText = rules.dailyAutoPosts > 0 ? `하루 ${rules.dailyAutoPosts}개` : "체험";
   return `
     <div class="plan-feature-grid">
       <div class="plan-feature">
-        <div class="plan-feature-label">발행 한도</div>
+        <div class="plan-feature-label">콘텐츠 생성</div>
         <div class="plan-feature-value">${escapeHtml(postLimit)}</div>
       </div>
       <div class="plan-feature">
-        <div class="plan-feature-label">자동 운영</div>
+        <div class="plan-feature-label">영상 생성</div>
+        <div class="plan-feature-value">${escapeHtml(videoLimit)}</div>
+      </div>
+      <div class="plan-feature">
+        <div class="plan-feature-label">자동 발행</div>
         <div class="plan-feature-value">${escapeHtml(autoText)}</div>
       </div>
       <div class="plan-feature">
@@ -299,6 +411,11 @@ function isNaverAccountReady() {
   return !!nid;
 }
 
+function openNavGroupFor(item) {
+  const group = item?.closest?.(".nav-group");
+  if (group) group.open = true;
+}
+
 navItems.forEach((item) => {
   item.addEventListener("click", () => {
     const target = item.dataset.panel;
@@ -325,6 +442,7 @@ navItems.forEach((item) => {
       return;
     }
 
+    openNavGroupFor(item);
     navItems.forEach((n) => n.classList.toggle("active", n === item));
     panels.forEach((p) => p.classList.toggle("hidden", p.dataset.panel !== target));
 
@@ -355,7 +473,10 @@ async function updateCardQuota() {
 
 function goToPanel(name) {
   const btn = document.querySelector(`.nav-item[data-panel="${name}"]`);
-  if (btn) btn.click();
+  if (btn) {
+    openNavGroupFor(btn);
+    btn.click();
+  }
 }
 
 
@@ -370,11 +491,20 @@ function renderPricingPanel() {
   const rules = getExePlanRules(state.user);
   const planLabel = formatPlanName(planKey, state.user.plan);
   const expiresText = state.user.expires_at ? ` · 만료 ${new Date(state.user.expires_at).toLocaleDateString("ko-KR")}` : "";
-  const postLimit = isExperienceLimitedUser() ? "즉시 발행 체험 5회" : (rules.maxPostsPerRun > 0 ? `1회 최대 ${rules.maxPostsPerRun}개` : "제한 없음");
+  const memberLimit = Number(state.user?.monthly_limit || 0);
+  const memberUsed = Number(state.user?.monthly_used || 0);
+  const memberLeft = Math.max(0, memberLimit - memberUsed);
+  const postLimit = planKey === "member"
+    ? `잔여 횟수 ${memberLeft}회`
+    : (rules.monthlyWriteLimit ? `콘텐츠 생성 월 ${rules.monthlyWriteLimit}회` : "제한 없음");
+  const videoLimit = planKey === "member"
+    ? "AI 생성은 잔여 횟수에서 차감"
+    : (rules.monthlyVideoLimit >= 99999 ? "영상 생성 제한 없음" : `영상 생성 월 ${rules.monthlyVideoLimit || 0}회`);
+  const autoLimit = rules.dailyAutoPosts > 0 ? `자동 발행 하루 ${rules.dailyAutoPosts}개` : "자동 발행 체험";
   box.innerHTML = `
     <strong>${escapeHtml(planLabel)}</strong>${escapeHtml(expiresText)}<br>
     ${escapeHtml(rules.desc)}<br>
-    발행 한도: ${escapeHtml(postLimit)} · 카페 발행: ${rules.canCafe ? "가능" : "Business 이상"} · 예약 발행: ${rules.canSchedule ? "가능" : "제한"}
+    ${escapeHtml(postLimit)} · ${escapeHtml(videoLimit)} · ${escapeHtml(autoLimit)} · 카페 발행: ${rules.canCafe ? "가능" : "Business 이상"}
   `;
 }
 
@@ -541,7 +671,7 @@ async function canUseExperience(kind) {
   const limit = EXPERIENCE_LIMITS[kind] || 0;
   if (usage[kind] < limit) return true;
 
-  const label = kind === "quick" ? "즉시 발행 10회" : "자동 운영 3회";
+  const label = kind === "quick" ? "자동 발행 체험" : "자동 운영 체험";
   showModal(
     "Pro 플랜 필요",
     `${label} 체험을 모두 사용했습니다.\n이후 자동 발행은 Pro 이상 플랜에서 이용할 수 있습니다.`,
@@ -700,7 +830,7 @@ function _friendlyError(err) {
     [/제목 입력 실패/i, "글 제목을 입력하지 못했습니다. 네이버 에디터 로딩이 느릴 수 있으니 다시 시도해주세요."],
     [/본문 입력 실패/i, "글 본문을 입력하지 못했습니다. 에디터 로딩 지연이 원인일 수 있습니다."],
     [/네트워크 오류/i, "인터넷 연결을 확인해주세요. 서버와 통신할 수 없습니다."],
-    [/일일 한도/i, "오늘의 발행 한도에 도달했습니다. 내일 다시 시도하거나 플랜을 업그레이드하세요."],
+    [/일일 한도|한도 초과/i, "사용 가능한 횟수를 모두 사용했습니다. 잔여 횟수나 구독 상태를 확인하세요."],
     [/라이선스/i, "구독이 만료되었거나 비활성 상태입니다. snsmakeit.com에서 구독을 확인해주세요."],
     [/글 생성 실패/i, "AI 글 생성에 실패했습니다. 잠시 후 다시 시도해주세요."],
     [/timeout|시간 초과|TIMEOUT/i, "작업 시간이 초과되었습니다. 인터넷 속도를 확인하고 다시 시도해주세요."],
@@ -910,7 +1040,7 @@ function setUserBadge(text, dotState = "gray") {
   // 등급 표시
   if (planTop && state.user) {
     var u = state.user;
-    var planLabels = { admin: "관리자", trial: "체험판", starter: "Basic", pro: "Pro", premium: "Premium", business: "Business", member: "Free" };
+    var planLabels = { admin: "관리자", trial: "체험판", starter: "Basic", pro: "Pro", premium: "Business", business: "Business", member: "회원" };
     var planKey = u.admin ? "admin" : (u.trial ? "trial" : (u.plan || "member").toLowerCase());
     var label = planLabels[planKey] || u.plan || "Free";
     planTop.textContent = label + " 플랜";
@@ -929,7 +1059,7 @@ function updateSidebarQuota() {
   var u = state.user;
   var limit = u.monthly_limit || 5;
   var used = u.monthly_used || 0;
-  if (u.trial) { limit = u.trial_limit || 5; used = u.trial_used || 0; }
+  if (u.trial) { limit = u.trial_limit || 5; used = u.monthly_used || u.trial_used || 0; }
   if (u.admin) { limit = 99999; used = 0; }
   var left = Math.max(0, limit - used);
   var pct = limit >= 99999 ? 100 : Math.min(100, Math.round((left / limit) * 100));
@@ -1007,8 +1137,8 @@ function renderPlanCard(data) {
   const avatar = initialOf(nick);
   const rules = getExePlanRules(data);
   const expiresText = data.expires_at ? `만료 ${new Date(data.expires_at).toLocaleDateString("ko-KR")}` : "";
-  const experienceText = isExperienceLimitedUser(data)
-    ? `<div class="plan-desc">체험 범위: 즉시 발행 ${EXPERIENCE_LIMITS.quick}회 · 자동 운영 ${EXPERIENCE_LIMITS.autopilot}회 · 이후 Pro 필요</div>`
+  const experienceText = data.trial
+    ? `<div class="plan-desc">무료 체험은 남은 횟수 안에서 사용할 수 있습니다. 구독하면 월간 횟수가 적용됩니다.</div>`
     : "";
   if (data.trial) {
     const remaining = Math.max(0, data.trial_limit - data.trial_used);
@@ -1218,6 +1348,8 @@ function handleVerifyResult(r, email) {
     // 관리자 이메일 체크
     const isAdmin = isAdminAccount(email, r.result);
     var serverQuota = r.result.quota || {};
+    var serverVideoQuota = r.result.video_quota || r.result.usage?.video || {};
+    var serverLimits = r.result.limits || {};
     const data = {
       valid: true,
       email,
@@ -1227,15 +1359,18 @@ function handleVerifyResult(r, email) {
       expires_at: r.result.expires_at || "",
       trial: isAdmin ? false : !!r.result.trial,
       trial_used: isAdmin ? 0 : Math.max(r.result.trial_used || 0, _trialUsedCache),
-      trial_limit: isAdmin ? 999999 : (r.result.trial_limit || 10),
+      trial_limit: isAdmin ? 999999 : (r.result.trial_limit || 5),
       admin: isAdmin,
-      monthly_used: serverQuota.used || 0,
-      monthly_limit: serverQuota.limit || 5,
+      monthly_used: Number(serverQuota.used || 0),
+      monthly_limit: Number(serverQuota.limit ?? r.result.remaining_count ?? 5),
+      monthly_used_video: Number(serverVideoQuota.used || 0),
+      monthly_video_limit: Number(serverVideoQuota.limit ?? serverLimits.video ?? getExePlanRules({ plan: r.result.plan }).monthlyVideoLimit ?? 0),
+      plan_limits: serverLimits,
     };
     state.loggedIn = true;
     state.user = data;
     const remaining = data.trial
-      ? Math.max(0, data.trial_limit - data.trial_used)
+      ? Math.max(0, data.trial_limit - data.monthly_used)
       : Math.max(0, data.monthly_limit - data.monthly_used);
     const badgeText = isAdmin
       ? `관리자 · ${data.nick || email}`
@@ -1310,6 +1445,13 @@ $("aboutWeb").addEventListener("click", (e) => {
   e.preventDefault();
   bridge.openExternal("https://snsmakeit.com/");
 });
+
+// ── Pro 체험권 문의 버튼 ──
+if ($("proTrialBtn")) {
+  $("proTrialBtn").addEventListener("click", function() {
+    bridge.openExternal("https://snsmakeit.com/contact?subject=pro-trial");
+  });
+}
 
 // ── 잡담방 ──
 async function loadChat() {
@@ -1635,8 +1777,8 @@ let blogAutopilotSourceMode = "normal";
 
 function showBlogMode(mode) {
   $("blogModeSelect").style.display = mode ? "none" : "";
-  $("blogAutopilotView").style.display = (mode === "autopilot" || mode === "drive-autopilot") ? "" : "none";
-  blogAutopilotSourceMode = mode === "drive-autopilot" ? "drive" : "normal";
+  $("blogAutopilotView").style.display = mode === "autopilot" ? "" : "none";
+  // 드라이브 모드는 이제 토글로 제어
   if ($("driveSourceSection")) {
     $("driveSourceSection").style.display = blogAutopilotSourceMode === "drive" ? "" : "none";
   }
@@ -1649,12 +1791,17 @@ if ($("modeAutopilot")) $("modeAutopilot").addEventListener("click", async () =>
   showBlogMode("autopilot");
   renderAutopilotAccountList();
 });
-if ($("modeDriveAutopilot")) $("modeDriveAutopilot").addEventListener("click", () => {
-  if (isExperienceLimitedUser()) {
+
+// 구글 드라이브 토글 (자동 운영 안에 통합)
+if ($("driveToggle")) $("driveToggle").addEventListener("change", function() {
+  if (this.checked && isExperienceLimitedUser()) {
+    this.checked = false;
     return showModal("Pro 플랜 필요", "구글 드라이브 자료 기반 자동 운영은 Pro 이상 플랜에서 이용할 수 있습니다.", "Pro 구독하기", () => bridge.openExternal("https://snsmakeit.com/pricing"));
   }
-  showBlogMode("drive-autopilot");
-  renderAutopilotAccountList();
+  blogAutopilotSourceMode = this.checked ? "drive" : "normal";
+  if ($("driveSourceSection")) {
+    $("driveSourceSection").style.display = this.checked ? "" : "none";
+  }
 });
 
 // ── 빠른 시작 ──
@@ -2415,6 +2562,12 @@ async function restoreAutopilotStatus() {
   }
   if (ap.drive_folder_url && $("driveFolderUrl") && !$("driveFolderUrl").value) {
     $("driveFolderUrl").value = ap.drive_folder_url;
+    // 드라이브 URL이 저장되어 있으면 토글도 켜기
+    if ($("driveToggle")) {
+      $("driveToggle").checked = true;
+      blogAutopilotSourceMode = "drive";
+      if ($("driveSourceSection")) $("driveSourceSection").style.display = "";
+    }
   }
   if ($("driveRecursive")) {
     $("driveRecursive").checked = !!ap.drive_recursive;
@@ -2920,7 +3073,11 @@ bridge.loadConfig().then(async cfg => {
       role: isAdminBoot ? "admin" : "",
       trial: isAdminBoot ? false : !cfg._cached_plan,
       trial_used: cachedUsed,
-      trial_limit: isAdminBoot ? 999999 : 10,
+      trial_limit: isAdminBoot ? 999999 : 5,
+      monthly_used: Number(cfg._cached_monthly_used || 0),
+      monthly_limit: Number(cfg._cached_monthly_limit || 5),
+      monthly_used_video: Number(cfg._cached_monthly_used_video || 0),
+      monthly_video_limit: Number(cfg._cached_monthly_video_limit || 0),
       admin: isAdminBoot,
     };
     setUserBadge(isAdminBoot ? `관리자 · ${nick}` : nick, "green");
@@ -2960,6 +3117,10 @@ bridge.loadConfig().then(async cfg => {
         _setTrialUsed(maxUsed);
         c._cached_trial_used = maxUsed;
         c._cached_plan = r.result.plan || "";
+        c._cached_monthly_used = r.result.quota?.used || 0;
+        c._cached_monthly_limit = r.result.quota?.limit ?? r.result.remaining_count ?? 5;
+        c._cached_monthly_used_video = r.result.video_quota?.used || r.result.usage?.video?.used || 0;
+        c._cached_monthly_video_limit = r.result.video_quota?.limit || r.result.usage?.video?.limit || r.result.limits?.video || 0;
         await bridge.saveConfig(c);
       }
     }
@@ -3219,7 +3380,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 (function initVideoEditor() {
   if (!bridge.videoSelectFile) return;
   var API_URL = "https://shorts-factory-r33o.onrender.com";
-  var ve = { filePath:null, fileInfo:null, fileId:null, segments:[], subtitles:[], videoClips:[], type:"shorts", clipCount:3, subEnabled:true, silenceRemove:false, subSize:38, subColor:"#FFFFFF", duration:0 };
+  var ve = { filePath:null, fileInfo:null, fileId:null, segments:[], subtitles:[], videoClips:[], recommendedClips:[], type:"landscape", clipCount:3, clipDuration:45, subEnabled:true, silenceRemove:false, subSize:38, subColor:"#FFFFFF", duration:0 };
 
   function goStep(n) {
     for (var i=1;i<=5;i++) {
@@ -3239,7 +3400,6 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function setProg(pId,bId,lId,pct,label) { var p=$(pId),b=$(bId),l=$(lId); if(p) p.textContent=pct+"%"; if(b) b.style.width=pct+"%"; if(l&&label) l.textContent=label; }
   function chipG(id,cb) { var w=$(id); if(!w) return; w.addEventListener("click",function(e){ var b=e.target.closest(".chip"); if(!b) return; w.querySelectorAll(".chip").forEach(function(c){c.classList.remove("active")}); b.classList.add("active"); cb(b.dataset.value); }); }
 
-  chipG("veTypeChips",function(v){ ve.type=v; applyVeLayout(v); });
   // 비율 라벨 업데이트
   function updateRatioLabel() {
     var label = $("veRatioLabel");
@@ -3253,14 +3413,14 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   var _veRatio = "landscape";
   var _veCanvasRAF = null;
   var _needsRedraw = true;
-  // _subMaxChars 상단 선언됨
+  var _subMaxChars = 15;
   var _subStroke = "0", _subShadow = "none", _subBg = "box", _subRound = "0";
   var _subStrokeColor = "#000000", _subBgColor = "#000000", _subBgOpacity = 60;
   var _subLines = 1, _subLang = "none", _subTransSize = 24;
   var subAnim = "none";
-  // _selectedClipIdx 상단 선언됨
+  var _selectedClipIdx = -1;
   var _veEditIdx = -1, _veEditText = "", _veEditCursorVisible = true, _veEditCursorPos = 0;
-  // _veEditCursorTimer 상단 선언됨
+  var _veEditCursorTimer = null;
   var timelineZoom = 1;
   var playInterval = null, isPlaying = false;
   var _eventsAttached = false;
@@ -3353,14 +3513,27 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           var dw = vw * scale, dh = vh * scale;
           ctx.drawImage(video, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
         } else if (_veRatio === "portrait") {
-          var scale = ch / vh;
-          var dw = vw * scale, dh = ch;
-          var sx = (dw - cw) / 2;
-          ctx.drawImage(video, -sx, 0, dw, dh);
+          var bgScale = Math.max(cw / vw, ch / vh);
+          var bgW = vw * bgScale, bgH = vh * bgScale;
+          ctx.save();
+          ctx.filter = "blur(12px)";
+          ctx.globalAlpha = 0.75;
+          ctx.drawImage(video, (cw - bgW) / 2, (ch - bgH) / 2, bgW, bgH);
+          ctx.restore();
+          var fgScale = Math.min(cw / vw, ch / vh);
+          var fgW = vw * fgScale, fgH = vh * fgScale;
+          ctx.drawImage(video, (cw - fgW) / 2, (ch - fgH) / 2, fgW, fgH);
         } else {
-          var minDim = Math.min(vw, vh);
-          var sx = (vw - minDim) / 2, sy = (vh - minDim) / 2;
-          ctx.drawImage(video, sx, sy, minDim, minDim, 0, 0, cw, ch);
+          var bgScale2 = Math.max(cw / vw, ch / vh);
+          var bgW2 = vw * bgScale2, bgH2 = vh * bgScale2;
+          ctx.save();
+          ctx.filter = "blur(10px)";
+          ctx.globalAlpha = 0.75;
+          ctx.drawImage(video, (cw - bgW2) / 2, (ch - bgH2) / 2, bgW2, bgH2);
+          ctx.restore();
+          var fgScale2 = Math.min(cw / vw, ch / vh);
+          var fgW2 = vw * fgScale2, fgH2 = vh * fgScale2;
+          ctx.drawImage(video, (cw - fgW2) / 2, (ch - fgH2) / 2, fgW2, fgH2);
         }
 
         // 자막 캔버스 위 직접 그리기
@@ -4176,7 +4349,10 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     }catch(e){hideVeLoading();showModal("실패",e.message||"AI 짤 삽입 실패","확인");}
     autoImgBtn.disabled=false; autoImgBtn.innerHTML=_origImgBtnHtml;
   }
-  chipG("veClipCountChips",function(v){ve.clipCount=parseInt(v)});
+  chipG("veClipCountChips",function(v){ve.clipCount=parseInt(v); syncShortsControls(); renderShortsPlanList();});
+  chipG("veClipCountChipsStart",function(v){ve.clipCount=parseInt(v); syncShortsControls(); renderShortsPlanList();});
+  chipG("veClipDurationChips",function(v){ve.clipDuration=parseInt(v); syncShortsControls(); renderShortsPlanList();});
+  chipG("veClipDurationChipsEdit",function(v){ve.clipDuration=parseInt(v); syncShortsControls(); renderShortsPlanList();});
   chipG("veSubChips",function(v){ve.subEnabled=v==="on"; _needsRedraw=true;});
   chipG("veSilenceChips",function(v){
     ve.silenceRemove=v==="on";
@@ -4607,7 +4783,11 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   chipG("veInitRatioChips", function(v) {
     ve.type = v;
     var rec = $("veShortsRecommend");
-    if (rec) rec.style.display = (v === "portrait") ? "" : "none";
+    var plan = $("veShortsPlanInput");
+    var isShorts = v === "portrait" || v === "square";
+    if (rec) rec.style.display = isShorts ? "" : "none";
+    if (plan) plan.style.display = isShorts ? "" : "none";
+    renderShortsPlanList();
   });
 
   // 저장 폴더 선택
@@ -4637,7 +4817,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       if(!ve.subtitles.length) ve.segments.forEach(function(seg){if(seg.subtitles&&seg.subtitles.length){ve.subtitles=ve.subtitles.concat(seg.subtitles);}else if(seg.script){var ss=seg.start_seconds||0,se=seg.end_seconds||ve.duration,ch=seg.script.match(/.{1,18}/g)||[],cd=(se-ss)/Math.max(1,ch.length);ch.forEach(function(t,i){ve.subtitles.push({start:ss+i*cd,end:ss+(i+1)*cd,text:t.trim()})});}});
       // 연속 중복 자막 제거
       ve.subtitles = ve.subtitles.filter(function(s, i) { return i === 0 || s.text !== ve.subtitles[i - 1].text; });
-      renderSegs(); setProg("veAnalyzePct","veAnalyzeBar","veAnalyzeLabel",100,"분석 완료!");
+      renderSegs(); buildShortsRecommendations(); renderShortsPlanList(); setProg("veAnalyzePct","veAnalyzeBar","veAnalyzeLabel",100,"분석 완료!");
       setTimeout(function(){goStep(3);var fn=$("veFileName2");if(fn) fn.textContent=ve.filePath.split(/[\\/]/).pop(); initEditor();},500);
     } catch(e) { showModal("분석 실패",e.message||"서버 연결 확인","확인"); goStep(1); }
   });
@@ -4655,6 +4835,151 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         "<div style='font-size:10px;color:var(--text-dim);margin-top:2px;'>"+fT(s.start_seconds||0)+" ~ "+fT(s.end_seconds||0)+"</div></div>"+
         "<div style='padding:3px 8px;border-radius:6px;background:"+(sc>=70?"rgba(16,185,129,0.1)":"rgba(251,191,36,0.1)")+";font-size:11px;font-weight:700;color:"+(sc>=70?"#10b981":"#f59e0b")+";'>"+sc+"점</div></div>";
     }).join("");
+  }
+
+  function getSubStart(s) { return Number(s.start_seconds != null ? s.start_seconds : (s.start || 0)); }
+  function getSubEnd(s) { return Number(s.end_seconds != null ? s.end_seconds : (s.end || getSubStart(s) + 2)); }
+  function getSubsInRange(start, end) {
+    return (ve.subtitles || []).filter(function(s) {
+      var st = getSubStart(s), en = getSubEnd(s);
+      return en > start && st < end;
+    });
+  }
+  function scoreShortsText(text, subCount, duration) {
+    var score = Math.min(35, subCount * 4);
+    if (/[?？]/.test(text)) score += 12;
+    if (/\d|가지|방법|이유|비밀|실수|꿀팁|핵심|문제|해결|절대|꼭|바로|충격|주의/.test(text)) score += 18;
+    if (/하지만|그런데|그래서|결국|왜냐하면|사실|반대로|중요한/.test(text)) score += 10;
+    if (duration >= 20 && duration <= 60) score += 10;
+    if (text.length >= 40) score += 8;
+    return Math.max(55, Math.min(98, Math.round(score + 35)));
+  }
+  function reasonForShorts(text, idx) {
+    if (/[?？]/.test(text)) return "질문형 훅이 있어 첫 3초 이탈 방지에 유리합니다.";
+    if (/\d|가지|방법|이유|꿀팁|핵심/.test(text)) return "리스트/팁 구조라 짧은 숏폼으로 이해하기 쉽습니다.";
+    if (/하지만|그런데|결국|문제|해결/.test(text)) return "문제 제기와 전환점이 있어 완주율을 기대할 수 있습니다.";
+    return idx === 0 ? "영상 초반 핵심 구간이라 도입 숏폼으로 쓰기 좋습니다." : "문맥이 끊기지 않고 자막 밀도가 적당한 구간입니다.";
+  }
+  function rangesOverlap(a, b) {
+    var overlap = Math.max(0, Math.min(a.end_seconds, b.end_seconds) - Math.max(a.start_seconds, b.start_seconds));
+    return overlap > Math.min(a.end_seconds - a.start_seconds, b.end_seconds - b.start_seconds) * 0.35;
+  }
+  function syncShortsControls() {
+    ["veClipCountChips", "veClipCountChipsStart"].forEach(function(id) {
+      var wrap = $(id); if (!wrap) return;
+      wrap.querySelectorAll(".chip").forEach(function(btn) { btn.classList.toggle("active", parseInt(btn.dataset.value) === ve.clipCount); });
+    });
+    ["veClipDurationChips", "veClipDurationChipsEdit"].forEach(function(id) {
+      var wrap = $(id); if (!wrap) return;
+      wrap.querySelectorAll(".chip").forEach(function(btn) { btn.classList.toggle("active", parseInt(btn.dataset.value) === ve.clipDuration); });
+    });
+  }
+  function buildShortsRecommendations() {
+    var target = Math.max(15, Math.min(90, parseInt(ve.clipDuration || 45)));
+    var duration = Math.max(1, ve.duration || 0);
+    var candidates = [];
+    if (ve.subtitles && ve.subtitles.length) {
+      for (var i = 0; i < ve.subtitles.length; i += Math.max(1, Math.floor(target / 12))) {
+        var start = Math.max(0, getSubStart(ve.subtitles[i]) - 1);
+        var end = Math.min(duration || start + target, start + target);
+        var subs = getSubsInRange(start, end);
+        if (!subs.length) continue;
+        var text = subs.map(function(s) { return s.text || ""; }).join(" ").trim();
+        candidates.push({
+          start_seconds: Math.round(start * 100) / 100,
+          end_seconds: Math.round(end * 100) / 100,
+          hook: text.slice(0, 34) || "추천 구간",
+          title: "추천 숏폼 " + (candidates.length + 1),
+          score: scoreShortsText(text, subs.length, end - start),
+          reason: reasonForShorts(text, candidates.length),
+          subtitles: subs,
+        });
+      }
+    }
+    (ve.segments || []).forEach(function(seg) {
+      var ss = Number(seg.start_seconds || 0);
+      var center = ss + Math.max(1, Number(seg.end_seconds || ss + target) - ss) / 2;
+      var start = Math.max(0, center - target / 2);
+      var end = Math.min(duration || start + target, start + target);
+      var subs = getSubsInRange(start, end);
+      var text = subs.map(function(s) { return s.text || ""; }).join(" ") || (seg.hook || seg.hook_text || seg.title || "");
+      candidates.push({
+        start_seconds: Math.round(start * 100) / 100,
+        end_seconds: Math.round(end * 100) / 100,
+        hook: (seg.hook || seg.hook_text || text || "추천 구간").slice(0, 34),
+        title: seg.title || "추천 숏폼 " + (candidates.length + 1),
+        score: Math.max(Number(seg.score || 0), scoreShortsText(text, subs.length, end - start)),
+        reason: reasonForShorts(text, candidates.length),
+        subtitles: subs,
+      });
+    });
+    candidates.sort(function(a, b) { return b.score - a.score; });
+    var selected = [];
+    candidates.forEach(function(c) {
+      if (selected.length >= ve.clipCount) return;
+      if (!selected.some(function(s) { return rangesOverlap(s, c); })) selected.push(c);
+    });
+    if (!selected.length && duration > 0) {
+      var usableStart = duration > target * 2 ? Math.min(Math.max(8, duration * 0.08), Math.max(0, duration - target)) : 0;
+      var usableEnd = Math.max(usableStart + target, duration - Math.min(target * 0.4, 20));
+      var usableSpan = Math.max(0, usableEnd - usableStart - target);
+      for (var ci = 0; ci < ve.clipCount; ci++) {
+        var ratio = ve.clipCount <= 1 ? 0.5 : ci / (ve.clipCount - 1);
+        var st = Math.min(Math.max(0, duration - target), usableStart + usableSpan * ratio);
+        var en = Math.min(duration, st + target);
+        selected.push({ start_seconds: st, end_seconds: en, hook: "자동 구간 " + (ci + 1), title: "추천 숏폼 " + (ci + 1), score: 60, reason: "자막이 부족해 영상 길이를 기준으로 나눈 구간입니다.", subtitles: getSubsInRange(st, en) });
+      }
+    }
+    ve.recommendedClips = selected.slice(0, ve.clipCount).map(function(c, idx) {
+      return Object.assign({}, c, { title: "쇼츠 " + (idx + 1) + ": " + (c.hook || "추천 구간").slice(0, 18) });
+    });
+  }
+  function isShortsMode() {
+    return ve.type === "portrait" || ve.type === "square";
+  }
+  function syncShortsVideoClips() {
+    if (!isShortsMode()) return;
+    buildShortsRecommendations();
+    ve.videoClips = (ve.recommendedClips || []).map(function(c, idx) {
+      return {
+        start: Number(c.start_seconds || 0),
+        end: Number(c.end_seconds || (c.start_seconds || 0) + (ve.clipDuration || 45)),
+        label: "쇼츠 " + (idx + 1),
+        title: c.title || c.hook || ("쇼츠 " + (idx + 1)),
+        score: c.score || 0,
+        reason: c.reason || "",
+        _shorts: true
+      };
+    });
+  }
+  function renderShortsPlanList() {
+    var list = $("veShortsPlanList"); if (!list) return;
+    syncShortsControls();
+    if (ve.type !== "portrait" && ve.type !== "square") {
+      list.innerHTML = "<div style='color:#64748b;padding:8px 0;'>세로 또는 정사각 비율을 선택하면 숏폼 후보가 표시됩니다.</div>";
+      return;
+    }
+    buildShortsRecommendations();
+    syncShortsVideoClips();
+    if (!ve.recommendedClips.length) {
+      list.innerHTML = "<div style='color:#64748b;padding:8px 0;'>분석 후 추천 숏폼 리스트가 자동으로 표시됩니다.</div>";
+      return;
+    }
+    list.innerHTML = ve.recommendedClips.map(function(c, i) {
+      var dur = Math.max(0, c.end_seconds - c.start_seconds);
+      return "<div data-short-idx='" + i + "' style='padding:10px 8px;border:1px solid #1e1e3a;border-radius:8px;margin-bottom:6px;background:#101026;cursor:pointer;'>" +
+        "<div style='display:flex;align-items:center;gap:8px;margin-bottom:5px;'><span style='width:22px;height:22px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;'>" + (i + 1) + "</span>" +
+        "<div style='flex:1;min-width:0;font-size:12px;font-weight:800;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml(c.hook || c.title || "추천 구간") + "</div>" +
+        "<span style='font-size:11px;font-weight:800;color:#22c55e;'>" + Math.round(c.score || 0) + "점</span></div>" +
+        "<div style='font-size:11px;color:#94a3b8;margin-bottom:4px;'>" + fmtTime(c.start_seconds) + " ~ " + fmtTime(c.end_seconds) + " · 약 " + Math.round(dur) + "초</div>" +
+        "<div style='font-size:11px;color:#64748b;line-height:1.45;'>" + escapeHtml(c.reason || "") + "</div></div>";
+    }).join("");
+    list.querySelectorAll("[data-short-idx]").forEach(function(el) {
+      el.addEventListener("click", function() {
+        var c = ve.recommendedClips[parseInt(el.dataset.shortIdx)];
+        var video = $("veVideo"); if (video && c) video.currentTime = c.start_seconds;
+      });
+    });
   }
 
   ve.overlays = []; // {path, startTime, endTime, x, y, width, height}
@@ -4696,8 +5021,35 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var track = $("veTrackVideo");
     if (!track) return;
     var dur = ve.duration || 1;
+    if (isShortsMode() && ve.recommendedClips && ve.recommendedClips.length) {
+      syncShortsVideoClips();
+      var totalShortDur = ve.videoClips.reduce(function(sum, c) { return sum + Math.max(0.5, c.end - c.start); }, 0) || 1;
+      var cursor = 0;
+      track.style.cssText = "position:absolute;inset:0;";
+      track.innerHTML = ve.videoClips.map(function(c, i) {
+        var clipDur = Math.max(0.5, c.end - c.start);
+        var left = (cursor / totalShortDur * 100).toFixed(2) + "%";
+        var width = (clipDur / totalShortDur * 100).toFixed(2) + "%";
+        cursor += clipDur;
+        var colors = ["#2563eb", "#1d4ed8", "#1e40af", "#3b82f6"];
+        var color = colors[i % colors.length];
+        return "<div data-vclip='" + i + "' title='" + escapeHtml(c.title || c.label) + "' style='position:absolute;top:2px;bottom:2px;left:" + left + ";width:" + width +
+          ";background:" + color + ";border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid " + color + "99;'>" +
+          "<div style='flex:1;min-width:0;padding:0 4px;font-size:10px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;text-align:center;font-weight:800;'>" + escapeHtml(c.label || ("쇼츠 " + (i + 1))) + "</div></div>";
+      }).join("");
+      track.querySelectorAll("[data-vclip]").forEach(function(el) {
+        el.addEventListener("click", function() {
+          var idx = parseInt(el.dataset.vclip);
+          track.querySelectorAll("[data-vclip]").forEach(function(e) { e.style.outline = "none"; e.style.boxShadow = "none"; });
+          el.style.outline = "2px solid #93c5fd"; el.style.boxShadow = "0 0 8px rgba(59,130,246,0.55)";
+          var c = ve.videoClips[idx];
+          if (c) { var video = $("veVideo"); if (video) video.currentTime = c.start; }
+        });
+      });
+      return;
+    }
     if (!ve.videoClips || !ve.videoClips.length) {
-      track.style.cssText = "position:absolute;inset:1px;background:linear-gradient(90deg,#1e40af,#2563eb,#1e40af);border-radius:2px;opacity:0.9;";
+      track.style.cssText = "position:absolute;inset:1px;background:#2563eb;border-radius:2px;opacity:0.9;";
       return;
     }
     track.style.cssText = "position:absolute;inset:0;";
@@ -4729,6 +5081,24 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // 클립 목록 (클립 탭)
   function renderClipList() {
     var list = $("veClipList"); if (!list) return;
+    if (isShortsMode() && ve.recommendedClips && ve.recommendedClips.length) {
+      syncShortsVideoClips();
+      list.style.display = "";
+      list.innerHTML = ve.videoClips.map(function(c, i) {
+        return "<div style='padding:8px 6px;border:1px solid #1e1e3a;border-radius:8px;margin-bottom:6px;cursor:pointer;background:#101026;' data-vci='" + i + "'>" +
+          "<div style='display:flex;align-items:center;gap:8px;margin-bottom:4px;'><span style='font-size:11px;font-weight:900;color:#60a5fa;min-width:38px;'>쇼츠 " + (i + 1) + "</span>" +
+          "<span style='font-size:12px;font-weight:800;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml(c.title || c.label || "") + "</span></div>" +
+          "<div style='font-size:11px;color:#94a3b8;'>" + fmtTime(c.start) + " ~ " + fmtTime(c.end) + " · " + Math.round(c.end - c.start) + "초 · " + Math.round(c.score || 0) + "점</div>" +
+          (c.reason ? "<div style='font-size:11px;color:#64748b;line-height:1.45;margin-top:4px;'>" + escapeHtml(c.reason) + "</div>" : "") + "</div>";
+      }).join("");
+      list.querySelectorAll("[data-vci]").forEach(function(el) {
+        el.addEventListener("click", function() {
+          var c = ve.videoClips[parseInt(el.dataset.vci)];
+          if (c) { var video = $("veVideo"); if (video) video.currentTime = c.start; _needsRedraw = true; }
+        });
+      });
+      return;
+    }
     if (!ve.videoClips || ve.videoClips.length <= 1) {
       list.innerHTML = "<div style='color:#475569;padding:8px 0;'>분할하면 여기에 클립 목록이 표시됩니다.</div>";
       return;
@@ -4796,22 +5166,63 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     video.load();
     isPlaying=false;
 
+    // 영상 로드 실패 처리
+    video.addEventListener("error", function onError() {
+      video.removeEventListener("error", onError);
+      if (loadOv) loadOv.style.display = "none";
+      var errMsg = "영상 파일을 불러올 수 없습니다.";
+      if (video.error) {
+        var codes = { 1: "로드 중단됨", 2: "네트워크 오류", 3: "디코딩 실패 (지원되지 않는 형식)", 4: "지원되지 않는 영상 형식" };
+        errMsg += "\n(" + (codes[video.error.code] || "코드 " + video.error.code) + ")";
+      }
+      showModal("영상 로드 실패", errMsg, "확인");
+    }, { once: true });
+
     // 영상 로드 완료 시 자막 준비 → 로딩 숨김
-    video.addEventListener("loadeddata", function onLoaded() {
-      video.removeEventListener("loadeddata", onLoaded);
+    var _veLoadDone = false;
+    function onVideoReady() {
+      if (_veLoadDone) return;
+      _veLoadDone = true;
       if (loadTxt) loadTxt.textContent = "자막 및 타임라인 준비 중...";
       setTimeout(function() {
-        // 기본 비율 적용 + 캔버스 렌더 시작
-        applyVeLayout(ve.type || "landscape");
-        updateRatioLabel();
-        // 비디오 클립 초기화 (전체 영상 = 1클립)
-        if (!ve.videoClips.length) {
-          ve.videoClips = [{ start: 0, end: ve.duration || 1, label: "전체 영상" }];
+        try {
+          var mediaDuration = Number(video.duration || 0);
+          if ((!ve.duration || ve.duration <= 0) && mediaDuration > 0) ve.duration = mediaDuration;
+          applyVeLayout(ve.type || "landscape");
+          updateRatioLabel();
+          if (!ve.videoClips.length) {
+            ve.videoClips = [{ start: 0, end: ve.duration || mediaDuration || 1, label: "전체 영상" }];
+          }
+          renderSubList();
+          renderTimeline();
+          renderVideoTrack();
+          renderClipList();
+          renderShortsPlanList();
+        } catch (err) {
+          console.error("[VideoEditor] timeline init failed:", err);
+          showModal(
+            "타임라인 준비 실패",
+            "자막과 타임라인을 준비하는 중 오류가 발생했습니다.\n편집 화면은 열어두었으니 다른 영상으로 다시 시도하거나 자막을 다시 생성해주세요.\n\n" + (err && err.message ? err.message : ""),
+            "확인"
+          );
+        } finally {
+          if (loadOv) loadOv.style.display = "none";
         }
-        renderSubList(); renderTimeline(); renderVideoTrack(); renderClipList();
-        if (loadOv) loadOv.style.display = "none";
       }, 300);
+    }
+    video.addEventListener("loadeddata", function onLoaded() {
+      video.removeEventListener("loadeddata", onLoaded);
+      onVideoReady();
     }, { once: true });
+    // 타임아웃: 15초 후에도 loadeddata 안 오면 강제 진행
+    setTimeout(function() {
+      if (!_veLoadDone) {
+        console.warn("[VideoEditor] loadeddata timeout — forcing init");
+        if (video.readyState >= 1) { onVideoReady(); return; }
+        if (loadOv) loadOv.style.display = "none";
+        showModal("영상 로드 지연", "영상 로드에 시간이 오래 걸립니다.\n파일 형식을 확인하거나 다른 영상을 시도해주세요.", "확인");
+      }
+    }, 15000);
     var pb=$("vePlayBtn"),seekBar=$("veSeekBar"),timeDisp=$("veTimeDisplay");
 
     // 재생/정지
@@ -4905,8 +5316,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var chars=Math.floor(text.length*Math.min(1,elapsed/Math.max(0.5,dur*0.6)));
       text=text.slice(0,chars);
     } else if(subAnim==="karaoke"){
-      var pct=Math.min(100,elapsed/Math.max(0.1,dur)*120);
-      style+="background:linear-gradient(90deg,#FFD700 "+pct+"%,"+col+" "+pct+"%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;";
+      style+="color:#2563eb;";
     } else if(subAnim==="bounce"){
       var sc=elapsed<0.2?0.5+elapsed*2.5:elapsed<0.35?1.1-(elapsed-0.2)*0.67:1;
       style+="display:inline-block;transform:scale("+sc+");";
@@ -4965,6 +5375,33 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function renderTimeline(){
     var blocks=$("veTimelineBlocks"); if(!blocks) return;
     var dur=ve.duration||1;
+    var timelineSubs = ve.subtitles || [];
+    var shortsTimelineMode = isShortsMode() && ve.videoClips && ve.videoClips.length && ve.videoClips.some(function(c) { return c._shorts; });
+    if (shortsTimelineMode) {
+      var mapped = [];
+      var offset = 0;
+      ve.videoClips.forEach(function(c, ci) {
+        var clipDur = Math.max(0.5, c.end - c.start);
+        (ve.subtitles || []).forEach(function(s, si) {
+          var st0 = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+          var en0 = s.end_seconds != null ? s.end_seconds : (s.end || st0 + 2);
+          if (en0 <= c.start || st0 >= c.end) return;
+          var st = Math.max(c.start, st0);
+          var en = Math.min(c.end, en0);
+          mapped.push(Object.assign({}, s, {
+            _origIdx: si,
+            _sourceStart: st,
+            _sourceEnd: en,
+            _shortsClip: ci,
+            start_seconds: offset + (st - c.start),
+            end_seconds: offset + (en - c.start)
+          }));
+        });
+        offset += clipDur;
+      });
+      timelineSubs = mapped;
+      dur = offset || 1;
+    }
 
     // 줌 적용 (CSS transform — 리플로우 없음)
     var tracksArea=$("veTracksArea");
@@ -4981,9 +5418,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     }
     if(timeline) { timeline.style.overflowX = "auto"; }
     _phCache.dirty = true;
-    if(!ve.subtitles.length){blocks.innerHTML="<div style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);'>자막 없음</div>";return;}
+    if(!timelineSubs.length){blocks.innerHTML="<div style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);'>자막 없음</div>";return;}
     var html="";
-    ve.subtitles.forEach(function(s,i){
+    timelineSubs.forEach(function(s,i){
       var st=s.start_seconds!=null?s.start_seconds:(s.start||0);
       var en=s.end_seconds!=null?s.end_seconds:(s.end||st+2);
       // 영상 끝 이후 자막은 스킵
@@ -4994,7 +5431,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       // 자막(T1) - 시안/틸 계열
       var colors=["#06b6d4","#0891b2","#0e7490","#22d3ee","#67e8f9","#155e75"];
       var color=colors[i%colors.length];
-      html+="<div title='"+escapeHtml(s.text||"")+"' style='position:absolute;top:4px;bottom:4px;left:"+left+";width:"+width+";background:"+color+"50;border:1px solid "+color+"70;border-radius:3px;cursor:grab;display:flex;align-items:center;justify-content:center;overflow:hidden;' data-idx='"+i+"'>" +
+      var origIdx = s._origIdx != null ? s._origIdx : i;
+      html+="<div title='"+escapeHtml(s.text||"")+"' style='position:absolute;top:4px;bottom:4px;left:"+left+";width:"+width+";background:"+color+"50;border:1px solid "+color+"70;border-radius:3px;cursor:"+(shortsTimelineMode?"pointer":"grab")+";display:flex;align-items:center;justify-content:center;overflow:hidden;' data-idx='"+origIdx+"' data-source-start='"+(s._sourceStart != null ? s._sourceStart : st)+"'>" +
         "<div class='trim-handle trim-left' style='width:5px;height:100%;cursor:col-resize;background:"+color+";border-radius:3px 0 0 3px;flex-shrink:0;opacity:0;transition:opacity 0.15s;'></div>" +
         "<div style='flex:1;min-width:0;padding:0 2px;font-size:10px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;text-align:center;line-height:1;'>"+escapeHtml((s.text||"").slice(0,15))+"</div>" +
         "<div class='trim-handle trim-right' style='width:5px;height:100%;cursor:col-resize;background:"+color+";border-radius:0 3px 3px 0;flex-shrink:0;opacity:0;transition:opacity 0.15s;'></div>" +
@@ -5008,10 +5446,11 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         var idx=parseInt(el.dataset.idx);
         selectClip(idx);
         var s=ve.subtitles[idx]; if(!s) return;
-        var video=$("veVideo"); if(video) video.currentTime=s.start_seconds!=null?s.start_seconds:(s.start||0);
+        var video=$("veVideo"); if(video) video.currentTime=parseFloat(el.dataset.sourceStart || (s.start_seconds!=null?s.start_seconds:(s.start||0)));
       });
       // 드래그: 블록 이동 또는 양쪽 트림
       el.addEventListener("mousedown",function(e){
+        if (shortsTimelineMode) return;
         e.preventDefault();
         var target = e.target;
         var isLeftTrim = target.classList.contains("trim-left");
@@ -5312,14 +5751,21 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     // 비디오 클립이 있으면 같은 구간으로 오디오도 잘라서 표시
     if (ve.videoClips && ve.videoClips.length > 1) {
       var html = "";
+      var totalShortDur = 0;
+      if (isShortsMode()) {
+        syncShortsVideoClips();
+        totalShortDur = ve.videoClips.reduce(function(sum, c) { return sum + Math.max(0.5, c.end - c.start); }, 0) || 1;
+      }
+      var cursor = 0;
       ve.videoClips.forEach(function(c, i) {
-        var left = (c.start / dur * 100).toFixed(2) + "%";
-        var width = ((c.end - c.start) / dur * 100).toFixed(2) + "%";
+        var segDur = Math.max(0.5, c.end - c.start);
+        var left = isShortsMode() ? (cursor / totalShortDur * 100).toFixed(2) + "%" : (c.start / dur * 100).toFixed(2) + "%";
+        var width = isShortsMode() ? (segDur / totalShortDur * 100).toFixed(2) + "%" : ((c.end - c.start) / dur * 100).toFixed(2) + "%";
+        cursor += segDur;
         // 오디오(A1) - 인디고 계열
         var colors = ["rgba(99,102,241,0.5)", "rgba(79,70,229,0.5)", "rgba(129,140,248,0.5)"];
         var color = colors[i % colors.length];
         // 구간 안에 웨이브폼 바
-        var segDur = c.end - c.start;
         var barCount = Math.max(5, Math.floor(segDur * 3));
         var bars = "";
         for (var b = 0; b < barCount; b++) {
@@ -5387,9 +5833,10 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (window.nbBridge && window.nbBridge.isLocalDev) { await doExport(true); return; }
     // 횟수 체크
     if (!state.loggedIn) return showModal("로그인 필요", "먼저 메이킷 계정에 로그인해주세요.", "확인");
-    var wq = await checkWriteLimit();
-    if (!wq.canUse) return showModal("한도 초과", "이번 달 사용 한도를 모두 사용했습니다.", "구독하기", function(){ bridge.openExternal("https://snsmakeit.com/programs"); });
-    showModal("횟수 차감 안내", "내보내기를 실행하면 1회가 차감됩니다.\n진행하시겠습니까?", "진행", async function(){ await doExport(); });
+    var vq = await checkVideoLimit();
+    if (!vq.canUse) return showModal("영상 한도 초과", "이번 달 영상 편집 한도(" + vq.limit + "회)를 모두 사용했습니다.\n플랜을 업그레이드하면 더 많이 사용할 수 있습니다.", "구독하기", function(){ bridge.openExternal("https://snsmakeit.com/programs"); });
+    var videoLeftText = vq.limit >= 99999 ? "제한 없음" : (vq.remaining + " / " + vq.limit + "회");
+    showModal("횟수 차감 안내", "내보내기를 실행하면 영상 편집 1회가 차감됩니다.\n남은 영상 횟수: " + videoLeftText + "\n진행하시겠습니까?", "진행", async function(){ await doExport(); });
     return;
   });
   async function doExport(skipCharge){
@@ -5398,12 +5845,19 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var result;
       var aspectMap = { portrait: "9:16", landscape: "16:9", square: "1:1" };
       var aspect = aspectMap[ve.type] || "16:9";
+      var outputResolution = (($("veExportRes") || {}).value || "1080");
+      if (outputResolution === "original") outputResolution = "1080";
       var isPortrait = ve.type === "portrait" || ve.type === "square";
 
       if (isPortrait) {
         // 세로/정사각: 하이라이트 자동 생성 (segments 없으면 자막 기반)
         var clips = [];
-        if (ve.segments.length > 0) {
+        buildShortsRecommendations();
+        if (ve.recommendedClips && ve.recommendedClips.length > 0) {
+          clips = ve.recommendedClips.slice(0, ve.clipCount || 5).map(function(s) {
+            return Object.assign({}, s, { subtitles: ve.subEnabled ? (s.subtitles || getSubsInRange(s.start_seconds || 0, s.end_seconds || 0)) : [] });
+          });
+        } else if (ve.segments.length > 0) {
           clips = ve.segments.slice(0, ve.clipCount || 5).map(function(s) {
             return Object.assign({}, s, { title: s.hook || s.hook_text || s.title || "", subtitles: ve.subEnabled ? (s.subtitles || []) : [] });
           });
@@ -5450,13 +5904,13 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           }
         } catch (e) { console.warn("[쇼츠] AI 제목 생성 실패:", e); }
         setProg("veExportPct", "veExportBar", "veExportLabel", 10, "쇼츠 렌더링 중...");
-        result = await bridge.videoRenderShorts({ inputPath: ve.filePath, clips: clips, outputDir: ve._outputDir || null, template: "minimal", subtitlesEnabled: ve.subEnabled, aspect: aspect, silenceRemove: ve.silenceRemove });
+        result = await bridge.videoRenderShorts({ inputPath: ve.filePath, clips: clips, outputDir: ve._outputDir || null, template: "minimal", subtitlesEnabled: ve.subEnabled, aspect: aspect, outputResolution: outputResolution, silenceRemove: ve.silenceRemove, captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1} });
       } else {
-        result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15},aspect:aspect,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null});
+        result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1},aspect:aspect,outputResolution:outputResolution,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null});
       }
       if(!result.ok) throw new Error(result.error||"렌더링 실패");
       // 횟수 차감 (로컬 dev 모드는 스킵)
-      if (!skipCharge && typeof markWriteUsed === "function") await markWriteUsed();
+      if (!skipCharge && typeof markFeatureUsed === "function") await markFeatureUsed("video", "데스크톱 영상 편집");
       goStep(5); var s5=$("veStep5");
       if(isPortrait&&result.results){
         s5.innerHTML="<div class='panel-header'><h1 style='font-size:18px;'>"+result.results.length+"개 쇼츠 완성</h1><p class='panel-sub'>AI가 생성한 제목과 설명이 포함됩니다</p></div>"+
@@ -6054,24 +6508,6 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 
   // 수동 글쓰기 횟수 관리
   const WRITE_LIMIT_KEY = "_manual_write_used";
-  async function checkWriteLimit() {
-    if (!state.user) return { canUse: false, used: 0, limit: 0, remaining: 0 };
-    var u = state.user;
-    if (u.admin) return { canUse: true, used: 0, limit: 99999, remaining: 99999 };
-    var limit = u.trial ? (u.trial_limit || 5) : (u.monthly_limit || 5);
-    var used = u.trial ? (u.trial_used || 0) : (u.monthly_used || 0);
-    var remaining = Math.max(0, limit - used);
-    return { canUse: remaining > 0, used, limit, remaining };
-  }
-
-  async function markWriteUsed() {
-    // 로컬 상태 업데이트 (사이드바 반영)
-    if (state.user) {
-      if (state.user.trial) { state.user.trial_used = (state.user.trial_used || 0) + 1; }
-      else { state.user.monthly_used = (state.user.monthly_used || 0) + 1; }
-    }
-    updateSidebarQuota();
-  }
 
   // 횟수 차감 확인 모달
   function showQuotaConfirm(featureName, onConfirm) {

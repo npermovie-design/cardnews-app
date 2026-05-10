@@ -7,14 +7,14 @@ const TOSS_API = "https://api.tosspayments.com/v1";
 
 // [보안 수정] 서버 사이드 금액 → 포인트 매핑 (클라이언트가 포인트를 지정하지 못하게)
 const PLAN_POINTS: Record<string, { amount: number; points: number }> = {
-  starter:        { amount:  5900, points:  600 },
-  basic:          { amount: 11000, points: 1300 },
-  standard:       { amount: 19000, points: 2400 },
-  plus:           { amount: 29000, points: 3800 },
-  pro:            { amount: 49000, points: 6500 },
-  basic_monthly:  { amount:  9900, points: 1200 },
-  pro_monthly:    { amount: 24900, points: 2800 },
-  premium_monthly:{ amount: 44900, points: 5500 },
+  starter:         { amount:  5900, points: 20 },
+  basic:           { amount: 11000, points: 50 },
+  standard:        { amount: 19000, points: 80 },
+  plus:            { amount: 29000, points: 126 },
+  pro:             { amount: 49000, points: 216 },
+  basic_monthly:   { amount:  9900, points: 30 },
+  pro_monthly:     { amount: 19900, points: 100 },
+  business_monthly:{ amount: 39900, points: 500 },
 };
 
 const corsHeaders = {
