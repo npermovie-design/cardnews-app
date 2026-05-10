@@ -88,6 +88,9 @@ export default function AdminPage({ C, user: adminUser }) {
   const [aiLogsLoading, setAiLogsLoading] = useState(false);
   const [guestSearch, setGuestSearch] = useState("");
   const [postSearch, setPostSearch] = useState("");
+  const [postPage, setPostPage] = useState(1);
+  const [memberPage, setMemberPage] = useState(1);
+  const PAGE_SIZE = 20;
   const [dailySignups, setDailySignups] = useState([]);
   const [dailyAiUsage, setDailyAiUsage] = useState([]);
   // ── 통합 회원관리: 구독/체험권/횟수내역 ──
@@ -320,7 +323,7 @@ export default function AdminPage({ C, user: adminUser }) {
         showToast("영상 수정 완료!");
       } else {
         await saveVideo(finalForm);
-        showToast("영상 등록 완료! 🎬");
+        showToast("영상 등록 완료!");
       }
       resetVidForm(); setVidEdit(null); setVidFormOpen(false);
       loadVideos();
@@ -448,7 +451,7 @@ export default function AdminPage({ C, user: adminUser }) {
     if (!isAdminRole) return (
       <div style={{ maxWidth: 400, margin: "80px auto", padding: "0 24px" }}>
         <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 20, padding: "36px 32px", boxShadow: C.shadow, textAlign: "center" }}>
-          <div style={{ fontSize: 36, marginBottom: 8 }}>🚫</div>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom:8 }}><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
           <h2 style={{ color: C.text, fontSize: 20, fontWeight: 900, marginBottom: 8 }}>접근 권한 없음</h2>
           <p style={{ color: C.muted, fontSize: 14 }}>관리자 권한이 있는 계정으로 로그인해 주세요.</p>
         </div>
@@ -462,11 +465,13 @@ export default function AdminPage({ C, user: adminUser }) {
     : members;
 
   const usage = getAllUsage();
-  const shellBg = isDark ? "#0f0d1f" : "#f6f7fb";
+  const shellBg = isDark ? "#0f0d1f" : "#f5f6fa";
   const panelBg = isDark ? "rgba(255,255,255,0.045)" : "#fff";
-  const panelBorder = isDark ? "rgba(255,255,255,0.08)" : "#e6e8f0";
+  const panelBorder = isDark ? "rgba(255,255,255,0.06)" : "#eef0f6";
   const subtleBg = isDark ? "rgba(255,255,255,0.035)" : "#f8f9fc";
-  const activeBg = isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)";
+  const activeBg = isDark ? "rgba(84,111,255,0.12)" : "rgba(84,111,255,0.08)";
+  const accent = "#546FFF";
+  const cardStyle = { padding: "20px 22px", borderRadius: 16, background: panelBg, border: `1px solid ${panelBorder}`, boxShadow: isDark ? "none" : "0 2px 12px rgba(0,0,0,0.04)" };
   const adminTitle = {stats:"통계 대시보드", visitors:"접속 분석", members:"회원 관리", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백"}[tab] || tab;
   const adminDesc = {
     stats: "회원, 게시글, AI 사용량을 한 화면에서 확인합니다.",
@@ -490,7 +495,7 @@ export default function AdminPage({ C, user: adminUser }) {
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif", background: shellBg }}>
       {/* 토스트 */}
       {toast && (
-        <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: "#22c55e", color: "#fff", padding: "12px 20px", borderRadius: 12, fontSize: 14, fontWeight: 700, boxShadow: "0 4px 20px rgba(0,0,0,0.2)", animation: "fadein 0.2s" }}>
+        <div style={{ position: "fixed", top: 24, right: 24, zIndex: 9999, background: accent, color: "#fff", padding: "14px 24px", borderRadius: 12, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(84,111,255,0.3)", animation: "fadein 0.2s", fontFamily: "inherit" }}>
           {toast}
         </div>
       )}
@@ -511,66 +516,125 @@ export default function AdminPage({ C, user: adminUser }) {
 
       {/* ── 사이드바 ── */}
       <aside style={{
-        width: 220, flexShrink: 0, padding: "20px 12px",
+        width: 230, flexShrink: 0, padding: "24px 16px",
         background: isDark ? "rgba(12,10,26,0.96)" : "#fff",
-        borderRight: `1px solid ${panelBorder}`,
         overflowY: "auto", position: "sticky", top: 0, height: "100vh",
-        ...(typeof window !== "undefined" && window.innerWidth < 768 ? { position: "fixed", left: sideOpen ? 0 : -240, zIndex: 1000, transition: "left 0.2s", boxShadow: sideOpen ? "4px 0 20px rgba(0,0,0,0.2)" : "none" } : {}),
+        ...(typeof window !== "undefined" && window.innerWidth < 768 ? { position: "fixed", left: sideOpen ? 0 : -250, zIndex: 1000, transition: "left 0.25s", boxShadow: sideOpen ? "4px 0 24px rgba(0,0,0,0.12)" : "none" } : {}),
       }}>
         {/* 로고 */}
-        <div style={{ padding: "8px 10px 18px", borderBottom: `1px solid ${panelBorder}`, marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>SNS메이킷</div>
-              <div style={{ fontSize: 10, color: C.muted, marginTop: 1 }}>Admin Console</div>
+        <div style={{ padding: "0 8px 24px", marginBottom: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${accent}, #8b5cf6)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
             </div>
-          </div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 12, background: subtleBg, padding: "8px 10px", borderRadius: 8, border: `1px solid ${panelBorder}` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}><span>회원</span><b style={{ color: C.text }}>{loadingMembers ? "..." : members.length.toLocaleString()}명</b></div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}><span>게시글</span><b style={{ color: C.text }}>{posts.length.toLocaleString()}개</b></div>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: C.text, letterSpacing: -0.3 }}>SNS메이킷</div>
+              <div style={{ fontSize: 10, color: C.muted, fontWeight: 500 }}>Admin Console</div>
+            </div>
           </div>
         </div>
 
-        {/* 메뉴 그룹 */}
-        {[
-          { group: "대시보드", items: [["stats", "S", "통계"], ["visitors", "V", "접속 분석"]] },
-          { group: "회원", items: [["members", "M", "회원 관리"], ["guest", "G", "비회원"]] },
-          { group: "콘텐츠", items: [["posts", "T", "게시글"], ["board", "B", "게시판"]] },
-          { group: "고객", items: [["inquiries", "Q", "문의"], ["appFeedback", "F", "앱 피드백"]] },
-        ].map(({ group, items }) => (
-          <div key={group} style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: C.muted, textTransform: "uppercase", padding: "0 10px", marginBottom: 4, letterSpacing: 1.5 }}>{group}</div>
-            {items.map(([id, icon, label]) => {
-              const active = tab === id;
-              return (
-                <button key={id} onClick={() => { setTab(id); setSideOpen(false); }} style={{
-                  width: "100%", padding: "8px 10px", borderRadius: 8, border: "none", cursor: "pointer",
-                  textAlign: "left", fontSize: 12, fontWeight: active ? 700 : 500, fontFamily: "inherit",
-                  background: active ? activeBg : "transparent",
-                  color: active ? C.purpleL : (isDark ? "rgba(255,255,255,0.55)" : "#666"),
-                  borderLeft: active ? "3px solid #3b82f6" : "3px solid transparent",
-                  marginBottom: 1, transition: "all 0.12s", display: "flex", alignItems: "center", gap: 8,
-                }}>
-                  <span style={{ width: 20, height: 20, borderRadius: 6, background: active ? "rgba(59,130,246,0.15)" : (isDark ? "rgba(255,255,255,0.06)" : "#f3f4f6"), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: active ? "#3b82f6" : C.muted, flexShrink: 0 }}>{icon}</span>
-                  {label}
-                </button>
-              );
-            })}
+        {/* 메뉴 */}
+        {(() => {
+          const recentMemberCnt = members.filter(m => { const d = m.join_date||m.created_at; return d && Date.now()-new Date(d).getTime()<7*86400000; }).length;
+          const menuItems = [
+            { group: "대시보드", items: [
+              ["stats", "통계", "M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"],
+              ["visitors", "접속 분석", "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"],
+            ]},
+            { group: "회원", items: [
+              ["members", "회원 관리", "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z", recentMemberCnt||null],
+              ["guest", "비회원", "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"],
+            ]},
+            { group: "콘텐츠", items: [
+              ["posts", "게시글", "M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2", posts.length||null],
+              ["board", "게시판", "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"],
+            ]},
+            { group: "고객", items: [
+              ["inquiries", "문의", "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"],
+              ["appFeedback", "앱 피드백", "M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"],
+            ]},
+          ];
+          return menuItems.map(({ group, items }) => (
+            <div key={group} style={{ marginBottom: 20 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: isDark ? "rgba(255,255,255,0.3)" : "#a0aec0", textTransform: "uppercase", padding: "0 12px", marginBottom: 6, letterSpacing: 1.2 }}>{group}</div>
+              {items.map(([id, label, pathD, badge]) => {
+                const active = tab === id;
+                return (
+                  <button key={id} onClick={() => { setTab(id); setSideOpen(false); }} style={{
+                    width: "100%", padding: "10px 12px", borderRadius: 10, border: "none", cursor: "pointer",
+                    textAlign: "left", fontSize: 13, fontWeight: active ? 600 : 500, fontFamily: "inherit",
+                    background: active ? activeBg : "transparent",
+                    color: active ? accent : (isDark ? "rgba(255,255,255,0.55)" : "#64748b"),
+                    marginBottom: 2, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 10,
+                  }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={active ? accent : (isDark ? "rgba(255,255,255,0.35)" : "#94a3b8")} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={pathD} /></svg>
+                    <span style={{ flex:1 }}>{label}</span>
+                    {badge && <span style={{ fontSize:10, fontWeight:700, minWidth:20, height:20, borderRadius:99, display:"flex", alignItems:"center", justifyContent:"center", background:active?accent+"20":"rgba(84,111,255,0.08)", color:active?accent:(isDark?"rgba(255,255,255,0.4)":"#94a3b8") }}>{badge}</span>}
+                  </button>
+                );
+              })}
+            </div>
+          ));
+        })()}
+
+        {/* 하단 관리자 프로필 */}
+        <div style={{ marginTop: "auto", padding: "16px 12px", borderTop: `1px solid ${panelBorder}` }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+            <div style={{ width:36, height:36, borderRadius:99, background:`linear-gradient(135deg, ${accent}, #8b5cf6)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#fff", flexShrink:0 }}>
+              {(adminUser?.nick||adminUser?.email||"A")[0].toUpperCase()}
+            </div>
+            <div style={{ minWidth:0 }}>
+              <div style={{ fontSize:13, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{adminUser?.nick||"관리자"}</div>
+              <div style={{ fontSize:10, color:isDark?"rgba(255,255,255,0.35)":"#94a3b8" }}>{adminUser?.email?.slice(0,20)||"Admin"}</div>
+            </div>
           </div>
-        ))}
+          <div style={{ fontSize: 11, color: C.muted }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}><span>회원</span><b style={{ color: C.text, fontWeight: 700 }}>{loadingMembers ? "..." : members.length.toLocaleString()}명</b></div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}><span>게시글</span><b style={{ color: C.text, fontWeight: 700 }}>{posts.length.toLocaleString()}개</b></div>
+          </div>
+        </div>
       </aside>
 
       {/* ── 메인 콘텐츠 ── */}
-      <main style={{ flex: 1, padding: "28px 28px 80px", overflowY: "auto", background: shellBg }}>
-        {/* 상단 타이틀 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 22, gap: 16, flexWrap: "wrap", background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 14, padding: "18px 20px", boxShadow: isDark ? "none" : "0 10px 30px rgba(15,23,42,0.04)" }}>
+      <main style={{ flex: 1, padding: "32px 36px 80px", overflowY: "auto", background: shellBg }}>
+        {/* 상단 헤더 */}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28, gap: 16, flexWrap: "wrap" }}>
           <div>
-            <h2 style={{ color: C.text, fontSize: 21, fontWeight: 900, margin: 0 }}>{adminTitle}</h2>
-            <div style={{ color: C.muted, fontSize: 13, marginTop: 4 }}>{adminDesc}</div>
+            <div style={{ fontSize:12, color:isDark?"rgba(255,255,255,0.3)":"#94a3b8", fontWeight:500, marginBottom:4 }}>
+              {new Date().toLocaleDateString("ko-KR",{year:"numeric",month:"long",day:"numeric",weekday:"long"})}
+            </div>
+            <h2 style={{ color: C.text, fontSize: 24, fontWeight: 800, margin: 0, letterSpacing: -0.3 }}>{adminTitle}</h2>
+            <div style={{ color: isDark ? "rgba(255,255,255,0.4)" : "#94a3b8", fontSize: 13, marginTop: 4, fontWeight: 400 }}>{adminDesc}</div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ padding: "7px 10px", borderRadius: 999, background: "rgba(34,197,94,0.1)", color: "#16a34a", border: "1px solid rgba(34,197,94,0.18)", fontSize: 12, fontWeight: 800 }}>관리자 인증됨</span>
-            <button onClick={refreshAdminData} style={{ padding: "8px 12px", borderRadius: 9, border: `1px solid ${panelBorder}`, background: subtleBg, color: C.text, fontSize: 12, fontWeight: 800, cursor: "pointer" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* CSV 내보내기 (회원 탭) */}
+            {tab === "members" && (
+              <button onClick={() => {
+                const csv = ["닉네임,이메일,플랜,잔여횟수,가입일"];
+                members.forEach(m => {
+                  const sub = subs.find(s=>s.uid===m.uid);
+                  csv.push([m.nick||"-", m.email||"-", sub?.product_name||"Free", Math.floor(m.points||0), (m.join_date||m.created_at||"-").slice(0,10)].map(v=>`"${v}"`).join(","));
+                });
+                const blob = new Blob(["\uFEFF"+csv.join("\n")], {type:"text/csv;charset=utf-8"});
+                const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
+                a.download = `members_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+                showToast("CSV 내보내기 완료");
+              }} style={{
+                padding:"9px 16px", borderRadius:10, border:`1px solid ${panelBorder}`,
+                background:panelBg, color:isDark?"rgba(255,255,255,0.6)":"#64748b", fontSize:12, fontWeight:600,
+                cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:6,
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                CSV
+              </button>
+            )}
+            <button onClick={refreshAdminData} style={{
+              padding: "9px 18px", borderRadius: 10, border: "none",
+              background: accent, color: "#fff", fontSize: 13, fontWeight: 600,
+              cursor: "pointer", fontFamily: "inherit",
+              boxShadow: "0 4px 14px rgba(84,111,255,0.25)",
+            }}>
               새로고침
             </button>
           </div>
@@ -600,237 +664,322 @@ export default function AdminPage({ C, user: adminUser }) {
         const topList = Object.entries(topPosters).sort((a,b)=>b[1]-a[1]).slice(0,10);
         const popularPosts = [...posts].sort((a,b) => (b.views||0)-(a.views||0)).slice(0,10);
 
-        const cardStyle = { padding:"18px 20px", borderRadius:12, background:panelBg, border:`1px solid ${panelBorder}`, flex:1, minWidth:140, boxShadow:isDark?"none":"0 10px 24px rgba(15,23,42,0.035)" };
-        const numStyle = { fontSize:28, fontWeight:900, color:C.purpleL||"#3b82f6", marginBottom:4 };
-        const labelStyle = { fontSize:12, color:C.muted, fontWeight:600 };
+        // AI 사용 분석 데이터
+        const aiOnly = aiLogs.filter(l => l.delta < 0);
+        const byReason = {};
+        aiOnly.forEach(l => { const r = l.reason || "기타"; byReason[r] = (byReason[r]||0) + 1; });
+        const totalAiUsage = aiOnly.length;
+        const reasonEntries = Object.entries(byReason).sort((a,b)=>b[1]-a[1]);
+        const donutColors = ["#546FFF","#FFab40","#FF6b6b","#8b5cf6","#06b6d4","#22c55e","#f59e0b","#ec4899"];
+
+        // SVG 라인 차트 헬퍼
+        const makeLine = (data, w, h, pad) => {
+          if (!data.length) return "";
+          const max = Math.max(...data.map(d=>d.count),1);
+          const step = (w - pad*2) / Math.max(data.length-1,1);
+          return data.map((d,i) => {
+            const x = pad + i*step;
+            const y = h - pad - (d.count/max)*(h-pad*2);
+            return `${i===0?"M":"L"}${x.toFixed(1)},${y.toFixed(1)}`;
+          }).join(" ");
+        };
+        const makeArea = (data, w, h, pad) => {
+          const line = makeLine(data,w,h,pad);
+          if (!line) return "";
+          const step = (w - pad*2) / Math.max(data.length-1,1);
+          return `${line} L${(pad+(data.length-1)*step).toFixed(1)},${(h-pad).toFixed(1)} L${pad},${(h-pad).toFixed(1)} Z`;
+        };
+
+        const cW = 520, cH = 180, cPad = 30;
 
         return (
         <div>
-          {/* 요약 카드 */}
-          <div style={{ display:"flex", gap:12, flexWrap:"wrap", marginBottom:24 }}>
+          {/* ── 요약 카드 4열 ── */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))", gap:18, marginBottom:28 }}>
             {[
-              { n: totalMembers, l: "전체 회원", color: "#3b82f6" },
-              { n: recentMembers, l: "이번주 신규", color: "#22c55e" },
-              { n: onlineCount||0, l: "실시간 접속", color: "#f59e0b" },
-              { n: totalPosts, l: "전체 게시글", color: "#8b5cf6" },
-              { n: todayPosts, l: "오늘 게시글", color: "#ec4899" },
-              { n: totalViews.toLocaleString(), l: "총 조회수", color: "#06b6d4" },
-              { n: totalLikes, l: "총 좋아요", color: "#f59e0b" },
-              { n: totalComments, l: "총 댓글", color: "#10b981" },
+              { n: totalMembers.toLocaleString()+"+", l: "전체 회원", sub: recentMembers ? `+${recentMembers} 이번주` : null, icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z", color:"#546FFF", bg:"rgba(84,111,255,0.08)" },
+              { n: (onlineCount||0).toLocaleString()+"+", l: "실시간 접속", sub: null, icon: "M13 10V3L4 14h7v7l9-11h-7z", color:"#22c55e", bg:"rgba(34,197,94,0.08)" },
+              { n: totalPosts.toLocaleString()+"+", l: "전체 게시글", sub: todayPosts ? `+${todayPosts} 오늘` : null, icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", color:"#f59e0b", bg:"rgba(245,158,11,0.08)" },
+              { n: totalAiUsage.toLocaleString()+"+", l: "AI 사용량", sub: null, icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z", color:"#8b5cf6", bg:"rgba(139,92,246,0.08)" },
             ].map((s,i) => (
-              <div key={i} style={cardStyle}>
-                <div style={{ ...labelStyle, marginBottom: 10 }}>{s.l}</div>
-                <div style={{ ...numStyle, color: s.color }}>{s.n}</div>
+              <div key={i} style={{ padding:"22px 24px", borderRadius:16, background:panelBg, border:`1px solid ${panelBorder}`, boxShadow: isDark ? "none" : "0 1px 8px rgba(0,0,0,0.04)", transition:"box-shadow 0.2s" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
+                  <div style={{ width:48, height:48, borderRadius:14, background:s.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={s.color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={s.icon}/></svg>
+                  </div>
+                  {s.sub && <span style={{ fontSize:11, fontWeight:600, color:"#22c55e", background:"rgba(34,197,94,0.08)", padding:"3px 10px", borderRadius:99 }}>{s.sub}</span>}
+                </div>
+                <div style={{ fontSize:28, fontWeight:800, color:C.text, letterSpacing:-0.5, lineHeight:1 }}>{s.n}</div>
+                <div style={{ fontSize:12, color:isDark?"rgba(255,255,255,0.4)":"#94a3b8", fontWeight:500, marginTop:6 }}>{s.l}</div>
               </div>
             ))}
           </div>
 
-          {/* 카테고리별 게시글 */}
-          <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginBottom:24 }}>
-            <div style={{ ...cardStyle, minWidth:280 }}>
-              <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:14 }}>📂 카테고리별 게시글</div>
-              {Object.entries(catStats).sort((a,b)=>b[1]-a[1]).map(([cat,cnt]) => (
-                <div key={cat} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-                  <span style={{ fontSize:13, fontWeight:700, color:C.text, minWidth:80 }}>{cat}</span>
-                  <div style={{ flex:1, height:8, borderRadius:4, background:isDark?"rgba(255,255,255,0.06)":"#f0f0f0", overflow:"hidden" }}>
-                    <div style={{ height:"100%", borderRadius:4, background:"#3b82f6", width:`${Math.max(3,(cnt/Math.max(...Object.values(catStats)))*100)}%` }}/>
+          {/* ── Reports 라인차트 + Analytics 도넛 ── */}
+          <div style={{ display:"grid", gridTemplateColumns:"1.8fr 1fr", gap:18, marginBottom:24 }}>
+            {/* Reports — SVG 라인 차트 */}
+            <div style={{ ...cardStyle, padding:"24px 28px" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+                <div style={{ fontSize:16, fontWeight:800, color:C.text }}>Reports</div>
+                <div style={{ display:"flex", gap:16, fontSize:11, color:isDark?"rgba(255,255,255,0.4)":"#94a3b8" }}>
+                  <span style={{ display:"flex", alignItems:"center", gap:5 }}><span style={{ width:8, height:8, borderRadius:99, background:"#546FFF", display:"inline-block" }}/>가입자</span>
+                  <span style={{ display:"flex", alignItems:"center", gap:5 }}><span style={{ width:8, height:8, borderRadius:99, background:"#f59e0b", display:"inline-block" }}/>AI 사용</span>
+                </div>
+              </div>
+              {dailySignups.length > 0 ? (
+                <svg viewBox={`0 0 ${cW} ${cH}`} style={{ width:"100%", height:180 }}>
+                  {/* 가로 그리드 */}
+                  {[0,1,2,3,4].map(i => {
+                    const y = cPad + i*(cH-cPad*2)/4;
+                    return <line key={i} x1={cPad} y1={y} x2={cW-cPad} y2={y} stroke={isDark?"rgba(255,255,255,0.06)":"#f0f0f0"} strokeWidth="1"/>;
+                  })}
+                  {/* 가입자 라인 */}
+                  <path d={makeArea(dailySignups,cW,cH,cPad)} fill="rgba(84,111,255,0.06)" />
+                  <path d={makeLine(dailySignups,cW,cH,cPad)} fill="none" stroke="#546FFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  {/* AI 사용 라인 */}
+                  {dailyAiUsage.length > 0 && <>
+                    <path d={makeArea(dailyAiUsage,cW,cH,cPad)} fill="rgba(245,158,11,0.06)" />
+                    <path d={makeLine(dailyAiUsage,cW,cH,cPad)} fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6 3"/>
+                  </>}
+                  {/* 포인트 + 라벨 */}
+                  {dailySignups.map((d,i) => {
+                    const max = Math.max(...dailySignups.map(x=>x.count),1);
+                    const step = (cW-cPad*2)/Math.max(dailySignups.length-1,1);
+                    const x = cPad+i*step, y = cH-cPad-(d.count/max)*(cH-cPad*2);
+                    return <g key={i}>
+                      <circle cx={x} cy={y} r="4" fill="#546FFF" stroke={isDark?"#1a1730":"#fff"} strokeWidth="2"/>
+                      <text x={x} y={cH-8} textAnchor="middle" fontSize="10" fill={isDark?"rgba(255,255,255,0.35)":"#94a3b8"}>{d.date.slice(5)}</text>
+                      {d.count > 0 && <text x={x} y={y-10} textAnchor="middle" fontSize="10" fontWeight="700" fill="#546FFF">{d.count}</text>}
+                    </g>;
+                  })}
+                </svg>
+              ) : (
+                <div style={{ height:180, display:"flex", alignItems:"center", justifyContent:"center", color:C.muted, fontSize:13 }}>데이터 없음</div>
+              )}
+            </div>
+
+            {/* Analytics — 도넛 차트 */}
+            <div style={{ ...cardStyle, padding:"24px 28px", display:"flex", flexDirection:"column" }}>
+              <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:18 }}>Analytics</div>
+              {reasonEntries.length > 0 ? (() => {
+                const total = reasonEntries.reduce((s,e)=>s+e[1],0);
+                let cumAngle = 0;
+                const arcs = reasonEntries.slice(0,6).map(([r,c],i) => {
+                  const pct = c/total;
+                  const start = cumAngle;
+                  cumAngle += pct*360;
+                  const end = cumAngle;
+                  const sr = start*Math.PI/180, er = end*Math.PI/180;
+                  const cx=80, cy=80, R=65, r2=40;
+                  const x1=cx+R*Math.sin(sr), y1=cy-R*Math.cos(sr);
+                  const x2=cx+R*Math.sin(er), y2=cy-R*Math.cos(er);
+                  const x3=cx+r2*Math.sin(er), y3=cy-r2*Math.cos(er);
+                  const x4=cx+r2*Math.sin(sr), y4=cy-r2*Math.cos(sr);
+                  const large = pct > 0.5 ? 1 : 0;
+                  return <path key={i} d={`M${x1},${y1} A${R},${R} 0 ${large} 1 ${x2},${y2} L${x3},${y3} A${r2},${r2} 0 ${large} 0 ${x4},${y4} Z`} fill={donutColors[i%donutColors.length]}/>;
+                });
+                const topPct = total > 0 ? Math.round((reasonEntries[0][1]/total)*100) : 0;
+                return <>
+                  <div style={{ display:"flex", justifyContent:"center", position:"relative" }}>
+                    <svg viewBox="0 0 160 160" style={{ width:140, height:140 }}>{arcs}</svg>
+                    <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", textAlign:"center" }}>
+                      <div style={{ fontSize:26, fontWeight:900, color:C.text }}>{topPct}%</div>
+                      <div style={{ fontSize:10, color:isDark?"rgba(255,255,255,0.4)":"#94a3b8" }}>{reasonEntries[0][0].length>6?reasonEntries[0][0].slice(0,6)+"..":reasonEntries[0][0]}</div>
+                    </div>
                   </div>
-                  <span style={{ fontSize:12, fontWeight:700, color:C.purpleL||"#3b82f6", minWidth:30, textAlign:"right" }}>{cnt}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* 활발한 작성자 TOP10 */}
-            <div style={{ ...cardStyle, minWidth:280 }}>
-              <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:14 }}>🏆 활발한 작성자 TOP10</div>
-              {topList.map(([nick,cnt],i) => (
-                <div key={nick} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-                  <span style={{ fontSize:13, fontWeight:900, color:i<3?"#f59e0b":C.muted, minWidth:20 }}>{i+1}</span>
-                  <span style={{ fontSize:13, fontWeight:700, color:C.text, flex:1 }}>{nick}</span>
-                  <span style={{ fontSize:12, fontWeight:700, color:C.purpleL||"#3b82f6" }}>{cnt}건</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 인기 게시글 TOP10 */}
-          <div style={cardStyle}>
-            <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:14 }}>🔥 인기 게시글 TOP10 (조회수)</div>
-            <div style={{ overflowX:"auto" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
-                <thead>
-                  <tr style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}` }}>
-                    <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:600 }}>#</th>
-                    <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:600 }}>제목</th>
-                    <th style={{ padding:"8px 10px", textAlign:"right", color:C.muted, fontWeight:600 }}>조회</th>
-                    <th style={{ padding:"8px 10px", textAlign:"right", color:C.muted, fontWeight:600 }}>좋아요</th>
-                    <th style={{ padding:"8px 10px", textAlign:"right", color:C.muted, fontWeight:600 }}>댓글</th>
-                    <th style={{ padding:"8px 10px", textAlign:"left", color:C.muted, fontWeight:600 }}>작성자</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {popularPosts.map((p,i) => (
-                    <tr key={p.id} style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.05)":"#f3f4f6"}` }}>
-                      <td style={{ padding:"8px 10px", fontWeight:700, color:i<3?"#f59e0b":C.muted }}>{i+1}</td>
-                      <td style={{ padding:"8px 10px", fontWeight:600, color:C.text, maxWidth:300, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</td>
-                      <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, color:"#06b6d4" }}>{(p.views||0).toLocaleString()}</td>
-                      <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, color:"#f59e0b" }}>{p.likes||0}</td>
-                      <td style={{ padding:"8px 10px", textAlign:"right", fontWeight:700, color:"#8b5cf6" }}>{(p.comments||[]).length}</td>
-                      <td style={{ padding:"8px 10px", color:C.muted }}>{p.nick}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* 검색엔진 노출 안내 */}
-          <div style={{ marginTop:24, padding:"18px 22px", borderRadius:14, background:isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)", border:`1px solid ${isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)"}` }}>
-            <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:10 }}>🔍 검색엔진 노출 현황</div>
-            <div style={{ fontSize:12, color:C.muted, lineHeight:1.8 }}>
-              <b style={{color:C.text}}>Google Search Console</b> → <a href="https://search.google.com/search-console" target="_blank" rel="noopener noreferrer" style={{color:"#3b82f6"}}>바로가기</a> (snsmakeit.com 등록 필요)<br/>
-              <b style={{color:C.text}}>Naver Search Advisor</b> → <a href="https://searchadvisor.naver.com" target="_blank" rel="noopener noreferrer" style={{color:"#3b82f6"}}>바로가기</a> (네이버 검색 노출)<br/>
-              <b style={{color:C.text}}>Bing Webmaster</b> → <a href="https://www.bing.com/webmasters" target="_blank" rel="noopener noreferrer" style={{color:"#3b82f6"}}>바로가기</a> (해외 Bing 검색)<br/>
-              <b style={{color:C.text}}>Google Analytics</b> → <a href="https://analytics.google.com" target="_blank" rel="noopener noreferrer" style={{color:"#3b82f6"}}>바로가기</a> (실시간 트래픽, 유입 경로, 페이지뷰)<br/>
-              <br/>
-              <span style={{color:"#f59e0b",fontWeight:700}}>💡 추천:</span> Google Analytics를 연동하면 실시간 방문자, 페이지뷰, 유입 검색어, 검색엔진별 트래픽을 모두 확인할 수 있습니다.
-              GA4 추적 코드를 <code style={{background:isDark?"rgba(255,255,255,0.1)":"#f0f0f6",padding:"1px 6px",borderRadius:4}}>index.html</code>에 추가하면 됩니다.
-            </div>
-          </div>
-          {/* 기간별 추이 차트 */}
-          <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginTop:24, marginBottom:24 }}>
-            {/* 최근 7일 신규 가입자 */}
-            <div style={{ ...cardStyle, minWidth:280, flex:1 }}>
-              <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:14 }}>📈 최근 7일 신규 가입자</div>
-              {dailySignups.length === 0 ? (
-                <div style={{ color:C.muted, fontSize:12 }}>데이터 없음</div>
-              ) : (() => {
-                const maxVal = Math.max(...dailySignups.map(d => d.count), 1);
-                return (
-                  <div style={{ display:"flex", alignItems:"flex-end", gap:8, height:120 }}>
-                    {dailySignups.map(d => (
-                      <div key={d.date} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-                        <span style={{ fontSize:11, fontWeight:700, color:C.purpleL||"#3b82f6" }}>{d.count}</span>
-                        <div style={{ width:"100%", maxWidth:40, borderRadius:"6px 6px 0 0", background:"#3b82f6", height:`${Math.max((d.count/maxVal)*80, 4)}px`, transition:"height 0.3s" }}/>
-                        <span style={{ fontSize:9, color:C.muted, whiteSpace:"nowrap" }}>{d.date.slice(5)}</span>
-                      </div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:"6px 14px", marginTop:14, justifyContent:"center" }}>
+                    {reasonEntries.slice(0,6).map(([r],i) => (
+                      <span key={r} style={{ display:"flex", alignItems:"center", gap:5, fontSize:11, color:isDark?"rgba(255,255,255,0.5)":"#64748b" }}>
+                        <span style={{ width:8, height:8, borderRadius:99, background:donutColors[i%donutColors.length], display:"inline-block" }}/>{r.length>8?r.slice(0,8)+"..":r}
+                      </span>
                     ))}
                   </div>
-                );
-              })()}
-            </div>
-            {/* 최근 7일 AI 사용량 */}
-            <div style={{ ...cardStyle, minWidth:280, flex:1 }}>
-              <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:14 }}>🤖 최근 7일 AI 사용량</div>
-              {dailyAiUsage.length === 0 ? (
-                <div style={{ color:C.muted, fontSize:12 }}>데이터 없음</div>
-              ) : (() => {
-                const maxVal = Math.max(...dailyAiUsage.map(d => d.count), 1);
-                return (
-                  <div style={{ display:"flex", alignItems:"flex-end", gap:8, height:120 }}>
-                    {dailyAiUsage.map(d => (
-                      <div key={d.date} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:4 }}>
-                        <span style={{ fontSize:11, fontWeight:700, color:"#f59e0b" }}>{d.count}</span>
-                        <div style={{ width:"100%", maxWidth:40, borderRadius:"6px 6px 0 0", background:"linear-gradient(180deg,#f59e0b,#f97316)", height:`${Math.max((d.count/maxVal)*80, 4)}px`, transition:"height 0.3s" }}/>
-                        <span style={{ fontSize:9, color:C.muted, whiteSpace:"nowrap" }}>{d.date.slice(5)}</span>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
+                </>;
+              })() : (
+                <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", color:C.muted, fontSize:13 }}>AI 사용 데이터 없음</div>
+              )}
             </div>
           </div>
 
-          {/* AI 설정 현황 */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))", gap:14, marginBottom:24 }}>
+          {/* ── 보조 지표 4열 ── */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:14, marginBottom:24 }}>
             {[
-              { label: "비회원 무료 횟수", value: FREE_GUEST + "회", color: "#4ade80" },
-              { label: "회원 무료 횟수",   value: FREE_MEMBER + "회", color: "#a5b4fc" },
+              { n: todayPosts, l: "오늘 게시글", color:"#06b6d4" },
+              { n: totalViews.toLocaleString(), l: "총 조회수", color:"#546FFF" },
+              { n: totalLikes, l: "총 좋아요", color:"#f59e0b" },
+              { n: totalComments, l: "총 댓글", color:"#8b5cf6" },
+            ].map((s,i) => (
+              <div key={i} style={{ padding:"16px 20px", borderRadius:14, background:panelBg, border:`1px solid ${panelBorder}`, display:"flex", alignItems:"center", gap:14 }}>
+                <div style={{ width:10, height:36, borderRadius:5, background:s.color, flexShrink:0, opacity:0.7 }}/>
+                <div>
+                  <div style={{ fontSize:20, fontWeight:800, color:C.text }}>{s.n}</div>
+                  <div style={{ fontSize:11, color:isDark?"rgba(255,255,255,0.4)":"#94a3b8", fontWeight:500, marginTop:1 }}>{s.l}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── 인기 게시글 + 활발한 작성자 ── */}
+          <div style={{ display:"grid", gridTemplateColumns:"1.8fr 1fr", gap:18, marginBottom:24 }}>
+            {/* 인기 게시글 TOP10 */}
+            <div style={cardStyle}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+                <div style={{ fontSize:16, fontWeight:800, color:C.text }}>인기 게시글 TOP10</div>
+                <span style={{ fontSize:11, color:isDark?"rgba(255,255,255,0.3)":"#94a3b8" }}>조회수 기준</span>
+              </div>
+              <div style={{ overflowX:"auto" }}>
+                <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                  <thead>
+                    <tr>
+                      {["#","제목","조회","좋아요","댓글","작성자"].map((h,i) => (
+                        <th key={h} style={{ padding:"10px 12px", textAlign:i>=2&&i<=4?"right":"left", color:isDark?"rgba(255,255,255,0.35)":"#94a3b8", fontWeight:600, fontSize:12, borderBottom:`2px solid ${isDark?"rgba(255,255,255,0.06)":"#eef0f6"}` }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {popularPosts.map((p,i) => (
+                      <tr key={p.id} style={{ transition:"background 0.15s" }}
+                        onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.02)":"#fafbfe"}
+                        onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                        <td style={{ padding:"10px 12px", fontWeight:800, color:i<3?"#f59e0b":(isDark?"rgba(255,255,255,0.3)":"#c0c0c0"), fontSize:14 }}>{i+1}</td>
+                        <td style={{ padding:"10px 12px", fontWeight:600, color:C.text, maxWidth:260, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</td>
+                        <td style={{ padding:"10px 12px", textAlign:"right" }}>
+                          <span style={{ background:"rgba(6,182,212,0.1)", color:"#06b6d4", fontWeight:700, fontSize:12, padding:"3px 10px", borderRadius:99 }}>{(p.views||0).toLocaleString()}</span>
+                        </td>
+                        <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color:"#f59e0b", fontSize:12 }}>{p.likes||0}</td>
+                        <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color:"#8b5cf6", fontSize:12 }}>{(p.comments||[]).length}</td>
+                        <td style={{ padding:"10px 12px", color:isDark?"rgba(255,255,255,0.4)":"#94a3b8", fontSize:12 }}>{p.nick}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 활발한 작성자 + 카테고리 */}
+            <div style={{ display:"flex", flexDirection:"column", gap:18 }}>
+              <div style={cardStyle}>
+                <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:14 }}>활발한 작성자 TOP10</div>
+                {topList.length === 0 ? <div style={{ color:C.muted, fontSize:12 }}>데이터 없음</div> : topList.map(([nick,cnt],i) => (
+                  <div key={nick} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                    <div style={{ width:28, height:28, borderRadius:99, background:i<3?`${donutColors[i]}18`:isDark?"rgba(255,255,255,0.04)":"#f3f4f6", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color:i<3?donutColors[i]:(isDark?"rgba(255,255,255,0.35)":"#94a3b8"), flexShrink:0 }}>{i+1}</div>
+                    <span style={{ fontSize:13, fontWeight:600, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nick}</span>
+                    <span style={{ fontSize:12, fontWeight:700, color:accent }}>{cnt}건</span>
+                  </div>
+                ))}
+              </div>
+              {/* 카테고리별 게시글 — 가로 바 */}
+              <div style={cardStyle}>
+                <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:14 }}>카테고리별 게시글</div>
+                {Object.entries(catStats).sort((a,b)=>b[1]-a[1]).map(([cat,cnt],i) => {
+                  const maxCat = Math.max(...Object.values(catStats),1);
+                  return (
+                    <div key={cat} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                      <span style={{ fontSize:12, fontWeight:600, color:C.text, minWidth:60 }}>{cat}</span>
+                      <div style={{ flex:1, height:10, borderRadius:5, background:isDark?"rgba(255,255,255,0.04)":"#f0f1f5", overflow:"hidden" }}>
+                        <div style={{ height:"100%", borderRadius:5, background:i%2===0?"#546FFF":"#f59e0b", width:`${Math.max(4,(cnt/maxCat)*100)}%`, transition:"width 0.4s" }}/>
+                      </div>
+                      <span style={{ fontSize:12, fontWeight:700, color:accent, minWidth:36, textAlign:"right" }}>{cnt}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* ── AI 설정 현황 ── */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14, marginBottom:24 }}>
+            {[
+              { label: "비회원 무료 횟수", value: FREE_GUEST + "회", color: "#22c55e" },
+              { label: "회원 무료 횟수",   value: FREE_MEMBER + "회", color: "#546FFF" },
               { label: "AI 1회 기준",      value: "1회 차감", color: "#f59e0b" },
             ].map(r => (
-              <div key={r.label} style={{ padding:"18px 20px", borderRadius:14, background:isDark?"rgba(255,255,255,0.04)":"#fff", border:`1px solid ${isDark?"rgba(255,255,255,0.08)":"#e5e7eb"}` }}>
-                <div style={{ fontSize:22, fontWeight:900, color:r.color, marginBottom:4 }}>{r.value}</div>
-                <div style={{ fontSize:12, color:C.muted }}>{r.label}</div>
+              <div key={r.label} style={{ padding:"18px 22px", borderRadius:14, background:panelBg, border:`1px solid ${panelBorder}`, display:"flex", alignItems:"center", gap:14 }}>
+                <div style={{ width:42, height:42, borderRadius:12, background:`${r.color}14`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <div style={{ width:14, height:14, borderRadius:99, background:r.color }}/>
+                </div>
+                <div>
+                  <div style={{ fontSize:22, fontWeight:900, color:C.text }}>{r.value}</div>
+                  <div style={{ fontSize:11, color:isDark?"rgba(255,255,255,0.4)":"#94a3b8", marginTop:2 }}>{r.label}</div>
+                </div>
               </div>
             ))}
           </div>
 
-          {/* AI 사용 로그 */}
-          <div style={{ ...cardStyle }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <div style={{ fontSize:15, fontWeight:800, color:C.text }}>🤖 AI 사용 로그 (최근 200건)</div>
-              <button onClick={loadAiLogs} disabled={aiLogsLoading}
-                style={{ padding:"5px 12px", borderRadius:7, border:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, background:"transparent", color:C.muted, fontSize:11, cursor:"pointer" }}>
-                {aiLogsLoading?"로딩중...":"🔄 새로고침"}
-              </button>
+          {/* ── AI 사용 로그 ── */}
+          <div style={cardStyle}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+              <div style={{ fontSize:16, fontWeight:800, color:C.text }}>AI 사용 로그</div>
+              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                <span style={{ fontSize:11, color:isDark?"rgba(255,255,255,0.35)":"#94a3b8" }}>최근 200건</span>
+                <button onClick={loadAiLogs} disabled={aiLogsLoading}
+                  style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${panelBorder}`, background:panelBg, color:accent, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                  {aiLogsLoading ? "로딩..." : "새로고침"}
+                </button>
+              </div>
             </div>
             {aiLogs.length === 0 ? (
-              <div style={{ textAlign:"center", padding:20, color:C.muted, fontSize:13 }}>
-                {aiLogsLoading ? "로딩중..." : "아직 사용 기록이 없습니다. (point_history 테이블 필요)"}
+              <div style={{ textAlign:"center", padding:40, color:C.muted, fontSize:13 }}>
+                {aiLogsLoading ? "로딩중..." : "아직 사용 기록이 없습니다."}
               </div>
             ) : (
               <>
-                {/* AI 기능별 사용 통계 */}
-                {(() => {
-                  const aiOnly = aiLogs.filter(l => l.delta < 0);
-                  const byReason = {};
-                  aiOnly.forEach(l => {
-                    const r = l.reason || "기타";
-                    byReason[r] = (byReason[r]||0) + 1;
-                  });
-                  const byUser = {};
-                  aiOnly.forEach(l => {
-                    const u = l.uid || "unknown";
-                    byUser[u] = (byUser[u]||0) + 1;
-                  });
-                  const topUsers = Object.entries(byUser).sort((a,b)=>b[1]-a[1]).slice(0,5);
-                  const nick = uid => members.find(m=>m.uid===uid)?.nick || uid?.slice(0,8) || "?";
-                  return (
-                    <div style={{ display:"flex", gap:16, flexWrap:"wrap", marginBottom:16 }}>
-                      <div style={{ flex:1, minWidth:200 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>기능별 사용 횟수</div>
-                        {Object.entries(byReason).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([r,c]) => (
-                          <div key={r} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-                            <span style={{ fontSize:11, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r}</span>
-                            <span style={{ fontSize:12, fontWeight:700, color:"#3b82f6" }}>{c}회</span>
-                          </div>
-                        ))}
+                {/* AI 기능별 + 사용자별 */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:18, padding:"16px 20px", borderRadius:12, background:isDark?"rgba(255,255,255,0.02)":"#fafbfe" }}>
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:700, color:isDark?"rgba(255,255,255,0.5)":"#64748b", marginBottom:10 }}>기능별 사용 횟수</div>
+                    {reasonEntries.slice(0,8).map(([r,c],i) => (
+                      <div key={r} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                        <span style={{ width:6, height:6, borderRadius:99, background:donutColors[i%donutColors.length], flexShrink:0 }}/>
+                        <span style={{ fontSize:12, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r}</span>
+                        <span style={{ fontSize:12, fontWeight:700, color:accent }}>{c}회</span>
                       </div>
-                      <div style={{ flex:1, minWidth:200 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>사용자별 TOP5</div>
-                        {topUsers.map(([uid,c],i) => (
-                          <div key={uid} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-                            <span style={{ fontSize:12, fontWeight:900, color:i<3?"#f59e0b":C.muted, minWidth:16 }}>{i+1}</span>
-                            <span style={{ fontSize:11, color:C.text, flex:1 }}>{nick(uid)}</span>
-                            <span style={{ fontSize:12, fontWeight:700, color:"#3b82f6" }}>{c}회</span>
+                    ))}
+                  </div>
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:700, color:isDark?"rgba(255,255,255,0.5)":"#64748b", marginBottom:10 }}>사용자별 TOP5</div>
+                    {(() => {
+                      const byUser = {};
+                      aiOnly.forEach(l => { byUser[l.uid||"unknown"] = (byUser[l.uid||"unknown"]||0)+1; });
+                      return Object.entries(byUser).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([uid,c],i) => {
+                        const nick = members.find(m=>m.uid===uid)?.nick || uid?.slice(0,8) || "?";
+                        return (
+                          <div key={uid} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                            <div style={{ width:22, height:22, borderRadius:99, background:`${donutColors[i]}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:800, color:donutColors[i], flexShrink:0 }}>{i+1}</div>
+                            <span style={{ fontSize:12, color:C.text, flex:1 }}>{nick}</span>
+                            <span style={{ fontSize:12, fontWeight:700, color:accent }}>{c}회</span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })()}
-                {/* 최근 로그 테이블 */}
-                <div style={{ overflowX:"auto", maxHeight:300, overflowY:"auto" }}>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
+                {/* 로그 테이블 */}
+                <div style={{ overflowX:"auto", maxHeight:320, overflowY:"auto", borderRadius:10 }}>
                   <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
                     <thead>
-                      <tr style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.1)":"#e5e7eb"}`, position:"sticky", top:0, background:isDark?"#1a1730":"#fff" }}>
-                        <th style={{ padding:"6px 8px", textAlign:"left", color:C.muted, fontWeight:600 }}>사용자</th>
-                        <th style={{ padding:"6px 8px", textAlign:"left", color:C.muted, fontWeight:600 }}>기능</th>
-                        <th style={{ padding:"6px 8px", textAlign:"right", color:C.muted, fontWeight:600 }}>잔여횟수</th>
-                        <th style={{ padding:"6px 8px", textAlign:"right", color:C.muted, fontWeight:600 }}>잔여</th>
-                        <th style={{ padding:"6px 8px", textAlign:"left", color:C.muted, fontWeight:600 }}>일시</th>
+                      <tr style={{ position:"sticky", top:0, background:isDark?"#1a1730":"#fff", zIndex:1 }}>
+                        {[{l:"사용자",a:"left"},{l:"기능",a:"left"},{l:"차감",a:"right"},{l:"잔여",a:"right"},{l:"일시",a:"left"}].map(h => (
+                          <th key={h.l} style={{ padding:"10px 12px", textAlign:h.a, color:isDark?"rgba(255,255,255,0.35)":"#94a3b8", fontWeight:600, borderBottom:`2px solid ${isDark?"rgba(255,255,255,0.06)":"#eef0f6"}` }}>{h.l}</th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
                       {aiLogs.slice(0,50).map((l,i) => {
                         const nick = members.find(m=>m.uid===l.uid)?.nick || l.uid?.slice(0,8) || "?";
+                        const deltaVal = l.created_at&&l.created_at<"2026-05-03"?Math.round((l.delta||0)/30):Math.round(l.delta);
+                        const balVal = l.created_at&&l.created_at<"2026-05-03"?Math.floor((l.balance||0)/30):Math.floor(l.balance||0);
                         return (
-                          <tr key={i} style={{ borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.04)":"#f3f4f6"}` }}>
-                            <td style={{ padding:"6px 8px", fontWeight:600, color:C.text }}>{nick}</td>
-                            <td style={{ padding:"6px 8px", color:C.muted }}>{l.reason||"-"}</td>
-                            <td style={{ padding:"6px 8px", textAlign:"right", fontWeight:700, color:l.delta>0?"#22c55e":"#ef4444" }}>{l.delta>0?"+":""}{l.created_at&&l.created_at<"2026-05-03"?Math.round((l.delta||0)/30):Math.round(l.delta)}회</td>
-                            <td style={{ padding:"6px 8px", textAlign:"right", color:C.text }}>{l.created_at&&l.created_at<"2026-05-03"?Math.floor((l.balance||0)/30):Math.floor(l.balance||0)}회</td>
-                            <td style={{ padding:"6px 8px", color:C.muted, fontSize:10 }}>{l.created_at ? new Date(l.created_at).toLocaleString("ko-KR") : "-"}</td>
+                          <tr key={i} style={{ transition:"background 0.15s" }}
+                            onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.02)":"#fafbfe"}
+                            onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                            <td style={{ padding:"10px 12px", fontWeight:600, color:C.text }}>{nick}</td>
+                            <td style={{ padding:"10px 12px", color:isDark?"rgba(255,255,255,0.5)":"#64748b" }}>{l.reason||"-"}</td>
+                            <td style={{ padding:"10px 12px", textAlign:"right" }}>
+                              <span style={{ fontWeight:700, fontSize:12, padding:"2px 10px", borderRadius:99, background:l.delta>0?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.1)", color:l.delta>0?"#22c55e":"#ef4444" }}>{l.delta>0?"+":""}{deltaVal}회</span>
+                            </td>
+                            <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:600, color:C.text }}>{balVal}회</td>
+                            <td style={{ padding:"10px 12px", color:isDark?"rgba(255,255,255,0.35)":"#94a3b8", fontSize:11 }}>{l.created_at ? new Date(l.created_at).toLocaleString("ko-KR") : "-"}</td>
                           </tr>
                         );
                       })}
@@ -840,20 +989,154 @@ export default function AdminPage({ C, user: adminUser }) {
               </>
             )}
           </div>
+
+          {/* ── 검색엔진 노출 안내 ── */}
+          <div style={{ marginTop:24, padding:"20px 24px", borderRadius:14, background:panelBg, border:`1px solid ${panelBorder}` }}>
+            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:12 }}>검색엔진 노출 현황</div>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(220px, 1fr))", gap:12 }}>
+              {[
+                { name:"Google Search Console", url:"https://search.google.com/search-console", desc:"검색 노출 관리", color:"#4285f4" },
+                { name:"Naver Search Advisor", url:"https://searchadvisor.naver.com", desc:"네이버 검색 노출", color:"#03cf5d" },
+                { name:"Google Analytics", url:"https://analytics.google.com", desc:"트래픽/유입 분석", color:"#e37400" },
+                { name:"Bing Webmaster", url:"https://www.bing.com/webmasters", desc:"Bing 검색 관리", color:"#008373" },
+              ].map(s => (
+                <a key={s.name} href={s.url} target="_blank" rel="noopener noreferrer" style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", borderRadius:10, background:isDark?"rgba(255,255,255,0.02)":"#fafbfe", border:`1px solid ${panelBorder}`, textDecoration:"none", transition:"border-color 0.2s" }}
+                  onMouseEnter={e=>e.currentTarget.style.borderColor=s.color}
+                  onMouseLeave={e=>e.currentTarget.style.borderColor=panelBorder}>
+                  <div style={{ width:8, height:32, borderRadius:4, background:s.color, flexShrink:0 }}/>
+                  <div>
+                    <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{s.name}</div>
+                    <div style={{ fontSize:11, color:isDark?"rgba(255,255,255,0.35)":"#94a3b8" }}>{s.desc}</div>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* ── 플랜 분포 + 최근 활동 ── */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1.5fr", gap:18, marginTop:24 }}>
+            {/* 플랜 분포 */}
+            <div style={cardStyle}>
+              <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:18 }}>플랜 분포</div>
+              {(() => {
+                const planCount = {};
+                members.forEach(m => {
+                  const sub = subs.find(s=>s.uid===m.uid);
+                  const p = sub?.product_name || "Free";
+                  planCount[p] = (planCount[p]||0)+1;
+                });
+                const entries = Object.entries(planCount).sort((a,b)=>b[1]-a[1]);
+                const total = members.length || 1;
+                const planColors = {Free:"#94a3b8",Basic:"#3b82f6",Pro:"#8b5cf6",Premium:"#f59e0b",Business:"#22c55e",Agency:"#ec4899"};
+                let cum = 0;
+                const arcs = entries.map(([p,c],i) => {
+                  const pct = c/total;
+                  const start = cum; cum += pct*360;
+                  const sr = start*Math.PI/180, er = cum*Math.PI/180;
+                  const cx=70,cy=70,R=55,r2=35;
+                  const large = pct>0.5?1:0;
+                  return <path key={p} d={`M${cx+R*Math.sin(sr)},${cy-R*Math.cos(sr)} A${R},${R} 0 ${large} 1 ${cx+R*Math.sin(er)},${cy-R*Math.cos(er)} L${cx+r2*Math.sin(er)},${cy-r2*Math.cos(er)} A${r2},${r2} 0 ${large} 0 ${cx+r2*Math.sin(sr)},${cy-r2*Math.cos(sr)} Z`} fill={planColors[p]||donutColors[i%donutColors.length]}/>;
+                });
+                return <>
+                  <div style={{ display:"flex", justifyContent:"center", position:"relative", marginBottom:16 }}>
+                    <svg viewBox="0 0 140 140" style={{ width:120, height:120 }}>{arcs}</svg>
+                    <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", textAlign:"center" }}>
+                      <div style={{ fontSize:20, fontWeight:900, color:C.text }}>{total}</div>
+                      <div style={{ fontSize:9, color:isDark?"rgba(255,255,255,0.4)":"#94a3b8" }}>전체 회원</div>
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    {entries.map(([p,c]) => (
+                      <div key={p} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                        <span style={{ width:10, height:10, borderRadius:99, background:planColors[p]||"#888", flexShrink:0 }}/>
+                        <span style={{ fontSize:12, color:C.text, flex:1, fontWeight:600 }}>{p}</span>
+                        <span style={{ fontSize:12, fontWeight:700, color:isDark?"rgba(255,255,255,0.5)":"#64748b" }}>{c}명</span>
+                        <span style={{ fontSize:11, color:isDark?"rgba(255,255,255,0.3)":"#94a3b8", minWidth:36, textAlign:"right" }}>{Math.round(c/total*100)}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </>;
+              })()}
+            </div>
+
+            {/* 최근 활동 타임라인 */}
+            <div style={cardStyle}>
+              <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:18 }}>최근 활동</div>
+              <div style={{ maxHeight:320, overflowY:"auto" }}>
+                {(() => {
+                  const timeline = [];
+                  // 최근 가입 회원
+                  members.slice(0,5).forEach(m => {
+                    const d = m.join_date||m.created_at;
+                    if (d) timeline.push({ type:"join", time:new Date(d), label:`${m.nick||"회원"} 가입`, sub:m.email, color:"#22c55e", icon:"M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" });
+                  });
+                  // 최근 AI 사용
+                  aiLogs.slice(0,5).forEach(l => {
+                    if (l.created_at) {
+                      const nick = members.find(m=>m.uid===l.uid)?.nick || l.uid?.slice(0,6) || "?";
+                      timeline.push({ type:"ai", time:new Date(l.created_at), label:`${nick} — ${l.reason||"AI 사용"}`, sub:`${l.delta>0?"+":""}${Math.round(l.delta)}회`, color:"#8b5cf6", icon:"M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" });
+                    }
+                  });
+                  // 최근 게시글
+                  posts.slice(0,3).forEach(p => {
+                    const d = typeof p.date==="string" ? new Date(p.date) : null;
+                    if (d && !isNaN(d)) timeline.push({ type:"post", time:d, label:`${p.nick||"회원"} — "${(p.title||"").slice(0,20)}"`, sub:"게시글 작성", color:"#f59e0b", icon:"M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" });
+                  });
+                  timeline.sort((a,b)=>b.time-a.time);
+                  if (timeline.length===0) return <div style={{ color:C.muted, fontSize:13, textAlign:"center", padding:20 }}>활동 데이터 없음</div>;
+                  const now = Date.now();
+                  const ago = (t) => {
+                    const diff = now - t.getTime();
+                    if (diff<60000) return "방금 전";
+                    if (diff<3600000) return Math.floor(diff/60000)+"분 전";
+                    if (diff<86400000) return Math.floor(diff/3600000)+"시간 전";
+                    return Math.floor(diff/86400000)+"일 전";
+                  };
+                  return timeline.slice(0,12).map((item,i) => (
+                    <div key={i} style={{ display:"flex", gap:12, marginBottom:0 }}>
+                      {/* 타임라인 라인 */}
+                      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", width:28, flexShrink:0 }}>
+                        <div style={{ width:28, height:28, borderRadius:99, background:`${item.color}15`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={item.color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={item.icon}/></svg>
+                        </div>
+                        {i<timeline.slice(0,12).length-1 && <div style={{ width:2, flex:1, background:isDark?"rgba(255,255,255,0.04)":"#eef0f6" }}/>}
+                      </div>
+                      {/* 내용 */}
+                      <div style={{ flex:1, paddingBottom:14, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.label}</div>
+                        <div style={{ display:"flex", gap:8, alignItems:"center", marginTop:2 }}>
+                          <span style={{ fontSize:11, color:isDark?"rgba(255,255,255,0.35)":"#94a3b8" }}>{item.sub}</span>
+                          <span style={{ fontSize:10, color:isDark?"rgba(255,255,255,0.25)":"#c0c0c0" }}>{ago(item.time)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+          </div>
         </div>
         );
       })()}
 
       {/* ─────────────── 회원 관리 ─────────────── */}
-      {tab === "members" && (
+      {tab === "members" && (() => {
+        const mTotalPages = Math.ceil(filteredMembers.length / PAGE_SIZE);
+        const mCurPage = Math.min(memberPage, mTotalPages || 1);
+        const pagedMembers = filteredMembers.slice((mCurPage-1)*PAGE_SIZE, mCurPage*PAGE_SIZE);
+        return (
         <div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 12, background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 12, padding: "14px 16px" }}>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 900, color: C.text }}>회원 목록</div>
-              <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>총 {members.length.toLocaleString()}명 · 검색 결과 {filteredMembers.length.toLocaleString()}명</div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
+            <div style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.4)" : "#94a3b8", fontWeight: 500 }}>
+              총 {members.length.toLocaleString()}명 {search && `· 검색 결과 ${filteredMembers.length.toLocaleString()}명`} · {mCurPage}/{mTotalPages||1} 페이지
             </div>
-            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="닉네임 / 이메일 검색..."
-              style={{ padding: "10px 14px", borderRadius: 9, border: "1px solid " + panelBorder, background: subtleBg, color: C.text, fontSize: 13, outline: "none", width: 260 }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ position: "relative" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isDark ? "rgba(255,255,255,0.3)" : "#94a3b8"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)" }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input value={search} onChange={e => { setSearch(e.target.value); setMemberPage(1); }} placeholder="Search"
+                  style={{ padding: "10px 14px 10px 36px", borderRadius: 10, border: `1px solid ${panelBorder}`, background: panelBg, color: C.text, fontSize: 13, outline: "none", width: 220, fontFamily: "inherit" }} />
+              </div>
+            </div>
           </div>
 
           {loadingMembers && <div style={{ textAlign:"center", padding:"60px 0", color:C.muted }}>회원 목록 불러오는 중...</div>}
@@ -863,18 +1146,18 @@ export default function AdminPage({ C, user: adminUser }) {
             </div>
           )}
 
-          {/* 테이블 헤더 */}
+          {/* 테이블 */}
           {!loadingMembers && filteredMembers.length > 0 && (
-            <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 12, overflow: "hidden" }}>
-              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 80px", gap: 0, padding: "10px 16px", borderBottom: `2px solid ${panelBorder}`, fontSize: 11, fontWeight: 700, color: C.muted }}>
-                <span>회원</span>
-                <span style={{ textAlign: "center" }}>플랜</span>
-                <span style={{ textAlign: "center" }}>잔여 횟수</span>
-                <span style={{ textAlign: "center" }}>가입일</span>
-                <span style={{ textAlign: "center" }}>관리</span>
+            <div style={{ background: panelBg, borderRadius: 16, overflow: "hidden", boxShadow: isDark ? "none" : "0 2px 12px rgba(0,0,0,0.04)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "2.5fr 1fr 1fr 1fr 60px", gap: 0, padding: "14px 24px", fontSize: 12, fontWeight: 500, color: isDark ? "rgba(255,255,255,0.35)" : "#94a3b8" }}>
+                <span>Name</span>
+                <span>Plan</span>
+                <span>Credits</span>
+                <span>Joined</span>
+                <span></span>
               </div>
 
-              {filteredMembers.map(m => {
+              {pagedMembers.map(m => {
                 const uid = m.uid || m.id || "";
                 const ptVal = ptInputs[uid] || "";
                 const sub = getSub(uid);
@@ -892,55 +1175,57 @@ export default function AdminPage({ C, user: adminUser }) {
                   <div key={uid}>
                     {/* 한 줄 요약 행 */}
                     <div onClick={() => toggleExpand(uid)} style={{
-                      display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr 80px", gap: 0, padding: "12px 16px", alignItems: "center",
-                      borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.04)" : "#f3f4f6"}`,
+                      display: "grid", gridTemplateColumns: "2.5fr 1fr 1fr 1fr 60px", gap: 0, padding: "14px 24px", alignItems: "center",
+                      borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.04)" : "#f3f4f6"}`,
                       cursor: "pointer", transition: "background 0.15s",
-                      background: isExpanded ? (isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.03)") : "transparent",
+                      background: isExpanded ? (isDark ? "rgba(84,111,255,0.06)" : "rgba(84,111,255,0.02)") : "transparent",
                     }}
-                      onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.03)" : "#f9fafb"; }}
-                      onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.background = "transparent"; }}
+                      onMouseEnter={e => { if (!isExpanded) e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.02)" : "#fafbfe"; }}
+                      onMouseLeave={e => { if (!isExpanded) e.currentTarget.style.background = isExpanded ? (isDark ? "rgba(84,111,255,0.06)" : "rgba(84,111,255,0.02)") : "transparent"; }}
                     >
                       {/* 회원 정보 */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                        <div style={{ width: 32, height: 32, borderRadius: 8, background: "#3b82f6", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900, color: "#fff", flexShrink: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 99, background: `linear-gradient(135deg, ${accent}22, ${accent}44)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: accent, flexShrink: 0 }}>
                           {(m.nick||"?")[0].toUpperCase()}
                         </div>
                         <div style={{ minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.nick || "-"}</span>
-                            {roleLabel && <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 4, fontWeight: 700, background: roleBg, color: roleColor }}>{roleLabel}</span>}
+                            <span style={{ fontSize: 14, fontWeight: 600, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.nick || "-"}</span>
+                            {roleLabel && <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 99, fontWeight: 600, background: roleBg, color: roleColor }}>{roleLabel}</span>}
                           </div>
-                          <div style={{ fontSize: 11, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.email}</div>
+                          <div style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.4)" : "#94a3b8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.email}</div>
                         </div>
                       </div>
                       {/* 플랜 */}
-                      <div style={{ textAlign: "center" }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99, background: planBg, color: planColor }}>{currentPlan}</span>
-                        {trial && <div style={{ fontSize: 9, color: "#2563eb", fontWeight: 600, marginTop: 2 }}>체험 중</div>}
+                      <div>
+                        <span style={{ fontSize: 12, fontWeight: 600, padding: "4px 12px", borderRadius: 99, background: planBg, color: planColor }}>{currentPlan}</span>
+                        {trial && <div style={{ fontSize: 9, color: accent, fontWeight: 600, marginTop: 3 }}>체험 중</div>}
                       </div>
                       {/* 잔여 횟수 */}
-                      <div style={{ textAlign: "center", fontSize: 15, fontWeight: 800, color: C.purpleL }}>{Math.floor(m.points || 0)}<span style={{ fontSize: 11, fontWeight: 500, color: C.muted }}>회</span></div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{Math.floor(m.points || 0)}<span style={{ fontSize: 11, fontWeight: 400, color: isDark ? "rgba(255,255,255,0.35)" : "#94a3b8", marginLeft: 2 }}>회</span></div>
                       {/* 가입일 */}
-                      <div style={{ textAlign: "center", fontSize: 11, color: C.muted }}>
-                        {(m.join_date || m.created_at) ? new Date(m.join_date || m.created_at).toLocaleDateString("ko-KR", { month: "short", day: "numeric" }) : "-"}
+                      <div style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.4)" : "#94a3b8" }}>
+                        {(m.join_date || m.created_at) ? new Date(m.join_date || m.created_at).toLocaleDateString("ko-KR", { year: "numeric", month: "short", day: "numeric" }) : "-"}
                       </div>
-                      {/* 펼치기 화살표 */}
+                      {/* 더보기 */}
                       <div style={{ textAlign: "center" }}>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isExpanded ? "#3b82f6" : C.muted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                          style={{ transition: "transform 0.2s", transform: isExpanded ? "rotate(180deg)" : "rotate(0)" }}>
-                          <polyline points="6 9 12 15 18 9" />
-                        </svg>
+                        <div style={{ width: 28, height: 28, borderRadius: 8, display: "inline-flex", alignItems: "center", justifyContent: "center", background: isExpanded ? (isDark ? "rgba(84,111,255,0.15)" : "rgba(84,111,255,0.08)") : "transparent", transition: "background 0.15s" }}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isExpanded ? accent : (isDark ? "rgba(255,255,255,0.3)" : "#94a3b8")} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                            style={{ transition: "transform 0.2s", transform: isExpanded ? "rotate(180deg)" : "rotate(0)" }}>
+                            <polyline points="6 9 12 15 18 9" />
+                          </svg>
+                        </div>
                       </div>
                     </div>
 
                     {/* 펼침 상세 패널 */}
                     {isExpanded && (
-                      <div style={{ padding: "16px 20px 20px", background: isDark ? "rgba(59,130,246,0.04)" : "rgba(59,130,246,0.02)", borderBottom: `2px solid ${isDark ? "rgba(59,130,246,0.15)" : "rgba(59,130,246,0.1)"}` }}>
+                      <div style={{ padding: "20px 24px 24px", background: isDark ? "rgba(255,255,255,0.02)" : "#fafbfe", borderTop: `1px solid ${panelBorder}` }}>
                         {/* 상단: 3열 정보 카드 */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14, marginBottom: 18 }}>
                           {/* 멤버십 */}
-                          <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "12px 14px" }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>멤버십</div>
+                          <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 14, padding: "16px 18px" }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: isDark ? "rgba(255,255,255,0.35)" : "#94a3b8", marginBottom: 10, letterSpacing: 0.3 }}>멤버십</div>
                             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                               <select value={currentPlan} onChange={e => { e.stopPropagation(); setPlan(uid, e.target.value); }}
                                 style={{ flex: 1, padding: "6px 8px", borderRadius: 6, border: `1px solid ${bdr}`, background: inputBg, color: C.text, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
@@ -955,8 +1240,8 @@ export default function AdminPage({ C, user: adminUser }) {
                           </div>
 
                           {/* 횟수 관리 */}
-                          <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "12px 14px" }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>횟수 관리</div>
+                          <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 14, padding: "16px 18px" }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: isDark ? "rgba(255,255,255,0.35)" : "#94a3b8", marginBottom: 10, letterSpacing: 0.3 }}>횟수 관리</div>
                             <div style={{ display: "flex", gap: 3, marginBottom: 6 }}>
                               {[5, 10, 20, 50].map(n => (
                                 <button key={n} onClick={e => { e.stopPropagation(); grantPoints(uid, n); }} style={{
@@ -987,8 +1272,8 @@ export default function AdminPage({ C, user: adminUser }) {
                           </div>
 
                           {/* 위험 작업 */}
-                          <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "12px 14px" }}>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>계정 관리</div>
+                          <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 14, padding: "16px 18px" }}>
+                            <div style={{ fontSize: 11, fontWeight: 600, color: isDark ? "rgba(255,255,255,0.35)" : "#94a3b8", marginBottom: 10, letterSpacing: 0.3 }}>계정 관리</div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                               <button onClick={e => { e.stopPropagation(); resetPoints(uid); }} style={{ width: "100%", padding: "6px 0", borderRadius: 6, border: `1px solid rgba(251,191,36,0.25)`, background: "rgba(251,191,36,0.06)", color: "#f59e0b", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>횟수 초기화</button>
                               <button onClick={e => { e.stopPropagation(); resetMemberUsage(uid); }} style={{ width: "100%", padding: "6px 0", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: C.purpleL, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>AI 사용량 초기화</button>
@@ -1017,8 +1302,8 @@ export default function AdminPage({ C, user: adminUser }) {
                         </div>
 
                         {/* 하단: 횟수 내역 테이블 */}
-                        <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 10, padding: "12px 14px" }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, color: C.muted, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.5 }}>최근 횟수 내역</div>
+                        <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 14, padding: "16px 18px" }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, color: isDark ? "rgba(255,255,255,0.35)" : "#94a3b8", marginBottom: 10, letterSpacing: 0.3 }}>최근 횟수 내역</div>
                           {historyLoading[uid] && <div style={{ fontSize: 11, color: C.muted, padding: "8px 0" }}>불러오는 중...</div>}
                           {!historyLoading[uid] && hist.length === 0 && <div style={{ fontSize: 11, color: C.muted, padding: "8px 0" }}>내역이 없습니다</div>}
                           {!historyLoading[uid] && hist.length > 0 && (
@@ -1051,61 +1336,97 @@ export default function AdminPage({ C, user: adminUser }) {
                   </div>
                 );
               })}
+              {/* 회원 페이지네이션 */}
+              {mTotalPages > 1 && (
+                <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:4, padding:"16px 20px", borderTop:`1px solid ${panelBorder}` }}>
+                  <button onClick={()=>setMemberPage(p=>Math.max(1,p-1))} disabled={mCurPage<=1}
+                    style={{ width:32, height:32, borderRadius:8, border:`1px solid ${panelBorder}`, background:"transparent", color:mCurPage<=1?(isDark?"rgba(255,255,255,0.15)":"#d0d0d0"):accent, cursor:mCurPage<=1?"default":"pointer", fontSize:14, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  {Array.from({length:Math.min(mTotalPages,7)}, (_,i) => {
+                    let pg;
+                    if (mTotalPages<=7) pg = i+1;
+                    else if (mCurPage<=4) pg = i+1;
+                    else if (mCurPage>=mTotalPages-3) pg = mTotalPages-6+i;
+                    else pg = mCurPage-3+i;
+                    return (
+                      <button key={pg} onClick={()=>setMemberPage(pg)}
+                        style={{ width:32, height:32, borderRadius:8, border:pg===mCurPage?`1.5px solid ${accent}`:`1px solid ${panelBorder}`, background:pg===mCurPage?(isDark?`${accent}15`:`${accent}08`):"transparent", color:pg===mCurPage?accent:(isDark?"rgba(255,255,255,0.5)":"#64748b"), cursor:"pointer", fontSize:12, fontWeight:pg===mCurPage?700:500, fontFamily:"inherit" }}>
+                        {pg}
+                      </button>
+                    );
+                  })}
+                  <button onClick={()=>setMemberPage(p=>Math.min(mTotalPages,p+1))} disabled={mCurPage>=mTotalPages}
+                    style={{ width:32, height:32, borderRadius:8, border:`1px solid ${panelBorder}`, background:"transparent", color:mCurPage>=mTotalPages?(isDark?"rgba(255,255,255,0.15)":"#d0d0d0"):accent, cursor:mCurPage>=mTotalPages?"default":"pointer", fontSize:14, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
+        );
+      })()}
 
       {/* ─────────────── 비회원 관리 ─────────────── */}
       {tab === "guest" && (
         <div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: C.text, marginBottom: 6 }}>🌐 비회원 관리</div>
-          <div style={{ fontSize: 13, color: C.muted, marginBottom: 20, lineHeight: 1.8 }}>
-            비회원은 브라우저의 localStorage에 사용 기록이 저장됩니다.<br/>
-            특정 비회원의 사용 횟수를 초기화하면 다시 5회 무료 이용이 가능합니다.
+          <div style={{ fontSize:13, color:isDark?"rgba(255,255,255,0.4)":"#94a3b8", marginBottom:20, lineHeight:1.7 }}>
+            비회원은 브라우저의 localStorage에 사용 기록이 저장됩니다. 초기화 시 5회 무료 이용이 재지급됩니다.
           </div>
 
-          {/* 현재 비회원 사용 현황 */}
-          <div style={{ background: C.card, border: "1px solid " + bdr, borderRadius: 14, padding: "20px 24px", marginBottom: 16 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 12 }}>현재 사용 현황</div>
+          {/* 비회원 사용 현황 */}
+          <div style={{ ...cardStyle, marginBottom:18 }}>
+            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:16 }}>사용 현황</div>
             {(() => {
               const u = getAllUsage();
               const guestUsed = u["guest"] || 0;
               const memberEntries = Object.entries(u).filter(([k]) => k.startsWith("member_"));
+              const pctUsed = Math.min(100, (guestUsed/FREE_GUEST)*100);
               return (
                 <div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid " + bdr }}>
-                    <div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>👤 비회원</div>
-                      <div style={{ fontSize: 12, color: C.muted }}>이 브라우저의 비회원 사용 기록</div>
+                  {/* 비회원 프로그레스 카드 */}
+                  <div style={{ display:"flex", alignItems:"center", gap:16, padding:"16px 20px", borderRadius:12, background:isDark?"rgba(255,255,255,0.02)":"#fafbfe", marginBottom:14 }}>
+                    <div style={{ width:48, height:48, borderRadius:14, background:"rgba(84,111,255,0.08)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <span style={{ fontSize: 15, fontWeight: 800, color: guestUsed >= FREE_GUEST ? "#ef4444" : C.purpleL }}>{guestUsed}/{FREE_GUEST}회 사용</span>
-                      <button onClick={resetGuestUsage} style={{ padding: "7px 16px", borderRadius: 9, border: "1px solid rgba(0,0,0,0.06)", background: "rgba(0,0,0,0.06)", color: C.purpleL, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                        🔄 초기화 (5회 재지급)
-                      </button>
+                    <div style={{ flex:1 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                        <span style={{ fontSize:14, fontWeight:700, color:C.text }}>비회원</span>
+                        <span style={{ fontSize:14, fontWeight:800, color:guestUsed>=FREE_GUEST?"#ef4444":accent }}>{guestUsed}/{FREE_GUEST}회</span>
+                      </div>
+                      <div style={{ height:8, borderRadius:4, background:isDark?"rgba(255,255,255,0.06)":"#eef0f6", overflow:"hidden" }}>
+                        <div style={{ height:"100%", borderRadius:4, background:guestUsed>=FREE_GUEST?"#ef4444":accent, width:`${pctUsed}%`, transition:"width 0.4s" }}/>
+                      </div>
                     </div>
+                    <button onClick={resetGuestUsage} style={{ padding:"8px 16px", borderRadius:10, border:`1px solid ${panelBorder}`, background:panelBg, color:accent, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>
+                      초기화
+                    </button>
                   </div>
+
+                  {/* 회원 사용 기록 */}
                   {memberEntries.length > 0 && (
-                    <div style={{ marginTop: 12 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 8 }}>회원 사용 기록</div>
+                    <div>
+                      <div style={{ fontSize:12, fontWeight:700, color:isDark?"rgba(255,255,255,0.35)":"#94a3b8", marginBottom:10 }}>회원 사용 기록 ({memberEntries.length}건)</div>
                       {memberEntries.map(([k, v]) => {
                         const uid = k.replace("member_", "");
                         const mem = members.find(m => m.id === uid || m.uid === uid);
+                        const pct = Math.min(100, (v/FREE_MEMBER)*100);
                         return (
-                          <div key={k} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "9px 0", borderBottom: "1px solid " + bdr, fontSize: 13 }}>
-                            <div>
-                              <span style={{ fontWeight: 600, color: C.text }}>{mem ? mem.nick : uid}</span>
-                              {mem && <span style={{ color: C.muted, fontSize: 11, marginLeft: 8 }}>{mem.email}</span>}
+                          <div key={k} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:`1px solid ${isDark?"rgba(255,255,255,0.04)":"#f3f4f6"}` }}>
+                            <div style={{ width:30, height:30, borderRadius:99, background:`${accent}15`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:accent, flexShrink:0 }}>
+                              {(mem?.nick||"?")[0].toUpperCase()}
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <span style={{ color: v >= FREE_MEMBER ? "#ef4444" : C.muted }}>{v}/{FREE_MEMBER}회</span>
-                              <button onClick={() => {
-                                const u2 = getAllUsage(); delete u2[k];
-                                localStorage.setItem("nper_ai_usage", JSON.stringify(u2));
-                                showToast("초기화 완료");
-                              }} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 11, cursor: "pointer" }}>초기화</button>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:13, fontWeight:600, color:C.text }}>{mem ? mem.nick : uid}</div>
+                              {mem && <div style={{ fontSize:11, color:isDark?"rgba(255,255,255,0.35)":"#94a3b8" }}>{mem.email}</div>}
                             </div>
+                            <span style={{ fontSize:12, fontWeight:700, color:v>=FREE_MEMBER?"#ef4444":(isDark?"rgba(255,255,255,0.5)":"#64748b"), minWidth:50, textAlign:"right" }}>{v}/{FREE_MEMBER}</span>
+                            <button onClick={() => {
+                              const u2 = getAllUsage(); delete u2[k];
+                              localStorage.setItem("nper_ai_usage", JSON.stringify(u2));
+                              showToast("초기화 완료");
+                            }} style={{ padding:"5px 12px", borderRadius:8, border:`1px solid ${panelBorder}`, background:"transparent", color:isDark?"rgba(255,255,255,0.4)":"#94a3b8", fontSize:11, cursor:"pointer", fontFamily:"inherit" }}>초기화</button>
                           </div>
                         );
                       })}
@@ -1117,16 +1438,20 @@ export default function AdminPage({ C, user: adminUser }) {
           </div>
 
           {/* 전체 초기화 */}
-          <div style={{ background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.15)", borderRadius: 12, padding: "16px 20px" }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#ef4444", marginBottom: 6 }}>⚠️ 전체 사용 기록 초기화</div>
-            <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>모든 비회원 및 회원의 AI 사용 횟수를 초기화합니다.</div>
-            <button onClick={() => {
-              if (!window.confirm("모든 사용자의 AI 횟수를 초기화하시겠습니까?")) return;
-              localStorage.removeItem("nper_ai_usage");
-              showToast("전체 초기화 완료");
-            }} style={{ padding: "9px 20px", borderRadius: 9, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#ef4444", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-              🗑 전체 초기화
-            </button>
+          <div style={{ padding:"18px 22px", borderRadius:14, background:"rgba(239,68,68,0.04)", border:"1px solid rgba(239,68,68,0.12)" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+              <div>
+                <div style={{ fontSize:14, fontWeight:700, color:"#ef4444", marginBottom:4 }}>전체 사용 기록 초기화</div>
+                <div style={{ fontSize:12, color:isDark?"rgba(255,255,255,0.4)":"#94a3b8" }}>모든 비회원 및 회원의 AI 사용 횟수를 초기화합니다.</div>
+              </div>
+              <button onClick={() => {
+                if (!window.confirm("모든 사용자의 AI 횟수를 초기화하시겠습니까?")) return;
+                localStorage.removeItem("nper_ai_usage");
+                showToast("전체 초기화 완료");
+              }} style={{ padding:"9px 20px", borderRadius:10, border:"1px solid rgba(239,68,68,0.25)", background:"rgba(239,68,68,0.06)", color:"#ef4444", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>
+                전체 초기화
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1136,92 +1461,164 @@ export default function AdminPage({ C, user: adminUser }) {
         const filteredPosts = postSearch.trim()
           ? posts.filter(p => (p.title||"").toLowerCase().includes(postSearch.toLowerCase()))
           : posts;
+        const totalPages = Math.ceil(filteredPosts.length / PAGE_SIZE);
+        const curPage = Math.min(postPage, totalPages || 1);
+        const pagedPosts = filteredPosts.slice((curPage-1)*PAGE_SIZE, curPage*PAGE_SIZE);
         return (
         <div>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14, flexWrap:"wrap", gap:10 }}>
-            <div style={{ fontSize: 13, color: C.muted }}>총 <b style={{ color: C.text }}>{posts.length}개</b>의 게시글{postSearch.trim() ? ` (검색결과 ${filteredPosts.length}개)` : ""}</div>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18, flexWrap:"wrap", gap:10 }}>
+            <div style={{ fontSize:12, color:isDark?"rgba(255,255,255,0.4)":"#94a3b8", fontWeight:500 }}>
+              총 {posts.length.toLocaleString()}개{postSearch.trim() ? ` · 검색 결과 ${filteredPosts.length}개` : ""} · {curPage}/{totalPages||1} 페이지
+            </div>
             <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-              <input value={postSearch} onChange={e => setPostSearch(e.target.value)} placeholder="제목 검색..."
-                style={{ padding: "8px 14px", borderRadius: 9, border: "1px solid " + bdr, background: inputBg, color: C.text, fontSize: 13, outline: "none", width: 200 }} />
-              <button onClick={loadPosts} style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${bdr}`, background:"transparent", color:C.muted, fontSize:12, cursor:"pointer" }}>🔄 새로고침</button>
+              <div style={{ position:"relative" }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={isDark?"rgba(255,255,255,0.3)":"#94a3b8"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position:"absolute", left:11, top:"50%", transform:"translateY(-50%)" }}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input value={postSearch} onChange={e => { setPostSearch(e.target.value); setPostPage(1); }} placeholder="Search"
+                  style={{ padding:"9px 14px 9px 34px", borderRadius:10, border:`1px solid ${panelBorder}`, background:panelBg, color:C.text, fontSize:13, outline:"none", width:200, fontFamily:"inherit" }} />
+              </div>
+              <button onClick={loadPosts} style={{ padding:"9px 16px", borderRadius:10, border:`1px solid ${panelBorder}`, background:panelBg, color:accent, fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>새로고침</button>
             </div>
           </div>
-          {loadingPosts && <div style={{ textAlign:"center", padding:"60px 0", color:C.muted }}>⏳ 게시글 불러오는 중...</div>}
-          {!loadingPosts && filteredPosts.length === 0 && <div style={{ textAlign: "center", padding: "60px 0", color: C.muted }}>{postSearch.trim() ? "검색 결과가 없어요" : "게시글이 없어요"}</div>}
-          {!loadingPosts && filteredPosts.map(p => (
-            <div key={p.id} style={{ background: C.card, border: "1px solid " + bdr, borderRadius: 12, padding: "14px 18px", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, boxShadow: C.shadow }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, color: C.text, fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.title}</div>
-                <div style={{ fontSize: 11, color: C.muted, marginTop: 3 }}>{p.nick} · {p.date} · 조회 {p.views||0} · 추천 {p.likes||0}</div>
-              </div>
-              <button onClick={() => deletePost(p.id)} style={{ padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(239,68,68,0.08)", color: "#ef4444", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>삭제</button>
+          {loadingPosts && <div style={{ textAlign:"center", padding:"60px 0", color:C.muted }}>게시글 불러오는 중...</div>}
+          {!loadingPosts && filteredPosts.length === 0 && <div style={{ textAlign:"center", padding:"60px 0", color:C.muted }}>{postSearch.trim() ? "검색 결과가 없어요" : "게시글이 없어요"}</div>}
+          {!loadingPosts && filteredPosts.length > 0 && (
+            <div style={{ background:panelBg, borderRadius:16, overflow:"hidden", boxShadow:isDark?"none":"0 1px 8px rgba(0,0,0,0.04)" }}>
+              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+                <thead>
+                  <tr>
+                    {["#","제목","작성자","날짜","조회","좋아요",""].map((h,i) => (
+                      <th key={h||i} style={{ padding:"12px 14px", textAlign:i>=4&&i<=5?"right":"left", color:isDark?"rgba(255,255,255,0.35)":"#94a3b8", fontWeight:600, fontSize:12, borderBottom:`2px solid ${isDark?"rgba(255,255,255,0.06)":"#eef0f6"}` }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {pagedPosts.map((p,i) => (
+                    <tr key={p.id} style={{ transition:"background 0.15s" }}
+                      onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.02)":"#fafbfe"}
+                      onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                      <td style={{ padding:"12px 14px", color:isDark?"rgba(255,255,255,0.3)":"#c0c0c0", fontWeight:600, fontSize:12 }}>{(curPage-1)*PAGE_SIZE+i+1}</td>
+                      <td style={{ padding:"12px 14px", fontWeight:600, color:C.text, maxWidth:320, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {p.title}
+                        {p.subCat && <span style={{ marginLeft:8, fontSize:10, padding:"2px 8px", borderRadius:99, background:isDark?"rgba(255,255,255,0.04)":"#f3f4f6", color:isDark?"rgba(255,255,255,0.4)":"#94a3b8", fontWeight:500 }}>{p.subCat}</span>}
+                      </td>
+                      <td style={{ padding:"12px 14px", color:isDark?"rgba(255,255,255,0.5)":"#64748b", fontSize:12 }}>{p.nick||"-"}</td>
+                      <td style={{ padding:"12px 14px", color:isDark?"rgba(255,255,255,0.35)":"#94a3b8", fontSize:12 }}>{typeof p.date==="string"?p.date.slice(0,10):"-"}</td>
+                      <td style={{ padding:"12px 14px", textAlign:"right" }}>
+                        <span style={{ fontWeight:700, fontSize:12, padding:"3px 10px", borderRadius:99, background:"rgba(6,182,212,0.08)", color:"#06b6d4" }}>{(p.views||0).toLocaleString()}</span>
+                      </td>
+                      <td style={{ padding:"12px 14px", textAlign:"right", fontWeight:700, color:"#f59e0b", fontSize:12 }}>{p.likes||0}</td>
+                      <td style={{ padding:"12px 14px", textAlign:"right" }}>
+                        <button onClick={() => deletePost(p.id)} style={{ padding:"5px 12px", borderRadius:8, border:"none", cursor:"pointer", background:"rgba(239,68,68,0.08)", color:"#ef4444", fontSize:11, fontWeight:600, fontFamily:"inherit" }}>삭제</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {/* 페이지네이션 */}
+              {totalPages > 1 && (
+                <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:4, padding:"16px 20px", borderTop:`1px solid ${panelBorder}` }}>
+                  <button onClick={()=>setPostPage(p=>Math.max(1,p-1))} disabled={curPage<=1}
+                    style={{ width:32, height:32, borderRadius:8, border:`1px solid ${panelBorder}`, background:"transparent", color:curPage<=1?(isDark?"rgba(255,255,255,0.15)":"#d0d0d0"):accent, cursor:curPage<=1?"default":"pointer", fontSize:14, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  </button>
+                  {Array.from({length:Math.min(totalPages,7)}, (_,i) => {
+                    let pg;
+                    if (totalPages<=7) pg = i+1;
+                    else if (curPage<=4) pg = i+1;
+                    else if (curPage>=totalPages-3) pg = totalPages-6+i;
+                    else pg = curPage-3+i;
+                    return (
+                      <button key={pg} onClick={()=>setPostPage(pg)}
+                        style={{ width:32, height:32, borderRadius:8, border:pg===curPage?`1.5px solid ${accent}`:`1px solid ${panelBorder}`, background:pg===curPage?(isDark?`${accent}15`:`${accent}08`):"transparent", color:pg===curPage?accent:(isDark?"rgba(255,255,255,0.5)":"#64748b"), cursor:"pointer", fontSize:12, fontWeight:pg===curPage?700:500, fontFamily:"inherit" }}>
+                        {pg}
+                      </button>
+                    );
+                  })}
+                  <button onClick={()=>setPostPage(p=>Math.min(totalPages,p+1))} disabled={curPage>=totalPages}
+                    style={{ width:32, height:32, borderRadius:8, border:`1px solid ${panelBorder}`, background:"transparent", color:curPage>=totalPages?(isDark?"rgba(255,255,255,0.15)":"#d0d0d0"):accent, cursor:curPage>=totalPages?"default":"pointer", fontSize:14, fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              )}
             </div>
-          ))}
+          )}
         </div>
         );
       })()}
 
       {/* ─────────────── 게시판 관리 ─────────────── */}
       {tab === "board" && (
-        <div style={{ display:"flex", gap:20, alignItems:"flex-start", flexWrap:"wrap" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1.4fr", gap:18, alignItems:"start" }}>
           {/* 왼쪽: 카테고리 목록 */}
-          <div style={{ flex:"1 1 280px", background:C.card, border:"1px solid "+bdr, borderRadius:16, padding:"20px" }}>
-            <div style={{ fontSize:15, fontWeight:900, color:C.text, marginBottom:4 }}>메인 카테고리</div>
-            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>카테고리를 선택하면 서브 카테고리를 관리할 수 있어요</div>
+          <div style={{ ...cardStyle }}>
+            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>메인 카테고리</div>
+            <div style={{ fontSize:12, color:isDark?"rgba(255,255,255,0.35)":"#94a3b8", marginBottom:16 }}>선택하면 서브 카테고리를 관리할 수 있어요</div>
             {boardLoading && <div style={{ color:C.muted, fontSize:13 }}>불러오는 중...</div>}
-            {boardCats.map(cat => (
-              <div key={cat.id} onClick={()=>handleSelectBoardCat(cat)}
-                style={{ display:"flex", alignItems:"center", gap:10, padding:"12px 14px", borderRadius:10, border:`2px solid ${selBoardCat?.id===cat.id?"#3b82f6":bdr}`, background:selBoardCat?.id===cat.id?"rgba(0,0,0,0.06)":"transparent", cursor:"pointer", marginBottom:8, transition:"all 0.15s" }}>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{cat.label}</div>
-                  <div style={{ fontSize:11, color:C.muted }}>ID: {cat.id}</div>
+            {boardCats.map(cat => {
+              const sel = selBoardCat?.id===cat.id;
+              return (
+                <div key={cat.id} onClick={()=>handleSelectBoardCat(cat)}
+                  style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", borderRadius:12, border:`1.5px solid ${sel?accent:panelBorder}`, background:sel?(isDark?"rgba(84,111,255,0.06)":"rgba(84,111,255,0.03)"):"transparent", cursor:"pointer", marginBottom:8, transition:"all 0.15s" }}>
+                  <div style={{ width:36, height:36, borderRadius:10, background:sel?`${accent}15`:(isDark?"rgba(255,255,255,0.04)":"#f3f4f6"), display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, flexShrink:0 }}>
+                    {cat.icon||"#"}
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:14, fontWeight:sel?700:600, color:sel?accent:C.text }}>{cat.label}</div>
+                    <div style={{ fontSize:10, color:isDark?"rgba(255,255,255,0.3)":"#94a3b8" }}>ID: {cat.id}</div>
+                  </div>
+                  {sel && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* 오른쪽: 서브 카테고리 관리 */}
-          <div style={{ flex:"1 1 320px", background:C.card, border:"1px solid "+bdr, borderRadius:16, padding:"20px" }}>
+          <div style={{ ...cardStyle }}>
             {!selBoardCat ? (
-              <div style={{ textAlign:"center", padding:"40px 0", color:C.muted }}>
-                <div style={{ fontSize:14 }}>왼쪽에서 카테고리를 선택하세요</div>
+              <div style={{ textAlign:"center", padding:"50px 0", color:isDark?"rgba(255,255,255,0.3)":"#94a3b8" }}>
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity:0.4, marginBottom:12 }}><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                <div style={{ fontSize:14, fontWeight:600 }}>왼쪽에서 카테고리를 선택하세요</div>
               </div>
             ) : (
               <>
-                <div style={{ marginBottom:16 }}>
-                  <div style={{ fontSize:15, fontWeight:900, color:C.text }}>{selBoardCat.label}</div>
-                  <div style={{ fontSize:11, color:C.muted }}>서브 카테고리 {boardTags.length}개</div>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
+                  <div>
+                    <div style={{ fontSize:16, fontWeight:800, color:C.text }}>{selBoardCat.label}</div>
+                    <div style={{ fontSize:11, color:isDark?"rgba(255,255,255,0.35)":"#94a3b8" }}>서브 카테고리 {boardTags.length}개</div>
+                  </div>
                 </div>
 
                 {/* 기존 태그 목록 */}
                 {boardTags.length === 0 ? (
-                  <div style={{ padding:"16px", borderRadius:10, background:isDark?"rgba(255,255,255,0.03)":"#f9fafb", textAlign:"center", color:C.muted, fontSize:12, marginBottom:16 }}>
+                  <div style={{ padding:"20px", borderRadius:12, background:isDark?"rgba(255,255,255,0.02)":"#fafbfe", textAlign:"center", color:isDark?"rgba(255,255,255,0.35)":"#94a3b8", fontSize:12, marginBottom:18, border:`1px dashed ${panelBorder}` }}>
                     서브 카테고리가 없어요. 아래에서 추가하세요.
                   </div>
                 ) : (
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:16 }}>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:18 }}>
                     {boardTags.map(tag => (
-                      <div key={tag.id} style={{ display:"flex", alignItems:"center", gap:6, padding:"6px 12px", borderRadius:20, background:isDark?"rgba(255,255,255,0.06)":"#f3f4f6", border:`1px solid ${bdr}` }}>
+                      <div key={tag.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 14px", borderRadius:10, background:isDark?"rgba(255,255,255,0.04)":"#f8f9fc", border:`1px solid ${panelBorder}`, transition:"border-color 0.15s" }}
+                        onMouseEnter={e=>e.currentTarget.style.borderColor="rgba(239,68,68,0.3)"}
+                        onMouseLeave={e=>e.currentTarget.style.borderColor=panelBorder}>
                         <span style={{ fontSize:13, fontWeight:600, color:C.text }}>{tag.label}</span>
-                        <button onClick={()=>handleDeleteTag(tag.id)} style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(239,68,68,0.7)", fontSize:14, lineHeight:1, padding:"0 2px" }}>×</button>
+                        <button onClick={()=>handleDeleteTag(tag.id)} style={{ background:"none", border:"none", cursor:"pointer", color:"rgba(239,68,68,0.6)", fontSize:16, lineHeight:1, padding:0, fontWeight:400 }}>×</button>
                       </div>
                     ))}
                   </div>
                 )}
 
                 {/* 새 태그 추가 */}
-                <div style={{ borderTop:"1px solid "+bdr, paddingTop:16 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:10 }}>새 서브 카테고리 추가</div>
-                  <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:10 }}>
+                <div style={{ borderTop:`1px solid ${panelBorder}`, paddingTop:18 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:isDark?"rgba(255,255,255,0.4)":"#64748b", marginBottom:10 }}>새 서브 카테고리 추가</div>
+                  <div style={{ display:"flex", gap:8, alignItems:"center" }}>
                     <input value={newTagLabel} onChange={e=>setNewTagLabel(e.target.value)}
                       onKeyDown={e=>{ if(e.key==="Enter") handleAddTag(); }}
                       placeholder="예: AI, 마케팅, 디자인..."
-                      style={{ flex:1, padding:"9px 12px", borderRadius:9, border:"1px solid "+bdr, background:inputBg, color:C.text, fontSize:13, outline:"none" }}/>
+                      style={{ flex:1, padding:"10px 14px", borderRadius:10, border:`1px solid ${panelBorder}`, background:isDark?"rgba(255,255,255,0.03)":"#fff", color:C.text, fontSize:13, outline:"none", fontFamily:"inherit" }}/>
+                    <button onClick={handleAddTag} disabled={!newTagLabel.trim()}
+                      style={{ padding:"10px 20px", borderRadius:10, border:"none", cursor:newTagLabel.trim()?"pointer":"not-allowed", background:newTagLabel.trim()?accent:"rgba(0,0,0,0.04)", color:"#fff", fontSize:13, fontWeight:700, opacity:newTagLabel.trim()?1:0.5, fontFamily:"inherit", boxShadow:newTagLabel.trim()?`0 4px 14px ${accent}40`:"none" }}>
+                      추가
+                    </button>
                   </div>
-                  <button onClick={handleAddTag} disabled={!newTagLabel.trim()}
-                    style={{ width:"100%", padding:"11px", borderRadius:10, border:"none", cursor:newTagLabel.trim()?"pointer":"not-allowed", background:newTagLabel.trim()?"#3b82f6":"rgba(0,0,0,0.06)", color:"#fff", fontSize:13, fontWeight:800, opacity:newTagLabel.trim()?1:0.6 }}>
-                    + 서브 카테고리 추가
-                  </button>
                 </div>
               </>
             )}
@@ -1244,7 +1641,7 @@ export default function AdminPage({ C, user: adminUser }) {
           {/* 등록/수정 폼 */}
           {vidFormOpen && (
             <div style={{ background:isDark?"rgba(0,0,0,0.06)":"rgba(0,0,0,0.06)", border:"1px solid rgba(0,0,0,0.06)", borderRadius:16, padding:"22px 24px", marginBottom:20 }}>
-              <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:16 }}>{vidEdit ? "✏️ 영상 수정" : "➕ 새 영상 등록"}</div>
+              <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:16 }}>{vidEdit ? "영상 수정" : "새 영상 등록"}</div>
               <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(260px,1fr))", gap:12 }}>
                 {[
                   { label:"제목 *", key:"title", placeholder:"영상 제목" },
@@ -1260,7 +1657,7 @@ export default function AdminPage({ C, user: adminUser }) {
                       style={{ width:"100%", padding:"9px 12px", borderRadius:9, border:"1px solid "+bdr, background:inputBg, color:C.text, fontSize:13, outline:"none", boxSizing:"border-box" }} />
                     {f.key==="videoUrl" && vidForm.videoUrl && (
                       <div style={{ fontSize:11, marginTop:4, color: extractYtId(vidForm.videoUrl)?"#4ade80":vidForm.videoUrl.includes("drive")?"#60a5fa":"#a3a3a3", fontWeight:600 }}>
-                        {extractYtId(vidForm.videoUrl) ? "✅ 유튜브 인식" : vidForm.videoUrl.includes("drive") ? "✅ 구글드라이브 인식" : "🔗 직접 링크"}
+                        {extractYtId(vidForm.videoUrl) ? "유튜브 인식" : vidForm.videoUrl.includes("drive") ? "구글드라이브 인식" : "직접 링크"}
                       </div>
                     )}
                   </div>
@@ -1277,7 +1674,7 @@ export default function AdminPage({ C, user: adminUser }) {
                     style={{ padding:"9px 20px", borderRadius:9, border:"1px solid "+bdr, background:"transparent", color:C.muted, fontSize:13, cursor:"pointer" }}>취소</button>
                   <button onClick={submitVideo}
                     style={{ padding:"9px 24px", borderRadius:9, border:"none", background:"#3b82f6", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                    {vidEdit ? "✅ 수정 완료" : "✅ 등록하기"}
+                    {vidEdit ? "수정 완료" : "등록하기"}
                   </button>
                 </div>
               </div>
@@ -1285,10 +1682,10 @@ export default function AdminPage({ C, user: adminUser }) {
           )}
 
           {/* 영상 목록 */}
-          {vidLoading && <div style={{ textAlign:"center", padding:"40px 0", color:C.muted }}>⏳ 불러오는 중...</div>}
+          {vidLoading && <div style={{ textAlign:"center", padding:"40px 0", color:C.muted }}>불러오는 중...</div>}
           {!vidLoading && videos.length === 0 && (
             <div style={{ textAlign:"center", padding:"60px 0", color:C.muted }}>
-              <div style={{ fontSize:40, marginBottom:10 }}>🎬</div>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom:10, opacity:0.5 }}><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/><line x1="17" y1="17" x2="22" y2="17"/></svg>
               <div style={{ fontSize:14, color:C.text, fontWeight:700 }}>등록된 영상이 없어요</div>
             </div>
           )}
@@ -1301,7 +1698,7 @@ export default function AdminPage({ C, user: adminUser }) {
                   <div style={{ width:96, height:54, borderRadius:8, overflow:"hidden", flexShrink:0, background:"rgba(0,0,0,0.06)" }}>
                     {thumb
                       ? <img src={thumb} alt={v.title} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                      : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🎬</div>
+                      : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>
                     }
                   </div>
                   {/* 정보 */}
@@ -1309,8 +1706,8 @@ export default function AdminPage({ C, user: adminUser }) {
                     <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{v.title}</div>
                     <div style={{ fontSize:11, color:C.muted, display:"flex", gap:8, flexWrap:"wrap" }}>
                       <span>{v.category || "synth"}</span>
-                      <span>{v.isFree !== false ? "🟢 무료" : "👑 멤버전용"}</span>
-                      {v.downloadUrl && <span>⬇️ 다운로드 있음</span>}
+                      <span style={{ color:v.isFree!==false?"#22c55e":"#f59e0b", fontWeight:600 }}>{v.isFree !== false ? "무료" : "멤버전용"}</span>
+                      {v.downloadUrl && <span>다운로드 있음</span>}
                       <span style={{ color:"rgba(255,255,255,0.2)" }}>|</span>
                       <span style={{ maxWidth:240, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", opacity:0.5 }}>{v.videoUrl}</span>
                     </div>
@@ -1318,9 +1715,9 @@ export default function AdminPage({ C, user: adminUser }) {
                   {/* 액션 버튼 */}
                   <div style={{ display:"flex", gap:6, flexShrink:0 }}>
                     <button onClick={() => startEditVideo(v)}
-                      style={{ padding:"7px 14px", borderRadius:9, border:"1px solid "+bdr, background:"transparent", color:C.purpleL, fontSize:12, fontWeight:600, cursor:"pointer" }}>✏️ 수정</button>
+                      style={{ padding:"7px 14px", borderRadius:9, border:"1px solid "+bdr, background:"transparent", color:C.purpleL, fontSize:12, fontWeight:600, cursor:"pointer" }}>수정</button>
                     <button onClick={() => deleteVideo(v.key, v.title)}
-                      style={{ padding:"7px 14px", borderRadius:9, border:"none", background:"rgba(239,68,68,0.1)", color:"#ef4444", fontSize:12, fontWeight:700, cursor:"pointer" }}>🗑 삭제</button>
+                      style={{ padding:"7px 14px", borderRadius:9, border:"none", background:"rgba(239,68,68,0.1)", color:"#ef4444", fontSize:12, fontWeight:700, cursor:"pointer" }}>삭제</button>
                   </div>
                 </div>
               );
@@ -1365,7 +1762,7 @@ export default function AdminPage({ C, user: adminUser }) {
                   {templates.map(tpl => (
                     <div key={tpl.id} style={{ borderRadius: 12, border: `1px solid ${C.border}`, background: C.card, overflow: "hidden" }}>
                       <div style={{ width: "100%", paddingBottom: "60%", position: "relative", background: isDark ? "rgba(255,255,255,0.05)" : "#f5f5f5" }}>
-                        {tpl.preview ? <img src={tpl.preview} alt={tpl.title} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, color: "#ccc" }}>🎨</div>}
+                        {tpl.preview ? <img src={tpl.preview} alt={tpl.title} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>}
                       </div>
                       <div style={{ padding: "10px 12px" }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 4 }}>{tpl.title || "제목 없음"}</div>
@@ -1443,6 +1840,8 @@ function InquiryManager({ C, isDark }) {
 
   const STATUS = { pending: { label: "대기중", color: "#f59e0b" }, replied: { label: "답변완료", color: "#4ade80" }, closed: { label: "종료", color: "#94a3b8" } };
 
+  const accent = "#546FFF";
+
   if (loading) return <div style={{ padding: 40, textAlign: "center", color: muted }}>문의 목록 로딩 중...</div>;
 
   if (selected) {
@@ -1450,71 +1849,109 @@ function InquiryManager({ C, isDark }) {
     const st = STATUS[s.status] || STATUS.pending;
     return (
       <div>
-        <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", cursor: "pointer", color: muted, fontSize: 13, marginBottom: 16, padding: 0 }}>← 목록으로</button>
-        <div style={{ background: cardBg, border: "1px solid " + bdr, borderRadius: 16, padding: "24px 28px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-            <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 6, background: st.color + "20", color: st.color }}>{st.label}</span>
+        <button onClick={() => setSelected(null)} style={{ background: "none", border: "none", cursor: "pointer", color: accent, fontSize: 13, marginBottom: 16, padding: 0, fontFamily: "inherit", fontWeight: 600 }}>
+          <span style={{ marginRight: 6 }}>←</span>목록으로
+        </button>
+        <div style={{ background: cardBg, border: "1px solid " + bdr, borderRadius: 16, padding: "28px 32px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 99, background: st.color + "18", color: st.color }}>{st.label}</span>
             <span style={{ fontSize: 12, color: muted }}>{new Date(s.created_at).toLocaleString("ko-KR")}</span>
-            <button onClick={() => deleteInquiry(s.id)} style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.3)", background: "transparent", color: "#f87171", fontSize: 11, cursor: "pointer" }}>삭제</button>
+            <div style={{ marginLeft:"auto", display:"flex", gap:6 }}>
+              {s.status !== "closed" && <button onClick={() => updateStatus(s.id, "closed")} style={{ padding:"6px 14px", borderRadius:8, border:"1px solid "+bdr, background:"transparent", color:muted, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>종료</button>}
+              <button onClick={() => deleteInquiry(s.id)} style={{ padding:"6px 14px", borderRadius:8, border:"1px solid rgba(239,68,68,0.2)", background:"rgba(239,68,68,0.04)", color:"#f87171", fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>삭제</button>
+            </div>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: "8px 12px", fontSize: 13, marginBottom: 20 }}>
-            <span style={{ color: muted, fontWeight: 700 }}>이름</span><span style={{ color: text }}>{s.name}</span>
-            <span style={{ color: muted, fontWeight: 700 }}>이메일</span><span style={{ color: text }}>{s.email}</span>
-            <span style={{ color: muted, fontWeight: 700 }}>유형</span><span style={{ color: text }}>{s.subject || "-"}</span>
+          {/* 고객 정보 카드 */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:14, marginBottom:20 }}>
+            {[{l:"이름",v:s.name},{l:"이메일",v:s.email},{l:"유형",v:s.subject||"일반"}].map(f => (
+              <div key={f.l} style={{ padding:"12px 16px", borderRadius:10, background:isDark?"rgba(255,255,255,0.02)":"#fafbfe", border:"1px solid "+bdr }}>
+                <div style={{ fontSize:10, fontWeight:600, color:muted, marginBottom:4, letterSpacing:0.5, textTransform:"uppercase" }}>{f.l}</div>
+                <div style={{ fontSize:14, fontWeight:600, color:text }}>{f.v}</div>
+              </div>
+            ))}
           </div>
-          <div style={{ fontSize: 14, color: text, lineHeight: 1.9, whiteSpace: "pre-wrap", padding: "16px 18px", borderRadius: 12, background: isDark ? "rgba(255,255,255,0.03)" : "#f9f9fc", border: "1px solid " + bdr, marginBottom: 20 }}>{s.message}</div>
+
+          <div style={{ fontSize:14, color:text, lineHeight:1.9, whiteSpace:"pre-wrap", padding:"18px 20px", borderRadius:12, background:isDark?"rgba(255,255,255,0.02)":"#fafbfe", border:"1px solid "+bdr, marginBottom:20 }}>{s.message}</div>
 
           {s.reply && (
-            <div style={{ padding: "14px 18px", borderRadius: 12, background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)", marginBottom: 16 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#4ade80", marginBottom: 6 }}>답변 내용</div>
-              <div style={{ fontSize: 13, color: text, lineHeight: 1.8, whiteSpace: "pre-wrap" }}>{s.reply}</div>
+            <div style={{ padding:"16px 20px", borderRadius:12, background:"rgba(34,197,94,0.04)", border:"1px solid rgba(34,197,94,0.15)", marginBottom:18 }}>
+              <div style={{ fontSize:11, fontWeight:700, color:"#22c55e", marginBottom:8 }}>답변 완료</div>
+              <div style={{ fontSize:13, color:text, lineHeight:1.8, whiteSpace:"pre-wrap" }}>{s.reply}</div>
             </div>
           )}
 
-          <div style={{ fontSize: 12, fontWeight: 700, color: muted, marginBottom: 8 }}>답변 작성</div>
+          <div style={{ fontSize:12, fontWeight:700, color:muted, marginBottom:8 }}>답변 작성</div>
           <textarea value={replyText} onChange={e => setReplyText(e.target.value)} rows={4} placeholder="답변 내용을 입력하세요..."
-            style={{ width: "100%", padding: "12px 14px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.05)" : "#fff", color: text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit", resize: "vertical" }} />
-          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-            <button onClick={() => submitReply(s.id)} style={{ padding: "10px 24px", borderRadius: 10, border: "none", background: "#3b82f6", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>답변 저장</button>
-            {s.status !== "closed" && <button onClick={() => updateStatus(s.id, "closed")} style={{ padding: "10px 18px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: muted, fontSize: 13, cursor: "pointer" }}>종료 처리</button>}
+            style={{ width:"100%", padding:"14px 16px", borderRadius:12, border:"1px solid "+bdr, background:isDark?"rgba(255,255,255,0.03)":"#fff", color:text, fontSize:13, outline:"none", boxSizing:"border-box", fontFamily:"inherit", resize:"vertical" }} />
+          <div style={{ display:"flex", gap:8, marginTop:12 }}>
+            <button onClick={() => submitReply(s.id)} style={{ padding:"10px 24px", borderRadius:10, border:"none", background:accent, color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", boxShadow:"0 4px 14px rgba(84,111,255,0.25)" }}>답변 저장</button>
           </div>
         </div>
       </div>
     );
   }
 
+  // 상태별 카운트
+  const pendingCnt = inquiries.filter(i=>i.status==="pending").length;
+  const repliedCnt = inquiries.filter(i=>i.status==="replied").length;
+  const closedCnt = inquiries.filter(i=>i.status==="closed").length;
+
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-        <div style={{ fontSize: 16, fontWeight: 900, color: text }}>📩 문의 목록 ({inquiries.length}건)</div>
+      {/* 상태 요약 카드 */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14, marginBottom:20 }}>
+        {[
+          {l:"대기중", n:pendingCnt, color:"#f59e0b"},
+          {l:"답변완료", n:repliedCnt, color:"#22c55e"},
+          {l:"종료", n:closedCnt, color:"#94a3b8"},
+        ].map(s => (
+          <div key={s.l} style={{ padding:"16px 20px", borderRadius:14, background:cardBg, border:"1px solid "+bdr, display:"flex", alignItems:"center", gap:14 }}>
+            <div style={{ width:10, height:32, borderRadius:5, background:s.color, flexShrink:0, opacity:0.7 }}/>
+            <div>
+              <div style={{ fontSize:22, fontWeight:800, color:text }}>{s.n}</div>
+              <div style={{ fontSize:11, color:muted, marginTop:1 }}>{s.l}</div>
+            </div>
+          </div>
+        ))}
       </div>
+
       {inquiries.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 0", color: muted }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-          <div style={{ fontSize: 15, fontWeight: 700 }}>접수된 문의가 없습니다</div>
+        <div style={{ textAlign:"center", padding:"60px 0", color:muted }}>
+          <div style={{ fontSize:15, fontWeight:700 }}>접수된 문의가 없습니다</div>
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {inquiries.map(item => {
-            const st = STATUS[item.status] || STATUS.pending;
-            return (
-              <div key={item.id} onClick={() => { setSelected(item); setReplyText(item.reply || ""); }}
-                style={{ background: cardBg, border: "1px solid " + bdr, borderRadius: 12, padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 14 }}
-                onMouseEnter={e => e.currentTarget.style.opacity = "0.85"}
-                onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                    <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 5, background: st.color + "20", color: st.color }}>{st.label}</span>
-                    <span style={{ fontSize: 11, color: muted }}>{item.subject || "일반"}</span>
-                    <span style={{ fontSize: 11, color: muted }}>{new Date(item.created_at).toLocaleDateString("ko-KR")}</span>
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: text, marginBottom: 2 }}>{item.name} ({item.email})</div>
-                  <div style={{ fontSize: 12, color: muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.message.slice(0, 80)}</div>
-                </div>
-                <span style={{ fontSize: 16, color: muted, flexShrink: 0 }}>→</span>
-              </div>
-            );
-          })}
+        <div style={{ background:cardBg, borderRadius:16, overflow:"hidden", border:"1px solid "+bdr }}>
+          <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+            <thead>
+              <tr>
+                {["상태","이름","이메일","유형","접수일",""].map((h,i) => (
+                  <th key={h||i} style={{ padding:"12px 14px", textAlign:"left", color:muted, fontWeight:600, fontSize:12, borderBottom:`2px solid ${bdr}` }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {inquiries.map(item => {
+                const st = STATUS[item.status] || STATUS.pending;
+                return (
+                  <tr key={item.id} onClick={() => { setSelected(item); setReplyText(item.reply || ""); }}
+                    style={{ cursor:"pointer", transition:"background 0.15s" }}
+                    onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.02)":"#fafbfe"}
+                    onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                    <td style={{ padding:"12px 14px" }}>
+                      <span style={{ fontSize:11, fontWeight:700, padding:"4px 12px", borderRadius:99, background:st.color+"15", color:st.color }}>{st.label}</span>
+                    </td>
+                    <td style={{ padding:"12px 14px", fontWeight:600, color:text }}>{item.name}</td>
+                    <td style={{ padding:"12px 14px", color:muted, fontSize:12 }}>{item.email}</td>
+                    <td style={{ padding:"12px 14px", color:muted, fontSize:12 }}>{item.subject || "일반"}</td>
+                    <td style={{ padding:"12px 14px", color:muted, fontSize:12 }}>{new Date(item.created_at).toLocaleDateString("ko-KR")}</td>
+                    <td style={{ padding:"12px 14px", textAlign:"right" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
@@ -1547,24 +1984,55 @@ function AppFeedbackTab({ C, isDark }) {
     setFeedbacks(prev => prev.map(f => f.id === id ? { ...f, status: newStatus } : f));
   };
 
+  const bdr2 = isDark ? "rgba(255,255,255,0.06)" : "#eef0f6";
+  const panelBg2 = isDark ? "rgba(255,255,255,0.045)" : "#fff";
+
+  // 상태별 카운트
+  const fbPending = feedbacks.filter(f=>f.status==="pending").length;
+  const fbReviewed = feedbacks.filter(f=>f.status==="reviewed").length;
+  const fbDone = feedbacks.filter(f=>f.status==="done").length;
+
   return (
     <div>
-      <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:16 }}>앱 피드백 ({feedbacks.length}건)</div>
-      {loading && <div style={{ color:C.muted }}>로딩 중...</div>}
-      {feedbacks.map(f => (
-        <div key={f.id} style={{ padding:"16px 18px", borderRadius:12, background:C.card, border:`1px solid ${isDark?"rgba(255,255,255,0.06)":"#f0f0f0"}`, marginBottom:10 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
-            <span style={{ fontSize:11, padding:"2px 8px", borderRadius:4, background:(catColors[f.category]||"#888")+"18", color:catColors[f.category]||"#888", fontWeight:700 }}>{catLabels[f.category]||f.category}</span>
-            <span style={{ fontSize:15, fontWeight:700, color:C.text, flex:1 }}>{f.title}</span>
-            <select value={f.status} onChange={e => updateStatus(f.id, e.target.value)}
-              style={{ padding:"4px 8px", borderRadius:6, border:`1px solid ${statusColors[f.status]}`, background:"transparent", color:statusColors[f.status], fontSize:11, fontWeight:700, cursor:"pointer" }}>
-              {statusOpts.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}
-            </select>
+      {/* 상태 요약 */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:14, marginBottom:20 }}>
+        {[
+          {l:"전체",n:feedbacks.length,color:"#546FFF"},
+          {l:"검토 대기",n:fbPending,color:"#94a3b8"},
+          {l:"검토 중",n:fbReviewed,color:"#3b82f6"},
+          {l:"반영 완료",n:fbDone,color:"#22c55e"},
+        ].map(s => (
+          <div key={s.l} style={{ padding:"14px 18px", borderRadius:14, background:panelBg2, border:`1px solid ${bdr2}`, display:"flex", alignItems:"center", gap:12 }}>
+            <div style={{ width:8, height:28, borderRadius:4, background:s.color, flexShrink:0, opacity:0.7 }}/>
+            <div>
+              <div style={{ fontSize:20, fontWeight:800, color:C.text }}>{s.n}</div>
+              <div style={{ fontSize:11, color:C.muted, marginTop:1 }}>{s.l}</div>
+            </div>
           </div>
-          <div style={{ fontSize:13, color:C.muted, lineHeight:1.7, whiteSpace:"pre-wrap" }}>{f.body}</div>
-          <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>{f.email} · {f.app_version} · {new Date(f.created_at).toLocaleDateString("ko-KR")}</div>
-        </div>
-      ))}
+        ))}
+      </div>
+
+      {loading && <div style={{ color:C.muted }}>로딩 중...</div>}
+      {feedbacks.length === 0 && !loading && <div style={{ textAlign:"center", padding:40, color:C.muted, fontSize:14 }}>피드백이 없습니다</div>}
+
+      <div style={{ background:panelBg2, borderRadius:16, overflow:"hidden", border:`1px solid ${bdr2}` }}>
+        {feedbacks.map((f,i) => (
+          <div key={f.id} style={{ padding:"16px 20px", borderTop:i>0?`1px solid ${bdr2}`:"none", transition:"background 0.15s" }}
+            onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.02)":"#fafbfe"}
+            onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+              <span style={{ fontSize:11, padding:"3px 10px", borderRadius:99, background:(catColors[f.category]||"#888")+"15", color:catColors[f.category]||"#888", fontWeight:700 }}>{catLabels[f.category]||f.category}</span>
+              <span style={{ fontSize:14, fontWeight:700, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.title}</span>
+              <select value={f.status} onChange={e => updateStatus(f.id, e.target.value)}
+                style={{ padding:"5px 10px", borderRadius:8, border:`1px solid ${statusColors[f.status]}40`, background:`${statusColors[f.status]}08`, color:statusColors[f.status], fontSize:11, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                {statusOpts.map(s => <option key={s} value={s}>{statusLabels[s]}</option>)}
+              </select>
+            </div>
+            <div style={{ fontSize:13, color:isDark?"rgba(255,255,255,0.5)":"#64748b", lineHeight:1.7, whiteSpace:"pre-wrap", maxHeight:80, overflow:"hidden" }}>{f.body}</div>
+            <div style={{ fontSize:11, color:isDark?"rgba(255,255,255,0.3)":"#94a3b8", marginTop:8 }}>{f.email} · {f.app_version} · {new Date(f.created_at).toLocaleDateString("ko-KR")}</div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1678,17 +2146,22 @@ function VisitorAnalyticsTab({ C, isDark }) {
       </div>
 
       {/* 통계 카드 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14, marginBottom: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16, marginBottom: 28 }}>
         {[
-          ["국가 수", data.countries, `${data.days}일 고유 국가`],
-          ["도시 수", data.cities, "도시 식별 기준"],
-          ["방문 수", data.totalVisits, `${data.days}일 고유 방문`],
-          ["페이지뷰", Object.values(data.dailyCounts || {}).reduce((s, v) => s + v, 0), `${data.days}일 전체 조회`],
-        ].map(([label, val, desc], i) => (
-          <div key={i} style={{ padding: "18px 20px", borderRadius: 14, background: card, border: `1px solid ${bdr}` }}>
-            <div style={{ fontSize: 12, color: "#3b82f6", fontWeight: 600, marginBottom: 6 }}>{label}</div>
-            <div style={{ fontSize: 28, fontWeight: 900, color: text }}>{val?.toLocaleString?.() || val || 0}</div>
-            <div style={{ fontSize: 11, color: muted, marginTop: 4 }}>{desc}</div>
+          {label:"국가 수", val:data.countries, desc:`${data.days}일 고유 국가`, color:"#546FFF", icon:"M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"},
+          {label:"도시 수", val:data.cities, desc:"도시 식별 기준", color:"#22c55e", icon:"M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"},
+          {label:"방문 수", val:data.totalVisits, desc:`${data.days}일 고유 방문`, color:"#f59e0b", icon:"M15 12a3 3 0 11-6 0 3 3 0 016 0z"},
+          {label:"페이지뷰", val:Object.values(data.dailyCounts || {}).reduce((s, v) => s + v, 0), desc:`${data.days}일 전체 조회`, color:"#8b5cf6", icon:"M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"},
+        ].map((s, i) => (
+          <div key={i} style={{ padding: "20px 22px", borderRadius: 16, background: card, border: `1px solid ${bdr}`, boxShadow: isDark?"none":"0 1px 8px rgba(0,0,0,0.04)" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+              <div style={{ width:42, height:42, borderRadius:12, background:`${s.color}12`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={s.color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={s.icon}/></svg>
+              </div>
+            </div>
+            <div style={{ fontSize: 26, fontWeight: 800, color: text, letterSpacing:-0.5 }}>{s.val?.toLocaleString?.() || s.val || 0}</div>
+            <div style={{ fontSize: 12, color: muted, marginTop: 4, fontWeight:500 }}>{s.label}</div>
+            <div style={{ fontSize: 10, color: isDark?"rgba(255,255,255,0.25)":"#c0c0c0", marginTop: 2 }}>{s.desc}</div>
           </div>
         ))}
       </div>

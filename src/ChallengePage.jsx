@@ -32,6 +32,7 @@ async function loadApplications(cid) { const { data } = await supabase.from("cha
 async function loadMyApplication(cid, uid) { if (!uid) return null; const { data } = await supabase.from("challenge_applications").select("*").eq("challenge_id", cid).eq("uid", uid).maybeSingle(); return data || null; }
 async function submitApplication(app) { const row = { ...app, id: "ca_" + Date.now(), status: "pending", created_at: new Date().toISOString() }; const { error } = await supabase.from("challenge_applications").insert(row); if (error) throw new Error(error.message || "신청 저장 실패"); return row; }
 async function updateApplicationStatus(id, status) { await supabase.from("challenge_applications").update({ status }).eq("id", id); }
+async function updateApplicationProof(id, patch) { const { data, error } = await supabase.from("challenge_applications").update(patch).eq("id", id).select("*").single(); if (error) throw new Error(error.message || "인증 저장 실패"); return data; }
 async function loadPublicApplicants(cid) {
   const { data, error } = await supabase.rpc("get_challenge_participants", { p_challenge_id: cid });
   if (!error) return data || [];
@@ -40,6 +41,16 @@ async function loadPublicApplicants(cid) {
 }
 async function loadMissions(cid) { const { data } = await supabase.from("challenge_missions").select("*").eq("challenge_id", cid).order("created_at", { ascending: false }); return data || []; }
 async function submitMission(m) { const row = { ...m, id: "cm_" + Date.now(), created_at: new Date().toISOString() }; await supabase.from("challenge_missions").insert(row); return row; }
+async function updateMission(id, patch) { const { data, error } = await supabase.from("challenge_missions").update(patch).eq("id", id).select("*").single(); if (error) throw new Error(error.message || "인증 수정 실패"); return data; }
+async function uploadChallengeProof(challengeId, user, file, kind) {
+  const ext = file.name.split(".").pop() || "png";
+  const safeUid = user?.uid || "guest";
+  const path = `challenge-proofs/${challengeId}/${kind}_${safeUid}_${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from("uploads").upload(path, file, { contentType: file.type, upsert: true });
+  if (error) throw error;
+  const { data } = supabase.storage.from("uploads").getPublicUrl(path);
+  return data?.publicUrl || "";
+}
 
 /* ═══════════════════════════════════════════════════════════
    ChallengePage
@@ -347,7 +358,10 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             {isParticipant ? (
               <button onClick={() => openBoard(ch)} style={ctaBtn(PRIMARY)}>미션 게시판 입장</button>
             ) : hasApplied ? (
-              <p style={{ fontSize: 14, color: "#4a5568" }}>관리자 확인 후 참여가 확정됩니다</p>
+              <div style={{ maxWidth: 420, margin: "0 auto" }}>
+                <p style={{ fontSize: 14, color: "#4a5568", marginBottom: 16 }}>관리자 확인 후 참여가 확정됩니다</p>
+                <StartProofUploader ch={ch} C={C} bdr={bdr} isDark={isDark} user={user} myApp={myApp} setMyApp={setMyApp} compact />
+              </div>
             ) : canApply ? (
               <button onClick={() => { setView("apply"); window.scrollTo(0, 0); }} style={ctaBtn("#1A1A2E")}>신청하기</button>
             ) : null}
@@ -385,6 +399,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
           관리자 확인 후 참여가 확정되면 안내를 드립니다.
           {sel.start_date && <><br/>챌린지 시작일: <strong style={{ color: C.text }}>{fmt(sel.start_date)}</strong></>}
         </p>
+        <StartProofUploader ch={sel} C={C} bdr={bdr} isDark={isDark} user={user} myApp={myApp} setMyApp={setMyApp} />
         <div style={{ marginTop: 16 }}>
           <button onClick={back} style={{ padding: "12px 28px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>목록으로</button>
         </div>
@@ -393,7 +408,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   );
 
   /* ═══ BOARD ══════════════════════════════════════════════ */
-  if (view === "board" && sel) return <MissionBoard ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} user={user} missions={missions} setMissions={setMissions} isParticipant={myApp?.status === "confirmed"} onBack={() => { setView("detail"); window.scrollTo(0, 0); }} />;
+  if (view === "board" && sel) return <MissionBoard ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} user={user} myApp={myApp} setMyApp={setMyApp} missions={missions} setMissions={setMissions} isParticipant={myApp?.status === "confirmed"} onBack={() => { setView("detail"); window.scrollTo(0, 0); }} />;
 
   /* ═══ ADMIN ══════════════════════════════════════════════ */
   if (view === "admin" && sel) return <AdminPanel ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} apps={apps} setApps={setApps} onBack={() => { setView("detail"); window.scrollTo(0, 0); }} onEdit={() => { setView("editor"); window.scrollTo(0, 0); }}
@@ -437,10 +452,19 @@ function Fld({ label, children, C }) {
 function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
   const [f, sf] = useState({ name: user?.nick || "", phone: "", email: user?.email || "", sns_link: "", purpose: "", payment_method: ch.price > 0 ? "later" : "free", agree_rules: false, agree_refund: false });
   const [busy, setBusy] = useState(false);
+  const [startFile, setStartFile] = useState(null);
+  const [startPreview, setStartPreview] = useState("");
   const up = (k, v) => sf(p => ({ ...p, [k]: v }));
   const inp = { width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
   const phoneValid = /^01[016789]-\d{3,4}-\d{4}$/.test(f.phone);
   const ok = f.name && phoneValid && f.email && f.purpose && f.agree_rules && (ch.price > 0 ? f.agree_refund : true);
+  const pickStartFile = e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert("이미지는 5MB 이하만 업로드할 수 있습니다."); return; }
+    setStartFile(file);
+    setStartPreview(URL.createObjectURL(file));
+  };
 
   return (
     <div style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)" }}>
@@ -489,6 +513,19 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
               );
             })()}
           </Fld>
+          <Fld label="시작 데이터 인증 이미지" C={C}>
+            <input type="file" accept="image/*" onChange={pickStartFile} style={{ display: "none" }} id="challenge-start-proof" />
+            <label htmlFor="challenge-start-proof" style={{ display: "block", border: `2px dashed ${startPreview ? PRIMARY : bdr}`, borderRadius: 14, padding: startPreview ? 0 : "22px 16px", textAlign: "center", cursor: "pointer", background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa", overflow: "hidden" }}>
+              {startPreview ? (
+                <img src={startPreview} alt="시작 인증" style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
+              ) : (
+                <>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>챌린지 시작 전 현재 상태 화면을 캡처해서 올려주세요</div>
+                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>예: 인스타 프로필 팔로워 수, 릴스/게시물 조회수, 블로그 방문자 수, 유튜브 채널 구독자 수 화면</div>
+                </>
+              )}
+            </label>
+          </Fld>
           <Fld label="참여 목적 *" C={C}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {PURPOSE_OPTIONS.map(p => (
@@ -514,9 +551,9 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
             </label>}
           </div>
 
-          <button disabled={!ok || busy} onClick={async () => { setBusy(true); try { await onSubmit(f); } catch(e) { alert("오류: " + e.message); } setBusy(false); }}
+          <button disabled={!ok || busy} onClick={async () => { setBusy(true); try { const start_screenshot_url = startFile ? await uploadChallengeProof(ch.id, user, startFile, "start") : ""; await onSubmit({ ...f, start_screenshot_url }); } catch(e) { alert("오류: " + e.message); } setBusy(false); }}
             style={{ width: "100%", padding: "16px", borderRadius: 99, border: "none", background: ok ? "#1A1A2E" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: ok ? "#fff" : C.muted, fontSize: 16, fontWeight: 700, cursor: ok ? "pointer" : "not-allowed", marginTop: 28, opacity: busy ? 0.7 : 1, fontFamily: "inherit" }}>
-            {busy ? "신청 중..." : "참여하기"}
+            {busy ? "인증 이미지 저장 중..." : "참여하기"}
           </button>
         </div>
       </div>
@@ -524,24 +561,137 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
   );
 }
 
+function ProofStatus({ title, url, C, bdr, onReplace }) {
+  return (
+    <div style={{ border: "1px solid " + bdr, borderRadius: 12, padding: 12, background: "rgba(59,130,246,0.03)" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: C.text }}>{title}</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {url ? <a href={url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, fontWeight: 700, textDecoration: "none" }}>보기</a> : <span style={{ fontSize: 11, color: C.muted }}>미등록</span>}
+          {url && onReplace && <button onClick={onReplace} style={{ border: "none", background: "transparent", color: C.muted, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 0 }}>다시 올리기</button>}
+        </span>
+      </div>
+      {url ? (
+        <img src={url} alt={title} style={{ width: "100%", height: 86, objectFit: "cover", borderRadius: 8, display: "block" }} />
+      ) : (
+        <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>예: 팔로워 수, 조회수, 방문자 수, 구독자 수가 보이는 화면을 이미지로 남깁니다</div>
+      )}
+    </div>
+  );
+}
+
+function StartProofUploader({ ch, C, bdr, isDark, user, myApp, setMyApp, compact = false }) {
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
+  if (!myApp?.id) return null;
+  const pickFile = e => {
+    const next = e.target.files?.[0];
+    if (!next) return;
+    if (next.size > 5 * 1024 * 1024) { alert("이미지는 5MB 이하만 업로드할 수 있습니다."); return; }
+    setFile(next);
+    setPreview(URL.createObjectURL(next));
+  };
+  const submit = async () => {
+    if (!file) return;
+    setBusy(true);
+    try {
+      const start_screenshot_url = await uploadChallengeProof(ch.id, user, file, "start");
+      const updated = await updateApplicationProof(myApp.id, { start_screenshot_url });
+      setMyApp(updated);
+      setFile(null);
+      setPreview("");
+      setEditing(false);
+    } catch (e) {
+      alert("시작 인증 저장 실패: " + e.message);
+    }
+    setBusy(false);
+  };
+  return (
+    <div style={{ border: "1px solid " + bdr, borderRadius: 14, padding: compact ? 12 : 16, background: isDark ? "rgba(255,255,255,0.03)" : "#fafafa", textAlign: "left" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+        <span style={{ fontSize: 13, fontWeight: 800, color: C.text }}>시작 데이터 인증</span>
+        {myApp.start_screenshot_url ? <a href={myApp.start_screenshot_url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, fontWeight: 700, textDecoration: "none" }}>등록됨</a> : <span style={{ fontSize: 11, color: "#f59e0b", fontWeight: 700 }}>미등록</span>}
+      </div>
+      {myApp.start_screenshot_url && !file && !editing ? (
+        <>
+          <img src={myApp.start_screenshot_url} alt="시작 인증" style={{ width: "100%", maxHeight: compact ? 130 : 180, objectFit: "cover", borderRadius: 10, display: "block" }} />
+          <button onClick={() => setEditing(true)} style={{ width: "100%", marginTop: 10, padding: "9px 12px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>다시 올리기</button>
+        </>
+      ) : (
+        <>
+          <input id={`start-proof-after-${myApp.id}`} type="file" accept="image/*" onChange={pickFile} style={{ display: "none" }} />
+          <label htmlFor={`start-proof-after-${myApp.id}`} style={{ display: "block", border: `1.5px dashed ${preview ? PRIMARY : bdr}`, borderRadius: 10, padding: preview ? 0 : "16px 12px", textAlign: "center", cursor: "pointer", color: C.muted, fontSize: 12, overflow: "hidden" }}>
+            {preview ? <img src={preview} alt="시작 인증 미리보기" style={{ width: "100%", maxHeight: compact ? 130 : 180, objectFit: "cover", display: "block" }} /> : "팔로워/조회수/방문자 수 화면 캡처 업로드"}
+          </label>
+          {file && <button disabled={busy} onClick={submit} style={{ width: "100%", marginTop: 10, padding: "10px 12px", borderRadius: 10, border: "none", background: "#1A1A2E", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{busy ? "저장 중..." : "시작 인증 저장"}</button>}
+        </>
+      )}
+    </div>
+  );
+}
+
+function ProofDayCell({ title, date, done, active, C, bdr, card, isDark, mob, onClick }) {
+  const dow = ["일","월","화","수","목","금","토"][date.getDay()];
+  return (
+    <div onClick={onClick}
+      style={{
+        borderRadius: 14,
+        padding: mob ? "10px 4px" : "12px 8px",
+        textAlign: "center",
+        cursor: "pointer",
+        border: active ? `2px solid ${PRIMARY}` : `1px solid ${bdr}`,
+        background: done ? "rgba(34,197,94,0.07)" : (isDark ? "rgba(255,255,255,0.03)" : card),
+        transition: "all 0.15s",
+        position: "relative",
+      }}
+      onMouseEnter={e => { if (!active) e.currentTarget.style.transform = "translateY(-2px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
+      <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>{date.getMonth() + 1}/{date.getDate()} {dow}</div>
+      <div style={{ fontSize: mob ? 12 : 13, fontWeight: 800, color: active ? PRIMARY : C.text, minHeight: 18 }}>{title}</div>
+      <div style={{ marginTop: 6 }}>
+        {done ? (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block", margin: "0 auto" }}><polyline points="20 6 9 17 4 12"/></svg>
+        ) : (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block", margin: "0 auto", opacity: 0.75 }}><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ═══ MissionBoard ═════════════════════════════════════════ */
-function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissions, isParticipant, onBack }) {
+function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, missions, setMissions, isParticipant, onBack }) {
   const [selDay, setSelDay] = useState(null);
+  const [proofPanel, setProofPanel] = useState(null);
   const [link, setLink] = useState("");
   const [memo, setMemo] = useState("");
-  const [extraLink, setExtraLink] = useState(""); // 추가 활동 (댓글/공감/공유 스크린샷)
+  const [extraFile, setExtraFile] = useState(null);
+  const [extraPreview, setExtraPreview] = useState("");
   const [screenshotFile, setScreenshotFile] = useState(null); // 인증 스크린샷
   const [screenshotPreview, setScreenshotPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [endProofFile, setEndProofFile] = useState(null);
+  const [endProofPreview, setEndProofPreview] = useState("");
+  const [endProofBusy, setEndProofBusy] = useState(false);
+  const [endProofEditing, setEndProofEditing] = useState(false);
+  const [missionEditMode, setMissionEditMode] = useState(false);
   const fileInputRef = useRef(null);
+  const extraFileInputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState("calendar");
   const inp = { width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
 
   const totalDays = parseInt(ch.duration) || 10;
   const startDate = ch.start_date ? new Date(ch.start_date) : new Date();
-  const todayNum = Math.max(1, Math.min(totalDays, Math.ceil((new Date() - startDate) / 86400000)));
+  const localDateOnly = dt => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+  const currentDayNum = Math.floor((localDateOnly(new Date()) - localDateOnly(startDate)) / 86400000) + 1;
+  const todayNum = Math.max(1, Math.min(totalDays, currentDayNum));
   const dayDate = d => { const dt = new Date(startDate); dt.setDate(dt.getDate() + d - 1); return dt; };
+  const startProofDate = (() => { const dt = new Date(startDate); dt.setDate(dt.getDate() - 1); return dt; })();
+  const endProofDate = (() => { const dt = dayDate(totalDays); dt.setDate(dt.getDate() + 1); return dt; })();
+  const canUploadEndProof = isParticipant && myApp?.id;
 
   // 내 미션 맵 (day → mission)
   const myMissions = {};
@@ -554,6 +704,9 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
 
   const myChecked = Object.keys(myMissions).length;
   const pct = Math.round((myChecked / totalDays) * 100);
+  const availableMissionCount = Math.max(0, Math.min(totalDays, currentDayNum));
+  const incompleteDays = Array.from({ length: availableMissionCount }, (_, i) => i + 1).filter(d => !myMissions[d]);
+  const incompleteCount = incompleteDays.length;
 
   // 스크린샷 선택 핸들러
   const handleScreenshot = (e) => {
@@ -563,10 +716,19 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
     setScreenshotFile(file);
     setScreenshotPreview(URL.createObjectURL(file));
   };
+  const handleExtraScreenshot = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert("파일 크기는 5MB 이하만 가능합니다."); return; }
+    setExtraFile(file);
+    setExtraPreview(URL.createObjectURL(file));
+  };
 
   // 인증 제출
   const submit = async () => {
-    if ((!link.trim() && !screenshotFile) || !selDay) return; setBusy(true);
+    const existing = myMissions[selDay];
+    const editing = missionEditMode && existing?.uid === user?.uid;
+    if ((!link.trim() && !screenshotFile && !editing) || !selDay) return; setBusy(true);
     try {
       let screenshotUrl = null;
       if (screenshotFile) {
@@ -579,30 +741,122 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
         screenshotUrl = urlData?.publicUrl || null;
         setUploading(false);
       }
-      const m = await submitMission({ challenge_id: ch.id, uid: user.uid, nick: user.nick || "참가자", day: selDay, title: `Day ${selDay} 미션 인증`, body: memo.trim(), link: link.trim() || screenshotUrl || "", extra_link: extraLink.trim() || null, screenshot_url: screenshotUrl });
-      setMissions(p => [m, ...p]); setLink(""); setMemo(""); setExtraLink(""); setScreenshotFile(null); setScreenshotPreview(null); setSelDay(null);
+      let extraUrl = null;
+      if (extraFile) {
+        setUploading(true);
+        const extraExt = extraFile.name.split(".").pop() || "png";
+        const extraPath = `challenge-missions/${ch.id}/day${selDay}_${user.uid}_extra_${Date.now()}.${extraExt}`;
+        const { error: extraErr } = await supabase.storage.from("uploads").upload(extraPath, extraFile, { contentType: extraFile.type, upsert: true });
+        if (extraErr) throw extraErr;
+        const { data: extraData } = supabase.storage.from("uploads").getPublicUrl(extraPath);
+        extraUrl = extraData?.publicUrl || null;
+        setUploading(false);
+      }
+      const payload = { body: memo.trim(), link: link.trim() || screenshotUrl || existing?.link || "", extra_link: extraUrl || existing?.extra_link || null, screenshot_url: screenshotUrl || existing?.screenshot_url || null };
+      const m = editing
+        ? await updateMission(existing.id, payload)
+        : await submitMission({ challenge_id: ch.id, uid: user.uid, nick: user.nick || "참가자", day: selDay, title: `Day ${selDay} 미션 인증`, ...payload });
+      setMissions(p => editing ? p.map(x => x.id === m.id ? m : x) : [m, ...p]);
+      setLink(""); setMemo(""); setExtraFile(null); setExtraPreview(""); setScreenshotFile(null); setScreenshotPreview(null); setMissionEditMode(false); setSelDay(null);
     } catch(e) { alert("등록 실패: " + e.message); }
     setBusy(false);
   };
 
   // Day 셀의 날짜 포맷
   const fmtShort = d => `${d.getMonth() + 1}/${d.getDate()}`;
-  const isToday = d => d === todayNum;
-  const isPast = d => d < todayNum;
-  const isFuture = d => d > todayNum;
+  const isToday = d => d === currentDayNum;
+  const isPast = d => d < currentDayNum;
+  const isFuture = d => d > currentDayNum;
   const isWeekend = d => { const dt = dayDate(d); const dow = dt.getDay(); return dow === 0 || dow === 6; };
   const dayLabel = d => { const dt = dayDate(d); return ["일","월","화","수","목","금","토"][dt.getDay()]; };
+  const lateDaysFor = m => {
+    if (!m?.created_at || Number(m.day) <= 0) return 0;
+    const submitted = new Date(m.created_at);
+    const due = dayDate(Number(m.day));
+    return Math.max(0, Math.floor((localDateOnly(submitted) - localDateOnly(due)) / 86400000));
+  };
+  const scoreForMission = (day, m) => {
+    const base = isWeekend(Number(day)) ? 2 : 1;
+    const bonus = m.extra_link ? 0.5 : 0;
+    const penalty = Math.min(base + bonus, lateDaysFor(m) * 0.5);
+    return Math.max(0, base + bonus - penalty);
+  };
 
-  // 점수 계산: 평일 인증=1점, 주말 인증=2점(보너스), 추가활동=+0.5점
+  // 점수 계산: 평일 1점, 주말 2점, 추가활동 +0.5점, 날짜 지연 제출은 하루당 -0.5점
   const calcScore = (missionsByDay) => {
     let score = 0;
     Object.entries(missionsByDay).forEach(([d, m]) => {
-      score += isWeekend(Number(d)) ? 2 : 1;
-      if (m.extra_link) score += 0.5;
+      score += scoreForMission(d, m);
     });
     return score;
   };
   const myScore = calcScore(myMissions);
+  const pickEndProofFile = e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { alert("이미지는 5MB 이하만 업로드할 수 있습니다."); return; }
+    setEndProofFile(file);
+    setEndProofPreview(URL.createObjectURL(file));
+  };
+  const submitEndProof = async () => {
+    if (!endProofFile || !myApp?.id) return;
+    setEndProofBusy(true);
+    try {
+      const end_screenshot_url = await uploadChallengeProof(ch.id, user, endProofFile, "end");
+      const updated = await updateApplicationProof(myApp.id, { end_screenshot_url });
+      setMyApp(updated);
+      setEndProofFile(null);
+      setEndProofPreview("");
+      setEndProofEditing(false);
+    } catch (e) {
+      alert("종료 인증 저장 실패: " + e.message);
+    }
+    setEndProofBusy(false);
+  };
+  const scrollToAuthPanel = id => setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  const nextMissionDay = (() => {
+    const availableCount = Math.max(0, Math.min(totalDays, currentDayNum));
+    const available = incompleteDays;
+    return available[0] || Math.max(1, Math.min(totalDays, currentDayNum));
+  })();
+  const scoreBreakdown = (day, m) => {
+    if (!m) return null;
+    const base = isWeekend(Number(day)) ? 2 : 1;
+    const bonus = m.extra_link ? 0.5 : 0;
+    const late = lateDaysFor(m) * 0.5;
+    const penalty = Math.min(base + bonus, late);
+    return { base, bonus, penalty, total: Math.max(0, base + bonus - penalty) };
+  };
+  const beginMissionEdit = m => {
+    setMissionEditMode(true);
+    setLink(m.link && !m.link.includes("supabase.co/storage") ? m.link : "");
+    setMemo(m.body || "");
+    setScreenshotFile(null);
+    setScreenshotPreview(null);
+    setExtraFile(null);
+    setExtraPreview("");
+  };
+  const openStartProof = () => {
+    setTab("calendar");
+    setProofPanel("start");
+    setSelDay(null);
+    setMissionEditMode(false);
+    scrollToAuthPanel("challenge-start-proof-panel");
+  };
+  const openEndProof = () => {
+    setTab("calendar");
+    setProofPanel("end");
+    setSelDay(null);
+    setMissionEditMode(false);
+    scrollToAuthPanel("challenge-end-proof-panel");
+  };
+  const openMissionProof = day => {
+    setTab("calendar");
+    setProofPanel(null);
+    setSelDay(day);
+    setMissionEditMode(false);
+    scrollToAuthPanel("challenge-day-proof-panel");
+  };
 
   return (
     <div style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)" }}>
@@ -620,6 +874,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
             <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>내 진행률</span>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>{myScore}점</span>
+              {incompleteCount > 0 && <span style={{ fontSize: 12, color: "#ef4444", fontWeight: 800 }}>미완료 {incompleteCount}개</span>}
               <span style={{ fontSize: 14, fontWeight: 700, color: PRIMARY }}>{myChecked}/{totalDays}일 ({pct}%)</span>
             </div>
           </div>
@@ -633,6 +888,25 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
           </div>
         </div>
 
+        {isParticipant && (
+          <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: mob ? "16px" : "18px 20px", marginBottom: 24, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+            <div style={{ display: "flex", alignItems: mob ? "stretch" : "center", justifyContent: "space-between", gap: 12, flexDirection: mob ? "column" : "row" }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: C.text, marginBottom: 4 }}>빠른 인증</div>
+                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>캘린더를 끝까지 찾지 않아도 바로 업로드할 수 있습니다. {incompleteCount > 0 ? `현재 미완료 ${incompleteCount}개` : "현재까지 미완료 없음"}</div>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={openStartProof} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid " + bdr, background: myApp?.start_screenshot_url ? "rgba(34,197,94,0.08)" : (isDark ? "rgba(255,255,255,0.04)" : "#fff"), color: myApp?.start_screenshot_url ? "#16a34a" : C.text, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>시작 데이터</button>
+                <button onClick={() => openMissionProof(nextMissionDay)} style={{ padding: "10px 16px", borderRadius: 10, border: "none", background: "#1A1A2E", color: "#fff", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>오늘/미완료 인증</button>
+                <button onClick={openEndProof} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid " + bdr, background: myApp?.end_screenshot_url ? "rgba(34,197,94,0.08)" : (isDark ? "rgba(255,255,255,0.04)" : "#fff"), color: myApp?.end_screenshot_url ? "#16a34a" : C.text, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>마지막 데이터</button>
+              </div>
+            </div>
+            <div style={{ marginTop: 12, padding: "10px 12px", borderRadius: 10, background: isDark ? "rgba(59,130,246,0.08)" : "rgba(59,130,246,0.06)", fontSize: 12, color: C.muted, lineHeight: 1.55 }}>
+              캡처 예시: 인스타 프로필 팔로워 수, 릴스/게시물 조회수, 블로그 방문자 수, 유튜브 구독자 수처럼 숫자가 보이는 화면
+            </div>
+          </div>
+        )}
+
         {/* 탭 */}
         <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "1px solid " + bdr }}>
           {[["calendar", "날짜별 체크"], ["members", "참가자 현황"], ["feed", "전체 피드"], ["my", "내 기록"], ["board", "자유게시판"]].map(([v, l]) => (
@@ -645,6 +919,20 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
           <div>
             {/* Day 그리드 */}
             <div style={{ display: "grid", gridTemplateColumns: mob ? "repeat(5, 1fr)" : "repeat(7, 1fr)", gap: 8, marginBottom: 24 }}>
+              {isParticipant && (
+                <ProofDayCell
+                  title="시작 인증"
+                  date={startProofDate}
+                  done={!!myApp?.start_screenshot_url}
+                  active={proofPanel === "start"}
+                  C={C}
+                  bdr={bdr}
+                  card={card}
+                  isDark={isDark}
+                  mob={mob}
+                  onClick={() => { setProofPanel(proofPanel === "start" ? null : "start"); setSelDay(null); setMissionEditMode(false); }}
+                />
+              )}
               {Array.from({ length: totalDays }, (_, i) => i + 1).map(d => {
                 const checked = !!myMissions[d];
                 const today = isToday(d);
@@ -655,7 +943,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                 const allCount = (allByDay[d] || []).length;
                 const wknd = isWeekend(d);
                 return (
-                  <div key={d} onClick={() => setSelDay(selDay === d ? null : d)}
+                  <div key={d} onClick={() => { setSelDay(selDay === d ? null : d); setProofPanel(null); setMissionEditMode(false); }}
                     style={{
                       borderRadius: 14, padding: mob ? "10px 4px" : "12px 8px", textAlign: "center", cursor: "pointer",
                       border: selDay === d ? `2px solid ${PRIMARY}` : today ? `2px solid ${PRIMARY}40` : `1px solid ${bdr}`,
@@ -681,33 +969,90 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                   </div>
                 );
               })}
+              {isParticipant && (
+                <ProofDayCell
+                  title="종료 인증"
+                  date={endProofDate}
+                  done={!!myApp?.end_screenshot_url}
+                  active={proofPanel === "end"}
+                  C={C}
+                  bdr={bdr}
+                  card={card}
+                  isDark={isDark}
+                  mob={mob}
+                  onClick={() => { setProofPanel(proofPanel === "end" ? null : "end"); setSelDay(null); setMissionEditMode(false); }}
+                />
+              )}
             </div>
+
+            {proofPanel === "start" && (
+              <div id="challenge-start-proof-panel" style={{ background: card, border: "1px solid " + bdr, borderRadius: 20, padding: mob ? "20px 16px" : "28px 24px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", marginBottom: 24, scrollMarginTop: 90 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>시작 전 데이터 인증</div>
+                    <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{startProofDate.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}</div>
+                    <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>예: 팔로워 수, 조회수, 방문자 수, 구독자 수가 보이는 화면</div>
+                  </div>
+                  <button onClick={() => { setProofPanel(null); setMissionEditMode(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 18 }}>x</button>
+                </div>
+                <StartProofUploader ch={ch} C={C} bdr={bdr} isDark={isDark} user={user} myApp={myApp} setMyApp={setMyApp} />
+              </div>
+            )}
+
+            {proofPanel === "end" && (
+              <div id="challenge-end-proof-panel" style={{ background: card, border: "1px solid " + bdr, borderRadius: 20, padding: mob ? "20px 16px" : "28px 24px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", marginBottom: 24, scrollMarginTop: 90 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 16 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>종료 다음날 데이터 인증</div>
+                    <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{endProofDate.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}</div>
+                    <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>예: 챌린지 후 늘어난 팔로워 수, 조회수, 방문자 수가 보이는 화면</div>
+                  </div>
+                  <button onClick={() => { setProofPanel(null); setEndProofEditing(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 18 }}>x</button>
+                </div>
+                {myApp?.end_screenshot_url && !endProofEditing ? (
+                  <ProofStatus title="종료 인증" url={myApp.end_screenshot_url} C={C} bdr={bdr} onReplace={() => setEndProofEditing(true)} />
+                ) : canUploadEndProof ? (
+                  <div>
+                    <input id="challenge-end-proof" type="file" accept="image/*" onChange={pickEndProofFile} style={{ display: "none" }} />
+                    <label htmlFor="challenge-end-proof" style={{ display: "block", border: `1.5px dashed ${endProofPreview ? PRIMARY : bdr}`, borderRadius: 12, padding: endProofPreview ? 0 : "22px 16px", textAlign: "center", cursor: "pointer", overflow: "hidden", fontSize: 13, color: C.muted, background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa" }}>
+                      {endProofPreview ? <img src={endProofPreview} alt="종료 인증 미리보기" style={{ width: "100%", maxHeight: 240, objectFit: "cover", display: "block" }} /> : "마지막 팔로워/조회수/방문자 수 화면 캡처 업로드"}
+                    </label>
+                    {endProofFile && <button disabled={endProofBusy} onClick={submitEndProof} style={{ width: "100%", marginTop: 10, padding: "12px 14px", borderRadius: 10, border: "none", background: "#1A1A2E", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{endProofBusy ? "저장 중..." : "종료 인증 저장"}</button>}
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             {/* 선택된 Day 상세 + 링크 등록 */}
             {selDay && (
-              <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 20, padding: mob ? "20px 16px" : "28px 24px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", marginBottom: 24 }}>
+              <div id="challenge-day-proof-panel" style={{ background: card, border: "1px solid " + bdr, borderRadius: 20, padding: mob ? "20px 16px" : "28px 24px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", marginBottom: 24, scrollMarginTop: 90 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span style={{ fontSize: 13, fontWeight: 700, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "5px 14px", borderRadius: 99 }}>Day {selDay}</span>
                     <span style={{ fontSize: 13, color: C.muted }}>{dayDate(selDay).toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}</span>
                   </div>
-                  <button onClick={() => setSelDay(null)} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 18 }}>x</button>
+                  <button onClick={() => { setSelDay(null); setMissionEditMode(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 18 }}>x</button>
                 </div>
 
                 {/* 내 인증 상태 */}
-                {myMissions[selDay] ? (
+                {myMissions[selDay] && !missionEditMode ? (
                   <div style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 12, padding: "14px 18px", marginBottom: 16 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
                       <span style={{ fontSize: 14, fontWeight: 700, color: "#22c55e" }}>인증 완료</span>
+                      {lateDaysFor(myMissions[selDay]) > 0 && <span style={{ fontSize: 11, fontWeight: 800, color: "#ef4444", background: "rgba(239,68,68,0.1)", padding: "2px 8px", borderRadius: 99 }}>지연 -{lateDaysFor(myMissions[selDay]) * 0.5}점</span>}
+                      <span style={{ fontSize: 11, fontWeight: 800, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "2px 8px", borderRadius: 99 }}>{scoreForMission(selDay, myMissions[selDay])}점</span>
                     </div>
                     <a href={myMissions[selDay].link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: PRIMARY, wordBreak: "break-all" }}>{myMissions[selDay].link}</a>
                     {myMissions[selDay].body && <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>{myMissions[selDay].body}</div>}
+                    {myMissions[selDay].extra_link && <a href={myMissions[selDay].extra_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 10, textDecoration: "none" }}><img src={myMissions[selDay].extra_link} alt="추가 활동" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 8, display: "block" }} /><span style={{ display: "block", fontSize: 11, color: "#f59e0b", fontWeight: 700, marginTop: 4 }}>추가활동 사진</span></a>}
+                    {(() => { const s = scoreBreakdown(selDay, myMissions[selDay]); return s ? <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10, fontSize: 11 }}><span style={{ color: C.muted }}>기본 {s.base}점</span>{s.bonus > 0 && <span style={{ color: "#f59e0b" }}>추가 +{s.bonus}점</span>}{s.penalty > 0 && <span style={{ color: "#ef4444" }}>지연 -{s.penalty}점</span>}<span style={{ color: PRIMARY, fontWeight: 800 }}>총 {s.total}점</span></div> : null; })()}
+                    <button onClick={() => beginMissionEdit(myMissions[selDay])} style={{ marginTop: 12, padding: "8px 14px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>인증 다시 올리기</button>
                   </div>
-                ) : (selDay <= todayNum && user && isParticipant) ? (
+                ) : (selDay <= currentDayNum && user && isParticipant) ? (
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>인증 링크 등록</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{missionEditMode ? "인증 다시 올리기" : "인증 링크 등록"}</span>
                       {isWeekend(selDay) && <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.1)", padding: "2px 8px", borderRadius: 99 }}>주말 보너스 x2</span>}
                     </div>
                     <input value={link} onChange={e => setLink(e.target.value)} placeholder="블로그 글, 인스타 포스팅 URL 등" style={{ ...inp, marginBottom: 8 }} />
@@ -733,12 +1078,29 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
 
                     <input value={memo} onChange={e => setMemo(e.target.value)} placeholder="메모 (선택)" style={{ ...inp, marginBottom: 8 }} />
                     <div style={{ fontSize: 12, fontWeight: 600, color: "#f59e0b", marginBottom: 6, marginTop: 4 }}>추가 활동 (가산점 +0.5점)</div>
-                    <input value={extraLink} onChange={e => setExtraLink(e.target.value)} placeholder="댓글/공감/공유 활동 스크린샷 or 링크 (선택)" style={{ ...inp, marginBottom: 12 }} />
+                    <div style={{ marginBottom: 12 }}>
+                      <input ref={extraFileInputRef} type="file" accept="image/*" onChange={handleExtraScreenshot} style={{ display: "none" }} />
+                      <div onClick={() => extraFileInputRef.current?.click()}
+                        style={{ border: `1.5px dashed ${extraPreview ? "#f59e0b" : bdr}`, borderRadius: 12, padding: extraPreview ? 0 : "16px 14px", textAlign: "center", cursor: "pointer", background: isDark ? "rgba(245,158,11,0.04)" : "rgba(245,158,11,0.03)", overflow: "hidden" }}>
+                        {extraPreview ? (
+                          <div style={{ position: "relative" }}>
+                            <img src={extraPreview} alt="추가 활동 미리보기" style={{ width: "100%", maxHeight: 180, objectFit: "cover", display: "block" }} />
+                            <button onClick={e => { e.stopPropagation(); setExtraFile(null); setExtraPreview(""); }} style={{ position: "absolute", top: 8, right: 8, width: 24, height: 24, borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>x</button>
+                          </div>
+                        ) : (
+                          <>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="1.7" style={{ display: "block", margin: "0 auto 8px" }}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            <div style={{ fontSize: 13, color: C.muted }}>추가 활동은 사진 인증만 가능 (선택, 최대 5MB)</div>
+                          </>
+                        )}
+                      </div>
+                    </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <button disabled={(!link.trim() && !screenshotFile) || busy} onClick={submit}
-                        style={{ padding: "11px 24px", borderRadius: 99, border: "none", background: (link.trim() || screenshotFile) ? "#1A1A2E" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: (link.trim() || screenshotFile) ? "#fff" : C.muted, fontSize: 14, fontWeight: 700, cursor: (link.trim() || screenshotFile) ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
-                        {uploading ? "업로드 중..." : busy ? "등록 중..." : "인증하기"}
+                      <button disabled={(!link.trim() && !screenshotFile && !missionEditMode) || busy} onClick={submit}
+                        style={{ padding: "11px 24px", borderRadius: 99, border: "none", background: (link.trim() || screenshotFile || missionEditMode) ? "#1A1A2E" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: (link.trim() || screenshotFile || missionEditMode) ? "#fff" : C.muted, fontSize: 14, fontWeight: 700, cursor: (link.trim() || screenshotFile || missionEditMode) ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+                        {uploading ? "업로드 중..." : busy ? "등록 중..." : missionEditMode ? "수정 저장" : "인증하기"}
                       </button>
+                      {missionEditMode && <button onClick={() => { setMissionEditMode(false); setLink(""); setMemo(""); setScreenshotFile(null); setScreenshotPreview(null); setExtraFile(null); setExtraPreview(""); }} style={{ padding: "10px 16px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>취소</button>}
                       <span style={{ fontSize: 11, color: C.muted }}>평일 1점 / 주말 2점 / 추가활동 +0.5점</span>
                     </div>
                   </div>
@@ -757,6 +1119,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                           <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{(m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</div>
                           {m.screenshot_url && <a href={m.screenshot_url} target="_blank" rel="noopener noreferrer"><img src={m.screenshot_url} alt="인증" style={{ width: 60, height: 40, objectFit: "cover", borderRadius: 6, marginTop: 4, display: "block" }} /></a>}
                           {m.link && !m.link.includes("supabase.co/storage") && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{m.link}</a>}
+                          {m.extra_link && <a href={m.extra_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 4 }}><img src={m.extra_link} alt="추가 활동" style={{ width: 60, height: 40, objectFit: "cover", borderRadius: 6, display: "block" }} /></a>}
                         </div>
                         <span style={{ fontSize: 11, color: C.muted, flexShrink: 0 }}>{new Date(m.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</span>
                         {user?.role === "admin" && (
@@ -817,14 +1180,14 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                         <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
                           {Array.from({ length: totalDays }, (_, i) => i + 1).map(d => {
                             const done = !!mem.days[d];
-                            const past = d <= todayNum;
+                            const past = d <= currentDayNum;
                             return (
                               <div key={d} title={`Day ${d}${done ? " - " + (mem.days[d].link || "인증완료") : ""}`}
                                 onClick={() => { if (done && mem.days[d].link) window.open(mem.days[d].link, "_blank"); }}
                                 style={{ width: mob ? 16 : 20, height: mob ? 16 : 20, borderRadius: 4, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", cursor: done ? "pointer" : "default",
                                   background: done ? "rgba(34,197,94,0.15)" : past ? "rgba(239,68,68,0.06)" : (isDark ? "rgba(255,255,255,0.04)" : "#f3f4f6"),
                                   color: done ? "#22c55e" : past ? "rgba(239,68,68,0.3)" : "transparent",
-                                  border: d === todayNum ? `1.5px solid ${PRIMARY}` : "none",
+                                  border: d === currentDayNum ? `1.5px solid ${PRIMARY}` : "none",
                                 }}>{d}</div>
                             );
                           })}
@@ -869,11 +1232,12 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                       <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{m.nick}</span>
                       <span style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "2px 8px", borderRadius: 99 }}>Day {m.day}</span>
                       {m.extra_link && <span style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.1)", padding: "2px 6px", borderRadius: 99 }}>+0.5</span>}
+                      {lateDaysFor(m) > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: "#ef4444", background: "rgba(239,68,68,0.1)", padding: "2px 6px", borderRadius: 99 }}>-{lateDaysFor(m) * 0.5}</span>}
                       <span style={{ fontSize: 11, color: C.muted, marginLeft: "auto" }}>{new Date(m.created_at).toLocaleDateString("ko-KR")}</span>
                     </div>
                     {m.body && <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>{m.body}</div>}
                     {m.link && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{m.link}</a>}
-                    {m.extra_link && <a href={m.extra_link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#f59e0b", textDecoration: "none", display: "block", marginTop: 2 }}>추가활동: {m.extra_link}</a>}
+                    {m.extra_link && <a href={m.extra_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 8, textDecoration: "none" }}><img src={m.extra_link} alt="추가 활동" style={{ width: 96, height: 64, objectFit: "cover", borderRadius: 8, display: "block" }} /><span style={{ display: "block", fontSize: 11, color: "#f59e0b", fontWeight: 700, marginTop: 4 }}>추가활동 사진</span></a>}
                   </div>
                   {user?.role === "admin" && (
                     <button onClick={() => deleteMission(m.id)} title="삭제" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(239,68,68,0.5)", fontSize: 16, flexShrink: 0, padding: 4 }}>
@@ -895,7 +1259,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                 {Array.from({ length: totalDays }, (_, i) => i + 1).map(d => {
                   const m = myMissions[d];
                   const dt = dayDate(d);
-                  const past = d <= todayNum;
+                  const past = d <= currentDayNum;
                   return (
                     <div key={d} style={{ display: "flex", alignItems: "center", gap: 14, padding: "12px 16px", borderRadius: 12, background: card, border: "1px solid " + bdr }}>
                       {/* 체크 아이콘 */}
@@ -909,13 +1273,16 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, missions, setMissio
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                           <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>Day {d}</span>
                           <span style={{ fontSize: 11, color: C.muted }}>{dt.toLocaleDateString("ko-KR", { month: "short", day: "numeric", weekday: "short" })}</span>
+                          {m && <span style={{ fontSize: 11, fontWeight: 800, color: lateDaysFor(m) > 0 ? "#ef4444" : PRIMARY }}>{scoreForMission(d, m)}점</span>}
                         </div>
                         {m?.link && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", marginTop: 2 }}>{m.link}</a>}
                         {m?.body && <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{m.body}</div>}
+                        {m?.extra_link && <a href={m.extra_link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#f59e0b", textDecoration: "none", display: "block", marginTop: 2 }}>추가활동 사진 보기</a>}
+                        {m && (() => { const s = scoreBreakdown(d, m); return <div style={{ fontSize: 11, color: C.muted, marginTop: 3 }}>기본 {s.base}점{s.bonus > 0 ? ` + 추가 ${s.bonus}점` : ""}{s.penalty > 0 ? ` - 지연 ${s.penalty}점` : ""}</div>; })()}
                       </div>
                       {/* 등록 버튼 (미인증 + 오늘 이전) */}
                       {!m && past && user && (
-                        <button onClick={() => { setSelDay(d); setTab("calendar"); }}
+                        <button onClick={() => { setSelDay(d); setTab("calendar"); setMissionEditMode(false); }}
                           style={{ padding: "6px 14px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: PRIMARY, fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0, fontFamily: "inherit" }}>
                           인증
                         </button>
@@ -1158,6 +1525,20 @@ function PublicLinkBoard({ challengeId, C, bdr, card, isDark, mob, title, isAdmi
 /* ═══ AdminPanel ═══════════════════════════════════════════ */
 function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onStatus, onDelete, onBadge }) {
   const SL = { pending: ["대기", "#f59e0b"], paid: ["결제완료", PRIMARY], confirmed: ["참여확정", "#22c55e"], cancelled: ["취소", "#ef4444"] };
+  const [proofFilter, setProofFilter] = useState("all");
+  const confirmedApps = apps.filter(a => a.status === "confirmed");
+  const stat = {
+    missingStart: confirmedApps.filter(a => !a.start_screenshot_url).length,
+    missingEnd: confirmedApps.filter(a => !a.end_screenshot_url).length,
+    completeProof: confirmedApps.filter(a => a.start_screenshot_url && a.end_screenshot_url).length,
+  };
+  const filteredApps = apps.filter(a => {
+    if (proofFilter === "confirmed") return a.status === "confirmed";
+    if (proofFilter === "missingStart") return a.status === "confirmed" && !a.start_screenshot_url;
+    if (proofFilter === "missingEnd") return a.status === "confirmed" && !a.end_screenshot_url;
+    if (proofFilter === "completeProof") return a.status === "confirmed" && a.start_screenshot_url && a.end_screenshot_url;
+    return true;
+  });
   return (
     <div style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)" }}>
       <div style={{ maxWidth: 860, margin: "0 auto", padding: mob ? "24px 16px 80px" : "40px 20px 100px" }}>
@@ -1167,16 +1548,32 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 4 }}>{ch.title}</h2>
-            <p style={{ fontSize: 13, color: C.muted }}>총 {apps.length}명 신청</p>
+            <p style={{ fontSize: 13, color: C.muted }}>총 {apps.length}명 신청 · 확정 {confirmedApps.length}명 · 시작 미인증 {stat.missingStart}명 · 마지막 미인증 {stat.missingEnd}명</p>
           </div>
           <button onClick={onEdit} style={{ padding: "10px 22px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>챌린지 수정</button>
         </div>
 
+        {apps.length > 0 && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+            {[
+              ["all", `전체 ${apps.length}`],
+              ["confirmed", `확정 ${confirmedApps.length}`],
+              ["missingStart", `시작 미인증 ${stat.missingStart}`],
+              ["missingEnd", `마지막 미인증 ${stat.missingEnd}`],
+              ["completeProof", `인증 완료 ${stat.completeProof}`],
+            ].map(([id, label]) => (
+              <button key={id} onClick={() => setProofFilter(id)} style={{ padding: "8px 12px", borderRadius: 99, border: "1px solid " + (proofFilter === id ? PRIMARY : bdr), background: proofFilter === id ? "rgba(59,130,246,0.08)" : "transparent", color: proofFilter === id ? PRIMARY : C.muted, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{label}</button>
+            ))}
+          </div>
+        )}
+
         {apps.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted }}><div style={{ fontSize: 15, fontWeight: 700 }}>아직 신청자가 없습니다</div></div>
+        ) : filteredApps.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "48px 20px", color: C.muted, border: "1px dashed " + bdr, borderRadius: 16 }}>조건에 맞는 신청자가 없습니다</div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {apps.map(a => {
+            {filteredApps.map(a => {
               const [sl, sc] = SL[a.status] || ["알 수 없음", "#6b7280"];
               return (
                 <div key={a.id} style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: "18px 22px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
@@ -1184,6 +1581,8 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span style={{ fontSize: 16, fontWeight: 700, color: C.text }}>{a.name}</span>
                       <span style={{ fontSize: 11, fontWeight: 700, color: sc, background: sc + "15", padding: "3px 12px", borderRadius: 99 }}>{sl}</span>
+                      {a.status === "confirmed" && <span style={{ fontSize: 11, fontWeight: 800, color: a.start_screenshot_url ? "#16a34a" : "#ef4444", background: a.start_screenshot_url ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", padding: "3px 8px", borderRadius: 99 }}>시작 {a.start_screenshot_url ? "완료" : "미인증"}</span>}
+                      {a.status === "confirmed" && <span style={{ fontSize: 11, fontWeight: 800, color: a.end_screenshot_url ? "#16a34a" : "#ef4444", background: a.end_screenshot_url ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)", padding: "3px 8px", borderRadius: 99 }}>마지막 {a.end_screenshot_url ? "완료" : "미인증"}</span>}
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
                       {a.status !== "confirmed" && <button onClick={() => onStatus(a.id, "confirmed")} style={{ padding: "7px 16px", borderRadius: 99, border: "none", background: "#22c55e", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>확정</button>}
@@ -1196,6 +1595,24 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                     <div><strong style={{ color: C.text }}>이메일</strong> {a.email}</div>
                     <div><strong style={{ color: C.text }}>목적</strong> {a.purpose}</div>
                     {a.sns_link && <div style={{ gridColumn: mob ? "1" : "1/4" }}><strong style={{ color: C.text }}>SNS</strong> <a href={a.sns_link} target="_blank" rel="noopener noreferrer" style={{ color: PRIMARY }}>{a.sns_link}</a></div>}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 10, marginTop: 14 }}>
+                      {a.start_screenshot_url ? (
+                        <a href={a.start_screenshot_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", border: "1px solid " + bdr, borderRadius: 12, overflow: "hidden", background: isDark ? "rgba(255,255,255,0.03)" : "#fafafa" }}>
+                          <img src={a.start_screenshot_url} alt="시작 인증" style={{ width: "100%", height: 110, objectFit: "cover", display: "block" }} />
+                          <div style={{ padding: "8px 10px", fontSize: 12, fontWeight: 700, color: C.text }}>시작 인증</div>
+                        </a>
+                      ) : (
+                        <div style={{ border: "1px dashed " + bdr, borderRadius: 12, padding: 16, fontSize: 12, color: C.muted, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 110 }}>시작 인증 미등록</div>
+                      )}
+                      {a.end_screenshot_url ? (
+                        <a href={a.end_screenshot_url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", border: "1px solid " + bdr, borderRadius: 12, overflow: "hidden", background: isDark ? "rgba(255,255,255,0.03)" : "#fafafa" }}>
+                          <img src={a.end_screenshot_url} alt="종료 인증" style={{ width: "100%", height: 110, objectFit: "cover", display: "block" }} />
+                          <div style={{ padding: "8px 10px", fontSize: 12, fontWeight: 700, color: C.text }}>종료 인증</div>
+                        </a>
+                      ) : (
+                        <div style={{ border: "1px dashed " + bdr, borderRadius: 12, padding: 16, fontSize: 12, color: C.muted, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 110 }}>마지막 인증 미등록</div>
+                      )}
                   </div>
                   <div style={{ fontSize: 11, color: C.muted, marginTop: 8 }}>{new Date(a.created_at).toLocaleString("ko-KR")}</div>
                 </div>
