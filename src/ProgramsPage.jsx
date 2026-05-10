@@ -114,7 +114,7 @@ const CATEGORIES = [
 
 const AUTOMATION_DOWNLOAD = {
   fileName: "SNSMakeIt-Setup-0.2.3.exe",
-  url: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/naverbot-releases/SNSMakeIt-Setup-0.2.3.exe",
+  url: "https://github.com/npermovie-design/cardnews-app/releases/download/app-v0.2.3/SNSMakeIt-Setup-0.2.3.exe",
   size: "430MB",
   version: "v0.2.3",
 };
