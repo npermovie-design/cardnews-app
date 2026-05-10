@@ -113,10 +113,10 @@ const CATEGORIES = [
 ];
 
 const AUTOMATION_DOWNLOAD = {
-  fileName: "SNSMakeIt-Setup-0.2.3.exe",
-  url: "https://github.com/npermovie-design/cardnews-app/releases/download/app-v0.2.3/SNSMakeIt-Setup-0.2.3.exe",
+  fileName: "SNSMakeIt-Setup-0.2.3-fix.exe",
+  url: "https://github.com/npermovie-design/cardnews-app/releases/download/app-v0.2.3-fix/SNSMakeIt-Setup-0.2.3-fix.exe",
   size: "430MB",
-  version: "v0.2.3",
+  version: "v0.2.3-fix",
 };
 const AUTOMATION_DOWNLOAD_READY = Boolean(AUTOMATION_DOWNLOAD.url);
 
