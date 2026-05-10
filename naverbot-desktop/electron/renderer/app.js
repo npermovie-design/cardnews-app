@@ -1667,6 +1667,55 @@ if (_hubEl) {
   }).observe(_hubEl, { attributes: true, attributeFilter: ["class"] });
 }
 
+// ── 공지사항 페이지네이션 ──
+(function() {
+  var noticeList = $("noticeList");
+  if (!noticeList) return;
+  var cards = Array.from(noticeList.querySelectorAll(".card"));
+  if (cards.length <= 3) return; // 3개 이하면 페이지네이션 불필요
+  var pageSize = 3;
+  var currentPage = 1;
+  var totalPages = Math.ceil(cards.length / pageSize);
+
+  function renderNoticePage() {
+    cards.forEach(function(c, i) {
+      var page = Math.floor(i / pageSize) + 1;
+      c.style.display = page === currentPage ? "" : "none";
+    });
+    // 기존 페이지네이션 제거
+    var oldPag = noticeList.querySelector(".notice-pagination");
+    if (oldPag) oldPag.remove();
+    // 페이지네이션 추가
+    if (totalPages > 1) {
+      var pag = document.createElement("div");
+      pag.className = "notice-pagination";
+      pag.style.cssText = "display:flex;justify-content:center;align-items:center;gap:6px;margin-top:16px;";
+      var html = "<button class='btn btn-outline btn-sm np-btn' data-np='" + Math.max(1, currentPage-1) + "' " + (currentPage<=1?"disabled":"") + " style='padding:6px 12px;font-size:12px;'>&laquo; 이전</button>";
+      for (var i = 1; i <= totalPages; i++) {
+        html += "<button class='btn btn-sm np-btn " + (i===currentPage?"btn-primary":"btn-outline") + "' data-np='" + i + "' style='padding:6px 10px;font-size:12px;min-width:32px;'>" + i + "</button>";
+      }
+      html += "<button class='btn btn-outline btn-sm np-btn' data-np='" + Math.min(totalPages, currentPage+1) + "' " + (currentPage>=totalPages?"disabled":"") + " style='padding:6px 12px;font-size:12px;'>다음 &raquo;</button>";
+      pag.innerHTML = html;
+      noticeList.appendChild(pag);
+      pag.querySelectorAll(".np-btn").forEach(function(btn) {
+        btn.addEventListener("click", function() {
+          currentPage = parseInt(btn.dataset.np) || 1;
+          renderNoticePage();
+        });
+      });
+    }
+  }
+  renderNoticePage();
+  // document 위임 (허브에서도 동작)
+  document.addEventListener("click", function(e) {
+    var btn = e.target.closest(".np-btn");
+    if (btn) {
+      currentPage = parseInt(btn.dataset.np) || 1;
+      renderNoticePage();
+    }
+  });
+})();
+
 // ── 홈 소식 탭 전환 ──
 document.querySelectorAll(".home-tab").forEach(function(tab) {
   tab.addEventListener("click", function() {
@@ -6901,35 +6950,99 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       });
   }
 
+  var _commPage = 1;
+  var _commPageSize = 10;
+
   function renderList() {
     var list = $("communityList");
     if (!list) return;
-    if (!posts.length) {
+    var filtered = currentTag ? posts.filter(function(p) { return p.tag === currentTag; }) : posts;
+    if (!filtered.length) {
       list.innerHTML = "<div style='text-align:center;padding:40px 0;color:var(--text-dim);font-size:13px;'>게시글이 없습니다.</div>";
       return;
     }
-    list.innerHTML = posts.map(function(p) {
+
+    var totalPages = Math.ceil(filtered.length / _commPageSize);
+    if (_commPage > totalPages) _commPage = totalPages;
+    var start = (_commPage - 1) * _commPageSize;
+    var pageItems = filtered.slice(start, start + _commPageSize);
+
+    var html = pageItems.map(function(p) {
       var date = p.created_at ? new Date(p.created_at).toLocaleDateString("ko-KR") : "";
       var thumb = "";
       if (p.images && p.images.length) {
         var img = typeof p.images === "string" ? JSON.parse(p.images) : p.images;
-        if (img[0]) thumb = "<img src='" + escapeHtml(img[0]) + "' style='width:48px;height:48px;object-fit:cover;border-radius:8px;flex-shrink:0;'>";
+        if (img[0]) thumb = "<img src='" + escapeHtml(img[0]) + "' style='width:56px;height:56px;object-fit:cover;border-radius:10px;flex-shrink:0;'>";
       }
-      var tagBadge = p.tag ? "<span style='font-size:10px;padding:2px 6px;border-radius:4px;background:#3b82f610;color:#3b82f6;font-weight:600;margin-left:6px;'>" + escapeHtml(p.tag) + "</span>" : "";
-      return "<div class='community-post-row' data-id='" + p.id + "' style='display:flex;gap:12px;align-items:center;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border-soft);border-radius:var(--radius-sm);cursor:pointer;transition:all 0.15s;'>" +
+      var tagBadge = p.tag ? "<span style='font-size:10px;padding:2px 6px;border-radius:4px;background:var(--accent-soft);color:var(--accent);font-weight:600;margin-left:6px;'>" + escapeHtml(p.tag) + "</span>" : "";
+      return "<div class='community-post-row' data-id='" + p.id + "' style='display:flex;gap:14px;align-items:center;padding:16px 18px;background:var(--bg-card);border:1px solid var(--border-soft);border-radius:12px;cursor:pointer;transition:all 0.15s;'>" +
         thumb +
         "<div style='flex:1;min-width:0;'>" +
-        "<div style='font-size:14px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml(p.title || "") + tagBadge + "</div>" +
-        "<div style='font-size:11px;color:var(--text-dim);margin-top:4px;'>" + escapeHtml(p.author || "") + " · " + date + " · 조회 " + (p.views || 0) + "</div>" +
+        "<div style='font-size:15px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.4;'>" + escapeHtml(p.title || "") + tagBadge + "</div>" +
+        "<div style='font-size:12px;color:var(--text-dim);margin-top:5px;'>" + escapeHtml(p.author || "") + " · " + date + " · 조회 " + (p.views || 0) + "</div>" +
         "</div></div>";
     }).join("");
+
+    // 페이지네이션
+    if (totalPages > 1) {
+      html += "<div style='display:flex;justify-content:center;align-items:center;gap:6px;margin-top:16px;'>";
+      html += "<button class='btn btn-outline btn-sm comm-page-btn' data-p='" + Math.max(1, _commPage - 1) + "' " + (_commPage <= 1 ? "disabled" : "") + " style='padding:6px 12px;font-size:12px;'>&laquo; 이전</button>";
+      for (var pi = 1; pi <= totalPages; pi++) {
+        html += "<button class='btn btn-sm comm-page-btn" + (pi === _commPage ? " btn-primary" : " btn-outline") + "' data-p='" + pi + "' style='padding:6px 10px;font-size:12px;min-width:32px;'>" + pi + "</button>";
+      }
+      html += "<button class='btn btn-outline btn-sm comm-page-btn' data-p='" + Math.min(totalPages, _commPage + 1) + "' " + (_commPage >= totalPages ? "disabled" : "") + " style='padding:6px 12px;font-size:12px;'>다음 &raquo;</button>";
+      html += "</div>";
+    }
+
+    html += "<div style='text-align:center;margin-top:8px;font-size:11px;color:var(--text-dim);'>전체 " + filtered.length + "개 · " + _commPage + "/" + totalPages + " 페이지</div>";
+
+    list.innerHTML = html;
 
     list.querySelectorAll(".community-post-row").forEach(function(row) {
       row.addEventListener("click", function() { openPost(row.dataset.id); });
       row.addEventListener("mouseenter", function() { row.style.borderColor = "var(--accent)"; row.style.boxShadow = "var(--shadow-md)"; });
       row.addEventListener("mouseleave", function() { row.style.borderColor = "var(--border-soft)"; row.style.boxShadow = "none"; });
     });
+    list.querySelectorAll(".comm-page-btn").forEach(function(btn) {
+      btn.addEventListener("click", function() {
+        _commPage = parseInt(btn.dataset.p) || 1;
+        renderList();
+        list.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
   }
+
+  // 허브에서 복제된 HTML에도 페이지네이션 동작하도록 document 레벨 위임
+  document.addEventListener("click", function(e) {
+    var pageBtn = e.target.closest(".comm-page-btn");
+    if (pageBtn) {
+      _commPage = parseInt(pageBtn.dataset.p) || 1;
+      renderList();
+      // 허브에 복제된 내용도 업데이트
+      setTimeout(function() {
+        var hub = document.getElementById("hubInlineContent");
+        var origList = $("communityList");
+        if (hub && origList && hub.querySelector(".community-post-row")) {
+          // 허브에 표시 중이면 다시 복제
+          var communitySection = hub.querySelector("[style]");
+          if (communitySection) {
+            var srcPanel = document.querySelector('section[data-panel="community"]');
+            if (srcPanel) {
+              hub.innerHTML = "";
+              Array.from(srcPanel.children).forEach(function(el) {
+                if (el.classList.contains("panel-header")) return;
+                hub.innerHTML += el.outerHTML;
+              });
+            }
+          }
+        }
+      }, 50);
+    }
+    var postRow = e.target.closest(".community-post-row");
+    if (postRow && postRow.dataset.id) {
+      openPost(postRow.dataset.id);
+    }
+  });
 
   function openPost(id) {
     var list = $("communityList");
@@ -7099,27 +7212,37 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function renderChallengeList() {
     var list = $("challengeList");
     if (!list) return;
-    if (!challenges.length) { list.innerHTML = "<div style='text-align:center;padding:40px 0;color:var(--text-dim);font-size:13px;'>등록된 챌린지가 없습니다.</div>"; return; }
-    list.innerHTML = challenges.map(function(ch) {
-      var st = getStatus(ch);
-      var dd = ch.recruit_end ? dday(ch.recruit_end) : "";
-      return "<div class='challenge-card' data-chid='" + ch.id + "' style='padding:20px;background:var(--bg-card);border:1px solid var(--border-soft);border-radius:var(--radius);cursor:pointer;transition:all 0.15s;'>" +
-        "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;'>" +
-        "<span style='font-size:11px;font-weight:700;color:" + st.color + ";background:" + st.bg + ";padding:3px 10px;border-radius:6px;'>" + st.label + "</span>" +
-        (dd ? "<span style='font-size:11px;font-weight:700;color:var(--accent);'>" + dd + "</span>" : "") +
-        "</div>" +
-        "<div style='font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;'>" + escapeHtml(ch.title || "") + "</div>" +
-        "<div style='font-size:12px;color:var(--text-dim);line-height:1.6;'>" + escapeHtml((ch.description || "").slice(0, 80)) + "</div>" +
-        "<div style='display:flex;gap:12px;margin-top:10px;font-size:11px;color:var(--text-dim);'>" +
-        "<span>" + fmtDate(ch.start_date) + " ~ " + fmtDate(ch.end_date) + "</span>" +
-        (ch.max_participants ? "<span>정원 " + ch.max_participants + "명</span>" : "") +
-        "</div></div>";
-    }).join("");
+    if (!challenges.length) { list.innerHTML = "<div style='text-align:center;padding:40px 0;color:var(--text-dim);font-size:14px;'>등록된 부트캠프가 없습니다.</div>"; return; }
+
+    list.innerHTML = "<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;'>" +
+      challenges.map(function(ch) {
+        var st = getStatus(ch);
+        var dd = ch.recruit_end ? dday(ch.recruit_end) : "";
+        var thumb = ch.thumbnail || ch.image || "";
+        var thumbHtml = thumb
+          ? "<div style='position:relative;padding-top:56%;background:#f0f0f0;overflow:hidden;border-radius:12px 12px 0 0;'><img src='" + escapeHtml(thumb) + "' style='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;'>" +
+            "<span style='position:absolute;top:10px;left:10px;font-size:11px;font-weight:700;color:" + st.color + ";background:" + st.bg + ";padding:3px 10px;border-radius:6px;'>" + st.label + "</span>" +
+            (dd ? "<span style='position:absolute;top:10px;right:10px;font-size:11px;font-weight:700;color:#fff;background:var(--accent);padding:3px 10px;border-radius:6px;'>" + dd + "</span>" : "") +
+            "</div>"
+          : "<div style='padding:16px 16px 0;display:flex;justify-content:space-between;align-items:center;'>" +
+            "<span style='font-size:11px;font-weight:700;color:" + st.color + ";background:" + st.bg + ";padding:3px 10px;border-radius:6px;'>" + st.label + "</span>" +
+            (dd ? "<span style='font-size:11px;font-weight:700;color:var(--accent);'>" + dd + "</span>" : "") +
+            "</div>";
+        return "<div class='challenge-card' data-chid='" + ch.id + "' style='background:var(--bg-card);border:1px solid var(--border-soft);border-radius:12px;cursor:pointer;transition:all 0.15s;overflow:hidden;'>" +
+          thumbHtml +
+          "<div style='padding:16px;'>" +
+          "<div style='font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;line-height:1.4;'>" + escapeHtml(ch.title || "") + "</div>" +
+          "<div style='font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:10px;'>" + escapeHtml((ch.description || "").slice(0, 100)) + "</div>" +
+          "<div style='display:flex;gap:12px;font-size:12px;color:var(--text-dim);'>" +
+          "<span>" + fmtDate(ch.start_date) + " ~ " + fmtDate(ch.end_date) + "</span>" +
+          (ch.max_participants ? "<span>정원 " + ch.max_participants + "명</span>" : "") +
+          "</div></div></div>";
+      }).join("") + "</div>";
 
     list.querySelectorAll(".challenge-card").forEach(function(card) {
       card.addEventListener("click", function() { openChallenge(card.dataset.chid); });
-      card.addEventListener("mouseenter", function() { card.style.borderColor = "var(--accent)"; card.style.boxShadow = "var(--shadow-md)"; });
-      card.addEventListener("mouseleave", function() { card.style.borderColor = "var(--border-soft)"; card.style.boxShadow = "none"; });
+      card.addEventListener("mouseenter", function() { card.style.borderColor = "var(--accent)"; card.style.boxShadow = "var(--shadow-md)"; card.style.transform = "translateY(-2px)"; });
+      card.addEventListener("mouseleave", function() { card.style.borderColor = "var(--border-soft)"; card.style.boxShadow = "none"; card.style.transform = ""; });
     });
   }
 
