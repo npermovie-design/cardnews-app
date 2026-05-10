@@ -11,3 +11,12 @@ dist/downloads/
 naverbot-desktop/
 .github/
 reports/
+naverbot-desktop/electron/distNew
+naverbot-desktop/electron/distProd
+naverbot-desktop/app.asar
+naverbot-desktop/electron/distNew/
+naverbot-desktop/electron/distProd/
+naverbot-desktop/app.asar
+naverbot-desktop/electron/distNew
+naverbot-desktop/electron/distProd
+naverbot-desktop/

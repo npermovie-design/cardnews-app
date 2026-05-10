@@ -66,3 +66,8 @@ naverbot-desktop/electron/dist/
 naverbot-desktop/electron/distFinal/
 naverbot-desktop/electron/dist[0-9]*/
 naverbot-desktop/electron/distX/
+
+# Electron 빌드 산출물
+naverbot-desktop/electron/distNew/
+naverbot-desktop/electron/distProd/
+naverbot-desktop/app.asar
