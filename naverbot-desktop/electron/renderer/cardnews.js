@@ -50,24 +50,40 @@
     fc.setBackgroundColor(bgColor, fc.renderAll.bind(fc));
 
     function addTexts() {
+      var layout = slide._layoutType || "center";
+      var titleY, bodyY, subY;
+
+      // 레이아웃별 텍스트 위치 (캡컷 참고 — 다양한 배치)
+      if (layout === "cover") {
+        subY = 0.50; titleY = 0.56; bodyY = 0.75;
+      } else if (layout === "bottom") {
+        subY = 0.60; titleY = 0.66; bodyY = 0.80;
+      } else if (layout === "top") {
+        subY = 0.08; titleY = 0.14; bodyY = 0.32;
+      } else if (layout === "cta") {
+        subY = 0.30; titleY = 0.38; bodyY = 0.55;
+      } else {
+        subY = 0.35; titleY = 0.42; bodyY = 0.58;
+      }
+
       // 부제목
       if (slide.subtitle) {
         fc.add(new fabric.Textbox(slide.subtitle, {
-          left: W * 0.09, top: H * 0.35, width: W * 0.82,
+          left: W * 0.09, top: H * subY, width: W * 0.82,
           fontSize: 14, fill: textColor, opacity: 0.6, fontWeight: "600",
           fontFamily: "'Malgun Gothic', sans-serif", lineHeight: 1.4,
         }));
       }
       // 제목
       fc.add(new fabric.Textbox(slide.title || "제목을 입력하세요", {
-        left: W * 0.09, top: H * (slide.subtitle ? 0.42 : 0.35), width: W * 0.82,
+        left: W * 0.09, top: H * (slide.subtitle ? titleY : titleY - 0.05), width: W * 0.82,
         fontSize: slide.isHookCover ? 34 : 28, fill: textColor, fontWeight: "900",
         fontFamily: "'Malgun Gothic', sans-serif", lineHeight: 1.3,
       }));
       // 본문
       if (slide.body) {
         fc.add(new fabric.Textbox(slide.body, {
-          left: W * 0.09, top: H * 0.58, width: W * 0.82,
+          left: W * 0.09, top: H * bodyY, width: W * 0.82,
           fontSize: 13, fill: textColor, opacity: 0.85, fontWeight: "400",
           fontFamily: "'Malgun Gothic', sans-serif", lineHeight: 1.7,
         }));
@@ -118,17 +134,40 @@
           if (img.getScaledHeight() < H) img.scaleToHeight(H);
           img.set({ left: 0, top: 0, originX: "left", originY: "top", selectable: false, evented: false });
           fc.setBackgroundImage(img, function() {
-            // 그라데이션 오버레이
-            var overlay = parseInt(($("cardOverlay") || {}).value || 50);
+            // 그라데이션 오버레이 (하단 강화 — 참고 이미지 스타일)
+            var overlay = parseInt(($("cardOverlay") || {}).value || 60);
+            var layout = slide._layoutType || "center";
+            var stops;
+            if (layout === "bottom" || layout === "cover") {
+              // 하단 텍스트 → 하단 진하게
+              stops = [
+                { offset: 0, color: "rgba(0,0,0,0.05)" },
+                { offset: 0.3, color: "rgba(0,0,0,0.15)" },
+                { offset: 0.6, color: "rgba(0,0,0,0.5)" },
+                { offset: 1, color: "rgba(0,0,0,0.85)" },
+              ];
+            } else if (layout === "top") {
+              // 상단 텍스트 → 상단 진하게
+              stops = [
+                { offset: 0, color: "rgba(0,0,0,0.8)" },
+                { offset: 0.4, color: "rgba(0,0,0,0.4)" },
+                { offset: 0.7, color: "rgba(0,0,0,0.1)" },
+                { offset: 1, color: "rgba(0,0,0,0.05)" },
+              ];
+            } else {
+              // 중앙/CTA → 전체 어둡게
+              stops = [
+                { offset: 0, color: "rgba(0,0,0,0.3)" },
+                { offset: 0.4, color: "rgba(0,0,0,0.45)" },
+                { offset: 0.7, color: "rgba(0,0,0,0.55)" },
+                { offset: 1, color: "rgba(0,0,0,0.75)" },
+              ];
+            }
             var overlayRect = new fabric.Rect({
               left: 0, top: 0, width: W, height: H, selectable: false, evented: false,
               fill: new fabric.Gradient({
                 type: "linear", coords: { x1: 0, y1: 0, x2: 0, y2: H },
-                colorStops: [
-                  { offset: 0, color: "rgba(0,0,0," + (overlay * 0.003) + ")" },
-                  { offset: 0.5, color: "rgba(0,0,0," + (overlay * 0.006) + ")" },
-                  { offset: 1, color: "rgba(0,0,0," + (overlay / 100) + ")" },
-                ]
+                colorStops: stops,
               }),
             });
             fc.add(overlayRect); fc.sendToBack(overlayRect);
@@ -277,16 +316,17 @@
     if (typeof markWriteUsed === "function") return markWriteUsed();
   }
 
-  // ─── 커버 이미지 검색 ───
-  async function findCoverImage(keyword) {
+  // ─── 이미지 검색 (키워드 기반) ───
+  async function findImage(keyword, orientation) {
     try {
-      var res = await fetch(API + "/proxy?action=pexels&path=v1/search&query=" + encodeURIComponent(keyword || "business") + "&per_page=5&orientation=landscape");
+      var res = await fetch(API + "/proxy?action=pexels&path=v1/search&query=" + encodeURIComponent(keyword || "business") + "&per_page=8&orientation=" + (orientation || "squarish"));
       var data = await res.json();
       var photos = data.photos || [];
-      var p = photos[Math.floor(Math.random() * Math.min(photos.length, 3))];
+      var p = photos[Math.floor(Math.random() * Math.min(photos.length, 5))];
       return p ? (p.src.large || p.src.medium) : null;
     } catch { return null; }
   }
+  async function findCoverImage(keyword) { return findImage(keyword, "landscape"); }
 
   // ─── 카드뉴스 생성 ───
   $("cardGenerateBtn")?.addEventListener("click", async function() {
@@ -329,14 +369,21 @@
       var rawSlides = parsed.slides || [];
       if (!rawSlides.length) throw new Error("슬라이드가 0장입니다. 다시 시도해주세요.");
 
-      // 첫 장 커버 이미지
-      $("cardLoadingMsg").textContent = "커버 이미지 검색 중...";
-      var coverUrl = await findCoverImage(rawSlides[0]?.visualKeyword || topic || "business");
+      // 모든 슬라이드에 배경 이미지 자동 삽입
+      $("cardLoadingMsg").textContent = "배경 이미지 검색 중...";
+      var imageUrls = [];
+      for (var si = 0; si < rawSlides.length; si++) {
+        var kw = rawSlides[si].visualKeyword || topic || "background";
+        var url = await findImage(kw, si === 0 ? "landscape" : "squarish");
+        imageUrls.push(url);
+        $("cardLoadingMsg").textContent = "이미지 " + (si + 1) + "/" + rawSlides.length + " 검색 중...";
+      }
 
-      // Fabric 슬라이드 배열 생성
+      // Fabric 슬라이드 배열 생성 (모든 슬라이드에 배경 이미지)
       slides = rawSlides.map(function(s, i) {
         if (i === 0) { s.isHookCover = true; s.badge = s.badge || "저장 필수"; }
-        return { json: null, bgUrl: i === 0 ? coverUrl : null, data: s };
+        s._layoutType = i === 0 ? "cover" : (i === rawSlides.length - 1 ? "cta" : ["bottom", "center", "top"][i % 3]);
+        return { json: null, bgUrl: imageUrls[i] || null, data: s };
       });
       currentIdx = 0;
 

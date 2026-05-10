@@ -10,132 +10,133 @@
     [data-idx]:hover .trim-handle, [data-idx][style*="outline"] .trim-handle { opacity:0.9 !important; }
     #veTimeRuler { cursor:pointer; }
 
-    /* ═══════ 캡컷 스타일 전체 오버라이드 ═══════ */
+    /* ═══════ 캡컷 다크 테마 ═══════ */
     :root {
-      --ve-bg: #161622;
-      --ve-bg-dark: #111118;
-      --ve-bg-panel: #1c1c2e;
-      --ve-border: #252538;
-      --ve-text: #e8e8f0;
-      --ve-text-dim: #6e6e88;
-      --ve-text-muted: #484860;
+      --ve-bg: #15171e;
+      --ve-bg-dark: #111318;
+      --ve-bg-panel: #1b1d24;
+      --ve-bg-surface: #1e2028;
+      --ve-border: #2a2c34;
+      --ve-border-soft: #222428;
+      --ve-text: #d4d6dc;
+      --ve-text-dim: #6b6e78;
+      --ve-text-muted: #44464e;
       --ve-accent: #00bfa5;
-      --ve-accent-hover: #00a892;
-      --ve-accent-bg: rgba(0,191,165,0.12);
-      --ve-accent-border: rgba(0,191,165,0.3);
+      --ve-accent-hover: #00d4b8;
+      --ve-accent-bg: rgba(0,191,165,0.10);
+      --ve-accent-border: rgba(0,191,165,0.25);
     }
-    #veStep3 { font-family: -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif; letter-spacing:-0.01em; }
+    #veStep3 { font-family: -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif; letter-spacing:-0.01em; color:var(--ve-text); }
     #veStep3 *, #veStep3 *::before, #veStep3 *::after { box-sizing:border-box; }
 
-    /* ── 탭 버튼 (캡컷 스타일) ── */
-    .ve-tab-btn { transition:all 0.15s !important; position:relative; }
-    .ve-tab-btn:hover { color:#b0b0c8 !important; background:rgba(255,255,255,0.04) !important; }
+    /* ── 탭 버튼 (캡컷) ── */
+    .ve-tab-btn { transition:all 0.12s !important; position:relative; color:var(--ve-text-dim) !important; }
+    .ve-tab-btn:hover { color:var(--ve-text) !important; }
     .ve-tab-btn.active { color:var(--ve-accent) !important; border-bottom-color:var(--ve-accent) !important; }
     .ve-tab-btn svg { stroke:currentColor; }
 
-    /* ── 칩 버튼 전면 개선 ── */
+    /* ── 칩 버튼 (캡컷) ── */
     #veStep3 .chip {
-      transition:all 0.15s !important;
+      transition:all 0.12s !important;
       border:1px solid var(--ve-border) !important;
-      background:var(--ve-bg-dark) !important;
+      background:var(--ve-bg-surface) !important;
       color:var(--ve-text-dim) !important;
-      border-radius:6px !important;
+      border-radius:4px !important;
       font-weight:600 !important;
       cursor:pointer;
+      font-size:11px !important;
     }
     #veStep3 .chip:hover {
-      border-color:#3a3a52 !important;
-      background:#1e1e32 !important;
-      color:#a0a0b8 !important;
+      border-color:var(--ve-text-muted) !important;
+      color:var(--ve-text) !important;
     }
     #veStep3 .chip.active {
-      border-color:var(--ve-accent-border) !important;
+      border-color:var(--ve-accent) !important;
       background:var(--ve-accent-bg) !important;
       color:var(--ve-accent) !important;
-      box-shadow:0 0 8px rgba(0,191,165,0.12);
     }
 
-    /* ── 슬라이더 ── */
+    /* ── 슬라이더 (캡컷) ── */
     #veStep3 input[type="range"] {
       -webkit-appearance:none !important;
-      height:3px !important;
-      background:#252538 !important;
-      border-radius:2px !important;
+      height:2px !important;
+      background:var(--ve-border) !important;
+      border-radius:1px !important;
       outline:none !important;
       cursor:pointer;
     }
     #veStep3 input[type="range"]::-webkit-slider-thumb {
       -webkit-appearance:none !important;
-      width:12px !important; height:12px !important;
+      width:10px !important; height:10px !important;
       border-radius:50% !important;
-      background:var(--ve-accent) !important;
-      box-shadow:0 0 6px rgba(0,191,165,0.4) !important;
+      background:#fff !important;
+      box-shadow:0 1px 4px rgba(0,0,0,0.4) !important;
       cursor:pointer !important;
       border:none !important;
     }
     #veStep3 input[type="range"]::-webkit-slider-thumb:hover {
-      transform:scale(1.2);
-      box-shadow:0 0 10px rgba(0,191,165,0.6) !important;
+      transform:scale(1.15);
     }
 
-    /* ── 색상 선택기 ── */
+    /* ── 색상 선택기 (캡컷) ── */
     #veStep3 input[type="color"] {
-      border:2px solid #333358 !important;
-      border-radius:6px !important;
+      border:1px solid var(--ve-border) !important;
+      border-radius:4px !important;
       cursor:pointer !important;
       padding:1px !important;
-      background:#12122a !important;
+      background:var(--ve-bg-dark) !important;
     }
-    #veStep3 input[type="color"]:hover { border-color:#4a4a6a !important; }
+    #veStep3 input[type="color"]:hover { border-color:var(--ve-text-muted) !important; }
 
-    /* ── details/summary 아코디언 ── */
-    details.ve-section { border-radius:8px !important; overflow:hidden; margin-bottom:4px !important; }
+    /* ── 아코디언 (캡컷) ── */
+    details.ve-section { border-radius:0 !important; overflow:hidden; margin-bottom:0 !important; }
     details.ve-section > summary {
       list-style:none !important;
       display:flex !important;
       align-items:center !important;
-      gap:8px !important;
-      padding:10px 8px !important;
-      border-top:1px solid #222242 !important;
-      font-size:12px !important;
-      font-weight:700 !important;
-      color:#7878a0 !important;
+      gap:6px !important;
+      padding:9px 12px !important;
+      border-top:1px solid var(--ve-border-soft) !important;
+      font-size:11px !important;
+      font-weight:600 !important;
+      color:var(--ve-text-dim) !important;
       cursor:pointer !important;
       user-select:none !important;
-      transition:all 0.15s;
+      transition:color 0.12s;
     }
-    details.ve-section > summary:hover { color:#a0a0c0 !important; background:rgba(255,255,255,0.02); }
+    details.ve-section > summary:hover { color:var(--ve-text) !important; }
     details.ve-section > summary::-webkit-details-marker { display:none !important; }
     details.ve-section > summary::before {
       content:"" !important; display:inline-block !important;
       width:0; height:0;
-      border-left:5px solid #525268; border-top:4px solid transparent; border-bottom:4px solid transparent;
-      transition:transform 0.2s; flex-shrink:0;
+      border-left:4px solid var(--ve-text-muted); border-top:3px solid transparent; border-bottom:3px solid transparent;
+      transition:transform 0.15s; flex-shrink:0;
     }
     details.ve-section[open] > summary::before { transform:rotate(90deg); border-left-color:var(--ve-accent); }
-    details.ve-section[open] > summary { color:#a0a0c0 !important; }
-    details.ve-section > div { padding:6px 4px 10px !important; }
+    details.ve-section[open] > summary { color:var(--ve-text) !important; }
+    details.ve-section > div { padding:6px 12px 10px !important; }
 
-    /* ── 도구바 버튼 ── */
+    /* ── 도구바 버튼 (캡컷) ── */
     #veStep3 .ve-tool-btn {
-      transition:all 0.12s !important;
-      border-radius:5px !important;
-      font-weight:600 !important;
+      transition:all 0.1s !important;
+      border-radius:4px !important;
+      font-weight:500 !important;
+      color:var(--ve-text-dim) !important;
     }
     #veStep3 .ve-tool-btn:hover {
-      background:rgba(255,255,255,0.06) !important;
-      color:#c8cdd3 !important;
+      background:rgba(255,255,255,0.05) !important;
+      color:var(--ve-text) !important;
     }
 
-    /* ── 트랙 레인 ── */
-    .ve-track-lane { transition:background 0.15s; }
-    .ve-track-lane:hover { background:rgba(255,255,255,0.02) !important; }
+    /* ── 트랙 레인 (캡컷) ── */
+    .ve-track-lane { transition:background 0.1s; }
+    .ve-track-lane:hover { background:rgba(255,255,255,0.015) !important; }
 
-    /* ── 스크롤바 ── */
-    #veStep3 ::-webkit-scrollbar { width:5px; height:5px; }
+    /* ── 스크롤바 (캡컷 — 미니멀) ── */
+    #veStep3 ::-webkit-scrollbar { width:4px; height:4px; }
     #veStep3 ::-webkit-scrollbar-track { background:transparent; }
-    #veStep3 ::-webkit-scrollbar-thumb { background:#2a2a4a; border-radius:3px; }
-    #veStep3 ::-webkit-scrollbar-thumb:hover { background:#3a3a5a; }
+    #veStep3 ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.08); border-radius:2px; }
+    #veStep3 ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.15); }
 
     /* ── 속성 패널 섹션 라벨 ── */
     #veStep3 .ve-tab-content .chips { display:flex; flex-wrap:wrap; }
@@ -150,50 +151,30 @@
       padding-right:22px !important;
     }
 
-    /* ── 프리뷰 비디오 래퍼 ── */
-    #veVideoWrap { box-shadow:0 4px 24px rgba(0,0,0,0.5) !important; border:1px solid var(--ve-border) !important; }
+    /* ── 프리뷰 (캡컷) ── */
+    #veVideoWrap { box-shadow:none !important; border:none !important; border-radius:0 !important; background:#000 !important; }
 
-    /* ── 내보내기 버튼 ── */
+    /* ── 내보내기 버튼 (캡컷 — 틸 라운드) ── */
     #veExportBtn {
       background:var(--ve-accent) !important;
-      box-shadow:0 2px 8px rgba(0,191,165,0.3) !important;
+      box-shadow:none !important;
       font-weight:700 !important;
+      border-radius:4px !important;
     }
-    #veExportBtn:hover { background:var(--ve-accent-hover) !important; box-shadow:0 4px 16px rgba(0,191,165,0.4) !important; }
+    #veExportBtn:hover { background:var(--ve-accent-hover) !important; }
 
-    /* ── AI 도구 바 버튼 ── */
-    .ve-ai-btn:hover {
-      background:var(--ve-accent-bg) !important;
-      color:var(--ve-accent) !important;
-    }
+    /* ── 플레이 버튼 (캡컷) ── */
+    #vePlayBtn { background:var(--ve-accent) !important; box-shadow:none !important; }
+    #vePlayBtn:hover { background:var(--ve-accent-hover) !important; transform:scale(1.05); }
 
-    /* ── 플레이 버튼 ── */
-    #vePlayBtn { background:var(--ve-accent) !important; box-shadow:0 2px 8px rgba(0,191,165,0.3) !important; }
-    #vePlayBtn:hover { background:var(--ve-accent-hover) !important; box-shadow:0 4px 12px rgba(0,191,165,0.5) !important; transform:scale(1.05); }
+    /* ── 타임라인 (캡컷 — 더 어두운 톤) ── */
+    #veTimeline { background:var(--ve-bg-dark) !important; }
 
-    /* ── 타임라인 ── */
-    #veTimeline { background:#0c0c18 !important; }
-
-    /* ═══ 좌측 아이콘 사이드바 (캡컷 스타일) ═══ */
-    .ve-sidebar-icon:hover { background:rgba(255,255,255,0.06) !important; color:#b0b0c8 !important; }
-    .ve-sidebar-icon.active { background:var(--ve-accent-bg) !important; color:var(--ve-accent) !important; }
-    .ve-left-sidebar { z-index:2; }
-
-    /* ═══ 속성 패널 섹션 구조 ═══ */
+    /* ═══ 패널 구조 (캡컷) ═══ */
     .ve-panel-section {
-      padding:12px 14px;
-      border-bottom:1px solid var(--ve-border);
+      padding:8px 12px;
+      border-bottom:1px solid var(--ve-border-soft);
     }
-    .ve-section-label {
-      font-size:11px;
-      font-weight:700;
-      color:var(--ve-text-muted);
-      text-transform:uppercase;
-      letter-spacing:0.04em;
-      margin-bottom:8px;
-    }
-
-    /* ── AI 퀵 액션 버튼 (중복 제거됨, 라인 165에서 정의) ── */
 
     /* ── 색상 칩 원형 ── */
     #veSubColorChips .chip {
@@ -207,13 +188,24 @@
       border-color:#fff !important;
     }
 
-    /* ── 패널 스크롤 영역 ── */
+    /* ── 패널 콘텐츠 ── */
     #veStep3 .ve-tab-content { padding:0 !important; }
+    details.ve-section { margin:0 !important; border-bottom:1px solid var(--ve-border-soft); }
+    details.ve-section > summary { padding:9px 12px !important; border-top:none !important; margin:0 !important; }
+    details.ve-section > div { padding:4px 12px 10px !important; }
 
-    /* ── details 내부 패딩 통일 ── */
-    details.ve-section { margin:0 !important; border-bottom:1px solid var(--ve-border); }
-    details.ve-section > summary { padding:12px 14px !important; border-top:none !important; margin:0 !important; }
-    details.ve-section > div { padding:4px 14px 14px !important; }
+    /* ── 자료실 검색바 ── */
+    .ml-input, #mkSearchInput {
+      border:1px solid #dbeafe !important;
+      background:#fafbff !important;
+      font-size:14px !important;
+      transition:border-color 0.2s, box-shadow 0.2s !important;
+    }
+    .ml-input:focus, #mkSearchInput:focus {
+      border-color:#93c5fd !important;
+      box-shadow:0 0 0 3px rgba(59,130,246,0.08) !important;
+      outline:none !important;
+    }
   </style>
 </head>
 <body>
@@ -247,29 +239,42 @@
         <button class="nav-item active" data-panel="home">
           <span class="nav-icon nav-home"></span>홈
         </button>
-        <details class="nav-group" open>
-          <summary>콘텐츠 제작</summary>
+        <!-- 핵심 기능 -->
+        <button class="nav-item" data-panel="naver-blog">
+          <span class="nav-icon nav-blog"></span>글쓰기
+        </button>
+        <button class="nav-item" data-panel="cardnews">
+          <span class="nav-icon nav-card"></span>카드뉴스
+        </button>
+        <button class="nav-item" data-panel="video-editor">
+          <span class="nav-icon nav-ve"></span>영상 편집
+        </button>
+        <button class="nav-item" data-panel="naver-cafe">
+          <span class="nav-icon nav-cafe"></span>카페
+        </button>
+        <details class="nav-group">
+          <summary>설정</summary>
           <button class="nav-item nav-sub" data-panel="naver-account">
             <span class="nav-icon nav-account"></span>계정 설정
           </button>
-          <button class="nav-item nav-sub" data-panel="manual-write">
-            <span class="nav-icon nav-write"></span>수동 글쓰기
+        </details>
+        <details class="nav-group">
+          <summary>자료실</summary>
+          <button class="nav-item nav-sub" data-panel="ml-photo">
+            <span class="nav-icon nav-media"></span>사진
           </button>
-          <button class="nav-item nav-sub" data-panel="naver-blog">
-            <span class="nav-icon nav-blog"></span>자동 글쓰기
+          <button class="nav-item nav-sub" data-panel="ml-gif">
+            <span class="nav-icon nav-media"></span>GIF
           </button>
-          <button class="nav-item nav-sub" data-panel="cardnews">
-            <span class="nav-icon nav-card"></span>카드뉴스
+          <button class="nav-item nav-sub" data-panel="ml-video">
+            <span class="nav-icon nav-media"></span>영상
           </button>
-          <button class="nav-item nav-sub" data-panel="video-editor">
-            <span class="nav-icon nav-ve"></span>영상 편집
-          </button>
-          <button class="nav-item nav-sub" data-panel="naver-cafe">
-            <span class="nav-icon nav-cafe"></span>카페
+          <button class="nav-item nav-sub" data-panel="ml-makeit">
+            <span class="nav-icon nav-media"></span>메이킷 자료
           </button>
         </details>
         <details class="nav-group">
-          <summary>운영 관리</summary>
+          <summary>운영</summary>
           <button class="nav-item nav-sub" data-panel="archive">
             <span class="nav-icon nav-archive"></span>보관함
           </button>
@@ -281,19 +286,18 @@
           </button>
         </details>
         <details class="nav-group">
-          <summary>소식/도움</summary>
+          <summary>소식</summary>
           <button class="nav-item nav-sub" data-panel="notice">
             <span class="nav-icon nav-notice"></span>공지사항
           </button>
           <button class="nav-item nav-sub" data-panel="community">
             <span class="nav-icon nav-community"></span>커뮤니티
           </button>
-          <!-- 잡담방 제거됨 -->
           <button class="nav-item nav-sub" data-panel="chat" style="display:none;">
             <span class="nav-icon nav-chat"></span>잡담방
           </button>
           <button class="nav-item nav-sub" data-panel="challenge">
-            <span class="nav-icon nav-challenge"></span>SNS 챌린지
+            <span class="nav-icon nav-challenge"></span>챌린지
           </button>
           <button class="nav-item nav-sub" data-panel="pricing">
             <span class="nav-icon nav-pricing"></span>가격정책
@@ -458,11 +462,27 @@
             <h3>로그인</h3>
           </div>
           <div class="form">
-            <button class="btn btn-primary btn-full btn-lg" id="browserLoginBtn">
+            <label>이메일</label>
+            <input type="email" id="makeitLoginEmail" placeholder="이메일 주소">
+            <label>비밀번호</label>
+            <input type="password" id="makeitLoginPw" placeholder="비밀번호">
+            <div style="display:flex;align-items:center;gap:8px;margin:8px 0 12px;">
+              <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:13px;color:var(--text-sub);cursor:pointer;">
+                <input type="checkbox" id="makeitSaveLogin" style="width:auto;min-height:auto;"> 로그인 정보 저장
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:13px;color:var(--text-sub);cursor:pointer;">
+                <input type="checkbox" id="makeitAutoLogin" style="width:auto;min-height:auto;"> 자동 로그인
+              </label>
+            </div>
+            <button class="btn btn-primary btn-full btn-lg" id="makeitDirectLoginBtn">
               로그인
             </button>
-            <div class="form-hint">
-              메이킷 계정으로 로그인합니다. Google 로그인 지원.<br>
+            <div style="text-align:center;margin:12px 0;font-size:12px;color:var(--text-dim);">또는</div>
+            <button class="btn btn-outline btn-full" id="browserLoginBtn">
+              Google 계정으로 로그인
+            </button>
+            <div class="form-hint" style="margin-top:10px;">
+              메이킷 계정 또는 Google 계정으로 로그인합니다.<br>
               월/연간 구독자는 로그인 즉시 이용 가능합니다.
             </div>
           </div>
@@ -708,8 +728,8 @@
       <!-- 네이버 블로그 자동화 -->
       <section class="panel hidden" data-panel="naver-blog">
         <div class="panel-header">
-          <h1>네이버 블로그</h1>
-          <p class="panel-sub">블로그 글을 자동으로 생성하고 발행합니다.</p>
+          <h1>글쓰기</h1>
+          <p class="panel-sub">블로그 글을 AI로 생성하고 자동/수동으로 발행합니다.</p>
         </div>
 
         <!-- 발행 방식 선택 (첫 화면) -->
@@ -739,6 +759,10 @@
           <div style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:12px;">또는 상세 설정으로 발행하기</div>
 
           <div class="mode-cards">
+            <div class="mode-card" id="modeManualWrite" onclick="goToPanel('manual-write')">
+              <div class="mode-card-title">수동 글쓰기</div>
+              <div class="mode-card-desc">원하는 주제로 글을 작성하고, 직접 수정 후 발행합니다.</div>
+            </div>
             <div class="mode-card" id="modeAutopilot">
               <div class="mode-card-title">자동 운영</div>
               <div class="mode-card-desc">키워드, 스타일, 분량, 인용구 등 세부 설정으로 자동 발행합니다.</div>
@@ -1236,6 +1260,121 @@
         </div>
       </section>
 
+      <!-- 무료 사진 -->
+      <section class="panel hidden" data-panel="ml-photo">
+        <div class="panel-header">
+          <h1>무료 사진</h1>
+          <p class="panel-sub">Pexels 제공 | 상업적 사용 가능한 고해상도 사진</p>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <div style="flex:1;position:relative;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="ml-input" data-ml-type="photo" placeholder="사진 검색 (예: 사무실, 음식, 여행...)" style="width:100%;padding:12px 14px 12px 40px;border-radius:10px;">
+          </div>
+          <button class="btn btn-primary ml-search-btn" data-ml-type="photo" style="padding:12px 24px;border-radius:10px;font-weight:700;white-space:nowrap;">검색</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="business">비즈니스</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="nature">자연</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="food">음식</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="office">사무실</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="people">사람</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="city">도시</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="technology">기술</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="travel">여행</button>
+        </div>
+        <div class="ml-grid" data-ml-type="photo" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;">
+          <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-dim);font-size:14px;">검색어를 입력하세요.</div>
+        </div>
+        <div class="ml-more-wrap" data-ml-type="photo" style="display:none;text-align:center;margin-top:20px;">
+          <button class="btn btn-outline ml-more-btn" data-ml-type="photo" style="padding:12px 32px;">더 보기</button>
+        </div>
+      </section>
+
+      <!-- 무료 GIF -->
+      <section class="panel hidden" data-panel="ml-gif">
+        <div class="panel-header">
+          <h1>무료 GIF</h1>
+          <p class="panel-sub">Klipy 제공 | 움짤/리액션 GIF 검색</p>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <div style="flex:1;position:relative;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="ml-input" data-ml-type="gif" placeholder="GIF 검색 (예: 축하, 웃음, 리액션...)" style="width:100%;padding:12px 14px 12px 40px;border-radius:10px;">
+          </div>
+          <button class="btn btn-primary ml-search-btn" data-ml-type="gif" style="padding:12px 24px;border-radius:10px;font-weight:700;white-space:nowrap;">검색</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="gif" data-q="thumbs up">좋아요</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="gif" data-q="celebration">축하</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="gif" data-q="laugh">웃음</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="gif" data-q="surprised">놀람</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="gif" data-q="cute">귀여운</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="gif" data-q="sad">슬픔</button>
+        </div>
+        <div class="ml-grid" data-ml-type="gif" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;">
+          <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-dim);font-size:14px;">검색어를 입력하세요.</div>
+        </div>
+        <div class="ml-more-wrap" data-ml-type="gif" style="display:none;text-align:center;margin-top:20px;">
+          <button class="btn btn-outline ml-more-btn" data-ml-type="gif" style="padding:12px 32px;">더 보기</button>
+        </div>
+      </section>
+
+      <!-- 무료 영상 -->
+      <section class="panel hidden" data-panel="ml-video">
+        <div class="panel-header">
+          <h1>무료 영상</h1>
+          <p class="panel-sub">Pixabay 제공 | 상업적 사용 가능한 영상 클립</p>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <div style="flex:1;position:relative;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="ml-input" data-ml-type="video" placeholder="영상 검색 (예: 하늘, 바다, 도시...)" style="width:100%;padding:12px 14px 12px 40px;border-radius:10px;">
+          </div>
+          <button class="btn btn-primary ml-search-btn" data-ml-type="video" style="padding:12px 24px;border-radius:10px;font-weight:700;white-space:nowrap;">검색</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="video" data-q="nature">자연</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="video" data-q="city">도시</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="video" data-q="sky">하늘</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="video" data-q="ocean">바다</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="video" data-q="abstract">추상</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="video" data-q="business">비즈니스</button>
+        </div>
+        <div class="ml-grid" data-ml-type="video" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+          <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-dim);font-size:14px;">검색어를 입력하세요.</div>
+        </div>
+        <div class="ml-more-wrap" data-ml-type="video" style="display:none;text-align:center;margin-top:20px;">
+          <button class="btn btn-outline ml-more-btn" data-ml-type="video" style="padding:12px 32px;">더 보기</button>
+        </div>
+      </section>
+
+      <!-- 메이킷 자료 -->
+      <section class="panel hidden" data-panel="ml-makeit">
+        <div class="panel-header">
+          <h1>메이킷 자료</h1>
+          <p class="panel-sub">SNS메이킷에서 제공하는 전용 사진/영상 소스</p>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <div style="flex:1;position:relative;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="mkSearchInput" placeholder="파일명 검색 (예: 말풍선, 하트, 임팩트...)" style="width:100%;padding:12px 14px 12px 40px;border-radius:10px;">
+          </div>
+          <button class="btn btn-primary" id="mkSearchBtn" style="padding:12px 24px;border-radius:10px;font-weight:700;white-space:nowrap;">검색</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+          <button class="chip active mk-cat-btn" data-mk-cat="photo">사진</button>
+          <button class="chip mk-cat-btn" data-mk-cat="video">영상</button>
+          <div style="flex:1;"></div>
+          <button class="btn btn-outline btn-sm" id="mkAddFilesBtn" style="display:none;font-size:12px;padding:7px 14px;">파일 추가</button>
+          <button class="btn btn-outline btn-sm" id="mkOpenFolderBtn" style="display:none;font-size:12px;padding:7px 14px;">폴더 열기</button>
+        </div>
+        <div id="mkResultCount" style="font-size:12px;color:var(--text-dim);margin-bottom:10px;"></div>
+        <div id="mkResults" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;">
+          <div style="grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);font-size:14px;">카테고리를 선택하세요.</div>
+        </div>
+      </section>
+
       <!-- 보관함 패널 -->
       <section class="panel hidden" data-panel="archive">
         <div class="panel-header">
@@ -1448,60 +1587,61 @@
 
         <!-- Step 3: NLE 편집기 (캡컷 레이아웃) -->
         <div id="veStep3" style="display:none;">
-          <!-- 상단 헤더 바 -->
-          <div style="display:flex;align-items:center;gap:8px;padding:0 12px;height:38px;background:#111118;border-bottom:1px solid #1e1e30;flex-shrink:0;">
-            <button id="veBackToUpload" class="ve-tool-btn" style="padding:4px 8px;font-size:11px;background:transparent;border:none;color:#6e6e88;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:3px;">
+          <!-- 상단 헤더 바 (캡컷) -->
+          <div style="display:flex;align-items:center;gap:6px;padding:0 10px;height:34px;background:var(--ve-bg-dark);border-bottom:1px solid var(--ve-border-soft);flex-shrink:0;">
+            <button id="veBackToUpload" class="ve-tool-btn" style="padding:4px 6px;background:transparent;border:none;color:#5a5a72;border-radius:4px;cursor:pointer;display:flex;align-items:center;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
-            <div style="font-size:12px;font-weight:600;color:#9898b0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="veFileName2"></div>
+            <span style="font-size:10px;color:#3a3a50;margin-right:4px;">|</span>
+            <div style="font-size:12px;font-weight:600;color:#8e8ea8;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="veFileName2"></div>
             <span id="veRatioLabel" style="font-size:10px;color:#4e4e66;"></span>
-            <select id="veExportRes" style="padding:3px 20px 3px 6px;font-size:10px;background:#111118;color:#6e6e88;border:1px solid #2a2a40;border-radius:4px;cursor:pointer;outline:none;">
+            <select id="veExportRes" style="padding:2px 18px 2px 6px;font-size:10px;background:#0c0c16;color:#5a5a72;border:1px solid #252538;border-radius:4px;cursor:pointer;outline:none;">
               <option value="original">원본</option>
               <option value="1080" selected>1080p</option>
               <option value="2160">4K</option>
               <option value="720">720p</option>
             </select>
-            <button id="veSaveProjectBtn" class="ve-tool-btn" style="padding:4px 10px;font-size:11px;font-weight:600;border:none;border-radius:4px;cursor:pointer;color:#6e6e88;background:transparent;display:flex;align-items:center;gap:3px;" title="프로젝트 저장 (Ctrl+S)">
+            <button id="veSaveProjectBtn" class="ve-tool-btn" style="padding:3px 8px;border:none;border-radius:4px;cursor:pointer;color:#5a5a72;background:transparent;" title="저장 (Ctrl+S)">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
             </button>
-            <button id="veExportBtn" style="padding:5px 16px;font-size:11px;font-weight:700;border:none;border-radius:4px;cursor:pointer;color:#fff;background:var(--ve-accent);display:flex;align-items:center;gap:4px;transition:background 0.15s;">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Export
+            <button id="veExportBtn" style="padding:5px 14px;font-size:11px;font-weight:700;border:none;border-radius:4px;cursor:pointer;color:#fff;background:var(--ve-accent);display:flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>내보내기
             </button>
           </div>
 
-          <!-- 메인 레이아웃: 좌측 아이콘바 + 프리뷰 + 우측 속성 -->
+          <!-- 아이콘 탭 행 (캡컷) -->
+          <div style="display:flex;gap:0;background:var(--ve-bg-dark);flex-shrink:0;border-bottom:1px solid var(--ve-border);padding:0 8px;">
+            <button class="ve-tab-btn active" data-ve-tab="sub" style="padding:10px 14px;font-size:11px;font-weight:600;border:none;background:transparent;color:#5a5a72;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.12s;display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="6" y1="14" x2="18" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg>자막
+            </button>
+            <button class="ve-tab-btn" data-ve-tab="clip" style="padding:10px 14px;font-size:11px;font-weight:600;border:none;background:transparent;color:#5a5a72;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.12s;display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>클립
+            </button>
+            <button class="ve-tab-btn" data-ve-tab="image" style="padding:10px 14px;font-size:11px;font-weight:600;border:none;background:transparent;color:#5a5a72;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.12s;display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>미디어
+            </button>
+          </div>
+
+          <!-- 메인 레이아웃: 좌측 콘텐츠 + 중앙 프리뷰 -->
           <div id="veMainLayout" style="display:flex;flex:1;min-height:0;overflow:hidden;">
-            <!-- 좌측 아이콘 사이드바 (숨김) -->
+            <!-- 좌측 아이콘 사이드바 (숨김 — JS 호환용) -->
             <div class="ve-left-sidebar" style="display:none;">
-              <button class="ve-sidebar-icon active" data-ve-tab="sub" title="자막" style="width:40px;height:40px;border:none;background:transparent;color:#6e6e88;cursor:pointer;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all 0.12s;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="6" y1="14" x2="18" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg>
-                <span style="font-size:8px;font-weight:600;">자막</span>
-              </button>
-              <button class="ve-sidebar-icon" data-ve-tab="clip" title="이미지" style="width:40px;height:40px;border:none;background:transparent;color:#6e6e88;cursor:pointer;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all 0.12s;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                <span style="font-size:8px;font-weight:600;">이미지</span>
-              </button>
-              <button class="ve-sidebar-icon" data-ve-tab="image" title="라이브러리" style="width:40px;height:40px;border:none;background:transparent;color:#6e6e88;cursor:pointer;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all 0.12s;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-                <span style="font-size:8px;font-weight:600;">미디어</span>
-              </button>
-              <div style="flex:1;"></div>
-              <button class="ve-sidebar-icon" id="veSubRegenBtn2" title="자막 재생성" style="width:40px;height:40px;border:none;background:transparent;color:#6e6e88;cursor:pointer;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all 0.12s;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 4v6h6M23 20v-6h-6"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
-                <span style="font-size:7px;font-weight:600;">자막AI</span>
-              </button>
-              <button class="ve-sidebar-icon" id="veSilenceQuickBtn" title="무음 제거" style="width:40px;height:40px;border:none;background:transparent;color:#6e6e88;cursor:pointer;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all 0.12s;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-                <span style="font-size:7px;font-weight:600;">무음</span>
-              </button>
-              <button class="ve-sidebar-icon" id="veAiGifQuickBtn" title="AI 짤" style="width:40px;height:40px;border:none;background:transparent;color:#6e6e88;cursor:pointer;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all 0.12s;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 8v8M8 12h8"/></svg>
-                <span style="font-size:7px;font-weight:600;">AI짤</span>
-              </button>
+              <button class="ve-sidebar-icon active" data-ve-tab="sub"></button>
+              <button class="ve-sidebar-icon" data-ve-tab="clip"></button>
+              <button class="ve-sidebar-icon" data-ve-tab="image"></button>
+              <button class="ve-sidebar-icon" id="veSubRegenBtn2"></button>
+              <button class="ve-sidebar-icon" id="veSilenceQuickBtn"></button>
+              <button class="ve-sidebar-icon" id="veAiGifQuickBtn"></button>
             </div>
 
-            <!-- 중앙: 프리뷰 -->
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;background:#0a0a14;">
+            <!-- 중앙: 프리뷰 (캡컷) -->
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;background:var(--ve-bg-dark);">
+              <!-- 프리뷰 헤더 -->
+              <div style="display:flex;align-items:center;padding:0 12px;height:24px;background:var(--ve-bg);border-bottom:1px solid var(--ve-border-soft);flex-shrink:0;">
+                <span style="font-size:10px;color:var(--ve-text-muted);font-weight:600;">플레이어</span>
+                <div style="flex:1;"></div>
+                <span id="veRatioLabel2" style="font-size:10px;color:var(--ve-text-muted);"></span>
+              </div>
               <div id="veVideoWrap" style="position:relative;background:#000;overflow:hidden;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;">
                 <video id="veVideo" style="max-width:100%;max-height:100%;object-fit:contain;display:block;"></video>
                 <div id="veSubOverlay" style="position:absolute;left:0;right:0;bottom:24px;text-align:center;pointer-events:none;padding:0 16px;"></div>
@@ -1510,32 +1650,17 @@
                   <div id="veLoadingText" style="color:#6e6e88;font-size:11px;margin-top:10px;">불러오는 중...</div>
                 </div>
               </div>
-              <!-- 재생 컨트롤 바 (캡컷 스타일 중앙 정렬) -->
-              <div style="display:flex;align-items:center;justify-content:center;gap:12px;padding:6px 16px;background:#0e0e1a;border-top:1px solid #1a1a2c;flex-shrink:0;">
-                <button id="vePlayBtn" style="width:28px;height:28px;border-radius:50%;border:none;background:var(--ve-accent);color:#fff;cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;transition:all 0.15s;">&#9654;</button>
-                <span id="veTimeDisplay" style="font-size:11px;color:#6e6e88;font-variant-numeric:tabular-nums;">0:00 / 0:00</span>
-                <input type="range" id="veSeekBar" min="0" max="1000" value="0" style="flex:1;max-width:400px;">
-                <button id="veSpeedBtn" style="padding:2px 6px;font-size:10px;border:none;border-radius:3px;cursor:pointer;color:#6e6e88;background:transparent;font-weight:700;transition:all 0.12s;">1x</button>
+              <!-- 재생 컨트롤 바 (캡컷) -->
+              <div style="display:flex;align-items:center;gap:10px;padding:5px 14px;background:var(--ve-bg);border-top:1px solid var(--ve-border-soft);flex-shrink:0;">
+                <button id="vePlayBtn" style="width:26px;height:26px;border-radius:50%;border:none;background:var(--ve-accent);color:#fff;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;">&#9654;</button>
+                <span id="veTimeDisplay" style="font-size:11px;color:#5a5a72;font-variant-numeric:tabular-nums;">0:00 / 0:00</span>
+                <input type="range" id="veSeekBar" min="0" max="1000" value="0" style="flex:1;">
+                <button id="veSpeedBtn" style="padding:2px 6px;font-size:10px;border:none;border-radius:3px;cursor:pointer;color:#5a5a72;background:transparent;font-weight:700;">1x</button>
               </div>
             </div>
 
-            <!-- 좌측 콘텐츠 패널 (캡컷 스타일, order:-1로 좌측 배치) -->
-            <div style="width:280px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;background:#141422;border-right:1px solid #1e1e30;order:-1;">
-              <!-- 탭 행 (캡컷 스타일) -->
-              <div style="display:flex;gap:0;background:#111118;flex-shrink:0;">
-                <button class="ve-tab-btn active" data-ve-tab="sub" style="flex:1;padding:12px 0;font-size:13px;font-weight:700;border:none;background:transparent;color:#6e6e88;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;display:flex;flex-direction:column;align-items:center;gap:3px;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="6" y1="14" x2="18" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg>
-                  자막
-                </button>
-                <button class="ve-tab-btn" data-ve-tab="clip" style="flex:1;padding:12px 0;font-size:13px;font-weight:700;border:none;background:transparent;color:#6e6e88;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;display:flex;flex-direction:column;align-items:center;gap:3px;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                  클립
-                </button>
-                <button class="ve-tab-btn" data-ve-tab="image" style="flex:1;padding:12px 0;font-size:13px;font-weight:700;border:none;background:transparent;color:#6e6e88;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s;display:flex;flex-direction:column;align-items:center;gap:3px;">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-                  미디어
-                </button>
-              </div>
+            <!-- 좌측 콘텐츠 패널 (캡컷, order:-1) -->
+            <div style="width:240px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;background:var(--ve-bg-panel);border-right:1px solid var(--ve-border-soft);order:-1;">
               <span id="vePanelTitle" style="display:none;"></span>
               <div style="flex:1;overflow-y:auto;padding:0;">
                 <!-- ═══ 자막 탭 ═══ -->
@@ -1711,12 +1836,7 @@
                   </div>
                 </div>
               </div>
-              <!-- AI 퀵 도구 -->
-              <div style="display:flex;gap:4px;padding:8px 10px;border-top:1px solid #1e1e30;flex-shrink:0;background:#111118;">
-                <button onclick="document.getElementById('veSubRegenBtn2').click()" style="flex:1;padding:8px 0;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:var(--ve-accent);background:var(--ve-accent-bg);transition:all 0.15s;">자막 AI</button>
-                <button onclick="document.getElementById('veSilenceQuickBtn').click()" style="flex:1;padding:8px 0;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:var(--ve-accent);background:var(--ve-accent-bg);transition:all 0.15s;">무음제거</button>
-                <button onclick="document.getElementById('veAiGifQuickBtn').click()" style="flex:1;padding:8px 0;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:var(--ve-accent);background:var(--ve-accent-bg);transition:all 0.15s;">AI 짤</button>
-              </div>
+              <!-- AI 퀵 도구는 도구바로 통합됨 -->
             </div>
           </div>
 

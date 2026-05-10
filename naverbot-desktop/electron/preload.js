@@ -58,6 +58,17 @@ contextBridge.exposeInMainWorld("nbBridge", {
   clearSchedule: () => ipcRenderer.invoke("schedule:clear"),
   onScheduleTrigger: (cb) => { ipcRenderer.removeAllListeners("schedule:trigger"); ipcRenderer.on("schedule:trigger", (_, time) => cb(time)); },
 
+  // 미디어 라이브러리
+  mediaDownload: (url, filename) => ipcRenderer.invoke("media:download", url, filename),
+  mediaSelectFiles: () => ipcRenderer.invoke("media:selectFiles"),
+  mediaGetLocalFiles: () => ipcRenderer.invoke("media:getLocalFiles"),
+  mediaImportFiles: (paths) => ipcRenderer.invoke("media:importFiles", paths),
+  mediaDeleteFile: (path) => ipcRenderer.invoke("media:deleteFile", path),
+  mediaGetMakeitFiles: (cat) => ipcRenderer.invoke("media:getMakeitFiles", cat),
+  mediaImportToMakeit: (paths, dest) => ipcRenderer.invoke("media:importToMakeit", paths, dest),
+  mediaFileToDataUrl: (path) => ipcRenderer.invoke("media:fileToDataUrl", path),
+  mediaGetThumbnail: (path) => ipcRenderer.invoke("media:getThumbnail", path),
+
   // 외부 링크
   openExternal: (url) => ipcRenderer.invoke("shell:openExternal", url),
 

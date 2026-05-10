@@ -1496,6 +1496,92 @@ async function handleLogout() {
 
 $("browserLoginBtn").addEventListener("click", handleBrowserLogin);
 
+// ── 직접 이메일/비번 로그인 + 저장 + 자동 로그인 ──
+const SB_LOGIN_URL = "https://ckzjnpzadeovrasucjmu.supabase.co";
+const SB_LOGIN_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNGU1bb7EVz_-Ljs";
+
+// 저장된 로그인 정보 복원
+(async function restoreSavedLogin() {
+  try {
+    var cfg = await bridge.loadConfig() || {};
+    if (cfg._saved_email) {
+      var emailEl = $("makeitLoginEmail");
+      var pwEl = $("makeitLoginPw");
+      var saveChk = $("makeitSaveLogin");
+      var autoChk = $("makeitAutoLogin");
+      if (emailEl) emailEl.value = cfg._saved_email;
+      if (pwEl) pwEl.value = cfg._saved_pw || "";
+      if (saveChk) saveChk.checked = true;
+      if (autoChk) autoChk.checked = !!cfg._auto_login;
+      // 자동 로그인
+      if (cfg._auto_login && cfg._saved_email && cfg._saved_pw) {
+        setTimeout(function() {
+          var btn = $("makeitDirectLoginBtn");
+          if (btn && !state.loggedIn) btn.click();
+        }, 1000);
+      }
+    }
+  } catch (e) {}
+})();
+
+var directLoginBtn = $("makeitDirectLoginBtn");
+if (directLoginBtn) directLoginBtn.addEventListener("click", async function() {
+  var email = ($("makeitLoginEmail") || {}).value || "";
+  var pw = ($("makeitLoginPw") || {}).value || "";
+  if (!email.trim() || !pw.trim()) { addLog("[계정] 이메일과 비밀번호를 입력하세요."); return; }
+
+  directLoginBtn.disabled = true;
+  directLoginBtn.textContent = "로그인 중...";
+  addLog("[계정] 이메일 로그인 시도...");
+  setUserBadge("로그인 중...", "gray");
+
+  try {
+    var resp = await fetch(SB_LOGIN_URL + "/auth/v1/token?grant_type=password", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "apikey": SB_LOGIN_KEY, "Authorization": "Bearer " + SB_LOGIN_KEY },
+      body: JSON.stringify({ email: email.trim(), password: pw })
+    });
+    var data = await resp.json();
+    if (!resp.ok) throw new Error(data.error_description || data.msg || "HTTP " + resp.status);
+
+    // 로그인 정보 저장
+    var cfg = await bridge.loadConfig() || {};
+    var saveChk = $("makeitSaveLogin");
+    var autoChk = $("makeitAutoLogin");
+    if (saveChk && saveChk.checked) {
+      cfg._saved_email = email.trim();
+      cfg._saved_pw = pw;
+      cfg._auto_login = autoChk ? autoChk.checked : false;
+    } else {
+      delete cfg._saved_email;
+      delete cfg._saved_pw;
+      delete cfg._auto_login;
+    }
+    // 토큰 저장
+    cfg.makeit_access_token = data.access_token;
+    cfg.makeit_refresh_token = data.refresh_token || "";
+    cfg.makeit_email = (data.user && data.user.email) || email;
+    cfg.makeit_uid = (data.user && data.user.id) || "";
+    cfg.makeit_token_expires = data.expires_at || "";
+    await bridge.saveConfig(cfg);
+
+    addLog("[계정] 로그인 성공, 구독 상태 확인 중...");
+    var r = await bridge.verifyAccount();
+    handleVerifyResult(r, email.trim());
+  } catch (e) {
+    addLog("[계정] 로그인 실패: " + e.message);
+    setUserBadge("로그인 실패", "red");
+  }
+  directLoginBtn.disabled = false;
+  directLoginBtn.textContent = "로그인";
+});
+
+// Enter 키로 로그인
+var loginPwEl = $("makeitLoginPw");
+if (loginPwEl) loginPwEl.addEventListener("keydown", function(e) {
+  if (e.key === "Enter") { e.preventDefault(); if (directLoginBtn) directLoginBtn.click(); }
+});
+
 // 로그인 창이 닫히면 버튼 상태 복원 (콜백 없이 닫은 경우)
 if (bridge.onAuthWindowClosed) {
   bridge.onAuthWindowClosed(() => {
@@ -3490,6 +3576,64 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // 보관함에서 영상 복원 시 접근할 수 있도록 window에 노출
   window._ve = ve;
 
+  // ── 자막 정제 (중복 제거 + 짧은 자막 합치기 + 더듬거림 제거) ──
+  function cleanupSubtitles(subs) {
+    // 1. 중복 제거
+    subs = subs.filter(function(s, i, arr) {
+      if (i === 0) return true;
+      var prev = arr[i - 1];
+      var sst = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+      var pst = prev.start_seconds != null ? prev.start_seconds : (prev.start || 0);
+      var pen = prev.end_seconds != null ? prev.end_seconds : (prev.end || pst + 2);
+      if (s.text === prev.text) return false;
+      if (Math.abs(sst - pst) < 0.3) return false;
+      if (s.text && prev.text) {
+        var shorter = s.text.length < prev.text.length ? s.text : prev.text;
+        var longer = s.text.length >= prev.text.length ? s.text : prev.text;
+        if (longer.indexOf(shorter) >= 0 && (sst - pen) < 0.5) return false;
+      }
+      return true;
+    });
+    // 2. 짧은 자막 / 잘린 단어 → 이전 자막에 합치기
+    var merged = [];
+    subs.forEach(function(s) {
+      var text = (s.text || "").trim();
+      if (!text) return;
+      var sst = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+      if (merged.length > 0) {
+        var prev = merged[merged.length - 1];
+        var pen = prev.end_seconds != null ? prev.end_seconds : (prev.end || 0);
+        var gap = sst - pen;
+        // 조건: 4글자 이하이고 간격 1초 미만 → 합치기
+        // 또는: 조사/어미 패턴(가,는,을,를,에,도,의,로,서,고,면,다 등)이고 간격 0.5초 미만
+        var isShort = text.length <= 4 && gap < 1.0;
+        var isParticle = text.length <= 2 && /^[가-힣]+$/.test(text) && gap < 0.8;
+        if (isShort || isParticle) {
+          // 이전 자막 끝과 현재 자막 시작이 자연스럽게 연결되는지 확인
+          var prevText = (prev.text || "").trim();
+          var needsSpace = prevText.length > 0 && !/\s$/.test(prevText) && text.length > 2;
+          prev.text = prevText + (needsSpace ? " " : "") + text;
+          if (prev.end_seconds != null) prev.end_seconds = s.end_seconds != null ? s.end_seconds : (s.end || pen);
+          else if (prev.end != null) prev.end = s.end != null ? s.end : (s.end_seconds || pen);
+          return;
+        }
+      }
+      merged.push(s);
+    });
+    // 3. 더듬거림/반복 글자 정리 ("맨맨" → "맨", "게게" → "게", "하하하" → "하하")
+    merged.forEach(function(s) {
+      if (!s.text) return;
+      // 같은 글자 2+회 반복 (한글 1음절) → 1회로
+      s.text = s.text.replace(/([가-힣])\1{2,}/g, "$1$1"); // 3회 이상 → 2회
+      s.text = s.text.replace(/^([가-힣])\1$/, "$1"); // "맨맨" 같은 2글자 반복 전체 → 1글자
+      // 단어 반복 ("그래서 그래서" → "그래서")
+      s.text = s.text.replace(/(\S{2,})\s+\1/g, "$1");
+    });
+    // 4. 빈 자막 제거
+    merged = merged.filter(function(s) { return s.text && s.text.trim().length > 0; });
+    return merged;
+  }
+
   // ── 프로젝트 저장 ──
   async function saveProject() {
     if (!ve.filePath) return;
@@ -3675,11 +3819,22 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (video) video.style.display = "none";
     _veCanvas.style.display = "block";
 
-    // 비율별 캔버스 크기 (프리뷰용 → 실제 표시 크기에 맞게 축소)
-    var sizes = { landscape: [854, 480], portrait: [480, 854], square: [480, 480] };
-    var sz = sizes[mode] || sizes.landscape;
-    _veCanvas.width = sz[0];
-    _veCanvas.height = sz[1];
+    // 비율별 캔버스 크기 (컨테이너에 맞게 동적 계산)
+    var wrap = document.getElementById("veVideoWrap");
+    var wrapW = wrap ? wrap.clientWidth : 854;
+    var wrapH = wrap ? wrap.clientHeight : 480;
+    var aspectRatios = { landscape: 16/9, portrait: 9/16, square: 1 };
+    var ar = aspectRatios[mode] || 16/9;
+    var cw, ch;
+    if (wrapW / wrapH > ar) {
+      ch = Math.min(wrapH, 1080);
+      cw = Math.round(ch * ar);
+    } else {
+      cw = Math.min(wrapW, 1920);
+      ch = Math.round(cw / ar);
+    }
+    _veCanvas.width = cw;
+    _veCanvas.height = ch;
     _needsRedraw = true;
 
     // 프리뷰 영역 크기 조정
@@ -4811,21 +4966,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         }
       } catch (sttErr) { console.warn("[무음제거] 자막 재생성 실패:", sttErr.message); }
 
-      // 연속 중복 + 유사 중복 자막 제거
-      ve.subtitles = ve.subtitles.filter(function(s, i, arr) {
-        if (i === 0) return true;
-        var prev = arr[i - 1];
-        if (s.text === prev.text) return false;
-        if (s.text && prev.text) {
-          var shorter = s.text.length < prev.text.length ? s.text : prev.text;
-          var longer = s.text.length >= prev.text.length ? s.text : prev.text;
-          if (longer.indexOf(shorter) >= 0) {
-            var gap = (s.start_seconds || s.start || 0) - (prev.end_seconds || prev.end || 0);
-            if (gap < 0.5) return false;
-          }
-        }
-        return true;
-      });
+      ve.subtitles = cleanupSubtitles(ve.subtitles);
 
       // ve.duration 초과 자막 자동 제거
       ve.subtitles = ve.subtitles.filter(function(s) {
@@ -4896,25 +5037,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           }
         });
       }
-      // 연속 중복 + 유사 중복 + 시간 겹침 자막 제거
-      ve.subtitles = ve.subtitles.filter(function(s, i, arr) {
-        if (i === 0) return true;
-        var prev = arr[i - 1];
-        var sst = s.start_seconds != null ? s.start_seconds : (s.start || 0);
-        var pst = prev.start_seconds != null ? prev.start_seconds : (prev.start || 0);
-        var pen = prev.end_seconds != null ? prev.end_seconds : (prev.end || pst + 2);
-        if (s.text === prev.text) return false;
-        if (Math.abs(sst - pst) < 0.3) return false;
-        if (s.text && prev.text) {
-          var shorter = s.text.length < prev.text.length ? s.text : prev.text;
-          var longer = s.text.length >= prev.text.length ? s.text : prev.text;
-          if (longer.indexOf(shorter) >= 0) {
-            var gap = sst - pen;
-            if (gap < 0.5) return false;
-          }
-        }
-        return true;
-      });
+      ve.subtitles = cleanupSubtitles(ve.subtitles);
       renderSubList(); renderTimeline();
       hideVeLoading();
       showModal("자막 재생성 완료", ve.subtitles.length + "개 자막이 새로 생성되었습니다.", "확인");
@@ -5174,28 +5297,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       ve.segments=(aD.segments||[]).slice(0,5); ve.subtitles=[];
       var fs2=aD.all_subs||aD.full_transcript; if(fs2&&Array.isArray(fs2)) ve.subtitles=fs2;
       if(!ve.subtitles.length) ve.segments.forEach(function(seg){if(seg.subtitles&&seg.subtitles.length){ve.subtitles=ve.subtitles.concat(seg.subtitles);}else if(seg.script){var ss=seg.start_seconds||0,se=seg.end_seconds||ve.duration,ch=seg.script.match(/.{1,18}/g)||[],cd=(se-ss)/Math.max(1,ch.length);ch.forEach(function(t,i){ve.subtitles.push({start:ss+i*cd,end:ss+(i+1)*cd,text:t.trim()})});}});
-      // 연속 중복 + 유사 중복 + 시간 겹침 자막 제거
-      ve.subtitles = ve.subtitles.filter(function(s, i, arr) {
-        if (i === 0) return true;
-        var prev = arr[i - 1];
-        var sst = s.start_seconds != null ? s.start_seconds : (s.start || 0);
-        var pst = prev.start_seconds != null ? prev.start_seconds : (prev.start || 0);
-        var pen = prev.end_seconds != null ? prev.end_seconds : (prev.end || pst + 2);
-        // 완전 동일 텍스트
-        if (s.text === prev.text) return false;
-        // 시간이 거의 같은 구간에 있는 자막 (0.3초 이내 시작)
-        if (Math.abs(sst - pst) < 0.3) return false;
-        // 한쪽이 다른 쪽을 포함하고 간격이 0.5초 미만이면 중복
-        if (s.text && prev.text) {
-          var shorter = s.text.length < prev.text.length ? s.text : prev.text;
-          var longer = s.text.length >= prev.text.length ? s.text : prev.text;
-          if (longer.indexOf(shorter) >= 0) {
-            var gap = sst - pen;
-            if (gap < 0.5) return false;
-          }
-        }
-        return true;
-      });
+      ve.subtitles = cleanupSubtitles(ve.subtitles);
       renderSegs();
       // 숏폼 모드: AI로 하이라이트 구간 추출
       if (isShortsMode() && ve.subtitles.length > 0) {
@@ -7538,4 +7640,709 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
   });
   var panel = document.querySelector('[data-panel="archive"]');
   if (panel) observer.observe(panel, { attributes: true, attributeFilter: ["style", "class"] });
+})();
+
+// ══════════════════════════════════════════════════════════
+//  무료 자료실 (사진/GIF/영상 검색 + 직접 다운로드 + 내 자료)
+// ══════════════════════════════════════════════════════════
+(function initMediaLibrary_DISABLED() { return; /* 아래 새 버전으로 교체 */ })();
+(function initMediaLibrary() {
+  var $ = function(id) { return document.getElementById(id); };
+  var API = "https://snsmakeit.com/api/proxy";
+  var mlSrc = "photo";
+  var mlPage = 1;
+  var mlQuery = "";
+
+  // 소스 칩 전환
+  document.querySelectorAll("[data-ml-src]").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      document.querySelectorAll("[data-ml-src]").forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      mlSrc = btn.dataset.mlSrc;
+      mlPage = 1;
+      if (mlQuery) doSearch(false);
+    });
+  });
+
+  // 빠른 검색 태그
+  document.querySelectorAll(".ml-quick").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var input = $("mlSearchInput");
+      if (input) input.value = btn.dataset.q;
+      mlQuery = btn.dataset.q;
+      mlPage = 1;
+      doSearch(false);
+    });
+  });
+
+  // 검색 버튼
+  var searchBtn = $("mlSearchBtn");
+  if (searchBtn) searchBtn.addEventListener("click", function() {
+    var input = $("mlSearchInput");
+    mlQuery = (input ? input.value : "").trim();
+    if (!mlQuery) return;
+    mlPage = 1;
+    doSearch(false);
+  });
+
+  // Enter 키
+  var searchInput = $("mlSearchInput");
+  if (searchInput) searchInput.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") { e.preventDefault(); searchBtn.click(); }
+  });
+
+  // 더 보기
+  var loadMore = $("mlLoadMore");
+  if (loadMore) loadMore.addEventListener("click", function() {
+    mlPage++;
+    doSearch(true);
+  });
+
+  async function doSearch(append) {
+    var results = $("mlResults");
+    var pagination = $("mlPagination");
+    if (!results) return;
+    if (!append) results.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);font-size:14px;'>검색 중...</div>";
+
+    try {
+      var items = [];
+      if (mlSrc === "photo") {
+        var r = await fetch(API + "?action=pexels&path=v1/search&query=" + encodeURIComponent(mlQuery) + "&per_page=24&page=" + mlPage);
+        var d = await r.json();
+        (d.photos || []).forEach(function(p) {
+          if (p.src) items.push({
+            thumb: p.src.medium || p.src.small,
+            full: p.src.original || p.src.large2x,
+            download: p.src.original || p.src.large2x,
+            type: "photo",
+            photographer: p.photographer || "",
+            w: p.width, h: p.height
+          });
+        });
+      } else if (mlSrc === "gif") {
+        var r = await fetch(API + "?action=klipy&path=gifs/search&q=" + encodeURIComponent(mlQuery) + "&per_page=24&locale=ko_KR");
+        var d = await r.json();
+        (d.data?.data || d.data || []).forEach(function(g) {
+          var sm = g?.file?.sm?.gif?.url || g?.file?.xs?.gif?.url || "";
+          var lg = g?.file?.lg?.gif?.url || g?.file?.md?.gif?.url || sm;
+          if (sm) items.push({ thumb: sm, full: lg, download: lg, type: "gif", photographer: "" });
+        });
+      } else {
+        var r = await fetch(API + "?action=pixabay&q=" + encodeURIComponent(mlQuery) + "&per_page=24&page=" + mlPage + "&safesearch=true&video=true");
+        var d = await r.json();
+        (d.hits || []).forEach(function(h) {
+          var thumb = h.videos?.tiny?.thumbnail || h.previewURL || "";
+          var videoUrl = h.videos?.medium?.url || h.videos?.small?.url || h.videos?.tiny?.url || "";
+          if (thumb) items.push({ thumb: thumb, full: videoUrl, download: videoUrl, type: "video", photographer: h.user || "", duration: h.duration });
+        });
+      }
+
+      if (!items.length && !append) {
+        results.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);font-size:14px;'>'" + escapeHtml(mlQuery) + "' 검색 결과가 없습니다.</div>";
+        if (pagination) pagination.style.display = "none";
+        return;
+      }
+
+      var html = items.map(function(it) {
+        var isVideo = it.type === "video";
+        var badge = it.type === "gif" ? "GIF" : isVideo ? "MP4" : (it.w && it.h ? it.w + "x" + it.h : "HD");
+        var durationBadge = it.duration ? "<span style='position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;'>" + Math.floor(it.duration / 60) + ":" + String(Math.floor(it.duration % 60)).padStart(2, "0") + "</span>" : "";
+        return "<div class='ml-card' style='position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--border-soft);background:var(--bg-card);box-shadow:var(--shadow);transition:all 0.2s;cursor:pointer;' data-download='" + escapeHtml(it.download) + "' data-type='" + it.type + "'>" +
+          "<div style='position:relative;padding-top:66%;background:#f0f0f0;overflow:hidden;'>" +
+          "<img src='" + escapeHtml(it.thumb) + "' loading='lazy' style='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;' onerror=\"this.style.display='none'\">" +
+          (isVideo ? "<div style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;'><div style='width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;'><svg width='14' height='14' viewBox='0 0 24 24' fill='#fff'><polygon points='5 3 19 12 5 21'/></svg></div></div>" : "") +
+          durationBadge +
+          "<span style='position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;'>" + badge + "</span>" +
+          "</div>" +
+          "<div style='padding:10px 12px;display:flex;align-items:center;justify-content:space-between;'>" +
+          "<span style='font-size:11px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;'>" + escapeHtml(it.photographer || (it.type === "gif" ? "GIF" : "Pixabay")) + "</span>" +
+          "<button class='btn btn-primary btn-sm ml-download-btn' style='padding:5px 12px;font-size:11px;font-weight:700;border-radius:6px;' data-url='" + escapeHtml(it.download) + "' data-type='" + it.type + "'>다운로드</button>" +
+          "</div></div>";
+      }).join("");
+
+      if (append) { results.insertAdjacentHTML("beforeend", html); }
+      else { results.innerHTML = html; }
+
+      if (pagination) pagination.style.display = items.length >= 20 ? "" : "none";
+
+      // 다운로드 버튼 이벤트
+      results.querySelectorAll(".ml-download-btn").forEach(function(btn) {
+        btn.addEventListener("click", function(e) {
+          e.stopPropagation();
+          var url = btn.dataset.url;
+          if (!url) return;
+          // 새 탭에서 열기 (다운로드)
+          if (typeof bridge !== "undefined" && bridge.openExternal) {
+            bridge.openExternal(url);
+          } else {
+            window.open(url, "_blank");
+          }
+        });
+      });
+
+      // 카드 클릭 → 미리보기
+      results.querySelectorAll(".ml-card").forEach(function(card) {
+        card.addEventListener("click", function(e) {
+          if (e.target.closest(".ml-download-btn")) return;
+          var url = card.dataset.download;
+          var type = card.dataset.type;
+          if (!url) return;
+          showMediaPreview(url, type);
+        });
+      });
+
+    } catch (err) {
+      if (!append) results.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px 0;color:var(--danger);font-size:13px;'>검색 실패: " + (err.message || "") + "</div>";
+    }
+  }
+
+  function showMediaPreview(url, type) {
+    var existing = document.getElementById("mlPreviewOverlay");
+    if (existing) existing.remove();
+    var ov = document.createElement("div");
+    ov.id = "mlPreviewOverlay";
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:40px;";
+    ov.addEventListener("click", function() { ov.remove(); });
+    var content = "";
+    if (type === "video") {
+      content = "<video src='" + escapeHtml(url) + "' controls autoplay style='max-width:90vw;max-height:80vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);'></video>";
+    } else {
+      content = "<img src='" + escapeHtml(url) + "' style='max-width:90vw;max-height:80vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);object-fit:contain;'>";
+    }
+    content += "<div style='position:absolute;bottom:24px;display:flex;gap:12px;'>" +
+      "<button onclick=\"event.stopPropagation();window.nbBridge?window.nbBridge.openExternal('" + escapeHtml(url) + "'):window.open('" + escapeHtml(url) + "','_blank')\" style='padding:10px 24px;border-radius:8px;background:#3b82f6;color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;'>원본 다운로드</button>" +
+      "<button onclick=\"event.stopPropagation();this.closest('#mlPreviewOverlay').remove()\" style='padding:10px 24px;border-radius:8px;background:rgba(255,255,255,0.15);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;'>닫기</button>" +
+      "</div>";
+    ov.innerHTML = content;
+    document.body.appendChild(ov);
+  }
+
+  function escapeHtml(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+})();
+
+// ══════════════════════════════════════════════════════════
+//  무료 자료실 v2 (구버전 — 비활성화)
+// ══════════════════════════════════════════════════════════
+(function initMediaLibraryV2_DISABLED() { return;
+  var $ = function(id) { return document.getElementById(id); };
+  var bridge = window.nbBridge || {};
+  var API = "https://snsmakeit.com/api/proxy";
+  var mlSrc = "photo";
+  var mlPage = 1;
+  var mlQuery = "";
+
+  function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+
+  // ── 탭 전환 ──
+  document.querySelectorAll(".ml-tab").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      document.querySelectorAll(".ml-tab").forEach(function(b) { b.classList.remove("active"); b.style.borderBottomColor = "transparent"; b.style.color = "var(--text-dim)"; });
+      btn.classList.add("active"); btn.style.borderBottomColor = "var(--accent)"; btn.style.color = "var(--accent)";
+      var tab = btn.dataset.mlTab;
+      $("mlTabSearch").style.display = tab === "search" ? "" : "none";
+      $("mlTabMyfiles").style.display = tab === "myfiles" ? "" : "none";
+      if (tab === "myfiles") renderMyFiles();
+    });
+  });
+  // 초기 active 스타일
+  var firstTab = document.querySelector(".ml-tab.active");
+  if (firstTab) { firstTab.style.borderBottomColor = "var(--accent)"; firstTab.style.color = "var(--accent)"; }
+
+  // ── 소스 칩 전환 ──
+  document.querySelectorAll("[data-ml-src]").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      document.querySelectorAll("[data-ml-src]").forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      mlSrc = btn.dataset.mlSrc;
+      mlPage = 1;
+      if (mlQuery) doSearch(false);
+    });
+  });
+
+  // ── 빠른 검색 태그 ──
+  document.querySelectorAll(".ml-quick").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var input = $("mlSearchInput");
+      if (input) input.value = btn.dataset.q;
+      mlQuery = btn.dataset.q;
+      mlPage = 1;
+      doSearch(false);
+    });
+  });
+
+  // ── 검색 ──
+  var searchBtn = $("mlSearchBtn");
+  if (searchBtn) searchBtn.addEventListener("click", function() {
+    mlQuery = ($("mlSearchInput") || {}).value || "";
+    if (!mlQuery.trim()) return;
+    mlPage = 1;
+    doSearch(false);
+  });
+  var searchInput = $("mlSearchInput");
+  if (searchInput) searchInput.addEventListener("keydown", function(e) { if (e.key === "Enter") { e.preventDefault(); if (searchBtn) searchBtn.click(); } });
+
+  // ── 더 보기 ──
+  var loadMore = $("mlLoadMore");
+  if (loadMore) loadMore.addEventListener("click", function() { mlPage++; doSearch(true); });
+
+  async function doSearch(append) {
+    var results = $("mlResults");
+    var pagination = $("mlPagination");
+    if (!results) return;
+    if (!append) results.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);font-size:14px;'>검색 중...</div>";
+
+    try {
+      var items = [];
+      if (mlSrc === "photo") {
+        var r = await fetch(API + "?action=pexels&path=v1/search&query=" + encodeURIComponent(mlQuery) + "&per_page=24&page=" + mlPage);
+        var d = await r.json();
+        (d.photos || []).forEach(function(p) {
+          if (p.src) items.push({ thumb: p.src.medium, full: p.src.original || p.src.large2x, type: "photo", credit: p.photographer || "Pexels", w: p.width, h: p.height });
+        });
+      } else if (mlSrc === "gif") {
+        var r = await fetch(API + "?action=klipy&path=gifs/search&q=" + encodeURIComponent(mlQuery) + "&per_page=24&locale=ko_KR");
+        var d = await r.json();
+        (d.data?.data || d.data || []).forEach(function(g) {
+          var sm = g?.file?.sm?.gif?.url || g?.file?.xs?.gif?.url || "";
+          var lg = g?.file?.lg?.gif?.url || g?.file?.md?.gif?.url || sm;
+          if (sm) items.push({ thumb: sm, full: lg, type: "gif", credit: "Klipy" });
+        });
+      } else {
+        var r = await fetch(API + "?action=pixabay&q=" + encodeURIComponent(mlQuery) + "&per_page=24&page=" + mlPage + "&safesearch=true&video=true");
+        var d = await r.json();
+        (d.hits || []).forEach(function(h) {
+          var thumb = h.videos?.tiny?.thumbnail || h.previewURL || "";
+          var videoUrl = h.videos?.medium?.url || h.videos?.small?.url || "";
+          if (thumb) items.push({ thumb: thumb, full: videoUrl, type: "video", credit: h.user || "Pixabay", duration: h.duration });
+        });
+      }
+
+      if (!items.length && !append) {
+        results.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);font-size:14px;'>'" + esc(mlQuery) + "' 검색 결과가 없습니다.</div>";
+        if (pagination) pagination.style.display = "none";
+        return;
+      }
+
+      var html = items.map(function(it) {
+        var isVideo = it.type === "video";
+        var badge = it.type === "gif" ? "GIF" : isVideo ? "MP4" : "HD";
+        var ext = it.type === "gif" ? "gif" : isVideo ? "mp4" : "jpg";
+        var fname = mlQuery.replace(/[^a-zA-Z0-9가-힣]/g, "_").substring(0, 20) + "_" + Date.now() % 10000 + "." + ext;
+        var durBadge = it.duration ? "<span style='position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;'>" + Math.floor(it.duration/60) + ":" + String(Math.floor(it.duration%60)).padStart(2,"0") + "</span>" : "";
+        return "<div class='ml-card' style='position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--border-soft);background:var(--bg-card);box-shadow:var(--shadow);transition:all 0.2s;cursor:pointer;'>" +
+          "<div style='position:relative;padding-top:66%;background:#f0f0f0;overflow:hidden;' data-preview='" + esc(it.full) + "' data-type='" + it.type + "'>" +
+          "<img src='" + esc(it.thumb) + "' loading='lazy' style='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;' onerror=\"this.style.display='none'\">" +
+          (isVideo ? "<div style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;'><div style='width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;'><svg width='16' height='16' viewBox='0 0 24 24' fill='#fff'><polygon points='5 3 19 12 5 21'/></svg></div></div>" : "") +
+          durBadge +
+          "<span style='position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;'>" + badge + "</span>" +
+          "</div>" +
+          "<div style='padding:8px 10px;display:flex;align-items:center;gap:6px;'>" +
+          "<span style='font-size:11px;color:var(--text-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + esc(it.credit) + "</span>" +
+          "<button class='ml-dl-btn' data-url='" + esc(it.full) + "' data-fname='" + esc(fname) + "' style='padding:5px 12px;border-radius:6px;border:none;background:var(--accent);color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:4px;transition:background 0.15s;'>" +
+          "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1='12' y1='15' x2='12' y2='3'/></svg>" +
+          "저장</button>" +
+          "</div></div>";
+      }).join("");
+
+      if (append) results.insertAdjacentHTML("beforeend", html);
+      else results.innerHTML = html;
+      if (pagination) pagination.style.display = items.length >= 20 ? "" : "none";
+      bindResultEvents(results);
+    } catch (err) {
+      if (!append) results.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px 0;color:var(--danger);font-size:13px;'>검색 실패: " + (err.message || "") + "</div>";
+    }
+  }
+
+  function bindResultEvents(container) {
+    // 다운로드 버튼 → 바로 파일 저장
+    container.querySelectorAll(".ml-dl-btn").forEach(function(btn) {
+      btn.addEventListener("click", async function(e) {
+        e.stopPropagation();
+        var url = btn.dataset.url;
+        var fname = btn.dataset.fname || "download";
+        btn.textContent = "저장 중..."; btn.disabled = true;
+        try {
+          if (bridge.mediaDownload) {
+            var result = await bridge.mediaDownload(url, fname);
+            if (result.ok) { btn.textContent = "완료"; btn.style.background = "#10b981"; }
+            else if (result.error === "canceled") { btn.innerHTML = "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1='12' y1='15' x2='12' y2='3'/></svg> 저장"; btn.disabled = false; }
+            else { btn.textContent = "실패"; btn.style.background = "#ef4444"; }
+          } else {
+            window.open(url, "_blank");
+            btn.textContent = "열림";
+          }
+        } catch (err) { btn.textContent = "실패"; btn.style.background = "#ef4444"; }
+        setTimeout(function() { btn.innerHTML = "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1='12' y1='15' x2='12' y2='3'/></svg> 저장"; btn.style.background = "var(--accent)"; btn.disabled = false; }, 2000);
+      });
+    });
+    // 이미지 클릭 → 미리보기
+    container.querySelectorAll("[data-preview]").forEach(function(el) {
+      el.addEventListener("click", function() { showPreview(el.dataset.preview, el.dataset.type); });
+    });
+  }
+
+  function showPreview(url, type) {
+    var existing = document.getElementById("mlPreviewOv");
+    if (existing) existing.remove();
+    var ov = document.createElement("div");
+    ov.id = "mlPreviewOv";
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;cursor:pointer;padding:40px;";
+    ov.addEventListener("click", function(e) { if (e.target === ov) ov.remove(); });
+    var media = type === "video"
+      ? "<video src='" + esc(url) + "' controls autoplay style='max-width:90vw;max-height:75vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);'></video>"
+      : "<img src='" + esc(url) + "' style='max-width:90vw;max-height:75vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);object-fit:contain;'>";
+    ov.innerHTML = media + "<div style='display:flex;gap:12px;'>" +
+      "<button id='mlPreviewDl' style='padding:10px 24px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;'>다운로드</button>" +
+      "<button onclick=\"this.closest('#mlPreviewOv').remove()\" style='padding:10px 24px;border-radius:8px;background:rgba(255,255,255,0.15);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;'>닫기</button></div>";
+    document.body.appendChild(ov);
+    var dlBtn = $("mlPreviewDl");
+    if (dlBtn) dlBtn.addEventListener("click", async function(e) {
+      e.stopPropagation();
+      var ext = type === "gif" ? "gif" : type === "video" ? "mp4" : "jpg";
+      if (bridge.mediaDownload) {
+        dlBtn.textContent = "저장 중...";
+        var r = await bridge.mediaDownload(url, "media_" + Date.now() + "." + ext);
+        dlBtn.textContent = r.ok ? "저장 완료" : "취소됨";
+      } else { window.open(url, "_blank"); }
+    });
+  }
+
+  // ══════ 내 자료 ══════
+  var importBtn = $("mlImportBtn");
+  if (importBtn) importBtn.addEventListener("click", async function() {
+    if (!bridge.mediaSelectFiles) return;
+    var paths = await bridge.mediaSelectFiles();
+    if (!paths.length) return;
+    importBtn.textContent = "추가 중..."; importBtn.disabled = true;
+    await bridge.mediaImportFiles(paths);
+    importBtn.innerHTML = "<svg width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='17 8 12 3 7 8'/><line x1='12' y1='3' x2='12' y2='15'/></svg> 파일 추가";
+    importBtn.disabled = false;
+    renderMyFiles();
+  });
+
+  async function renderMyFiles() {
+    var list = $("mlMyFilesList");
+    if (!list || !bridge.mediaGetLocalFiles) return;
+    var files = await bridge.mediaGetLocalFiles();
+    if (!files.length) {
+      list.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-dim);font-size:14px;'>저장된 자료가 없습니다.<br><span style='font-size:12px;margin-top:4px;display:inline-block;'>\"파일 추가\" 버튼으로 자료를 등록하세요.</span></div>";
+      return;
+    }
+    list.innerHTML = files.map(function(f) {
+      var isVideo = /\.(mp4|webm|mov)$/i.test(f.name);
+      var isGif = /\.gif$/i.test(f.name);
+      return "<div class='ml-my-card' style='position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border-soft);background:var(--bg-card);box-shadow:var(--shadow);'>" +
+        "<div style='position:relative;padding-top:66%;background:#f0f0f0;overflow:hidden;cursor:pointer;' data-preview='" + esc(f.url) + "' data-type='" + (isVideo?"video":isGif?"gif":"photo") + "'>" +
+        (isVideo
+          ? "<div style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#1a1a2e;'><svg width='28' height='28' viewBox='0 0 24 24' fill='#fff' opacity='0.6'><polygon points='5 3 19 12 5 21'/></svg></div>"
+          : "<img src='" + esc(f.url) + "' loading='lazy' style='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;'>") +
+        (isGif ? "<span style='position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;'>GIF</span>" : "") +
+        "</div>" +
+        "<div style='padding:6px 8px;display:flex;align-items:center;gap:4px;'>" +
+        "<span style='font-size:10px;color:var(--text-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + esc(f.name) + "</span>" +
+        "<button class='ml-my-del' data-path='" + esc(f.path) + "' style='border:none;background:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:2px 4px;' title='삭제'>x</button>" +
+        "</div></div>";
+    }).join("");
+    // 미리보기
+    list.querySelectorAll("[data-preview]").forEach(function(el) {
+      el.addEventListener("click", function() { showPreview(el.dataset.preview, el.dataset.type); });
+    });
+    // 삭제
+    list.querySelectorAll(".ml-my-del").forEach(function(btn) {
+      btn.addEventListener("click", async function(e) {
+        e.stopPropagation();
+        if (bridge.mediaDeleteFile) await bridge.mediaDeleteFile(btn.dataset.path);
+        renderMyFiles();
+      });
+    });
+  }
+})();
+
+// ══════════════════════════════════════════════════════════
+//  자료실 v3 (사진/GIF/영상 개별 패널 + 메이킷 자료)
+// ══════════════════════════════════════════════════════════
+(function initMediaLibraryV3() {
+  var bridge = window.nbBridge || {};
+  var API = "https://snsmakeit.com/api/proxy";
+  var pages = { photo: 1, gif: 1, video: 1 };
+  var queries = { photo: "", gif: "", video: "" };
+  var MAKEIT_BASE = "D:/홈페이지/SNS메이킷/메이킷_자료실";
+
+  function esc(s) { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+
+  // ── 검색 (사진/GIF/영상 공통) ──
+  document.querySelectorAll(".ml-search-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var type = btn.dataset.mlType;
+      var input = document.querySelector('.ml-input[data-ml-type="' + type + '"]');
+      queries[type] = (input ? input.value : "").trim();
+      if (!queries[type]) return;
+      pages[type] = 1;
+      doSearch(type, false);
+    });
+  });
+
+  document.querySelectorAll(".ml-input").forEach(function(input) {
+    input.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        var btn = document.querySelector('.ml-search-btn[data-ml-type="' + input.dataset.mlType + '"]');
+        if (btn) btn.click();
+      }
+    });
+  });
+
+  document.querySelectorAll(".ml-qtag").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var type = btn.dataset.mlType;
+      var input = document.querySelector('.ml-input[data-ml-type="' + type + '"]');
+      if (input) input.value = btn.dataset.q;
+      queries[type] = btn.dataset.q;
+      pages[type] = 1;
+      doSearch(type, false);
+    });
+  });
+
+  // 패널 열릴 때 기본 결과 로드
+  var defaultQueries = { photo: "background", gif: "reaction", video: "nature" };
+  var loaded = { photo: false, gif: false, video: false };
+  ["ml-photo", "ml-gif", "ml-video"].forEach(function(panelName) {
+    var type = panelName.replace("ml-", "");
+    var panel = document.querySelector('[data-panel="' + panelName + '"]');
+    if (panel) {
+      new MutationObserver(function() {
+        if (!panel.classList.contains("hidden") && !loaded[type]) {
+          loaded[type] = true;
+          queries[type] = defaultQueries[type];
+          doSearch(type, false);
+        }
+      }).observe(panel, { attributes: true, attributeFilter: ["class"] });
+    }
+  });
+
+  document.querySelectorAll(".ml-more-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      var type = btn.dataset.mlType;
+      pages[type]++;
+      doSearch(type, true);
+    });
+  });
+
+  async function doSearch(type, append) {
+    var grid = document.querySelector('.ml-grid[data-ml-type="' + type + '"]');
+    var moreWrap = document.querySelector('.ml-more-wrap[data-ml-type="' + type + '"]');
+    if (!grid) return;
+    if (!append) grid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);'>검색 중...</div>";
+    var q = queries[type];
+    var page = pages[type];
+
+    try {
+      var items = [];
+      if (type === "photo") {
+        var r = await fetch(API + "?action=pexels&path=v1/search&query=" + encodeURIComponent(q) + "&per_page=24&page=" + page);
+        var d = await r.json();
+        (d.photos || []).forEach(function(p) {
+          if (p.src) items.push({ thumb: p.src.medium, full: p.src.original, type: "photo", credit: p.photographer || "Pexels" });
+        });
+      } else if (type === "gif") {
+        var r = await fetch(API + "?action=klipy&path=gifs/search&q=" + encodeURIComponent(q) + "&per_page=24&locale=ko_KR");
+        var d = await r.json();
+        (d.data?.data || d.data || []).forEach(function(g) {
+          var sm = g?.file?.sm?.gif?.url || g?.file?.xs?.gif?.url || "";
+          var lg = g?.file?.lg?.gif?.url || g?.file?.md?.gif?.url || sm;
+          if (sm) items.push({ thumb: sm, full: lg, type: "gif", credit: "Klipy" });
+        });
+      } else {
+        var r = await fetch(API + "?action=pixabay&q=" + encodeURIComponent(q) + "&per_page=24&page=" + page + "&safesearch=true&video=true");
+        var d = await r.json();
+        (d.hits || []).forEach(function(h) {
+          var thumb = h.videos?.tiny?.thumbnail || h.previewURL || "";
+          var url = h.videos?.medium?.url || h.videos?.small?.url || "";
+          if (thumb) items.push({ thumb: thumb, full: url, type: "video", credit: h.user || "Pixabay", duration: h.duration });
+        });
+      }
+
+      if (!items.length && !append) {
+        grid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);'>결과 없음</div>";
+        if (moreWrap) moreWrap.style.display = "none";
+        return;
+      }
+
+      var html = items.map(function(it) {
+        var ext = it.type === "gif" ? "gif" : it.type === "video" ? "mp4" : "jpg";
+        var fname = q.replace(/[^a-zA-Z0-9가-힣]/g, "_").substring(0, 15) + "_" + Date.now() % 10000 + "." + ext;
+        var badge = it.type === "gif" ? "GIF" : it.type === "video" ? "MP4" : "HD";
+        var dur = it.duration ? "<span style='position:absolute;bottom:8px;left:8px;background:rgba(0,0,0,0.7);color:#fff;font-size:10px;padding:2px 6px;border-radius:4px;'>" + Math.floor(it.duration/60) + ":" + String(Math.floor(it.duration%60)).padStart(2,"0") + "</span>" : "";
+        var playIcon = it.type === "video" ? "<div style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;'><div style='width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;'><svg width='16' height='16' viewBox='0 0 24 24' fill='#fff'><polygon points='5 3 19 12 5 21'/></svg></div></div>" : "";
+        return "<div style='border-radius:12px;overflow:hidden;border:1px solid var(--border-soft);background:var(--bg-card);box-shadow:var(--shadow);transition:all 0.15s;'>" +
+          "<div style='position:relative;padding-top:66%;background:#f0f0f0;overflow:hidden;cursor:pointer;' onclick='window._mlPreview(\"" + esc(it.full) + "\",\"" + it.type + "\")'>" +
+          "<img src='" + esc(it.thumb) + "' loading='lazy' style='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;'>" +
+          playIcon + dur +
+          "<span style='position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.6);color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;'>" + badge + "</span></div>" +
+          "<div style='padding:8px 10px;display:flex;align-items:center;gap:6px;'>" +
+          "<span style='font-size:11px;color:var(--text-dim);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + esc(it.credit) + "</span>" +
+          "<button onclick='window._mlDownload(\"" + esc(it.full) + "\",\"" + esc(fname) + "\",this)' style='padding:5px 12px;border-radius:6px;border:none;background:var(--accent);color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;'>저장</button>" +
+          "</div></div>";
+      }).join("");
+
+      if (append) grid.insertAdjacentHTML("beforeend", html);
+      else grid.innerHTML = html;
+      if (moreWrap) moreWrap.style.display = items.length >= 20 ? "" : "none";
+    } catch (err) {
+      if (!append) grid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px 0;color:var(--danger);'>검색 실패</div>";
+    }
+  }
+
+  // ── 다운로드 (전역) ──
+  window._mlDownload = async function(url, fname, btn) {
+    if (!btn) return;
+    var orig = btn.textContent;
+    btn.textContent = "저장 중..."; btn.disabled = true;
+    try {
+      if (bridge.mediaDownload) {
+        var r = await bridge.mediaDownload(url, fname);
+        btn.textContent = r.ok ? "완료" : (r.error === "canceled" ? "취소" : "실패");
+        if (r.ok) btn.style.background = "#10b981";
+      } else { window.open(url, "_blank"); btn.textContent = "열림"; }
+    } catch (e) { btn.textContent = "실패"; btn.style.background = "#ef4444"; }
+    setTimeout(function() { btn.textContent = orig; btn.style.background = ""; btn.disabled = false; }, 2000);
+  };
+
+  // ── 미리보기 (전역) ──
+  window._mlPreview = function(url, type) {
+    var ov = document.getElementById("mlPrevOv");
+    if (ov) ov.remove();
+    ov = document.createElement("div");
+    ov.id = "mlPrevOv";
+    ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;cursor:pointer;padding:40px;";
+    ov.addEventListener("click", function(e) { if (e.target === ov) ov.remove(); });
+    var media = type === "video"
+      ? "<video src='" + esc(url) + "' controls autoplay style='max-width:90vw;max-height:75vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);'></video>"
+      : "<img src='" + esc(url) + "' style='max-width:90vw;max-height:75vh;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);object-fit:contain;'>";
+    ov.innerHTML = media + "<div style='display:flex;gap:12px;'><button onclick=\"event.stopPropagation();window._mlDownload('" + esc(url) + "','download',this)\" style='padding:10px 24px;border-radius:8px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;'>다운로드</button><button onclick=\"event.stopPropagation();document.getElementById('mlPrevOv').remove()\" style='padding:10px 24px;border-radius:8px;background:rgba(255,255,255,0.15);color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;'>닫기</button></div>";
+    document.body.appendChild(ov);
+  };
+
+  // ══════ 메이킷 자료 ══════
+  var mkCat = "photo";
+  var mkQuery = "";
+  var mkAllFiles = [];
+  var MAKEIT_BASE = "D:/홈페이지/SNS메이킷/메이킷_자료실";
+
+  // 관리자 버튼 표시
+  function checkMkAdmin() {
+    var isAdmin = state && state.user && state.user.admin;
+    var addBtn = document.getElementById("mkAddFilesBtn");
+    var openBtn = document.getElementById("mkOpenFolderBtn");
+    if (addBtn) addBtn.style.display = isAdmin ? "" : "none";
+    if (openBtn) openBtn.style.display = isAdmin ? "" : "none";
+  }
+  // 로그인 상태 변경 감시
+  setInterval(checkMkAdmin, 2000);
+  checkMkAdmin();
+
+  // 파일 추가 (관리자)
+  var mkAddBtn = document.getElementById("mkAddFilesBtn");
+  if (mkAddBtn) mkAddBtn.addEventListener("click", async function() {
+    if (!bridge.mediaSelectFiles) return;
+    var paths = await bridge.mediaSelectFiles();
+    if (!paths.length) return;
+    // 현재 카테고리에 맞는 폴더로 복사
+    var destFolder = mkCat === "photo" ? "사진" : "영상";
+    if (bridge.mediaImportToMakeit) {
+      mkAddBtn.textContent = "추가 중..."; mkAddBtn.disabled = true;
+      await bridge.mediaImportToMakeit(paths, destFolder);
+      mkAddBtn.textContent = "파일 추가"; mkAddBtn.disabled = false;
+      renderMakeitFiles();
+    }
+  });
+
+  // 폴더 열기 (관리자)
+  var mkOpenBtn = document.getElementById("mkOpenFolderBtn");
+  if (mkOpenBtn) mkOpenBtn.addEventListener("click", function() {
+    var folder = mkCat === "photo" ? "사진" : "영상";
+    var fullPath = MAKEIT_BASE + "/" + folder;
+    if (bridge.openExternal) bridge.openExternal("file:///" + fullPath);
+  });
+
+  document.querySelectorAll(".mk-cat-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      document.querySelectorAll(".mk-cat-btn").forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      mkCat = btn.dataset.mkCat;
+      mkQuery = "";
+      var input = document.getElementById("mkSearchInput");
+      if (input) input.value = "";
+      renderMakeitFiles();
+    });
+  });
+
+  // 검색
+  var mkSearchBtn = document.getElementById("mkSearchBtn");
+  if (mkSearchBtn) mkSearchBtn.addEventListener("click", function() {
+    mkQuery = (document.getElementById("mkSearchInput") || {}).value || "";
+    renderMakeitFiles();
+  });
+  var mkInput = document.getElementById("mkSearchInput");
+  if (mkInput) mkInput.addEventListener("keydown", function(e) { if (e.key === "Enter") { e.preventDefault(); if (mkSearchBtn) mkSearchBtn.click(); } });
+
+  // 패널 열릴 때 자동 로드
+  var mkPanel = document.querySelector('[data-panel="ml-makeit"]');
+  if (mkPanel) {
+    new MutationObserver(function() {
+      if (!mkPanel.classList.contains("hidden")) renderMakeitFiles();
+    }).observe(mkPanel, { attributes: true, attributeFilter: ["class"] });
+  }
+
+  async function renderMakeitFiles() {
+    var grid = document.getElementById("mkResults");
+    var countEl = document.getElementById("mkResultCount");
+    if (!grid) return;
+    grid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:20px 0;color:var(--text-dim);'>불러오는 중...</div>";
+
+    try {
+      if (!bridge.mediaGetMakeitFiles) return;
+      var files = await bridge.mediaGetMakeitFiles(mkCat);
+      // 검색 필터
+      if (mkQuery.trim()) {
+        var q = mkQuery.trim().toLowerCase();
+        files = files.filter(function(f) { return f.name.toLowerCase().indexOf(q) >= 0; });
+      }
+      if (countEl) countEl.textContent = files.length + "개 자료";
+      if (!files.length) {
+        grid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);'>" + (mkQuery ? "'" + esc(mkQuery) + "' 검색 결과 없음" : "자료가 없습니다.") + "</div>";
+        return;
+      }
+      // makeit:// 프로토콜로 로컬 파일 접근
+      grid.innerHTML = files.map(function(f, i) {
+        var isVideo = /\.(mp4|webm)$/i.test(f.name);
+        var isGif = /\.gif$/i.test(f.name);
+        var badge = isGif ? "GIF" : isVideo ? "MP4" : "";
+        var mkUrl = "makeit://file/" + encodeURI(f.path.replace(/\\/g, "/"));
+        return "<div class='mk-card' data-mk-idx='" + i + "' style='border-radius:10px;overflow:hidden;border:1px solid var(--border-soft);background:var(--bg-card);box-shadow:var(--shadow);cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;'>" +
+          "<div style='position:relative;padding-top:66%;background:" + (isVideo ? "#1a1a2e" : "#f0f0f0") + ";overflow:hidden;'>" +
+          (isVideo
+            ? "<video src='" + mkUrl + "' preload='metadata' muted style='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;'></video>" +
+              "<div style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;'><div style='width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;'><svg width='14' height='14' viewBox='0 0 24 24' fill='#fff'><polygon points='5 3 19 12 5 21'/></svg></div></div>"
+            : "<img src='" + mkUrl + "' loading='lazy' style='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;'>") +
+          (badge ? "<span style='position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;z-index:1;'>" + badge + "</span>" : "") +
+          "</div>" +
+          "<div style='padding:6px 8px;'><span style='font-size:10px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;'>" + esc(f.name) + "</span></div></div>";
+      }).join("");
+
+      // 클릭 → 미리보기
+      grid.querySelectorAll(".mk-card").forEach(function(card) {
+        card.addEventListener("click", function() {
+          var idx = parseInt(card.dataset.mkIdx);
+          var f = files[idx]; if (!f) return;
+          var isVideo = /\.(mp4|webm)$/i.test(f.name);
+          var mkUrl = "makeit://file/" + encodeURI(f.path.replace(/\\/g, "/"));
+          window._mlPreview(mkUrl, isVideo ? "video" : "photo");
+        });
+      });
+    } catch (e) {
+      grid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px 0;color:var(--danger);'>로드 실패: " + esc(e.message || "") + "</div>";
+      console.error("[메이킷 자료]", e);
+    }
+  }
 })();

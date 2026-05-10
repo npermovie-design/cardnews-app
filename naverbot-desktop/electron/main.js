@@ -385,7 +385,37 @@ function createWindow() {
   );
 }
 
+// ── 커스텀 프로토콜: makeit:// (로컬 파일 안전 제공) ──
+protocol.registerSchemesAsPrivileged([
+  { scheme: "makeit", privileges: { bypassCSP: true, stream: true, supportFetchAPI: true } }
+]);
+
 app.whenReady().then(async () => {
+  // makeit:// 프로토콜 핸들러 등록
+  protocol.handle("makeit", (req) => {
+    try {
+      const url = new URL(req.url);
+      // makeit://file/D:/path/to/file.mp4 → D:/path/to/file.mp4
+      let filePath = decodeURIComponent(url.pathname);
+      if (process.platform === "win32" && filePath.startsWith("/")) filePath = filePath.slice(1);
+      const resolved = path.resolve(filePath);
+      // 보안: 메이킷_자료실 폴더 내 파일만 허용
+      const allowedBase = path.resolve("D:/홈페이지/SNS메이킷/메이킷_자료실");
+      if (!resolved.startsWith(allowedBase)) {
+        return new Response("Forbidden", { status: 403 });
+      }
+      const { createReadStream, existsSync } = require("fs");
+      if (!existsSync(resolved)) return new Response("Not Found", { status: 404 });
+      const ext = path.extname(resolved).toLowerCase();
+      const mimes = { ".jpg":"image/jpeg", ".jpeg":"image/jpeg", ".png":"image/png", ".gif":"image/gif", ".webp":"image/webp", ".svg":"image/svg+xml", ".mp4":"video/mp4", ".webm":"video/webm" };
+      const mime = mimes[ext] || "application/octet-stream";
+      const stream = createReadStream(resolved);
+      return new Response(stream, { headers: { "Content-Type": mime } });
+    } catch (e) {
+      return new Response("Error: " + e.message, { status: 500 });
+    }
+  });
+
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -899,6 +929,148 @@ ipcMain.handle("app:installExeUpdate", () => {
   if (!autoUpdater) return { ok: false };
   autoUpdater.quitAndInstall(false, true);
   return { ok: true };
+});
+
+// ── IPC: 파일 다운로드 ──
+ipcMain.handle("media:download", async (_, url, filename) => {
+  if (!url || !mainWindow) return { ok: false, error: "invalid" };
+  try {
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      defaultPath: filename || "download",
+      filters: [
+        { name: "이미지", extensions: ["jpg", "jpeg", "png", "gif", "webp"] },
+        { name: "영상", extensions: ["mp4", "webm", "mov"] },
+        { name: "모든 파일", extensions: ["*"] }
+      ]
+    });
+    if (canceled || !filePath) return { ok: false, error: "canceled" };
+    const https = require("https");
+    const http = require("http");
+    const fs = require("fs");
+    const get = url.startsWith("https") ? https.get : http.get;
+    await new Promise((resolve, reject) => {
+      get(url, { headers: { "User-Agent": "SNSMakeit/1.0" } }, (res) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          const get2 = res.headers.location.startsWith("https") ? https.get : http.get;
+          get2(res.headers.location, (res2) => {
+            const ws = fs.createWriteStream(filePath);
+            res2.pipe(ws);
+            ws.on("finish", resolve);
+            ws.on("error", reject);
+          }).on("error", reject);
+        } else {
+          const ws = fs.createWriteStream(filePath);
+          res.pipe(ws);
+          ws.on("finish", resolve);
+          ws.on("error", reject);
+        }
+      }).on("error", reject);
+    });
+    return { ok: true, path: filePath };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+// ── IPC: 미디어 라이브러리 로컬 파일 관리 ──
+ipcMain.handle("media:selectFiles", async () => {
+  if (!mainWindow) return [];
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    properties: ["openFile", "multiSelections"],
+    filters: [
+      { name: "미디어", extensions: ["jpg", "jpeg", "png", "gif", "webp", "mp4", "webm", "mov", "svg"] }
+    ]
+  });
+  if (canceled) return [];
+  return filePaths;
+});
+
+ipcMain.handle("media:getLocalFiles", async () => {
+  const fs = require("fs");
+  const mediaDir = path.join(app.getPath("userData"), "media-library");
+  if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
+  const files = fs.readdirSync(mediaDir).filter(f => /\.(jpg|jpeg|png|gif|webp|mp4|webm|mov|svg)$/i.test(f));
+  return files.map(f => ({ name: f, path: path.join(mediaDir, f), url: "file:///" + path.join(mediaDir, f).replace(/\\/g, "/") }));
+});
+
+ipcMain.handle("media:importFiles", async (_, filePaths) => {
+  const fs = require("fs");
+  const mediaDir = path.join(app.getPath("userData"), "media-library");
+  if (!fs.existsSync(mediaDir)) fs.mkdirSync(mediaDir, { recursive: true });
+  const imported = [];
+  for (const src of filePaths) {
+    const name = path.basename(src);
+    const dest = path.join(mediaDir, name);
+    if (!fs.existsSync(dest)) fs.copyFileSync(src, dest);
+    imported.push({ name, path: dest, url: "file:///" + dest.replace(/\\/g, "/") });
+  }
+  return imported;
+});
+
+ipcMain.handle("media:deleteFile", async (_, filePath) => {
+  const fs = require("fs");
+  try { fs.unlinkSync(filePath); return { ok: true }; } catch (e) { return { ok: false }; }
+});
+
+// ── IPC: 메이킷 자료실 파일 목록 ──
+ipcMain.handle("media:getMakeitFiles", (_, cat) => {
+  const fs = require("fs");
+  const base = "D:/홈페이지/SNS메이킷/메이킷_자료실";
+  let dir;
+  if (cat === "photo") {
+    dir = path.join(base, "사진");
+  } else if (cat === "video") {
+    dir = path.join(base, "영상");
+  } else {
+    dir = path.join(base, "영상", cat);
+  }
+  if (!fs.existsSync(dir)) return [];
+  // mov 제외, mp4/webm만 허용
+  const exts = /\.(jpg|jpeg|png|gif|webp|mp4|webm|svg)$/i;
+  const files = fs.readdirSync(dir).filter(f => exts.test(f) && !f.startsWith("_"));
+  return files.map(f => ({ name: f, path: path.join(dir, f) }));
+});
+
+// ── IPC: 로컬 파일 → data URL 변환 (미리보기용) ──
+ipcMain.handle("media:fileToDataUrl", (_, filePath) => {
+  const fs = require("fs");
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    const ext = path.extname(filePath).toLowerCase();
+    const mimeMap = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml", ".mp4": "video/mp4", ".webm": "video/webm" };
+    const mime = mimeMap[ext] || "application/octet-stream";
+    const data = fs.readFileSync(filePath);
+    return "data:" + mime + ";base64," + data.toString("base64");
+  } catch (e) { return null; }
+});
+
+// ── IPC: 로컬 이미지 썸네일 (작은 사이즈, 빠른 로드) ──
+ipcMain.handle("media:getThumbnail", (_, filePath) => {
+  const fs = require("fs");
+  try {
+    if (!fs.existsSync(filePath)) return null;
+    const ext = path.extname(filePath).toLowerCase();
+    if ([".mp4", ".webm"].includes(ext)) return null; // 영상은 썸네일 불가
+    const mimeMap = { ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml" };
+    const mime = mimeMap[ext] || "image/png";
+    const data = fs.readFileSync(filePath);
+    return "data:" + mime + ";base64," + data.toString("base64");
+  } catch (e) { return null; }
+});
+
+// ── IPC: 메이킷 자료실에 파일 복사 (관리자) ──
+ipcMain.handle("media:importToMakeit", (_, filePaths, destFolder) => {
+  const base = "D:/홈페이지/SNS메이킷/메이킷_자료실";
+  const destDir = path.join(base, destFolder || "사진");
+  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+  const imported = [];
+  for (const src of filePaths) {
+    const name = path.basename(src);
+    const dest = path.join(destDir, name);
+    if (!fs.existsSync(dest)) fs.copyFileSync(src, dest);
+    imported.push(name);
+  }
+  return { ok: true, count: imported.length };
 });
 
 // ── IPC: 외부 링크 (URL 검증 포함) ──

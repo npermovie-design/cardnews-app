@@ -1415,10 +1415,10 @@ body {
   overflow: hidden !important;
 }
 
-/* NLE 다크 테마 (캡컷 틸 — index.html <style>에서 상세 정의) */
+/* NLE 다크 테마 (캡컷 — index.html에서 상세 정의) */
 #veStep3 .chips { gap: 3px; }
-#veStep3 .ve-sub-row { border-color: #1a1a3a !important; transition: background 0.1s; }
-#veStep3 .ve-sub-row:hover { background: rgba(0,191,165,0.08) !important; }
+#veStep3 .ve-sub-row { border-color: var(--ve-border-soft, #222428) !important; transition: background 0.1s; }
+#veStep3 .ve-sub-row:hover { background: rgba(0,191,165,0.06) !important; }
 
 /* NLE 도구바 버튼 호버 */
 #veStep3 button[id$="Btn"]:not(.chip):hover,
