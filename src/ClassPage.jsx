@@ -102,53 +102,256 @@ async function deleteCourseFromDb(courseId) {
   await supabase.from("classes").delete().eq("id", courseId);
 }
 
-// ── 캘린더 (큰 사이즈) ──
+// ── 캘린더 (Event Manager 스타일) ──
 function ClassCalendar({ schedules, C, isDark, onSelectDate }) {
   const [month, setMonth] = useState(() => { const n = new Date(); return new Date(n.getFullYear(), n.getMonth(), 1); });
+  const [view, setView] = useState("month"); // month | week | list
+  const [hoveredEvent, setHoveredEvent] = useState(null);
   const year = month.getFullYear(), mon = month.getMonth();
-  const firstDay = new Date(year, mon, 1).getDay();
-  const daysInMonth = new Date(year, mon + 1, 0).getDate();
   const today = new Date();
-  const cells = [];
-  for (let i = 0; i < firstDay; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
-  const scheduleDates = (schedules||[]).map(s => new Date(s.date));
-  const getSchedules = (d) => d ? (schedules||[]).filter(s => { const sd = new Date(s.date); return sd.getFullYear()===year && sd.getMonth()===mon && sd.getDate()===d; }) : [];
-  const hasSchedule = (d) => getSchedules(d).length > 0;
-  const isToday = (d) => d && isSameDay(new Date(year, mon, d), today);
+  const allSchedules = schedules || [];
+  const getSchedules = (d) => d ? allSchedules.filter(s => { const sd = new Date(s.date); return sd.getFullYear()===year && sd.getMonth()===mon && sd.getDate()===d; }) : [];
 
-  return (
-    <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "16px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-        <button onClick={() => setMonth(new Date(year, mon - 1, 1))} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 16, padding: "4px 8px", fontWeight: 700 }}>&lt;</button>
-        <span style={{ fontSize: 15, fontWeight: 900, color: C.text }}>{year}년 {mon + 1}월</span>
-        <button onClick={() => setMonth(new Date(year, mon + 1, 1))} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 16, padding: "4px 8px", fontWeight: 700 }}>&gt;</button>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 2, textAlign: "center" }}>
+  const panelBg = isDark ? "rgba(255,255,255,0.045)" : "#fff";
+  const panelBorder = isDark ? "rgba(255,255,255,0.06)" : "#eef0f6";
+  const hoverBg = isDark ? "rgba(255,255,255,0.02)" : "#fafbfe";
+
+  // 뷰 버튼 스타일
+  const viewBtn = (v) => ({
+    padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer",
+    fontSize: 12, fontWeight: view === v ? 700 : 500, fontFamily: "inherit",
+    background: view === v ? (isDark ? "rgba(59,130,246,0.12)" : "rgba(59,130,246,0.08)") : "transparent",
+    color: view === v ? ACC : (isDark ? "rgba(255,255,255,0.5)" : "#64748b"),
+    transition: "all 0.15s",
+  });
+
+  // ── 월간 뷰 ──
+  const renderMonth = () => {
+    const firstDay = new Date(year, mon, 1).getDay();
+    const daysInMonth = new Date(year, mon + 1, 0).getDate();
+    const cells = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+    return (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", borderTop: `1px solid ${panelBorder}` }}>
         {["일","월","화","수","목","금","토"].map((d,i) => (
-          <div key={d} style={{ fontSize: 10, color: i===0?"#ef4444":i===6?"#3b82f6":C.muted, fontWeight: 700, padding: "4px 0" }}>{d}</div>
+          <div key={d} style={{ fontSize: 11, color: i===0?"#ef4444":i===6?"#3b82f6":(isDark?"rgba(255,255,255,0.4)":"#94a3b8"), fontWeight: 600, padding: "8px 4px", textAlign: "center", borderBottom: `1px solid ${panelBorder}`, borderRight: i<6?`1px solid ${panelBorder}`:"none" }}>{d}</div>
         ))}
         {cells.map((d, i) => {
           const daySchedules = getSchedules(d);
+          const isT = d && isSameDay(new Date(year, mon, d), today);
+          const hasEvent = daySchedules.length > 0;
           return (
-            <div key={i} onClick={() => d && hasSchedule(d) && onSelectDate?.(new Date(year, mon, d))}
+            <div key={i} onClick={() => d && hasEvent && onSelectDate?.(new Date(year, mon, d))}
               style={{
-                padding: "6px 2px", minHeight: 36, fontSize: 12, fontWeight: isToday(d) ? 800 : 500, borderRadius: 8,
-                color: !d ? "transparent" : isToday(d) ? "#fff" : i%7===0 ? "#ef4444" : C.text,
-                background: isToday(d) ? ACC : hasSchedule(d) ? (isDark?`${ACC}15`:`${ACC}08`) : "transparent",
-                cursor: d && hasSchedule(d) ? "pointer" : "default",
-                border: hasSchedule(d) && !isToday(d) ? `1px solid ${ACC}40` : "1px solid transparent",
-                transition: "all 0.12s",
+                minHeight: 56, padding: "4px 4px 2px", fontSize: 12, position: "relative",
+                borderBottom: `1px solid ${panelBorder}`, borderRight: (i+1)%7!==0?`1px solid ${panelBorder}`:"none",
+                background: d ? "transparent" : (isDark?"rgba(255,255,255,0.01)":"#fafafa"),
+                cursor: d && hasEvent ? "pointer" : "default",
+                transition: "background 0.12s",
+              }}
+              onMouseEnter={e => { if (d) e.currentTarget.style.background = hoverBg; }}
+              onMouseLeave={e => { if (d) e.currentTarget.style.background = "transparent"; }}>
+              <div style={{
+                width: 24, height: 24, borderRadius: 99, display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, fontWeight: isT ? 700 : 400,
+                background: isT ? ACC : "transparent", color: isT ? "#fff" : (isDark?"rgba(255,255,255,0.7)":"#333"),
+                margin: "0 auto 2px",
               }}>
-              <div>{d || ""}</div>
-              {daySchedules.length > 0 && !isToday(d) && (
-                <div style={{ width: 5, height: 5, borderRadius: "50%", background: "#ec4899", margin: "2px auto 0" }} />
+                {d || ""}
+              </div>
+              {daySchedules.slice(0,2).map((s,si) => (
+                <div key={si}
+                  onMouseEnter={() => setHoveredEvent(s)}
+                  onMouseLeave={() => setHoveredEvent(null)}
+                  style={{
+                    fontSize: 10, fontWeight: 600, color: "#fff", padding: "2px 4px", borderRadius: 4, marginBottom: 1,
+                    background: s.title?.includes("라이브") || s.duration ? "#ec4899" : ACC,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    transition: "transform 0.15s",
+                  }}>
+                  {s.title || new Date(s.date).toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"})}
+                </div>
+              ))}
+              {daySchedules.length > 2 && (
+                <div style={{ fontSize: 9, color: isDark?"rgba(255,255,255,0.35)":"#94a3b8", textAlign: "center" }}>+{daySchedules.length-2}</div>
               )}
             </div>
           );
         })}
       </div>
+    );
+  };
+
+  // ── 주간 뷰 ──
+  const renderWeek = () => {
+    const startOfWeek = new Date(month);
+    startOfWeek.setDate(month.getDate() - month.getDay());
+    const weekDays = Array.from({length:7}, (_,i) => { const d = new Date(startOfWeek); d.setDate(startOfWeek.getDate()+i); return d; });
+    const hours = [9,10,11,12,13,14,15,16,17,18,19,20];
+
+    return (
+      <div style={{ overflowX: "auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "50px repeat(7,1fr)", minWidth: 500 }}>
+          <div style={{ borderRight: `1px solid ${panelBorder}`, borderBottom: `1px solid ${panelBorder}`, padding: 4, fontSize: 10, color: isDark?"rgba(255,255,255,0.3)":"#94a3b8" }}>시간</div>
+          {weekDays.map((d,i) => {
+            const isT = isSameDay(d, today);
+            return (
+              <div key={i} style={{ borderRight: i<6?`1px solid ${panelBorder}`:"none", borderBottom: `1px solid ${panelBorder}`, padding: "6px 4px", textAlign: "center" }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: isT?ACC:(isDark?"rgba(255,255,255,0.5)":"#64748b") }}>{["일","월","화","수","목","금","토"][d.getDay()]}</div>
+                <div style={{ fontSize: 13, fontWeight: isT?800:600, color: isT?"#fff":(isDark?"rgba(255,255,255,0.7)":"#333"), background: isT?ACC:"transparent", borderRadius: 99, width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", margin: "2px auto" }}>{d.getDate()}</div>
+              </div>
+            );
+          })}
+          {hours.map(h => (<>
+            <div key={`t${h}`} style={{ borderRight: `1px solid ${panelBorder}`, borderBottom: `1px solid ${panelBorder}`, padding: "8px 4px", fontSize: 10, color: isDark?"rgba(255,255,255,0.3)":"#94a3b8" }}>{h}:00</div>
+            {weekDays.map((d,i) => {
+              const dayEvents = allSchedules.filter(s => { const sd = new Date(s.date); return isSameDay(sd, d) && sd.getHours()===h; });
+              return (
+                <div key={`${h}-${i}`} style={{ borderRight: i<6?`1px solid ${panelBorder}`:"none", borderBottom: `1px solid ${panelBorder}`, padding: 2, minHeight: 40, transition: "background 0.12s" }}
+                  onMouseEnter={e=>e.currentTarget.style.background=hoverBg}
+                  onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+                  {dayEvents.map((s,si) => (
+                    <div key={si} onClick={() => onSelectDate?.(new Date(s.date))}
+                      style={{ fontSize: 10, fontWeight: 600, color: "#fff", padding: "3px 5px", borderRadius: 4, background: "#ec4899", cursor: "pointer", marginBottom: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {s.title || `${h}:00`}
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </>))}
+        </div>
+      </div>
+    );
+  };
+
+  // ── 리스트 뷰 ──
+  const renderList = () => {
+    const sorted = [...allSchedules].sort((a,b) => new Date(a.date) - new Date(b.date));
+    const upcoming = sorted.filter(s => new Date(s.date) >= new Date(today.getFullYear(), today.getMonth(), today.getDate()));
+    const grouped = {};
+    upcoming.forEach(s => {
+      const key = new Date(s.date).toLocaleDateString("ko-KR", { year:"numeric", month:"long", day:"numeric", weekday:"long" });
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(s);
+    });
+
+    return (
+      <div style={{ padding: "8px 0" }}>
+        {Object.entries(grouped).length === 0 && (
+          <div style={{ textAlign: "center", padding: "32px 0", color: isDark?"rgba(255,255,255,0.35)":"#94a3b8", fontSize: 13 }}>예정된 일정이 없습니다</div>
+        )}
+        {Object.entries(grouped).map(([date, items]) => (
+          <div key={date} style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: isDark?"rgba(255,255,255,0.4)":"#94a3b8", marginBottom: 8, padding: "0 4px" }}>{date}</div>
+            {items.map((s,i) => {
+              const time = new Date(s.date);
+              return (
+                <div key={i} onClick={() => onSelectDate?.(time)}
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 12px", borderRadius: 10, cursor: "pointer", marginBottom: 4, border: `1px solid ${panelBorder}`, transition: "all 0.15s" }}
+                  onMouseEnter={e => { e.currentTarget.style.background = hoverBg; e.currentTarget.style.transform = "translateX(4px)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.transform = "none"; }}>
+                  <div style={{ width: 4, height: 28, borderRadius: 2, background: "#ec4899", flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title || "라이브 방송"}</div>
+                    <div style={{ fontSize: 11, color: isDark?"rgba(255,255,255,0.4)":"#94a3b8", display: "flex", gap: 8, marginTop: 2 }}>
+                      <span>{time.toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"})}</span>
+                      {s.duration && <span>{s.duration}</span>}
+                      {s.maxSeats && <span>{s.enrolled||0}/{s.maxSeats}명</span>}
+                    </div>
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isDark?"rgba(255,255,255,0.3)":"#94a3b8"} strokeWidth="2" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // ── 호버 이벤트 카드 (floating) ──
+  const renderHoverCard = () => {
+    if (!hoveredEvent) return null;
+    const time = new Date(hoveredEvent.date);
+    return (
+      <div style={{ position: "fixed", zIndex: 9999, pointerEvents: "none", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 12, padding: "12px 16px", boxShadow: "0 12px 40px rgba(0,0,0,0.15)", minWidth: 200 }}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 4 }}>{hoveredEvent.title || "라이브 방송"}</div>
+        <div style={{ fontSize: 12, color: isDark?"rgba(255,255,255,0.5)":"#64748b", display: "flex", alignItems: "center", gap: 6 }}>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          {time.toLocaleString("ko-KR",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"})}
+        </div>
+        {hoveredEvent.duration && <div style={{ fontSize: 11, color: isDark?"rgba(255,255,255,0.35)":"#94a3b8", marginTop: 2 }}>{hoveredEvent.duration}</div>}
+        {hoveredEvent.maxSeats && (
+          <div style={{ marginTop: 6 }}>
+            <div style={{ fontSize: 10, color: isDark?"rgba(255,255,255,0.35)":"#94a3b8", marginBottom: 2 }}>{hoveredEvent.enrolled||0}/{hoveredEvent.maxSeats}명 참여</div>
+            <div style={{ height: 4, borderRadius: 2, background: isDark?"rgba(255,255,255,0.06)":"#f0f0f5", overflow: "hidden" }}>
+              <div style={{ height: "100%", borderRadius: 2, background: "#ec4899", width: `${Math.min(100,((hoveredEvent.enrolled||0)/hoveredEvent.maxSeats)*100)}%` }} />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 16, overflow: "hidden" }}>
+      {/* 헤더 */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: `1px solid ${panelBorder}`, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={() => {
+            const d = new Date(month);
+            if (view==="month") d.setMonth(d.getMonth()-1);
+            else if (view==="week") d.setDate(d.getDate()-7);
+            setMonth(d);
+          }} style={{ width: 28, height: 28, borderRadius: 8, border: `1px solid ${panelBorder}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: isDark?"rgba(255,255,255,0.5)":"#64748b" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button onClick={() => setMonth(new Date())} style={{ padding: "4px 12px", borderRadius: 8, border: `1px solid ${panelBorder}`, background: "transparent", cursor: "pointer", fontSize: 11, fontWeight: 600, color: isDark?"rgba(255,255,255,0.5)":"#64748b", fontFamily: "inherit" }}>오늘</button>
+          <button onClick={() => {
+            const d = new Date(month);
+            if (view==="month") d.setMonth(d.getMonth()+1);
+            else if (view==="week") d.setDate(d.getDate()+7);
+            setMonth(d);
+          }} style={{ width: 28, height: 28, borderRadius: 8, border: `1px solid ${panelBorder}`, background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: isDark?"rgba(255,255,255,0.5)":"#64748b" }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <span style={{ fontSize: 14, fontWeight: 800, color: C.text, marginLeft: 4 }}>
+            {view === "month" ? `${year}년 ${mon+1}월` : view === "week" ? `${month.toLocaleDateString("ko-KR",{month:"short",day:"numeric"})} 주` : "일정 목록"}
+          </span>
+        </div>
+        {/* 뷰 전환 */}
+        <div style={{ display: "flex", gap: 2, background: isDark?"rgba(255,255,255,0.04)":"#f3f4f6", borderRadius: 8, padding: 2 }}>
+          <button onClick={() => setView("month")} style={viewBtn("month")}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 3 }}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            월
+          </button>
+          <button onClick={() => setView("week")} style={viewBtn("week")}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 3 }}><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            주
+          </button>
+          <button onClick={() => setView("list")} style={viewBtn("list")}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ marginRight: 3 }}><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            목록
+          </button>
+        </div>
+      </div>
+
+      {/* 콘텐츠 */}
+      {view === "month" && renderMonth()}
+      {view === "week" && renderWeek()}
+      {view === "list" && renderList()}
+
+      {/* 하단 요약 */}
+      <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 14px", borderTop: `1px solid ${panelBorder}`, fontSize: 11, color: isDark?"rgba(255,255,255,0.3)":"#94a3b8" }}>
+        <span>{allSchedules.length}개 일정</span>
+        <span>방금 업데이트</span>
+      </div>
+
+      {renderHoverCard()}
     </div>
   );
 }

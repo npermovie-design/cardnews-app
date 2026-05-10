@@ -7,6 +7,7 @@ import { useI18n, LANGUAGES } from "./i18n.jsx";
 const HomePage = lazy(() => import("./HomePage"));
 import AuthPage from "./AuthPage";
 import Footer from "./Footer.jsx";
+import ChatWidget from "./ChatWidget.jsx";
 
 // 지연 로드 컴포넌트 (코드 스플리팅)
 const AboutPage = lazy(() => import("./AboutPage").then(m => ({ default: m.AboutPage })));
@@ -28,6 +29,7 @@ const ProgramsPage = lazy(() => import("./ProgramsPage.jsx"));
 const NoticePage = lazy(() => import("./NoticePage.jsx"));
 const ClassPage = lazy(() => import("./ClassPage.jsx"));
 const ChallengePage = lazy(() => import("./ChallengePage.jsx"));
+// const GuidePage = lazy(() => import("./GuidePage.jsx"));
 
 // 로딩 폴백
 const PageLoader = () => (
@@ -785,7 +787,8 @@ export default function App() {
     if (page === "home")     return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} setAiMenu={setAiMenu} />;
     if (page === "login")    { if (user) { navigate("home"); return null; } return <AuthPage C={C} onAuth={handleAuth} navigate={navigate} />; }
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
-    if (page === "howto" || page === "guide")  return <HowToPage C={C} navigate={navigate} />;
+    if (page === "howto")  return <HowToPage C={C} navigate={navigate} />;
+    // guide 페이지 비활성화
     if (page === "faq")      return <FaqPage C={C} navigate={navigate} />;
 
     if (page === "analyzer")  return <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
@@ -1364,6 +1367,9 @@ export default function App() {
 
       {/* ── 푸터 (AI 페이지에서는 콘텐츠 내부에 포함) ── */}
       {page !== "ai" && <Footer C={C} navigateBoard={navigateBoard} navigateAi={navigateAi} navigate={navigate} />}
+
+      {/* 실시간 채팅 위젯 */}
+      <ChatWidget user={user} C={C} />
 
       {showScrollTop && (
         <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

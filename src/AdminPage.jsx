@@ -472,7 +472,7 @@ export default function AdminPage({ C, user: adminUser }) {
   const activeBg = isDark ? "rgba(84,111,255,0.12)" : "rgba(84,111,255,0.08)";
   const accent = "#546FFF";
   const cardStyle = { padding: "20px 22px", borderRadius: 16, background: panelBg, border: `1px solid ${panelBorder}`, boxShadow: isDark ? "none" : "0 2px 12px rgba(0,0,0,0.04)" };
-  const adminTitle = {stats:"통계 대시보드", visitors:"접속 분석", members:"회원 관리", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백"}[tab] || tab;
+  const adminTitle = {stats:"통계 대시보드", visitors:"접속 분석", members:"회원 관리", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백", chat:"실시간 채팅"}[tab] || tab;
   const adminDesc = {
     stats: "회원, 게시글, AI 사용량을 한 화면에서 확인합니다.",
     visitors: "유입 경로와 접속 데이터를 점검합니다.",
@@ -482,6 +482,7 @@ export default function AdminPage({ C, user: adminUser }) {
     board: "게시판 카테고리와 태그를 관리합니다.",
     inquiries: "고객 문의 상태와 답변을 처리합니다.",
     appFeedback: "앱 피드백을 확인하고 상태를 변경합니다.",
+    chat: "사용자 문의에 실시간으로 답변합니다.",
   }[tab] || "관리자 작업을 처리합니다.";
   const refreshAdminData = () => {
     loadMembers(); loadPosts(); loadAiLogs(); loadDailySignups(); loadDailyAiUsage();
@@ -553,6 +554,7 @@ export default function AdminPage({ C, user: adminUser }) {
             { group: "고객", items: [
               ["inquiries", "문의", "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"],
               ["appFeedback", "앱 피드백", "M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"],
+              ["chat", "실시간 채팅", "M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"],
             ]},
           ];
           return menuItems.map(({ group, items }) => (
@@ -1795,6 +1797,9 @@ export default function AdminPage({ C, user: adminUser }) {
       {/* ── 접속 분석 ── */}
       {tab === "visitors" && <VisitorAnalyticsTab C={C} isDark={isDark} />}
 
+      {/* ── 실시간 채팅 ── */}
+      {tab === "chat" && <AdminChatTab C={C} isDark={isDark} adminUser={adminUser} />}
+
       </main>
     </div>
   );
@@ -2259,3 +2264,241 @@ function VisitorAnalyticsTab({ C, isDark }) {
   );
 }
 
+// ── 관리자 실시간 채팅 탭 ──
+function AdminChatTab({ C, isDark, adminUser }) {
+  const [convs, setConvs] = React.useState([]);
+  const [selected, setSelected] = React.useState(null);
+  const [messages, setMessages] = React.useState([]);
+  const [input, setInput] = React.useState("");
+  const [loading, setLoading] = React.useState(true);
+  const endRef = React.useRef(null);
+
+  const accent = "#546FFF";
+  const panelBg = isDark ? "rgba(255,255,255,0.045)" : "#fff";
+  const panelBorder = isDark ? "rgba(255,255,255,0.06)" : "#eef0f6";
+  const hoverBg = isDark ? "rgba(255,255,255,0.02)" : "#fafbfe";
+
+  // 대화 목록 로드
+  const loadConvs = async () => {
+    const { data } = await supabase.from("chat_conversations").select("*").order("updated_at", { ascending: false });
+    setConvs(data || []);
+    setLoading(false);
+  };
+
+  // 메시지 로드
+  const loadMessages = async (convId) => {
+    const { data } = await supabase.from("chat_messages").select("*").eq("conversation_id", convId).order("created_at", { ascending: true });
+    setMessages(data || []);
+    // 읽음 처리
+    await supabase.from("chat_conversations").update({ unread_admin: 0 }).eq("id", convId);
+    setConvs(prev => prev.map(c => c.id === convId ? { ...c, unread_admin: 0 } : c));
+  };
+
+  React.useEffect(() => { loadConvs(); }, []);
+
+  // 실시간 구독 — 전체 새 메시지 감지
+  React.useEffect(() => {
+    const channel = supabase
+      .channel("admin-chat-all")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload) => {
+        const msg = payload.new;
+        // 현재 보고 있는 대화면 메시지 추가
+        if (selected && msg.conversation_id === selected.id) {
+          setMessages(prev => [...prev, msg]);
+          if (msg.sender_role === "user") {
+            supabase.from("chat_conversations").update({ unread_admin: 0 }).eq("id", selected.id);
+          }
+        }
+        // 대화 목록 갱신
+        loadConvs();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [selected]);
+
+  React.useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // 대화 선택
+  const selectConv = (conv) => {
+    setSelected(conv);
+    loadMessages(conv.id);
+  };
+
+  // 답변 전송
+  const send = async () => {
+    if (!input.trim() || !selected) return;
+    const msg = input.trim();
+    setInput("");
+    await supabase.from("chat_messages").insert({
+      conversation_id: selected.id,
+      sender_uid: adminUser?.uid || "admin",
+      sender_role: "admin",
+      message: msg,
+    });
+    await supabase.from("chat_conversations").update({
+      last_message: msg,
+      unread_user: (selected.unread_user || 0) + 1,
+      updated_at: new Date().toISOString(),
+    }).eq("id", selected.id);
+  };
+
+  // 대화 종료
+  const closeConv = async (convId) => {
+    await supabase.from("chat_conversations").update({ status: "closed" }).eq("id", convId);
+    setConvs(prev => prev.map(c => c.id === convId ? { ...c, status: "closed" } : c));
+    if (selected?.id === convId) { setSelected(null); setMessages([]); }
+  };
+
+  const totalUnread = convs.reduce((s, c) => s + (c.unread_admin || 0), 0);
+  const openConvs = convs.filter(c => c.status === "open");
+  const closedConvs = convs.filter(c => c.status === "closed");
+
+  if (loading) return <div style={{ padding: 40, textAlign: "center", color: C.muted }}>채팅 목록 로딩 중...</div>;
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: selected ? "300px 1fr" : "1fr", gap: 16, height: "calc(100vh - 200px)", minHeight: 500 }}>
+      {/* 왼쪽: 대화 목록 */}
+      <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+        <div style={{ padding: "16px 18px", borderBottom: `1px solid ${panelBorder}` }}>
+          <div style={{ fontSize: 16, fontWeight: 800, color: C.text }}>
+            대화 목록
+            {totalUnread > 0 && <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 700, color: "#fff", background: "#ef4444", padding: "2px 8px", borderRadius: 99 }}>{totalUnread}</span>}
+          </div>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {openConvs.length === 0 && closedConvs.length === 0 && (
+            <div style={{ padding: "40px 20px", textAlign: "center", color: C.muted, fontSize: 13 }}>아직 문의가 없습니다</div>
+          )}
+          {openConvs.length > 0 && (
+            <div style={{ padding: "8px 0" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: isDark ? "rgba(255,255,255,0.3)" : "#94a3b8", padding: "4px 18px", letterSpacing: 1 }}>진행중</div>
+              {openConvs.map(conv => (
+                <div key={conv.id} onClick={() => selectConv(conv)}
+                  style={{
+                    padding: "12px 18px", cursor: "pointer", transition: "background 0.12s",
+                    background: selected?.id === conv.id ? (isDark ? "rgba(84,111,255,0.08)" : "rgba(84,111,255,0.04)") : "transparent",
+                    borderLeft: selected?.id === conv.id ? `3px solid ${accent}` : "3px solid transparent",
+                  }}
+                  onMouseEnter={e => { if (selected?.id !== conv.id) e.currentTarget.style.background = hoverBg; }}
+                  onMouseLeave={e => { if (selected?.id !== conv.id) e.currentTarget.style.background = "transparent"; }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{conv.user_nick || "익명"}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {conv.unread_admin > 0 && (
+                        <span style={{ width: 18, height: 18, borderRadius: 99, background: "#ef4444", color: "#fff", fontSize: 10, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{conv.unread_admin}</span>
+                      )}
+                      <span style={{ fontSize: 10, color: isDark ? "rgba(255,255,255,0.25)" : "#94a3b8" }}>
+                        {new Date(conv.updated_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.4)" : "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {conv.last_message || "새 대화"}
+                  </div>
+                  <div style={{ fontSize: 10, color: isDark ? "rgba(255,255,255,0.25)" : "#94a3b8", marginTop: 2 }}>{conv.user_email}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          {closedConvs.length > 0 && (
+            <div style={{ padding: "8px 0", borderTop: `1px solid ${panelBorder}` }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: isDark ? "rgba(255,255,255,0.2)" : "#c0c0c0", padding: "4px 18px", letterSpacing: 1 }}>종료됨</div>
+              {closedConvs.slice(0, 10).map(conv => (
+                <div key={conv.id} onClick={() => selectConv(conv)}
+                  style={{ padding: "10px 18px", cursor: "pointer", opacity: 0.5 }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = "0.8"}
+                  onMouseLeave={e => e.currentTarget.style.opacity = "0.5"}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{conv.user_nick || "익명"}</div>
+                  <div style={{ fontSize: 11, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{conv.last_message}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 오른쪽: 채팅 화면 */}
+      {selected && (
+        <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          {/* 헤더 */}
+          <div style={{ padding: "14px 20px", borderBottom: `1px solid ${panelBorder}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{selected.user_nick || "익명"}</div>
+              <div style={{ fontSize: 11, color: isDark ? "rgba(255,255,255,0.35)" : "#94a3b8" }}>{selected.user_email}</div>
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {selected.status === "open" && (
+                <button onClick={() => closeConv(selected.id)}
+                  style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${panelBorder}`, background: "transparent", color: isDark ? "rgba(255,255,255,0.4)" : "#94a3b8", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                  종료
+                </button>
+              )}
+              <button onClick={() => { setSelected(null); setMessages([]); }}
+                style={{ padding: "6px 14px", borderRadius: 8, border: `1px solid ${panelBorder}`, background: "transparent", color: isDark ? "rgba(255,255,255,0.4)" : "#94a3b8", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                닫기
+              </button>
+            </div>
+          </div>
+
+          {/* 메시지 */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
+            {messages.length === 0 && <div style={{ textAlign: "center", padding: 40, color: C.muted, fontSize: 13 }}>메시지가 없습니다</div>}
+            {messages.map(msg => {
+              const isAdmin = msg.sender_role === "admin";
+              return (
+                <div key={msg.id} style={{ display: "flex", justifyContent: isAdmin ? "flex-end" : "flex-start" }}>
+                  <div style={{
+                    maxWidth: "70%", padding: "10px 14px",
+                    borderRadius: isAdmin ? "14px 14px 4px 14px" : "14px 14px 14px 4px",
+                    background: isAdmin ? accent : (isDark ? "rgba(255,255,255,0.06)" : "#f3f4f6"),
+                    color: isAdmin ? "#fff" : C.text,
+                    fontSize: 14, lineHeight: 1.5, wordBreak: "break-word",
+                  }}>
+                    {msg.message}
+                    <div style={{ fontSize: 10, marginTop: 4, opacity: 0.5, textAlign: isAdmin ? "right" : "left" }}>
+                      {isAdmin ? "관리자" : (selected.user_nick || "사용자")} · {new Date(msg.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={endRef} />
+          </div>
+
+          {/* 입력 */}
+          {selected.status === "open" && (
+            <div style={{ padding: "12px 20px", borderTop: `1px solid ${panelBorder}` }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input value={input} onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+                  placeholder="답변을 입력하세요..."
+                  style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: `1px solid ${panelBorder}`, background: isDark ? "rgba(255,255,255,0.03)" : "#f9fafb", color: C.text, fontSize: 14, outline: "none", fontFamily: "inherit" }} />
+                <button onClick={send} disabled={!input.trim()}
+                  style={{ padding: "10px 20px", borderRadius: 10, border: "none", background: input.trim() ? accent : (isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb"), color: "#fff", fontSize: 14, fontWeight: 600, cursor: input.trim() ? "pointer" : "default", fontFamily: "inherit" }}>
+                  전송
+                </button>
+              </div>
+            </div>
+          )}
+          {selected.status === "closed" && (
+            <div style={{ padding: "14px 20px", borderTop: `1px solid ${panelBorder}`, textAlign: "center", fontSize: 13, color: C.muted }}>
+              종료된 대화입니다
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 대화 미선택 시 */}
+      {!selected && convs.length > 0 && (
+        <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 16, display: "flex", alignItems: "center", justifyContent: "center", minHeight: 400 }}>
+          <div style={{ textAlign: "center", color: isDark ? "rgba(255,255,255,0.3)" : "#94a3b8" }}>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ opacity: 0.4, marginBottom: 12 }}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>왼쪽에서 대화를 선택하세요</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -247,6 +247,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
         .hp-float-icon{position:absolute;pointer-events:none;z-index:1}
         @media(max-width:768px){
           .hp-hero-inner{flex-direction:column!important;gap:36px!important;text-align:center!important}
+          .hp-row{grid-template-columns:1fr!important}
           .hp-hero-btns{justify-content:center!important}
           .hp-hero-visual{max-width:420px!important;margin:0 auto!important}
           .hp-float-icon{display:none!important}
@@ -400,82 +401,144 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
         </div>
       </section>
 
-      {/* ══════ 주요 기능 — 탭 전환 (Feature108 스타일) ══════ */}
-      {(() => {
-        const tabs = [
-          { id: "auto", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 013 3L7 19l-4 1 1-4z"/></svg>, label: ko ? "자동 발행" : "Auto Publish",
-            badge: "HOT", title: ko ? "콘텐츠 제작부터 발행까지 한 번에" : "From content creation to publishing",
-            desc: ko ? "주제만 입력하면 글 작성, 이미지 삽입, 카테고리 선택, 발행까지 자동으로 처리됩니다. 반복 작업에서 벗어나세요." : "Enter a topic and it handles writing, images, categories, and publishing automatically.",
-            btn: ko ? "자세히 보기" : "Learn more", onClick: goAi,
-            visual: <div style={{ borderRadius: 16, overflow: "hidden", border: "1px solid " + BDR }}><img src="/hero-writing.png" alt="" style={{ width: "100%", display: "block" }} loading="lazy" /></div>,
-          },
-          { id: "drive", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 6V2M8 6V4M16 6V4"/></svg>, label: ko ? "드라이브 연동" : "Drive Sync",
-            badge: "NEW", title: ko ? "내 자료를 바로 콘텐츠로" : "Turn your files into content",
-            desc: ko ? "구글 드라이브에 있는 글감과 이미지를 연결하면, 별도 정리 없이 바로 콘텐츠로 활용할 수 있습니다." : "Connect Google Drive files and images to instantly use them as content.",
-            btn: ko ? "자세히 보기" : "Learn more", onClick: goAi,
-            visual: <div style={{ borderRadius: 16, background: DARK, aspectRatio: "16/10", display: "flex", alignItems: "center", justifyContent: "center" }}><div style={{ textAlign: "center", color: "#fff" }}><svg width="48" height="48" viewBox="0 0 24 24" fill="none" style={{ margin: "0 auto 8px" }}><path d="M8 18L3 12L8 6M16 6L21 12L16 18" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/></svg><div style={{ fontSize: 14, fontWeight: 600 }}>{ko ? "드라이브 폴더 -> 자동 포스팅" : "Drive folder -> Auto posting"}</div></div></div>,
-          },
-          { id: "keyword", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>, label: ko ? "키워드 분석" : "Keywords",
-            title: ko ? "오늘 뜨는 키워드로 바로 글쓰기" : "Write with today's trending keywords",
-            desc: ko ? "네이버와 구글에서 실시간으로 수집한 320개 이상의 트렌드 키워드를 확인하고, 바로 콘텐츠를 만드세요." : "320+ trending keywords from Naver & Google.",
-            btn: ko ? "키워드 확인하기" : "Check keywords", onClick: goAi,
-            visual: <div style={{ borderRadius: 16, padding: 24, background: PBG, border: "1px solid " + PBDR }}><div style={{ fontSize: 13, fontWeight: 600, color: P, marginBottom: 12 }}>{ko ? "실시간 트렌드 키워드" : "Trending now"}</div><div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>{(ko ? ["블로그 마케팅","블로그 수익화","네이버 상위노출","SNS 자동화","부업 추천","자동 발행","키워드 분석","뷰티 트렌드"] : ["Blog Marketing","Blog Monetize","Naver SEO","SNS Automation","Side Hustle","Auto Publish","Keyword Analysis","Beauty"]).map((t, i) => <span key={i} style={{ fontSize: 13, padding: "6px 14px", borderRadius: 8, background: i < 2 ? P : "#fff", color: i < 2 ? "#fff" : TEXT, fontWeight: 600, border: i < 2 ? "none" : "1px solid " + BDR }}>{t}</span>)}</div></div>,
-          },
-        ];
-        const [activeTab, setActiveTab] = useState(tabs[0].id);
-        const active = tabs.find(t => t.id === activeTab) || tabs[0];
-        return (
-          <section className="hp-sec" style={{ padding: "clamp(80px,12vw,112px) clamp(20px,5vw,32px)", background: BG }}>
-            <div style={{ maxWidth: 1140, margin: "0 auto" }}>
+      {/* ══════ 주요 기능 — 벤토 그리드 카드 (Features 스타일) ══════ */}
+      <section className="hp-sec" style={{ padding: "clamp(80px,12vw,112px) clamp(20px,5vw,32px)", background: BG }}>
+        <div style={{ maxWidth: 1140, margin: "0 auto" }}>
+          <Reveal>
+            <h2 style={{ fontSize: "clamp(28px,4.5vw,42px)", fontWeight: 700, color: TEXT, letterSpacing: -0.5, margin: "0 0 12px", lineHeight: 1.15, textAlign: "center" }}>
+              {ko ? "SNS 운영에 필요한 모든 것" : "Everything for SNS management"}
+            </h2>
+          </Reveal>
+
+          <style>{`
+            .hp-bento{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:48px}
+            .hp-bento-card{border-radius:20px;border:1px solid ${BDR};background:${BG2};overflow:hidden;transition:transform .2s,box-shadow .2s}
+            .hp-bento-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,0.06)}
+            .hp-bento-wide{grid-column:1/-1}
+            .hp-bento-wide-inner{display:grid;grid-template-columns:1fr 1.2fr}
+            @media(max-width:768px){.hp-bento{grid-template-columns:1fr !important}.hp-bento-wide{grid-column:1 !important}.hp-bento-wide-inner{grid-template-columns:1fr !important}}
+          `}</style>
+
+          <div className="hp-bento">
+            {/* ── 와이드 카드: AI 글쓰기 ── */}
+            <div className="hp-bento-card hp-bento-wide">
               <Reveal>
-                <div style={{ textAlign: "center", marginBottom: 32 }}>
-                  <span style={{ display: "inline-block", fontSize: 13, fontWeight: 600, color: P, background: PBG, padding: "4px 14px", borderRadius: 20, marginBottom: 16 }}>
-                    {ko ? "주요 기능" : "Key Features"}
-                  </span>
-                  <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 700, color: TEXT, letterSpacing: -0.5, margin: "0 0 12px", lineHeight: 1.2 }}>
-                    {ko ? "SNS 운영에 필요한 모든 것" : "Everything for SNS management"}
-                  </h2>
-                  <p style={{ fontSize: 16, color: SUB }}>{ko ? "탭을 눌러 각 기능을 확인하세요." : "Click each tab to explore features."}</p>
+                <div className="hp-bento-wide-inner">
+                  <div style={{ padding: "clamp(28px,3vw,40px)" }}>
+                    <h3 style={{ fontSize: "clamp(20px,2.5vw,24px)", fontWeight: 700, color: TEXT, margin: "0 0 12px", lineHeight: 1.3 }}>
+                      {ko ? "AI 콘텐츠 생성" : "AI Content Generation"}
+                    </h3>
+                    <p style={{ fontSize: 15, color: SUB, lineHeight: 1.65, margin: 0, maxWidth: 420 }}>
+                      {ko ? "주제만 입력하면 블로그 글, 인스타 캡션, 카드뉴스까지 AI가 자동으로 작성합니다. SEO 최적화 구조로 검색 노출까지 고려합니다." : "Enter a topic and AI writes blog posts, Instagram captions, and card news. SEO-optimized structure included."}
+                    </p>
+                  </div>
+                  <div style={{ position: "relative", overflow: "hidden", minHeight: 300 }}>
+                    <div style={{ position: "absolute", top: 24, left: 0, right: -8, bottom: -8, background: BG, border: `1px solid ${BDR}`, borderRadius: "16px 0 0 0", padding: "20px 24px" }}>
+                      <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: 99, background: "#ef4444" }}/><div style={{ width: 10, height: 10, borderRadius: 99, background: "#f59e0b" }}/><div style={{ width: 10, height: 10, borderRadius: 99, background: "#22c55e" }}/>
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: TEXT, marginBottom: 14 }}>{ko ? "AI 글 생성기" : "AI Writer"}</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        <div style={{ height: 8, borderRadius: 4, background: `${P}18`, width: "90%" }}/>
+                        <div style={{ height: 8, borderRadius: 4, background: `${P}12`, width: "70%" }}/>
+                        <div style={{ height: 8, borderRadius: 4, background: `${P}08`, width: "55%" }}/>
+                        <div style={{ height: 1, background: BDR, margin: "8px 0" }}/>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 4 }}>
+                          <div style={{ height: 64, borderRadius: 10, background: `${P}06`, border: `1px solid ${BDR}` }}/>
+                          <div style={{ height: 64, borderRadius: 10, background: "#22c55e08", border: `1px solid ${BDR}` }}/>
+                        </div>
+                        <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                          {(ko?["블로그","인스타","스레드"]:["Blog","Insta","Threads"]).map((t,i) => (
+                            <span key={t} style={{ fontSize: 10, padding: "4px 10px", borderRadius: 6, background: i===0?P:"transparent", color: i===0?"#fff":MUTED, fontWeight: 600, border: i>0?`1px solid ${BDR}`:"none" }}>{t}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </Reveal>
+            </div>
 
-              {/* 탭 버튼 */}
-              <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 32, flexWrap: "wrap" }}>
-                {tabs.map(tab => (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                    display: "flex", alignItems: "center", gap: 8, padding: "10px 20px", borderRadius: 14,
-                    border: "none", cursor: "pointer", fontSize: 14, fontWeight: 600, fontFamily: "inherit",
-                    background: activeTab === tab.id ? PBG : "transparent",
-                    color: activeTab === tab.id ? P : MUTED,
-                    transition: "all .2s",
-                  }}>
-                    {tab.icon} {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* 탭 콘텐츠 */}
-              <div style={{ background: BG2, borderRadius: 24, padding: "clamp(24px,4vw,48px)" }}>
-                <div className="hp-row" style={{ display: "flex", gap: "clamp(24px,4vw,48px)", alignItems: "center" }}>
-                  <div className="hp-row-text" style={{ flex: "1 1 50%", minWidth: 0 }}>
-                    {active.badge && <span style={{ display: "inline-block", fontSize: 12, fontWeight: 700, color: "#fff", background: P, padding: "4px 12px", borderRadius: 20, marginBottom: 16 }}>{active.badge}</span>}
-                    <h3 style={{ fontSize: "clamp(24px,3vw,32px)", fontWeight: 700, color: TEXT, margin: "0 0 14px", lineHeight: 1.25 }}>{active.title}</h3>
-                    <p style={{ fontSize: 16, color: SUB, lineHeight: 1.65, margin: "0 0 28px" }}>{active.desc}</p>
-                    <button onClick={active.onClick} style={{
-                      position: "relative", overflow: "hidden",
-                      fontSize: 15, fontWeight: 600, padding: "12px 28px", borderRadius: 24,
-                      border: `1px solid ${P}30`, background: P, color: "#fff", cursor: "pointer", fontFamily: "inherit",
-                    }}>{active.btn}</button>
-                  </div>
-                  <div className="hp-row-img" style={{ flex: "1 1 50%", minWidth: 0 }}>
-                    {active.visual}
+            {/* ── 카드 2: 자동 발행 ── */}
+            <div className="hp-bento-card" style={{ padding: "clamp(20px,2.5vw,28px)" }}>
+              <Reveal delay={0.05}>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: TEXT, margin: "0 0 8px" }}>{ko ? "다채널 자동 발행" : "Multi-channel Publishing"}</h3>
+                <p style={{ fontSize: 14, color: SUB, lineHeight: 1.6, margin: "0 0 20px" }}>{ko ? "네이버 블로그, 카페, 인스타그램, 스레드에 동시에 발행합니다." : "Publish to Naver Blog, Cafe, Instagram, Threads simultaneously."}</p>
+                <div style={{ background: BG, border: `1px solid ${BDR}`, borderRadius: 12, padding: 14 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {[{name:ko?"네이버 블로그":"Naver Blog",status:ko?"발행 완료":"Done",color:"#22c55e"},{name:ko?"인스타그램":"Instagram",status:ko?"발행 중":"Publishing",color:"#f59e0b"},{name:ko?"스레드":"Threads",status:ko?"대기":"Waiting",color:MUTED}].map(p => (
+                      <div key={p.name} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 10px", borderRadius:8, background:BG2, border:`1px solid ${BDR}` }}>
+                        <div style={{ width:6, height:6, borderRadius:99, background:p.color, flexShrink:0 }}/>
+                        <span style={{ fontSize:12, fontWeight:600, color:TEXT, flex:1 }}>{p.name}</span>
+                        <span style={{ fontSize:10, fontWeight:600, color:p.color }}>{p.status}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
+              </Reveal>
             </div>
-          </section>
-        );
-      })()}
+
+            {/* ── 카드 3: 키워드 분석 ── */}
+            <div className="hp-bento-card" style={{ padding: "clamp(20px,2.5vw,28px) clamp(20px,2.5vw,28px) 0" }}>
+              <Reveal delay={0.1}>
+                <div style={{ padding: "0 clamp(20px,2.5vw,28px)" }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: TEXT, margin: "0 0 8px" }}>{ko ? "키워드 트렌드 분석" : "Keyword Trends"}</h3>
+                  <p style={{ fontSize: 14, color: SUB, lineHeight: 1.6, margin: "0 0 20px" }}>{ko ? "실시간 320+ 키워드로 검색 최적화 콘텐츠를 만드세요." : "320+ real-time keywords for SEO content."}</p>
+                </div>
+                <div style={{ background: BG, border: `1px solid ${BDR}`, borderRadius: "12px 12px 0 0", margin: "0 12px", padding: 14 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 10 }}>
+                    {(ko?["블로그 마케팅","SEO","SNS 자동화","키워드"]:["Blog Marketing","SEO","Automation","Keywords"]).map((t,i) => (
+                      <span key={t} style={{ fontSize: 10, padding: "4px 8px", borderRadius: 6, background: i===0?P:"#f0f0f5", color: i===0?"#fff":TEXT, fontWeight: 600 }}>{t}</span>
+                    ))}
+                  </div>
+                  <div style={{ background: "#f8f9fb", borderRadius: 8, padding: 10 }}>
+                    <div style={{ fontSize: 11, color: MUTED, marginBottom: 6 }}>{ko ? "AI에게 물어보기" : "Ask AI"}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", gap: 4 }}>
+                        <div style={{ width: 22, height: 22, borderRadius: 99, border: "1px solid " + BDR, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        </div>
+                        <div style={{ width: 22, height: 22, borderRadius: 99, border: "1px solid " + BDR, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke={MUTED} strokeWidth="2"><circle cx="12" cy="12" r="10"/></svg>
+                        </div>
+                      </div>
+                      <div style={{ width: 22, height: 22, borderRadius: 99, background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+            </div>
+
+            {/* ── 카드 4: 커뮤니티 ── */}
+            <div className="hp-bento-card" style={{ padding: "clamp(20px,2.5vw,28px) clamp(20px,2.5vw,28px) 0" }}>
+              <Reveal delay={0.15}>
+                <div style={{ padding: "0 clamp(20px,2.5vw,28px)" }}>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: TEXT, margin: "0 0 8px" }}>{ko ? "커뮤니티 & 부트캠프" : "Community & Bootcamp"}</h3>
+                  <p style={{ fontSize: 14, color: SUB, lineHeight: 1.6, margin: "0 0 16px" }}>{ko ? "사업자들과 노하우를 나누고 함께 성장하세요." : "Share tips and grow together."}</p>
+                </div>
+                <div style={{ margin: "0 12px", paddingBottom: 12 }}>
+                  <div style={{ background: BG, border: `1px solid ${BDR}`, borderRadius: 12, padding: 14 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {[
+                        {label:ko?"정보 공유":"Info sharing", count:"128"},
+                        {label:ko?"질문 답변":"Q&A", count:"64"},
+                        {label:ko?"사용 후기":"Reviews", count:"42"},
+                      ].map(c => (
+                        <div key={c.label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"6px 0" }}>
+                          <span style={{ fontSize:12, fontWeight:600, color:TEXT }}>{c.label}</span>
+                          <span style={{ fontSize:11, fontWeight:700, color:P }}>{c.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ══════ 이미지 아코디언 (interactive-image-accordion 스타일) ══════ */}
       {(() => {
