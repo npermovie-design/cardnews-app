@@ -84,7 +84,6 @@ function AiSidebar({ aiMenu, setAiMenu, user, onQna, theme, onlineCount, navigat
 
   // 메뉴 정의
   const menuItems = [
-    { id:"video_guide", label:t("howto"), ids:["video_guide"] },
     { id:"home", label:"AI도구", ids:["home","blog_naver","blog_tistory","blog_insta","blog_youtube","blog_thread","blog_cafe","blog_yt_blog","blog_news","blog_link","blog_write"] },
     { id:"today_keywords", label:t("sideKeywords"), ids:["today_keywords"] },
     { id:"sns_consulting", label:t("sideConsulting"), ids:["sns_consulting"] },

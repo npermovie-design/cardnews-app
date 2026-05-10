@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getAuthToken } from "./storage";
 
 /* ══════════════════════════════════════════════════════
    SnsConnectionManager
@@ -48,6 +49,11 @@ const PLATFORMS = [
   },
 ];
 
+async function authHeaders(extra = {}) {
+  const token = await getAuthToken();
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
+
 export default function SnsConnectionManager({ user, isDark, compact = false }) {
   const [connections, setConnections] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +70,7 @@ export default function SnsConnectionManager({ user, isDark, compact = false }) 
   const fetchConnections = async () => {
     if (!user?.uid) { setLoading(false); return; }
     try {
-      const res = await fetch(`/api/sns-connections?uid=${user.uid}`);
+      const res = await fetch(`/api/sns-connections?uid=${user.uid}`, { headers: await authHeaders() });
       const data = await res.json();
       setConnections(data.connections || []);
     } catch (e) {
@@ -102,7 +108,7 @@ export default function SnsConnectionManager({ user, isDark, compact = false }) 
       if (platform.id === "threads" || platform.id === "instagram") {
         params.set("platform", platform.id);
       }
-      const res = await fetch(`${platform.authEndpoint}?${params}`);
+      const res = await fetch(`${platform.authEndpoint}?${params}`, { headers: await authHeaders() });
       const data = await res.json();
       if (data.authUrl) {
         window.location.href = data.authUrl;
@@ -121,7 +127,7 @@ export default function SnsConnectionManager({ user, isDark, compact = false }) 
     if (!user?.uid || !confirm("연결을 해제하시겠습니까?")) return;
     setDisconnecting(platformId);
     try {
-      await fetch(`/api/sns-connections?uid=${user.uid}&platform=${platformId}`, { method: "DELETE" });
+      await fetch(`/api/sns-connections?uid=${user.uid}&platform=${platformId}`, { method: "DELETE", headers: await authHeaders() });
       setConnections(prev => prev.filter(c => c.platform !== platformId));
     } catch (e) {
       alert("해제 실패: " + e.message);
@@ -237,7 +243,7 @@ export default function SnsConnectionManager({ user, isDark, compact = false }) 
 export async function getConnectedPlatforms(uid) {
   if (!uid) return [];
   try {
-    const res = await fetch(`/api/sns-connections?uid=${uid}`);
+    const res = await fetch(`/api/sns-connections?uid=${uid}`, { headers: await authHeaders() });
     const data = await res.json();
     return data.connections || [];
   } catch { return []; }
@@ -247,7 +253,7 @@ export async function getConnectedPlatforms(uid) {
 export async function publishToSns(uid, platform, { title, content, tags }) {
   const res = await fetch("/api/sns-publish", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: await authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ uid, platform, title, content, tags }),
   });
   return res.json();

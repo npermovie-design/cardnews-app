@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
-import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAuthUser, FREE_GUEST, processReferralSignup, ensureReferralCode, pointsToUses } from "./storage";
+import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAuthUser, FREE_GUEST, processReferralSignup, ensureReferralCode, getUsageSummary } from "./storage";
 import { useI18n, LANGUAGES } from "./i18n.jsx";
 
 // 핵심 컴포넌트 (즉시 로드)
@@ -272,6 +272,8 @@ export default function App() {
         faq: "자주 묻는 질문 - SNS메이킷",
         ai: "AI 생성기 - SNS메이킷",
         programs: "자동화 - SNS메이킷",
+        class: "클래스 - SNS메이킷",
+        challenge: "부트캠프 - SNS메이킷",
         pricing: "가격정책 - SNS메이킷",
         contact: "문의하기 - SNS메이킷",
         event: "이벤트 - SNS메이킷",
@@ -286,6 +288,8 @@ export default function App() {
         faq: "FAQ - SNS Makeit",
         ai: "AI Generator - SNS Makeit",
         programs: "Resources - SNS Makeit",
+        class: "Classes - SNS Makeit",
+        challenge: "Bootcamp - SNS Makeit",
         pricing: "Pricing - SNS Makeit",
         contact: "Contact - SNS Makeit",
         event: "Events - SNS Makeit",
@@ -296,11 +300,13 @@ export default function App() {
     };
     const descMap = {
       ko: {
-        home: "블로그 글쓰기, 자동 발행, 키워드 분석까지. SNS 콘텐츠 관리를 쉽게 도와주는 올인원 플랫폼. 비회원 5회 무료.",
+        home: "블로그 글쓰기, 자동 발행, 키워드 분석까지. SNS 콘텐츠 관리를 쉽게 도와주는 올인원 플랫폼.",
         about: "SNS메이킷은 블로그 글쓰기, 자동 발행, 키워드 분석 등 SNS 콘텐츠 관리를 위한 올인원 플랫폼입니다.",
         howto: "SNS메이킷 사용법 가이드. 블로그 글쓰기, 자동 발행, 키워드 분석까지 단계별로 안내합니다.",
         faq: "SNS메이킷의 콘텐츠 생성, 요금제, 저작권, 계정 관련 자주 묻는 질문을 확인하세요.",
         ai: "블로그 글, 인스타그램 캡션, 영상 편집까지 쉽게 생성하세요.",
+        class: "SNS 콘텐츠 제작과 자동화 실무를 배우는 메이킷 클래스입니다.",
+        challenge: "SNS 성장 목표를 정하고 매일 인증하며 실행하는 메이킷 부트캠프입니다.",
         pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 콘텐츠 생성과 자동 발행을 이용하세요.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류, 제휴 문의를 남겨주시면 빠르게 답변드립니다.",
         community: "SNS메이킷 커뮤니티. SNS 운영, AI 콘텐츠 제작, 마케팅 정보와 질문답변, 챌린지를 함께하세요.",
@@ -315,10 +321,25 @@ export default function App() {
         howto: "Learn how to use SNS Makeit for AI writing, image generation, card news, detail pages, and shorts editing.",
         faq: "Find answers about SNS Makeit AI content generation, credits, pricing, copyright, and accounts.",
         ai: "Generate blog posts, Instagram captions, card news, product images, logos, and shorts videos with AI.",
+        class: "Practical SNS Makeit classes for content creation, automation, and marketing workflows.",
+        challenge: "SNS Makeit bootcamps help you set goals, submit proofs, and build a consistent content routine.",
         pricing: "SNS Makeit pricing. 5 credits on signup, simple monthly usage counts, and plan upgrades.",
         contact: "Contact SNS Makeit for billing, features, bugs, or partnership inquiries.",
         community: "SNS Makeit Community for AI content creation, marketing tips, and Q&A.",
         programs: "Download automation tools, templates, free photos, and video resources for SNS operations.",
+      },
+      ja: {
+        home: "キーワードを入力すると、AIがブログ、Instagram、ショート動画の下書きを作成します。",
+        about: "SNS Makeitは、SNSコンテンツ制作を支援するAIプラットフォームです。",
+        howto: "SNS MakeitのAIライティング、画像生成、ショート動画編集の使い方を確認できます。",
+        faq: "SNS Makeitの生成回数、料金、著作権、アカウントに関する質問を確認できます。",
+        ai: "ブログ、カードニュース、商品画像、ショート動画をAIで作成できます。",
+        class: "SNSコンテンツ制作と自動化を実践的に学べるSNS Makeitクラスです。",
+        challenge: "目標設定、認証、毎日の実行を支援するSNS Makeitブートキャンプです。",
+        pricing: "SNS Makeitの料金プラン。無料利用からBusinessまで確認できます。",
+        contact: "決済、機能、不具合、提携に関するお問い合わせはこちらです。",
+        community: "SNS運用、AIコンテンツ制作、マーケティング情報を共有するコミュニティです。",
+        programs: "SNS運用に役立つ自動化ツール、テンプレート、素材を確認できます。",
       },
     };
     const title = (titleMap[lang] || titleMap.ko)[page] || `${brand}`;
@@ -539,20 +560,22 @@ export default function App() {
     // SEO: 다국어 동적 타이틀
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
     const titleMap = {
-      ko: { home:"SNS메이킷 - AI SNS 콘텐츠 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자동화", class:"클래스", challenge:"챌린지", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
-      en: { home:"SNS Makeit - AI Social Content Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", notice:"Notices", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy" },
-      ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", programs:"プログラムストア", notice:"お知らせ", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約" },
+      ko: { home:"SNS메이킷 - AI SNS 콘텐츠 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자동화", class:"클래스", challenge:"부트캠프", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
+      en: { home:"SNS Makeit - AI Social Content Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", class:"Classes", challenge:"Bootcamp", notice:"Notices", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy" },
+      ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", programs:"プログラムストア", class:"クラス", challenge:"ブートキャンプ", notice:"お知らせ", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約" },
     };
     // 페이지별 meta description (SEO 최적화)
     const descMap = {
       ko: {
-        home: "블로그 글쓰기, 자동 발행, 키워드 분석까지. SNS 콘텐츠 관리를 쉽게 도와주는 올인원 플랫폼. 비회원 5회 무료.",
+        home: "블로그 글쓰기, 자동 발행, 키워드 분석까지. SNS 콘텐츠 관리를 쉽게 도와주는 올인원 플랫폼.",
         pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 콘텐츠 생성과 자동 발행을 이용하세요.",
         about: "SNS메이킷은 SNS 콘텐츠 관리를 위한 올인원 플랫폼입니다.",
         howto: "SNS메이킷 사용법 가이드. 블로그 글쓰기, 자동 발행까지 단계별로 안내합니다.",
-        ai: "블로그 글, 이미지, 영상을 쉽게 생성하세요. 비회원 5회 무료.",
+        ai: "블로그 글, 이미지, 영상을 쉽게 생성하세요.",
+        class: "SNS 콘텐츠 제작과 자동화 실무를 배우는 메이킷 클래스입니다.",
+        challenge: "SNS 성장 목표를 정하고 매일 인증하며 실행하는 메이킷 부트캠프입니다.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류 등 1:1 문의를 받고 있어요.",
-        community: "SNS메이킷 커뮤니티. 마케터와 크리에이터를 위한 정보, Q&A, 자료실.",
+        community: "SNS메이킷 커뮤니티. 마케터와 크리에이터를 위한 정보와 Q&A.",
         programs: "SNS 자동화봇으로 네이버 블로그 글 생성, 드라이브 자료 기반 발행, 자동 운영 흐름을 확인하세요.",
       },
       en: {
@@ -561,8 +584,21 @@ export default function App() {
         about: "SNS Makeit is an all-in-one platform automating SNS content creation with AI.",
         howto: "SNS Makeit user guide. Step-by-step for AI writing, image generation, and shorts editing.",
         ai: "Generate blogs, card news, detail pages, images, and shorts videos with AI. 5 free uses for guests.",
+        class: "Practical SNS Makeit classes for content creation, automation, and marketing workflows.",
+        challenge: "SNS Makeit bootcamps help you set goals, submit proofs, and build a consistent content routine.",
         contact: "Contact SNS Makeit. 1:1 support for billing, features, and troubleshooting.",
         community: "SNS Makeit Community. Info, Q&A, and resources for marketers and creators.",
+      },
+      ja: {
+        home: "キーワードを入力すると、AIがブログ、Instagram、ショート動画の下書きを作成します。",
+        pricing: "SNS Makeitの料金プラン。無料利用からBusinessまで確認できます。",
+        about: "SNS Makeitは、SNSコンテンツ制作を支援するAIプラットフォームです。",
+        howto: "SNS Makeitの使い方をステップごとに確認できます。",
+        ai: "ブログ、画像、動画をAIで簡単に作成できます。",
+        class: "SNSコンテンツ制作と自動化を実践的に学べるSNS Makeitクラスです。",
+        challenge: "目標設定、認証、毎日の実行を支援するSNS Makeitブートキャンプです。",
+        contact: "決済、機能、不具合に関するお問い合わせはこちらです。",
+        community: "SNS運用、AIコンテンツ制作、Q&Aのためのコミュニティです。",
       },
     };
     const titles = titleMap[lang] || titleMap.ko;
@@ -579,7 +615,7 @@ export default function App() {
     setBoardCat(cat);
     window.history.pushState(null, "", "/community/" + cat);
     setPage("community"); setOpenMenu(null); setMobileOpen(false);
-    const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용���기", challenge: "챌린지" };
+    const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", challenge: "챌린지" };
     const title = (catNames[cat] || "커뮤니티") + " - SNS메이킷";
     document.title = title;
     updateOgMeta(title, null, "/community/" + cat);
@@ -625,6 +661,33 @@ export default function App() {
   // AiPage에 전달하는 콜백 안정화 (인라인 함수 → useCallback)
   const stableOnLoginRequest = useCallback(() => navigate("login"), [navigate]);
   const stableOnUserUpdate = useCallback(u => { setLocalUser(u); setUserState(u); }, []);
+  const refreshCurrentUser = useCallback(async () => {
+    const uid = user?.uid;
+    if (!uid) return;
+    try {
+      const fresh = await fetchUser(uid, { force: true });
+      if (fresh) {
+        setLocalUser(fresh);
+        setUserState(fresh);
+      }
+    } catch {}
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const onFocus = () => refreshCurrentUser();
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refreshCurrentUser();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [user?.uid, refreshCurrentUser]);
+
+  const usageSummary = getUsageSummary(user);
   const logout = async () => {
     // 로그아웃 플래그 → onAuthStateChange 재로그인 차단
     isLoggingOut.current = true;
@@ -979,12 +1042,10 @@ export default function App() {
         <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
           <NavBtn id="home" label={t("home")} />
           <NavBtn id="programs" label="제품" />
+          <NavBtn id="class" label="클래스" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
           {/* 부트캠프 */}
-          <button onClick={() => navigate("challenge")}
-            style={{ padding: "8px 14px", borderRadius: 8, border: "none", cursor: "pointer", fontSize: 14, fontWeight: page==="challenge" ? 700 : 500, background: page==="challenge" ? "rgba(59,130,246,0.08)" : "transparent", color: page==="challenge" ? "#3b82f6" : C.muted, transition: "all 0.15s", fontFamily: "inherit" }}>
-            부트캠프
-          </button>
+          <NavBtn id="challenge" label="부트캠프" />
           {/* 커뮤니티 */}
           <div style={{ position: "relative" }}>
             <DropBtn id="community" label={t("community")} open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
@@ -1053,7 +1114,7 @@ export default function App() {
                   {(user.nick||"U")[0].toUpperCase()}
                 </div>
                 <span style={{ fontSize: 13, color: C.text, fontWeight: 600, maxWidth: 80, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.nick}</span>
-                <span style={{ fontSize: 11, color: C.purpleL, fontWeight: 700 }}>{pointsToUses(user.points||0)}회</span>
+                <span style={{ fontSize: 11, color: C.purpleL, fontWeight: 700 }}>{usageSummary.label}</span>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2.5" style={{ flexShrink:0, transform: profileOpen?"rotate(180deg)":"none", transition:"transform 0.2s" }}><polyline points="18 15 12 9 6 15"/></svg>
               </button>
 
@@ -1074,7 +1135,7 @@ export default function App() {
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
                           <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{user.nick}</span>
-                          {user.role==="admin" && <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 5, background: "rgba(251,191,36,0.15)", color: "#fbbf24", fontWeight: 700 }}>👑 관리자</span>}
+                          {user.role==="admin" && <span style={{ fontSize: 10, padding: "2px 7px", borderRadius: 5, background: "rgba(251,191,36,0.15)", color: "#fbbf24", fontWeight: 700 }}>관리자</span>}
                         </div>
                         <div style={{ fontSize: 12, color: C.muted }}>{user.email}</div>
                       </div>
@@ -1083,13 +1144,15 @@ export default function App() {
                     <div style={{ background: theme==="dark"?"rgba(255,255,255,0.05)":"#f5f5f8", borderRadius: 10, padding: "10px 12px" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
                         <span style={{ color: C.muted }}>잔여 횟수</span>
-                        <span style={{ fontWeight: 800, color: C.purpleL }}>{pointsToUses(user.points||0)}회</span>
+                        <span style={{ fontWeight: 800, color: C.purpleL }}>{usageSummary.label}</span>
                       </div>
                       <div style={{ height: 4, borderRadius: 4, background: theme==="dark"?"rgba(255,255,255,0.08)":"#e0e0eb", overflow: "hidden" }}>
-                        <div style={{ height: "100%", borderRadius: 4, width: Math.min(((user.points||0)/500)*100,100)+"%",
+                        <div style={{ height: "100%", borderRadius: 4, width: Math.min((usageSummary.left / Math.max(usageSummary.limit || 1, 1)) * 100, 100)+"%",
                           background: "#3b82f6" }} />
                       </div>
-                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>AI 생성 {pointsToUses(user.points||0)}회 가능</div>
+                      <div style={{ fontSize: 11, color: C.muted, marginTop: 5 }}>
+                        {usageSummary.isSubscriber ? `${usageSummary.planName} ${usageSummary.used.toLocaleString()}/${usageSummary.limit.toLocaleString()}회 사용` : `AI 생성 ${usageSummary.label} 가능`}
+                      </div>
                     </div>
                   </div>
                   {/* 메뉴 */}
@@ -1120,7 +1183,7 @@ export default function App() {
                         cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 10, color: "#ef4444" }}
                       onMouseEnter={e=>e.currentTarget.style.background="rgba(239,68,68,0.08)"}
                       onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                      <span style={{ fontSize: 18, width: 28, textAlign: "center" }}>🚪</span>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width:28, textAlign:"center" }}><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                       <span style={{ fontSize: 13, fontWeight: 700 }}>로그아웃</span>
                     </button>
                   </div>
@@ -1198,6 +1261,7 @@ export default function App() {
           {[
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
             { id: "programs", label: "제품", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
+            { id: "class", label: "클래스", onClick: () => { navigate("class"); setMobileOpen(false); }, active: page==="class" },
             { id: "challenge", label: "부트캠프", onClick: () => { navigate("challenge"); setMobileOpen(false); }, active: page==="challenge" },
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
           ].map(m => (
@@ -1240,7 +1304,7 @@ export default function App() {
                     </div>
                     <div>
                       <div style={{ fontSize: 14, color: C.text, fontWeight: 700 }}>{user.nick}</div>
-                      <div style={{ fontSize: 12, color: C.purpleL, marginTop: 1 }}>잔여 {pointsToUses(user.points||0)}회</div>
+                      <div style={{ fontSize: 12, color: C.purpleL, marginTop: 1 }}>잔여 {usageSummary.label}</div>
                     </div>
                   </div>
                   <button onClick={logout} style={{ padding: "7px 14px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12 }}>{t("logout")}</button>

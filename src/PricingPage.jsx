@@ -9,17 +9,17 @@ const PLANS = [
     id: "free", name: "Free",
     monthlyPrice: 0, yearlyPrice: 0,
     highlight: false, badge: null,
-    limits: { write: 5, naver: 0 },
-    features: ["가입 시 5회 제공", "영상 생성 3회/월", "커뮤니티 이용", "키워드 분석"],
-    btnLabel: "무료로 시작",
+    limits: { write: 5, video: 3, naver: 0 },
+    features: ["관리자 체험권 대상자 사용 가능", "커뮤니티 이용", "키워드 분석"],
+    btnLabel: "관리자 부여 전용",
     free: true,
   },
   {
     id: "basic", name: "Basic",
     monthlyPrice: 9.9, yearlyPrice: 99,
     highlight: false, badge: null,
-    limits: { write: 30, naver: 0 },
-    features: ["콘텐츠 생성 월 30회", "영상 생성 10회/월", "SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석"],
+    limits: { write: 30, video: 10, naver: 0 },
+    features: ["콘텐츠 생성 월 30회", "영상 생성 월 10회", "영상 10회 초과 시 Pro 권장", "자동발행 체험", "카페 발행 제한", "SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석"],
     btnLabel: "시작하기",
     lsId: "8dca976c-3064-4d76-af4b-8743a10e9f9f",
     lsIdYearly: "6b3922c9-04e1-40f0-b295-75870a9e0b3f",
@@ -28,8 +28,8 @@ const PLANS = [
     id: "pro", name: "Pro",
     monthlyPrice: 19.9, yearlyPrice: 199,
     highlight: true, badge: "추천",
-    limits: { write: 100, naver: 3 },
-    features: ["콘텐츠 생성 월 100회", "영상 생성 30회/월", "자동발행 일 3회", "카페 발행 일 6회", "SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석"],
+    limits: { write: 200, video: 99999, naver: 3 },
+    features: ["콘텐츠 생성 월 200회", "영상 생성 제한 없음", "영상 편집 추천 플랜", "자동발행 하루 3회", "카페 발행 제한", "SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석"],
     btnLabel: "시작하기",
     lsId: "81968d65-1482-4dd8-b3a2-88540bdba780",
     lsIdYearly: "ab2d967d-43bb-40a8-96c0-9fcfd6d9c62a",
@@ -38,8 +38,8 @@ const PLANS = [
     id: "business", name: "Business",
     monthlyPrice: 39.9, yearlyPrice: 399,
     highlight: false, badge: "대량 생산",
-    limits: { write: 500, naver: 10 },
-    features: ["콘텐츠 생성 월 500회", "영상 생성 100회/월", "자동발행 일 10회", "카페 발행 일 20회", "계정 3개", "SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석"],
+    limits: { write: 700, video: 99999, naver: 10 },
+    features: ["콘텐츠 생성 월 700회", "영상 생성 제한 없음", "대량 운영용 사용량", "자동발행 하루 10회", "카페 발행 가능", "계정 3개", "SNS 플랫폼 지원", "커뮤니티 이용", "키워드 분석"],
     btnLabel: "시작하기",
     lsId: "",
     lsIdYearly: "",
@@ -51,10 +51,10 @@ const LIMIT_LABELS = [
 ];
 
 const COMPARE_ROWS = [
-  { label: "콘텐츠 생성 (글+디자인)", vals: ["5회/월", "30회/월", "100회/월", "500회/월"], types: ["num","num","num","highlight"] },
-  { label: "영상 생성", vals: ["3회/월", "10회/월", "30회/월", "100회/월"], types: ["num","num","num","highlight"] },
+  { label: "콘텐츠 생성 (글+디자인)", vals: ["5회/월", "30회/월", "200회/월", "700회/월"], types: ["num","num","highlight","highlight"] },
+  { label: "영상 생성", vals: ["3회/월", "10회/월", "제한 없음", "제한 없음"], types: ["num","num","highlight","highlight"] },
   { label: "자동발행", vals: ["-", "체험", "일 3회", "일 10회"], types: ["no","num","num","highlight"] },
-  { label: "카페 발행", vals: ["-", "-", "일 6회", "일 20회"], types: ["no","no","num","highlight"] },
+  { label: "카페 발행", vals: ["-", "-", "-", "가능"], types: ["no","no","no","highlight"] },
   { label: "SNS 다중 발행", vals: ["✓", "✓", "✓", "✓"], types: ["yes","yes","yes","yes"] },
   { label: "키워드 분석", vals: ["✓", "✓", "✓", "✓"], types: ["yes","yes","yes","yes"] },
   { label: "커뮤니티", vals: ["✓", "✓", "✓", "✓"], types: ["yes","yes","yes","yes"] },
@@ -72,7 +72,7 @@ const FAQ_LIST = [
   { q: "결제 수단은 무엇인가요?", a: "Visa, Mastercard, PayPal 등 해외 결제가 가능합니다. LemonSqueezy를 통해 안전하게 처리됩니다." },
   { q: "플랜 변경이나 취소는 어떻게 하나요?", a: "마이페이지에서 언제든 변경하거나 취소할 수 있습니다. 취소 시 현재 결제 주기가 끝날 때까지 이용 가능합니다." },
   { q: "횟수가 남으면 다음 달로 이월되나요?", a: "미사용 횟수는 다음 달로 이월되지 않습니다. 매월 결제일에 초기화됩니다." },
-  { q: "무료 플랜으로도 충분한가요?", a: "월 5회 AI 생성(글쓰기+디자인)을 무료로 체험할 수 있습니다. 본격적으로 콘텐츠를 제작하신다면 Basic 이상을 추천합니다." },
+  { q: "체험권은 어떻게 받을 수 있나요?", a: "체험권은 관리자가 대상 회원에게 직접 부여합니다. 공개 페이지에서 사용자가 직접 체험을 시작하는 방식은 제공하지 않습니다." },
   { q: "NaverBot 자동발행이란?", a: "설정한 키워드를 기반으로 매일 자동으로 네이버 블로그에 글을 작성하고 발행하는 기능입니다. Pro 플랜 이상에서 사용 가능합니다." },
   { q: "환불 정책은 어떻게 되나요?", a: "구매 후 7일 이내 미사용 상태에서 요청 시 전액 환불이 가능합니다. 고객센터 문의하기를 통해 요청해주세요." },
   { q: "연간 결제 시 혜택이 있나요?", a: "연간 결제 시 약 17% 할인된 가격으로 이용하실 수 있습니다. 월간 대비 2개월분을 절약합니다." },
@@ -218,12 +218,12 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
       {/* 헤더 */}
       <div style={{ textAlign: "center", marginBottom: 40 }}>
-        <div style={{ display: "inline-block", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 20, padding: "5px 16px", fontSize: 12, fontWeight: 700, marginBottom: 14, color: isDark ? "#c4b5fd" : "#3b82f6" }}>Pricing</div>
-        <h2 style={{ fontSize: "clamp(24px,4vw,36px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 10 }}>
+        <div style={{ display: "inline-block", background: isDark ? "rgba(59,130,246,0.1)" : "#eff6ff", border: `1px solid ${isDark ? "rgba(59,130,246,0.2)" : "#bfdbfe"}`, borderRadius: 20, padding: "5px 16px", fontSize: 12, fontWeight: 700, marginBottom: 14, color: isDark ? "#93bbfc" : "#3b82f6" }}>Pricing</div>
+        <h2 style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 12, lineHeight: 1.2 }}>
           딱 필요한 만큼만, 심플하게
         </h2>
-        <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.7 }}>
-          복잡한 계산 없이 횟수만 확인하세요. 매달 사용한 만큼만 결제합니다.
+        <p style={{ fontSize: 16, color: C.muted, lineHeight: 1.7, maxWidth: 440, margin: "0 auto" }}>
+          비즈니스 규모에 맞는 플랜을 선택하세요. 연간 결제 시 17% 할인됩니다.
         </p>
       </div>
 
@@ -243,20 +243,12 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         </div>
       </div>
 
-      {/* 무료 체험 안내 (모바일 상단) */}
-      <div className="pricing-free-banner" style={{ display: "none", background: isDark ? "rgba(16,185,129,0.08)" : "#f0fdf4", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 14, padding: "16px 20px", marginBottom: 24, textAlign: "center" }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: isDark ? "#6ee7b7" : "#059669", marginBottom: 4 }}>무료로 시작할 수 있어요</div>
-        <div style={{ fontSize: 12, color: C.muted }}>가입 즉시 5회 지급 · 카드 등록 없음</div>
-      </div>
-      <style>{`.pricing-free-banner { display: none !important; } @media(max-width:768px) { .pricing-free-banner { display: block !important; } }`}</style>
-
       {/* 플랜 카드 — 다크 스타일 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 16, marginBottom: 56 }}>
         {PLANS.map(plan => {
           const isYearly = billing === "yearly";
           const price = isYearly ? (plan.yearlyPrice / 12) : plan.monthlyPrice;
           const isHighlight = plan.highlight;
-
           return (
             <div key={plan.id} style={{
               position: "relative",
@@ -298,18 +290,18 @@ export function PricingPage({ navigate, C, user, onLogin }) {
 
               {/* CTA 버튼 — 상단 배치 */}
               <button
-                onClick={() => plan.free ? (user ? null : onLogin?.()) : handleBuy(plan)}
-                disabled={plan.free && !!user}
+                onClick={() => plan.free ? null : handleBuy(plan)}
+                disabled={plan.free}
                 style={{
-                  padding: "14px", borderRadius: 14, border: "none", cursor: (plan.free && user) ? "default" : "pointer",
+                  padding: "14px", borderRadius: 14, border: "none", cursor: plan.free ? "default" : "pointer",
                   fontSize: 15, fontWeight: 700, width: "100%", minHeight: 48, marginBottom: 24,
                   background: isHighlight ? GRAD : "#1A1A2E",
                   color: "#fff",
-                  opacity: (plan.free && user) ? 0.5 : 1,
+                  opacity: plan.free ? 0.55 : 1,
                   transition: "opacity 0.15s",
                   boxShadow: isHighlight ? "0 4px 16px rgba(59,130,246,0.3)" : "none",
                 }}>
-                {!user ? "로그인 후 시작" : (plan.free && user) ? "현재 플랜" : plan.btnLabel}
+                {plan.free ? plan.btnLabel : (!user ? "로그인 후 시작" : plan.btnLabel)}
               </button>
 
               {/* 횟수 표시 */}
@@ -325,9 +317,9 @@ export function PricingPage({ navigate, C, user, onLogin }) {
               {/* 기능 리스트 */}
               <div style={{ flex: 1 }}>
                 {plan.features.map((f, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: isHighlight ? "rgba(255,255,255,0.3)" : C.muted, flexShrink: 0 }}/>
-                    <span style={{ fontSize: 13, color: isHighlight ? "rgba(255,255,255,0.7)" : C.muted }}>{f}</span>
+                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8 }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={isHighlight ? "rgba(255,255,255,0.4)" : "#22c55e"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, marginTop:1 }}><polyline points="20 6 9 17 4 12"/></svg>
+                    <span style={{ fontSize: 13, color: isHighlight ? "rgba(255,255,255,0.7)" : C.muted, lineHeight:1.4 }}>{f}</span>
                   </div>
                 ))}
               </div>
@@ -389,10 +381,10 @@ export function PricingPage({ navigate, C, user, onLogin }) {
         <div style={{ fontSize: 18, fontWeight: 900, color: C.text, marginBottom: 16, textAlign: "center" }}>어떤 플랜이 나에게 맞을까?</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(220px,100%),1fr))", gap: 14 }}>
           {[
-            { label: "SNS를 처음 시작하는 분", plan: "Free", desc: "무료로 AI 글쓰기를 체험하고, 커뮤니티에서 정보를 얻어보세요.", color: C.muted },
+            { label: "체험권을 받은 회원", plan: "Free", desc: "관리자가 부여한 체험권으로 기능을 확인할 수 있습니다.", color: C.muted },
             { label: "개인 블로거 / 크리에이터", plan: "Basic", desc: "매일 1~2개씩 꾸준히 콘텐츠를 만들고 싶은 분에게 딱 맞습니다.", color: isDark ? "#c4b5fd" : "#3b82f6" },
             { label: "마케터 / 소상공인", plan: "Pro", desc: "대량 콘텐츠 + NaverBot 자동발행으로 마케팅을 자동화하세요.", color: "#3b82f6", badge: "추천" },
-            { label: "에이전시 / 기업", plan: "Business", desc: "월 500회 글쓰기와 대량 자동발행으로 팀 전체 콘텐츠를 관리하세요.", color: isDark ? "#c4b5fd" : "#3b82f6" },
+            { label: "에이전시 / 기업", plan: "Business", desc: "월 700회 콘텐츠 생성과 영상 제한 없음으로 팀 전체 콘텐츠를 관리하세요.", color: isDark ? "#c4b5fd" : "#3b82f6" },
           ].map((seg, i) => (
             <div key={i} style={{ position: "relative", background: C.card, border: seg.badge ? "2px solid #3b82f6" : "1px solid " + C.border, borderRadius: 16, padding: "24px 20px", textAlign: "center", boxShadow: seg.badge ? "0 0 20px rgba(59,130,246,0.12)" : C.shadow }}>
               {seg.badge && (
@@ -413,22 +405,6 @@ export function PricingPage({ navigate, C, user, onLogin }) {
           {COMMON_FEATURES.map((f, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: C.muted }}>
               <span style={{ color: "#3b82f6", fontWeight: 700, flexShrink: 0 }}>✓</span>{f}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 무료 횟수 충전 안내 */}
-      <div style={{ background: GRAD, borderRadius: 20, padding: "28px", marginBottom: 48 }}>
-        <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", marginBottom: 20, textAlign: "center" }}>무료로 횟수를 충전하는 방법</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(min(150px,45%),1fr))", gap: 12 }}>
-          {[
-            { action: "회원가입", count: "글쓰기 5회", desc: "가입 즉시 지급" },
-          ].map((item, i) => (
-            <div key={i} style={{ background: "rgba(255,255,255,0.15)", backdropFilter: "blur(8px)", borderRadius: 14, padding: "18px 16px", textAlign: "center" }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", marginBottom: 4 }}>{item.action}</div>
-              <div style={{ fontSize: 20, fontWeight: 900, color: "#fff" }}>{item.count}</div>
-              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>{item.desc}</div>
             </div>
           ))}
         </div>

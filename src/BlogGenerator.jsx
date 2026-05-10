@@ -1251,8 +1251,8 @@ export default function BlogGenerator({ initialType, embedded, menuLabel, theme,
     return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, []);
 
-  useEffect(()=>{if(user?.uid)fetch(`/api/sns-connections?uid=${user.uid}`).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});},[user?.uid]);
-  const handlePublish=async(platform,scheduledTime)=>{if(!user?.uid||!result)return;setPublishing(platform);setPublishResult(null);try{const tags=result.match(/#[\wㄱ-ㅎ가-힣]+/g)?.join(",")||"";const body={uid:user.uid,platform,title:fields.keyword||"",content:result,tags};if(scheduledTime)body.scheduledTime=scheduledTime;const r=await fetch("/api/sns-publish",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const data=await r.json();setPublishResult({platform,...data});if(scheduledTime&&data.success)setShowSchedule(false);}catch(e){setPublishResult({platform,success:false,error:e.message});}setPublishing(null);};
+  useEffect(()=>{if(user?.uid)(async()=>{const token=await getAuthToken();fetch(`/api/sns-connections?uid=${user.uid}`,{headers:token?{Authorization:`Bearer ${token}`}:{}}).then(r=>r.json()).then(d=>setSnsConns(d.connections||[])).catch(()=>{});})();},[user?.uid]);
+  const handlePublish=async(platform,scheduledTime)=>{if(!user?.uid||!result)return;setPublishing(platform);setPublishResult(null);try{const tags=result.match(/#[\wㄱ-ㅎ가-힣]+/g)?.join(",")||"";const body={uid:user.uid,platform,title:fields.keyword||"",content:result,tags};if(scheduledTime)body.scheduledTime=scheduledTime;const token=await getAuthToken();const r=await fetch("/api/sns-publish",{method:"POST",headers:{"Content-Type":"application/json",...(token?{Authorization:`Bearer ${token}`}:{})},body:JSON.stringify(body)});const data=await r.json();setPublishResult({platform,...data});if(scheduledTime&&data.success)setShowSchedule(false);}catch(e){setPublishResult({platform,success:false,error:e.message});}setPublishing(null);};
   // 숏폼 연계 데이터 자동 입력
   useEffect(() => {
     try {
@@ -1737,6 +1737,40 @@ ${emojiRule}
     if (advWordCount !== 2000) advPromptExtra += `\n[원하는 분량] 약 ${advWordCount}자`;
     if (advExtra) advPromptExtra += `\n[추가 지시사항] ${advExtra}`;
 
+    // ── 글감 다양성 강화: 히스토리 기반 중복 방지 ──
+    let diversityPrompt = "";
+    try {
+      const saves = JSON.parse(localStorage.getItem("sns_blog_saves_v1") || "[]");
+      const keyword = (fields.keyword || "").trim().toLowerCase();
+      // 같은 키워드로 최근 생성한 글 제목 최대 8개 추출
+      const recentTitles = saves
+        .filter(s => s.title && s.title.toLowerCase().includes(keyword.slice(0, 6)))
+        .slice(0, 8)
+        .map(s => s.title);
+      if (recentTitles.length > 0) {
+        diversityPrompt += `\n\n[중복 방지 — 새로운 관점 필수]\n아래는 이 키워드로 이전에 작성한 글 제목입니다. 같은 구성·같은 소제목·같은 흐름을 반복하지 마세요.\n${recentTitles.map((t, i) => `${i + 1}. ${t}`).join("\n")}\n위와 다른 새로운 각도, 다른 사례, 다른 구성으로 작성하세요.`;
+      }
+      // 관점 다양화 시드: 매번 다른 접근법 힌트를 랜덤 제공
+      const angles = [
+        "초보자가 처음 시작할 때 겪는 실수 중심으로",
+        "전문가 인터뷰 형식으로 깊이 있게",
+        "최신 트렌드와 변화를 중심으로",
+        "비용 대비 효과를 비교하는 관점으로",
+        "실제 사례와 후기를 엮어서",
+        "시간 순서(타임라인)로 정리하면서",
+        "장단점을 솔직하게 비교하면서",
+        "흔한 오해와 진실을 파헤치면서",
+        "대상별(연령/상황/목적)로 나눠서",
+        "계절·시기별 차이를 반영해서",
+        "다른 대안이나 경쟁 상품과 비교하면서",
+        "체크리스트·단계별 가이드 형식으로",
+        "데이터와 통계를 근거로 분석하면서",
+        "실패 사례에서 배우는 교훈 중심으로",
+      ];
+      const angleIdx = (Date.now() + Math.floor(Math.random() * 1000)) % angles.length;
+      diversityPrompt += `\n[관점 힌트] ${angles[angleIdx]}`;
+    } catch (e) {}
+
     const basePrompt = cfg.buildPrompt(subtype, fields, tone, wordCount, speechStyle);
     const quoteRule = quoteStyle === "none" ? "\n- 인용구([quote]...[/quote])를 사용하지 마세요. 소제목 아래에 바로 본문을 작성하세요." : "\n- 각 큰 소제목마다 [quote]짧은 핵심 문장[/quote] 인용구를 1개씩 넣으세요.";
     const formatPromptExtra = `\n\n[AEO/GEO/SEO 노출 최적화 규칙]\n- SEO: 핵심 키워드와 롱테일 키워드를 도입부, 소제목, 본문, 해시태그에 자연스럽게 분산하세요. 키워드 반복은 과하지 않게 문맥 안에서만 사용하세요.\n- AEO: 검색자가 바로 답을 얻을 수 있게 각 소제목 첫 문단에 짧은 결론부터 제시하고, 질문형 소제목과 실천 답변을 포함하세요.\n- GEO: AI 검색/생성형 검색에 인용되기 좋게 정의, 절차, 체크리스트, 비교, 주의사항을 명확한 문장으로 정리하세요.\n- E-E-A-T: 경험 기반 관찰, 구체적 상황, 검증 가능한 기준, 독자가 바로 적용할 행동을 포함하세요.\n\n[화면 표시용 서식 규칙]${quoteRule}\n- 포인트로 강조할 핵심 키워드, 숫자, 결론 문구는 반드시 **강조 문구** 형식으로 감싸세요.\n- 한 문단마다 0~1개만 강조하고, 전체 글에는 8~14개의 **강조 문구**를 넣으세요.\n- 색상 이름이나 HTML/CSS는 출력하지 마세요. 선택한 포인트 색상은 화면에서 자동 적용됩니다.`;
@@ -1748,7 +1782,11 @@ ${emojiRule}
     let structureOverride = "";
     if (isNaverBlog && aeoPosition === "none") structureOverride += "\n\n[AEO 질문-답변 제외] Q./A. 형식의 AEO 질문-답변 블록과 [TABLE] 핵심 정보 박스를 넣지 마세요. 도입부 다음 바로 본문 섹션으로 진행하세요.";
     if (isNaverBlog && !includeProsCons) structureOverride += "\n\n[장단점·추천 제외] 장점/단점 목록과 추천 대상/비추천 대상 섹션을 넣지 마세요. 자연스러운 결론으로 마무리하세요.";
-    const prompt = basePrompt + briefPromptExtra + formatPromptExtra + structureOverride + sourcePromptExtra + (advPromptExtra ? advPromptExtra : "");
+    // 참고 글감(designRef)이 있으면 프롬프트에 반영
+    const refPromptExtra = designRef.trim()
+      ? `\n\n[참고 글감 / 스타일 참고]\n아래 내용의 톤, 구성, 표현 방식을 참고해서 작성하되 내용을 그대로 복사하지 마세요.\n${designRef.slice(0, 3000)}`
+      : "";
+    const prompt = basePrompt + briefPromptExtra + formatPromptExtra + structureOverride + sourcePromptExtra + (advPromptExtra ? advPromptExtra : "") + diversityPrompt + refPromptExtra;
     // 분량에 따른 max_tokens 설정 (여유 있게)
     const tokenMap = { short: 3000, medium: 5500, long: 8000, xlong: 10000 };
     const maxTok = tokenMap[wordCount] || 5500;
@@ -3094,7 +3132,7 @@ hospital equipment`
         </div>
       </div>
 
-      <div>
+      <div style={{marginBottom:20}}>
         <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           추가 지시사항 <span style={{fontSize:11,fontWeight:500,color:muted}}>(선택)</span>
@@ -3102,6 +3140,32 @@ hospital equipment`
         <textarea value={fields.extra||""} onChange={e=>setField("extra",e.target.value)} rows={3}
           placeholder="AI에게 전달할 내용이나 참고 출처를 적어주세요. 예) 국세청 자료 기준으로, 첨부 파일 중심으로, 초보자도 이해할 수 있게"
           style={{width:"100%",padding:"10px 14px",borderRadius:12,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",resize:"vertical",lineHeight:1.6}}/>
+      </div>
+
+      {/* 참고 글감 / 파일 첨부 (수동 글쓰기 설정 페이지) */}
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:13,fontWeight:800,color:text,marginBottom:8,display:"flex",alignItems:"center",gap:6}}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={accent} strokeWidth="2" strokeLinecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.49"/></svg>
+          참고 자료 <span style={{fontSize:11,fontWeight:500,color:muted}}>(선택)</span>
+        </div>
+        <div style={{fontSize:11,color:muted,lineHeight:1.6,marginBottom:10}}>
+          참고할 글이나 파일을 추가하면 AI가 해당 내용을 바탕으로 글을 작성합니다.
+        </div>
+        <textarea value={designRef} onChange={e=>setDesignRef(e.target.value)} rows={3}
+          placeholder="참고할 글, 프롬프트, 스타일 가이드를 붙여넣기하세요. 예) 기존 블로그 글, 경쟁사 글, 원하는 톤의 예시문..."
+          style={{width:"100%",padding:"10px 14px",borderRadius:12,border:`1.5px solid ${inputBdr}`,background:inputBg,color:text,fontSize:13,fontFamily:"inherit",outline:"none",boxSizing:"border-box",resize:"vertical",lineHeight:1.6,marginBottom:10}}/>
+        <div style={{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+          <label style={{padding:"8px 14px",borderRadius:10,border:`1.5px dashed ${border}`,background:"transparent",color:muted,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",gap:5}}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            파일 첨부
+            <input type="file" multiple accept="image/*,.txt,.pdf,.doc,.docx,.hwp" style={{display:"none"}}
+              onChange={e => { const files = Array.from(e.target.files || []); if (files.length) handleFileInput(files); e.target.value = ""; }} />
+          </label>
+          {(fields._files || []).length > 0 && (
+            <span style={{fontSize:11,color:accent,fontWeight:600}}>{(fields._files || []).length}개 파일 첨부됨</span>
+          )}
+          {fileLoading && <span style={{fontSize:11,color:muted}}>{fileLoadMsg}</span>}
+        </div>
       </div>
 
       <div style={{display:"flex",justifyContent:"flex-end",gap:10,marginTop:22,paddingTop:16,borderTop:`1px solid ${border}`}}>
@@ -3239,7 +3303,6 @@ hospital equipment`
             >
               {[
                 {id:"write", label:t("bg_tabWrite"), color:"#3b82f6", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>},
-                {id:"design", label:t("bg_tabDesign"), color:"#3b82f6", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>},
                 {id:"sns_publish", label:"SNS 발행", color:"#38bdf8", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>, navigate:true},
               ].map((m,mi) => {
                 const isActive = m.id==="shorts" ? shortsMode : mode===m.id && !shortsMode;

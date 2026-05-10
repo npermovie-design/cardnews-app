@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { supabase } from "./storage";
+import { getAuthToken, supabase } from "./storage";
 
 /* ══════════════════════════════════════════════════════════════
    SnsPublisher — SNS 다중 플랫폼 콘텐츠 발행
@@ -17,6 +17,11 @@ const CONTENT_TYPES = [
   { id: "image", label: "이미지" },
   { id: "text", label: "텍스트" },
 ];
+
+async function authHeaders(extra = {}) {
+  const token = await getAuthToken();
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
 
 const PLATFORMS = [
   { id: "youtube", label: "YouTube", color: "#FF0000", icon: "/icon-youtube.png", accepts: ["video"], fields: ["description", "tags", "visibility"] },
@@ -489,7 +494,7 @@ export default function SnsPublisher({ isDark, user, onLoginRequest }) {
   // SNS 연결 상태 조회
   useEffect(() => {
     if (!user?.uid) return;
-    fetch(`/api/sns-connections?uid=${user.uid}`)
+    authHeaders().then(headers => fetch(`/api/sns-connections?uid=${user.uid}`, { headers }))
       .then(r => r.json())
       .then(d => setConnections(d.connections || []))
       .catch(() => {});
@@ -498,7 +503,7 @@ export default function SnsPublisher({ isDark, user, onLoginRequest }) {
   // 발행 히스토리 조회
   useEffect(() => {
     if (!user?.uid) return;
-    fetch(`/api/sns-publish-history?uid=${user.uid}`)
+    authHeaders().then(headers => fetch(`/api/sns-publish-history?uid=${user.uid}`, { headers }))
       .then(r => r.json())
       .then(d => setHistory(d.history || []))
       .catch(() => {});
@@ -534,7 +539,7 @@ export default function SnsPublisher({ isDark, user, onLoginRequest }) {
 
       const res = await fetch("/api/sns-multi-publish", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           uid: user.uid,
           title,
@@ -557,7 +562,7 @@ export default function SnsPublisher({ isDark, user, onLoginRequest }) {
           : `${enabledPlatforms.length}개 플랫폼에 발행을 시작했습니다!`;
         alert(msg);
         setTab("history");
-        fetch(`/api/sns-publish-history?uid=${user.uid}`)
+        authHeaders().then(headers => fetch(`/api/sns-publish-history?uid=${user.uid}`, { headers }))
           .then(r => r.json())
           .then(d => setHistory(d.history || []))
           .catch(() => {});
@@ -668,7 +673,7 @@ export default function SnsPublisher({ isDark, user, onLoginRequest }) {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
                 <div style={{ fontSize: 16, fontWeight: 700, color: text }}>발행 히스토리</div>
                 <button onClick={() => {
-                  fetch(`/api/sns-publish-history?uid=${user.uid}`)
+                  authHeaders().then(headers => fetch(`/api/sns-publish-history?uid=${user.uid}`, { headers }))
                     .then(r => r.json())
                     .then(d => setHistory(d.history || []))
                     .catch(() => {});

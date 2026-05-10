@@ -124,10 +124,10 @@ async function insertUserWithReferralFallback(userData) {
 
 // ── 내부 헬퍼: users 테이블에서 유저 가져오기 ────────────────────────────
 const _userCache = { uid: null, data: null, ts: 0 };
-async function _fetchUserRow(uid) {
+async function _fetchUserRow(uid, { force = false } = {}) {
   if (!uid) return null;
   // 5초 캐시 — 동시 호출 방지
-  if (_userCache.uid === uid && _userCache.data && Date.now() - _userCache.ts < 5000) return _userCache.data;
+  if (!force && _userCache.uid === uid && _userCache.data && Date.now() - _userCache.ts < 5000) return _userCache.data;
   const { data, error } = await supabase
     .from("users")
     .select("*")
@@ -406,8 +406,8 @@ export async function fbLogout() {
 }
 
 // ── DB: 유저 데이터 가져오기 ─────────────────────────────────────────────
-export async function fetchUser(uid) {
-  const user = await _fetchUserRow(uid);
+export async function fetchUser(uid, options = {}) {
+  const user = await _fetchUserRow(uid, options);
   if (user && uid) {
     // 구독 정보 자동 첨부
     try {
@@ -424,17 +424,71 @@ const UNLIMITED_PLANS = ["Agency"];
 
 // 구독 플랜별 월간 한도 (PricingPage 기준)
 export const PLAN_LIMITS = {
+  "Free":     { write: 5,   video: 3,   naver: 0 },
   "Basic":    { write: 30,  video: 10,  naver: 0 },
-  "Pro":      { write: 100, video: 30,  naver: 3 },
-  "Premium":  { write: 200, video: 50,  naver: 6 },
-  "Business": { write: 500, video: 100, naver: 10 },
+  "Starter":  { write: 30,  video: 10,  naver: 0 },
+  "Pro":      { write: 200, video: 99999, naver: 3 },
+  "Premium":  { write: 700, video: 99999, naver: 10 },
+  "Business": { write: 700, video: 99999, naver: 10 },
   "Agency":   { write: 999, video: 999, naver: 99 },
 };
+
+function normalizePlanDisplayName(planName = "") {
+  const raw = String(planName || "").toLowerCase();
+  if (raw.includes("agency")) return "Agency";
+  if (raw.includes("business") || raw.includes("enterprise")) return "Business";
+  if (raw.includes("premium")) return "Premium";
+  if (raw.includes("pro")) return "Pro";
+  if (raw.includes("basic") || raw.includes("starter")) return "Basic";
+  if (raw.includes("free")) return "Free";
+  return "Pro";
+}
 
 // 구독 정보 캐시
 let _cachedSub = null;
 let _cachedSubUid = null;
 let _cachedSubTime = 0;
+
+async function getActiveProgramTrial(uid, email) {
+  if (!uid && !email) return null;
+  try {
+    const now = new Date().toISOString();
+    const normalizedEmail = String(email || "").toLowerCase();
+    let q = supabase
+      .from("program_trials")
+      .select("plan, expires_at, status")
+      .eq("status", "active")
+      .gte("expires_at", now)
+      .order("expires_at", { ascending: false })
+      .limit(1);
+
+    if (uid && normalizedEmail) q = q.or(`uid.eq.${uid},email.eq.${normalizedEmail}`);
+    else if (uid) q = q.eq("uid", uid);
+    else q = q.eq("email", normalizedEmail);
+
+    const { data, error } = await q;
+    if (error) return null;
+    const trial = data?.[0] || null;
+    if (!trial) return null;
+
+    const productName = normalizePlanDisplayName(trial.plan || "Pro");
+    const limits = PLAN_LIMITS[productName] || PLAN_LIMITS.Pro;
+    return {
+      product_name: productName,
+      status: "on_trial",
+      ends_at: trial.expires_at,
+      renews_at: null,
+      monthly_limit: limits.write,
+      interval: "trial",
+      customer_portal_url: null,
+      _limits: limits,
+      _monthlyWriteLimit: limits.write,
+      _grantType: "program_trial",
+    };
+  } catch {
+    return null;
+  }
+}
 
 // 구독 상세 정보 반환 (플랜명, 한도, 상태, 갱신일 등)
 export async function getUserSubscription(uid) {
@@ -448,7 +502,11 @@ export async function getUserSubscription(uid) {
       .in("status", ["active", "on_trial"])
       .order("updated_at", { ascending: false })
       .limit(1);
-    const sub = data?.[0] || null;
+    let sub = data?.[0] || null;
+    if (!sub) {
+      const { data: userRow } = await supabase.from("users").select("email").eq("uid", uid).maybeSingle();
+      sub = await getActiveProgramTrial(uid, userRow?.email);
+    }
     if (sub) {
       const limits = PLAN_LIMITS[sub.product_name] || null;
       sub._limits = limits;
@@ -469,6 +527,40 @@ export async function getUserPlan(uid) {
 
 export function isUnlimitedPlan(planName) {
   return UNLIMITED_PLANS.includes(planName);
+}
+
+export function getUsageSummary(user, feature = "write") {
+  const sub = user?._subscription;
+  const isVideo = feature === "video";
+  const used = isVideo
+    ? Number(user?.monthly_used_video || 0)
+    : Number(user?.monthly_used_write ?? user?.monthly_used ?? 0);
+  const limit = sub?._limits
+    ? (isVideo ? Number(sub._limits.video || 0) : Number(sub._monthlyWriteLimit || sub._limits.write || 0))
+    : 0;
+
+  if (sub && limit > 0) {
+    return {
+      isSubscriber: true,
+      planName: sub.product_name,
+      feature,
+      used,
+      limit,
+      left: Math.max(0, limit - used),
+      label: `${Math.max(0, limit - used).toLocaleString()}회`,
+    };
+  }
+
+  const points = Number(user?.points || 0);
+  return {
+    isSubscriber: false,
+    planName: sub?.product_name || null,
+    feature,
+    used: 0,
+    limit: points,
+    left: pointsToUses(points),
+    label: `${pointsToUses(points).toLocaleString()}회`,
+  };
 }
 
 // 구독 캐시 무효화 (결제 완료 등)
@@ -591,7 +683,7 @@ export async function syncLocalLibrary(uid, kind, localItems) {
 // ── Storage 업로드 제한 ──────────────────────────────────────────────────
 const MAX_UPLOAD_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME_TYPES = [
-  "image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml",
+  "image/jpeg", "image/png", "image/webp", "image/gif",
   "video/mp4", "video/webm", "audio/mpeg", "audio/wav",
   "application/pdf",
 ];
@@ -724,7 +816,7 @@ export async function useAiOnce(user, setUserState, cost = POINTS.AI_USE, reason
     }
   }
 
-  // 비구독자 / 폴백: 기존 무료 횟수 + 포인트 방식
+  // 비구독자 / 폴백: 기존 무료 횟수 + 보유 잔여 횟수 방식
   const usage = getAiUsage();
   const key   = user ? "member_" + user.uid : "guest";
   const used  = usage[key] || 0;

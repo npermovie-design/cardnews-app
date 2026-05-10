@@ -157,7 +157,7 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <div style={{ width: 44, height: 44, borderRadius: 13, background: "#3b82f6", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 8 }}>N</div>
           <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>{ko ? "SNS메이킷" : "SNS MakeIt"}</div>
-          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{ko ? "가입 즉시 5회 지급 · AI 생성 비회원 5회 무료" : "Get 5 credits on signup · 5 free AI generations for guests"}</div>
+          <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{ko ? "플랜 구독 또는 관리자 체험권으로 기능 이용" : "Use with a plan or admin-granted trial"}</div>
         </div>
 
         <div style={{ display: "flex", marginBottom: 24, background: C.toggleBg, borderRadius: 10, padding: 4 }}>
@@ -256,12 +256,12 @@ export default function AuthModal({ onClose, onAuth, C, embedded = false }) {
               <div style={{ fontSize: 11, color: C.purpleL, fontWeight: 700, marginBottom: 6 }}>{ko ? "가입 혜택" : "Signup Benefits"}</div>
               <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.8 }}>
                 {ko ? <>
-                  · 가입 즉시 <b style={{ color: C.text }}>5회</b> 지급<br/>
-                  · 카드 등록 없이 무료 체험 가능<br/>
+                  · 플랜 구독 후 기능 이용<br/>
+                  · 체험권은 관리자가 대상 회원에게 부여<br/>
                   · 플랜 업그레이드로 더 많은 AI 생성
                 </> : <>
-                  · <b style={{ color: C.text }}>5 credits</b> on signup<br/>
-                  · Free trial without card registration<br/>
+                  · Use features after subscribing<br/>
+                  · Trials are granted by an admin<br/>
                   · More AI generations with plan upgrades
                 </>}
               </div>

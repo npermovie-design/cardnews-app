@@ -1,7 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "./storage";
+import { getAuthToken, supabase } from "./storage";
 import SnsConnectionManager from "./SnsConnectionManager";
 import { useI18n } from "./i18n";
+
+async function authHeaders(extra = {}) {
+  const token = await getAuthToken();
+  return token ? { ...extra, Authorization: `Bearer ${token}` } : extra;
+}
 
 /* ════════════════════════════════════════════════════════════
    AI Instagram 모듈 - 자동 DM / 자동 댓글
@@ -109,7 +114,7 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
     if (!user?.uid) { setInstaConnected(false); return; }
     (async () => {
       try {
-        const r = await fetch(`/api/sns-connections?uid=${user.uid}`);
+        const r = await fetch(`/api/sns-connections?uid=${user.uid}`, { headers: await authHeaders() });
         const data = await r.json();
         const th = (data.connections || []).find(c => c.platform === "threads");
         setInstaConnected(th ? { username: th.username || th.account_name || th.platform_username || "Threads" } : false);
@@ -123,7 +128,7 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
     setMediaLoading(true);
     (async () => {
       try {
-        const r = await fetch(`/api/threads-media?uid=${user.uid}`);
+        const r = await fetch(`/api/threads-media?uid=${user.uid}`, { headers: await authHeaders() });
         const data = await r.json();
         setMedia(data.media || []);
       } catch (e) {}
@@ -133,7 +138,7 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
     (async () => {
       try {
         const r = await fetch("/api/insta-auto-reply", {
-          method: "POST", headers: { "Content-Type": "application/json" },
+          method: "POST", headers: await authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ action: "list_campaigns", uid: user.uid }),
         });
         const data = await r.json();
@@ -147,7 +152,7 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
     if (!user?.uid) return;
     setConnectLoading(true);
     try {
-      const r = await fetch(`/api/sns-auth-meta?uid=${user.uid}&platform=threads`);
+      const r = await fetch(`/api/sns-auth-meta?uid=${user.uid}&platform=threads`, { headers: await authHeaders() });
       const data = await r.json();
       if (data.authUrl) window.location.href = data.authUrl;
       else alert(data.error || t("ig_auth_url_fail"));
@@ -178,8 +183,8 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
     if (!user?.uid || !selectedPost || !form.replyMessage.trim()) return;
     setSaving(true);
     try {
-      const r = await fetch("/api/insta-auto-reply", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        const r = await fetch("/api/insta-auto-reply", {
+          method: "POST", headers: await authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           action: "create_campaign", uid: user.uid,
           campaign: {
@@ -209,7 +214,7 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
   const toggleCampaign = async (id, isActive) => {
     try {
       await fetch("/api/insta-auto-reply", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: await authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ action: "toggle_campaign", uid: user.uid, campaignId: id, isActive }),
       });
       setCampaigns(prev => prev.map(c => c.id === id ? { ...c, is_active: isActive } : c));
@@ -220,7 +225,7 @@ function InstaAutoReply({ isDark, user, onUserUpdate, navigate }) {
     if (!confirm(t("ig_delete_rule_confirm"))) return;
     try {
       await fetch("/api/insta-auto-reply", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: await authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ action: "delete_campaign", uid: user.uid, campaignId: id }),
       });
       setCampaigns(prev => prev.filter(c => c.id !== id));
@@ -616,7 +621,7 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
     if (!user?.uid) { setInstaConnected(false); return; }
     (async () => {
       try {
-        const r = await fetch(`/api/sns-connections?uid=${user.uid}`);
+        const r = await fetch(`/api/sns-connections?uid=${user.uid}`, { headers: await authHeaders() });
         const data = await r.json();
         const ig = (data.connections || []).find(c => c.platform === "instagram");
         setInstaConnected(ig ? { username: ig.username || ig.account_name || ig.platform_username || "Instagram" } : false);
@@ -634,7 +639,7 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
     setMediaLoading(true);
     (async () => {
       try {
-        const r = await fetch(`/api/insta-media?uid=${user.uid}`);
+        const r = await fetch(`/api/insta-media?uid=${user.uid}`, { headers: await authHeaders() });
         const data = await r.json();
         setMedia(data.media || []);
       } catch (e) { console.error("Media load error:", e); }
@@ -645,7 +650,7 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
     (async () => {
       try {
         const r = await fetch("/api/insta-auto-dm", {
-          method: "POST", headers: { "Content-Type": "application/json" },
+          method: "POST", headers: await authHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ action: "list_campaigns", uid: user.uid }),
         });
         const data = await r.json();
@@ -660,7 +665,7 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
     if (!user?.uid) return;
     setConnectLoading(true);
     try {
-      const r = await fetch(`/api/sns-auth-meta?uid=${user.uid}&platform=instagram`);
+      const r = await fetch(`/api/sns-auth-meta?uid=${user.uid}&platform=instagram`, { headers: await authHeaders() });
       const data = await r.json();
       if (data.authUrl) window.location.href = data.authUrl;
       else alert(data.error || t("ig_auth_url_fail"));
@@ -711,8 +716,8 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
     setGenerating(true);
     const toneLabel = TONE_OPTIONS.find(tp => tp.id === selectedTone)?.label || t("ig_tone_friendly");
     try {
-      const r = await fetch("/api/insta-auto-dm", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        const r = await fetch("/api/insta-auto-dm", {
+          method: "POST", headers: await authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ action: "generate_dm", category: (selectedPost.caption || "").substring(0, 100), tone: toneLabel, goal: "팔로우 유도 + 링크 클릭" }),
       });
       const data = await r.json();
@@ -726,8 +731,8 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
     if (!user?.uid) return;
     setLogsLoading(true);
     try {
-      const r = await fetch("/api/insta-auto-dm", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        const r = await fetch("/api/insta-auto-dm", {
+          method: "POST", headers: await authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ action: "list_logs", uid: user.uid }),
       });
       const data = await r.json();
@@ -741,8 +746,8 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
     if (!user?.uid || !selectedPost || !form.dmMessageFollower.trim()) return;
     setSaving(true);
     try {
-      const r = await fetch("/api/insta-auto-dm", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        const r = await fetch("/api/insta-auto-dm", {
+          method: "POST", headers: await authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           action: "create_campaign", uid: user.uid,
           campaign: {
@@ -772,7 +777,7 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
   const toggleCampaign = async (id, isActive) => {
     try {
       await fetch("/api/insta-auto-dm", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: await authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ action: "toggle_campaign", uid: user.uid, campaignId: id, isActive }),
       });
       setCampaigns(prev => prev.map(c => c.id === id ? { ...c, is_active: isActive } : c));
@@ -784,7 +789,7 @@ function InstaAutoDM({ isDark, user, onUserUpdate, navigate }) {
     if (!confirm(t("ig_delete_campaign_confirm"))) return;
     try {
       await fetch("/api/insta-auto-dm", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: await authHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ action: "delete_campaign", uid: user.uid, campaignId: id }),
       });
       setCampaigns(prev => prev.filter(c => c.id !== id));

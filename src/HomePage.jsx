@@ -259,13 +259,14 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
           .hp-tc-hide-md{display:none!important}
           .hp-tc-hide-sm{display:none!important}
           .hp-g4{grid-template-columns:1fr 1fr!important}
-          .hp-stats{grid-template-columns:repeat(2,1fr)!important}
+          .hp-stats{grid-template-columns:repeat(2,1fr)!important;gap:12px!important}
           .mobile-sticky-cta{display:flex!important}
           .hp-sec{padding-left:20px!important;padding-right:20px!important}
         }
         @media(max-width:480px){
           .hp-hero-inner h1{font-size:28px!important}
           .hp-g4{grid-template-columns:1fr!important}
+          .hp-acc-wrap{height:280px!important}
         }
       `}</style>
 
@@ -286,7 +287,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
               onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
               onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
             >
-              {ko ? "무료로 시작하기" : "Start free"}
+              {ko ? "AI 도구 살펴보기" : "Explore AI tools"}
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 10H13M13 10L10 7M13 10L10 13" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
             <button onClick={goPrice} style={{ fontSize: 18, fontWeight: 500, padding: "16px 36px", borderRadius: 99, border: "1px solid #cbd5e0", background: "transparent", color: "#1a1a1a", cursor: "pointer", fontFamily: "inherit", transition: "transform .15s" }}
@@ -295,7 +296,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             >{ko ? "요금 알아보기" : "See pricing"}</button>
           </div>
           <p style={{ fontSize: 13, color: "#718096", fontStyle: "italic", marginBottom: 28 }}>
-            {ko ? "*카드 등록 없이 무료로 시작" : "*No credit card required"}
+            {ko ? "*체험권은 관리자 부여 방식으로 운영됩니다" : "*Trials are granted by an admin"}
           </p>
           {/* 소셜 프루프 — 실시간 가입자 */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -348,19 +349,20 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
       </section>
 
       {/* ══════ 실적 (liveklass 스타일 스탯 바) ══════ */}
-      <section style={{ padding: "40px clamp(20px,5vw,32px)", background: BG, borderBottom: "1px solid " + BDR }}>
-        <div style={{ maxWidth: 800, margin: "0 auto" }}>
-          <div className="hp-stats" style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 16, textAlign: "center" }}>
+      <section style={{ padding: "48px clamp(20px,5vw,32px)", background: BG, borderBottom: "1px solid " + BDR }}>
+        <div style={{ maxWidth: 900, margin: "0 auto" }}>
+          <div className="hp-stats" style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20, textAlign: "center" }}>
             {[
+              { num: Math.max(userCount, 100), suffix: "+", label: ko ? "가입 사용자" : "Users" },
+              { num: Math.max(statsCount, 50), suffix: "+", label: ko ? "커뮤니티 게시글" : "Posts" },
+              { num: 20, suffix: "+", label: ko ? "AI 도구" : "AI Tools" },
               { num: 92, suffix: "%", label: ko ? "시간 절약" : "Time saved" },
-              { num: 20, suffix: "+", label: ko ? "지원 기능" : "Features" },
-              { num: 320, suffix: "+", label: ko ? "실시간 키워드" : "Keywords" },
             ].map((s, i) => (
-              <div key={i}>
-                <div style={{ fontSize: "clamp(24px,3vw,36px)", fontWeight: 700, color: TEXT, letterSpacing: -1 }}>
+              <div key={i} style={{ padding: "16px 0" }}>
+                <div style={{ fontSize: "clamp(26px,3.5vw,40px)", fontWeight: 800, color: TEXT, letterSpacing: -1 }}>
                   <Counter end={s.num} suffix={s.suffix}/>
                 </div>
-                <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>{s.label}</div>
+                <div style={{ fontSize: 13, color: MUTED, marginTop: 6, fontWeight: 500 }}>{s.label}</div>
               </div>
             ))}
           </div>
@@ -502,12 +504,12 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
                       position: "relative", overflow: "hidden",
                       fontSize: 15, fontWeight: 600, padding: "12px 28px", borderRadius: 24,
                       border: `1px solid ${P}30`, background: P, color: "#fff", cursor: "pointer", fontFamily: "inherit",
-                    }}>{ko ? "무료로 시작하기" : "Start free"}</button>
+                    }}>{ko ? "AI 도구 살펴보기" : "Explore AI tools"}</button>
                   </Reveal>
                 </div>
                 {/* 오른쪽 아코디언 */}
                 <div className="hp-row-img" style={{ flex: "1 1 55%", minWidth: 0 }}>
-                  <div style={{ display: "flex", gap: 8, height: 440, alignItems: "stretch" }}>
+                  <div className="hp-acc-wrap" style={{ display: "flex", gap: 8, height: 440, alignItems: "stretch" }}>
                     {accItems.map((item, i) => (
                       <div key={i} onMouseEnter={() => setAccIdx(i)} style={{
                         position: "relative", borderRadius: 16, overflow: "hidden", cursor: "pointer",
@@ -708,20 +710,47 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
       </section>
 
       {/* ══════ CTA ══════ */}
-      <section className="hp-sec" style={{ padding: "clamp(64px,10vw,96px) clamp(20px,5vw,32px)", background: BG, textAlign: "center" }}>
-        <div style={{ maxWidth: 520, margin: "0 auto" }}>
+      <section className="hp-sec" style={{ padding: "clamp(80px,12vw,120px) clamp(20px,5vw,32px)", background: "linear-gradient(180deg, #fff 0%, #f0f4ff 100%)", textAlign: "center" }}>
+        <div style={{ maxWidth: 560, margin: "0 auto" }}>
           <Reveal>
-            <h2 style={{ fontSize: "clamp(28px,4.5vw,40px)", fontWeight: 700, color: TEXT, letterSpacing: -0.5, lineHeight: 1.15, margin: "0 0 14px" }}>
+            <h2 style={{ fontSize: "clamp(28px,4.5vw,42px)", fontWeight: 800, color: TEXT, letterSpacing: -0.5, lineHeight: 1.15, margin: "0 0 16px" }}>
               {ko ? "지금 바로 시작하세요." : "Start right now."}
             </h2>
-            <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.6, marginBottom: 32 }}>
-              {ko ? "복잡한 SNS 운영, 이제 쉽게 시작하세요." : "Complex SNS management, now made easy."}
+            <p style={{ fontSize: 17, color: SUB, lineHeight: 1.6, marginBottom: 36 }}>
+              {ko ? "복잡한 SNS 운영, 이제 쉽게 시작하세요.\n무료 체험으로 먼저 확인해보세요." : "Complex SNS management, now made easy.\nTry it free first."}
             </p>
-            <button onClick={() => navigate("programs")} style={{
-              position: "relative", overflow: "hidden",
-              fontSize: 16, fontWeight: 600, padding: "14px 36px", borderRadius: 24,
-              border: "none", background: P, color: "#fff", cursor: "pointer", fontFamily: "inherit",
-            }}>{ko ? "제품 둘러보기" : "Explore products"}</button>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", marginBottom: 24 }}>
+              <button onClick={() => navigate("programs")} style={{
+                fontSize: 16, fontWeight: 600, padding: "15px 36px", borderRadius: 99,
+                border: "none", background: "#1a1a1a", color: "#fff", cursor: "pointer", fontFamily: "inherit",
+                transition: "transform .15s",
+              }}
+                onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+              >{ko ? "무료로 시작하기" : "Start for free"}</button>
+              <button onClick={goPrice} style={{
+                fontSize: 16, fontWeight: 600, padding: "15px 36px", borderRadius: 99,
+                border: "1px solid #cbd5e0", background: "transparent", color: TEXT, cursor: "pointer", fontFamily: "inherit",
+                transition: "transform .15s",
+              }}
+                onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+                onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+              >{ko ? "요금 알아보기" : "See pricing"}</button>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, fontSize: 13, color: MUTED }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {ko ? "카드 등록 불필요" : "No credit card"}
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {ko ? "5회 무료 체험" : "5 free uses"}
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                {ko ? "즉시 사용 가능" : "Instant access"}
+              </span>
+            </div>
           </Reveal>
         </div>
       </section>
@@ -730,7 +759,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
       <div className="mobile-sticky-cta" style={{ display: "none", position: "fixed", left: 12, right: 12, bottom: 12, zIndex: 900, alignItems: "center", gap: 10, padding: "14px 16px", borderRadius: 14, background: "rgba(255,255,255,0.95)", border: "1px solid " + BDR, boxShadow: "0 4px 20px rgba(0,0,0,0.08)", backdropFilter: "blur(16px)" }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{ko ? "SNS 콘텐츠 관리" : "SNS Management"}</div>
-          <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>{ko ? "무료로 시작하기" : "Start free"}</div>
+          <div style={{ fontSize: 13, color: MUTED, marginTop: 2 }}>{ko ? "기능 둘러보기" : "Explore features"}</div>
         </div>
         <button onClick={() => navigate("programs")} style={{ flex: "0 0 auto", minHeight: 44, padding: "0 20px", borderRadius: 10, border: "none", background: P, color: "#fff", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>{ko ? "보기" : "View"}</button>
       </div>

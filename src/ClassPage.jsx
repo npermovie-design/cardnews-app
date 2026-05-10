@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import DOMPurify from "dompurify";
 import { supabase } from "./storage";
 
 /* ═══════════════════════════════════════════════════════════
@@ -906,8 +907,15 @@ function CourseEditorPage({ course, C, isDark, onClose, onSave }) {
 // ═══════════════════════════════════════════════════════════
 export default function ClassPage({ C, navigate, user, theme, initialCourseId, initialLessonId }) {
   const isDark = theme === "dark";
+  const [mob, setMob] = useState(() => typeof window !== "undefined" ? window.innerWidth <= 768 : false);
   const [courses, setCourses] = useState([]);
   const [dbLoading, setDbLoading] = useState(true);
+  useEffect(() => {
+    const onResize = () => setMob(window.innerWidth <= 768);
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
   useEffect(() => {
     loadAllCourses().then(data => {
       setCourses(data);
@@ -1333,9 +1341,9 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
           .class-player video::-webkit-media-controls-current-time-display,.class-player video::-webkit-media-controls-time-remaining-display{pointer-events:none;}
         `}</style>
         {/* 상단 바 */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 20px", borderBottom: "1px solid rgba(255,255,255,0.1)", flexShrink: 0, background: "#0f0f1a", minHeight: 48 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: mob ? "8px 10px" : "10px 20px", borderBottom: "1px solid rgba(255,255,255,0.1)", flexShrink: 0, background: "#0f0f1a", minHeight: 48 }}>
           <button onClick={() => setSelectedLesson(null)}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 10, border: "none", background: ACC, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            style={{ display: "flex", alignItems: "center", gap: 6, padding: mob ? "8px 10px" : "8px 16px", borderRadius: 10, border: "none", background: ACC, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
             돌아가기
           </button>
@@ -1346,7 +1354,7 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
         </div>
 
         {/* 메인 영역 */}
-        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: mob ? "column" : "row", overflow: "hidden" }}>
           {/* 영상 + 플로팅 컨트롤 */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
             {/* 비디오 영역 */}
@@ -1545,7 +1553,7 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
           </div>
 
           {/* 사이드 커리큘럼 */}
-          <div style={{ width: 300, minWidth: 300, borderLeft: "1px solid rgba(255,255,255,0.1)", overflowY: "auto", flexShrink: 0, background: "#111", display: "flex", flexDirection: "column" }}>
+          <div style={{ width: mob ? "100%" : 300, minWidth: mob ? 0 : 300, maxHeight: mob ? "42vh" : "none", borderLeft: mob ? "none" : "1px solid rgba(255,255,255,0.1)", borderTop: mob ? "1px solid rgba(255,255,255,0.1)" : "none", overflowY: "auto", flexShrink: 0, background: "#111", display: "flex", flexDirection: "column" }}>
             <div style={{ padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", gap: 16, flexShrink: 0 }}>
               {["커리큘럼", "노트", "커뮤니티"].map(t => {
                 const tabKey = t === "커리큘럼" ? "curriculum" : t === "노트" ? "notes" : "community";
@@ -1673,6 +1681,11 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
     const lessons = course.lessons || [];
     const schedules = course.liveSchedules || [];
     const totalLessons = lessons.length || schedules.length;
+    const watchedCount = lessons.filter(l => progress[l.id]?.watched).length;
+    const assignmentCount = lessons.filter(l => l.assignmentRequired).length;
+    const assignmentDoneCount = lessons.filter(l => l.assignmentRequired && (completedAssignments[l.id] || progress[l.id]?.assignment_submitted)).length;
+    const courseProgressPct = lessons.length ? Math.round((watchedCount / lessons.length) * 100) : 0;
+    const nextPlayableLesson = lessons.find((l, i) => !isLessonLocked(course, l, i) && !progress[l.id]?.watched) || lessons.find((l, i) => !isLessonLocked(course, l, i));
     return (
       <div>
         {/* ═══ 히어로 섹션 (다크 배경 + 썸네일) ═══ */}
@@ -1685,9 +1698,9 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
               목록으로
             </button>
-            <div style={{ display: "flex", gap: 28, alignItems: "flex-end", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 28, alignItems: "flex-end", flexWrap: "wrap", flexDirection: mob ? "column" : "row" }}>
               {/* 썸네일 */}
-              <div style={{ width: 280, aspectRatio: "16/10", borderRadius: 14, overflow: "hidden", flexShrink: 0, background: "#222", boxShadow: "0 16px 48px rgba(0,0,0,0.4)" }}>
+              <div style={{ width: mob ? "100%" : 280, aspectRatio: "16/10", borderRadius: 14, overflow: "hidden", flexShrink: 0, background: "#222", boxShadow: "0 16px 48px rgba(0,0,0,0.4)" }}>
                 {course.thumbnail ? <img src={course.thumbnail} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke={ACC} strokeWidth="1.5"><polygon points="5 3 19 12 5 21 5 3" /></svg></div>}
               </div>
@@ -1717,14 +1730,14 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
         </div>
 
         {/* ═══ 콘텐츠 + 사이드바 ═══ */}
-        <div style={{ maxWidth: 1060, margin: "0 auto", padding: "28px 20px 80px", display: "grid", gridTemplateColumns: "1fr 320px", gap: 28, alignItems: "start" }}>
+        <div style={{ maxWidth: 1060, margin: "0 auto", padding: mob ? "20px 16px 80px" : "28px 20px 80px", display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 320px", gap: 28, alignItems: "start" }}>
           {/* 좌측 콘텐츠 */}
           <div>
             {/* 탭 네비 */}
             <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 14, padding: "4px", display: "inline-flex", gap: 4, marginBottom: 24, boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
               {[["intro","클래스 소개"],["curriculum","커리큘럼"],["reviews","수강후기"]].map(([id,label]) => (
                 <button key={id} onClick={() => setDetailTab(id)}
-                  style={{ padding: "10px 22px", borderRadius: 10, border: "none", background: detailTab===id ? ACC : "transparent", color: detailTab===id ? "#fff" : C.muted, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>
+                  style={{ padding: mob ? "9px 13px" : "10px 22px", borderRadius: 10, border: "none", background: detailTab===id ? ACC : "transparent", color: detailTab===id ? "#fff" : C.muted, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>
                   {label}
                 </button>
               ))}
@@ -1734,7 +1747,7 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
             {detailTab === "intro" && (
               <div>
                 {course.introHtml ? (
-                  <div style={{ fontSize: 15, lineHeight: 1.9, color: C.text, marginBottom: 32 }} dangerouslySetInnerHTML={{ __html: course.introHtml }} />
+                  <div style={{ fontSize: 15, lineHeight: 1.9, color: C.text, marginBottom: 32 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(course.introHtml) }} />
                 ) : (
                   <>
                     <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, padding: "24px", marginBottom: 16 }}>
@@ -1764,7 +1777,7 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
                     </div>
                     <div>
                       <div style={{ fontSize: 16, fontWeight: 800, color: C.text }}>{course.instructor}</div>
-                      {course.instructorBio && <div style={{ fontSize: 13, color: C.muted, marginTop: 4, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: course.instructorBio }} />}
+                      {course.instructorBio && <div style={{ fontSize: 13, color: C.muted, marginTop: 4, lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(course.instructorBio) }} />}
                     </div>
                   </div>
                 </div>
@@ -1906,8 +1919,23 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
           </div>
 
           {/* 우측 사이드바 (sticky) */}
-          <div style={{ position: "sticky", top: 80 }}>
+          <div style={{ position: mob ? "static" : "sticky", top: 80 }}>
             <div style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}>
+              {lessons.length > 0 && (
+                <div style={{ padding: "18px 20px", borderBottom: "1px solid " + C.border }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: C.text }}>내 수강 진행</span>
+                    <span style={{ fontSize: 13, fontWeight: 900, color: ACC }}>{courseProgressPct}%</span>
+                  </div>
+                  <div style={{ height: 7, borderRadius: 99, background: isDark ? "rgba(255,255,255,0.08)" : "#ececf3", overflow: "hidden" }}>
+                    <div style={{ height: "100%", width: `${courseProgressPct}%`, background: GRAD, borderRadius: 99, transition: "width 0.25s" }} />
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11, color: C.muted }}>
+                    <span>시청 {watchedCount}/{lessons.length}</span>
+                    {assignmentCount > 0 && <span>과제 {assignmentDoneCount}/{assignmentCount}</span>}
+                  </div>
+                </div>
+              )}
               {/* 가격 */}
               <div style={{ padding: "20px", borderBottom: "1px solid " + C.border }}>
                 <div style={{ fontSize: 24, fontWeight: 900, color: course.pricing==="free" ? "#22c55e" : C.text, marginBottom: 4 }}>
@@ -1928,9 +1956,9 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
                   </button>
                 </div>
                 {lessons.length > 0 ? (
-                  <button onClick={() => { const first = lessons.find((l,i) => !isLessonLocked(course,l,i)); if (first) setSelectedLesson(first); }}
+                  <button onClick={() => { const first = nextPlayableLesson || lessons.find((l,i) => !isLessonLocked(course,l,i)); if (first) setSelectedLesson(first); }}
                     style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: GRAD, color: "#fff", fontSize: 15, fontWeight: 800, cursor: "pointer", boxShadow: "0 4px 16px rgba(0,0,0,0.06)" }}>
-                    {user ? "수강 시작하기" : "로그인 후 수강"}
+                    {user ? (watchedCount > 0 ? "이어보기" : "수강 시작하기") : "로그인 후 수강"}
                   </button>
                 ) : schedules.length > 0 ? (
                   <button style={{ width: "100%", padding: "15px", borderRadius: 12, border: "none", background: user ? GRAD : "rgba(0,0,0,0.06)", color: "#fff", fontSize: 15, fontWeight: 800, cursor: user?"pointer":"default" }}>
@@ -1975,7 +2003,7 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
 
   // ── 강의 목록 (메인) ──
   return (
-    <div style={{ maxWidth: 1060, margin: "0 auto", padding: "32px 20px 80px" }}>
+    <div style={{ maxWidth: 1060, margin: "0 auto", padding: mob ? "24px 16px 80px" : "32px 20px 80px" }}>
 
       {/* 헤더 */}
       <div style={{ textAlign: "center", marginBottom: 32 }}>
@@ -1987,7 +2015,7 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
       </div>
 
       {/* 실시간 방송 일정 + 슬라이드쇼 */}
-      <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: 20, marginBottom: 32, alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "320px 1fr", gap: 20, marginBottom: 32, alignItems: "start" }}>
         {/* 왼쪽: 캘린더 */}
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
@@ -2009,17 +2037,17 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
 
       {/* 필터 + 관리자 버튼 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
-        <div style={{ display: "flex", gap: 6 }}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", width: mob ? "100%" : "auto" }}>
           {[["all", "전체"], ["vod", "VOD"], ["zoom", "라이브"], ["offline", "오프라인"]].map(([v, l]) => (
             <button key={v} onClick={() => setFilter(v)}
-              style={{ padding: "7px 16px", borderRadius: 10, border: filter === v ? `2px solid ${ACC}` : "1px solid " + C.border, background: filter === v ? `${ACC}10` : "transparent", color: filter === v ? ACC : C.muted, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              style={{ padding: "7px 16px", borderRadius: 10, border: filter === v ? `2px solid ${ACC}` : "1px solid " + C.border, background: filter === v ? `${ACC}10` : "transparent", color: filter === v ? ACC : C.muted, fontSize: 13, fontWeight: 700, cursor: "pointer", flex: mob ? "1 1 auto" : "0 0 auto" }}>
               {l}
             </button>
           ))}
           <div style={{ width: 1, height: 20, background: C.border, margin: "0 4px", alignSelf: "center" }} />
           {[["all", "전체"], ["free", "무료"], ["paid", "유료"]].map(([v, l]) => (
             <button key={v} onClick={() => setPricingFilter(v)}
-              style={{ padding: "7px 14px", borderRadius: 10, border: pricingFilter === v ? `2px solid ${ACC}` : "1px solid " + C.border, background: pricingFilter === v ? `${ACC}10` : "transparent", color: pricingFilter === v ? ACC : C.muted, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              style={{ padding: "7px 14px", borderRadius: 10, border: pricingFilter === v ? `2px solid ${ACC}` : "1px solid " + C.border, background: pricingFilter === v ? `${ACC}10` : "transparent", color: pricingFilter === v ? ACC : C.muted, fontSize: 13, fontWeight: 700, cursor: "pointer", flex: mob ? "1 1 auto" : "0 0 auto" }}>
               {l}
             </button>
           ))}
@@ -2033,7 +2061,7 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
       </div>
 
       {/* 강의 카드 그리드 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(280px,100%),1fr))", gap: 16 }}>
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(auto-fill,minmax(min(280px,100%),1fr))", gap: 16 }}>
         {filtered.map(course => (
           <div key={course.id} onClick={() => { setSelectedCourse(course); window.history.pushState(null, "", "/class/" + course.id); document.title = `${course.title} - SNS메이킷 클래스`; }}
             style={{ background: C.card, border: "1px solid " + C.border, borderRadius: 16, overflow: "hidden", cursor: "pointer", transition: "transform 0.15s, box-shadow 0.15s" }}
@@ -2048,7 +2076,7 @@ export default function ClassPage({ C, navigate, user, theme, initialCourseId, i
               )}
               {/* 뱃지 */}
               <div style={{ position: "absolute", top: 10, left: 10, display: "flex", gap: 4 }}>
-                <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, color: "#fff", background: course.type === "vod" ? "rgba(0,0,0,0.06)" : course.type === "zoom" ? "rgba(236,72,153,0.85)" : "rgba(34,197,94,0.85)", backdropFilter: "blur(4px)" }}>
+                <span style={{ padding: "3px 8px", borderRadius: 6, fontSize: 10, fontWeight: 800, color: "#fff", background: course.type === "vod" ? "rgba(17,24,39,0.8)" : course.type === "zoom" ? "rgba(236,72,153,0.85)" : "rgba(34,197,94,0.85)", backdropFilter: "blur(4px)" }}>
                   {course.type === "vod" ? "VOD" : course.type === "zoom" ? "LIVE" : "오프라인"}
                 </span>
               </div>

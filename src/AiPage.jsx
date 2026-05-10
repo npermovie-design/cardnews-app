@@ -13,13 +13,10 @@ const RepurposePage = React.lazy(() => import("./AiTools.jsx").then(m => ({ defa
 const MarketingHub = React.lazy(() => import("./AiTools.jsx").then(m => ({ default: m.MarketingHub })));
 const UnifiedBlogWriter = React.lazy(() => import("./AiTools.jsx").then(m => ({ default: m.UnifiedBlogWriter })));
 const LinkBlogCombined = React.lazy(() => import("./AiTools.jsx").then(m => ({ default: m.LinkBlogCombined })));
-const PlannerPanel = React.lazy(() => import("./CardNewsApp").then(m => ({ default: m.PlannerPanel })));
-const CardNewsApp = React.lazy(() => import("./CardNewsApp").then(m => ({ default: m.CardNewsApp })));
-const SimpleDetailPageGenerator = React.lazy(() => import("./SimpleDetailPageGenerator"));
-const DetailPageStudio = React.lazy(() => import("./v2/DetailPageStudioV2"));
+// 제거됨: CardNewsApp, PlannerPanel, SimpleDetailPageGenerator, DetailPageStudio — 전부 데스크톱 SaaS로 이관
 const BlogGenerator = React.lazy(() => import("./BlogGenerator"));
 const SocialAnalyzer = React.lazy(() => import("./SocialAnalyzer"));
-const VideoGuidePage = React.lazy(() => import("./VideoGuidePage"));
+// 제거됨: VideoGuidePage — 데스크톱 SaaS로 이관
 const AutoPublisher = React.lazy(() => import("./AutoPublisher"));
 const AnalyzerPage = React.lazy(() => import("./AnalyzerPage"));
 const SnsConnectionManager = React.lazy(() => import("./SnsConnectionManager"));
@@ -1333,9 +1330,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     repurpose: <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
   };
 
-  // 이용방법 (영상 갤러리)
+  // 이용방법 (영상 갤러리) — 데스크톱 SaaS로 이관
   if (aiMenu === "video_guide") {
-    return <VideoGuidePage C={C} theme={theme} />;
+    setAiMenu("home"); return null;
   }
 
   // 홈
@@ -1516,19 +1513,9 @@ function AiContent({ aiMenu, user, setAiMenu, navigate, navigateBoard, navigateA
     );
   }
 
-  // 카드뉴스 기획 패널
+  // 카드뉴스 기획 패널 — 데스크톱 SaaS로 이관
   if (aiMenu === "cardnews_plan") {
-    return (
-      <div key="cn_plan" style={{ flex:1, display:"flex", overflow:"hidden", background: theme==="dark"?"#0f0c29":"#f4f4f8" }}>
-        <PlannerPanel inline theme={theme}
-          onClose={()=>{}}
-          onApplySlides={(slides)=>{
-            try { localStorage.setItem("nper_plan_slides", JSON.stringify(slides)); } catch(e) {}
-            setAiMenu("cardnews_simple_make");
-          }}
-        />
-      </div>
-    );
+    setAiMenu("home"); return null;
   }
 
   // 회원정보

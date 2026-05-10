@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { supabase, getBrandKit, ensureReferralCode, pointsToUses, pointDeltaToUses } from "./storage";
+import { supabase, getBrandKit, ensureReferralCode, pointsToUses, pointDeltaToUses, getUsageSummary } from "./storage";
 import SnsConnectionManager from "./SnsConnectionManager";
 import { useI18n } from "./i18n.jsx";
 
@@ -58,7 +58,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
   // user prop 변경 시 즉시 반영 (이용 횟수 차감 등)
   useEffect(() => {
     if (user) setUserData(u => ({ ...u, ...user }));
-  }, [user?.points, user?.nick, user?.referral_code]);
+  }, [user?.points, user?.monthly_used, user?.monthly_used_write, user?.monthly_used_video, user?.nick, user?.referral_code]);
 
   // 닉네임 변경
   const [nickEdit, setNickEdit]   = useState(false);
@@ -136,13 +136,13 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
       try {
         let { data, error } = await supabase
           .from("users")
-          .select("points, nick, email, referral_code")
+          .select("points, monthly_used, monthly_used_write, monthly_used_video, nick, email, referral_code")
           .eq("uid", user.uid)
           .single();
         if (error) {
           const fallback = await supabase
             .from("users")
-            .select("points, nick, email")
+            .select("points, monthly_used, monthly_used_write, monthly_used_video, nick, email")
             .eq("uid", user.uid)
             .single();
           data = fallback.data;
@@ -243,6 +243,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
   const normDelta = (h) => (h.at && h.at < "2026-05-03") ? Math.round((h.delta||0)/30) : (h.delta||0);
   const earned = history.filter(h=>h.delta>0).reduce((s,h)=>s+normDelta(h),0);
   const used   = history.filter(h=>h.delta<0).reduce((s,h)=>s+normDelta(h),0);
+  const usageSummary = getUsageSummary(userData);
   const referralCode = userData?.referral_code || "";
   const referralLink = referralCode ? `${window.location.origin}/login?ref=${encodeURIComponent(referralCode)}` : "";
   const copyReferral = async () => {
@@ -334,13 +335,13 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
 
           {/* 오른쪽: 크레딧 */}
           <div style={{ flexShrink:0, textAlign:"right" }}>
-            {userData?._subscription && userData._subscription._monthlyWriteLimit > 0 ? (
+            {usageSummary.isSubscriber ? (
               <>
                 <div style={{ fontSize:22, fontWeight:900, color:"#a5b4fc" }}>
-                  {Math.max(0, (userData._subscription._monthlyWriteLimit || 0) - (userData.monthly_used || 0))}회
+                  {usageSummary.left.toLocaleString()}회
                 </div>
-                <div style={{ fontSize:10, color:muted }}>{userData._subscription.product_name} {ko?"월간 잔여":"monthly left"}</div>
-                <div style={{ fontSize:9, color:muted, marginTop:2 }}>{userData.monthly_used || 0}/{userData._subscription._monthlyWriteLimit}{ko?"회 사용":" used"}</div>
+                <div style={{ fontSize:10, color:muted }}>{usageSummary.planName} {ko?"월간 잔여":"monthly left"}</div>
+                <div style={{ fontSize:9, color:muted, marginTop:2 }}>{usageSummary.used.toLocaleString()}/{usageSummary.limit.toLocaleString()}{ko?"회 사용":" used"}</div>
               </>
             ) : (
               <>

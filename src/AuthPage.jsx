@@ -69,7 +69,7 @@ function LoginRightPanel({ accent }) {
         {/* 배지 */}
         <div style={{ padding: "6px 16px", borderRadius: 20, background: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.15)", fontSize: 12, fontWeight: 600, color: "#a5f3fc", marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981" }} />
-          카드 등록 없이 무료로 시작
+          체험권은 관리자 부여 방식
         </div>
 
         {/* 타이틀 */}
@@ -198,7 +198,7 @@ export default function AuthPage({ C, onAuth, navigate }) {
             {tab === "login" ? (ko ? <>다시 만나서<br/>반가워요</> : "Welcome back") : (ko ? "시작해볼까요?" : "Let's get started")}
           </h1>
           <p style={{ fontSize: 15, color: "#6b7280", marginBottom: 32 }}>
-            {tab === "login" ? (ko ? "이메일과 비밀번호를 입력해주세요." : "Enter your credentials to continue.") : (ko ? "무료로 가입하고 AI 콘텐츠를 만들어보세요." : "Sign up free and start creating.")}
+            {tab === "login" ? (ko ? "이메일과 비밀번호를 입력해주세요." : "Enter your credentials to continue.") : (ko ? "가입 후 플랜을 선택하거나 관리자 체험권을 사용할 수 있습니다." : "Sign up, then choose a plan or use an admin-granted trial.")}
           </p>
 
           {err && <div style={{ padding: "12px 16px", borderRadius: 12, background: "#fef2f2", color: "#ef4444", fontSize: 13, marginBottom: 16, border: "1px solid #fecaca" }}>{err}</div>}
@@ -250,7 +250,7 @@ export default function AuthPage({ C, onAuth, navigate }) {
                 <span style={{ fontSize: 12, color: "#6b7280", lineHeight: 1.5 }}><a href="/legal" target="_blank" style={{ color: accent }}>{ko ? "이용약관 및 개인정보처리방침" : "Terms & Privacy"}</a>{ko ? "에 동의합니다." : ""}</span>
               </label>
               <button onClick={handleRegister} disabled={loading || !agreedToTerms} style={{ width: "100%", padding: "15px", borderRadius: 14, border: "none", background: (!agreedToTerms) ? "#d1d5db" : accent, color: "#fff", fontSize: 15, fontWeight: 700, cursor: (loading || !agreedToTerms) ? "not-allowed" : "pointer" }}>
-                {loading ? (ko ? "가입 중..." : "Creating...") : (ko ? "무료로 시작하기" : "Get started free")}
+                {loading ? (ko ? "가입 중..." : "Creating...") : (ko ? "회원가입하기" : "Create account")}
               </button>
             </div>
           )}

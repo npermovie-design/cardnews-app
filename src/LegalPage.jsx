@@ -24,7 +24,7 @@ const TERMS = [
   },
   {
     title: "제6조 (이용 횟수 및 결제)",
-    content: "1. 서비스 이용료는 횟수제 방식으로 부과됩니다. 콘텐츠 생성(글쓰기, 디자인, 영상 편집 등) 기능 이용 시 1회가 차감되며, 자세한 내용은 가격정책 페이지에서 확인할 수 있습니다.\n2. 이용 횟수는 월 구독 또는 연 구독 플랜을 통해 충전할 수 있습니다.\n3. 회원가입 시 5회가 무료로 지급되며, 비회원은 5회 무료 체험이 가능합니다.\n4. 이용 횟수는 현금으로 환급·교환되지 않으며, 타인에게 양도·증여할 수 없습니다.",
+    content: "1. 서비스 이용료는 횟수제 방식으로 부과됩니다. 콘텐츠 생성(글쓰기, 디자인, 영상 편집 등) 기능 이용 시 1회가 차감되며, 자세한 내용은 가격정책 페이지에서 확인할 수 있습니다.\n2. 이용 횟수는 월 구독 또는 연 구독 플랜을 통해 충전할 수 있습니다.\n3. 체험권은 관리자가 대상 회원에게 직접 부여하며, 부여된 기간과 범위 안에서만 사용할 수 있습니다.\n4. 이용 횟수는 현금으로 환급·교환되지 않으며, 타인에게 양도·증여할 수 없습니다.",
   },
   {
     title: "제7조 (개인정보 보호)",
@@ -145,9 +145,9 @@ export function LegalPage({ C, navigate, initialTab }) {
   const isDark = C?.border?.includes("255");
 
   const tabs = [
-    { id: "terms",   label: "📋 이용약관" },
-    { id: "privacy", label: "🔒 개인정보처리방침" },
-    { id: "refund",  label: "💰 환불정책" },
+    { id: "terms",   label: "이용약관" },
+    { id: "privacy", label: "개인정보처리방침" },
+    { id: "refund",  label: "환불정책" },
   ];
 
   const content = tab === "terms" ? TERMS : tab === "privacy" ? PRIVACY : REFUND;
@@ -158,7 +158,7 @@ export function LegalPage({ C, navigate, initialTab }) {
 
       {/* 헤더 */}
       <div style={{ textAlign: "center", marginBottom: 36 }}>
-        <div style={{ display: "inline-block", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>⚖️ 법적 방침</div>
+        <div style={{ display: "inline-block", background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 20, padding: "5px 16px", fontSize: 12, color: C.purpleL, fontWeight: 700, marginBottom: 14 }}>법적 방침</div>
         <h2 style={{ fontSize: "clamp(22px,4vw,32px)", fontWeight: 900, color: C.text, letterSpacing: -1, marginBottom: 8 }}>SNS메이킷 법적 방침</h2>
         <p style={{ fontSize: 14, color: C.muted }}>서비스 이용 전 아래 내용을 확인해주세요</p>
       </div>
@@ -186,7 +186,7 @@ export function LegalPage({ C, navigate, initialTab }) {
 
       {/* 문의 안내 */}
       <div style={{ marginTop: 32, padding: "20px 24px", borderRadius: 14, background: isDark ? "rgba(0,0,0,0.06)" : "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.06)", textAlign: "center" }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 6 }}>📬 법적 방침 관련 문의</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 6 }}>법적 방침 관련 문의</div>
         <div style={{ fontSize: 13, color: C.muted }}>npermovie@naver.com &nbsp;·&nbsp; 평일 09:00 ~ 18:00</div>
       </div>
     </div>
