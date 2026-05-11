@@ -769,13 +769,13 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                 <div style={{ position: "relative", height: 200, borderRadius: 16, overflow: "hidden", border: "1px solid " + bdr }}>
                   {/* 하늘 그라데이션 */}
                   <div style={{ position: "absolute", inset: 0, background: isDark ? "#1a1a2e" : "linear-gradient(180deg, #87CEEB 0%, #B0E0E6 40%, #d4edda 70%, #8fbc8f 85%, #6b8e23 100%)" }} />
-                  {/* 뒷 산 (원경) */}
-                  <svg style={{ position: "absolute", bottom: 30, left: 0, right: 0 }} viewBox="0 0 800 80" preserveAspectRatio="none" height="60">
-                    <path d="M0,80 L0,50 Q100,10 200,45 Q300,15 400,40 Q500,5 600,35 Q700,20 800,50 L800,80 Z" fill={isDark ? "#2d2d5e" : "#a8c8a0"} opacity="0.4" />
+                  {/* 뒷 산 (원경) — 사각형/메사 형태 */}
+                  <svg style={{ position: "absolute", bottom: 30, left: 0, right: 0 }} viewBox="0 0 800 80" preserveAspectRatio="none" height="55">
+                    <path d="M0,80 L0,55 L60,55 L80,30 L180,30 L200,50 L280,50 L300,20 L420,20 L440,45 L520,45 L540,25 L660,25 L680,50 L760,50 L780,40 L800,40 L800,80 Z" fill={isDark ? "#2d2d5e" : "#a8c8a0"} opacity="0.4" />
                   </svg>
-                  {/* 앞 산 (중경) */}
-                  <svg style={{ position: "absolute", bottom: 20, left: 0, right: 0 }} viewBox="0 0 800 60" preserveAspectRatio="none" height="45">
-                    <path d="M0,60 L0,40 Q80,15 180,35 Q280,5 380,30 Q480,10 580,25 Q680,8 800,35 L800,60 Z" fill={isDark ? "#1e3a1e" : "#7dab72"} opacity="0.5" />
+                  {/* 앞 산 (중경) — 사각형 형태 */}
+                  <svg style={{ position: "absolute", bottom: 20, left: 0, right: 0 }} viewBox="0 0 800 60" preserveAspectRatio="none" height="40">
+                    <path d="M0,60 L0,40 L100,40 L120,18 L260,18 L280,35 L400,35 L420,12 L560,12 L580,30 L700,30 L720,22 L800,22 L800,60 Z" fill={isDark ? "#1e3a1e" : "#7dab72"} opacity="0.5" />
                   </svg>
                   {/* 구름 — SVG로 깔끔하게 */}
                   {[{x:"8%",y:10,s:50,d:0},{x:"35%",y:18,s:35,d:4},{x:"62%",y:8,s:45,d:8},{x:"85%",y:22,s:30,d:12}].map((cl,i) => (
@@ -787,11 +787,11 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                     </svg>
                   ))}
                   {/* 나무 — 왼쪽으로 지나가는 효과 */}
-                  {[{s:28,o:0.5,d:0},{s:20,o:0.3,d:6},{s:24,o:0.4,d:12},{s:18,o:0.3,d:18},{s:26,o:0.45,d:24}].map((t,i) => (
-                    <div key={`tree${i}`} className="tree-pass" style={{ position: "absolute", bottom: 14, animationDelay: `${t.d}s`, opacity: t.o }}>
-                      <svg width={t.s} height={t.s * 1.5} viewBox="0 0 20 30">
-                        <rect x="8.5" y="18" width="3" height="12" rx="1" fill="#5a3e28" />
-                        <path d="M10,2 L3,14 L6,14 L2,22 L18,22 L14,14 L17,14 Z" fill="#2d5016" />
+                  {[{s:45,o:0.5,d:0},{s:35,o:0.35,d:5},{s:50,o:0.45,d:10},{s:30,o:0.3,d:16},{s:42,o:0.5,d:22}].map((t,i) => (
+                    <div key={`tree${i}`} className="tree-pass" style={{ position: "absolute", bottom: 16, animationDelay: `${t.d}s`, opacity: t.o }}>
+                      <svg width={t.s} height={t.s * 1.4} viewBox="0 0 20 28">
+                        <rect x="8.5" y="17" width="3" height="11" rx="1" fill="#5a3e28" />
+                        <path d="M10,1 L3,12 L6,12 L2,20 L18,20 L14,12 L17,12 Z" fill="#2d5016" />
                       </svg>
                     </div>
                   ))}
@@ -824,7 +824,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                     const c = medal || PRIMARY;
                     const isTied = (idx > 0 && scores[idx] === scores[idx - 1]) || (idx < scores.length - 1 && scores[idx] === scores[idx + 1]);
                     return (
-                      <div key={m.uid} className={`${score > 0 ? "run-anim" : ""} ${isTied && score > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${runPct}% - 24px)`, bottom: 18, transition: "left 1s ease", zIndex: rankData.length - idx, animationDelay: `${idx * 0.3}s` }}>
+                      <div key={m.uid} className={`${score > 0 ? "run-anim" : ""} ${isTied && score > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${runPct}% - 24px)`, bottom: 10, transition: "left 1s ease", zIndex: rankData.length - idx, animationDelay: `${idx * 0.3}s` }}>
                         <RunnerChar nick={m.nick} color={c} running={score > 0} size={66} />
                       </div>
                     );
