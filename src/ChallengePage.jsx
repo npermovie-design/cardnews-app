@@ -1512,9 +1512,67 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
             if (!memberMap[m.uid].days[m.day]) { memberMap[m.uid].days[m.day] = m; memberMap[m.uid].count++; }
           });
           const members = Object.values(memberMap).sort((a, b) => calcScore(b.days) - calcScore(a.days));
+          const top3 = members.slice(0, 3);
+          const medalColors = ["#f59e0b", "#94a3b8", "#cd7f32"];
+          const medalLabels = ["1st", "2nd", "3rd"];
           return (
             <div>
-              <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>총 {members.length}명 참가 중</div>
+              {/* 포인트 랭킹 포디움 */}
+              {members.length > 0 && (
+                <div style={{ marginBottom: 24 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <span style={{ fontSize: 16, fontWeight: 800, color: C.text }}>포인트 랭킹</span>
+                    <span style={{ fontSize: 12, color: C.muted }}>{members.length}명 참가 중</span>
+                  </div>
+                  {/* 상위 3명 포디움 */}
+                  <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: mob ? 8 : 16, marginBottom: 20 }}>
+                    {[1, 0, 2].map(rank => {
+                      const m = top3[rank];
+                      if (!m) return <div key={rank} style={{ flex: 1 }} />;
+                      const score = calcScore(m.days);
+                      const pct = Math.round((m.count / totalDays) * 100);
+                      const isFirst = rank === 0;
+                      return (
+                        <div key={rank} style={{ flex: 1, maxWidth: 180, textAlign: "center" }}>
+                          <div style={{
+                            background: card, border: `2px solid ${medalColors[rank]}`, borderRadius: 16,
+                            padding: isFirst ? (mob ? "20px 10px" : "24px 16px") : (mob ? "16px 10px" : "18px 14px"),
+                            transform: isFirst ? "scale(1.05)" : "none",
+                            boxShadow: isFirst ? `0 8px 24px ${medalColors[rank]}30` : "0 2px 8px rgba(0,0,0,0.04)",
+                          }}>
+                            <div style={{ width: isFirst ? 48 : 40, height: isFirst ? 48 : 40, borderRadius: "50%", background: medalColors[rank], display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 8px", fontSize: isFirst ? 18 : 14, fontWeight: 900, color: "#fff" }}>{rank + 1}</div>
+                            <div style={{ fontSize: mob ? 13 : 15, fontWeight: 800, color: C.text, marginBottom: 4 }}>{isAdmin ? m.nick : (m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</div>
+                            <div style={{ fontSize: isFirst ? 28 : 22, fontWeight: 900, color: medalColors[rank], lineHeight: 1 }}>{score}</div>
+                            <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>{m.count}일 / {pct}%</div>
+                          </div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: medalColors[rank], marginTop: 6 }}>{medalLabels[rank]}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* 4위부터 간단 랭킹 리스트 */}
+                  {members.length > 3 && (
+                    <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 14, overflow: "hidden" }}>
+                      {members.slice(3).map((m, i) => {
+                        const score = calcScore(m.days);
+                        const pct = Math.round((m.count / totalDays) * 100);
+                        return (
+                          <div key={m.uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 16px", borderBottom: i < members.length - 4 ? "1px solid " + bdr : "none" }}>
+                            <span style={{ fontSize: 14, fontWeight: 800, color: C.muted, width: 28, textAlign: "center" }}>{i + 4}</span>
+                            <div style={{ width: 28, height: 28, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(m.nick || "?")[0]}</div>
+                            <div style={{ flex: 1 }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{isAdmin ? m.nick : (m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</span>
+                              <span style={{ fontSize: 11, color: C.muted, marginLeft: 8 }}>{m.count}일 ({pct}%)</span>
+                            </div>
+                            <span style={{ fontSize: 16, fontWeight: 800, color: "#f59e0b" }}>{score}점</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
               {members.length === 0 ? (
                 <div style={{ textAlign: "center", padding: "40px 20px", color: C.muted, border: "1px dashed " + bdr, borderRadius: 16 }}>아직 인증 기록이 없습니다</div>
               ) : (
