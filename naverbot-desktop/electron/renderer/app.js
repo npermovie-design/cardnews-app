@@ -7363,15 +7363,66 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   $("writeStep2Next")?.addEventListener("click", () => writeGoStep(3));
   $("writeStep3Prev")?.addEventListener("click", () => writeGoStep(2));
 
-  // URL 가져오기
+  // URL 가져오기 (텍스트 + 이미지)
+  var _refImages = []; // URL에서 크롤링한 이미지 목록
+  var _refImagesSelected = []; // 사용자가 선택한 이미지
+
   $("writeUrlFetchBtn")?.addEventListener("click", async () => {
     const url = $("writeRefUrl")?.value.trim(); if (!url) return;
     $("writeUrlFetchBtn").textContent = "가져오는 중..."; $("writeUrlFetchBtn").disabled = true;
+    _refImages = []; _refImagesSelected = [];
     try {
-      const res = await fetch(API + "/fetch-url-content", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url }) });
+      const res = await fetch(API + "/fetch-url-content?url=" + encodeURIComponent(url));
       const data = await res.json();
       _refContent = data.content || data.text || "";
+      _refImages = data.images || [];
+      if (data.thumbnail && !_refImages.includes(data.thumbnail)) _refImages.unshift(data.thumbnail);
+
+      // 텍스트 프리뷰
       if (_refContent) { $("writeUrlPreview").style.display = "block"; $("writeUrlPreview").textContent = _refContent.slice(0, 300) + "..."; }
+
+      // 이미지 프리뷰 (선택 가능)
+      var imgContainer = $("writeUrlImages");
+      if (imgContainer && _refImages.length > 0) {
+        imgContainer.style.display = "block";
+        var html = '<div style="font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:8px;">페이지 이미지 (' + _refImages.length + '개) — 클릭하여 글에 사용할 이미지 선택</div>';
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;">';
+        _refImages.forEach(function(imgUrl, idx) {
+          html += '<div class="ref-img-item" data-idx="' + idx + '" style="cursor:pointer;border:2px solid var(--border);border-radius:8px;overflow:hidden;transition:all 0.15s;position:relative;">';
+          html += '<img src="' + escapeHtml(imgUrl) + '" style="width:100%;height:70px;object-fit:cover;display:block;" onerror="this.parentElement.style.display=\'none\'">';
+          html += '<div class="ref-img-check" style="display:none;position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;text-align:center;line-height:20px;">v</div>';
+          html += '</div>';
+        });
+        html += '</div>';
+        imgContainer.innerHTML = html;
+
+        // 기본: 전체 선택
+        _refImagesSelected = _refImages.slice();
+        imgContainer.querySelectorAll(".ref-img-item").forEach(function(item) {
+          item.style.borderColor = "var(--accent)";
+          item.querySelector(".ref-img-check").style.display = "block";
+        });
+
+        // 클릭 토글
+        imgContainer.querySelectorAll(".ref-img-item").forEach(function(item) {
+          item.addEventListener("click", function() {
+            var idx = parseInt(item.dataset.idx);
+            var pos = _refImagesSelected.indexOf(_refImages[idx]);
+            if (pos >= 0) {
+              _refImagesSelected.splice(pos, 1);
+              item.style.borderColor = "var(--border)";
+              item.querySelector(".ref-img-check").style.display = "none";
+            } else {
+              _refImagesSelected.push(_refImages[idx]);
+              item.style.borderColor = "var(--accent)";
+              item.querySelector(".ref-img-check").style.display = "block";
+            }
+          });
+        });
+      } else if (imgContainer) {
+        imgContainer.style.display = "none";
+        imgContainer.innerHTML = "";
+      }
     } catch { showModal("오류", "URL을 가져올 수 없습니다.", "확인"); }
     $("writeUrlFetchBtn").textContent = "가져오기"; $("writeUrlFetchBtn").disabled = false;
   });
@@ -7536,15 +7587,22 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
       // [SUBTITLE] → 소제목 스타일
       rendered = rendered.replace(/\[SUBTITLE\]\s*(.+)/g, '<div style="font-size:17px;font-weight:800;color:var(--text);margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--accent);">$1</div>');
 
-      // [image: ...] → 실제 이미지
+      // [image: ...] → 실제 이미지 (URL 크롤링 이미지 우선 사용)
       if (imageMode !== "none") {
         const imgTags = rendered.match(/\[image:\s*(.+?)\]/gi) || [];
+        let refImgIdx = 0; // URL 크롤링 이미지 인덱스
         for (const tag of imgTags) {
           const keyword = tag.match(/\[image:\s*(.+?)\]/i)?.[1] || topic;
-          const urls = await searchImages(keyword, 1);
-          if (urls.length) {
-            rendered = rendered.replace(tag, '<img src="' + urls[0] + '" alt="' + keyword + '" style="max-width:100%;border-radius:8px;margin:8px 0;">');
-          } else { rendered = rendered.replace(tag, ""); }
+          // URL에서 가져온 이미지가 있으면 우선 사용
+          if (_refImagesSelected && _refImagesSelected.length > 0 && refImgIdx < _refImagesSelected.length) {
+            rendered = rendered.replace(tag, '<img src="' + _refImagesSelected[refImgIdx] + '" alt="' + keyword + '" style="max-width:100%;border-radius:8px;margin:8px 0;">');
+            refImgIdx++;
+          } else {
+            const urls = await searchImages(keyword, 1);
+            if (urls.length) {
+              rendered = rendered.replace(tag, '<img src="' + urls[0] + '" alt="' + keyword + '" style="max-width:100%;border-radius:8px;margin:8px 0;">');
+            } else { rendered = rendered.replace(tag, ""); }
+          }
         }
       } else {
         rendered = rendered.replace(/\[image:\s*.+?\]/gi, "");

@@ -311,7 +311,7 @@ export default function App() {
         challenge: "SNS 성장 목표를 정하고 매일 인증하며 실행하는 메이킷 부트캠프입니다.",
         pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 콘텐츠 생성과 자동 발행을 이용하세요.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류, 제휴 문의를 남겨주시면 빠르게 답변드립니다.",
-        community: "SNS메이킷 커뮤니티. SNS 운영, AI 콘텐츠 제작, 마케팅 정보와 질문답변, 챌린지를 함께하세요.",
+        community: "SNS메이킷 커뮤니티. SNS 운영, AI 콘텐츠 제작, 마케팅 정보와 질문답변, 부트캠프를 함께하세요.",
         programs: "SNS 운영에 필요한 자동화 도구, 템플릿, 무료 사진, 무료 영상 자료를 확인하세요.",
         event: "SNS메이킷 이벤트와 혜택을 확인하세요.",
         cases: "SNS메이킷을 활용한 고객사례와 AI 콘텐츠 제작 성공 사례를 확인하세요.",
@@ -617,7 +617,7 @@ export default function App() {
     setBoardCat(cat);
     window.history.pushState(null, "", "/community/" + cat);
     setPage("community"); setOpenMenu(null); setMobileOpen(false);
-    const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", challenge: "챌린지" };
+    const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", challenge: "부트캠프" };
     const title = (catNames[cat] || "커뮤니티") + " - SNS메이킷";
     document.title = title;
     updateOgMeta(title, null, "/community/" + cat);

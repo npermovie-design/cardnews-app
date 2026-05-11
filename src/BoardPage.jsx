@@ -93,7 +93,7 @@ function extractKeywordsBoard(title, plainBody, catName) {
   if (catName) base.push(catName);
   return [...base, ...top].join(", ");
 }
-const CAT_LABEL_MAP = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", showcase: "작품 공유", challenge: "챌린지" };
+const CAT_LABEL_MAP = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", showcase: "작품 공유", challenge: "부트캠프" };
 
 function slugifyKo(input, fallback = "post") {
   const slug = stripMdHtml(input || "")
@@ -170,9 +170,9 @@ function updatePostSeoMeta(post, catId) {
 function resetBoardSeoMeta() {
   document.title = "SNS메이킷 - 커뮤니티";
   const setMeta = (sel, val) => { const el = document.querySelector(sel); if (el) el.content = val; };
-  setMeta('meta[name="description"]', "SNS메이킷 커뮤니티 - 정보공유, 질문답변, 챌린지");
+  setMeta('meta[name="description"]', "SNS메이킷 커뮤니티 - 정보공유, 질문답변, 부트캠프");
   setMeta('meta[property="og:title"]', "SNS메이킷 - 커뮤니티");
-  setMeta('meta[property="og:description"]', "SNS메이킷 커뮤니티 - 정보공유, 질문답변, 챌린지");
+  setMeta('meta[property="og:description"]', "SNS메이킷 커뮤니티 - 정보공유, 질문답변, 부트캠프");
 }
 
 /* ─── BoardPage 메인 ──────────────────────────────────────── */

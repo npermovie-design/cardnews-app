@@ -113,10 +113,10 @@ const CATEGORIES = [
 ];
 
 const AUTOMATION_DOWNLOAD = {
-  fileName: "SNSMakeIt-Setup-0.2.3-fix.exe",
-  url: "https://github.com/npermovie-design/cardnews-app/releases/download/app-v0.2.3-fix/SNSMakeIt-Setup-0.2.3-fix.exe",
+  fileName: "SNSMakeIt-Setup-0.2.4.exe",
+  url: "https://github.com/npermovie-design/cardnews-app/releases/download/app-v0.2.4/SNSMakeIt-Setup-0.2.4.exe",
   size: "430MB",
-  version: "v0.2.3-fix",
+  version: "v0.2.4",
 };
 const AUTOMATION_DOWNLOAD_READY = Boolean(AUTOMATION_DOWNLOAD.url);
 
@@ -252,13 +252,13 @@ const INTERACTIVE_FLOW = [
 
 const DEMO_PRODUCTS = [
   {
-    id: 1, title: "SNS 자동화 봇 v0.2.3",
+    id: 1, title: "SNS 자동화 봇 v0.2.4",
     desc: "테마만 입력하면 AI가 네이버 블로그 글을 자동 생성하고, 카테고리 선택부터 이미지 삽입, 발행까지 한 번에 처리합니다. 빠른 시작 모드로 1분 안에 첫 발행이 가능합니다.",
     category: "automation", price: 0, priceLabel: "무료",
-    version: "v0.2.3", platform: "Windows 10/11",
+    version: "v0.2.4", platform: "Windows 10/11",
     fileSize: "430MB", downloadCount: 180, viewCount: 420,
     tags: ["자동화", "블로그", "네이버", "SEO", "AEO", "영상편집"],
-    downloadUrl: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/naverbot-releases/SNSMakeIt-Setup-0.2.3.exe",
+    downloadUrl: "https://github.com/npermovie-design/cardnews-app/releases/download/app-v0.2.4/SNSMakeIt-Setup-0.2.4.exe",
     thumbnail: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/uploads/automation-thumb.png",
     detailContent: [
       { type: "heading", value: "SNS 자동화 봇이란?" },
@@ -896,18 +896,18 @@ function ProductDetail({ p, C, user, onLogin, onBack, isMobile, isAdmin, onUpdat
               ))}
             </div>
 
-            {/* CTA - 회원 전용 다운로드 */}
+            {/* CTA - 바로 다운로드 */}
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               {p.downloadUrl ? (
-                <button onClick={() => { if (!user) { onLogin(); return; } if (onDownload) onDownload(p.id); window.open(p.downloadUrl, "_blank"); }} style={{
+                <a href={p.downloadUrl} download style={{
                   display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10,
                   padding: "15px 40px", borderRadius: 14, background: GRAD, color: "#fff",
-                  fontWeight: 700, fontSize: 16, border: "none", cursor: "pointer",
+                  fontWeight: 700, fontSize: 16, border: "none", cursor: "pointer", textDecoration: "none",
                   boxShadow: "0 4px 16px rgba(0,0,0,0.06)", flex: isMobile ? 1 : "unset",
-                }}>
+                }} onClick={() => { if (onDownload) onDownload(p.id); }}>
                   <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v10M5 8l4 4 4-4M3 14h12" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   {p.price === 0 ? "무료 다운로드" : "구매하기"}
-                </button>
+                </a>
               ) : (
                 <button style={{
                   padding: "15px 40px", borderRadius: 14,
@@ -917,11 +917,6 @@ function ProductDetail({ p, C, user, onLogin, onBack, isMobile, isAdmin, onUpdat
                 }}>준비중</button>
               )}
             </div>
-            {!user && (
-              <div style={{ fontSize: 12, color: C.muted, marginTop: 10 }}>
-                * 다운로드는 회원 로그인 후 이용 가능합니다.
-              </div>
-            )}
           </div>
         </div>
       </section>
@@ -1142,7 +1137,11 @@ function ProductDetail({ p, C, user, onLogin, onBack, isMobile, isAdmin, onUpdat
 
 /* ── 메인 목록 페이지 ── */
 export default function ProgramsPage({ C, navigate }) {
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const [winW, setWinW] = useState(typeof window !== "undefined" ? window.innerWidth : 1200);
+  useEffect(() => { const h = () => setWinW(window.innerWidth); window.addEventListener("resize", h); return () => window.removeEventListener("resize", h); }, []);
+  const isMobile = winW < 768;
+  const isTablet = winW >= 768 && winW < 1100;
+  const isSmallLaptop = winW >= 1100 && winW < 1400;
 
   useEffect(() => {
     document.title = "SNS 자동화 도구 - SNS메이킷";
@@ -1166,28 +1165,29 @@ export default function ProgramsPage({ C, navigate }) {
         .pg-card{transition:transform .2s,box-shadow .2s}.pg-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,0.08)}
         .pg-faq summary::-webkit-details-marker{display:none}.pg-faq summary{list-style:none}
         .pg-feat-row{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+        @media(max-width:1100px){.pg-feat-row{gap:32px !important}}
         @media(max-width:768px){.pg-feat-row{grid-template-columns:1fr !important;gap:24px !important}.pg-hide-m{display:none !important}}
       `}</style>
 
       {/* ══════ HERO ══════ */}
-      <section style={{ position:"relative", overflow:"hidden", padding: isMobile?"100px 20px 60px":"140px 24px 100px", textAlign:"center", background: isDark?"linear-gradient(180deg,#0f0d1f,#1a1830)":"linear-gradient(180deg, #e8f0ff 0%, #f5f9ff 50%, #fff 100%)" }}>
+      <section style={{ position:"relative", overflow:"hidden", padding: isMobile?"100px 20px 60px": isTablet?"120px 24px 80px":"140px 24px 100px", textAlign:"center", background: isDark?"linear-gradient(180deg,#0f0d1f,#1a1830)":"linear-gradient(180deg, #e8f0ff 0%, #f5f9ff 50%, #fff 100%)" }}>
         <div style={{ maxWidth: 800, margin: "0 auto", position:"relative", zIndex:2 }}>
           <div style={{ display:"inline-flex", alignItems:"center", padding:"6px 16px", borderRadius:99, background:isDark?"rgba(59,130,246,0.12)":`${BRAND}08`, border:`1px solid ${isDark?"rgba(59,130,246,0.2)":`${BRAND}20`}`, color:BRAND, fontSize:13, fontWeight:700, marginBottom:20 }}>
             SNS 운영을 더 쉽게
           </div>
-          <h1 style={{ fontSize:isMobile?36:60, lineHeight:1.1, letterSpacing:-1.5, margin:"0 0 20px", fontWeight:800 }}>
+          <h1 style={{ fontSize:isMobile?36: isTablet?46:60, lineHeight:1.1, letterSpacing:-1.5, margin:"0 0 20px", fontWeight:800 }}>
             콘텐츠 제작부터<br/>발행까지, 한 번에
           </h1>
-          <p style={{ maxWidth:520, margin:"0 auto 36px", fontSize:isMobile?16:19, color:SUB, lineHeight:1.7 }}>
+          <p style={{ maxWidth:520, margin:"0 auto 36px", fontSize:isMobile?16: isTablet?17:19, color:SUB, lineHeight:1.7 }}>
             블로그 글쓰기, 카드뉴스, 키워드 분석, 자동 발행까지.{!isMobile&&<br/>}복잡한 SNS 운영을 하나의 플랫폼으로 해결하세요.
           </p>
           <div style={{ display:"flex", justifyContent:"center", gap:12, flexWrap:"wrap" }}>
             <a href={AUTOMATION_DOWNLOAD.url} download={AUTOMATION_DOWNLOAD.fileName}
-              style={{ padding:"15px 36px", borderRadius:99, border:"none", background:"#1a1a1a", color:"#fff", fontSize:17, fontWeight:600, textDecoration:"none", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8 }}>
+              style={{ padding: isMobile?"14px 28px":"15px 36px", borderRadius:99, border:"none", background:"#1a1a1a", color:"#fff", fontSize:isMobile?15: isTablet?16:17, fontWeight:600, textDecoration:"none", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8 }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               프로그램 다운로드
             </a>
-            <button onClick={() => navigate?.("pricing")} style={{ padding:"15px 36px", borderRadius:99, border:`1px solid ${isDark?"rgba(255,255,255,0.15)":"#cbd5e0"}`, background:"transparent", color:C.text, fontSize:17, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+            <button onClick={() => navigate?.("pricing")} style={{ padding: isMobile?"14px 28px":"15px 36px", borderRadius:99, border:`1px solid ${isDark?"rgba(255,255,255,0.15)":"#cbd5e0"}`, background:"transparent", color:C.text, fontSize:isMobile?15: isTablet?16:17, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
               요금 알아보기
             </button>
           </div>
@@ -1195,10 +1195,10 @@ export default function ProgramsPage({ C, navigate }) {
       </section>
 
       {/* ══════ 주요 기능 — imweb 스타일 교대 레이아웃 ══════ */}
-      <section style={{ maxWidth:1100, margin:"0 auto", padding:isMobile?"60px 20px":"100px 40px" }}>
-        <div style={{ textAlign:"center", marginBottom:isMobile?40:64 }}>
+      <section style={{ maxWidth:1100, margin:"0 auto", padding:isMobile?"60px 20px": isTablet?"80px 28px":"100px 40px" }}>
+        <div style={{ textAlign:"center", marginBottom:isMobile?40: isTablet?48:64 }}>
           <div style={{ fontSize:13, fontWeight:700, color:BRAND, marginBottom:8 }}>주요 기능</div>
-          <h2 style={{ fontSize:isMobile?28:42, fontWeight:800, margin:0, color:INK, lineHeight:1.2, letterSpacing:-0.5 }}>SNS 운영에 필요한 모든 도구</h2>
+          <h2 style={{ fontSize:isMobile?28: isTablet?34:42, fontWeight:800, margin:0, color:INK, lineHeight:1.2, letterSpacing:-0.5 }}>SNS 운영에 필요한 모든 도구</h2>
         </div>
 
         <div style={{ display:"flex", flexDirection:"column", gap:isMobile?40:56 }}>

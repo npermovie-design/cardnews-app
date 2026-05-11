@@ -330,6 +330,35 @@ async function handleFetchUrlContent(req, res) {
     const extracted = extractArticleContent(html);
     const content = extracted.content;
 
+    // 본문 이미지 추출 (og:image 외 실제 본문 이미지들)
+    const images = [];
+    const seenImgUrls = new Set();
+    if (thumbnail) seenImgUrls.add(thumbnail);
+    const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+    let imgMatch;
+    while ((imgMatch = imgRegex.exec(html)) !== null) {
+      let imgUrl = imgMatch[1];
+      if (!imgUrl || imgUrl.startsWith("data:")) continue;
+      // 상대 경로 → 절대 경로
+      if (imgUrl.startsWith("//")) imgUrl = "https:" + imgUrl;
+      else if (imgUrl.startsWith("/")) {
+        try { const u = new URL(url); imgUrl = u.origin + imgUrl; } catch { continue; }
+      }
+      // 작은 아이콘/트래커/광고 필터
+      if (/(icon|logo|sprite|pixel|tracker|banner|ad[_-]|btn|button|badge|avatar)/i.test(imgUrl)) continue;
+      const alt = (imgMatch[0].match(/alt=["']([^"']*?)["']/i)?.[1] || "").toLowerCase();
+      if (/(icon|logo|avatar|captcha)/i.test(alt)) continue;
+      // 크기 힌트로 필터 (width/height < 80)
+      const wMatch = imgMatch[0].match(/width=["']?(\d+)/i);
+      const hMatch = imgMatch[0].match(/height=["']?(\d+)/i);
+      if (wMatch && parseInt(wMatch[1]) < 80) continue;
+      if (hMatch && parseInt(hMatch[1]) < 80) continue;
+      if (seenImgUrls.has(imgUrl)) continue;
+      seenImgUrls.add(imgUrl);
+      images.push(imgUrl);
+      if (images.length >= 20) break;
+    }
+
     // 사이트 종류 감지
     let type = "web";
     const urlLower = url.toLowerCase();
@@ -354,6 +383,7 @@ async function handleFetchUrlContent(req, res) {
       publishedAt,
       author,
       thumbnail,
+      images,
       url,
     });
   } catch (e) {

@@ -318,10 +318,11 @@
           <div class="card" style="cursor:default;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <span style="font-size:13px;font-weight:700;color:var(--accent);">업데이트</span>
-              <span style="font-size:11px;color:var(--text-dim);">2026-05-10</span>
+              <span style="font-size:11px;color:var(--text-dim);">2026-05-11</span>
             </div>
             <div style="font-size:16px;font-weight:700;margin-bottom:8px;">v0.2.4 업데이트 안내</div>
             <div style="font-size:13px;color:var(--text-sub);line-height:1.8;">
+              - 노트북 해상도별 UI 최적화 (1024~1440px 중간 해상도 대응)<br>
               - 메뉴 구조 대폭 개편 (글쓰기 통합, 커뮤니티 허브)<br>
               - 블로그/카페 글쓰기 통합 (탭 전환 방식)<br>
               - 카드뉴스 디자인 다양화 (5가지 레이아웃 + 모든 슬라이드 사진 자동삽입)<br>
@@ -329,7 +330,8 @@
               - 영상 편집기 캡컷 다크 테마 적용<br>
               - 자막 더듬거림/반복 제거 강화<br>
               - 이메일/비밀번호 직접 로그인 + 자동 로그인<br>
-              - 네이버 로그인 감지 개선
+              - 네이버 로그인 감지 개선<br>
+              - 홈페이지 exe 직접 다운로드 지원
             </div>
           </div>
           <div class="card" style="cursor:default;">
@@ -1998,6 +2000,7 @@
                 <button class="btn btn-outline btn-sm" id="writeUrlFetchBtn" style="white-space:nowrap;">가져오기</button>
               </div>
               <div id="writeUrlPreview" style="display:none;margin-top:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text-sub);line-height:1.6;max-height:80px;overflow-y:auto;"></div>
+              <div id="writeUrlImages" style="display:none;margin-top:8px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;"></div>
 
               <label>원하는 글 방향 <span class="optional">(선택)</span></label>
               <textarea id="writeExtra" rows="2" placeholder="예: 이미지 먼저 보여주고, 짧은 문단으로 쉽게 써줘. 핵심 단어는 굵게 강조해줘."></textarea>

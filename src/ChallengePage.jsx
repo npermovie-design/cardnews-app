@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { supabase, uploadFileToStorage } from "./storage";
 import { RichEditor } from "./BoardComponents.jsx";
 import DOMPurify from "dompurify";
@@ -13,9 +13,10 @@ const STATUS_MAP = {
   completed:  { label: "완료",   color: "#6b7280", bg: "rgba(107,114,128,0.1)" },
 };
 const TYPE_MAP = {
-  challenge: { label: "챌린지", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
-  meetup:    { label: "모임",   color: "#8b5cf6", bg: "rgba(139,92,246,0.1)" },
-  study:     { label: "스터디", color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
+  challenge: { label: "부트캠프", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
+  class:     { label: "클래스",   color: "#10b981", bg: "rgba(16,185,129,0.1)" },
+  meetup:    { label: "모임",     color: "#8b5cf6", bg: "rgba(139,92,246,0.1)" },
+  study:     { label: "스터디",   color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
 };
 const PURPOSE_OPTIONS = ["SNS 수익화", "꾸준한 습관 만들기", "브랜딩 / 퍼스널브랜드", "마케팅 실력 향상", "기타"];
 
@@ -168,7 +169,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             <span style={{ background: `linear-gradient(135deg, ${PRIMARY}, #60a5fa)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>SNS 부트캠프</span>
           </h1>
           <p style={{ fontSize: mob ? 14 : 17, color: "#4a5568", lineHeight: 1.7, marginBottom: 32 }}>
-            챌린지, 스터디, 모임까지 다양한 프로그램을 운영합니다.<br/>
+            부트캠프, 클래스, 스터디, 모임까지 다양한 프로그램을 운영합니다.<br/>
             함께 실행하고, 서로 피드백하며 성장하세요.
           </p>
           {isAdmin && (
@@ -186,8 +187,8 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
         {challenges.length === 0 ? (
           <div style={{ textAlign: "center", padding: "80px 20px", color: C.muted }}>
             <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1" strokeLinecap="round" style={{ margin: "0 auto 20px", display: "block", opacity: 0.25 }}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-            <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>아직 등록된 챌린지가 없어요</div>
-            <div style={{ fontSize: 14 }}>곧 새로운 챌린지가 시작될 예정입니다</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>아직 등록된 부트캠프가 없어요</div>
+            <div style={{ fontSize: 14 }}>곧 새로운 부트캠프가 시작될 예정입니다</div>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill,minmax(${mob ? "100%" : "340px"},1fr))`, gap: 24 }}>
@@ -328,7 +329,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             {[
               ["미션 게시판", () => openBoard(ch)],
               ["현황판", () => document.getElementById("public-board")?.scrollIntoView({ behavior: "smooth" })],
-              ["챌린지 개요", () => document.getElementById("sect-overview")?.scrollIntoView({ behavior: "smooth" })],
+              ["부트캠프 개요", () => document.getElementById("sect-overview")?.scrollIntoView({ behavior: "smooth" })],
               ...(canApply && !hasApplied ? [["신청하기", () => document.getElementById("cta-section")?.scrollIntoView({ behavior: "smooth" })]] : []),
               ...(isAdmin ? [["신청자 관리", () => openAdmin(ch)]] : []),
             ].map(([label, fn], i) => (
@@ -343,7 +344,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
 
           {/* 콘텐츠 섹션들 */}
           <div id="sect-overview" />
-          {ch.description && <Sect title="챌린지 개요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.description) }} /></Sect>}
+          {ch.description && <Sect title="부트캠프 개요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.description) }} /></Sect>}
           {ch.target_audience && <Sect title="이런 사람에게 추천해요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.target_audience) }} /></Sect>}
           {ch.process && <Sect title="진행 방식" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.process) }} /></Sect>}
           {ch.rules && <Sect title="규칙" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.rules) }} /></Sect>}
@@ -353,7 +354,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
           {/* CTA */}
           <div id="cta-section" style={{ background: "linear-gradient(135deg, #E8F0FF, rgba(59,130,246,0.08))", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 24, padding: mob ? "36px 20px" : "52px 40px", textAlign: "center", marginTop: 44 }}>
             <div style={{ fontSize: mob ? 20 : 28, fontWeight: 700, color: "#1a1a1a", marginBottom: 14 }}>
-              {isParticipant ? "미션 게시판에 입장하세요" : hasApplied ? "신청이 완료되었습니다" : canApply ? "지금 바로 신청하세요" : "다음 챌린지를 기대해주세요"}
+              {isParticipant ? "미션 게시판에 입장하세요" : hasApplied ? "신청이 완료되었습니다" : canApply ? "지금 바로 신청하세요" : "다음 부트캠프를 기대해주세요"}
             </div>
             {isParticipant ? (
               <button onClick={() => openBoard(ch)} style={ctaBtn(PRIMARY)}>미션 게시판 입장</button>
@@ -397,7 +398,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
         <h2 style={{ fontSize: 24, fontWeight: 700, color: C.text, marginBottom: 10 }}>신청 완료!</h2>
         <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, marginBottom: 28 }}>
           관리자 확인 후 참여가 확정되면 안내를 드립니다.
-          {sel.start_date && <><br/>챌린지 시작일: <strong style={{ color: C.text }}>{fmt(sel.start_date)}</strong></>}
+          {sel.start_date && <><br/>부트캠프 시작일: <strong style={{ color: C.text }}>{fmt(sel.start_date)}</strong></>}
         </p>
         <StartProofUploader ch={sel} C={C} bdr={bdr} isDark={isDark} user={user} myApp={myApp} setMyApp={setMyApp} />
         <div style={{ marginTop: 16 }}>
@@ -458,13 +459,13 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
   const inp = { width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
   const phoneValid = /^01[016789]-\d{3,4}-\d{4}$/.test(f.phone);
   const ok = f.name && phoneValid && f.email && f.purpose && f.agree_rules && (ch.price > 0 ? f.agree_refund : true);
-  const pickStartFile = e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const applyStartImg = (file) => {
+    if (!file || !file.type.startsWith("image/")) return;
     if (file.size > 5 * 1024 * 1024) { alert("이미지는 5MB 이하만 업로드할 수 있습니다."); return; }
     setStartFile(file);
     setStartPreview(URL.createObjectURL(file));
   };
+  const pickStartFile = e => applyStartImg(e.target.files?.[0]);
 
   return (
     <div style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)" }}>
@@ -474,7 +475,7 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
         </button>
         <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 24, padding: mob ? "28px 20px" : "40px 36px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 6 }}>{ch.title}</h2>
-          <p style={{ fontSize: 13, color: C.muted, marginBottom: 32 }}>챌린지 참가 신청</p>
+          <p style={{ fontSize: 13, color: C.muted, marginBottom: 32 }}>부트캠프 참가 신청</p>
 
           <Fld label="이름 *" C={C}><input value={f.name} onChange={e => up("name", e.target.value)} placeholder="이름" style={inp} /></Fld>
           <Fld label="연락처 *" C={C}><input value={f.phone} onChange={e => {
@@ -515,16 +516,24 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
           </Fld>
           <Fld label="시작 데이터 인증 이미지" C={C}>
             <input type="file" accept="image/*" onChange={pickStartFile} style={{ display: "none" }} id="challenge-start-proof" />
-            <label htmlFor="challenge-start-proof" style={{ display: "block", border: `2px dashed ${startPreview ? PRIMARY : bdr}`, borderRadius: 14, padding: startPreview ? 0 : "22px 16px", textAlign: "center", cursor: "pointer", background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa", overflow: "hidden" }}>
+            <div
+              onClick={() => document.getElementById("challenge-start-proof")?.click()}
+              onDrop={e => { e.preventDefault(); applyStartImg(e.dataTransfer?.files?.[0]); }}
+              onDragOver={e => e.preventDefault()}
+              onDragEnter={e => e.preventDefault()}
+              onPaste={e => { const items = e.clipboardData?.items; if (!items) return; for (const item of items) { if (item.type.startsWith("image/")) { e.preventDefault(); applyStartImg(item.getAsFile()); return; } } }}
+              tabIndex={0}
+              style={{ border: `2px dashed ${startPreview ? PRIMARY : bdr}`, borderRadius: 14, padding: startPreview ? 0 : "22px 16px", textAlign: "center", cursor: "pointer", background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa", overflow: "hidden", outline: "none", transition: "all 0.2s" }}>
               {startPreview ? (
                 <img src={startPreview} alt="시작 인증" style={{ width: "100%", maxHeight: 260, objectFit: "cover", display: "block" }} />
               ) : (
                 <>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>챌린지 시작 전 현재 상태 화면을 캡처해서 올려주세요</div>
-                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>예: 인스타 프로필 팔로워 수, 릴스/게시물 조회수, 블로그 방문자 수, 유튜브 채널 구독자 수 화면</div>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.5" style={{ display: "block", margin: "0 auto 10px" }}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>클릭, 드래그 또는 캡처 후 Ctrl+V</div>
+                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>팔로워 수, 조회수, 방문자 수 등 현재 상태 화면</div>
                 </>
               )}
-            </label>
+            </div>
           </Fld>
           <Fld label="참여 목적 *" C={C}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
@@ -543,7 +552,7 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
           <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: C.text }}>
               <input type="checkbox" checked={f.agree_rules} onChange={e => up("agree_rules", e.target.checked)} style={{ width: 18, height: 18, accentColor: PRIMARY }} />
-              챌린지 규칙에 동의합니다 <span style={{ color: "#ef4444" }}>*</span>
+              부트캠프 규칙에 동의합니다 <span style={{ color: "#ef4444" }}>*</span>
             </label>
             {ch.price > 0 && <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: C.text }}>
               <input type="checkbox" checked={f.agree_refund} onChange={e => up("agree_refund", e.target.checked)} style={{ width: 18, height: 18, accentColor: PRIMARY }} />
@@ -586,13 +595,16 @@ function StartProofUploader({ ch, C, bdr, isDark, user, myApp, setMyApp, compact
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
   if (!myApp?.id) return null;
-  const pickFile = e => {
-    const next = e.target.files?.[0];
-    if (!next) return;
-    if (next.size > 5 * 1024 * 1024) { alert("이미지는 5MB 이하만 업로드할 수 있습니다."); return; }
-    setFile(next);
-    setPreview(URL.createObjectURL(next));
+  const applyImg = (f) => {
+    if (!f || !f.type.startsWith("image/")) return;
+    if (f.size > 5 * 1024 * 1024) { alert("이미지는 5MB 이하만 업로드할 수 있습니다."); return; }
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
   };
+  const pickFile = e => applyImg(e.target.files?.[0]);
+  const onDrop = e => { e.preventDefault(); applyImg(e.dataTransfer?.files?.[0]); };
+  const onDragOver = e => e.preventDefault();
+  const onPaste = e => { const items = e.clipboardData?.items; if (!items) return; for (const item of items) { if (item.type.startsWith("image/")) { e.preventDefault(); applyImg(item.getAsFile()); return; } } };
   const submit = async () => {
     if (!file) return;
     setBusy(true);
@@ -622,9 +634,11 @@ function StartProofUploader({ ch, C, bdr, isDark, user, myApp, setMyApp, compact
       ) : (
         <>
           <input id={`start-proof-after-${myApp.id}`} type="file" accept="image/*" onChange={pickFile} style={{ display: "none" }} />
-          <label htmlFor={`start-proof-after-${myApp.id}`} style={{ display: "block", border: `1.5px dashed ${preview ? PRIMARY : bdr}`, borderRadius: 10, padding: preview ? 0 : "16px 12px", textAlign: "center", cursor: "pointer", color: C.muted, fontSize: 12, overflow: "hidden" }}>
-            {preview ? <img src={preview} alt="시작 인증 미리보기" style={{ width: "100%", maxHeight: compact ? 130 : 180, objectFit: "cover", display: "block" }} /> : "팔로워/조회수/방문자 수 화면 캡처 업로드"}
-          </label>
+          <div onDrop={onDrop} onDragOver={onDragOver} onDragEnter={e => e.preventDefault()} onPaste={onPaste} tabIndex={0}
+            onClick={() => document.getElementById(`start-proof-after-${myApp.id}`)?.click()}
+            style={{ display: "block", border: `1.5px dashed ${preview ? PRIMARY : bdr}`, borderRadius: 10, padding: preview ? 0 : "16px 12px", textAlign: "center", cursor: "pointer", color: C.muted, fontSize: 12, overflow: "hidden", outline: "none", transition: "all 0.2s" }}>
+            {preview ? <img src={preview} alt="시작 인증 미리보기" style={{ width: "100%", maxHeight: compact ? 130 : 180, objectFit: "cover", display: "block" }} /> : (<><div>클릭, 드래그 또는 캡처 후 Ctrl+V</div><div style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>팔로워/조회수/방문자 수 화면</div></>)}
+          </div>
           {file && <button disabled={busy} onClick={submit} style={{ width: "100%", marginTop: 10, padding: "10px 12px", borderRadius: 10, border: "none", background: "#1A1A2E", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{busy ? "저장 중..." : "시작 인증 저장"}</button>}
         </>
       )}
@@ -676,6 +690,8 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   const [endProofPreview, setEndProofPreview] = useState("");
   const [endProofBusy, setEndProofBusy] = useState(false);
   const [endProofEditing, setEndProofEditing] = useState(false);
+  const [dragOverDay, setDragOverDay] = useState(null); // 드래그 중인 Day 셀 하이라이트
+  const boardRef = useRef(null);
   const [missionEditMode, setMissionEditMode] = useState(false);
   const fileInputRef = useRef(null);
   const extraFileInputRef = useRef(null);
@@ -709,19 +725,33 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   const incompleteCount = incompleteDays.length;
 
   // 스크린샷 선택 핸들러
-  const handleScreenshot = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const applyFile = (file, target) => {
+    if (!file || !file.type.startsWith("image/")) return;
     if (file.size > 5 * 1024 * 1024) { alert("파일 크기는 5MB 이하만 가능합니다."); return; }
-    setScreenshotFile(file);
-    setScreenshotPreview(URL.createObjectURL(file));
+    if (target === "extra") { setExtraFile(file); setExtraPreview(URL.createObjectURL(file)); }
+    else { setScreenshotFile(file); setScreenshotPreview(URL.createObjectURL(file)); }
   };
-  const handleExtraScreenshot = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert("파일 크기는 5MB 이하만 가능합니다."); return; }
-    setExtraFile(file);
-    setExtraPreview(URL.createObjectURL(file));
+  const handleScreenshot = (e) => applyFile(e.target.files?.[0], "main");
+  const handleExtraScreenshot = (e) => applyFile(e.target.files?.[0], "extra");
+  const [dragTarget, setDragTarget] = useState(null);
+  const dropBlockRef = useRef(false);
+  const makeDragProps = (target) => ({
+    onDragEnter: e => { e.preventDefault(); setDragTarget(target); },
+    onDragOver: e => { e.preventDefault(); },
+    onDragLeave: e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragTarget(null); },
+    onDrop: e => { e.preventDefault(); e.stopPropagation(); setDragTarget(null); dropBlockRef.current = true; setTimeout(() => { dropBlockRef.current = false; }, 300); applyFile(e.dataTransfer?.files?.[0], target); },
+  });
+  const safeClick = (fn) => (e) => { if (dropBlockRef.current) { e.preventDefault(); e.stopPropagation(); return; } fn(); };
+  const handlePaste = (target) => (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        applyFile(item.getAsFile(), target);
+        return;
+      }
+    }
   };
 
   // 인증 제출
@@ -791,13 +821,15 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
     return score;
   };
   const myScore = calcScore(myMissions);
-  const pickEndProofFile = e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { alert("이미지는 5MB 이하만 업로드할 수 있습니다."); return; }
-    setEndProofFile(file);
-    setEndProofPreview(URL.createObjectURL(file));
+  const applyEndFile = (f) => {
+    if (!f || !f.type.startsWith("image/")) return;
+    if (f.size > 5 * 1024 * 1024) { alert("이미지는 5MB 이하만 업로드할 수 있습니다."); return; }
+    setEndProofFile(f);
+    setEndProofPreview(URL.createObjectURL(f));
   };
+  const pickEndProofFile = e => applyEndFile(e.target.files?.[0]);
+  const endDrop = e => { e.preventDefault(); applyEndFile(e.dataTransfer?.files?.[0]); };
+  const endPaste = e => { const items = e.clipboardData?.items; if (!items) return; for (const item of items) { if (item.type.startsWith("image/")) { e.preventDefault(); applyEndFile(item.getAsFile()); return; } } };
   const submitEndProof = async () => {
     if (!endProofFile || !myApp?.id) return;
     setEndProofBusy(true);
@@ -859,11 +891,14 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   };
 
   return (
-    <div style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)" }}>
+    <div ref={boardRef}
+      onDragOver={e => e.preventDefault()}
+      onDrop={e => { e.preventDefault(); e.stopPropagation(); }}
+      style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)" }}>
       <div style={{ maxWidth: 860, margin: "0 auto", padding: mob ? "24px 16px 80px" : "40px 20px 100px" }}>
         {/* 헤더 */}
         <button onClick={onBack} style={{ background: "none", border: "none", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 16, display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit" }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg> 챌린지 상세로
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg> 부트캠프 상세로
         </button>
         <h2 style={{ fontSize: mob ? 20 : 24, fontWeight: 700, color: C.text, marginBottom: 4 }}>{ch.title}</h2>
         <p style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>{ch.daily_mission || "매일 미션을 수행하고 인증 링크를 등록하세요"}</p>
@@ -917,6 +952,13 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
         {/* ── 탭: 날짜별 캘린더 체크 ── */}
         {tab === "calendar" && (
           <div>
+            {/* 드래그 안내 */}
+            {isParticipant && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 14px", borderRadius: 10, background: isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.1)" }}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={PRIMARY} strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                <span style={{ fontSize: 12, color: C.muted }}>Day 셀에 <strong style={{ color: C.text }}>이미지를 드래그해서 놓거나</strong>, 클릭 후 <strong style={{ color: C.text }}>Ctrl+V로 붙여넣기</strong>하면 바로 인증됩니다</span>
+              </div>
+            )}
             {/* Day 그리드 */}
             <div style={{ display: "grid", gridTemplateColumns: mob ? "repeat(5, 1fr)" : "repeat(7, 1fr)", gap: 8, marginBottom: 24 }}>
               {isParticipant && (
@@ -943,12 +985,26 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 const allCount = (allByDay[d] || []).length;
                 const wknd = isWeekend(d);
                 return (
-                  <div key={d} onClick={() => { setSelDay(selDay === d ? null : d); setProofPanel(null); setMissionEditMode(false); }}
+                  <div key={d}
+                    onClick={() => { setSelDay(selDay === d ? null : d); setProofPanel(null); setMissionEditMode(false); }}
+                    onDragOver={e => { e.preventDefault(); setDragOverDay(d); }}
+                    onDragEnter={e => { e.preventDefault(); setDragOverDay(d); }}
+                    onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverDay(null); }}
+                    onDrop={e => {
+                      e.preventDefault(); setDragOverDay(null);
+                      const file = e.dataTransfer?.files?.[0];
+                      if (file && file.type.startsWith("image/") && d <= currentDayNum && isParticipant) {
+                        setSelDay(d); setProofPanel(null); setMissionEditMode(false);
+                        applyFile(file, "main");
+                        setTimeout(() => document.getElementById("challenge-day-proof-panel")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+                      }
+                    }}
                     style={{
                       borderRadius: 14, padding: mob ? "10px 4px" : "12px 8px", textAlign: "center", cursor: "pointer",
-                      border: selDay === d ? `2px solid ${PRIMARY}` : today ? `2px solid ${PRIMARY}40` : `1px solid ${bdr}`,
-                      background: checked && wknd ? "rgba(245,158,11,0.08)" : checked ? "rgba(59,130,246,0.06)" : missed ? "rgba(239,68,68,0.04)" : wknd ? (isDark ? "rgba(245,158,11,0.03)" : "rgba(245,158,11,0.03)") : card,
+                      border: dragOverDay === d ? `2px solid ${PRIMARY}` : selDay === d ? `2px solid ${PRIMARY}` : today ? `2px solid ${PRIMARY}40` : `1px solid ${bdr}`,
+                      background: dragOverDay === d ? "rgba(59,130,246,0.15)" : checked && wknd ? "rgba(245,158,11,0.08)" : checked ? "rgba(59,130,246,0.06)" : missed ? "rgba(239,68,68,0.04)" : wknd ? (isDark ? "rgba(245,158,11,0.03)" : "rgba(245,158,11,0.03)") : card,
                       transition: "all 0.15s", position: "relative",
+                      transform: dragOverDay === d ? "scale(1.05)" : undefined,
                     }}
                     onMouseEnter={e => { if (selDay !== d) e.currentTarget.style.transform = "translateY(-2px)"; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = "none"; }}>
@@ -1005,7 +1061,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>종료 다음날 데이터 인증</div>
                     <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{endProofDate.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}</div>
-                    <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>예: 챌린지 후 늘어난 팔로워 수, 조회수, 방문자 수가 보이는 화면</div>
+                    <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>예: 부트캠프 후 늘어난 팔로워 수, 조회수, 방문자 수가 보이는 화면</div>
                   </div>
                   <button onClick={() => { setProofPanel(null); setEndProofEditing(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 18 }}>x</button>
                 </div>
@@ -1014,9 +1070,11 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 ) : canUploadEndProof ? (
                   <div>
                     <input id="challenge-end-proof" type="file" accept="image/*" onChange={pickEndProofFile} style={{ display: "none" }} />
-                    <label htmlFor="challenge-end-proof" style={{ display: "block", border: `1.5px dashed ${endProofPreview ? PRIMARY : bdr}`, borderRadius: 12, padding: endProofPreview ? 0 : "22px 16px", textAlign: "center", cursor: "pointer", overflow: "hidden", fontSize: 13, color: C.muted, background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa" }}>
-                      {endProofPreview ? <img src={endProofPreview} alt="종료 인증 미리보기" style={{ width: "100%", maxHeight: 240, objectFit: "cover", display: "block" }} /> : "마지막 팔로워/조회수/방문자 수 화면 캡처 업로드"}
-                    </label>
+                    <div onDrop={e => { e.preventDefault(); e.stopPropagation(); applyEndFile(e.dataTransfer?.files?.[0]); }} onDragOver={e => { e.preventDefault(); e.stopPropagation(); }} onDragEnter={e => { e.preventDefault(); }} onPaste={endPaste} tabIndex={0}
+                      onClick={() => document.getElementById("challenge-end-proof")?.click()}
+                      style={{ display: "block", border: `1.5px dashed ${endProofPreview ? PRIMARY : bdr}`, borderRadius: 12, padding: endProofPreview ? 0 : "22px 16px", textAlign: "center", cursor: "pointer", overflow: "hidden", fontSize: 13, color: C.muted, background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa", outline: "none", transition: "all 0.2s" }}>
+                      {endProofPreview ? <img src={endProofPreview} alt="종료 인증 미리보기" style={{ width: "100%", maxHeight: 240, objectFit: "cover", display: "block" }} /> : (<><div>클릭, 드래그 또는 캡처 후 Ctrl+V</div><div style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>마지막 팔로워/조회수/방문자 수 화면</div></>)}
+                    </div>
                     {endProofFile && <button disabled={endProofBusy} onClick={submitEndProof} style={{ width: "100%", marginTop: 10, padding: "12px 14px", borderRadius: 10, border: "none", background: "#1A1A2E", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{endProofBusy ? "저장 중..." : "종료 인증 저장"}</button>}
                   </div>
                 ) : null}
@@ -1055,13 +1113,20 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                       <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{missionEditMode ? "인증 다시 올리기" : "인증 링크 등록"}</span>
                       {isWeekend(selDay) && <span style={{ fontSize: 11, fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.1)", padding: "2px 8px", borderRadius: 99 }}>주말 보너스 x2</span>}
                     </div>
-                    <input value={link} onChange={e => setLink(e.target.value)} placeholder="블로그 글, 인스타 포스팅 URL 등" style={{ ...inp, marginBottom: 8 }} />
+                    <input value={link} onChange={e => setLink(e.target.value)} placeholder="블로그 글, 인스타 포스팅 URL 등" style={{ ...inp, marginBottom: 4 }} />
+                    <div style={{ fontSize: 11, color: selDay && lateDaysFor({ created_at: new Date().toISOString(), day: selDay }) > 0 ? "#ef4444" : "#22c55e", fontWeight: 700, marginBottom: 8, padding: "4px 0" }}>
+                      Day {selDay} 해당 날짜: {selDay && dayDate(selDay).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric", weekday: "short" })}
+                      {selDay && lateDaysFor({ created_at: new Date().toISOString(), day: selDay }) > 0
+                        ? ` (${lateDaysFor({ created_at: new Date().toISOString(), day: selDay })}일 지연 — 해당 날짜에 작성한 글인지 확인해주세요)`
+                        : " (오늘 해당)"}
+                    </div>
 
-                    {/* 스크린샷 업로드 */}
+                    {/* 스크린샷 업로드 — 클릭/드래그/붙여넣기 */}
                     <div style={{ marginBottom: 8 }}>
                       <input ref={fileInputRef} type="file" accept="image/*" onChange={handleScreenshot} style={{ display: "none" }} />
-                      <div onClick={() => fileInputRef.current?.click()}
-                        style={{ border: `2px dashed ${screenshotPreview ? PRIMARY : bdr}`, borderRadius: 12, padding: screenshotPreview ? 0 : "20px 16px", textAlign: "center", cursor: "pointer", background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa", overflow: "hidden", transition: "border-color 0.2s" }}>
+                      <div onClick={safeClick(() => fileInputRef.current?.click())}
+                        {...makeDragProps("main")} onPaste={handlePaste("main")} tabIndex={0}
+                        style={{ border: `2px dashed ${dragTarget === "main" ? PRIMARY : screenshotPreview ? PRIMARY : bdr}`, borderRadius: 12, padding: screenshotPreview ? 0 : "20px 16px", textAlign: "center", cursor: "pointer", background: dragTarget === "main" ? (isDark ? "rgba(59,130,246,0.08)" : "rgba(59,130,246,0.06)") : (isDark ? "rgba(255,255,255,0.02)" : "#fafafa"), overflow: "hidden", transition: "all 0.2s", outline: "none" }}>
                         {screenshotPreview ? (
                           <div style={{ position: "relative" }}>
                             <img src={screenshotPreview} alt="preview" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
@@ -1070,7 +1135,8 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                         ) : (
                           <>
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.5" style={{ display: "block", margin: "0 auto 8px" }}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                            <div style={{ fontSize: 13, color: C.muted }}>인증 스크린샷 첨부 (선택, 최대 5MB)</div>
+                            <div style={{ fontSize: 13, color: C.muted, marginBottom: 4 }}>클릭, 드래그 또는 캡처 후 Ctrl+V로 바로 붙여넣기</div>
+                            <div style={{ fontSize: 11, color: C.muted, opacity: 0.6 }}>선택, 최대 5MB</div>
                           </>
                         )}
                       </div>
@@ -1080,8 +1146,9 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     <div style={{ fontSize: 12, fontWeight: 600, color: "#f59e0b", marginBottom: 6, marginTop: 4 }}>추가 활동 (가산점 +0.5점)</div>
                     <div style={{ marginBottom: 12 }}>
                       <input ref={extraFileInputRef} type="file" accept="image/*" onChange={handleExtraScreenshot} style={{ display: "none" }} />
-                      <div onClick={() => extraFileInputRef.current?.click()}
-                        style={{ border: `1.5px dashed ${extraPreview ? "#f59e0b" : bdr}`, borderRadius: 12, padding: extraPreview ? 0 : "16px 14px", textAlign: "center", cursor: "pointer", background: isDark ? "rgba(245,158,11,0.04)" : "rgba(245,158,11,0.03)", overflow: "hidden" }}>
+                      <div onClick={safeClick(() => extraFileInputRef.current?.click())}
+                        {...makeDragProps("extra")} onPaste={handlePaste("extra")} tabIndex={0}
+                        style={{ border: `1.5px dashed ${dragTarget === "extra" ? "#f59e0b" : extraPreview ? "#f59e0b" : bdr}`, borderRadius: 12, padding: extraPreview ? 0 : "16px 14px", textAlign: "center", cursor: "pointer", background: dragTarget === "extra" ? "rgba(245,158,11,0.1)" : (isDark ? "rgba(245,158,11,0.04)" : "rgba(245,158,11,0.03)"), overflow: "hidden", outline: "none", transition: "all 0.2s" }}>
                         {extraPreview ? (
                           <div style={{ position: "relative" }}>
                             <img src={extraPreview} alt="추가 활동 미리보기" style={{ width: "100%", maxHeight: 180, objectFit: "cover", display: "block" }} />
@@ -1090,18 +1157,32 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                         ) : (
                           <>
                             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="1.7" style={{ display: "block", margin: "0 auto 8px" }}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                            <div style={{ fontSize: 13, color: C.muted }}>추가 활동은 사진 인증만 가능 (선택, 최대 5MB)</div>
+                            <div style={{ fontSize: 13, color: C.muted, marginBottom: 4 }}>클릭, 드래그 또는 캡처 후 Ctrl+V로 붙여넣기</div>
+                            <div style={{ fontSize: 11, color: C.muted, opacity: 0.6 }}>선택, 최대 5MB</div>
                           </>
                         )}
                       </div>
                     </div>
+                    {/* 예상 점수 미리보기 */}
+                    {(() => {
+                      const base = isWeekend(selDay) ? 2 : 1;
+                      const bonus = extraFile || (missionEditMode && myMissions[selDay]?.extra_link) ? 0.5 : 0;
+                      const expectedScore = base + bonus;
+                      return (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, padding: "10px 14px", borderRadius: 10, background: isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.1)" }}>
+                          <span style={{ fontSize: 12, color: C.muted }}>이번 인증</span>
+                          <span style={{ fontSize: 14, fontWeight: 800, color: PRIMARY }}>+{expectedScore}점</span>
+                          <span style={{ fontSize: 11, color: C.muted }}>({isWeekend(selDay) ? "주말 2점" : "평일 1점"}{bonus > 0 ? " + 추가 0.5점" : ""})</span>
+                          <span style={{ marginLeft: "auto", fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>현재 {myScore}점 / {myChecked}일</span>
+                        </div>
+                      );
+                    })()}
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <button disabled={(!link.trim() && !screenshotFile && !missionEditMode) || busy} onClick={submit}
                         style={{ padding: "11px 24px", borderRadius: 99, border: "none", background: (link.trim() || screenshotFile || missionEditMode) ? "#1A1A2E" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: (link.trim() || screenshotFile || missionEditMode) ? "#fff" : C.muted, fontSize: 14, fontWeight: 700, cursor: (link.trim() || screenshotFile || missionEditMode) ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
                         {uploading ? "업로드 중..." : busy ? "등록 중..." : missionEditMode ? "수정 저장" : "인증하기"}
                       </button>
                       {missionEditMode && <button onClick={() => { setMissionEditMode(false); setLink(""); setMemo(""); setScreenshotFile(null); setScreenshotPreview(null); setExtraFile(null); setExtraPreview(""); }} style={{ padding: "10px 16px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>취소</button>}
-                      <span style={{ fontSize: 11, color: C.muted }}>평일 1점 / 주말 2점 / 추가활동 +0.5점</span>
                     </div>
                   </div>
                 ) : (
@@ -1385,7 +1466,7 @@ function FreeBoard({ ch, C, bdr, card, isDark, mob, user }) {
       {posts.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted, border: "1px dashed " + bdr, borderRadius: 16 }}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>아직 글이 없어요</div>
-          <div style={{ fontSize: 13 }}>챌린지 참여자끼리 자유롭게 소통해보세요!</div>
+          <div style={{ fontSize: 13 }}>부트캠프 참여자끼리 자유롭게 소통해보세요!</div>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1526,6 +1607,10 @@ function PublicLinkBoard({ challengeId, C, bdr, card, isDark, mob, title, isAdmi
 function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onStatus, onDelete, onBadge }) {
   const SL = { pending: ["대기", "#f59e0b"], paid: ["결제완료", PRIMARY], confirmed: ["참여확정", "#22c55e"], cancelled: ["취소", "#ef4444"] };
   const [proofFilter, setProofFilter] = useState("all");
+  const [adminTab, setAdminTab] = useState("applicants"); // "applicants" | "missions"
+  const [adminMissions, setAdminMissions] = useState([]);
+  const [missionsLoading, setMissionsLoading] = useState(false);
+  const [expandedUser, setExpandedUser] = useState(null);
   const confirmedApps = apps.filter(a => a.status === "confirmed");
   const stat = {
     missingStart: confirmedApps.filter(a => !a.start_screenshot_url).length,
@@ -1539,20 +1624,63 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
     if (proofFilter === "completeProof") return a.status === "confirmed" && a.start_screenshot_url && a.end_screenshot_url;
     return true;
   });
+
+  // 인증현황 탭 진입 시 미션 데이터 로드
+  useEffect(() => {
+    if (adminTab !== "missions" || !ch?.id) return;
+    setMissionsLoading(true);
+    loadMissions(ch.id).then(d => setAdminMissions(d)).catch(() => setAdminMissions([])).finally(() => setMissionsLoading(false));
+  }, [adminTab, ch?.id]);
+
+  // 인증현황 데이터 계산
+  const totalDays = Math.max(parseInt(ch.duration) || 10, 1);
+  const missionsByUser = {};
+  adminMissions.filter(m => m.day > 0).forEach(m => {
+    const key = m.uid || m.nick;
+    if (!missionsByUser[key]) missionsByUser[key] = { uid: m.uid, nick: m.nick, days: {} };
+    missionsByUser[key].days[m.day] = m;
+  });
+  // confirmedApps 기준으로 참가자 목록 구성 (미션 없는 참가자도 포함)
+  const participantMap = {};
+  confirmedApps.forEach(a => {
+    const key = a.uid || a.name;
+    if (!participantMap[key]) participantMap[key] = { uid: a.uid, nick: a.name, days: {} };
+  });
+  Object.keys(missionsByUser).forEach(k => {
+    if (!participantMap[k]) participantMap[k] = missionsByUser[k];
+    else participantMap[k].days = { ...participantMap[k].days, ...missionsByUser[k].days };
+  });
+  const participants = Object.values(participantMap);
+  participants.sort((a, b) => {
+    const ac = Object.keys(a.days).length, bc = Object.keys(b.days).length;
+    return bc - ac;
+  });
+
+  const tabBtn = (id, label) => (
+    <button key={id} onClick={() => setAdminTab(id)} style={{ padding: "10px 20px", borderRadius: "12px 12px 0 0", border: "1px solid " + (adminTab === id ? bdr : "transparent"), borderBottom: adminTab === id ? "2px solid " + PRIMARY : "2px solid transparent", background: adminTab === id ? card : "transparent", color: adminTab === id ? PRIMARY : C.muted, fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{label}</button>
+  );
+
   return (
     <div style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)" }}>
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: mob ? "24px 16px 80px" : "40px 20px 100px" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: mob ? "24px 16px 80px" : "40px 20px 100px" }}>
         <button onClick={onBack} style={{ background: "none", border: "none", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 24, display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit" }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg> 뒤로
         </button>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28, flexWrap: "wrap", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 4 }}>{ch.title}</h2>
             <p style={{ fontSize: 13, color: C.muted }}>총 {apps.length}명 신청 · 확정 {confirmedApps.length}명 · 시작 미인증 {stat.missingStart}명 · 마지막 미인증 {stat.missingEnd}명</p>
           </div>
-          <button onClick={onEdit} style={{ padding: "10px 22px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>챌린지 수정</button>
+          <button onClick={onEdit} style={{ padding: "10px 22px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>부트캠프 수정</button>
         </div>
 
+        {/* 탭 전환 */}
+        <div style={{ display: "flex", gap: 0, borderBottom: "1px solid " + bdr, marginBottom: 20 }}>
+          {tabBtn("applicants", "신청자 관리")}
+          {tabBtn("missions", "인증 현황")}
+        </div>
+
+        {adminTab === "applicants" && (<>
         {apps.length > 0 && (
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
             {[
@@ -1620,6 +1748,217 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
             })}
           </div>
         )}
+        </>)}
+
+        {/* ═══ 인증 현황 탭 ═══ */}
+        {adminTab === "missions" && (
+          missionsLoading ? (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted, fontSize: 14 }}>인증 데이터 로딩 중...</div>
+          ) : participants.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted }}><div style={{ fontSize: 15, fontWeight: 700 }}>아직 인증 데이터가 없습니다</div></div>
+          ) : (<>
+            {/* 요약 통계 */}
+            <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr 1fr" : "1fr 1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
+              {[
+                ["참가자", participants.length + "명", PRIMARY],
+                ["총 인증", adminMissions.filter(m => m.day > 0).length + "건", "#22c55e"],
+                ["평균 달성", Math.round(participants.reduce((s, p) => s + Object.keys(p.days).length, 0) / participants.length * 100 / totalDays) + "%", "#f59e0b"],
+                ["완주자", participants.filter(p => Object.keys(p.days).length >= totalDays).length + "명", "#8b5cf6"],
+              ].map(([label, val, color]) => (
+                <div key={label} style={{ background: card, border: "1px solid " + bdr, borderRadius: 14, padding: "16px 14px", textAlign: "center" }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color }}>{val}</div>
+                  <div style={{ fontSize: 12, color: C.muted, marginTop: 4, fontWeight: 600 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* 인증 그리드 */}
+            <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, overflow: "hidden" }}>
+              {/* 헤더 */}
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: Math.max(400, 120 + totalDays * 38) }}>
+                  <thead>
+                    <tr style={{ borderBottom: "1px solid " + bdr }}>
+                      <th style={{ padding: "12px 14px", textAlign: "left", fontSize: 13, fontWeight: 700, color: C.text, position: "sticky", left: 0, background: card, zIndex: 1, minWidth: 100 }}>참가자</th>
+                      {Array.from({ length: totalDays }, (_, i) => (
+                        <th key={i} style={{ padding: "12px 4px", textAlign: "center", fontSize: 11, fontWeight: 700, color: C.muted, minWidth: 34 }}>D{i + 1}</th>
+                      ))}
+                      <th style={{ padding: "12px 14px", textAlign: "center", fontSize: 12, fontWeight: 700, color: C.text, minWidth: 60 }}>달성률</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {participants.map((p, pi) => {
+                      const doneCount = Object.keys(p.days).length;
+                      const rate = Math.round(doneCount / totalDays * 100);
+                      const isExpanded = expandedUser === (p.uid || p.nick);
+                      return (
+                        <React.Fragment key={p.uid || p.nick || pi}>
+                          <tr onClick={() => setExpandedUser(isExpanded ? null : (p.uid || p.nick))} style={{ borderBottom: "1px solid " + bdr, cursor: "pointer", background: isExpanded ? (isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.03)") : "transparent", transition: "background 0.15s" }}>
+                            <td style={{ padding: "10px 14px", fontSize: 13, fontWeight: 600, color: C.text, position: "sticky", left: 0, background: isExpanded ? (isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.03)") : card, zIndex: 1, whiteSpace: "nowrap" }}>
+                              {p.nick}
+                              <span style={{ fontSize: 11, color: C.muted, marginLeft: 6 }}>{doneCount}/{totalDays}</span>
+                            </td>
+                            {Array.from({ length: totalDays }, (_, i) => {
+                              const m = p.days[i + 1];
+                              return (
+                                <td key={i} style={{ padding: "10px 4px", textAlign: "center" }}>
+                                  {m ? (
+                                    <div style={{ width: 24, height: 24, borderRadius: 6, background: "rgba(34,197,94,0.15)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                    </div>
+                                  ) : (
+                                    <div style={{ width: 24, height: 24, borderRadius: 6, background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                                      <div style={{ width: 6, height: 6, borderRadius: 99, background: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }} />
+                                    </div>
+                                  )}
+                                </td>
+                              );
+                            })}
+                            <td style={{ padding: "10px 14px", textAlign: "center" }}>
+                              <span style={{ fontSize: 13, fontWeight: 800, color: rate >= 100 ? "#8b5cf6" : rate >= 70 ? "#22c55e" : rate >= 40 ? "#f59e0b" : "#ef4444" }}>{rate}%</span>
+                            </td>
+                          </tr>
+                          {/* 확장 상세 */}
+                          {isExpanded && (() => {
+                            const userApp = apps.find(a => a.uid === p.uid || a.name === p.nick);
+                            const startDate = ch.start_date ? new Date(ch.start_date) : new Date();
+                            const localDateOnly = dt => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+                            const dayDate = d => { const dt = new Date(startDate); dt.setDate(dt.getDate() + d - 1); return dt; };
+                            const isWeekend = d => { const dow = dayDate(d).getDay(); return dow === 0 || dow === 6; };
+                            const lateDays = m => { if (!m?.created_at || Number(m.day) <= 0) return 0; return Math.max(0, Math.floor((localDateOnly(new Date(m.created_at)) - localDateOnly(dayDate(Number(m.day)))) / 86400000)); };
+                            const scoreFor = (day, m) => { const base = isWeekend(Number(day)) ? 2 : 1; const bonus = m.extra_link ? 0.5 : 0; const penalty = Math.min(base + bonus, lateDays(m) * 0.5); return Math.max(0, base + bonus - penalty); };
+                            const totalScore = Object.entries(p.days).reduce((s, [d, m]) => s + scoreFor(d, m), 0);
+                            return (
+                            <tr>
+                              <td colSpan={totalDays + 2} style={{ padding: 0, borderBottom: "1px solid " + bdr }}>
+                                <div style={{ padding: mob ? "16px" : "20px 24px", background: isDark ? "rgba(255,255,255,0.02)" : "#f9fafb" }}>
+                                  {/* 참가자 요약 헤더 */}
+                                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 16, paddingBottom: 14, borderBottom: "1px solid " + bdr }}>
+                                    <div>
+                                      <div style={{ fontSize: 16, fontWeight: 800, color: C.text }}>{p.nick}</div>
+                                      {userApp && <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>연락처: {userApp.phone || "-"} / 이메일: {userApp.email || "-"}</div>}
+                                    </div>
+                                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                      <span style={{ fontSize: 12, fontWeight: 800, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "5px 12px", borderRadius: 99 }}>{Object.keys(p.days).length}/{totalDays}일 ({rate}%)</span>
+                                      <span style={{ fontSize: 12, fontWeight: 800, color: "#f59e0b", background: "rgba(245,158,11,0.08)", padding: "5px 12px", borderRadius: 99 }}>{totalScore}점</span>
+                                      {rate >= 100 && <span style={{ fontSize: 12, fontWeight: 800, color: "#8b5cf6", background: "rgba(139,92,246,0.08)", padding: "5px 12px", borderRadius: 99 }}>완주</span>}
+                                    </div>
+                                  </div>
+
+                                  {/* 시작/종료 인증 */}
+                                  {userApp && (
+                                    <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                                      <div style={{ border: "1px solid " + bdr, borderRadius: 14, overflow: "hidden", background: card }}>
+                                        <div style={{ padding: "10px 14px", fontSize: 12, fontWeight: 800, color: userApp.start_screenshot_url ? "#16a34a" : "#ef4444", background: userApp.start_screenshot_url ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.04)" }}>
+                                          시작 인증 {userApp.start_screenshot_url ? "완료" : "미등록"}
+                                        </div>
+                                        {userApp.start_screenshot_url ? (
+                                          <a href={userApp.start_screenshot_url} target="_blank" rel="noopener noreferrer">
+                                            <img src={userApp.start_screenshot_url} alt="시작 인증" style={{ width: "100%", height: 160, objectFit: "cover", display: "block" }} />
+                                          </a>
+                                        ) : (
+                                          <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: C.muted, fontSize: 12 }}>인증 이미지 없음</div>
+                                        )}
+                                      </div>
+                                      <div style={{ border: "1px solid " + bdr, borderRadius: 14, overflow: "hidden", background: card }}>
+                                        <div style={{ padding: "10px 14px", fontSize: 12, fontWeight: 800, color: userApp.end_screenshot_url ? "#16a34a" : "#ef4444", background: userApp.end_screenshot_url ? "rgba(34,197,94,0.06)" : "rgba(239,68,68,0.04)" }}>
+                                          종료 인증 {userApp.end_screenshot_url ? "완료" : "미등록"}
+                                        </div>
+                                        {userApp.end_screenshot_url ? (
+                                          <a href={userApp.end_screenshot_url} target="_blank" rel="noopener noreferrer">
+                                            <img src={userApp.end_screenshot_url} alt="종료 인증" style={{ width: "100%", height: 160, objectFit: "cover", display: "block" }} />
+                                          </a>
+                                        ) : (
+                                          <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", color: C.muted, fontSize: 12 }}>인증 이미지 없음</div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* 일별 인증 상세 */}
+                                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 10 }}>일별 인증 상세</div>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                                    {Array.from({ length: totalDays }, (_, i) => {
+                                      const day = i + 1;
+                                      const m = p.days[day];
+                                      const dt = dayDate(day);
+                                      const wknd = isWeekend(day);
+                                      const late = m ? lateDays(m) : 0;
+                                      const score = m ? scoreFor(day, m) : 0;
+                                      return (
+                                        <div key={i} style={{ border: "1px solid " + bdr, borderRadius: 14, background: card, overflow: "hidden" }}>
+                                          {/* Day 헤더 */}
+                                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", background: m ? "rgba(34,197,94,0.04)" : (isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)") }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                              <span style={{ fontSize: 13, fontWeight: 800, color: C.text }}>Day {day}</span>
+                                              <span style={{ fontSize: 11, color: C.muted }}>{dt.toLocaleDateString("ko-KR", { month: "short", day: "numeric", weekday: "short" })}</span>
+                                              {wknd && <span style={{ fontSize: 10, fontWeight: 800, color: "#f59e0b", background: "rgba(245,158,11,0.1)", padding: "2px 6px", borderRadius: 4 }}>x2</span>}
+                                            </div>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                              {m ? (<>
+                                                <span style={{ fontSize: 11, fontWeight: 800, color: "#22c55e" }}>인증완료</span>
+                                                {late > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: "#ef4444", background: "rgba(239,68,68,0.1)", padding: "2px 6px", borderRadius: 4 }}>지연 {late}일 -{late * 0.5}점</span>}
+                                                <span style={{ fontSize: 11, fontWeight: 800, color: PRIMARY }}>{score}점</span>
+                                              </>) : (
+                                                <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444" }}>미인증</span>
+                                              )}
+                                            </div>
+                                          </div>
+                                          {/* 인증 콘텐츠 */}
+                                          {m && (
+                                            <div style={{ padding: "12px 14px" }}>
+                                              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                                                {/* 스크린샷 */}
+                                                {m.screenshot_url && (
+                                                  <a href={m.screenshot_url} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
+                                                    <img src={m.screenshot_url} alt={`Day ${day} 스크린샷`} style={{ width: 120, height: 90, objectFit: "cover", borderRadius: 10, border: "1px solid " + bdr, display: "block" }} />
+                                                  </a>
+                                                )}
+                                                {/* 추가활동 사진 */}
+                                                {m.extra_link && (
+                                                  <a href={m.extra_link} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
+                                                    <img src={m.extra_link} alt={`Day ${day} 추가활동`} style={{ width: 120, height: 90, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(245,158,11,0.3)", display: "block" }} />
+                                                    <div style={{ fontSize: 10, color: "#f59e0b", fontWeight: 700, marginTop: 4, textAlign: "center" }}>추가활동</div>
+                                                  </a>
+                                                )}
+                                                {/* 텍스트 정보 */}
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                  {m.link && (
+                                                    <div style={{ marginBottom: 6 }}>
+                                                      <span style={{ fontSize: 11, fontWeight: 700, color: C.muted }}>인증 링크</span>
+                                                      <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ display: "block", fontSize: 12, color: PRIMARY, wordBreak: "break-all", marginTop: 2, textDecoration: "none" }}>{m.link}</a>
+                                                    </div>
+                                                  )}
+                                                  {m.body && (
+                                                    <div style={{ marginBottom: 6 }}>
+                                                      <span style={{ fontSize: 11, fontWeight: 700, color: C.muted }}>메모</span>
+                                                      <div style={{ fontSize: 12, color: C.text, marginTop: 2, lineHeight: 1.5 }}>{m.body}</div>
+                                                    </div>
+                                                  )}
+                                                  <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>
+                                                    등록: {new Date(m.created_at).toLocaleString("ko-KR")}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          );})()}
+                        </React.Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>)
+        )}
       </div>
     </div>
   );
@@ -1651,9 +1990,9 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg> 목록으로
         </button>
         <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 24, padding: mob ? "28px 20px" : "40px 36px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 32 }}>{ch ? "챌린지 수정" : "새 챌린지"}</h2>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 32 }}>{ch ? "부트캠프 수정" : "새 부트캠프"}</h2>
 
-          <Fld label="제목 *" C={C}><input value={f.title} onChange={e => up("title", e.target.value)} placeholder="예: SNS 수익화 10일 챌린지" style={inp} /></Fld>
+          <Fld label="제목 *" C={C}><input value={f.title} onChange={e => up("title", e.target.value)} placeholder="예: SNS 수익화 10일 부트캠프" style={inp} /></Fld>
           <Fld label="한줄 소개" C={C}><input value={f.subtitle} onChange={e => up("subtitle", e.target.value)} placeholder="카드에 표시될 짧은 설명" style={inp} /></Fld>
           <Fld label="썸네일" C={C}>{thumb && <img src={thumb} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 14, marginBottom: 10, display: "block" }} />}<input type="file" accept="image/*" onChange={handleThumb} style={{ fontSize: 13 }} /></Fld>
           <Fld label="상세 설명 (이미지 삽입 가능)" C={C}><RichEditor value={f.description} onChange={v => up("description", v)} isDark={isDark} /></Fld>
@@ -1666,8 +2005,8 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Fld label="모집 시작" C={C}><input type="date" value={f.recruit_start} onChange={e => up("recruit_start", e.target.value)} style={inp} /></Fld>
             <Fld label="모집 마감" C={C}><input type="date" value={f.recruit_end} onChange={e => up("recruit_end", e.target.value)} style={inp} /></Fld>
-            <Fld label="챌린지 시작" C={C}><input type="date" value={f.start_date} onChange={e => up("start_date", e.target.value)} style={inp} /></Fld>
-            <Fld label="챌린지 종료" C={C}><input type="date" value={f.end_date} onChange={e => up("end_date", e.target.value)} style={inp} /></Fld>
+            <Fld label="부트캠프 시작" C={C}><input type="date" value={f.start_date} onChange={e => up("start_date", e.target.value)} style={inp} /></Fld>
+            <Fld label="부트캠프 종료" C={C}><input type="date" value={f.end_date} onChange={e => up("end_date", e.target.value)} style={inp} /></Fld>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <Fld label="참가비 (원)" C={C}><input type="number" value={f.price} onChange={e => up("price", +e.target.value)} style={inp} /></Fld>
@@ -1678,13 +2017,13 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
             <Fld label="플랫폼" C={C}><input value={f.platform} onChange={e => up("platform", e.target.value)} style={inp} /></Fld>
             <Fld label="일일 미션" C={C}><input value={f.daily_mission} onChange={e => up("daily_mission", e.target.value)} style={inp} /></Fld>
           </div>
-          <Fld label="진행자 이름" C={C}><input value={f.host_name || ""} onChange={e => up("host_name", e.target.value)} placeholder="챌린지 진행자 이름" style={inp} /></Fld>
+          <Fld label="진행자 이름" C={C}><input value={f.host_name || ""} onChange={e => up("host_name", e.target.value)} placeholder="부트캠프 진행자 이름" style={inp} /></Fld>
           <Fld label="커뮤니티 링크" C={C}><input value={f.community_link} onChange={e => up("community_link", e.target.value)} placeholder="카카오 오픈채팅, 디스코드 등" style={inp} /></Fld>
           <Fld label="달성 뱃지" C={C}>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               {f.badge_image && <img src={f.badge_image} alt="뱃지" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 8 }} />}
               <div style={{ flex: 1 }}>
-                <input value={f.badge_title || ""} onChange={e => up("badge_title", e.target.value)} placeholder="뱃지 이름 (예: 까짓거 SNS챌린지 2기)" style={{ ...inp, marginBottom: 8 }} />
+                <input value={f.badge_title || ""} onChange={e => up("badge_title", e.target.value)} placeholder="뱃지 이름 (예: SNS 부트캠프 2기)" style={{ ...inp, marginBottom: 8 }} />
                 <input value={f.badge_image || ""} onChange={e => up("badge_image", e.target.value)} placeholder="뱃지 이미지 URL" style={inp} />
                 <input type="file" accept="image/*" style={{ marginTop: 8, fontSize: 12 }} onChange={async e => {
                   const file = e.target.files?.[0]; if (!file) return;
@@ -1697,7 +2036,7 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
           </Fld>
           <Fld label="유형" C={C}>
             <div style={{ display: "flex", gap: 8 }}>
-              {[["challenge", "챌린지"], ["meetup", "모임"], ["study", "스터디"]].map(([v, l]) => {
+              {[["challenge", "부트캠프"], ["class", "클래스"], ["meetup", "모임"], ["study", "스터디"]].map(([v, l]) => {
                 const tc = TYPE_MAP[v]?.color || PRIMARY;
                 return (
                   <button key={v} onClick={() => up("type", v)}
@@ -1727,3 +2066,4 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
     </div>
   );
 }
+                     

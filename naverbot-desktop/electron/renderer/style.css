@@ -1135,6 +1135,129 @@ body {
   pointer-events: none;
 }
 
+/* ── 소형 노트북 (1024~1366px 해상도) ── */
+@media (max-width: 1100px) {
+  .app {
+    grid-template-columns: 200px 1fr;
+  }
+  .sidebar {
+    padding: 14px 10px 12px;
+  }
+  .sidebar-header {
+    padding: 4px 8px 10px;
+  }
+  .nav-item {
+    padding: 9px 12px;
+    font-size: 13px;
+    min-height: 38px;
+  }
+  .nav-group summary {
+    padding: 9px 12px;
+    font-size: 13px;
+    min-height: 38px;
+  }
+  .main {
+    padding: 20px 22px 24px;
+  }
+  .panel-header h1 {
+    font-size: 21px;
+  }
+  .panel-sub {
+    font-size: 13px;
+  }
+  .card {
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+  .card-header h3 {
+    font-size: 16px;
+  }
+  .home-automation-hero {
+    padding: 22px 24px;
+  }
+  .home-automation-hero h2 {
+    font-size: 19px;
+  }
+  .home-feature-card {
+    padding: 14px;
+  }
+  .home-feature-card h3 {
+    font-size: 14px;
+  }
+  .home-feature-card p {
+    font-size: 11px;
+  }
+  .home-feature-icon {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+  }
+  .mode-card {
+    padding: 20px 18px;
+  }
+  .mode-card-title {
+    font-size: 17px;
+  }
+  .user-badge {
+    padding: 6px 8px;
+  }
+  .user-text {
+    font-size: 12px;
+  }
+  .brand-title {
+    font-size: 14px;
+  }
+  body {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 900px) {
+  .app {
+    grid-template-columns: 180px 1fr;
+  }
+  .sidebar {
+    padding: 12px 8px 10px;
+  }
+  .nav-item {
+    padding: 8px 10px;
+    font-size: 12px;
+    min-height: 34px;
+  }
+  .nav-group summary {
+    padding: 8px 10px;
+    font-size: 12px;
+    min-height: 34px;
+  }
+  .main {
+    padding: 16px 18px 20px;
+  }
+  .panel-header h1 {
+    font-size: 19px;
+  }
+  .card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+  .home-feature-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .home-automation-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 18px 20px;
+  }
+  .home-automation-hero h2 {
+    font-size: 17px;
+  }
+  .brand-link {
+    display: none;
+  }
+  body {
+    font-size: 13px;
+  }
+}
+
 @media (max-height: 760px) {
   .sidebar {
     padding: 14px 12px 12px;
