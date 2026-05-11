@@ -28,9 +28,9 @@ function RunnerChar({ nick, color, running, size = 40 }) {
         ? `<dotlottie-wc src="https://lottie.host/e7e086e2-678c-4bfb-bca1-eb2a807a2713/IYDVGD8pRq.lottie" style="width:${size}px;height:${size * 1.2}px;display:block;background:transparent" autoplay loop></dotlottie-wc>`
         : `<dotlottie-wc src="https://lottie.host/e7e086e2-678c-4bfb-bca1-eb2a807a2713/IYDVGD8pRq.lottie" style="width:${size}px;height:${size * 1.2}px;display:block;background:transparent;opacity:0.4" speed="0"></dotlottie-wc>`
       }} />
-      {/* 프로필 이니셜 */}
+      {/* 프로필 이니셜 — 머리 위치에 맞춤 */}
       <div style={{
-        position: "absolute", top: -2, left: "50%", transform: "translateX(-50%)",
+        position: "absolute", top: Math.round(size * 0.05), left: "50%", transform: "translateX(-40%)",
         width: headSize, height: headSize, borderRadius: "50%",
         background: color, border: "2px solid #fff",
         display: "flex", alignItems: "center", justifyContent: "center",
