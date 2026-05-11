@@ -21,33 +21,30 @@ const hasExtra = (m) => m && getExtraLinks(m.extra_link).length > 0;
 function RunnerChar({ nick, color, running, size = 40 }) {
   const ini = (nick || "?")[0];
   const headSize = Math.round(size * 0.38);
+  // 색상별 CSS filter — 검정 원본을 각 색상으로 변환
+  const colorFilters = {
+    "#f59e0b": "invert(62%) sepia(85%) saturate(600%) hue-rotate(5deg) brightness(100%)",     // 금색
+    "#94a3b8": "invert(70%) sepia(10%) saturate(300%) hue-rotate(180deg) brightness(95%)",    // 은색
+    "#cd7f32": "invert(50%) sepia(60%) saturate(500%) hue-rotate(15deg) brightness(90%)",     // 동색
+    "#3b82f6": "invert(40%) sepia(90%) saturate(700%) hue-rotate(200deg) brightness(100%)",   // 파랑
+  };
+  const cssFilter = colorFilters[color] || colorFilters["#3b82f6"];
   return (
     <div style={{ position: "relative", width: size, height: size * 1.1 }}>
-      {/* WebM 달리기 — 투명 배경 */}
-      {running && (
-        <video
-          src="/runner.webm"
-          autoPlay loop muted playsInline
-          style={{ width: size, height: size * 1.1, objectFit: "contain", display: "block" }}
-        />
-      )}
-      {/* 서있는 자세 (0점) */}
-      {!running && (
-        <svg width={size} height={size * 1.1} viewBox="0 0 40 44" style={{ position: "absolute", top: 0, left: 0 }}>
-          <circle cx="20" cy="8" r="7" fill={color} />
-          <path d="M20,15 L20,27" stroke={color} strokeWidth="4" strokeLinecap="round" fill="none" />
-          <path d="M20,19 L14,24" stroke={color} strokeWidth="3" strokeLinecap="round" fill="none" />
-          <path d="M20,19 L26,24" stroke={color} strokeWidth="3" strokeLinecap="round" fill="none" />
-          <path d="M20,27 L16,39" stroke={color} strokeWidth="3" strokeLinecap="round" fill="none" />
-          <path d="M16,39 L13,39" stroke={color} strokeWidth="2.5" strokeLinecap="round" fill="none" />
-          <path d="M20,27 L24,39" stroke={color} strokeWidth="3" strokeLinecap="round" fill="none" />
-          <path d="M24,39 L27,39" stroke={color} strokeWidth="2.5" strokeLinecap="round" fill="none" />
-        </svg>
-      )}
-      {/* 프로필 이니셜 — 머리 위치 */}
+      {/* WebM 달리기 — 투명 배경 + 색상 필터 */}
+      <video
+        src="/runner.webm"
+        autoPlay={running} loop muted playsInline
+        style={{
+          width: size, height: size * 1.1, objectFit: "contain", display: "block",
+          filter: cssFilter,
+          opacity: running ? 1 : 0.6,
+        }}
+      />
+      {/* 프로필 이니셜 */}
       <div style={{
-        position: "absolute", top: running ? 0 : -2, left: "50%",
-        transform: running ? "translateX(-35%)" : "translateX(-50%)",
+        position: "absolute", top: Math.round(size * 0.02), left: "50%",
+        transform: "translateX(-35%)",
         width: headSize, height: headSize, borderRadius: "50%",
         background: color, border: "2px solid #fff",
         display: "flex", alignItems: "center", justifyContent: "center",
