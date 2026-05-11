@@ -344,8 +344,8 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             </div>
           )}
 
-          {/* 참여자용 미션 게시판 바로가기 (상단 고정) */}
-          {isParticipant && (
+          {/* 참여자/관리자 미션 게시판 바로가기 */}
+          {(isParticipant || isAdmin) && (
             <div onClick={() => openBoard(ch)} style={{ background: PRIMARY, borderRadius: 16, padding: mob ? "20px 18px" : "22px 28px", marginBottom: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, transition: "transform 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
               onMouseLeave={e => e.currentTarget.style.transform = "none"}>
@@ -401,7 +401,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   );
 
   /* ═══ BOARD ══════════════════════════════════════════════ */
-  if (view === "board" && sel) return <MissionBoard ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} user={user} myApp={myApp} setMyApp={setMyApp} missions={missions} setMissions={setMissions} isParticipant={myApp?.status === "confirmed"} onBack={() => { setView("detail"); window.scrollTo(0, 0); }} />;
+  if (view === "board" && sel) return <MissionBoard ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} user={user} myApp={myApp} setMyApp={setMyApp} missions={missions} setMissions={setMissions} isParticipant={myApp?.status === "confirmed" || isAdmin} onBack={() => { setView("detail"); window.scrollTo(0, 0); }} />;
 
   /* ═══ ADMIN ══════════════════════════════════════════════ */
   if (view === "admin" && sel) return <AdminPanel ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} apps={apps} setApps={setApps} onBack={() => { setView("detail"); window.scrollTo(0, 0); }} onEdit={() => { setView("editor"); window.scrollTo(0, 0); }}
@@ -485,7 +485,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
             {t.label}
           </button>
         ))}
-        {isParticipant && (
+        {(isParticipant || isAdmin) && (
           <button onClick={openBoard}
             style={{ marginLeft: "auto", padding: "8px 20px", borderRadius: 99, border: "none", background: PRIMARY, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", alignSelf: "center", marginBottom: 4 }}>
             미션 게시판
@@ -523,9 +523,9 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
           {/* 하단 CTA */}
           <div style={{ background: isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 20, padding: mob ? "28px 18px" : "36px 32px", textAlign: "center", marginTop: 24 }}>
             <div style={{ fontSize: mob ? 18 : 24, fontWeight: 700, color: C.text, marginBottom: 12 }}>
-              {isParticipant ? "미션 게시판에 입장하세요" : hasApplied ? "신청이 완료되었습니다" : canApply ? "지금 바로 신청하세요" : "다음 프로그램을 기대해주세요"}
+              {(isParticipant || isAdmin) ? "미션 게시판에 입장하세요" : hasApplied ? "신청이 완료되었습니다" : canApply ? "지금 바로 신청하세요" : "다음 프로그램을 기대해주세요"}
             </div>
-            {isParticipant ? (
+            {(isParticipant || isAdmin) ? (
               <button onClick={openBoard} style={ctaBtn(PRIMARY)}>미션 게시판 입장</button>
             ) : hasApplied ? (
               <div style={{ maxWidth: 420, margin: "0 auto" }}>
