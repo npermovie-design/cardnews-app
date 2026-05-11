@@ -430,6 +430,164 @@ function ctaBtn(bg) {
 }
 
 /* ── 섹션 ── */
+/* ── 추가활동 독립 탭 ── */
+function ExtraActivityTab({ ch, C, bdr, card, isDark, mob, user, missions, setMissions, isParticipant, isAdmin, vM, totalDays, currentDayNum, dayDate, showToast }) {
+  const [selDay, setSelDay] = useState(null);
+  const [category, setCategory] = useState(null);
+  const [snsLink, setSnsLink] = useState("");
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState("");
+  const [busy, setBusy] = useState(false);
+  const fileRef = useRef(null);
+  const catLabels = { comment: "댓글", like: "좋아요", share: "공유/리포스트", other: "기타" };
+
+  // 인증 완료된 Day만 선택 가능
+  const certifiedDays = [];
+  for (let d = 1; d <= Math.min(totalDays, currentDayNum); d++) {
+    if (vM[d]) certifiedDays.push(d);
+  }
+
+  const handleFile = e => { const f = e.target.files?.[0]; if (f) { setFile(f); const r = new FileReader(); r.onload = ev => setPreview(ev.target.result); r.readAsDataURL(f); } };
+
+  const submit = async () => {
+    if (!file || !selDay || !category || !vM[selDay]) return;
+    setBusy(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `challenge-proofs/${ch.id}/${user.uid}/extra_${selDay}_${category}_${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("uploads").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: { publicUrl } } = supabase.storage.from("uploads").getPublicUrl(path);
+      const existing = getExtraLinks(vM[selDay].extra_link);
+      const newEntry = { img: publicUrl, cat: category, link: snsLink.trim() || null };
+      const updated = JSON.stringify([...existing, newEntry]);
+      await supabase.from("challenge_missions").update({ extra_link: updated }).eq("id", vM[selDay].id);
+      setMissions(prev => prev.map(m => m.id === vM[selDay].id ? { ...m, extra_link: updated } : m));
+      setFile(null); setPreview(""); setCategory(null); setSnsLink("");
+      showToast(`추가활동 등록 완료! Day ${selDay} ${catLabels[category]} +0.5점`);
+    } catch (e) { alert("업로드 실패: " + e.message); }
+    setBusy(false);
+  };
+
+  return (
+    <div>
+      {/* 안내 */}
+      <div style={{ padding: "14px 18px", borderRadius: 12, background: isDark ? "rgba(245,158,11,0.06)" : "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.12)", marginBottom: 20, fontSize: 13, color: C.muted, lineHeight: 1.6 }}>
+        인증 완료된 Day에 댓글, 좋아요, 공유 등 추가활동을 올리면 <strong style={{ color: "#f59e0b" }}>각 +0.5점</strong> 가산됩니다. 여러 개 올릴 수 있습니다.
+      </div>
+
+      {certifiedDays.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "48px 20px", color: C.muted, border: "1px dashed " + bdr, borderRadius: 16 }}>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>아직 인증된 Day가 없습니다</div>
+          <div style={{ fontSize: 13 }}>먼저 "날짜별 체크"에서 미션을 인증해주세요</div>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 20 }}>
+          {/* 왼쪽: 업로드 폼 */}
+          <div>
+            {/* Day 선택 */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 8 }}>Day 선택</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {certifiedDays.map(d => {
+                  const extraCount = getExtraLinks(vM[d].extra_link).length;
+                  return (
+                    <button key={d} onClick={() => setSelDay(d)}
+                      style={{ padding: "8px 14px", borderRadius: 10, border: selDay === d ? `2px solid ${PRIMARY}` : "1px solid " + bdr, background: selDay === d ? "rgba(59,130,246,0.08)" : card, color: selDay === d ? PRIMARY : C.text, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", position: "relative" }}>
+                      Day {d}
+                      {extraCount > 0 && <span style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "#f59e0b", color: "#fff", fontSize: 9, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{extraCount}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {selDay && (<>
+              {/* 카테고리 */}
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 8 }}>활동 유형</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {Object.entries(catLabels).map(([id, label]) => (
+                    <button key={id} onClick={() => setCategory(id)}
+                      style={{ padding: "8px 16px", borderRadius: 99, border: category === id ? "none" : "1px solid " + bdr, background: category === id ? "#f59e0b" : "transparent", color: category === id ? "#fff" : C.text, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {category && (<>
+                {/* SNS 링크 */}
+                <div style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>SNS 링크 (선택)</div>
+                  <input value={snsLink} onChange={e => setSnsLink(e.target.value)} placeholder="인증한 게시글 URL" style={{ width: "100%", padding: "11px 14px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+                </div>
+
+                {/* 스크린샷 */}
+                <div style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>스크린샷</div>
+                  <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} />
+                  <div onClick={() => fileRef.current?.click()}
+                    style={{ border: `2px dashed ${preview ? "#f59e0b" : bdr}`, borderRadius: 12, padding: preview ? 0 : "24px 16px", textAlign: "center", cursor: "pointer", background: isDark ? "rgba(245,158,11,0.04)" : "rgba(245,158,11,0.02)", overflow: "hidden" }}>
+                    {preview ? (
+                      <div style={{ position: "relative" }}>
+                        <img src={preview} alt="미리보기" style={{ width: "100%", maxHeight: 200, objectFit: "cover", display: "block" }} />
+                        <button onClick={e => { e.stopPropagation(); setFile(null); setPreview(""); }} style={{ position: "absolute", top: 8, right: 8, width: 24, height: 24, borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>x</button>
+                      </div>
+                    ) : (
+                      <div style={{ color: C.muted, fontSize: 13 }}>{catLabels[category]} 화면을 캡처해주세요</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 저장 버튼 */}
+                <button disabled={!file || busy} onClick={submit}
+                  style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: file ? "#f59e0b" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: file ? "#fff" : C.muted, fontSize: 15, fontWeight: 800, cursor: file ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+                  {busy ? "저장 중..." : `${catLabels[category]} 인증 저장 (+0.5점)`}
+                </button>
+              </>)}
+            </>)}
+          </div>
+
+          {/* 오른쪽: 내 추가활동 목록 */}
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 12 }}>내 추가활동 기록</div>
+            {(() => {
+              const allExtras = [];
+              for (let d = 1; d <= totalDays; d++) {
+                if (vM[d]) {
+                  getExtraLinks(vM[d].extra_link).forEach((item, i) => {
+                    allExtras.push({ day: d, item, idx: i });
+                  });
+                }
+              }
+              if (allExtras.length === 0) return <div style={{ padding: "32px 16px", textAlign: "center", color: C.muted, fontSize: 13, border: "1px dashed " + bdr, borderRadius: 12 }}>아직 추가활동이 없습니다</div>;
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {allExtras.map(({ day, item, idx }) => (
+                    <div key={`${day}-${idx}`} style={{ display: "flex", gap: 10, alignItems: "center", padding: "10px 12px", borderRadius: 10, background: card, border: "1px solid " + bdr }}>
+                      <a href={extraImg(item)} target="_blank" rel="noopener noreferrer"><img src={extraImg(item)} alt="" style={{ width: 50, height: 36, objectFit: "cover", borderRadius: 6, display: "block", flexShrink: 0 }} /></a>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
+                          <span style={{ fontWeight: 700, color: PRIMARY }}>Day {day}</span>
+                          {extraCat(item) && <span style={{ fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.1)", padding: "1px 7px", borderRadius: 99, fontSize: 10 }}>{catLabels[extraCat(item)] || extraCat(item)}</span>}
+                          <span style={{ color: "#f59e0b", fontWeight: 700 }}>+0.5</span>
+                        </div>
+                        {extraUrl(item) && <a href={extraUrl(item)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: C.muted, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{extraUrl(item)}</a>}
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", textAlign: "right", marginTop: 4 }}>총 {allExtras.length}개 · +{allExtras.length * 0.5}점</div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Sect({ title, children, C, bdr }) {
   return <div style={{ marginBottom: 36 }}>
     <h3 style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 16, paddingBottom: 12, borderBottom: "1px solid " + bdr }}>{title}</h3>
@@ -1285,7 +1443,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
 
         {/* 탭 */}
         <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "1px solid " + bdr }}>
-          {[["calendar", "날짜별 체크"], ["members", "참가자 현황"], ["feed", "전체 피드"], ["my", isViewing ? `${viewAsMember.nick} 기록` : "내 기록"], ["board", "자유게시판"]].map(([v, l]) => (
+          {[["calendar", "날짜별 체크"], ["extra", "추가활동"], ["members", "참가자 현황"], ["feed", "전체 피드"], ["my", isViewing ? `${viewAsMember.nick} 기록` : "내 기록"], ["board", "자유게시판"]].map(([v, l]) => (
             <button key={v} onClick={() => { setTab(v); if (v === "members") setViewAsMember(null); }} style={{ padding: "12px 20px", border: "none", cursor: "pointer", fontSize: 14, fontWeight: tab === v ? 700 : 500, background: "transparent", color: tab === v ? PRIMARY : C.muted, borderBottom: tab === v ? `2px solid ${PRIMARY}` : "2px solid transparent", marginBottom: -1, fontFamily: "inherit", transition: "all 0.15s" }}>{l}</button>
           ))}
         </div>
@@ -1626,6 +1784,17 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
               </div>
             )}
           </div>
+        )}
+
+        {/* ── 탭: 추가활동 ── */}
+        {tab === "extra" && (
+          <ExtraActivityTab
+            ch={ch} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob}
+            user={user} missions={missions} setMissions={setMissions}
+            isParticipant={isParticipant} isAdmin={isAdmin}
+            vM={vM} totalDays={totalDays} currentDayNum={currentDayNum}
+            dayDate={dayDate} showToast={showToast}
+          />
         )}
 
         {/* ── 탭: 참가자 현황 ── */}
