@@ -772,7 +772,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                   <div style={{ fontSize: 12, color: C.muted }}>🏁 {maxScore}점</div>
                 </div>
                 {/* 큰 트랙 — 일자 레이스 */}
-                <div style={{ position: "relative", height: 160, borderRadius: 16, background: isDark ? "rgba(255,255,255,0.02)" : "#f8faf8", border: "1px solid " + bdr, overflow: "visible" }}>
+                <div style={{ position: "relative", height: 160, borderRadius: 16, background: isDark ? "rgba(255,255,255,0.02)" : "#fff", border: "1px solid " + bdr, overflow: "visible" }}>
                   <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, height: 3, borderRadius: 2, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb" }} />
                   {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 0, height: 18, width: 1, borderLeft: "1px dashed " + (isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)") }} />)}
                   <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 0, background: "transparent", borderRadius: "0 16px 16px 0" }} />
@@ -1383,7 +1383,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 <span style={{ fontSize: 14, fontWeight: 800, color: C.text }}>레이스 현황</span>
                 <span style={{ fontSize: 11, color: C.muted }}>🏁 {topScore}점</span>
               </div>
-              <div style={{ position: "relative", height: 140, borderRadius: 16, background: isDark ? "rgba(255,255,255,0.02)" : "#f8faf8", border: "1px solid " + bdr }}>
+              <div style={{ position: "relative", height: 140, borderRadius: 16, background: isDark ? "rgba(255,255,255,0.02)" : "#fff", border: "1px solid " + bdr }}>
                 <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, height: 3, borderRadius: 2, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb" }} />
                 {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 0, height: 18, width: 1, borderLeft: "1px dashed " + (isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)") }} />)}
                 <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 0, background: "transparent", borderRadius: "0 16px 16px 0" }} />
