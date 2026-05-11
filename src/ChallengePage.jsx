@@ -450,19 +450,26 @@ function ExtraActivityTab({ ch, C, bdr, card, isDark, mob, user, missions, setMi
   const handleFile = e => { const f = e.target.files?.[0]; if (f) { setFile(f); const r = new FileReader(); r.onload = ev => setPreview(ev.target.result); r.readAsDataURL(f); } };
 
   const submit = async () => {
-    if (!file || !selDay || !category || !vM[selDay]) return;
+    if (!file || !selDay || !category) return;
     setBusy(true);
     try {
+      // 미인증 Day면 빈 미션 레코드 먼저 생성
+      let mission = vM[selDay];
+      if (!mission) {
+        const row = await submitMission({ challenge_id: ch.id, uid: user.uid, nick: user.nick || "참가자", day: selDay, link: "", body: "", extra_link: null, screenshot_url: null });
+        setMissions(prev => [row, ...prev]);
+        mission = row;
+      }
       const ext = file.name.split(".").pop();
       const path = `challenge-proofs/${ch.id}/${user.uid}/extra_${selDay}_${category}_${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("uploads").upload(path, file, { upsert: true });
       if (upErr) throw upErr;
       const { data: { publicUrl } } = supabase.storage.from("uploads").getPublicUrl(path);
-      const existing = getExtraLinks(vM[selDay].extra_link);
+      const existing = getExtraLinks(mission.extra_link);
       const newEntry = { img: publicUrl, cat: category, link: snsLink.trim() || null };
       const updated = JSON.stringify([...existing, newEntry]);
-      await supabase.from("challenge_missions").update({ extra_link: updated }).eq("id", vM[selDay].id);
-      setMissions(prev => prev.map(m => m.id === vM[selDay].id ? { ...m, extra_link: updated } : m));
+      await supabase.from("challenge_missions").update({ extra_link: updated }).eq("id", mission.id);
+      setMissions(prev => prev.map(m => m.id === mission.id ? { ...m, extra_link: updated } : m));
       setFile(null); setPreview(""); setCategory(null); setSnsLink("");
       showToast(`추가활동 등록 완료! Day ${selDay} ${catLabels[category]} +0.5점`);
     } catch (e) { alert("업로드 실패: " + e.message); }
@@ -473,13 +480,13 @@ function ExtraActivityTab({ ch, C, bdr, card, isDark, mob, user, missions, setMi
     <div>
       {/* 안내 */}
       <div style={{ padding: "14px 18px", borderRadius: 12, background: isDark ? "rgba(245,158,11,0.06)" : "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.12)", marginBottom: 20, fontSize: 13, color: C.muted, lineHeight: 1.6 }}>
-        인증 완료된 Day에 댓글, 좋아요, 공유 등 추가활동을 올리면 <strong style={{ color: "#f59e0b" }}>각 +0.5점</strong> 가산됩니다. 여러 개 올릴 수 있습니다.
+        댓글, 좋아요, 공유 등 추가활동을 올리면 <strong style={{ color: "#f59e0b" }}>각 +0.5점</strong> 가산됩니다. 미션 인증 없이도 올릴 수 있습니다.
       </div>
 
-      {certifiedDays.length === 0 ? (
+      {!fixedDay && certifiedDays.length === 0 ? (
         <div style={{ textAlign: "center", padding: "48px 20px", color: C.muted, border: "1px dashed " + bdr, borderRadius: 16 }}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>아직 인증된 Day가 없습니다</div>
-          <div style={{ fontSize: 13 }}>먼저 "날짜별 체크"에서 미션을 인증해주세요</div>
+          <div style={{ fontSize: 13 }}>Day를 선택하면 추가활동을 올릴 수 있습니다</div>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 20 }}>
@@ -1767,7 +1774,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 </>)}
 
                 {/* Day별 추가활동 */}
-                {daySubTab === "dayExtra" && !isViewing && isParticipant && vM[selDay] && (
+                {daySubTab === "dayExtra" && !isViewing && isParticipant && (
                   <ExtraActivityTab
                     ch={ch} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob}
                     user={user} missions={missions} setMissions={setMissions}
@@ -1776,8 +1783,8 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     dayDate={dayDate} showToast={showToast} fixedDay={selDay}
                   />
                 )}
-                {daySubTab === "dayExtra" && (!isParticipant || !vM[selDay]) && (
-                  <div style={{ textAlign: "center", padding: "32px 16px", color: C.muted, fontSize: 13 }}>먼저 이 Day의 미션을 인증해주세요</div>
+                {daySubTab === "dayExtra" && !isParticipant && (
+                  <div style={{ textAlign: "center", padding: "32px 16px", color: C.muted, fontSize: 13 }}>참가자만 추가활동을 올릴 수 있습니다</div>
                 )}
 
                 {/* 참가자 인증 목록 */}
