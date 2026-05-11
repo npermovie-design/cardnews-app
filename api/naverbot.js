@@ -835,13 +835,12 @@ function handleVersionCheck(req, res) {
     return 0;
   };
 
-  const isFutureSpoof = compare(clientVersion, latestVersion) > 0;
-  const isOk = !isFutureSpoof && compare(clientVersion, minVersion) >= 0;
+  const isOk = compare(clientVersion, minVersion) >= 0;
   return res.status(200).json({
     ok: isOk,
     min_version: minVersion,
     latest_version: latestVersion,
-    message: isOk ? "" : (isFutureSpoof ? "등록되지 않은 앱 버전입니다. 공식 빌드로 업데이트하세요." : "최소 요구 버전보다 낮습니다. 업데이트가 필요합니다."),
+    message: isOk ? "" : "최소 요구 버전보다 낮습니다. 업데이트가 필요합니다.",
     download_url: downloadUrl,
   });
 }
