@@ -41,16 +41,6 @@ button:hover:not(:disabled) {
 .track-anim {
   animation: trackSlide 0.8s ease-out;
 }
-@keyframes poseSwap {
-  0%, 49.9% { opacity: 1; }
-  50%, 100% { opacity: 0; }
-}
-@keyframes poseSwapB {
-  0%, 49.9% { opacity: 0; }
-  50%, 100% { opacity: 1; }
-}
-.run-pose-a { animation: poseSwap 0.4s step-end infinite; }
-.run-pose-b { animation: poseSwapB 0.4s step-end infinite; }
 
 body {
   font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;

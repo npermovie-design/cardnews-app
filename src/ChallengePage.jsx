@@ -19,55 +19,25 @@ const extraUrl = (item) => typeof item === "object" ? item?.link : null;
 const hasExtra = (m) => m && getExtraLinks(m.extra_link).length > 0;
 
 function RunnerChar({ nick, color, running, size = 40 }) {
-  const c = color;
   const ini = (nick || "?")[0];
-  const sc = size / 40; // scale
+  const headSize = Math.round(size * 0.4);
   return (
-    <svg width={size} height={size * 1.25} viewBox="0 0 40 50">
-      {running ? (<>
-        {/* Contact — 다리 크게 벌리고 착지, 몸 앞으로 기울임 */}
-        <g className="run-pose-a">
-          {/* 뒷다리: 엉덩이→뒤 대각선→발끝 뒤로 */}
-          <path d="M17,29 L27,39 L30,44" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          <path d="M30,44 L33,43" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-          {/* 앞다리: 엉덩이→앞 아래로 뻗음→발끝 앞으로 */}
-          <path d="M17,29 L8,38 L4,44" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          <path d="M4,44 L1,43" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-          {/* 몸통: 앞으로 20도 기울임 */}
-          <path d="M21,16 L17,30" stroke={c} strokeWidth="5" strokeLinecap="round" fill="none" />
-          {/* 뒷팔: 팔꿈치 뒤→아래로 뻗음 */}
-          <path d="M20,20 L26,24 L28,20" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          {/* 앞팔: 팔꿈치 앞→위로 접음 */}
-          <path d="M20,20 L14,18 L13,12" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        </g>
-        {/* Contact Other Side — 반대쪽 다리 */}
-        <g className="run-pose-b">
-          {/* 뒷다리: 반대방향 */}
-          <path d="M17,29 L8,39 L5,44" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          <path d="M5,44 L2,43" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-          {/* 앞다리: 반대방향 */}
-          <path d="M17,29 L26,37 L30,44" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          <path d="M30,44 L33,43" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-          {/* 몸통 */}
-          <path d="M21,16 L17,30" stroke={c} strokeWidth="5" strokeLinecap="round" fill="none" />
-          {/* 뒷팔: 반대 */}
-          <path d="M20,20 L14,24 L12,20" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          {/* 앞팔: 반대 */}
-          <path d="M20,20 L26,18 L27,12" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        </g>
-        <circle cx="23" cy="9" r="9" fill={c} stroke="#fff" strokeWidth="2" />
-        <text x="23" y="13" textAnchor="middle" fontSize="9" fontWeight="800" fill="#fff">{ini}</text>
-      </>) : (<>
-        {/* 서있는 자세 */}
-        <path d="M20,29 L17,42 L14,42" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        <path d="M20,29 L23,42 L26,42" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        <path d="M20,16 L20,30" stroke={c} strokeWidth="5" strokeLinecap="round" fill="none" />
-        <path d="M20,21 L14,27" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-        <path d="M20,21 L26,27" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-        <circle cx="20" cy="9" r="9" fill={c} stroke="#fff" strokeWidth="2" />
-        <text x="20" y="13" textAnchor="middle" fontSize="9" fontWeight="800" fill="#fff">{ini}</text>
-      </>)}
-    </svg>
+    <div style={{ position: "relative", width: size, height: size * 1.2 }}>
+      {/* Lottie 달리기 애니메이션 */}
+      <div dangerouslySetInnerHTML={{ __html: running
+        ? `<dotlottie-wc src="https://lottie.host/e7e086e2-678c-4bfb-bca1-eb2a807a2713/IYDVGD8pRq.lottie" style="width:${size}px;height:${size * 1.2}px;display:block" autoplay loop></dotlottie-wc>`
+        : `<dotlottie-wc src="https://lottie.host/e7e086e2-678c-4bfb-bca1-eb2a807a2713/IYDVGD8pRq.lottie" style="width:${size}px;height:${size * 1.2}px;display:block;opacity:0.4" speed="0"></dotlottie-wc>`
+      }} />
+      {/* 프로필 이니셜 */}
+      <div style={{
+        position: "absolute", top: -2, left: "50%", transform: "translateX(-50%)",
+        width: headSize, height: headSize, borderRadius: "50%",
+        background: color, border: "2px solid #fff",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: Math.round(headSize * 0.5), fontWeight: 800, color: "#fff",
+        boxShadow: "0 2px 8px rgba(0,0,0,0.2)", zIndex: 1,
+      }}>{ini}</div>
+    </div>
   );
 }
 const maskNick = (nick) => { const n = nick || "?"; return n.length <= 2 ? n[0] + "*" : n.slice(0, 2) + "*".repeat(Math.max(1, n.length - 2)); };
