@@ -13,6 +13,7 @@ const getExtraLinks = (val) => {
   return [val]; // 단일 URL
 };
 const hasExtra = (m) => m && getExtraLinks(m.extra_link).length > 0;
+const maskNick = (nick) => { const n = nick || "?"; return n.length <= 2 ? n[0] + "*" : n.slice(0, 2) + "*".repeat(Math.max(1, n.length - 2)); };
 const fmt = d => d ? new Date(d).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" }) : "";
 const dday = d => { if (!d) return ""; const diff = Math.ceil((new Date(d) - new Date()) / 86400000); return diff > 0 ? `D-${diff}` : diff === 0 ? "D-DAY" : "마감"; };
 const STATUS_MAP = {
@@ -515,7 +516,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                 return (
                   <div key={m.uid} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < Math.min(rankData.length, 5) - 1 ? "1px solid " + bdr : "none" }}>
                     <span style={{ fontSize: 14, fontWeight: 900, color: i < 3 ? ["#f59e0b","#94a3b8","#cd7f32"][i] : C.muted, width: 24, textAlign: "center" }}>{i + 1}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: C.text, flex: 1 }}>{(m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: C.text, flex: 1 }}>{maskNick(m.nick)}</span>
                     <span style={{ fontSize: 15, fontWeight: 800, color: "#f59e0b" }}>{score}점</span>
                   </div>
                 );
@@ -572,7 +573,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                         boxShadow: isFirst ? `0 8px 28px ${medalColors[rank]}30` : "0 2px 8px rgba(0,0,0,0.04)",
                       }}>
                         <div style={{ width: isFirst ? 52 : 42, height: isFirst ? 52 : 42, borderRadius: "50%", background: medalColors[rank], display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", fontSize: isFirst ? 20 : 16, fontWeight: 900, color: "#fff" }}>{rank + 1}</div>
-                        <div style={{ fontSize: mob ? 14 : 16, fontWeight: 800, color: C.text, marginBottom: 6 }}>{(m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</div>
+                        <div style={{ fontSize: mob ? 14 : 16, fontWeight: 800, color: C.text, marginBottom: 6 }}>{maskNick(m.nick)}</div>
                         <div style={{ fontSize: isFirst ? 32 : 24, fontWeight: 900, color: medalColors[rank], lineHeight: 1 }}>{score}</div>
                         <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>점 · {m.count}일 인증 · {pct}%</div>
                       </div>
@@ -592,7 +593,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                         <span style={{ fontSize: 15, fontWeight: 800, color: C.muted, width: 30, textAlign: "center" }}>{i + 4}</span>
                         <div style={{ width: 30, height: 30, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(m.nick || "?")[0]}</div>
                         <div style={{ flex: 1 }}>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{(m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</span>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{maskNick(m.nick)}</span>
                           <span style={{ fontSize: 11, color: C.muted, marginLeft: 8 }}>{m.count}일 ({pct}%)</span>
                         </div>
                         <span style={{ fontSize: 18, fontWeight: 800, color: "#f59e0b" }}>{score}점</span>
@@ -1595,7 +1596,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                       <div key={m.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "1px solid " + bdr }}>
                         <div style={{ width: 28, height: 28, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(m.nick || "?")[0]}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{(m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{maskNick(m.nick)}</div>
                           {m.screenshot_url && <a href={m.screenshot_url} target="_blank" rel="noopener noreferrer"><img src={m.screenshot_url} alt="인증" style={{ width: 60, height: 40, objectFit: "cover", borderRadius: 6, marginTop: 4, display: "block" }} /></a>}
                           {m.link && !m.link.includes("supabase.co/storage") && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{m.link}</a>}
                           {hasExtra(m) && <div style={{ display: "flex", gap: 4, marginTop: 4 }}>{getExtraLinks(m.extra_link).map((url, ei) => <a key={ei} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="추가활동" style={{ width: 50, height: 34, objectFit: "cover", borderRadius: 4, display: "block" }} /></a>)}</div>}
@@ -1655,7 +1656,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                             boxShadow: isFirst ? `0 8px 24px ${medalColors[rank]}30` : "0 2px 8px rgba(0,0,0,0.04)",
                           }}>
                             <div style={{ width: isFirst ? 48 : 40, height: isFirst ? 48 : 40, borderRadius: "50%", background: medalColors[rank], display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 8px", fontSize: isFirst ? 18 : 14, fontWeight: 900, color: "#fff" }}>{rank + 1}</div>
-                            <div style={{ fontSize: mob ? 13 : 15, fontWeight: 800, color: C.text, marginBottom: 4 }}>{isAdmin ? m.nick : (m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</div>
+                            <div style={{ fontSize: mob ? 13 : 15, fontWeight: 800, color: C.text, marginBottom: 4 }}>{isAdmin ? m.nick : maskNick(m.nick)}</div>
                             <div style={{ fontSize: isFirst ? 28 : 22, fontWeight: 900, color: medalColors[rank], lineHeight: 1 }}>{score}</div>
                             <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>{m.count}일 / {pct}%</div>
                           </div>
@@ -1675,7 +1676,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                             <span style={{ fontSize: 14, fontWeight: 800, color: C.muted, width: 28, textAlign: "center" }}>{i + 4}</span>
                             <div style={{ width: 28, height: 28, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(m.nick || "?")[0]}</div>
                             <div style={{ flex: 1 }}>
-                              <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{isAdmin ? m.nick : (m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</span>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{isAdmin ? m.nick : maskNick(m.nick)}</span>
                               <span style={{ fontSize: 11, color: C.muted, marginLeft: 8 }}>{m.count}일 ({pct}%)</span>
                             </div>
                             <span style={{ fontSize: 16, fontWeight: 800, color: "#f59e0b" }}>{score}점</span>
@@ -1702,7 +1703,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                             {idx < 3 ? ["1","2","3"][idx] : (mem.nick || "?")[0]}
                           </div>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{isAdmin ? (mem.nick || "?") : (mem.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (mem.nick || "?").length - 1))}</div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{isAdmin ? (mem.nick || "?") : maskNick(mem.nick)}</div>
                             <div style={{ fontSize: 12, color: C.muted }}>{mem.count}/{totalDays}일 인증 ({memberPct}%)</div>
                           </div>
                           <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: 12 }}>
@@ -1770,7 +1771,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(m.nick || "?")[0]}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{m.nick}</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{isAdmin ? m.nick : maskNick(m.nick)}</span>
                       <span style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "2px 8px", borderRadius: 99 }}>Day {m.day}</span>
                       {hasExtra(m) && <span style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.1)", padding: "2px 6px", borderRadius: 99 }}>+0.5 ({getExtraLinks(m.extra_link).length})</span>}
                       {lateDaysFor(m) > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: "#ef4444", background: "rgba(239,68,68,0.1)", padding: "2px 6px", borderRadius: 99 }}>-{lateDaysFor(m) * 0.5}</span>}
@@ -2063,7 +2064,7 @@ function PublicLinkBoard({ challengeId, C, bdr, card, isDark, mob, title, isAdmi
             <div style={{ width: 30, height: 30, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(l.nick || "?")[0]}</div>
             <a href={l.link} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, textDecoration: "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 1 }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{l.nick}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{isAdmin ? l.nick : maskNick(l.nick)}</span>
                 <span style={{ fontSize: 10, fontWeight: 700, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "1px 7px", borderRadius: 99 }}>Day {l.day}</span>
               </div>
               <div style={{ fontSize: 11, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.link}</div>
