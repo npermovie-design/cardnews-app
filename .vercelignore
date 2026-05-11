@@ -13,3 +13,9 @@ naverbot-desktop/
 reports/
 public/icons3d/
 *.asar
+사용방법_체험방/
+dist/tts/
+*.WAV
+*.wav
+*.mp4
+nper-chat-default-rtdb-export.json
