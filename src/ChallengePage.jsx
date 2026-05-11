@@ -799,6 +799,10 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                   <div style={{ position: "absolute", bottom: 12, left: 0, right: 0, height: 3, background: "rgba(255,255,255,0.4)" }} />
                   {/* 거리 마커 */}
                   {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 8, height: 12, width: 1, background: "rgba(255,255,255,0.3)" }} />)}
+                  {/* SNS 로고 지나가기 */}
+                  {["📸","📝","▶️","💬","❤️","🔔","📱","✏️"].map((icon,i) => (
+                    <div key={i} className="sns-float" style={{ position: "absolute", top: 15 + (i % 3) * 20, fontSize: 14 + (i % 3) * 4, opacity: 0.15, animationDelay: `${i * 3}s`, animationDuration: `${18 + i * 2}s` }}>{icon}</div>
+                  ))}
                   {/* 골인 */}
                   <div style={{ position: "absolute", right: 10, bottom: 16, fontSize: 28 }}>🏁</div>
                   {rankData.map((m, idx) => {

@@ -51,6 +51,16 @@ button:hover:not(:disabled) {
   animation: cloudDrift 25s linear infinite;
 }
 
+@keyframes snsFloat {
+  0% { transform: translateX(-30px) rotate(0deg); opacity: 0; }
+  5% { opacity: 0.18; }
+  95% { opacity: 0.18; }
+  100% { transform: translateX(calc(100vw)) rotate(15deg); opacity: 0; }
+}
+.sns-float {
+  animation: snsFloat 20s linear infinite;
+}
+
 @keyframes jockey {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(8px); }
