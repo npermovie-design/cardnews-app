@@ -1066,6 +1066,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   const [extraAddMode, setExtraAddMode] = useState(false); // 추가활동만 추가 모드
   const [extraCategory, setExtraCategory] = useState(null); // "comment"|"like"|"share"|"other"
   const [extraLink, setExtraLink] = useState(""); // 추가활동 SNS 링크
+  const [daySubTab, setDaySubTab] = useState("my"); // "my" | "others" Day 상세 서브탭
   const fileInputRef = useRef(null);
   const extraFileInputRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -1485,7 +1486,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 const wknd = isWeekend(d);
                 return (
                   <div key={d}
-                    onClick={() => { setSelDay(selDay === d ? null : d); setProofPanel(null); setMissionEditMode(false); setExtraAddMode(false); }}
+                    onClick={() => { setSelDay(selDay === d ? null : d); setProofPanel(null); setMissionEditMode(false); setExtraAddMode(false); setDaySubTab("my"); }}
                     onDragOver={e => { e.preventDefault(); setDragOverDay(d); }}
                     onDragEnter={e => { e.preventDefault(); setDragOverDay(d); }}
                     onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverDay(null); }}
@@ -1590,7 +1591,14 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                   </div>
                   <button onClick={() => { setSelDay(null); setMissionEditMode(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 18 }}>x</button>
                 </div>
+                {/* 서브 탭 */}
+                <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: "1px solid " + bdr }}>
+                  {[["my", "내 인증"], ["others", `참가자 (${(allByDay[selDay] || []).length}명)`]].map(([id, label]) => (
+                    <button key={id} onClick={() => setDaySubTab(id)} style={{ padding: "8px 18px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: daySubTab === id ? 700 : 500, background: "transparent", color: daySubTab === id ? PRIMARY : C.muted, borderBottom: daySubTab === id ? `2px solid ${PRIMARY}` : "2px solid transparent", marginBottom: -1, fontFamily: "inherit" }}>{label}</button>
+                  ))}
+                </div>
 
+                {daySubTab === "my" && (<>
                 {/* 인증 상태 */}
                 {vM[selDay] && (!missionEditMode || isViewing) ? (
                   <div style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 12, padding: "14px 18px", marginBottom: 16 }}>
@@ -1756,9 +1764,12 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 ) : (
                   <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>{isViewing ? "미인증" : !user ? "로그인 후 참여할 수 있습니다" : !isParticipant ? "참가 신청 후 인증할 수 있습니다" : isFuture(selDay) ? "아직 시작되지 않은 Day입니다" : "인증 기간이 지났습니다"}</div>
                 )}
+                </>)}
 
-                {/* 해당 Day 전체 참가자 인증 목록 */}
-                {(allByDay[selDay] || []).length > 0 && (
+                {/* 참가자 인증 목록 */}
+                {daySubTab === "others" && ((allByDay[selDay] || []).length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "32px 16px", color: C.muted, fontSize: 13 }}>아직 이 Day에 인증한 참가자가 없습니다</div>
+                ) : (
                   <div>
                     <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 10 }}>Day {selDay} 참가자 인증 ({(allByDay[selDay] || []).length}명)</div>
                     {(allByDay[selDay] || []).map(m => (
@@ -1780,7 +1791,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                       </div>
                     ))}
                   </div>
-                )}
+                ))}
               </div>
             )}
           </div>
