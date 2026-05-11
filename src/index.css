@@ -51,6 +51,21 @@ button:hover:not(:disabled) {
   animation: cloudDrift 25s linear infinite;
 }
 
+@keyframes treePass {
+  0% { transform: translateX(calc(100vw)); }
+  100% { transform: translateX(-60px); }
+}
+.tree-pass {
+  animation: treePass 15s linear infinite;
+}
+@keyframes groundScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ground-scroll {
+  animation: groundScroll 2s linear infinite;
+}
+
 @keyframes snsFloat {
   0% { transform: translateX(-30px) rotate(0deg); opacity: 0; }
   5% { opacity: 0.18; }

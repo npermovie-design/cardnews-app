@@ -786,22 +786,34 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                       <ellipse cx="28" cy="10" rx="12" ry="9" fill="#fff" />
                     </svg>
                   ))}
-                  {/* 나무 (SVG) — 원근감: 뒤쪽 작고 연하게, 앞쪽 크고 진하게 */}
-                  {[{x:"12%",s:18,o:0.3},{x:"30%",s:22,o:0.35},{x:"52%",s:16,o:0.25},{x:"72%",s:24,o:0.4},{x:"88%",s:14,o:0.2}].map((t,i) => (
-                    <svg key={i} style={{ position: "absolute", bottom: 14, left: t.x, opacity: t.o }} width={t.s} height={t.s * 1.5} viewBox="0 0 20 30">
-                      <rect x="8.5" y="18" width="3" height="12" rx="1" fill="#5a3e28" />
-                      <path d="M10,2 L3,14 L6,14 L2,22 L18,22 L14,14 L17,14 Z" fill="#2d5016" />
-                    </svg>
+                  {/* 나무 — 왼쪽으로 지나가는 효과 */}
+                  {[{s:28,o:0.5,d:0},{s:20,o:0.3,d:6},{s:24,o:0.4,d:12},{s:18,o:0.3,d:18},{s:26,o:0.45,d:24}].map((t,i) => (
+                    <div key={`tree${i}`} className="tree-pass" style={{ position: "absolute", bottom: 14, animationDelay: `${t.d}s`, opacity: t.o }}>
+                      <svg width={t.s} height={t.s * 1.5} viewBox="0 0 20 30">
+                        <rect x="8.5" y="18" width="3" height="12" rx="1" fill="#5a3e28" />
+                        <path d="M10,2 L3,14 L6,14 L2,22 L18,22 L14,14 L17,14 Z" fill="#2d5016" />
+                      </svg>
+                    </div>
                   ))}
-                  {/* 잔디 바닥 */}
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 16, background: isDark ? "#1a2e1a" : "#4a7c3f", borderRadius: "0 0 16px 16px" }} />
+                  {/* 잔디 바닥 — 스크롤 효과 */}
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 20, background: isDark ? "#1a2e1a" : "#4a7c3f", borderRadius: "0 0 16px 16px", overflow: "hidden" }}>
+                    <div className="ground-scroll" style={{ position: "absolute", top: 0, left: 0, width: "200%", height: "100%", backgroundImage: "repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0px, transparent 2px, transparent 20px)", backgroundSize: "40px 100%" }} />
+                  </div>
                   {/* 트랙 라인 */}
-                  <div style={{ position: "absolute", bottom: 12, left: 0, right: 0, height: 3, background: "rgba(255,255,255,0.4)" }} />
+                  <div style={{ position: "absolute", bottom: 18, left: 0, right: 0, height: 2, background: "rgba(255,255,255,0.3)" }} />
                   {/* 거리 마커 */}
                   {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 8, height: 12, width: 1, background: "rgba(255,255,255,0.3)" }} />)}
                   {/* SNS 로고 지나가기 */}
-                  {["📸","📝","▶️","💬","❤️","🔔","📱","✏️"].map((icon,i) => (
-                    <div key={i} className="sns-float" style={{ position: "absolute", top: 15 + (i % 3) * 20, fontSize: 14 + (i % 3) * 4, opacity: 0.15, animationDelay: `${i * 3}s`, animationDuration: `${18 + i * 2}s` }}>{icon}</div>
+                  {[
+                    /* 인스타그램 */ <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="2"/><circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/></svg>,
+                    /* 유튜브 */ <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 9.71a8.5 8.5 0 00-.91-4.13 2.92 2.92 0 00-1.72-1.12A69.28 69.28 0 0012 4a69.28 69.28 0 00-8.37.46A2.92 2.92 0 001.91 5.58 8.5 8.5 0 001 9.71a44.56 44.56 0 000 4.58 8.5 8.5 0 00.91 4.13 2.92 2.92 0 001.72 1.12A69.28 69.28 0 0012 20a69.28 69.28 0 008.37-.46 2.92 2.92 0 001.72-1.12 8.5 8.5 0 00.91-4.13 44.56 44.56 0 000-4.58zM9.74 14.85V8.44l5.6 3.21-5.6 3.2z"/></svg>,
+                    /* 페이스북 */ <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.07C24 5.41 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.04V9.41c0-3.02 1.8-4.7 4.54-4.7 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.95.93-1.95 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.62 23.1 24 18.1 24 12.07"/></svg>,
+                    /* 트위터/X */ <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
+                    /* 스레드 */ <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007C5.965 24 2.634 20.147 2.634 15.625v-.057c.04-2.86 1.166-5.088 3.262-6.45a7.88 7.88 0 014.122-1.48l.07.852a6.85 6.85 0 00-3.483 1.293c-1.75 1.199-2.64 3.082-2.67 5.609v.048c0 3.878 2.828 7.21 8.05 7.21h.008c3.14 0 5.476-1.263 6.75-3.652.94-1.764 1.186-4.204.2-6.384-.644-1.422-1.808-2.55-3.37-3.26a.478.478 0 01-.015-.008c-.06-.03-.12-.057-.182-.084-.29 1.613-.928 2.79-1.907 3.51-.93.682-2.085.86-3.153.86h-.098c-1.67 0-2.828-.65-3.452-1.078l.543-.72c.497.34 1.456.87 2.91.87h.097c.9 0 1.83-.15 2.57-.69.758-.557 1.275-1.5 1.54-2.81a8.18 8.18 0 00-.372-.085c-1.098-.23-2.358-.272-3.483.03-1.187.32-2.14 1.003-2.533 2.025l-.81-.338c.5-1.3 1.694-2.146 3.14-2.536 1.233-.333 2.623-.298 3.834-.043.073.016.145.033.217.05.01-.14.014-.284.014-.43 0-1.465-.543-2.588-1.57-3.244-.993-.635-2.322-.785-3.46-.35l-.308-.796c1.38-.527 2.96-.35 4.155.413 1.25.8 1.883 2.16 1.883 3.844a7.3 7.3 0 01-.013.39c1.68.79 2.916 2.04 3.604 3.56 1.12 2.47.856 5.16-.23 7.194C18.493 22.533 15.77 24 12.186 24z"/></svg>,
+                    /* 블로그 */ <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="2"/><path d="M7 8h10M7 12h7M7 16h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>,
+                    /* 틱톡 */ <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .55.04.81.11V9a6.27 6.27 0 00-.81-.05A6.34 6.34 0 003.15 15.3a6.34 6.34 0 0010.86 4.43V13a8.16 8.16 0 005.58 2.18V11.7a4.83 4.83 0 01-3.77-1.24V6.69h3.77z"/></svg>,
+                  ].map((svg, i) => (
+                    <div key={i} className="sns-float" style={{ position: "absolute", top: 12 + (i % 3) * 22, width: 18 + (i % 3) * 6, height: 18 + (i % 3) * 6, color: isDark ? "rgba(255,255,255,0.1)" : "rgba(59,130,246,0.12)", animationDelay: `${i * 3.2}s`, animationDuration: `${20 + i * 2.5}s` }}>{svg}</div>
                   ))}
                   {/* 골인 */}
                   <div style={{ position: "absolute", right: 10, bottom: 16, fontSize: 28 }}>🏁</div>
@@ -812,7 +824,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                     const c = medal || PRIMARY;
                     const isTied = (idx > 0 && scores[idx] === scores[idx - 1]) || (idx < scores.length - 1 && scores[idx] === scores[idx + 1]);
                     return (
-                      <div key={m.uid} className={`${score > 0 ? "run-anim" : ""} ${isTied && score > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${runPct}% - 24px)`, bottom: 12, transition: "left 1s ease", zIndex: rankData.length - idx, animationDelay: `${idx * 0.3}s` }}>
+                      <div key={m.uid} className={`${score > 0 ? "run-anim" : ""} ${isTied && score > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${runPct}% - 24px)`, bottom: 18, transition: "left 1s ease", zIndex: rankData.length - idx, animationDelay: `${idx * 0.3}s` }}>
                         <RunnerChar nick={m.nick} color={c} running={score > 0} size={66} />
                       </div>
                     );
@@ -1393,14 +1405,8 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
         {!isViewing && (() => {
           const rMap = {};
           missions.forEach(m => { if (m.day > 0 && !rMap[m.uid]) rMap[m.uid] = { nick: m.nick, uid: m.uid, days: {} }; if (m.day > 0 && rMap[m.uid] && !rMap[m.uid].days[m.day]) rMap[m.uid].days[m.day] = m; });
-          // 0점 참가자도 추가 (application_count 기반)
-          const totalParticipants = ch.application_count || Object.keys(rMap).length;
-          const zeroCount = Math.max(0, totalParticipants - Object.keys(rMap).length);
-          for (let z = 0; z < Math.min(zeroCount, 15); z++) {
-            const zid = `zero_${z}`;
-            if (!rMap[zid]) rMap[zid] = { nick: `${z + 1}`, uid: zid, days: {} };
-          }
-          const runners = Object.values(rMap).sort((a, b) => calcScore(b.days) - calcScore(a.days)).slice(0, 25);
+          // 점수 있는 참가자만 표시
+          const runners = Object.values(rMap).filter(r => calcScore(r.days) > 0).sort((a, b) => calcScore(b.days) - calcScore(a.days)).slice(0, 25);
           if (runners.length === 0) return null;
           const topScore = Math.max(...runners.map(r => calcScore(r.days)), 1);
           const medalC = { 1: "#f59e0b", 2: "#94a3b8", 3: "#cd7f32" };
