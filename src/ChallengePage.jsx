@@ -31,28 +31,44 @@ function RunnerChar({ nick, color, running, size = 40 }) {
         <circle cx={running ? 22 : 20} cy="8" r="8" fill={c} stroke="#fff" strokeWidth="1.5" />
         <text x={running ? 22 : 20} y="11.5" textAnchor="middle" fontSize="8" fontWeight="800" fill="#fff">{ini}</text>
         {running ? (<>
-          {/* 몸통 — 앞 기울임 */}
-          <line x1="21" y1="16" x2="18" y2="28" stroke={c} strokeWidth="4.5" strokeLinecap="round" />
-          {/* 팔/다리는 CSS로 프레임 전환 */}
+          {/* 측면 달리기 — 이미지 참고 정밀 재현 */}
+          {/* 몸통: 앞으로 25도 기울임 */}
+          <path d="M22,16 L17,29" stroke={c} strokeWidth="4.5" strokeLinecap="round" fill="none" />
+          {/* 프레임 A */}
           <g className="limb-a">
-            <path d="M20,19 L26,24" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-            <path d="M20,19 L15,17 L16,12" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            <path d="M18,28 L27,37 L30,36" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            <path d="M18,28 L12,24 L12,32" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            {/* 앞팔: 팔꿈치 앞으로 접어서 손이 얼굴 높이 */}
+            <path d="M21,18 L15,16 L16,11" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            {/* 뒷팔: 뒤로 뻗음 */}
+            <path d="M21,18 L28,23" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+            {/* 앞다리: 무릎 높이 올림 + 종아리 아래로 */}
+            <path d="M17,29 L11,23" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
+            <path d="M11,23 L10,32" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+            {/* 뒷다리: 뒤로 크게 뻗음 + 발 */}
+            <path d="M17,29 L29,39" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
+            <path d="M29,39 L32,38" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
           </g>
+          {/* 프레임 B — 좌우 반대 */}
           <g className="limb-b">
-            <path d="M20,19 L14,24" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-            <path d="M20,19 L25,17 L24,12" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            <path d="M18,28 L9,37 L6,36" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            <path d="M18,28 L24,25 L25,33" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            {/* 앞팔: 뒤로 */}
+            <path d="M21,18 L27,16 L26,11" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            {/* 뒷팔: 앞으로 */}
+            <path d="M21,18 L14,23" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+            {/* 앞다리: 뒤로 뻗음 */}
+            <path d="M17,29 L28,39" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
+            <path d="M28,39 L31,38" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+            {/* 뒷다리: 무릎 올림 */}
+            <path d="M17,29 L12,24" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
+            <path d="M12,24 L11,33" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
           </g>
         </>) : (<>
-          {/* 서있는 자세 */}
-          <line x1="20" y1="16" x2="20" y2="28" stroke={c} strokeWidth="4.5" strokeLinecap="round" />
-          <path d="M20,20 L14,25" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-          <path d="M20,20 L26,25" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-          <path d="M20,28 L16,40 L13,40" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          <path d="M20,28 L24,40 L27,40" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          {/* 측면 서있는 자세 */}
+          <path d="M20,16 L20,29" stroke={c} strokeWidth="4.5" strokeLinecap="round" fill="none" />
+          <path d="M20,20 L15,24" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+          <path d="M20,20 L25,24" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+          <path d="M20,29 L16,40" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
+          <path d="M16,40 L13,40" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+          <path d="M20,29 L24,40" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
+          <path d="M24,40 L27,40" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
         </>)}
       </svg>
     </div>
