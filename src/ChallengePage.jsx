@@ -18,17 +18,23 @@ const extraCat = (item) => typeof item === "object" ? item?.cat : null;
 const extraUrl = (item) => typeof item === "object" ? item?.link : null;
 const hasExtra = (m) => m && getExtraLinks(m.extra_link).length > 0;
 
-function RunnerChar({ nick, color, running, size = 40 }) {
+function RunnerChar({ nick, color, running, size = 40, rank }) {
   const ini = (nick || "?")[0];
+  const medalEmoji = { 1: "🥇", 2: "🥈", 3: "🥉" };
   return (
-    <div style={{
-      width: size, height: size, borderRadius: "50%",
-      background: color, border: "3px solid #fff",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      fontSize: Math.round(size * 0.4), fontWeight: 800, color: "#fff",
-      boxShadow: "0 3px 10px rgba(0,0,0,0.2)",
-      opacity: running ? 1 : 0.5,
-    }}>{ini}</div>
+    <div style={{ position: "relative", width: size, height: size }}>
+      <div style={{
+        width: size, height: size, borderRadius: "50%",
+        background: color, border: "3px solid #fff",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: Math.round(size * 0.4), fontWeight: 800, color: "#fff",
+        boxShadow: `0 3px 10px ${color}40`,
+        opacity: running ? 1 : 0.5,
+      }}>{ini}</div>
+      {rank && rank <= 3 && (
+        <div style={{ position: "absolute", top: -6, right: -6, fontSize: Math.max(14, Math.round(size * 0.3)), lineHeight: 1 }}>{medalEmoji[rank]}</div>
+      )}
+    </div>
   );
 }
 const maskNick = (nick) => { const n = nick || "?"; return n.length <= 2 ? n[0] + "*" : n.slice(0, 2) + "*".repeat(Math.max(1, n.length - 2)); };
@@ -757,7 +763,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                     const isTied = (idx > 0 && scores[idx] === scores[idx - 1]) || (idx < scores.length - 1 && scores[idx] === scores[idx + 1]);
                     return (
                       <div key={m.uid} className={`${score > 0 ? "run-anim" : ""} ${isTied && score > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${Math.max(5, 5 + runPct * 0.82)}% - 20px)`, bottom: 12, transition: "left 1s ease", zIndex: rankData.length - idx, animationDelay: `${idx * 0.3}s` }}>
-                        <RunnerChar nick={m.nick} color={c} running={score > 0} size={Math.max(28, 66 - (getRank(idx) - 1) * 5)} />
+                        <RunnerChar nick={m.nick} color={c} running={score > 0} size={Math.max(28, 66 - (getRank(idx) - 1) * 5)} rank={getRank(idx)} />
                       </div>
                     );
                   })}
@@ -1360,7 +1366,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                   const tied = (i > 0 && calcScore(runners[i-1].days) === sc) || (i < runners.length - 1 && calcScore(runners[i+1].days) === sc);
                   return (
                     <div key={r.uid} className={`${sc > 0 ? "run-anim" : ""} ${tied && sc > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${Math.max(5, 5 + pct * 0.82)}% - 18px)`, bottom: 10, transition: "left 1s ease", zIndex: runners.length - i, animationDelay: `${i * 0.4}s` }}>
-                      <RunnerChar nick={r.nick} color={medalC[rank] || PRIMARY} running={sc > 0} size={Math.max(24, 60 - (rank - 1) * 5)} />
+                      <RunnerChar nick={r.nick} color={medalC[rank] || PRIMARY} running={sc > 0} size={Math.max(24, 60 - (rank - 1) * 5)} rank={rank} />
                     </div>
                   );
                 })}
