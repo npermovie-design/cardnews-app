@@ -344,8 +344,12 @@ async function handleFetchUrlContent(req, res) {
       else if (imgUrl.startsWith("/")) {
         try { const u = new URL(url); imgUrl = u.origin + imgUrl; } catch { continue; }
       }
-      // 작은 아이콘/트래커/광고 필터
-      if (/(icon|logo|sprite|pixel|tracker|banner|ad[_-]|btn|button|badge|avatar)/i.test(imgUrl)) continue;
+      // 작은 아이콘/트래커/광고/UI 요소 필터
+      if (/(icon|logo|sprite|pixel|tracker|banner|ad[_-]|btn|button|badge|avatar|snslink|sidemenu|sns_|social_|footer|header|nav_|menu_|arrow|close|search|loading|spinner|placeholder|blank|spacer|bg_|_bg\.|_off\.|_on\.)/i.test(imgUrl)) continue;
+      // skin/template 경로 UI 이미지 필터
+      if (/\/(skin|skins|template|templates|layout|common|assets\/img)\//i.test(imgUrl)) continue;
+      // 확장자 필터 (svg, gif 1x1 등 제외)
+      if (/\.svg(\?|$)/i.test(imgUrl)) continue;
       const alt = (imgMatch[0].match(/alt=["']([^"']*?)["']/i)?.[1] || "").toLowerCase();
       if (/(icon|logo|avatar|captcha)/i.test(alt)) continue;
       // 크기 힌트로 필터 (width/height < 80)

@@ -95,6 +95,7 @@ contextBridge.exposeInMainWorld("nbBridge", {
 
   // ── 영상 편집 (로컬 ffmpeg) ──
   videoSelectFile: () => ipcRenderer.invoke("video:selectFile"),
+  videoConcat: (paths) => ipcRenderer.invoke("video:concat", paths),
   videoSelectImage: () => ipcRenderer.invoke("video:selectImage"),
   videoProbe: (filePath) => ipcRenderer.invoke("video:probe", filePath),
   videoRenderShorts: (opts) => ipcRenderer.invoke("video:renderShorts", opts),
@@ -115,4 +116,17 @@ contextBridge.exposeInMainWorld("nbBridge", {
     return () => ipcRenderer.removeListener("video:progress", handler);
   },
   offVideoProgress: () => ipcRenderer.removeAllListeners("video:progress"),
+
+  // ── 슬라이드 영상 ──
+  invoke: (channel, ...args) => {
+    const allowed = ["slideshow:generate", "slideshow:bgmDuration", "slideshow:extractLyrics", "slideshow:saveAs", "slideshow:openFolder", "dialog:selectFolder"];
+    if (allowed.includes(channel)) return ipcRenderer.invoke(channel, ...args);
+    return Promise.reject(new Error("blocked channel: " + channel));
+  },
+  on: (channel, cb) => {
+    if (channel === "slideshow:progress") {
+      ipcRenderer.removeAllListeners("slideshow:progress");
+      ipcRenderer.on("slideshow:progress", cb);
+    }
+  },
 });

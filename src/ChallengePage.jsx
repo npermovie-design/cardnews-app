@@ -13,7 +13,7 @@ const STATUS_MAP = {
   completed:  { label: "완료",   color: "#6b7280", bg: "rgba(107,114,128,0.1)" },
 };
 const TYPE_MAP = {
-  challenge: { label: "부트캠프", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
+  challenge: { label: "성장 프로그램", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
   class:     { label: "클래스",   color: "#10b981", bg: "rgba(16,185,129,0.1)" },
   meetup:    { label: "모임",     color: "#8b5cf6", bg: "rgba(139,92,246,0.1)" },
   study:     { label: "스터디",   color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
@@ -78,9 +78,9 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   // SEO 메타 업데이트
   const updateSeo = (ch) => {
     if (!ch) return;
-    const title = `${ch.title} - SNS메이킷 부트캠프`;
+    const title = `${ch.title} - SNS메이킷 성장 프로그램`;
     const desc = (ch.subtitle || ch.description?.replace(/<[^>]*>/g, "") || "").slice(0, 155);
-    const url = `https://snsmakeit.com/challenge/${ch.id}`;
+    const url = `https://snsmakeit.com/growth/${ch.id}`;
     document.title = title;
     const setM = (sel, val) => { const el = document.querySelector(sel); if (el && val) el.content = val; };
     setM('meta[name="description"]', desc);
@@ -95,7 +95,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
     if (!canon) { canon = document.createElement("link"); canon.rel = "canonical"; document.head.appendChild(canon); }
     canon.href = url;
   };
-  const resetSeo = () => { document.title = "부트캠프 - SNS메이킷"; };
+  const resetSeo = () => { document.title = "성장 프로그램 - SNS메이킷"; };
 
   useEffect(() => {
     (async () => {
@@ -130,14 +130,22 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
 
   const openDetail = async ch => {
     setSel(ch); setView("detail"); window.scrollTo(0, 0);
-    window.history.pushState(null, "", "/challenge/" + ch.id);
+    window.history.pushState(null, "", "/growth/" + ch.id);
     updateSeo(ch);
     if (user?.uid) setMyApp(await loadMyApplication(ch.id, user.uid));
     try { setPublicApps(await loadPublicApplicants(ch.id)); } catch { setPublicApps([]); }
   };
-  const openBoard = async ch => { setSel(ch); try { setMissions(await loadMissions(ch.id)); } catch { setMissions([]); } setView("board"); window.scrollTo(0, 0); window.history.pushState(null, "", "/challenge/" + ch.id + "/board"); document.title = `미션 게시판 - ${ch.title} | SNS메이킷`; };
+  const openBoard = async ch => {
+    // 관리자 또는 참여 확정자만 접근 가능
+    if (!user) { showToast("로그인 후 이용할 수 있습니다"); if (typeof window.__onLoginRequest === "function") window.__onLoginRequest(); return; }
+    if (!isAdmin) {
+      const { data: appCheck } = await supabase.from("challenge_applications").select("status").eq("challenge_id", ch.id).eq("uid", user.uid).single();
+      if (!appCheck || appCheck.status !== "confirmed") { showToast("참여가 확정된 회원만 미션 게시판에 입장할 수 있습니다"); return; }
+    }
+    setSel(ch); try { setMissions(await loadMissions(ch.id)); } catch { setMissions([]); } setView("board"); window.scrollTo(0, 0); window.history.pushState(null, "", "/growth/" + ch.id + "/board"); document.title = `미션 게시판 - ${ch.title} | SNS메이킷`;
+  };
   const openAdmin = async ch => { if (!isAdmin) return; setSel(ch); try { setApps(await loadApplications(ch.id)); } catch { setApps([]); } setView("admin"); window.scrollTo(0, 0); };
-  const back = () => { setView("list"); setSel(null); setMyApp(null); window.history.pushState(null, "", "/challenge"); resetSeo(); window.scrollTo(0, 0); };
+  const back = () => { setView("list"); setSel(null); setMyApp(null); window.history.pushState(null, "", "/growth"); resetSeo(); window.scrollTo(0, 0); };
   const getStatus = ch => { if (ch.status === "completed") return "completed"; const now = new Date(); if (ch.start_date && new Date(ch.start_date) <= now && ch.end_date && new Date(ch.end_date) >= now) return "ongoing"; if (ch.recruit_end && new Date(ch.recruit_end) < now) return "ongoing"; return "recruiting"; };
 
   /* ── Toast ── */
@@ -166,17 +174,17 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
           <div style={{ display: "inline-block", background: PRIMARY, color: "#fff", fontSize: 12, fontWeight: 700, padding: "5px 16px", borderRadius: 99, marginBottom: 20 }}>BOOTCAMP</div>
           <h1 style={{ fontSize: mob ? "clamp(26px,6vw,38px)" : "clamp(36px,5vw,52px)", fontWeight: 700, color: "#1a1a1a", lineHeight: 1.3, marginBottom: 14, letterSpacing: "-0.02em" }}>
             함께 성장하는<br/>
-            <span style={{ color: PRIMARY }}>SNS 부트캠프</span>
+            <span style={{ color: PRIMARY }}>SNS 성장 프로그램</span>
           </h1>
           <p style={{ fontSize: mob ? 14 : 17, color: "#4a5568", lineHeight: 1.7, marginBottom: 32 }}>
-            부트캠프, 클래스, 스터디, 모임까지 다양한 프로그램을 운영합니다.<br/>
+            성장 프로그램, 클래스, 스터디, 모임까지 다양한 프로그램을 운영합니다.<br/>
             함께 실행하고, 서로 피드백하며 성장하세요.
           </p>
           {isAdmin && (
             <button onClick={() => { setSel(null); setView("editor"); }}
               style={{ padding: "16px 36px", borderRadius: 99, border: "none", background: PRIMARY, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "transform 0.18s", fontFamily: "inherit" }}
               onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={e => e.currentTarget.style.transform = "none"}>
-              + 새 부트캠프 만들기
+              + 새 성장 프로그램 만들기
             </button>
           )}
         </div>
@@ -187,8 +195,8 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
         {challenges.length === 0 ? (
           <div style={{ textAlign: "center", padding: "80px 20px", color: C.muted }}>
             <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1" strokeLinecap="round" style={{ margin: "0 auto 20px", display: "block", opacity: 0.25 }}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-            <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>아직 등록된 부트캠프가 없어요</div>
-            <div style={{ fontSize: 14 }}>곧 새로운 부트캠프가 시작될 예정입니다</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>아직 등록된 성장 프로그램가 없어요</div>
+            <div style={{ fontSize: 14 }}>곧 새로운 성장 프로그램가 시작될 예정입니다</div>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill,minmax(${mob ? "100%" : "340px"},1fr))`, gap: 24 }}>
@@ -337,55 +345,14 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             </div>
           )}
 
-          {/* 빠른 이동 */}
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 36, padding: "16px 0", borderBottom: "1px solid " + bdr }}>
-            {[
-              ["미션 게시판", () => openBoard(ch)],
-              ["현황판", () => document.getElementById("public-board")?.scrollIntoView({ behavior: "smooth" })],
-              ["부트캠프 개요", () => document.getElementById("sect-overview")?.scrollIntoView({ behavior: "smooth" })],
-              ...(canApply && !hasApplied ? [["신청하기", () => document.getElementById("cta-section")?.scrollIntoView({ behavior: "smooth" })]] : []),
-              ...(isAdmin ? [["신청자 관리", () => openAdmin(ch)]] : []),
-            ].map(([label, fn], i) => (
-              <button key={i} onClick={fn}
-                style={{ padding: "9px 20px", borderRadius: 99, border: "1px solid " + bdr, background: i === 0 && isParticipant ? PRIMARY : "transparent", color: i === 0 && isParticipant ? "#fff" : C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}
-                onMouseEnter={e => { if (!(i === 0 && isParticipant)) { e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)"; } }}
-                onMouseLeave={e => { if (!(i === 0 && isParticipant)) { e.currentTarget.style.background = "transparent"; } }}>
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* 콘텐츠 섹션들 */}
-          <div id="sect-overview" />
-          {ch.description && <Sect title="부트캠프 개요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.description) }} /></Sect>}
-          {ch.target_audience && <Sect title="이런 사람에게 추천해요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.target_audience) }} /></Sect>}
-          {ch.process && <Sect title="진행 방식" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.process) }} /></Sect>}
-          {ch.rules && <Sect title="규칙" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.rules) }} /></Sect>}
-          {ch.rewards && <Sect title="보상 구조" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.rewards) }} /></Sect>}
-          {ch.refund_policy && <Sect title="환불 정책" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.muted, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.refund_policy) }} /></Sect>}
-
-          {/* CTA */}
-          <div id="cta-section" style={{ background: "linear-gradient(135deg, #E8F0FF, rgba(59,130,246,0.08))", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 24, padding: mob ? "36px 20px" : "52px 40px", textAlign: "center", marginTop: 44 }}>
-            <div style={{ fontSize: mob ? 20 : 28, fontWeight: 700, color: "#1a1a1a", marginBottom: 14 }}>
-              {isParticipant ? "미션 게시판에 입장하세요" : hasApplied ? "신청이 완료되었습니다" : canApply ? "지금 바로 신청하세요" : "다음 부트캠프를 기대해주세요"}
-            </div>
-            {isParticipant ? (
-              <button onClick={() => openBoard(ch)} style={ctaBtn(PRIMARY)}>미션 게시판 입장</button>
-            ) : hasApplied ? (
-              <div style={{ maxWidth: 420, margin: "0 auto" }}>
-                <p style={{ fontSize: 14, color: "#4a5568", marginBottom: 16 }}>관리자 확인 후 참여가 확정됩니다</p>
-                <StartProofUploader ch={ch} C={C} bdr={bdr} isDark={isDark} user={user} myApp={myApp} setMyApp={setMyApp} compact />
-              </div>
-            ) : canApply ? (
-              <button onClick={() => { setView("apply"); window.scrollTo(0, 0); }} style={ctaBtn(PRIMARY)}>신청하기</button>
-            ) : null}
-            {isAdmin && <button onClick={() => openAdmin(ch)} style={{ ...ctaBtn("transparent"), border: "1px solid " + bdr, color: C.muted, marginLeft: 12, boxShadow: "none" }}>관리자 보기</button>}
-          </div>
-
-
-          {/* 공개 현황판 - 검색엔진 노출용 (누구나 열람 가능) */}
-          <div id="public-board" />
-          <PublicLinkBoard challengeId={ch.id} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} title={ch.title} isAdmin={isAdmin} />
+          {/* 탭 메뉴 */}
+          <DetailTabs
+            ch={ch} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob}
+            isParticipant={isParticipant} hasApplied={hasApplied} canApply={canApply} isAdmin={isAdmin}
+            openBoard={() => openBoard(ch)} openAdmin={() => openAdmin(ch)}
+            onApply={() => { setView("apply"); window.scrollTo(0, 0); }}
+            user={user} myApp={myApp} setMyApp={setMyApp}
+          />
         </div>
       </div>
     );
@@ -411,7 +378,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
         <h2 style={{ fontSize: 24, fontWeight: 700, color: C.text, marginBottom: 10 }}>신청 완료!</h2>
         <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, marginBottom: 28 }}>
           관리자 확인 후 참여가 확정되면 안내를 드립니다.
-          {sel.start_date && <><br/>부트캠프 시작일: <strong style={{ color: C.text }}>{fmt(sel.start_date)}</strong></>}
+          {sel.start_date && <><br/>성장 프로그램 시작일: <strong style={{ color: C.text }}>{fmt(sel.start_date)}</strong></>}
         </p>
         <StartProofUploader ch={sel} C={C} bdr={bdr} isDark={isDark} user={user} myApp={myApp} setMyApp={setMyApp} />
         <div style={{ marginTop: 16 }}>
@@ -458,6 +425,98 @@ function Sect({ title, children, C, bdr }) {
   </div>;
 }
 
+/* ── 상세 페이지 탭 분리 ── */
+function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, canApply, isAdmin, openBoard, openAdmin, onApply, user, myApp, setMyApp }) {
+  const [dtab, setDtab] = useState("intro");
+  const tabs = [
+    { id: "intro", label: "소개" },
+    { id: "board", label: "현황판" },
+    { id: "detail", label: "상세 안내" },
+    ...(!isParticipant && canApply && !hasApplied ? [{ id: "apply", label: "신청하기" }] : []),
+    ...(isAdmin ? [{ id: "admin", label: "관리" }] : []),
+  ];
+
+  return (
+    <div>
+      {/* 탭 바 */}
+      <div style={{ display: "flex", gap: 0, borderBottom: "1px solid " + bdr, marginBottom: 24 }}>
+        {tabs.map(t => (
+          <button key={t.id} onClick={() => setDtab(t.id)}
+            style={{ padding: mob ? "12px 14px" : "12px 24px", border: "none", cursor: "pointer", fontSize: 14, fontWeight: dtab === t.id ? 700 : 500, background: "transparent", color: dtab === t.id ? PRIMARY : C.muted, borderBottom: dtab === t.id ? `2px solid ${PRIMARY}` : "2px solid transparent", marginBottom: -1, fontFamily: "inherit", transition: "all 0.15s" }}>
+            {t.label}
+          </button>
+        ))}
+        {isParticipant && (
+          <button onClick={openBoard}
+            style={{ marginLeft: "auto", padding: "8px 20px", borderRadius: 99, border: "none", background: PRIMARY, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", alignSelf: "center", marginBottom: 4 }}>
+            미션 게시판
+          </button>
+        )}
+      </div>
+
+      {/* 소개 탭 */}
+      {dtab === "intro" && (
+        <div>
+          {ch.description && <Sect title="프로그램 소개" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.description) }} /></Sect>}
+          {ch.target_audience && <Sect title="이런 사람에게 추천해요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.target_audience) }} /></Sect>}
+          {/* 하단 CTA */}
+          <div style={{ background: isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 20, padding: mob ? "28px 18px" : "36px 32px", textAlign: "center", marginTop: 24 }}>
+            <div style={{ fontSize: mob ? 18 : 24, fontWeight: 700, color: C.text, marginBottom: 12 }}>
+              {isParticipant ? "미션 게시판에 입장하세요" : hasApplied ? "신청이 완료되었습니다" : canApply ? "지금 바로 신청하세요" : "다음 프로그램을 기대해주세요"}
+            </div>
+            {isParticipant ? (
+              <button onClick={openBoard} style={ctaBtn(PRIMARY)}>미션 게시판 입장</button>
+            ) : hasApplied ? (
+              <div style={{ maxWidth: 420, margin: "0 auto" }}>
+                <p style={{ fontSize: 14, color: C.muted, marginBottom: 16 }}>관리자 확인 후 참여가 확정됩니다</p>
+                <StartProofUploader ch={ch} C={C} bdr={bdr} isDark={isDark} user={user} myApp={myApp} setMyApp={setMyApp} compact />
+              </div>
+            ) : canApply ? (
+              <button onClick={onApply} style={ctaBtn(PRIMARY)}>신청하기</button>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* 현황판 탭 */}
+      {dtab === "board" && (
+        <div>
+          <PublicLinkBoard challengeId={ch.id} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} title={ch.title} isAdmin={isAdmin} />
+        </div>
+      )}
+
+      {/* 상세 안내 탭 */}
+      {dtab === "detail" && (
+        <div>
+          {ch.process && <Sect title="진행 방식" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.process) }} /></Sect>}
+          {ch.rules && <Sect title="규칙" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.rules) }} /></Sect>}
+          {ch.rewards && <Sect title="보상 구조" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.rewards) }} /></Sect>}
+          {ch.refund_policy && <Sect title="환불 정책" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.muted, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.refund_policy) }} /></Sect>}
+          {!ch.process && !ch.rules && !ch.rewards && !ch.refund_policy && (
+            <div style={{ textAlign: "center", padding: "48px 20px", color: C.muted, fontSize: 14 }}>등록된 상세 안내가 없습니다</div>
+          )}
+        </div>
+      )}
+
+      {/* 신청하기 탭 */}
+      {dtab === "apply" && (
+        <div style={{ textAlign: "center", padding: "40px 20px" }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 12 }}>지금 바로 신청하세요</div>
+          <div style={{ fontSize: 14, color: C.muted, marginBottom: 24 }}>참가비를 내고 매일 미션을 수행하면 보상을 받을 수 있습니다</div>
+          <button onClick={onApply} style={ctaBtn(PRIMARY)}>신청하기</button>
+        </div>
+      )}
+
+      {/* 관리 탭 */}
+      {dtab === "admin" && (
+        <div style={{ textAlign: "center", padding: "40px 20px" }}>
+          <button onClick={openAdmin} style={ctaBtn(PRIMARY)}>관리자 패널 열기</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── 필드 ── */
 function Fld({ label, children, C }) {
   return <div style={{ marginBottom: 20 }}><div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 8 }}>{label}</div>{children}</div>;
@@ -489,7 +548,7 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
         </button>
         <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 24, padding: mob ? "28px 20px" : "40px 36px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 6 }}>{ch.title}</h2>
-          <p style={{ fontSize: 13, color: C.muted, marginBottom: 32 }}>부트캠프 참가 신청</p>
+          <p style={{ fontSize: 13, color: C.muted, marginBottom: 32 }}>성장 프로그램 참가 신청</p>
 
           <Fld label="이름 *" C={C}><input value={f.name} onChange={e => up("name", e.target.value)} placeholder="이름" style={inp} /></Fld>
           <Fld label="연락처 *" C={C}><input value={f.phone} onChange={e => {
@@ -566,7 +625,7 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
           <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: C.text }}>
               <input type="checkbox" checked={f.agree_rules} onChange={e => up("agree_rules", e.target.checked)} style={{ width: 18, height: 18, accentColor: PRIMARY }} />
-              부트캠프 규칙에 동의합니다 <span style={{ color: "#ef4444" }}>*</span>
+              성장 프로그램 규칙에 동의합니다 <span style={{ color: "#ef4444" }}>*</span>
             </label>
             {ch.price > 0 && <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: C.text }}>
               <input type="checkbox" checked={f.agree_refund} onChange={e => up("agree_refund", e.target.checked)} style={{ width: 18, height: 18, accentColor: PRIMARY }} />
@@ -935,7 +994,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
       <div style={{ maxWidth: 860, margin: "0 auto", padding: mob ? "24px 16px 80px" : "40px 20px 100px" }}>
         {/* 헤더 */}
         <button onClick={onBack} style={{ background: "none", border: "none", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 16, display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit" }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg> 부트캠프 상세로
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg> 성장 프로그램 상세로
         </button>
         <h2 style={{ fontSize: mob ? 20 : 24, fontWeight: 700, color: C.text, marginBottom: 4 }}>{ch.title}</h2>
         <p style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>{ch.daily_mission || "매일 미션을 수행하고 인증 링크를 등록하세요"}</p>
@@ -1211,7 +1270,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>종료 다음날 데이터 인증</div>
                     <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{endProofDate.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}</div>
-                    <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>예: 부트캠프 후 늘어난 팔로워 수, 조회수, 방문자 수가 보이는 화면</div>
+                    <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>예: 성장 프로그램 후 늘어난 팔로워 수, 조회수, 방문자 수가 보이는 화면</div>
                   </div>
                   <button onClick={() => { setProofPanel(null); setEndProofEditing(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 18 }}>x</button>
                 </div>
@@ -1622,7 +1681,7 @@ function FreeBoard({ ch, C, bdr, card, isDark, mob, user }) {
       {posts.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted, border: "1px dashed " + bdr, borderRadius: 16 }}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>아직 글이 없어요</div>
-          <div style={{ fontSize: 13 }}>부트캠프 참여자끼리 자유롭게 소통해보세요!</div>
+          <div style={{ fontSize: 13 }}>성장 프로그램 참여자끼리 자유롭게 소통해보세요!</div>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -1718,26 +1777,51 @@ function PublicLinkBoard({ challengeId, C, bdr, card, isDark, mob, title, isAdmi
 
   if (!loaded || links.length === 0) return null;
 
-  const displayLinks = expanded ? links : links.slice(0, 10);
+  const uniqueUsers = new Set(links.map(l => l.nick)).size;
+  const latestDay = links.length > 0 ? Math.max(...links.map(l => l.day)) : 0;
+  const displayLinks = expanded ? links : links.slice(0, 12);
 
   return (
-    <div style={{ marginTop: 48 }}>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 6 }}>{title} 현황판</h2>
-        <p style={{ fontSize: 13, color: C.muted }}>참가자들이 올린 콘텐츠를 확인하세요 ({links.length}개)</p>
+    <div style={{ marginBottom: 36 }}>
+      {/* 현황판 헤더 */}
+      <div style={{ background: isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 16, padding: mob ? "20px 18px" : "24px 28px", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={PRIMARY} strokeWidth="2" strokeLinecap="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+              <h2 style={{ fontSize: mob ? 18 : 20, fontWeight: 800, color: C.text, margin: 0 }}>실시간 현황판</h2>
+            </div>
+            <p style={{ fontSize: 13, color: C.muted, margin: 0 }}>참가자들이 올린 콘텐츠를 실시간으로 확인하세요</p>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 10, padding: "8px 14px", textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: PRIMARY }}>{links.length}</div>
+              <div style={{ fontSize: 10, color: C.muted }}>총 인증</div>
+            </div>
+            <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 10, padding: "8px 14px", textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#22c55e" }}>{uniqueUsers}</div>
+              <div style={{ fontSize: 10, color: C.muted }}>참가자</div>
+            </div>
+            <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 10, padding: "8px 14px", textAlign: "center" }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: "#f59e0b" }}>D{latestDay}</div>
+              <div style={{ fontSize: 10, color: C.muted }}>최신</div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* 링크 목록 */}
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 8 }}>
         {displayLinks.map((l, i) => (
-          <div key={l.id || i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 14, border: "1px solid " + bdr, background: card, transition: "all 0.15s", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}
-            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.06)"; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 1px 2px rgba(0,0,0,0.04)"; }}>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(l.nick || "?")[0]}</div>
+          <div key={l.id || i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 12, border: "1px solid " + bdr, background: card, transition: "all 0.15s" }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = PRIMARY; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = bdr; }}>
+            <div style={{ width: 30, height: 30, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(l.nick || "?")[0]}</div>
             <a href={l.link} target="_blank" rel="noopener noreferrer" style={{ flex: 1, minWidth: 0, textDecoration: "none" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 1 }}>
                 <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{l.nick}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "1px 8px", borderRadius: 99 }}>Day {l.day}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "1px 7px", borderRadius: 99 }}>Day {l.day}</span>
               </div>
-              <div style={{ fontSize: 12, color: PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.link}</div>
+              <div style={{ fontSize: 11, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.link}</div>
             </a>
             {isAdmin && (
               <button onClick={() => deleteLink(l.id)} title="삭제"
@@ -1745,11 +1829,11 @@ function PublicLinkBoard({ challengeId, C, bdr, card, isDark, mob, title, isAdmi
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
               </button>
             )}
-            {!isAdmin && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="2" style={{ flexShrink: 0 }}><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>}
+            {!isAdmin && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.5" style={{ flexShrink: 0, opacity: 0.5 }}><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>}
           </div>
         ))}
       </div>
-      {links.length > 10 && !expanded && (
+      {links.length > 12 && !expanded && (
         <button onClick={() => setExpanded(true)}
           style={{ display: "block", margin: "16px auto 0", padding: "10px 28px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
           전체 {links.length}개 보기
@@ -1827,7 +1911,7 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
             <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 4 }}>{ch.title}</h2>
             <p style={{ fontSize: 13, color: C.muted }}>총 {apps.length}명 신청 · 확정 {confirmedApps.length}명 · 시작 미인증 {stat.missingStart}명 · 마지막 미인증 {stat.missingEnd}명</p>
           </div>
-          <button onClick={onEdit} style={{ padding: "10px 22px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>부트캠프 수정</button>
+          <button onClick={onEdit} style={{ padding: "10px 22px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>성장 프로그램 수정</button>
         </div>
 
         {/* 탭 전환 */}
@@ -2237,9 +2321,9 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg> 목록으로
         </button>
         <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 24, padding: mob ? "28px 20px" : "40px 36px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 32 }}>{ch ? "부트캠프 수정" : "새 부트캠프"}</h2>
+          <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 32 }}>{ch ? "성장 프로그램 수정" : "새 성장 프로그램"}</h2>
 
-          <Fld label="제목 *" C={C}><input value={f.title} onChange={e => up("title", e.target.value)} placeholder="예: SNS 수익화 10일 부트캠프" style={inp} /></Fld>
+          <Fld label="제목 *" C={C}><input value={f.title} onChange={e => up("title", e.target.value)} placeholder="예: SNS 수익화 10일 성장 프로그램" style={inp} /></Fld>
           <Fld label="한줄 소개" C={C}><input value={f.subtitle} onChange={e => up("subtitle", e.target.value)} placeholder="카드에 표시될 짧은 설명" style={inp} /></Fld>
           <Fld label="썸네일" C={C}>{thumb && <img src={thumb} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 14, marginBottom: 10, display: "block" }} />}<input type="file" accept="image/*" onChange={handleThumb} style={{ fontSize: 13 }} /></Fld>
           <Fld label="상세 설명 (이미지 삽입 가능)" C={C}><RichEditor value={f.description} onChange={v => up("description", v)} isDark={isDark} /></Fld>
@@ -2252,8 +2336,8 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Fld label="모집 시작" C={C}><input type="date" value={f.recruit_start} onChange={e => up("recruit_start", e.target.value)} style={inp} /></Fld>
             <Fld label="모집 마감" C={C}><input type="date" value={f.recruit_end} onChange={e => up("recruit_end", e.target.value)} style={inp} /></Fld>
-            <Fld label="부트캠프 시작" C={C}><input type="date" value={f.start_date} onChange={e => up("start_date", e.target.value)} style={inp} /></Fld>
-            <Fld label="부트캠프 종료" C={C}><input type="date" value={f.end_date} onChange={e => up("end_date", e.target.value)} style={inp} /></Fld>
+            <Fld label="성장 프로그램 시작" C={C}><input type="date" value={f.start_date} onChange={e => up("start_date", e.target.value)} style={inp} /></Fld>
+            <Fld label="성장 프로그램 종료" C={C}><input type="date" value={f.end_date} onChange={e => up("end_date", e.target.value)} style={inp} /></Fld>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
             <Fld label="참가비 (원)" C={C}><input type="number" value={f.price} onChange={e => up("price", +e.target.value)} style={inp} /></Fld>
@@ -2264,13 +2348,13 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
             <Fld label="플랫폼" C={C}><input value={f.platform} onChange={e => up("platform", e.target.value)} style={inp} /></Fld>
             <Fld label="일일 미션" C={C}><input value={f.daily_mission} onChange={e => up("daily_mission", e.target.value)} style={inp} /></Fld>
           </div>
-          <Fld label="진행자 이름" C={C}><input value={f.host_name || ""} onChange={e => up("host_name", e.target.value)} placeholder="부트캠프 진행자 이름" style={inp} /></Fld>
+          <Fld label="진행자 이름" C={C}><input value={f.host_name || ""} onChange={e => up("host_name", e.target.value)} placeholder="성장 프로그램 진행자 이름" style={inp} /></Fld>
           <Fld label="커뮤니티 링크" C={C}><input value={f.community_link} onChange={e => up("community_link", e.target.value)} placeholder="카카오 오픈채팅, 디스코드 등" style={inp} /></Fld>
           <Fld label="달성 뱃지" C={C}>
             <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
               {f.badge_image && <img src={f.badge_image} alt="뱃지" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 8 }} />}
               <div style={{ flex: 1 }}>
-                <input value={f.badge_title || ""} onChange={e => up("badge_title", e.target.value)} placeholder="뱃지 이름 (예: SNS 부트캠프 2기)" style={{ ...inp, marginBottom: 8 }} />
+                <input value={f.badge_title || ""} onChange={e => up("badge_title", e.target.value)} placeholder="뱃지 이름 (예: SNS 성장 프로그램 2기)" style={{ ...inp, marginBottom: 8 }} />
                 <input value={f.badge_image || ""} onChange={e => up("badge_image", e.target.value)} placeholder="뱃지 이미지 URL" style={inp} />
                 <input type="file" accept="image/*" style={{ marginTop: 8, fontSize: 12 }} onChange={async e => {
                   const file = e.target.files?.[0]; if (!file) return;
@@ -2283,7 +2367,7 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
           </Fld>
           <Fld label="유형" C={C}>
             <div style={{ display: "flex", gap: 8 }}>
-              {[["challenge", "부트캠프"], ["class", "클래스"], ["meetup", "모임"], ["study", "스터디"]].map(([v, l]) => {
+              {[["challenge", "성장 프로그램"], ["class", "클래스"], ["meetup", "모임"], ["study", "스터디"]].map(([v, l]) => {
                 const tc = TYPE_MAP[v]?.color || PRIMARY;
                 return (
                   <button key={v} onClick={() => up("type", v)}

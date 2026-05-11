@@ -275,7 +275,7 @@ export default function App() {
         ai: "AI 생성기 - SNS메이킷",
         programs: "자동화 - SNS메이킷",
         class: "클래스 - SNS메이킷",
-        challenge: "부트캠프 - SNS메이킷",
+        challenge: "성장 프로그램 - SNS메이킷",
         pricing: "가격정책 - SNS메이킷",
         contact: "문의하기 - SNS메이킷",
         event: "이벤트 - SNS메이킷",
@@ -308,10 +308,10 @@ export default function App() {
         faq: "SNS메이킷의 콘텐츠 생성, 요금제, 저작권, 계정 관련 자주 묻는 질문을 확인하세요.",
         ai: "블로그 글, 인스타그램 캡션, 영상 편집까지 쉽게 생성하세요.",
         class: "SNS 콘텐츠 제작과 자동화 실무를 배우는 메이킷 클래스입니다.",
-        challenge: "SNS 성장 목표를 정하고 매일 인증하며 실행하는 메이킷 부트캠프입니다.",
+        challenge: "SNS 성장 목표를 정하고 매일 인증하며 실행하는 메이킷 성장 프로그램입니다.",
         pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 콘텐츠 생성과 자동 발행을 이용하세요.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류, 제휴 문의를 남겨주시면 빠르게 답변드립니다.",
-        community: "SNS메이킷 커뮤니티. SNS 운영, AI 콘텐츠 제작, 마케팅 정보와 질문답변, 부트캠프를 함께하세요.",
+        community: "SNS메이킷 커뮤니티. SNS 운영, AI 콘텐츠 제작, 마케팅 정보와 질문답변, 성장 프로그램을 함께하세요.",
         programs: "SNS 운영에 필요한 자동화 도구, 템플릿, 무료 사진, 무료 영상 자료를 확인하세요.",
         event: "SNS메이킷 이벤트와 혜택을 확인하세요.",
         cases: "SNS메이킷을 활용한 고객사례와 AI 콘텐츠 제작 성공 사례를 확인하세요.",
@@ -483,8 +483,8 @@ export default function App() {
     if (mainSeg === "programs" && segments[1]) {
       setProgramId(segments[1]);
     }
-    // /challenge/[id] → page=challenge, challengeId=id
-    if (mainSeg === "challenge" && segments[1]) {
+    // /growth/[id] or /challenge/[id] → page=challenge, challengeId=id
+    if ((mainSeg === "growth" || mainSeg === "challenge") && segments[1]) {
       setChallengeId(segments[1]);
     }
     // /class/[courseId]/[lessonId] → page=class
@@ -492,8 +492,10 @@ export default function App() {
       setClassId(segments[1]);
       if (segments[2]) setClassLessonId(segments[2]);
     }
-    if (mainSeg && mainSeg !== "home") setPage(mainSeg);
-    if (mainSeg === "ai") setAiVisited(true);
+    // /growth → challenge 페이지로 매핑
+    const effectiveSeg = mainSeg === "growth" ? "challenge" : mainSeg;
+    if (effectiveSeg && effectiveSeg !== "home") setPage(effectiveSeg);
+    if (effectiveSeg === "ai") setAiVisited(true);
   }, []);
 
   // popstate - 뒤로가기: URL에서 상태 복원
@@ -554,7 +556,7 @@ export default function App() {
   const navigate = async (target, extra) => {
     if (target === "login_trigger") { navigate("login"); return; }
     if (!(await confirmGuard())) return;
-    const urlTarget = target === "home" ? "/" : "/" + target;
+    const urlTarget = target === "home" ? "/" : target === "challenge" ? "/growth" : "/" + target;
     window.history.pushState(null, "", urlTarget);
     setPage(target); setOpenMenu(null); setMobileOpen(false);
     if (target === "ai") setAiVisited(true);
@@ -562,7 +564,7 @@ export default function App() {
     // SEO: 다국어 동적 타이틀
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
     const titleMap = {
-      ko: { home:"SNS메이킷 - AI SNS 콘텐츠 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자동화", class:"클래스", challenge:"부트캠프", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
+      ko: { home:"SNS메이킷 - AI SNS 콘텐츠 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자동화", class:"클래스", challenge:"성장 프로그램", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
       en: { home:"SNS Makeit - AI Social Content Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", class:"Classes", challenge:"Bootcamp", notice:"Notices", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy" },
       ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", programs:"プログラムストア", class:"クラス", challenge:"ブートキャンプ", notice:"お知らせ", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約" },
     };
@@ -575,7 +577,7 @@ export default function App() {
         howto: "SNS메이킷 사용법 가이드. 블로그 글쓰기, 자동 발행까지 단계별로 안내합니다.",
         ai: "블로그 글, 이미지, 영상을 쉽게 생성하세요.",
         class: "SNS 콘텐츠 제작과 자동화 실무를 배우는 메이킷 클래스입니다.",
-        challenge: "SNS 성장 목표를 정하고 매일 인증하며 실행하는 메이킷 부트캠프입니다.",
+        challenge: "SNS 성장 목표를 정하고 매일 인증하며 실행하는 메이킷 성장 프로그램입니다.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류 등 1:1 문의를 받고 있어요.",
         community: "SNS메이킷 커뮤니티. 마케터와 크리에이터를 위한 정보와 Q&A.",
         programs: "SNS 자동화봇으로 네이버 블로그 글 생성, 드라이브 자료 기반 발행, 자동 운영 흐름을 확인하세요.",
@@ -617,7 +619,7 @@ export default function App() {
     setBoardCat(cat);
     window.history.pushState(null, "", "/community/" + cat);
     setPage("community"); setOpenMenu(null); setMobileOpen(false);
-    const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", challenge: "부트캠프" };
+    const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", challenge: "성장 프로그램" };
     const title = (catNames[cat] || "커뮤니티") + " - SNS메이킷";
     document.title = title;
     updateOgMeta(title, null, "/community/" + cat);
@@ -1047,8 +1049,8 @@ export default function App() {
           <NavBtn id="programs" label="제품" />
           <NavBtn id="class" label="클래스" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
-          {/* 부트캠프 */}
-          <NavBtn id="challenge" label="부트캠프" />
+          {/* 성장 프로그램 */}
+          <NavBtn id="challenge" label="성장 프로그램" />
           {/* 커뮤니티 */}
           <div style={{ position: "relative" }}>
             <DropBtn id="community" label={t("community")} open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
@@ -1265,7 +1267,7 @@ export default function App() {
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
             { id: "programs", label: "제품", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
             { id: "class", label: "클래스", onClick: () => { navigate("class"); setMobileOpen(false); }, active: page==="class" },
-            { id: "challenge", label: "부트캠프", onClick: () => { navigate("challenge"); setMobileOpen(false); }, active: page==="challenge" },
+            { id: "challenge", label: "성장 프로그램", onClick: () => { navigate("challenge"); setMobileOpen(false); }, active: page==="challenge" },
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
           ].map(m => (
             <button key={m.id} onClick={m.onClick} style={{

@@ -1085,6 +1085,15 @@ ipcMain.handle("media:importToMakeit", (_, filePaths, destFolder) => {
   return { ok: true, count: imported.length };
 });
 
+// ── IPC: 폴더 선택 다이얼로그 ──
+ipcMain.handle("dialog:selectFolder", async () => {
+  const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+    properties: ["openDirectory"],
+    title: "폴더 선택"
+  });
+  return canceled ? null : filePaths[0] || null;
+});
+
 // ── IPC: 외부 링크 (URL 검증 포함) ──
 ipcMain.handle("shell:openExternal", (_, url) => {
   if (!url || typeof url !== "string") return;
@@ -1346,6 +1355,340 @@ function getFfprobePath() {
   return "ffprobe";
 }
 
+// ═══════════════════════════════════════════════════════════
+// 슬라이드 영상 생성기
+// ═══════════════════════════════════════════════════════════
+
+ipcMain.handle("slideshow:bgmDuration", async (_, filePath) => {
+  return new Promise((resolve) => {
+    const proc = spawn(getFfprobePath(), [
+      "-v", "error", "-show_entries", "format=duration",
+      "-of", "csv=p=0", filePath
+    ], { windowsHide: true });
+    let out = "";
+    proc.stdout.on("data", (d) => { out += d; });
+    proc.on("close", () => resolve(parseFloat(out) || 0));
+    proc.on("error", () => resolve(0));
+  });
+});
+
+// 음원에서 Whisper STT로 가사/보컬 인식
+ipcMain.handle("slideshow:extractLyrics", async (_, filePath) => {
+  const API = "https://shorts-factory-r33o.onrender.com";
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: "파일 없음" };
+
+    const sendProg = (pct, label) => {
+      if (mainWindow) mainWindow.webContents.send("slideshow:progress", { percent: pct, label });
+    };
+
+    sendProg(10, "오디오 변환 중...");
+    const audioPath = path.join(os.tmpdir(), `makeit_lyrics_${Date.now()}.mp3`);
+    await new Promise((resolve, reject) => {
+      const proc = spawn(getFfmpegPath(), [
+        "-i", filePath, "-vn", "-acodec", "libmp3lame",
+        "-ab", "64k", "-ar", "16000", "-ac", "1", "-y", audioPath
+      ], { windowsHide: true });
+      const timeout = setTimeout(() => { try { proc.kill(); } catch {} reject(new Error("시간 초과")); }, 120000);
+      proc.on("close", (code) => { clearTimeout(timeout); code === 0 ? resolve() : reject(new Error("오디오 변환 실패")); });
+      proc.on("error", (e) => { clearTimeout(timeout); reject(e); });
+    });
+
+    // 25MB 초과 시 앞 3분만
+    if (fs.statSync(audioPath).size > 24 * 1024 * 1024) {
+      const trimPath = audioPath + ".trim.mp3";
+      await new Promise((resolve) => {
+        const proc = spawn(getFfmpegPath(), ["-i", audioPath, "-t", "180", "-acodec", "libmp3lame", "-ab", "64k", "-ar", "16000", "-ac", "1", "-y", trimPath], { windowsHide: true });
+        proc.on("close", () => { if (fs.existsSync(trimPath)) { fs.unlinkSync(audioPath); fs.renameSync(trimPath, audioPath); } resolve(); });
+      });
+    }
+
+    sendProg(30, "AI 음성 인식 중...");
+    const audioB64 = fs.readFileSync(audioPath).toString("base64");
+    fs.unlinkSync(audioPath);
+
+    const reqBody = JSON.stringify({ audio_base64: audioB64, file_name: "audio.mp3", lang: "ko" });
+    const tmpReq = path.join(os.tmpdir(), `makeit_lyrics_req_${Date.now()}.json`);
+    fs.writeFileSync(tmpReq, reqBody);
+
+    const result = await new Promise((resolve) => {
+      const proc = spawn("curl", [
+        "-s", "-w", "\n%{http_code}", "-X", "POST",
+        `${API}/whisper`, "-H", "Content-Type: application/json",
+        "-d", `@${tmpReq}`, "--max-time", "300", "--connect-timeout", "15",
+      ], { windowsHide: true, maxBuffer: 50 * 1024 * 1024 });
+      const chunks = [];
+      proc.stdout.on("data", d => chunks.push(d.toString()));
+      proc.on("close", code => {
+        try { fs.unlinkSync(tmpReq); } catch {}
+        const raw = chunks.join("");
+        const lines = raw.trim().split("\n");
+        const httpCode = parseInt(lines.pop()) || 0;
+        const body = lines.join("\n");
+        try {
+          const data = JSON.parse(body);
+          resolve({ ok: httpCode >= 200 && httpCode < 300, data });
+        } catch {
+          resolve({ ok: false, error: "응답 파싱 실패" });
+        }
+      });
+      proc.on("error", () => resolve({ ok: false, error: "curl 실행 실패" }));
+    });
+
+    sendProg(90, "가사 정리 중...");
+    if (result.ok && result.data) {
+      // segments or text
+      const rawSegments = result.data.segments || [];
+      if (rawSegments.length) {
+        // 무음/반주 구간 필터링: no_speech_prob > 0.5 또는 텍스트가 너무 짧은 구간 제거
+        const segments = rawSegments.filter(s => {
+          if (!s.text || s.text.trim().length < 2) return false;
+          if (s.no_speech_prob != null && s.no_speech_prob > 0.5) return false;
+          // 반복 노이즈 제거 (같은 문자 반복, 의미없는 소리)
+          const t = s.text.trim();
+          if (/^[.\s\-~…]+$/.test(t)) return false;
+          if (/^(.)\1{3,}/.test(t)) return false; // aaaa 같은 반복
+          return true;
+        });
+        if (segments.length) {
+          const lyrics = segments.map(s => s.text.trim()).join("\n");
+          return { ok: true, lyrics, segments };
+        }
+      }
+      if (result.data.text) {
+        return { ok: true, lyrics: result.data.text };
+      }
+    }
+    return { ok: false, error: result.error || "인식된 가사가 없습니다" };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+});
+
+ipcMain.handle("slideshow:generate", async (event, params) => {
+  const { photos, subtitles, bgmPath, bgmVolume, perPhoto, resolution, transition, motion, colorGrade, vignette, fadeInOut, subFont, subAnim, subBg, subBgStyle, subLines, segments } = params;
+  const [w, h] = resolution.split("x").map(Number);
+  const tmpDir = path.join(os.tmpdir(), "makeit_slideshow_" + Date.now());
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const fps = 30;
+  const frames = Math.ceil(perPhoto * fps);
+
+  const sendProg = (pct, label) => {
+    if (mainWindow) mainWindow.webContents.send("slideshow:progress", { percent: pct, label });
+  };
+
+  sendProg(5, "사진 준비 중...");
+
+  // 1. 각 사진을 확대된 해상도로 리사이즈 (모션용 여백 확보)
+  // 모션 있으면 1.3x 크기로 만들고 zoompan으로 크롭
+  const scaleW = motion !== "none" ? Math.ceil(w * 1.3) : w;
+  const scaleH = motion !== "none" ? Math.ceil(h * 1.3) : h;
+
+  for (let i = 0; i < photos.length; i++) {
+    sendProg(5 + Math.floor((i / photos.length) * 20), `사진 ${i + 1}/${photos.length} 변환 중...`);
+    const outImg = path.join(tmpDir, `img_${String(i).padStart(4, "0")}.png`);
+    await new Promise((resolve, reject) => {
+      const args = [
+        "-y", "-i", photos[i],
+        "-vf", `scale=${scaleW}:${scaleH}:force_original_aspect_ratio=decrease,pad=${scaleW}:${scaleH}:(ow-iw)/2:(oh-ih)/2:black`,
+        "-frames:v", "1", outImg
+      ];
+      const proc = spawn(getFfmpegPath(), args, { windowsHide: true });
+      proc.on("close", (code) => code === 0 ? resolve() : reject(new Error("이미지 변환 실패: " + photos[i])));
+      proc.on("error", reject);
+    });
+  }
+
+  sendProg(30, "영상 클립 생성 중...");
+
+  // 2. 각 사진을 개별 영상 클립으로 (모션 + 자막 적용)
+  const clips = [];
+  for (let i = 0; i < photos.length; i++) {
+    sendProg(30 + Math.floor((i / photos.length) * 35), `클립 ${i + 1}/${photos.length} 렌더링...`);
+    const imgPath = path.join(tmpDir, `img_${String(i).padStart(4, "0")}.png`);
+    const clipPath = path.join(tmpDir, `clip_${String(i).padStart(4, "0")}.mp4`);
+    clips.push(clipPath);
+
+    // 모션 필터
+    let vf = "";
+    const even = (n) => Math.floor(n / 2) * 2; // FFmpeg는 짝수 해상도 필요
+    if (motion === "zoom") {
+      // 짝수 사진 zoom in, 홀수 zoom out
+      const zStart = i % 2 === 0 ? 1.0 : 1.3;
+      const zEnd   = i % 2 === 0 ? 1.3 : 1.0;
+      vf = `zoompan=z='${zStart}+(${zEnd}-${zStart})*on/${frames}':x='(iw-iw/zoom)/2':y='(ih-ih/zoom)/2':d=${frames}:s=${even(w)}x${even(h)}:fps=${fps}`;
+    } else if (motion === "pan") {
+      // 좌→우, 우→좌 교대
+      const dir = i % 2 === 0;
+      const maxPan = scaleW - w;
+      vf = dir
+        ? `zoompan=z=1:x='${maxPan}*on/${frames}':y='(ih-oh)/2':d=${frames}:s=${even(w)}x${even(h)}:fps=${fps}`
+        : `zoompan=z=1:x='${maxPan}-${maxPan}*on/${frames}':y='(ih-oh)/2':d=${frames}:s=${even(w)}x${even(h)}:fps=${fps}`;
+    } else if (motion === "kenburns") {
+      // 줌 + 패닝 조합 (4가지 패턴 순환)
+      const pattern = i % 4;
+      const maxPan = Math.floor((scaleW - w) * 0.7);
+      if (pattern === 0) {
+        vf = `zoompan=z='1.0+0.3*on/${frames}':x='${maxPan}*on/${frames}':y='(ih-ih/zoom)/2':d=${frames}:s=${even(w)}x${even(h)}:fps=${fps}`;
+      } else if (pattern === 1) {
+        vf = `zoompan=z='1.3-0.3*on/${frames}':x='${maxPan}-${maxPan}*on/${frames}':y='(ih-ih/zoom)/2':d=${frames}:s=${even(w)}x${even(h)}:fps=${fps}`;
+      } else if (pattern === 2) {
+        vf = `zoompan=z='1.0+0.25*on/${frames}':x='(iw-iw/zoom)/2':y='${Math.floor((scaleH-h)*0.5)}*on/${frames}':d=${frames}:s=${even(w)}x${even(h)}:fps=${fps}`;
+      } else {
+        vf = `zoompan=z='1.25-0.25*on/${frames}':x='(iw-iw/zoom)/2':y='${Math.floor((scaleH-h)*0.5)}-${Math.floor((scaleH-h)*0.5)}*on/${frames}':d=${frames}:s=${even(w)}x${even(h)}:fps=${fps}`;
+      }
+    } else {
+      // 정지 (모션 없음)
+      vf = `scale=${even(w)}:${even(h)},setsar=1`;
+    }
+
+    // 색감 보정
+    if (colorGrade === "warm") vf += `,colorbalance=rs=0.1:gs=0.05:bs=-0.1`;
+    else if (colorGrade === "cool") vf += `,colorbalance=rs=-0.1:gs=0:bs=0.15`;
+    else if (colorGrade === "vintage") vf += `,curves=vintage,eq=saturation=0.8:contrast=1.1`;
+    else if (colorGrade === "bw") vf += `,hue=s=0`;
+
+    // 클립 페이드 인/아웃 (첫/마지막 사진)
+    if (fadeInOut && i === 0) vf += `,fade=t=in:st=0:d=1`;
+    if (fadeInOut && i === photos.length - 1) vf += `,fade=t=out:st=${Math.max(0, perPhoto - 1.5)}:d=1.5`;
+
+    // ── 자막 drawtext ──
+    const fontSize = Math.floor(h / 18);
+    const yPos = h - fontSize - Math.floor(h / 10);
+
+    // 폰트 선택
+    const fontMap = {
+      pretendard: [path.join(__dirname, "build", "fonts", "Pretendard-Bold.otf"), path.join(process.env.LOCALAPPDATA || "", "Microsoft", "Windows", "Fonts", "Pretendard-Bold.otf")],
+      round: [path.join(__dirname, "build", "fonts", "NanumSquareRoundB.ttf"), path.join(process.env.LOCALAPPDATA || "", "Microsoft", "Windows", "Fonts", "NanumSquareRoundB.ttf")],
+      malgun: ["C:/Windows/Fonts/malgunbd.ttf"],
+    };
+    const fontCands = [...(fontMap[subFont || "pretendard"] || []), "C:/Windows/Fonts/malgunbd.ttf"];
+    let fontFile = fontCands.find(f => { try { return fs.existsSync(f); } catch { return false; } }) || fontCands[fontCands.length - 1];
+    fontFile = fontFile.replace(/\\/g, "/").replace(":", "\\:");
+
+    function mkDt(text, enableExpr) {
+      const esc = text.replace(/'/g, "\u2019").replace(/\\/g, "\\\\").replace(/:/g, "\\:");
+      let d = `drawtext=text='${esc}':fontfile='${fontFile}':fontsize=${fontSize}:fontcolor=white`;
+      if (subBgStyle === "box" || subBg) d += `:box=1:boxcolor=black@0.4:boxborderw=10`;
+      else if (subBgStyle === "outline") d += `:borderw=3:bordercolor=black@0.6`;
+      // "none" → 테두리/배경 없음
+      d += `:x=(w-text_w)/2:y=${yPos}`;
+      if (enableExpr) d += `:enable='${enableExpr}'`;
+      return d;
+    }
+
+    // 타임스탬프 기반 자막 (segments 있을 때 → 노래 타이밍 동기화)
+    const clipStart = i * perPhoto;
+    const clipEnd = (i + 1) * perPhoto;
+
+    if (segments && segments.length > 0) {
+      const overlapping = segments.filter(s => s.end > clipStart && s.start < clipEnd);
+      overlapping.forEach(seg => {
+        const ls = Math.max(0, seg.start - clipStart);
+        const le = Math.min(perPhoto, seg.end - clipStart);
+        if (le - ls < 0.2) return;
+        vf += `,${mkDt(seg.text, `between(t\\,${ls.toFixed(2)}\\,${le.toFixed(2)})`)}`;
+      });
+    } else {
+      // segments 없으면 기존 subtitles 배열 사용
+      const sub = (subtitles && subtitles[i]) ? subtitles[i].trim() : "";
+      if (sub) {
+        if (subAnim === "fade") {
+          const fo = Math.max(0, perPhoto - 0.4);
+          vf += `,${mkDt(sub, null)}`;
+          // alpha 는 enable 과 별도로 - 간단하게 전체 표시
+        } else {
+          vf += `,${mkDt(sub, null)}`;
+        }
+      }
+    }
+
+    await new Promise((resolve, reject) => {
+      const args = [
+        "-y", "-loop", "1", "-i", imgPath,
+        "-vf", vf,
+        "-t", String(perPhoto),
+        "-c:v", "libx264", "-preset", "fast", "-pix_fmt", "yuv420p",
+        "-r", String(fps), "-an", clipPath
+      ];
+      const proc = spawn(getFfmpegPath(), args, { windowsHide: true });
+      let stderr = "";
+      proc.stderr.on("data", d => { stderr += d.toString(); });
+      proc.on("close", (code) => {
+        if (code === 0 && fs.existsSync(clipPath)) resolve();
+        else reject(new Error(`클립 ${i+1} 렌더링 실패\n` + stderr.slice(-300)));
+      });
+      proc.on("error", reject);
+    });
+  }
+
+  sendProg(70, "클립 합치는 중...");
+
+  // 3. concat 파일
+  const concatFile = path.join(tmpDir, "concat.txt");
+  const concatContent = clips.map(c => `file '${c.replace(/\\/g, "/")}'`).join("\n");
+  fs.writeFileSync(concatFile, concatContent);
+
+  // 4. 최종 인코딩 (클립 합치기 + BGM)
+  const outFile = path.join(tmpDir, "slideshow_output.mp4");
+  const ffArgs = ["-y", "-f", "concat", "-safe", "0", "-i", concatFile];
+
+  if (bgmPath && fs.existsSync(bgmPath)) {
+    ffArgs.push("-i", bgmPath);
+    ffArgs.push("-c:v", "copy");
+    ffArgs.push("-c:a", "aac", "-b:a", "192k");
+    const vol = bgmVolume != null ? bgmVolume : 0.5;
+    const totalDur = perPhoto * photos.length;
+    // 음악 끝 1.5초 페이드아웃 + 볼륨 조절
+    const fadeStart = Math.max(0, totalDur - 1.5);
+    ffArgs.push("-filter:a", `volume=${vol},afade=t=out:st=${fadeStart.toFixed(1)}:d=1.5`);
+    ffArgs.push("-shortest");
+  } else {
+    ffArgs.push("-c:v", "copy", "-an");
+  }
+  ffArgs.push("-movflags", "+faststart", outFile);
+
+  await new Promise((resolve, reject) => {
+    const proc = spawn(getFfmpegPath(), ffArgs, { windowsHide: true });
+    let stderr = "";
+    proc.stderr.on("data", (d) => {
+      stderr += d.toString();
+      // 진행률 파싱 (time=)
+      const match = d.toString().match(/time=(\d+):(\d+):(\d+)/);
+      if (match) {
+        const sec = parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseInt(match[3]);
+        const total = perPhoto * photos.length;
+        const pct = Math.min(95, 55 + Math.floor((sec / total) * 40));
+        sendProg(pct, `인코딩 중... ${Math.floor(sec)}초 / ${Math.floor(total)}초`);
+      }
+    });
+    proc.on("close", (code) => {
+      if (code === 0 && fs.existsSync(outFile)) resolve();
+      else reject(new Error("FFmpeg 인코딩 실패\n" + stderr.slice(-500)));
+    });
+    proc.on("error", reject);
+  });
+
+  sendProg(100, "완료!");
+  return outFile;
+});
+
+ipcMain.handle("slideshow:saveAs", async (_, currentPath) => {
+  const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+    defaultPath: "슬라이드영상.mp4",
+    filters: [{ name: "MP4 영상", extensions: ["mp4"] }]
+  });
+  if (!canceled && filePath) {
+    fs.copyFileSync(currentPath, filePath);
+    return filePath;
+  }
+  return null;
+});
+
+ipcMain.handle("slideshow:openFolder", async (_, filePath) => {
+  shell.showItemInFolder(filePath);
+});
+
 // 로컬 ffmpeg 오디오 추출 → /whisper API → 자막+하이라이트 생성
 // /analyze가 서버 메모리 부족으로 크래시하므로, /whisper만 사용
 ipcMain.handle("video:uploadAndAnalyze", async (_, filePath, maxSegments) => {
@@ -1515,11 +1858,65 @@ ipcMain.handle("video:uploadAndAnalyze", async (_, filePath, maxSegments) => {
 // 파일 선택
 ipcMain.handle("video:selectFile", async () => {
   const r = await dialog.showOpenDialog(mainWindow, {
-    properties: ["openFile"],
+    properties: ["openFile", "multiSelections"],
     filters: [{ name: "영상", extensions: ["mp4", "mov", "avi", "mkv", "webm"] }],
   });
   if (r.canceled || !r.filePaths.length) return { ok: false };
-  return { ok: true, filePath: r.filePaths[0] };
+  // 하위 호환: filePath(단일) + filePaths(다중) 모두 반환
+  return { ok: true, filePath: r.filePaths[0], filePaths: r.filePaths };
+});
+
+// 다중 영상을 하나로 합치기 (concat → 단일 파일)
+ipcMain.handle("video:concat", async (_, filePaths) => {
+  if (!filePaths || filePaths.length < 2) return { ok: false, error: "2개 이상의 영상이 필요합니다" };
+  try {
+    const tmpDir = path.join(os.tmpdir(), "makeit_concat_" + Date.now());
+    fs.mkdirSync(tmpDir, { recursive: true });
+
+    const sendProg = (pct, label) => {
+      if (mainWindow) mainWindow.webContents.send("video:progress", { percent: pct, label });
+    };
+
+    // 1. 모든 영상을 같은 코덱/해상도로 변환
+    sendProg(5, "영상 규격 통일 중...");
+    const normalized = [];
+    for (let i = 0; i < filePaths.length; i++) {
+      sendProg(5 + Math.floor((i / filePaths.length) * 50), `영상 ${i + 1}/${filePaths.length} 변환 중...`);
+      const outPath = path.join(tmpDir, `part_${i}.mp4`);
+      await new Promise((resolve, reject) => {
+        const proc = spawn(getFfmpegPath(), [
+          "-y", "-i", filePaths[i],
+          "-c:v", "libx264", "-preset", "fast", "-crf", "23",
+          "-c:a", "aac", "-b:a", "192k", "-ar", "44100", "-ac", "2",
+          "-r", "30", "-pix_fmt", "yuv420p",
+          "-movflags", "+faststart", outPath
+        ], { windowsHide: true });
+        proc.on("close", code => code === 0 ? resolve() : reject(new Error("변환 실패: " + filePaths[i])));
+        proc.on("error", reject);
+      });
+      normalized.push(outPath);
+    }
+
+    // 2. concat 파일 생성
+    sendProg(60, "영상 합치는 중...");
+    const concatFile = path.join(tmpDir, "concat.txt");
+    fs.writeFileSync(concatFile, normalized.map(f => `file '${f.replace(/\\/g, "/")}'`).join("\n"));
+
+    const outFile = path.join(tmpDir, "merged.mp4");
+    await new Promise((resolve, reject) => {
+      const proc = spawn(getFfmpegPath(), [
+        "-y", "-f", "concat", "-safe", "0", "-i", concatFile,
+        "-c", "copy", "-movflags", "+faststart", outFile
+      ], { windowsHide: true });
+      proc.on("close", code => code === 0 ? resolve() : reject(new Error("합치기 실패")));
+      proc.on("error", reject);
+    });
+
+    sendProg(90, "완료!");
+    return { ok: true, filePath: outFile };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
 });
 
 // 이미지/GIF 선택 (짤 삽입용)

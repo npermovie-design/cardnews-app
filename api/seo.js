@@ -49,6 +49,7 @@ async function handleSitemap(req, res) {
     { url: "/pricing", priority: "0.8", freq: "monthly", langs: true, lastmod: "2026-04-17" },
     { url: "/ai", priority: "0.9", freq: "weekly", langs: true, lastmod: today },
     { url: "/programs", priority: "0.8", freq: "weekly", lastmod: today },
+    { url: "/growth", priority: "0.7", freq: "weekly", lastmod: today },
     { url: "/community/info", priority: "0.7", freq: "daily", lastmod: today },
     { url: "/community/qna", priority: "0.7", freq: "daily", lastmod: today },
     { url: "/contact", priority: "0.5", freq: "monthly", lastmod: "2026-03-15" },
@@ -118,7 +119,7 @@ async function handleSitemap(req, res) {
     const { data: chs } = await sb3.from("challenges").select("id,title,updated_at").order("created_at", { ascending: false });
     if (chs) {
       challengeUrls = chs.map(c => ({
-        url: `/challenge/${c.id}`,
+        url: `/growth/${c.id}`,
         priority: "0.8",
         freq: "daily",
         lastmod: c.updated_at ? c.updated_at.slice(0, 10) : today,

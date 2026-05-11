@@ -1,4 +1,48 @@
 // 메이킷자동화 renderer - UI 로직 (v2 Clean)
+
+// ── 전역 드래그앤드롭 유틸 ──
+// dropZone: 드롭 대상 요소, fileInput: hidden input, opts: { accept, onDrop }
+function enableDragDrop(dropZone, fileInput, opts) {
+  if (!dropZone) return;
+  var accept = (opts && opts.accept) || "*";
+  var onDrop = opts && opts.onDrop;
+
+  function highlight() { dropZone.style.borderColor = "var(--accent)"; dropZone.style.background = "rgba(59,130,246,0.06)"; }
+  function unhighlight() { dropZone.style.borderColor = ""; dropZone.style.background = ""; }
+
+  dropZone.addEventListener("dragover", function(e) { e.preventDefault(); e.stopPropagation(); highlight(); });
+  dropZone.addEventListener("dragleave", function(e) { e.preventDefault(); e.stopPropagation(); unhighlight(); });
+  dropZone.addEventListener("drop", function(e) {
+    e.preventDefault(); e.stopPropagation(); unhighlight();
+    var files = e.dataTransfer && e.dataTransfer.files;
+    if (!files || !files.length) return;
+    // accept 필터
+    var filtered = [];
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      if (accept === "*" || accept.split(",").some(function(a) {
+        a = a.trim();
+        if (a.startsWith(".")) return f.name.toLowerCase().endsWith(a);
+        if (a.endsWith("/*")) return f.type.startsWith(a.replace("/*", ""));
+        return f.type === a;
+      })) filtered.push(f);
+    }
+    if (!filtered.length) return;
+    if (onDrop) { onDrop(filtered); return; }
+    // fileInput 에 파일 주입 (DataTransfer trick)
+    if (fileInput) {
+      var dt = new DataTransfer();
+      filtered.forEach(function(f) { dt.items.add(f); });
+      fileInput.files = dt.files;
+      fileInput.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  });
+}
+
+// 전역: 페이지에 파일 드롭 시 기본 동작 방지
+document.addEventListener("dragover", function(e) { e.preventDefault(); });
+document.addEventListener("drop", function(e) { e.preventDefault(); });
+
 const bridge = window.nbBridge;
 
 if (!bridge) {
@@ -1498,7 +1542,7 @@ $("browserLoginBtn").addEventListener("click", handleBrowserLogin);
 
 // ── 직접 이메일/비번 로그인 + 저장 + 자동 로그인 ──
 const SB_LOGIN_URL = "https://ckzjnpzadeovrasucjmu.supabase.co";
-const SB_LOGIN_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNGU1bb7EVz_-Ljs";
+const SB_LOGIN_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
 
 // 저장된 로그인 정보 복원
 (async function restoreSavedLogin() {
@@ -1634,6 +1678,9 @@ function _loadHubTab(name) {
   var container = document.getElementById("hubInlineContent");
   if (!container) return;
   container.innerHTML = "<div style='color:var(--text-dim);padding:30px;text-align:center;'>불러오는 중...</div>";
+
+  // 클래스 탭은 Supabase에서 직접 로드
+  if (name === "classes") { _loadClassesTab(container); return; }
 
   var srcPanel = document.querySelector('section[data-panel="' + name + '"]');
   if (!srcPanel) { container.innerHTML = "<div style='color:var(--text-dim);padding:30px;text-align:center;'>콘텐츠 없음</div>"; return; }
@@ -1866,7 +1913,59 @@ document.querySelector('.nav-item[data-panel="chat"]')?.addEventListener("click"
 
 // ── 요청합니다 (피드백) ──
 const SB_URL = "https://ckzjnpzadeovrasucjmu.supabase.co";
-const SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNGU1bb7EVz_-Ljs";
+const SB_ANON = "sb_publishable_TRn4PuhwKeH5yhkCJmL8JQ_Ee3HXQnf";
+
+// ── 클래스 탭 (Supabase 직접 로드) ──
+async function _loadClassesTab(container) {
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/classes?select=id,title,desc,type,pricing,price,thumbnail,instructor,difficulty,duration_info,tags,created_at&order=created_at.desc`, {
+      headers: { apikey: SB_ANON, Authorization: `Bearer ${SB_ANON}` }
+    });
+    if (!res.ok) throw new Error(res.status);
+    const rows = await res.json();
+    if (!rows.length) {
+      container.innerHTML = "<div style='color:var(--text-dim);padding:40px;text-align:center;'>등록된 클래스가 없습니다.</div>";
+      return;
+    }
+    const typeLabel = { vod: "VOD", live: "LIVE", offline: "오프라인" };
+    const pricingLabel = { free: "무료", paid: "유료", member: "회원전용" };
+    container.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;">' +
+      rows.map(function(c) {
+        var thumb = c.thumbnail ? '<img src="' + escapeHtml(c.thumbnail) + '" style="width:100%;height:140px;object-fit:cover;border-radius:8px 8px 0 0;" onerror="this.style.display=\'none\'">' : '<div style="height:140px;background:linear-gradient(135deg,#3b82f6 0%,#6366f1 100%);border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:28px;font-weight:800;">' + escapeHtml((c.title || "")[0] || "C") + '</div>';
+        var tags = (c.tags || []).slice(0, 3).map(function(t) { return '<span style="background:var(--bg-dim);padding:2px 8px;border-radius:4px;font-size:11px;">' + escapeHtml(t) + '</span>'; }).join("");
+        return '<div class="card" style="padding:0;overflow:hidden;cursor:pointer;" data-class-id="' + c.id + '">' +
+          thumb +
+          '<div style="padding:12px 14px;">' +
+            '<div style="display:flex;gap:6px;margin-bottom:6px;">' +
+              '<span style="background:#3b82f6;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">' + (typeLabel[c.type] || "VOD") + '</span>' +
+              '<span style="background:' + (c.pricing === "free" ? "#10b981" : "#f59e0b") + ';color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">' + (pricingLabel[c.pricing] || "유료") + '</span>' +
+            '</div>' +
+            '<h3 style="font-size:15px;font-weight:700;margin:0 0 4px;line-height:1.3;">' + escapeHtml(c.title || "") + '</h3>' +
+            '<p style="font-size:12px;color:var(--text-dim);margin:0 0 8px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + escapeHtml(c.desc || "") + '</p>' +
+            '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px;">' + tags + '</div>' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-dim);">' +
+              '<span>' + escapeHtml(c.instructor || "") + '</span>' +
+              '<span>' + escapeHtml(c.difficulty || "입문") + ' · ' + escapeHtml(c.duration_info || "") + '</span>' +
+            '</div>' +
+          '</div></div>';
+      }).join("") + '</div>';
+
+    // 카드 클릭 → 웹사이트 클래스 페이지로 이동
+    container.querySelectorAll("[data-class-id]").forEach(function(card) {
+      card.addEventListener("click", function() {
+        var cid = card.dataset.classId;
+        var url = "https://snsmakeit.com/class/" + cid;
+        if (window.nbBridge && window.nbBridge.openExternal) {
+          window.nbBridge.openExternal(url);
+        } else {
+          window.open(url, "_blank");
+        }
+      });
+    });
+  } catch (err) {
+    container.innerHTML = "<div style='color:var(--text-dim);padding:40px;text-align:center;'>클래스를 불러올 수 없습니다.</div>";
+  }
+}
 
 let feedbackCat = "feature";
 const feedbackCatChips = document.getElementById("feedbackCatChips");
@@ -2120,8 +2219,89 @@ if ($("driveSourceToggle")) {
     $("driveSourceToggle").querySelectorAll(".chip").forEach(function(b) { b.classList.remove("active"); });
     btn.classList.add("active");
     var val = btn.dataset.value;
-    blogAutopilotSourceMode = val === "drive" ? "drive" : "normal";
+    blogAutopilotSourceMode = val === "drive" ? "drive" : val === "folder" ? "folder" : val === "url" ? "url" : "normal";
+    if ($("urlSourceSection")) $("urlSourceSection").style.display = val === "url" ? "" : "none";
     if ($("driveSourceSection")) $("driveSourceSection").style.display = val === "drive" ? "" : "none";
+    if ($("folderSourceSection")) $("folderSourceSection").style.display = val === "folder" ? "" : "none";
+  });
+}
+// 자동 글쓰기 URL 가져오기
+var _apRefContent = "";
+var _apRefImages = [];
+var _apRefImagesSelected = [];
+var _apUrlMode = "both"; // both | photo | text
+
+if ($("apUrlModeChips")) {
+  $("apUrlModeChips").addEventListener("click", function(e) {
+    var btn = e.target.closest(".chip"); if (!btn) return;
+    $("apUrlModeChips").querySelectorAll(".chip").forEach(function(b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    _apUrlMode = btn.dataset.value;
+    if ($("apUrlPreview")) $("apUrlPreview").style.display = (_apUrlMode === "photo") ? "none" : _apRefContent ? "block" : "none";
+    if ($("apUrlImages")) $("apUrlImages").style.display = (_apUrlMode === "text") ? "none" : _apRefImages.length ? "block" : "none";
+  });
+}
+
+if ($("apUrlFetchBtn")) {
+  $("apUrlFetchBtn").addEventListener("click", async function() {
+    var url = $("apRefUrl") ? $("apRefUrl").value.trim() : "";
+    if (!url) return;
+    $("apUrlFetchBtn").textContent = "가져오는 중..."; $("apUrlFetchBtn").disabled = true;
+    _apRefImages = []; _apRefImagesSelected = [];
+    try {
+      var res = await fetch(API + "/fetch-url-content?url=" + encodeURIComponent(url));
+      var data = await res.json();
+      _apRefContent = data.content || data.text || "";
+      _apRefImages = data.images || [];
+      if (data.thumbnail && !_apRefImages.includes(data.thumbnail)) _apRefImages.unshift(data.thumbnail);
+
+      // 모드 선택 표시
+      if ($("apUrlMode")) $("apUrlMode").style.display = "";
+
+      if (_apRefContent && $("apUrlPreview")) { $("apUrlPreview").style.display = "block"; $("apUrlPreview").textContent = _apRefContent.slice(0, 300) + "..."; }
+
+      var imgCont = $("apUrlImages");
+      if (imgCont && _apRefImages.length > 0) {
+        imgCont.style.display = "block";
+        var html = '<div style="font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:6px;">이미지 (' + _apRefImages.length + '개) — 클릭으로 선택/해제</div>';
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;">';
+        _apRefImages.forEach(function(imgUrl, idx) {
+          html += '<div class="ap-img-item" data-idx="' + idx + '" style="cursor:pointer;border:2px solid var(--accent);border-radius:6px;overflow:hidden;position:relative;">';
+          html += '<img src="' + escapeHtml(imgUrl) + '" style="width:100%;height:60px;object-fit:cover;display:block;" onerror="this.parentElement.style.display=\'none\'">';
+          html += '<div class="ap-img-chk" style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;text-align:center;line-height:16px;">v</div>';
+          html += '</div>';
+        });
+        html += '</div>';
+        imgCont.innerHTML = html;
+        _apRefImagesSelected = _apRefImages.slice();
+        imgCont.querySelectorAll(".ap-img-item").forEach(function(item) {
+          item.addEventListener("click", function() {
+            var idx = parseInt(item.dataset.idx);
+            var pos = _apRefImagesSelected.indexOf(_apRefImages[idx]);
+            if (pos >= 0) { _apRefImagesSelected.splice(pos, 1); item.style.borderColor = "var(--border)"; item.querySelector(".ap-img-chk").style.display = "none"; }
+            else { _apRefImagesSelected.push(_apRefImages[idx]); item.style.borderColor = "var(--accent)"; item.querySelector(".ap-img-chk").style.display = ""; }
+          });
+        });
+      }
+    } catch(e) { console.error("[ap url fetch]", e); }
+    $("apUrlFetchBtn").textContent = "가져오기"; $("apUrlFetchBtn").disabled = false;
+  });
+}
+
+// 로컬 폴더 선택
+if ($("localFolderBtn")) {
+  $("localFolderBtn").addEventListener("click", async function() {
+    try {
+      var result = await bridge.invoke("dialog:selectFolder");
+      if (result) {
+        $("localFolderPath").textContent = result;
+        $("localFolderPath").dataset.path = result;
+      }
+    } catch(e) {
+      // fallback: videoSelectSaveDir 사용
+      var dir = await bridge.videoSelectSaveDir();
+      if (dir) { $("localFolderPath").textContent = dir; $("localFolderPath").dataset.path = dir; }
+    }
   });
 }
 
@@ -2751,7 +2931,10 @@ $("startAutopilotBtn").addEventListener("click", async () => {
       category_count: categoryCount,
       interval,
       custom_prompt: customPrompt,
-      ref_url: "",
+      ref_url: blogAutopilotSourceMode === "url" ? ($("apRefUrl") ? $("apRefUrl").value.trim() : "") : "",
+      ref_content: (blogAutopilotSourceMode === "url" && _apUrlMode !== "photo") ? _apRefContent : "",
+      ref_images: (blogAutopilotSourceMode === "url" && _apUrlMode !== "text") ? _apRefImagesSelected : [],
+      ref_mode: blogAutopilotSourceMode === "url" ? _apUrlMode : "",
       drive_folder_url: blogAutopilotSourceMode === "drive" ? driveFolderUrl : "",
       drive_recursive: driveRecursive,
       drive_images_per_post: 4,
@@ -5400,14 +5583,62 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 
   if(bridge.onVideoProgress) bridge.onVideoProgress(function(d){ var s4=$("veStep4"); if(s4&&s4.style.display!=="none") setProg("veExportPct","veExportBar","veExportSub",d.percent,d.clip?"클립 "+d.clip+"/"+d.total:""); });
 
-  // 파일 선택
-  var selBtn=$("veSelectFile"); if(selBtn) selBtn.addEventListener("click",async function(){
-    var r=await bridge.videoSelectFile(); if(!r.ok) return;
-    ve.filePath=r.filePath; var info=await bridge.videoProbe(r.filePath); ve.fileInfo=info; ve.duration=info.ok?info.duration:0;
-    var name=r.filePath.split(/[\\/]/).pop(); var dur=info.ok?Math.floor(info.duration/60)+":"+String(Math.floor(info.duration%60)).padStart(2,"0"):""; var size=info.ok?(info.size/1e6).toFixed(1)+"MB":"";
+  // 파일 선택 (다중 지원)
+  var veFiles = []; // 다중 영상 파일 경로
+  async function veLoadFile(filePath) {
+    ve.filePath=filePath; var info=await bridge.videoProbe(filePath); ve.fileInfo=info; ve.duration=info.ok?info.duration:0;
+    var name=filePath.split(/[\\/]/).pop(); var dur=info.ok?Math.floor(info.duration/60)+":"+String(Math.floor(info.duration%60)).padStart(2,"0"):""; var size=info.ok?(info.size/1e6).toFixed(1)+"MB":"";
     var fi=$("veFileInfo"); if(fi){fi.style.display="";fi.innerHTML="<strong>"+escapeHtml(name)+"</strong>&nbsp; "+dur+" · "+size+" · "+(info.width||0)+"x"+(info.height||0);}
     var ab=$("veAnalyzeBtn"); if(ab) ab.disabled=false;
-  });
+    var addBtn=$("veAddMore"); if(addBtn) addBtn.style.display="";
+  }
+  async function veLoadMultiFiles(paths) {
+    veFiles = paths;
+    if (paths.length === 1) { veLoadFile(paths[0]); renderVeFileList(); return; }
+    // 다중: 합치기
+    var fi=$("veFileInfo"); if(fi){fi.style.display="";fi.innerHTML="<strong>"+paths.length+"개 영상</strong> 합치는 중...";}
+    var ab=$("veAnalyzeBtn"); if(ab) ab.disabled=true;
+    var result = await bridge.videoConcat(paths);
+    if (result.ok) {
+      veLoadFile(result.filePath);
+    } else {
+      if(fi) fi.innerHTML="<span style='color:#ef4444;'>합치기 실패: "+escapeHtml(result.error||"")+"</span>";
+    }
+    renderVeFileList();
+  }
+  function renderVeFileList() {
+    var list=$("veFileList"); if(!list) return;
+    if(veFiles.length<=1){list.style.display="none";return;}
+    list.style.display="flex";
+    list.innerHTML=veFiles.map(function(f,i){
+      var name=f.split(/[\\/]/).pop();
+      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg-dim);border-radius:6px;font-size:12px;">'+
+        '<span style="font-weight:600;color:var(--text-dim);min-width:16px;">'+(i+1)+'</span>'+
+        '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+escapeHtml(name)+'</span>'+
+        '<button class="btn btn-sm ve-rm-file" data-idx="'+i+'" style="font-size:10px;padding:2px 6px;color:#ef4444;">X</button></div>';
+    }).join("");
+    list.onclick=function(e){var b=e.target.closest(".ve-rm-file");if(!b)return;veFiles.splice(parseInt(b.dataset.idx),1);if(veFiles.length)veLoadMultiFiles(veFiles);else{list.style.display="none";$("veFileInfo").style.display="none";$("veAddMore").style.display="none";}};
+  }
+  var selBtn=$("veSelectFile"); if(selBtn) {
+    selBtn.addEventListener("click",async function(){
+      var r=await bridge.videoSelectFile(); if(!r.ok) return;
+      if(r.filePaths && r.filePaths.length>1) { veLoadMultiFiles(r.filePaths); }
+      else { veFiles=[r.filePath]; veLoadFile(r.filePath); renderVeFileList(); }
+    });
+    enableDragDrop(selBtn, null, { accept: "video/*,.mp4,.mov,.avi,.mkv,.webm", onDrop: function(files) {
+      var paths=[];files.forEach(function(f){if(f.path)paths.push(f.path);});
+      if(paths.length>1) veLoadMultiFiles(paths);
+      else if(paths.length===1) { veFiles=[paths[0]]; veLoadFile(paths[0]); renderVeFileList(); }
+    }});
+  }
+  var addMoreBtn=$("veAddMore"); if(addMoreBtn) {
+    addMoreBtn.addEventListener("click",async function(){
+      var r=await bridge.videoSelectFile(); if(!r.ok) return;
+      var newPaths = r.filePaths || [r.filePath];
+      veFiles = veFiles.concat(newPaths);
+      veLoadMultiFiles(veFiles);
+    });
+  }
 
   // 시퀀스 비율 칩 (Step1) + 숏폼 추천 토글
   chipG("veInitRatioChips", function(v) {
@@ -7366,6 +7597,52 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // URL 가져오기 (텍스트 + 이미지)
   var _refImages = []; // URL에서 크롤링한 이미지 목록
   var _refImagesSelected = []; // 사용자가 선택한 이미지
+  var _writeUrlMode = "both"; // both | photo | text
+
+  var _ocrExtractedText = ""; // OCR로 추출한 텍스트
+
+  // 이미지 URL들에서 텍스트 추출 (AI Vision)
+  async function extractTextFromImages(imageUrls) {
+    if (!imageUrls || !imageUrls.length) return "";
+    var results = [];
+    for (var k = 0; k < Math.min(imageUrls.length, 5); k++) { // 최대 5장
+      try {
+        var res = await fetch(API + "/ai-proxy", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "claude-haiku-4-5",
+            max_tokens: 500,
+            messages: [{
+              role: "user",
+              content: [
+                { type: "image", source: { type: "url", url: imageUrls[k] } },
+                { type: "text", text: "이 이미지에 포함된 텍스트를 모두 추출해줘. 텍스트만 출력해." }
+              ]
+            }]
+          })
+        });
+        var data = await res.json();
+        var text = (data.content && data.content[0] && data.content[0].text) || (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "";
+        if (text.trim()) results.push(text.trim());
+      } catch (e) { console.warn("[OCR] image", k, "failed:", e); }
+    }
+    return results.join("\n\n---\n\n");
+  }
+
+  // 모드 칩 토글
+  if ($("writeUrlModeChips")) {
+    $("writeUrlModeChips").addEventListener("click", function(e) {
+      var btn = e.target.closest(".chip"); if (!btn) return;
+      $("writeUrlModeChips").querySelectorAll(".chip").forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      _writeUrlMode = btn.dataset.value;
+      // 모드에 따라 표시 토글
+      if ($("writeUrlPreview")) $("writeUrlPreview").style.display = (_writeUrlMode === "photo") ? "none" : _refContent ? "block" : "none";
+      if ($("writeUrlImages")) $("writeUrlImages").style.display = (_writeUrlMode === "text") ? "none" : _refImages.length ? "block" : "none";
+      // OCR 모드면 이미지도 표시
+      if (_writeUrlMode === "ocr" && $("writeUrlImages")) $("writeUrlImages").style.display = _refImages.length ? "block" : "none";
+    });
+  }
 
   $("writeUrlFetchBtn")?.addEventListener("click", async () => {
     const url = $("writeRefUrl")?.value.trim(); if (!url) return;
@@ -7377,6 +7654,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       _refContent = data.content || data.text || "";
       _refImages = data.images || [];
       if (data.thumbnail && !_refImages.includes(data.thumbnail)) _refImages.unshift(data.thumbnail);
+
+      // 모드 선택 표시
+      if ($("writeUrlMode")) $("writeUrlMode").style.display = "";
 
       // 텍스트 프리뷰
       if (_refContent) { $("writeUrlPreview").style.display = "block"; $("writeUrlPreview").textContent = _refContent.slice(0, 300) + "..."; }
@@ -7468,6 +7748,17 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 
   async function doWriteGenerate(topic) {
 
+    // OCR 모드: 선택된 이미지에서 텍스트 먼저 추출
+    if (_writeUrlMode === "ocr" && _refImagesSelected.length > 0) {
+      $("writeInputView").style.display = "none";
+      $("writeLoadingView").style.display = "block";
+      $("writeGenBar").style.width = "5%";
+      $("writeGenLabel").textContent = "사진 속 텍스트 인식 중...";
+      try {
+        _ocrExtractedText = await extractTextFromImages(_refImagesSelected);
+      } catch(e) { console.warn("[OCR]", e); _ocrExtractedText = ""; }
+    }
+
     const platform = chipVal("writePlatformChips", "naver");
     const subtype = chipVal("writeSubtypeChips", "info");
     const tone = chipVal("writeToneChips", "friendly");
@@ -7497,7 +7788,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 글 톤: ${tone}
 말투: ${speech}
 ${category ? "콘텐츠 분야: " + category : ""}
-${_refContent ? "\n참고 자료:\n" + _refContent.slice(0, 2000) : ""}
+${(_writeUrlMode !== "photo" && _refContent) ? "\n참고 자료:\n" + _refContent.slice(0, 2000) : ""}
+${_writeUrlMode === "ocr" && _ocrExtractedText ? "\n사진에서 추출한 텍스트:\n" + _ocrExtractedText.slice(0, 2000) : ""}
 ${extra ? "\n글 방향: " + extra : ""}
 
 글 구조 (반드시 이 형식으로):
@@ -7593,8 +7885,8 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
         let refImgIdx = 0; // URL 크롤링 이미지 인덱스
         for (const tag of imgTags) {
           const keyword = tag.match(/\[image:\s*(.+?)\]/i)?.[1] || topic;
-          // URL에서 가져온 이미지가 있으면 우선 사용
-          if (_refImagesSelected && _refImagesSelected.length > 0 && refImgIdx < _refImagesSelected.length) {
+          // URL에서 가져온 이미지가 있으면 우선 사용 (text 모드면 스킵)
+          if (_writeUrlMode !== "text" && _refImagesSelected && _refImagesSelected.length > 0 && refImgIdx < _refImagesSelected.length) {
             rendered = rendered.replace(tag, '<img src="' + _refImagesSelected[refImgIdx] + '" alt="' + keyword + '" style="max-width:100%;border-radius:8px;margin:8px 0;">');
             refImgIdx++;
           } else {
@@ -8650,4 +8942,17 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
       console.error("[메이킷 자료]", e);
     }
   }
+})();
+
+// ── 영상 편집 허브: 모드 선택 → 패널 전환 ──
+(function() {
+  function showPanel(name) {
+    document.querySelectorAll(".panel").forEach(function(p) { p.classList.add("hidden"); });
+    var target = document.querySelector('[data-panel="' + name + '"]');
+    if (target) target.classList.remove("hidden");
+  }
+  var vhSlideshow = document.getElementById("vhSlideshow");
+  var vhVideoEdit = document.getElementById("vhVideoEdit");
+  if (vhSlideshow) vhSlideshow.addEventListener("click", function() { showPanel("slideshow"); });
+  if (vhVideoEdit) vhVideoEdit.addEventListener("click", function() { showPanel("video-editor"); });
 })();
