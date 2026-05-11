@@ -41,18 +41,12 @@ button:hover:not(:disabled) {
 .track-anim {
   animation: trackSlide 0.8s ease-out;
 }
-@keyframes legRun {
-  0%, 100% { transform: rotate(-25deg); }
-  50% { transform: rotate(25deg); }
+@keyframes runCycle {
+  0% { transform: scaleX(1); }
+  50% { transform: scaleX(-1); }
+  100% { transform: scaleX(1); }
 }
-@keyframes armRun {
-  0%, 100% { transform: rotate(25deg); }
-  50% { transform: rotate(-25deg); }
-}
-.leg-anim-l { animation: legRun 0.3s ease-in-out infinite; transform-origin: top center; }
-.leg-anim-r { animation: legRun 0.3s ease-in-out infinite 0.15s; transform-origin: top center; }
-.arm-anim-l { animation: armRun 0.3s ease-in-out infinite; transform-origin: top center; }
-.arm-anim-r { animation: armRun 0.3s ease-in-out infinite 0.15s; transform-origin: top center; }
+.runner-flip { animation: runCycle 0.5s step-end infinite; }
 
 body {
   font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
