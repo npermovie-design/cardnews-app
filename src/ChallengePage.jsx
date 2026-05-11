@@ -5,6 +5,14 @@ import DOMPurify from "dompurify";
 
 /* ── 상수 / 헬퍼 ──────────────────────────────────────── */
 const PRIMARY = "#3b82f6";
+// extra_link: 단일 URL(레거시) 또는 JSON 배열 호환
+const getExtraLinks = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  try { const arr = JSON.parse(val); if (Array.isArray(arr)) return arr; } catch {}
+  return [val]; // 단일 URL
+};
+const hasExtra = (m) => m && getExtraLinks(m.extra_link).length > 0;
 const fmt = d => d ? new Date(d).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" }) : "";
 const dday = d => { if (!d) return ""; const diff = Math.ceil((new Date(d) - new Date()) / 86400000); return diff > 0 ? `D-${diff}` : diff === 0 ? "D-DAY" : "마감"; };
 const STATUS_MAP = {
@@ -756,6 +764,7 @@ function ProofDayCell({ title, date, done, active, C, bdr, card, isDark, mob, on
 
 /* ═══ MissionBoard ═════════════════════════════════════════ */
 function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, missions, setMissions, isParticipant, onBack }) {
+  const isAdmin = user?.role === "admin";
   const [selDay, setSelDay] = useState(null);
   const [proofPanel, setProofPanel] = useState(null);
   const [link, setLink] = useState("");
@@ -908,7 +917,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   };
   const scoreForMission = (day, m) => {
     const base = isWeekend(Number(day)) ? 2 : 1;
-    const bonus = m.extra_link ? 0.5 : 0;
+    const bonus = hasExtra(m) ? 0.5 : 0;
     const penalty = Math.min(base + bonus, lateDaysFor(m) * 0.5);
     return Math.max(0, base + bonus - penalty);
   };
@@ -955,7 +964,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   const scoreBreakdown = (day, m) => {
     if (!m) return null;
     const base = isWeekend(Number(day)) ? 2 : 1;
-    const bonus = m.extra_link ? 0.5 : 0;
+    const bonus = hasExtra(m) ? 0.5 : 0;
     const late = lateDaysFor(m) * 0.5;
     const penalty = Math.min(base + bonus, late);
     return { base, bonus, penalty, total: Math.max(0, base + bonus - penalty) };
@@ -1321,7 +1330,18 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     {vM[selDay].link && <a href={vM[selDay].link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: PRIMARY, wordBreak: "break-all" }}>{vM[selDay].link}</a>}
                     {vM[selDay].body && <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>{vM[selDay].body}</div>}
                     {vM[selDay].screenshot_url && <img src={vM[selDay].screenshot_url} alt="인증" style={{ marginTop: 8, maxWidth: "100%", maxHeight: 300, objectFit: "contain", borderRadius: 10, display: "block", border: "1px solid " + bdr }} />}
-                    {vM[selDay].extra_link && <a href={vM[selDay].extra_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 10, textDecoration: "none" }}><img src={vM[selDay].extra_link} alt="추가 활동" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 8, display: "block" }} /><span style={{ display: "block", fontSize: 11, color: "#f59e0b", fontWeight: 700, marginTop: 4 }}>추가활동 사진</span></a>}
+                    {hasExtra(vM[selDay]) && (
+                      <div style={{ marginTop: 10 }}>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", marginBottom: 6 }}>추가활동 ({getExtraLinks(vM[selDay].extra_link).length}개)</div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          {getExtraLinks(vM[selDay].extra_link).map((url, i) => (
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
+                              <img src={url} alt={`추가활동 ${i + 1}`} style={{ width: 100, height: 70, objectFit: "cover", borderRadius: 8, display: "block", border: "1px solid rgba(245,158,11,0.2)" }} />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     {(() => { const s = scoreBreakdown(selDay, vM[selDay]); return s ? <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10, fontSize: 11 }}><span style={{ color: C.muted }}>기본 {s.base}점</span>{s.bonus > 0 && <span style={{ color: "#f59e0b" }}>추가 +{s.bonus}점</span>}{s.penalty > 0 && <span style={{ color: "#ef4444" }}>지연 -{s.penalty}점</span>}<span style={{ color: PRIMARY, fontWeight: 800 }}>총 {s.total}점</span></div> : null; })()}
                     {!isViewing && (
                       <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
@@ -2118,7 +2138,7 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                             const dayDate = d => { const dt = new Date(startDate); dt.setDate(dt.getDate() + d - 1); return dt; };
                             const isWeekend = d => { const dow = dayDate(d).getDay(); return dow === 0 || dow === 6; };
                             const lateDays = m => { if (!m?.created_at || Number(m.day) <= 0) return 0; return Math.max(0, Math.floor((localDateOnly(new Date(m.created_at)) - localDateOnly(dayDate(Number(m.day)))) / 86400000)); };
-                            const scoreFor = (day, m) => { const base = isWeekend(Number(day)) ? 2 : 1; const bonus = m.extra_link ? 0.5 : 0; const penalty = Math.min(base + bonus, lateDays(m) * 0.5); return Math.max(0, base + bonus - penalty); };
+                            const scoreFor = (day, m) => { const base = isWeekend(Number(day)) ? 2 : 1; const bonus = hasExtra(m) ? 0.5 : 0; const penalty = Math.min(base + bonus, lateDays(m) * 0.5); return Math.max(0, base + bonus - penalty); };
                             const totalScore = Object.entries(p.days).reduce((s, [d, m]) => s + scoreFor(d, m), 0);
                             return (
                             <tr>
