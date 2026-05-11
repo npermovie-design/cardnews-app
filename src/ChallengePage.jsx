@@ -1063,7 +1063,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
           }
           const lateCount = doneList.filter(([,m]) => lateDaysFor(m) > 0).length;
           const latePct = doneList.length > 0 ? Math.round((lateCount / doneList.length) * 100) : 0;
-          const extraCount = doneList.filter(([,m]) => m.extra_link).length;
+          const extraCount = doneList.filter(([,m]) => hasExtra(m)).length;
           const extraPct = doneList.length > 0 ? Math.round((extraCount / doneList.length) * 100) : 0;
           const hourBuckets = Array(24).fill(0);
           doneList.forEach(([,m]) => { if (m.created_at) hourBuckets[new Date(m.created_at).getHours()]++; });
@@ -1345,7 +1345,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     {(() => { const s = scoreBreakdown(selDay, vM[selDay]); return s ? <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10, fontSize: 11 }}><span style={{ color: C.muted }}>기본 {s.base}점</span>{s.bonus > 0 && <span style={{ color: "#f59e0b" }}>추가 +{s.bonus}점</span>}{s.penalty > 0 && <span style={{ color: "#ef4444" }}>지연 -{s.penalty}점</span>}<span style={{ color: PRIMARY, fontWeight: 800 }}>총 {s.total}점</span></div> : null; })()}
                     {!isViewing && (
                       <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-                        {!vM[selDay].extra_link && <button onClick={() => { setExtraAddMode(true); setExtraFile(null); setExtraPreview(""); }} style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: "rgba(245,158,11,0.1)", color: "#f59e0b", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>추가활동 올리기 (+0.5점)</button>}
+                        <button onClick={() => { setExtraAddMode(true); setExtraFile(null); setExtraPreview(""); }} style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: "rgba(245,158,11,0.1)", color: "#f59e0b", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{hasExtra(vM[selDay]) ? "추가활동 더 올리기" : "추가활동 올리기 (+0.5점)"}</button>
                         <button onClick={() => beginMissionEdit(vM[selDay])} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>전체 다시 올리기</button>
                       </div>
                     )}
@@ -1376,10 +1376,12 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                               const { error: upErr } = await supabase.storage.from("challenge-proofs").upload(path, extraFile, { upsert: true });
                               if (upErr) throw upErr;
                               const { data: { publicUrl } } = supabase.storage.from("challenge-proofs").getPublicUrl(path);
-                              await supabase.from("challenge_missions").update({ extra_link: publicUrl }).eq("id", vM[selDay].id);
-                              setMissions(prev => prev.map(m => m.id === vM[selDay].id ? { ...m, extra_link: publicUrl } : m));
+                              const existing = getExtraLinks(vM[selDay].extra_link);
+                              const updated = JSON.stringify([...existing, publicUrl]);
+                              await supabase.from("challenge_missions").update({ extra_link: updated }).eq("id", vM[selDay].id);
+                              setMissions(prev => prev.map(m => m.id === vM[selDay].id ? { ...m, extra_link: updated } : m));
                               setExtraAddMode(false); setExtraFile(null); setExtraPreview("");
-                              showToast("추가활동이 등록되었습니다! +0.5점");
+                              showToast(`추가활동이 등록되었습니다! (${existing.length + 1}개)`);
                             } catch (e) { alert("업로드 실패: " + e.message); }
                             setBusy(false);
                           }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", background: extraFile ? "#f59e0b" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: extraFile ? "#fff" : C.muted, fontSize: 13, fontWeight: 700, cursor: extraFile ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
@@ -1483,7 +1485,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                           <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{(m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</div>
                           {m.screenshot_url && <a href={m.screenshot_url} target="_blank" rel="noopener noreferrer"><img src={m.screenshot_url} alt="인증" style={{ width: 60, height: 40, objectFit: "cover", borderRadius: 6, marginTop: 4, display: "block" }} /></a>}
                           {m.link && !m.link.includes("supabase.co/storage") && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{m.link}</a>}
-                          {m.extra_link && <a href={m.extra_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 4 }}><img src={m.extra_link} alt="추가 활동" style={{ width: 60, height: 40, objectFit: "cover", borderRadius: 6, display: "block" }} /></a>}
+                          {hasExtra(m) && <div style={{ display: "flex", gap: 4, marginTop: 4 }}>{getExtraLinks(m.extra_link).map((url, ei) => <a key={ei} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="추가활동" style={{ width: 50, height: 34, objectFit: "cover", borderRadius: 4, display: "block" }} /></a>)}</div>}
                         </div>
                         <span style={{ fontSize: 11, color: C.muted, flexShrink: 0 }}>{new Date(m.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</span>
                         {user?.role === "admin" && (
@@ -1599,13 +1601,13 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{m.nick}</span>
                       <span style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "2px 8px", borderRadius: 99 }}>Day {m.day}</span>
-                      {m.extra_link && <span style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.1)", padding: "2px 6px", borderRadius: 99 }}>+0.5</span>}
+                      {hasExtra(m) && <span style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.1)", padding: "2px 6px", borderRadius: 99 }}>+0.5 ({getExtraLinks(m.extra_link).length})</span>}
                       {lateDaysFor(m) > 0 && <span style={{ fontSize: 10, fontWeight: 700, color: "#ef4444", background: "rgba(239,68,68,0.1)", padding: "2px 6px", borderRadius: 99 }}>-{lateDaysFor(m) * 0.5}</span>}
                       <span style={{ fontSize: 11, color: C.muted, marginLeft: "auto" }}>{new Date(m.created_at).toLocaleDateString("ko-KR")}</span>
                     </div>
                     {m.body && <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>{m.body}</div>}
                     {m.link && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{m.link}</a>}
-                    {m.extra_link && <a href={m.extra_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 8, textDecoration: "none" }}><img src={m.extra_link} alt="추가 활동" style={{ width: 96, height: 64, objectFit: "cover", borderRadius: 8, display: "block" }} /><span style={{ display: "block", fontSize: 11, color: "#f59e0b", fontWeight: 700, marginTop: 4 }}>추가활동 사진</span></a>}
+                    {hasExtra(m) && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>{getExtraLinks(m.extra_link).map((url, ei) => <a key={ei} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="추가활동" style={{ width: 80, height: 54, objectFit: "cover", borderRadius: 6, display: "block", border: "1px solid rgba(245,158,11,0.2)" }} /></a>)}</div>}
                   </div>
                   {user?.role === "admin" && (
                     <button onClick={() => deleteMission(m.id)} title="삭제" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(239,68,68,0.5)", fontSize: 16, flexShrink: 0, padding: 4 }}>
@@ -1645,7 +1647,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                         </div>
                         {m?.link && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", marginTop: 2 }}>{m.link}</a>}
                         {m?.body && <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{m.body}</div>}
-                        {m?.extra_link && <a href={m.extra_link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: "#f59e0b", textDecoration: "none", display: "block", marginTop: 2 }}>추가활동 사진 보기</a>}
+                        {hasExtra(m) && <span style={{ fontSize: 11, color: "#f59e0b", marginTop: 2, display: "block" }}>추가활동 {getExtraLinks(m.extra_link).length}개</span>}
                         {m && (() => { const s = scoreBreakdown(d, m); return <div style={{ fontSize: 11, color: C.muted, marginTop: 3 }}>기본 {s.base}점{s.bonus > 0 ? ` + 추가 ${s.bonus}점` : ""}{s.penalty > 0 ? ` - 지연 ${s.penalty}점` : ""}</div>; })()}
                       </div>
                       {/* 등록 버튼 (미인증 + 오늘 이전) */}
@@ -2318,12 +2320,11 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                                                   </a>
                                                 )}
                                                 {/* 추가활동 사진 */}
-                                                {m.extra_link && (
-                                                  <a href={m.extra_link} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
-                                                    <img src={m.extra_link} alt={`Day ${day} 추가활동`} style={{ width: 120, height: 90, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(245,158,11,0.3)", display: "block" }} />
-                                                    <div style={{ fontSize: 10, color: "#f59e0b", fontWeight: 700, marginTop: 4, textAlign: "center" }}>추가활동</div>
+                                                {hasExtra(m) && getExtraLinks(m.extra_link).map((url, ei) => (
+                                                  <a key={ei} href={url} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
+                                                    <img src={url} alt={`Day ${day} 추가활동 ${ei + 1}`} style={{ width: 100, height: 75, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(245,158,11,0.3)", display: "block" }} />
                                                   </a>
-                                                )}
+                                                ))}
                                                 {/* 텍스트 정보 */}
                                                 <div style={{ flex: 1, minWidth: 0 }}>
                                                   {m.link && (
