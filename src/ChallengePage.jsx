@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
-const DotLottieReact = lazy(() => import("@lottiefiles/dotlottie-react").then(m => ({ default: m.DotLottieReact })));
+import React, { useState, useEffect, useRef } from "react";
 import { supabase, uploadFileToStorage } from "./storage";
 import { RichEditor } from "./BoardComponents.jsx";
 import DOMPurify from "dompurify";
@@ -21,28 +20,41 @@ const hasExtra = (m) => m && getExtraLinks(m.extra_link).length > 0;
 
 function RunnerChar({ nick, color, running, size = 40 }) {
   const ini = (nick || "?")[0];
-  const headSize = Math.round(size * 0.4);
+  const c = color;
+  const h = Math.round(size * 0.35); // head size
+  // 6프레임 달리기 사이클 - CSS animation-delay로 각 캐릭터 시차
+  const delay = (nick || "").charCodeAt(0) % 6 * 0.08;
   return (
-    <div style={{ position: "relative", width: size, height: size * 1.2 }}>
-      {/* Lottie 달리기 애니메이션 */}
-      <Suspense fallback={null}>
-        <div style={{ mixBlendMode: "multiply" }}>
-          <DotLottieReact
-            src="https://lottie.host/e7e086e2-678c-4bfb-bca1-eb2a807a2713/IYDVGD8pRq.lottie"
-            loop={running} autoplay={running}
-            style={{ width: size, height: size * 1.2, opacity: running ? 1 : 0.4 }}
-          />
-        </div>
-      </Suspense>
-      {/* 프로필 이니셜 — 머리 위치에 맞춤 */}
-      <div style={{
-        position: "absolute", top: Math.round(size * 0.05), left: "50%", transform: "translateX(-40%)",
-        width: headSize, height: headSize, borderRadius: "50%",
-        background: color, border: "2px solid #fff",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontSize: Math.round(headSize * 0.5), fontWeight: 800, color: "#fff",
-        boxShadow: "0 2px 8px rgba(0,0,0,0.2)", zIndex: 1,
-      }}>{ini}</div>
+    <div className={running ? "runner-cycle" : ""} style={{ width: size, height: size * 1.1, animationDelay: `${delay}s` }}>
+      <svg width={size} height={size * 1.1} viewBox="0 0 40 44">
+        {/* 머리 — 프로필 이니셜 */}
+        <circle cx={running ? 22 : 20} cy="8" r="8" fill={c} stroke="#fff" strokeWidth="1.5" />
+        <text x={running ? 22 : 20} y="11.5" textAnchor="middle" fontSize="8" fontWeight="800" fill="#fff">{ini}</text>
+        {running ? (<>
+          {/* 몸통 — 앞 기울임 */}
+          <line x1="21" y1="16" x2="18" y2="28" stroke={c} strokeWidth="4.5" strokeLinecap="round" />
+          {/* 팔/다리는 CSS로 프레임 전환 */}
+          <g className="limb-a">
+            <path d="M20,19 L26,24" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+            <path d="M20,19 L15,17 L16,12" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <path d="M18,28 L27,37 L30,36" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <path d="M18,28 L12,24 L12,32" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </g>
+          <g className="limb-b">
+            <path d="M20,19 L14,24" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+            <path d="M20,19 L25,17 L24,12" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <path d="M18,28 L9,37 L6,36" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <path d="M18,28 L24,25 L25,33" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </g>
+        </>) : (<>
+          {/* 서있는 자세 */}
+          <line x1="20" y1="16" x2="20" y2="28" stroke={c} strokeWidth="4.5" strokeLinecap="round" />
+          <path d="M20,20 L14,25" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+          <path d="M20,20 L26,25" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+          <path d="M20,28 L16,40 L13,40" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          <path d="M20,28 L24,40 L27,40" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        </>)}
+      </svg>
     </div>
   );
 }
