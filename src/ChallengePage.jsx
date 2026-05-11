@@ -692,6 +692,17 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   const [endProofEditing, setEndProofEditing] = useState(false);
   const [dragOverDay, setDragOverDay] = useState(null); // 드래그 중인 Day 셀 하이라이트
   const boardRef = useRef(null);
+
+  // 전역: 브라우저 기본 파일 열기 차단
+  useEffect(() => {
+    const prevent = e => e.preventDefault();
+    window.addEventListener("dragover", prevent);
+    window.addEventListener("drop", prevent);
+    return () => {
+      window.removeEventListener("dragover", prevent);
+      window.removeEventListener("drop", prevent);
+    };
+  }, []);
   const [missionEditMode, setMissionEditMode] = useState(false);
   const fileInputRef = useRef(null);
   const extraFileInputRef = useRef(null);
@@ -893,8 +904,10 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   return (
     <div ref={boardRef}
       onDragOver={e => e.preventDefault()}
-      onDrop={e => { e.preventDefault(); e.stopPropagation(); }}
-      style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)" }}>
+      onDrop={e => e.preventDefault()}
+      style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)", position: "relative" }}>
+
+
       <div style={{ maxWidth: 860, margin: "0 auto", padding: mob ? "24px 16px 80px" : "40px 20px 100px" }}>
         {/* 헤더 */}
         <button onClick={onBack} style={{ background: "none", border: "none", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 16, display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit" }}>
@@ -1070,7 +1083,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 ) : canUploadEndProof ? (
                   <div>
                     <input id="challenge-end-proof" type="file" accept="image/*" onChange={pickEndProofFile} style={{ display: "none" }} />
-                    <div onDrop={e => { e.preventDefault(); e.stopPropagation(); applyEndFile(e.dataTransfer?.files?.[0]); }} onDragOver={e => { e.preventDefault(); e.stopPropagation(); }} onDragEnter={e => { e.preventDefault(); }} onPaste={endPaste} tabIndex={0}
+                    <div onDrop={e => { e.preventDefault(); applyEndFile(e.dataTransfer?.files?.[0]); }} onDragOver={e => e.preventDefault()} onDragEnter={e => e.preventDefault()} onPaste={endPaste} tabIndex={0}
                       onClick={() => document.getElementById("challenge-end-proof")?.click()}
                       style={{ display: "block", border: `1.5px dashed ${endProofPreview ? PRIMARY : bdr}`, borderRadius: 12, padding: endProofPreview ? 0 : "22px 16px", textAlign: "center", cursor: "pointer", overflow: "hidden", fontSize: 13, color: C.muted, background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa", outline: "none", transition: "all 0.2s" }}>
                       {endProofPreview ? <img src={endProofPreview} alt="종료 인증 미리보기" style={{ width: "100%", maxHeight: 240, objectFit: "cover", display: "block" }} /> : (<><div>클릭, 드래그 또는 캡처 후 Ctrl+V</div><div style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>마지막 팔로워/조회수/방문자 수 화면</div></>)}
@@ -2066,4 +2079,3 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
     </div>
   );
 }
-                     
