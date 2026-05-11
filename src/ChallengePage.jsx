@@ -442,8 +442,35 @@ function Sect({ title, children, C, bdr }) {
 /* ── 상세 페이지 탭 분리 ── */
 function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, canApply, isAdmin, openBoard, openAdmin, onApply, user, myApp, setMyApp }) {
   const [dtab, setDtab] = useState("intro");
+  const [rankData, setRankData] = useState([]);
+  const totalDays = Math.max(parseInt(ch.duration) || 10, 1);
+  const startDate = ch.start_date ? new Date(ch.start_date) : new Date();
+  const dayDate = d => { const dt = new Date(startDate); dt.setDate(dt.getDate() + d - 1); return dt; };
+  const isWeekend = d => { const dow = dayDate(d).getDay(); return dow === 0 || dow === 6; };
+  const localDateOnly = dt => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+  const lateDaysFor = m => { if (!m?.created_at || Number(m.day) <= 0) return 0; return Math.max(0, Math.floor((localDateOnly(new Date(m.created_at)) - localDateOnly(dayDate(Number(m.day)))) / 86400000)); };
+  const scoreFor = (day, m) => { const base = isWeekend(Number(day)) ? 2 : 1; const bonus = hasExtra(m) ? 0.5 : 0; const penalty = Math.min(base + bonus, lateDaysFor(m) * 0.5); return Math.max(0, base + bonus - penalty); };
+  const calcRankScore = (days) => Object.entries(days).reduce((s, [d, m]) => s + scoreFor(d, m), 0);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase.from("challenge_missions").select("uid,nick,day,extra_link,created_at").eq("challenge_id", ch.id).gt("day", 0);
+        if (data) {
+          const map = {};
+          data.forEach(m => {
+            if (!map[m.uid]) map[m.uid] = { nick: m.nick, uid: m.uid, days: {}, count: 0 };
+            if (!map[m.uid].days[m.day]) { map[m.uid].days[m.day] = m; map[m.uid].count++; }
+          });
+          setRankData(Object.values(map).sort((a, b) => calcRankScore(b.days) - calcRankScore(a.days)));
+        }
+      } catch {}
+    })();
+  }, [ch.id]);
+
   const tabs = [
     { id: "intro", label: "소개" },
+    { id: "ranking", label: "순위표" },
     { id: "board", label: "현황판" },
     { id: "detail", label: "상세 안내" },
     ...(!isParticipant && canApply && !hasApplied ? [{ id: "apply", label: "신청하기" }] : []),
@@ -473,6 +500,28 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
         <div>
           {ch.description && <Sect title="프로그램 소개" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.description) }} /></Sect>}
           {ch.target_audience && <Sect title="이런 사람에게 추천해요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.target_audience) }} /></Sect>}
+          {/* 미니 순위표 */}
+          {rankData.length > 0 && (
+            <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: mob ? "18px 16px" : "22px 24px", marginBottom: 24 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>실시간 순위</span>
+                </div>
+                <button onClick={() => setDtab("ranking")} style={{ fontSize: 12, fontWeight: 700, color: PRIMARY, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>전체 보기 &rarr;</button>
+              </div>
+              {rankData.slice(0, 5).map((m, i) => {
+                const score = calcRankScore(m.days);
+                return (
+                  <div key={m.uid} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < Math.min(rankData.length, 5) - 1 ? "1px solid " + bdr : "none" }}>
+                    <span style={{ fontSize: 14, fontWeight: 900, color: i < 3 ? ["#f59e0b","#94a3b8","#cd7f32"][i] : C.muted, width: 24, textAlign: "center" }}>{i + 1}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: C.text, flex: 1 }}>{(m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</span>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: "#f59e0b" }}>{score}점</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
           {/* 하단 CTA */}
           <div style={{ background: isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 20, padding: mob ? "28px 18px" : "36px 32px", textAlign: "center", marginTop: 24 }}>
             <div style={{ fontSize: mob ? 18 : 24, fontWeight: 700, color: C.text, marginBottom: 12 }}>
@@ -493,6 +542,70 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
       )}
 
       {/* 현황판 탭 */}
+      {/* 순위표 탭 */}
+      {dtab === "ranking" && (() => {
+        const medalColors = ["#f59e0b", "#94a3b8", "#cd7f32"];
+        const medalLabels = ["1st", "2nd", "3rd"];
+        const top3 = rankData.slice(0, 3);
+        return (
+          <div>
+            {rankData.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "48px 20px", color: C.muted, border: "1px dashed " + bdr, borderRadius: 16 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>아직 순위 데이터가 없습니다</div>
+                <div style={{ fontSize: 13 }}>참가자들이 인증을 시작하면 순위가 표시됩니다</div>
+              </div>
+            ) : (<>
+              {/* 포디움 */}
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: mob ? 8 : 16, marginBottom: 24 }}>
+                {[1, 0, 2].map(rank => {
+                  const m = top3[rank];
+                  if (!m) return <div key={rank} style={{ flex: 1 }} />;
+                  const score = calcRankScore(m.days);
+                  const pct = Math.round((m.count / totalDays) * 100);
+                  const isFirst = rank === 0;
+                  return (
+                    <div key={rank} style={{ flex: 1, maxWidth: 200, textAlign: "center" }}>
+                      <div style={{
+                        background: card, border: `2px solid ${medalColors[rank]}`, borderRadius: 18,
+                        padding: isFirst ? (mob ? "24px 12px" : "28px 18px") : (mob ? "18px 10px" : "20px 14px"),
+                        transform: isFirst ? "scale(1.06)" : "none",
+                        boxShadow: isFirst ? `0 8px 28px ${medalColors[rank]}30` : "0 2px 8px rgba(0,0,0,0.04)",
+                      }}>
+                        <div style={{ width: isFirst ? 52 : 42, height: isFirst ? 52 : 42, borderRadius: "50%", background: medalColors[rank], display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", fontSize: isFirst ? 20 : 16, fontWeight: 900, color: "#fff" }}>{rank + 1}</div>
+                        <div style={{ fontSize: mob ? 14 : 16, fontWeight: 800, color: C.text, marginBottom: 6 }}>{(m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</div>
+                        <div style={{ fontSize: isFirst ? 32 : 24, fontWeight: 900, color: medalColors[rank], lineHeight: 1 }}>{score}</div>
+                        <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>점 · {m.count}일 인증 · {pct}%</div>
+                      </div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: medalColors[rank], marginTop: 8 }}>{medalLabels[rank]}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* 4위부터 */}
+              {rankData.length > 3 && (
+                <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 14, overflow: "hidden" }}>
+                  {rankData.slice(3).map((m, i) => {
+                    const score = calcRankScore(m.days);
+                    const pct = Math.round((m.count / totalDays) * 100);
+                    return (
+                      <div key={m.uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 18px", borderBottom: i < rankData.length - 4 ? "1px solid " + bdr : "none" }}>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: C.muted, width: 30, textAlign: "center" }}>{i + 4}</span>
+                        <div style={{ width: 30, height: 30, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(m.nick || "?")[0]}</div>
+                        <div style={{ flex: 1 }}>
+                          <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{(m.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (m.nick || "?").length - 1))}</span>
+                          <span style={{ fontSize: 11, color: C.muted, marginLeft: 8 }}>{m.count}일 ({pct}%)</span>
+                        </div>
+                        <span style={{ fontSize: 18, fontWeight: 800, color: "#f59e0b" }}>{score}점</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>)}
+          </div>
+        );
+      })()}
+
       {dtab === "board" && (
         <div>
           <PublicLinkBoard challengeId={ch.id} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} title={ch.title} isAdmin={isAdmin} />
