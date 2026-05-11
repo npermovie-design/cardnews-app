@@ -765,58 +765,67 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                   <div style={{ fontSize: 18, fontWeight: 800, color: C.text }}>마라톤 레이스</div>
                   <div style={{ fontSize: 12, color: C.muted }}>🏁 {maxScore}점</div>
                 </div>
-                {/* 큰 트랙 — 배경 풍경 */}
-                <div style={{ position: "relative", height: 200, borderRadius: 16, overflow: "hidden", border: "1px solid " + bdr }}>
-                  {/* 하늘 그라데이션 */}
-                  <div style={{ position: "absolute", inset: 0, background: isDark ? "#1a1a2e" : "linear-gradient(180deg, #87CEEB 0%, #B0E0E6 40%, #d4edda 70%, #8fbc8f 85%, #6b8e23 100%)" }} />
-                  {/* 뒷 산 (원경) — 사각형/메사 형태 */}
-                  <svg style={{ position: "absolute", bottom: 30, left: 0, right: 0 }} viewBox="0 0 800 80" preserveAspectRatio="none" height="55">
-                    <path d="M0,80 L0,55 L60,55 L80,30 L180,30 L200,50 L280,50 L300,20 L420,20 L440,45 L520,45 L540,25 L660,25 L680,50 L760,50 L780,40 L800,40 L800,80 Z" fill={isDark ? "#2d2d5e" : "#a8c8a0"} opacity="0.4" />
+                {/* 큰 트랙 — 마리오 스타일 */}
+                <div style={{ position: "relative", height: 220, borderRadius: 16, overflow: "hidden", border: "1px solid " + bdr }}>
+                  {/* 하늘 */}
+                  <div style={{ position: "absolute", inset: 0, background: isDark ? "#1a1a2e" : "linear-gradient(180deg, #5bb5f0 0%, #8ed0f8 50%, #d4eefc 100%)" }} />
+                  {/* 뒤 둥근 언덕 */}
+                  <svg style={{ position: "absolute", bottom: 28, left: 0, width: "100%" }} viewBox="0 0 800 90" preserveAspectRatio="none" height="70">
+                    <ellipse cx="130" cy="90" rx="180" ry="75" fill="#a8d48c" />
+                    <ellipse cx="420" cy="90" rx="220" ry="85" fill="#9acf7e" />
+                    <ellipse cx="700" cy="90" rx="160" ry="65" fill="#a8d48c" />
                   </svg>
-                  {/* 앞 산 (중경) — 사각형 형태 */}
-                  <svg style={{ position: "absolute", bottom: 20, left: 0, right: 0 }} viewBox="0 0 800 60" preserveAspectRatio="none" height="40">
-                    <path d="M0,60 L0,40 L100,40 L120,18 L260,18 L280,35 L400,35 L420,12 L560,12 L580,30 L700,30 L720,22 L800,22 L800,60 Z" fill={isDark ? "#1e3a1e" : "#7dab72"} opacity="0.5" />
-                  </svg>
-                  {/* 구름 — SVG로 깔끔하게 */}
-                  {[{x:"8%",y:10,s:50,d:0},{x:"35%",y:18,s:35,d:4},{x:"62%",y:8,s:45,d:8},{x:"85%",y:22,s:30,d:12}].map((cl,i) => (
-                    <svg key={i} className="cloud-drift" style={{ position: "absolute", top: cl.y, left: cl.x, animationDelay: `${cl.d}s`, opacity: 0.7 }} width={cl.s} height={cl.s * 0.5} viewBox="0 0 60 30">
-                      <ellipse cx="30" cy="20" rx="28" ry="10" fill="#fff" />
-                      <ellipse cx="20" cy="15" rx="15" ry="10" fill="#fff" />
-                      <ellipse cx="38" cy="13" rx="18" ry="11" fill="#fff" />
-                      <ellipse cx="28" cy="10" rx="12" ry="9" fill="#fff" />
+                  {/* 구름 (납작 타원) */}
+                  {[{y:12,s:65,d:0},{y:28,s:48,d:9},{y:8,s:58,d:18},{y:34,s:40,d:25}].map((cl,i) => (
+                    <svg key={`cl${i}`} className="cloud-drift" style={{ position: "absolute", top: cl.y, animationDelay: `${cl.d}s` }} width={cl.s} height={cl.s * 0.35} viewBox="0 0 80 28">
+                      <ellipse cx="40" cy="20" rx="38" ry="8" fill="#fff" opacity="0.9" />
+                      <ellipse cx="28" cy="14" rx="18" ry="10" fill="#fff" opacity="0.9" />
+                      <ellipse cx="52" cy="12" rx="20" ry="11" fill="#fff" opacity="0.9" />
+                      <ellipse cx="40" cy="9" rx="13" ry="9" fill="#fff" opacity="0.85" />
                     </svg>
                   ))}
-                  {/* 나무 — 왼쪽으로 지나가는 효과 */}
-                  {[{s:45,o:0.5,d:0},{s:35,o:0.35,d:5},{s:50,o:0.45,d:10},{s:30,o:0.3,d:16},{s:42,o:0.5,d:22}].map((t,i) => (
-                    <div key={`tree${i}`} className="tree-pass" style={{ position: "absolute", bottom: 16, animationDelay: `${t.d}s`, opacity: t.o }}>
-                      <svg width={t.s} height={t.s * 1.4} viewBox="0 0 20 28">
-                        <rect x="8.5" y="17" width="3" height="11" rx="1" fill="#5a3e28" />
-                        <path d="M10,1 L3,12 L6,12 L2,20 L18,20 L14,12 L17,12 Z" fill="#2d5016" />
+                  {/* 둥근 나무 (마리오 스타일 — 지나가기) */}
+                  {[{h:75,w:32,d:0},{h:60,w:26,d:5},{h:85,w:36,d:11},{h:50,w:22,d:17},{h:70,w:30,d:23}].map((t,i) => (
+                    <div key={`mt${i}`} className="tree-pass" style={{ position: "absolute", bottom: 24, animationDuration: `${14 + i * 2}s`, animationDelay: `${t.d}s` }}>
+                      <svg width={t.w} height={t.h} viewBox="0 0 40 85">
+                        <rect x="16" y="48" width="8" height="37" rx="3" fill="#2d8a30" stroke="#1e6e22" strokeWidth="1" />
+                        <ellipse cx="20" cy="32" rx="18" ry="20" fill="#32a836" />
+                        <ellipse cx="20" cy="18" rx="14" ry="16" fill="#3cb840" />
+                        <ellipse cx="20" cy="10" rx="10" ry="10" fill="#45c44a" />
+                        <ellipse cx="13" cy="16" rx="4" ry="6" fill="rgba(255,255,255,0.3)" />
+                        <ellipse cx="14" cy="35" rx="3" ry="5" fill="rgba(255,255,255,0.2)" />
                       </svg>
                     </div>
                   ))}
-                  {/* 잔디 바닥 — 스크롤 효과 */}
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 20, background: isDark ? "#1a2e1a" : "#4a7c3f", borderRadius: "0 0 16px 16px", overflow: "hidden" }}>
-                    <div className="ground-scroll" style={{ position: "absolute", top: 0, left: 0, width: "200%", height: "100%", backgroundImage: "repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0px, transparent 2px, transparent 20px)", backgroundSize: "40px 100%" }} />
-                  </div>
-                  {/* 트랙 라인 */}
-                  <div style={{ position: "absolute", bottom: 18, left: 0, right: 0, height: 2, background: "rgba(255,255,255,0.3)" }} />
-                  {/* 거리 마커 */}
-                  {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 8, height: 12, width: 1, background: "rgba(255,255,255,0.3)" }} />)}
-                  {/* SNS 로고 지나가기 */}
+                  {/* SNS 컬러 아이콘 지나가기 */}
                   {[
-                    /* 인스타그램 */ <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="2" width="20" height="20" rx="5" stroke="currentColor" strokeWidth="2"/><circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/></svg>,
-                    /* 유튜브 */ <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 9.71a8.5 8.5 0 00-.91-4.13 2.92 2.92 0 00-1.72-1.12A69.28 69.28 0 0012 4a69.28 69.28 0 00-8.37.46A2.92 2.92 0 001.91 5.58 8.5 8.5 0 001 9.71a44.56 44.56 0 000 4.58 8.5 8.5 0 00.91 4.13 2.92 2.92 0 001.72 1.12A69.28 69.28 0 0012 20a69.28 69.28 0 008.37-.46 2.92 2.92 0 001.72-1.12 8.5 8.5 0 00.91-4.13 44.56 44.56 0 000-4.58zM9.74 14.85V8.44l5.6 3.21-5.6 3.2z"/></svg>,
-                    /* 페이스북 */ <svg viewBox="0 0 24 24" fill="currentColor"><path d="M24 12.07C24 5.41 18.63 0 12 0S0 5.4 0 12.07C0 18.1 4.39 23.1 10.13 24v-8.44H7.08v-3.49h3.04V9.41c0-3.02 1.8-4.7 4.54-4.7 1.31 0 2.68.24 2.68.24v2.97h-1.51c-1.49 0-1.95.93-1.95 1.89v2.26h3.33l-.53 3.49h-2.8V24C19.62 23.1 24 18.1 24 12.07"/></svg>,
-                    /* 트위터/X */ <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>,
-                    /* 스레드 */ <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12.186 24h-.007C5.965 24 2.634 20.147 2.634 15.625v-.057c.04-2.86 1.166-5.088 3.262-6.45a7.88 7.88 0 014.122-1.48l.07.852a6.85 6.85 0 00-3.483 1.293c-1.75 1.199-2.64 3.082-2.67 5.609v.048c0 3.878 2.828 7.21 8.05 7.21h.008c3.14 0 5.476-1.263 6.75-3.652.94-1.764 1.186-4.204.2-6.384-.644-1.422-1.808-2.55-3.37-3.26a.478.478 0 01-.015-.008c-.06-.03-.12-.057-.182-.084-.29 1.613-.928 2.79-1.907 3.51-.93.682-2.085.86-3.153.86h-.098c-1.67 0-2.828-.65-3.452-1.078l.543-.72c.497.34 1.456.87 2.91.87h.097c.9 0 1.83-.15 2.57-.69.758-.557 1.275-1.5 1.54-2.81a8.18 8.18 0 00-.372-.085c-1.098-.23-2.358-.272-3.483.03-1.187.32-2.14 1.003-2.533 2.025l-.81-.338c.5-1.3 1.694-2.146 3.14-2.536 1.233-.333 2.623-.298 3.834-.043.073.016.145.033.217.05.01-.14.014-.284.014-.43 0-1.465-.543-2.588-1.57-3.244-.993-.635-2.322-.785-3.46-.35l-.308-.796c1.38-.527 2.96-.35 4.155.413 1.25.8 1.883 2.16 1.883 3.844a7.3 7.3 0 01-.013.39c1.68.79 2.916 2.04 3.604 3.56 1.12 2.47.856 5.16-.23 7.194C18.493 22.533 15.77 24 12.186 24z"/></svg>,
-                    /* 블로그 */ <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="2"/><path d="M7 8h10M7 12h7M7 16h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>,
-                    /* 틱톡 */ <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .55.04.81.11V9a6.27 6.27 0 00-.81-.05A6.34 6.34 0 003.15 15.3a6.34 6.34 0 0010.86 4.43V13a8.16 8.16 0 005.58 2.18V11.7a4.83 4.83 0 01-3.77-1.24V6.69h3.77z"/></svg>,
-                  ].map((svg, i) => (
-                    <div key={i} className="sns-float" style={{ position: "absolute", top: 12 + (i % 3) * 22, width: 18 + (i % 3) * 6, height: 18 + (i % 3) * 6, color: isDark ? "rgba(255,255,255,0.1)" : "rgba(59,130,246,0.12)", animationDelay: `${i * 3.2}s`, animationDuration: `${20 + i * 2.5}s` }}>{svg}</div>
+                    {c:"#E1306C",d:"M12,2.16c2.71,0,3.06.01,4.12.06,1,.05,1.54.2,1.9.33a3.17,3.17,0,0,1,1.18.77,3.17,3.17,0,0,1,.77,1.18c.13.36.28.9.33,1.9.05,1.06.06,1.41.06,4.12s-.01,3.06-.06,4.12c-.05,1-.2,1.54-.33,1.9a3.39,3.39,0,0,1-1.95,1.95c-.36.13-.9.28-1.9.33-1.06.05-1.41.06-4.12.06s-3.06-.01-4.12-.06c-1-.05-1.54-.2-1.9-.33A3.17,3.17,0,0,1,4.82,19.4a3.17,3.17,0,0,1-.77-1.18c-.13-.36-.28-.9-.33-1.9C3.67,15.26,3.66,14.91,3.66,12.2s.01-3.06.06-4.12c.05-1,.2-1.54.33-1.9A3.17,3.17,0,0,1,4.82,5,3.17,3.17,0,0,1,6,4.22c.36-.13.9-.28,1.9-.33C8.94,3.84,9.29,3.83,12,3.83M12,2C9.28,2,8.94,2.01,7.88,2.06s-1.8.22-2.44.47A4.9,4.9,0,0,0,3.7,3.7,4.9,4.9,0,0,0,2.53,5.44c-.25.64-.42,1.37-.47,2.44S2,9.28,2,12s.01,3.06.06,4.12.22,1.8.47,2.44A4.9,4.9,0,0,0,3.7,20.3a4.9,4.9,0,0,0,1.74,1.17c.64.25,1.37.42,2.44.47S9.28,22,12,22s3.06-.01,4.12-.06,1.8-.22,2.44-.47A5.14,5.14,0,0,0,21.47,18.56c.25-.64.42-1.37.47-2.44S22,14.72,22,12s-.01-3.06-.06-4.12-.22-1.8-.47-2.44A4.9,4.9,0,0,0,20.3,3.7a4.9,4.9,0,0,0-1.74-1.17c-.64-.25-1.37-.42-2.44-.47S14.72,2,12,2Z M12,6.86A5.14,5.14,0,1,0,17.14,12,5.14,5.14,0,0,0,12,6.86Zm0,8.47A3.33,3.33,0,1,1,15.33,12,3.33,3.33,0,0,1,12,15.33ZM18.54,6.66a1.2,1.2,0,1,1-1.2-1.2A1.2,1.2,0,0,1,18.54,6.66Z"},
+                    {c:"#FF0000",d:"M23,9.71a8.5,8.5,0,0,0-.91-4.13,2.92,2.92,0,0,0-1.72-1.12A69.28,69.28,0,0,0,12,4a69.28,69.28,0,0,0-8.37.46A2.92,2.92,0,0,0,1.91,5.58,8.5,8.5,0,0,0,1,9.71a44.56,44.56,0,0,0,0,4.58,8.5,8.5,0,0,0,.91,4.13,2.92,2.92,0,0,0,1.72,1.12A69.28,69.28,0,0,0,12,20a69.28,69.28,0,0,0,8.37-.46,2.92,2.92,0,0,0,1.72-1.12,8.5,8.5,0,0,0,.91-4.13,44.56,44.56,0,0,0,0-4.58ZM9.74,14.85V8.44l5.6,3.21Z"},
+                    {c:"#1877F2",d:"M24,12.07A12,12,0,1,0,10.13,24V15.56H7.08V12.07h3V9.41c0-3,1.8-4.7,4.54-4.7a18.72,18.72,0,0,1,2.68.24v3h-1.51c-1.49,0-1.95.93-1.95,1.89v2.26h3.33l-.53,3.49h-2.8V24A12,12,0,0,0,24,12.07"},
+                    {c:"#000",d:"M18.24,2.25h3.31l-7.23,8.26,8.5,11.24H16.17l-5.21-6.82L5,21.75H1.68l7.73-8.84L1.25,2.25H8.08l4.71,6.23Zm-1.16,17.52h1.83L7.08,4.13H5.12Z"},
+                    {c:"#25D366",d:"M12,2A10,10,0,0,0,3.07,17.44L2,22l4.7-1.24A10,10,0,1,0,12,2Zm5.4,14.12c-.22.63-1.3,1.22-1.79,1.26s-.49.36-3.08-.64S8.7,13.16,8.5,12.9a6.52,6.52,0,0,1-1.37-3.44A3.77,3.77,0,0,1,8.32,6.9a1.25,1.25,0,0,1,.91-.43c.22,0,.45,0,.65,0s.52-.1.82.63.93,2.27,1,2.44a.6.6,0,0,1,0,.57,2.17,2.17,0,0,1-.33.55c-.16.18-.34.4-.49.54s-.31.3-.13.59a8.74,8.74,0,0,0,1.61,2,7.93,7.93,0,0,0,2.33,1.44c.29.14.46.12.63-.07s.73-.85.92-1.15.38-.24.64-.14,1.66.78,1.94.93.47.22.54.34A2.37,2.37,0,0,1,17.4,16.12Z"},
+                  ].map((icon, i) => (
+                    <div key={`si${i}`} className="sns-float" style={{ position: "absolute", top: 8 + (i % 3) * 25, animationDelay: `${i * 4.5}s`, animationDuration: `${22 + i * 3}s` }}>
+                      <svg width={22 + (i % 2) * 6} height={22 + (i % 2) * 6} viewBox="0 0 24 24" style={{ opacity: 0.2 }}><path d={icon.d} fill={icon.c} /></svg>
+                    </div>
                   ))}
+                  {/* 앞 덤불 */}
+                  <svg style={{ position: "absolute", bottom: 24, left: 0, width: "100%" }} viewBox="0 0 800 25" preserveAspectRatio="none" height="18">
+                    <ellipse cx="80" cy="25" rx="55" ry="16" fill="#2d8a30" />
+                    <ellipse cx="240" cy="25" rx="75" ry="20" fill="#32a836" />
+                    <ellipse cx="430" cy="25" rx="65" ry="18" fill="#2d8a30" />
+                    <ellipse cx="600" cy="25" rx="85" ry="22" fill="#32a836" />
+                    <ellipse cx="760" cy="25" rx="45" ry="14" fill="#2d8a30" />
+                  </svg>
+                  {/* 흙길 바닥 */}
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 28, background: "#c9a96e", borderRadius: "0 0 16px 16px", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "#45a832" }} />
+                    <div className="ground-scroll" style={{ position: "absolute", top: 4, left: 0, width: "200%", height: "100%", backgroundImage: "repeating-linear-gradient(90deg, rgba(0,0,0,0.04) 0px, transparent 1px, transparent 16px)", backgroundSize: "16px 100%" }} />
+                  </div>
+                  {/* 거리 마커 */}
+                  {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 22, height: 10, width: 1, background: "rgba(255,255,255,0.2)" }} />)}
                   {/* 골인 */}
-                  <div style={{ position: "absolute", right: 10, bottom: 16, fontSize: 28 }}>🏁</div>
+                  <div style={{ position: "absolute", right: 10, bottom: 28, fontSize: 28 }}>🏁</div>
                   {rankData.map((m, idx) => {
                     const score = scores[idx];
                     const runPct = Math.max(2, (score / maxScore) * 82);
@@ -824,7 +833,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                     const c = medal || PRIMARY;
                     const isTied = (idx > 0 && scores[idx] === scores[idx - 1]) || (idx < scores.length - 1 && scores[idx] === scores[idx + 1]);
                     return (
-                      <div key={m.uid} className={`${score > 0 ? "run-anim" : ""} ${isTied && score > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${runPct}% - 24px)`, bottom: 10, transition: "left 1s ease", zIndex: rankData.length - idx, animationDelay: `${idx * 0.3}s` }}>
+                      <div key={m.uid} className={`${score > 0 ? "run-anim" : ""} ${isTied && score > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${Math.max(10, 10 + runPct * 0.8)}% - 24px)`, bottom: 22, transition: "left 1s ease", zIndex: rankData.length - idx, animationDelay: `${idx * 0.3}s` }}>
                         <RunnerChar nick={m.nick} color={c} running={score > 0} size={66} />
                       </div>
                     );
