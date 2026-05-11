@@ -324,26 +324,19 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             ))}
           </div>
 
-          {/* 참여자 현황 - 최상단 */}
+          {/* 참여자 현황 - 요약 */}
           {publicApps.length > 0 && (
-            <div style={{ marginBottom: 36, padding: "24px 20px", borderRadius: 20, background: isDark ? "rgba(255,255,255,0.03)" : "#f9fafb", border: "1px solid " + bdr }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                <h2 style={{ fontSize: 18, fontWeight: 700, color: C.text, margin: 0 }}>참여자 현황</h2>
-                <span style={{ fontSize: 14, fontWeight: 700, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "4px 14px", borderRadius: 99 }}>{publicApps.length}명 참여</span>
+            <div style={{ marginBottom: 24, padding: "16px 20px", borderRadius: 14, background: isDark ? "rgba(255,255,255,0.03)" : "#f9fafb", border: "1px solid " + bdr, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ display: "flex" }}>
+                  {publicApps.slice(0, 5).map((a, i) => (
+                    <div key={a.id} style={{ width: 28, height: 28, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff", marginLeft: i > 0 ? -8 : 0, border: "2px solid " + (isDark ? "#1a1a2e" : "#f9fafb"), zIndex: 5 - i }}>{(a.name || "?")[0]}</div>
+                  ))}
+                  {publicApps.length > 5 && <div style={{ width: 28, height: 28, borderRadius: "50%", background: isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: C.muted, marginLeft: -8, border: "2px solid " + (isDark ? "#1a1a2e" : "#f9fafb") }}>+{publicApps.length - 5}</div>}
+                </div>
+                <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{publicApps.length}명 참여 중</span>
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                {publicApps.map(a => {
-                  const isConfirmed = a.status === "confirmed";
-                  const masked = (a.name || "?").slice(0, 1) + "*".repeat(Math.max(1, (a.name || "?").length - 1));
-                  return (
-                    <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 16px", borderRadius: 12, border: "1px solid " + bdr, background: card }}>
-                      <div style={{ width: 28, height: 28, borderRadius: "50%", background: isConfirmed ? PRIMARY : "#f59e0b", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(a.name || "?")[0]}</div>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{masked}</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: isConfirmed ? "#22c55e" : "#f59e0b", background: isConfirmed ? "rgba(34,197,94,0.1)" : "rgba(245,158,11,0.1)", padding: "2px 8px", borderRadius: 99 }}>{isConfirmed ? "확정" : "대기중"}</span>
-                    </div>
-                  );
-                })}
-              </div>
+              <span style={{ fontSize: 12, fontWeight: 700, color: "#22c55e" }}>{publicApps.filter(a => a.status === "confirmed").length}명 확정</span>
             </div>
           )}
 
@@ -450,7 +443,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
   const isWeekend = d => { const dow = dayDate(d).getDay(); return dow === 0 || dow === 6; };
   const localDateOnly = dt => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
   const lateDaysFor = m => { if (!m?.created_at || Number(m.day) <= 0) return 0; return Math.max(0, Math.floor((localDateOnly(new Date(m.created_at)) - localDateOnly(dayDate(Number(m.day)))) / 86400000)); };
-  const scoreFor = (day, m) => { const base = isWeekend(Number(day)) ? 2 : 1; const bonus = hasExtra(m) ? 0.5 : 0; const penalty = Math.min(base + bonus, lateDaysFor(m) * 0.5); return Math.max(0, base + bonus - penalty); };
+  const scoreFor = (day, m) => { const base = isWeekend(Number(day)) ? 2 : 1; const bonus = getExtraLinks(m.extra_link).length * 0.5; const penalty = Math.min(base + bonus, lateDaysFor(m) * 0.5); return Math.max(0, base + bonus - penalty); };
   const calcRankScore = (days) => Object.entries(days).reduce((s, [d, m]) => s + scoreFor(d, m), 0);
 
   useEffect(() => {
@@ -907,6 +900,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   }, []);
   const [missionEditMode, setMissionEditMode] = useState(false);
   const [extraAddMode, setExtraAddMode] = useState(false); // 추가활동만 추가 모드
+  const [extraCategory, setExtraCategory] = useState(null); // "comment"|"like"|"share"|"other"
   const fileInputRef = useRef(null);
   const extraFileInputRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -1031,7 +1025,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   };
   const scoreForMission = (day, m) => {
     const base = isWeekend(Number(day)) ? 2 : 1;
-    const bonus = hasExtra(m) ? 0.5 : 0;
+    const bonus = getExtraLinks(m.extra_link).length * 0.5;
     const penalty = Math.min(base + bonus, lateDaysFor(m) * 0.5);
     return Math.max(0, base + bonus - penalty);
   };
@@ -1078,7 +1072,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   const scoreBreakdown = (day, m) => {
     if (!m) return null;
     const base = isWeekend(Number(day)) ? 2 : 1;
-    const bonus = hasExtra(m) ? 0.5 : 0;
+    const bonus = getExtraLinks(m.extra_link).length * 0.5;
     const late = lateDaysFor(m) * 0.5;
     const penalty = Math.min(base + bonus, late);
     return { base, bonus, penalty, total: Math.max(0, base + bonus - penalty) };
@@ -1466,7 +1460,23 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     {/* 추가활동만 추가 모드 */}
                     {extraAddMode && !isViewing && (
                       <div style={{ marginTop: 12, padding: "14px 16px", borderRadius: 12, background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.15)" }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b", marginBottom: 8 }}>추가활동 사진 첨부 (+0.5점)</div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b", marginBottom: 10 }}>추가활동 인증 (각 +0.5점)</div>
+                        {/* 카테고리 선택 */}
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                          {[["comment","댓글"],["like","좋아요"],["share","공유/리포스트"],["other","기타"]].map(([id,label]) => (
+                            <button key={id} onClick={() => setExtraCategory(id)}
+                              style={{ padding: "7px 14px", borderRadius: 99, border: extraCategory === id ? "none" : "1px solid " + bdr, background: extraCategory === id ? "#f59e0b" : "transparent", color: extraCategory === id ? "#fff" : C.text, fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                        {extraCategory && (<>
+                        <div style={{ fontSize: 11, color: C.muted, marginBottom: 8 }}>
+                          {extraCategory === "comment" && "댓글을 남긴 화면을 캡처해주세요"}
+                          {extraCategory === "like" && "좋아요를 누른 화면을 캡처해주세요"}
+                          {extraCategory === "share" && "공유/리포스트한 화면을 캡처해주세요"}
+                          {extraCategory === "other" && "기타 추가활동 화면을 캡처해주세요"}
+                        </div>
                         <input ref={extraFileInputRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) { setExtraFile(f); const r = new FileReader(); r.onload = ev => setExtraPreview(ev.target.result); r.readAsDataURL(f); } }} style={{ display: "none" }} />
                         <div onClick={() => extraFileInputRef.current?.click()}
                           {...makeDragProps("extra")} onPaste={handlePaste("extra")} tabIndex={0}
@@ -1477,11 +1487,12 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                               <button onClick={e => { e.stopPropagation(); setExtraFile(null); setExtraPreview(""); }} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>x</button>
                             </div>
                           ) : (
-                            <div style={{ fontSize: 12, color: C.muted }}>댓글, 좋아요 등 추가활동 스크린샷</div>
+                            <div style={{ fontSize: 12, color: C.muted }}>{{"comment":"댓글","like":"좋아요","share":"공유","other":"기타"}[extraCategory]} 스크린샷</div>
                           )}
                         </div>
-                        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                          <button disabled={!extraFile || busy} onClick={async () => {
+                        </>)}
+                        {extraCategory && <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                          <button disabled={!extraFile || !extraCategory || busy} onClick={async () => {
                             if (!extraFile || !vM[selDay]) return;
                             setBusy(true);
                             try {
@@ -1494,15 +1505,15 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                               const updated = JSON.stringify([...existing, publicUrl]);
                               await supabase.from("challenge_missions").update({ extra_link: updated }).eq("id", vM[selDay].id);
                               setMissions(prev => prev.map(m => m.id === vM[selDay].id ? { ...m, extra_link: updated } : m));
-                              setExtraAddMode(false); setExtraFile(null); setExtraPreview("");
-                              showToast(`추가활동이 등록되었습니다! (${existing.length + 1}개)`);
+                              setExtraAddMode(false); setExtraFile(null); setExtraPreview(""); setExtraCategory(null);
+                              showToast(`추가활동이 등록되었습니다! (${existing.length + 1}개, +${(existing.length + 1) * 0.5}점)`);
                             } catch (e) { alert("업로드 실패: " + e.message); }
                             setBusy(false);
                           }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", background: extraFile ? "#f59e0b" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: extraFile ? "#fff" : C.muted, fontSize: 13, fontWeight: 700, cursor: extraFile ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
                             {busy ? "저장 중..." : "추가활동 저장"}
                           </button>
-                          <button onClick={() => { setExtraAddMode(false); setExtraFile(null); setExtraPreview(""); }} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>취소</button>
-                        </div>
+                          <button onClick={() => { setExtraAddMode(false); setExtraFile(null); setExtraPreview(""); setExtraCategory(null); }} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>취소</button>
+                        </div>}
                       </div>
                     )}
                   </div>
@@ -2236,7 +2247,7 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                             const dayDate = d => { const dt = new Date(startDate); dt.setDate(dt.getDate() + d - 1); return dt; };
                             const isWeekend = d => { const dow = dayDate(d).getDay(); return dow === 0 || dow === 6; };
                             const lateDays = m => { if (!m?.created_at || Number(m.day) <= 0) return 0; return Math.max(0, Math.floor((localDateOnly(new Date(m.created_at)) - localDateOnly(dayDate(Number(m.day)))) / 86400000)); };
-                            const scoreFor = (day, m) => { const base = isWeekend(Number(day)) ? 2 : 1; const bonus = hasExtra(m) ? 0.5 : 0; const penalty = Math.min(base + bonus, lateDays(m) * 0.5); return Math.max(0, base + bonus - penalty); };
+                            const scoreFor = (day, m) => { const base = isWeekend(Number(day)) ? 2 : 1; const bonus = getExtraLinks(m.extra_link).length * 0.5; const penalty = Math.min(base + bonus, lateDays(m) * 0.5); return Math.max(0, base + bonus - penalty); };
                             const totalScore = Object.entries(p.days).reduce((s, [d, m]) => s + scoreFor(d, m), 0);
                             return (
                             <tr>
