@@ -1455,6 +1455,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                       <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
                         <button onClick={() => { setExtraAddMode(true); setExtraFile(null); setExtraPreview(""); }} style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: "rgba(245,158,11,0.1)", color: "#f59e0b", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{hasExtra(vM[selDay]) ? "추가활동 더 올리기" : "추가활동 올리기 (+0.5점)"}</button>
                         <button onClick={() => beginMissionEdit(vM[selDay])} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>전체 다시 올리기</button>
+                        {isAdmin && <button onClick={async () => { if (!confirm(`Day ${selDay} 인증을 삭제하시겠습니까?`)) return; await supabase.from("challenge_missions").delete().eq("id", vM[selDay].id); setMissions(p => p.filter(x => x.id !== vM[selDay].id)); setSelDay(null); showToast("인증이 삭제되었습니다"); }} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid rgba(239,68,68,0.3)", background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>삭제</button>}
                       </div>
                     )}
                     {/* 추가활동만 추가 모드 */}
@@ -1498,9 +1499,9 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                             try {
                               const ext = extraFile.name.split(".").pop();
                               const path = `challenge/${ch.id}/${user.uid}/extra_${selDay}_${Date.now()}.${ext}`;
-                              const { error: upErr } = await supabase.storage.from("challenge-proofs").upload(path, extraFile, { upsert: true });
+                              const { error: upErr } = await supabase.storage.from("uploads").upload(path, extraFile, { upsert: true });
                               if (upErr) throw upErr;
-                              const { data: { publicUrl } } = supabase.storage.from("challenge-proofs").getPublicUrl(path);
+                              const { data: { publicUrl } } = supabase.storage.from("uploads").getPublicUrl(path);
                               const existing = getExtraLinks(vM[selDay].extra_link);
                               const updated = JSON.stringify([...existing, publicUrl]);
                               await supabase.from("challenge_missions").update({ extra_link: updated }).eq("id", vM[selDay].id);
