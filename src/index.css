@@ -41,16 +41,14 @@ button:hover:not(:disabled) {
 .track-anim {
   animation: trackSlide 0.8s ease-out;
 }
-@keyframes limbSwap {
-  0%, 49.9% { opacity: 1; }
-  50%, 100% { opacity: 0; }
+@keyframes jockey {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(8px); }
+  75% { transform: translateX(-8px); }
 }
-@keyframes limbSwapB {
-  0%, 49.9% { opacity: 0; }
-  50%, 100% { opacity: 1; }
+.jockey-anim {
+  animation: jockey 2s ease-in-out infinite;
 }
-.runner-cycle .limb-a { animation: limbSwap 0.35s step-end infinite; }
-.runner-cycle .limb-b { animation: limbSwapB 0.35s step-end infinite; }
 
 body {
   font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;

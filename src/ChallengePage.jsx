@@ -20,57 +20,43 @@ const hasExtra = (m) => m && getExtraLinks(m.extra_link).length > 0;
 
 function RunnerChar({ nick, color, running, size = 40 }) {
   const ini = (nick || "?")[0];
-  const c = color;
-  const h = Math.round(size * 0.35); // head size
-  // 6프레임 달리기 사이클 - CSS animation-delay로 각 캐릭터 시차
-  const delay = (nick || "").charCodeAt(0) % 6 * 0.08;
+  const headSize = Math.round(size * 0.38);
   return (
-    <div className={running ? "runner-cycle" : ""} style={{ width: size, height: size * 1.1, animationDelay: `${delay}s` }}>
-      <svg width={size} height={size * 1.1} viewBox="0 0 40 44">
-        {/* 머리 — 프로필 이니셜 */}
-        <circle cx={running ? 22 : 20} cy="8" r="8" fill={c} stroke="#fff" strokeWidth="1.5" />
-        <text x={running ? 22 : 20} y="11.5" textAnchor="middle" fontSize="8" fontWeight="800" fill="#fff">{ini}</text>
-        {running ? (<>
-          {/* 측면 달리기 — 이미지 참고 정밀 재현 */}
-          {/* 몸통: 앞으로 25도 기울임 */}
-          <path d="M22,16 L17,29" stroke={c} strokeWidth="4.5" strokeLinecap="round" fill="none" />
-          {/* 프레임 A */}
-          <g className="limb-a">
-            {/* 앞팔: 팔꿈치 앞으로 접어서 손이 얼굴 높이 */}
-            <path d="M21,18 L15,16 L16,11" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            {/* 뒷팔: 뒤로 뻗음 */}
-            <path d="M21,18 L28,23" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-            {/* 앞다리: 무릎 높이 올림 + 종아리 아래로 */}
-            <path d="M17,29 L11,23" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
-            <path d="M11,23 L10,32" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-            {/* 뒷다리: 뒤로 크게 뻗음 + 발 */}
-            <path d="M17,29 L29,39" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
-            <path d="M29,39 L32,38" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-          </g>
-          {/* 프레임 B — 좌우 반대 */}
-          <g className="limb-b">
-            {/* 앞팔: 뒤로 */}
-            <path d="M21,18 L27,16 L26,11" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            {/* 뒷팔: 앞으로 */}
-            <path d="M21,18 L14,23" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-            {/* 앞다리: 뒤로 뻗음 */}
-            <path d="M17,29 L28,39" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
-            <path d="M28,39 L31,38" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-            {/* 뒷다리: 무릎 올림 */}
-            <path d="M17,29 L12,24" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
-            <path d="M12,24 L11,33" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-          </g>
-        </>) : (<>
-          {/* 측면 서있는 자세 */}
-          <path d="M20,16 L20,29" stroke={c} strokeWidth="4.5" strokeLinecap="round" fill="none" />
-          <path d="M20,20 L15,24" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-          <path d="M20,20 L25,24" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-          <path d="M20,29 L16,40" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
-          <path d="M16,40 L13,40" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-          <path d="M20,29 L24,40" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
-          <path d="M24,40 L27,40" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
-        </>)}
-      </svg>
+    <div style={{ position: "relative", width: size, height: size * 1.1 }}>
+      {/* GIF 달리기 — mix-blend-mode로 흰 배경 제거 */}
+      <img
+        src="/runner.gif"
+        alt=""
+        style={{
+          width: size, height: size * 1.1, objectFit: "contain",
+          mixBlendMode: "multiply",
+          opacity: running ? 1 : 0,
+          display: "block",
+        }}
+      />
+      {/* 서있는 자세 (0점) */}
+      {!running && (
+        <svg width={size} height={size * 1.1} viewBox="0 0 40 44" style={{ position: "absolute", top: 0, left: 0 }}>
+          <circle cx="20" cy="8" r="7" fill={color} />
+          <path d="M20,15 L20,27" stroke={color} strokeWidth="4" strokeLinecap="round" fill="none" />
+          <path d="M20,19 L14,24" stroke={color} strokeWidth="3" strokeLinecap="round" fill="none" />
+          <path d="M20,19 L26,24" stroke={color} strokeWidth="3" strokeLinecap="round" fill="none" />
+          <path d="M20,27 L16,39" stroke={color} strokeWidth="3" strokeLinecap="round" fill="none" />
+          <path d="M16,39 L13,39" stroke={color} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+          <path d="M20,27 L24,39" stroke={color} strokeWidth="3" strokeLinecap="round" fill="none" />
+          <path d="M24,39 L27,39" stroke={color} strokeWidth="2.5" strokeLinecap="round" fill="none" />
+        </svg>
+      )}
+      {/* 프로필 이니셜 — 머리 위치 */}
+      <div style={{
+        position: "absolute", top: running ? 0 : -2, left: "50%",
+        transform: running ? "translateX(-35%)" : "translateX(-50%)",
+        width: headSize, height: headSize, borderRadius: "50%",
+        background: color, border: "2px solid #fff",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: Math.round(headSize * 0.5), fontWeight: 800, color: "#fff",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.15)", zIndex: 2,
+      }}>{ini}</div>
     </div>
   );
 }
@@ -796,8 +782,9 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                     const runPct = Math.max(2, (score / maxScore) * 82);
                     const medal = medalColors[getRank(idx)];
                     const c = medal || PRIMARY;
+                    const isTied = (idx > 0 && scores[idx] === scores[idx - 1]) || (idx < scores.length - 1 && scores[idx] === scores[idx + 1]);
                     return (
-                      <div key={m.uid} className={score > 0 ? "run-anim" : ""} style={{ position: "absolute", left: `calc(${runPct}% - 24px)`, bottom: 12, transition: "left 1s ease", zIndex: rankData.length - idx }}>
+                      <div key={m.uid} className={`${score > 0 ? "run-anim" : ""} ${isTied && score > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${runPct}% - 24px)`, bottom: 12, transition: "left 1s ease", zIndex: rankData.length - idx, animationDelay: `${idx * 0.3}s` }}>
                         <RunnerChar nick={m.nick} color={c} running={score > 0} size={66} />
                       </div>
                     );
@@ -1405,8 +1392,9 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                   const sc = calcScore(r.days);
                   const rank = sc === prevS ? prevR : i + 1; prevS = sc; prevR = rank;
                   const pct = Math.max(2, (sc / topScore) * 82);
+                  const tied = (i > 0 && calcScore(runners[i-1].days) === sc) || (i < runners.length - 1 && calcScore(runners[i+1].days) === sc);
                   return (
-                    <div key={r.uid} className={sc > 0 ? "run-anim" : ""} style={{ position: "absolute", left: `calc(${pct}% - 22px)`, bottom: 12, transition: "left 1s ease", zIndex: runners.length - i }}>
+                    <div key={r.uid} className={`${sc > 0 ? "run-anim" : ""} ${tied && sc > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${pct}% - 22px)`, bottom: 12, transition: "left 1s ease", zIndex: runners.length - i, animationDelay: `${i * 0.4}s` }}>
                       <RunnerChar nick={r.nick} color={medalC[rank] || PRIMARY} running={sc > 0} size={60} />
                     </div>
                   );
