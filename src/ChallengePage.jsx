@@ -6,12 +6,16 @@ import DOMPurify from "dompurify";
 /* ── 상수 / 헬퍼 ──────────────────────────────────────── */
 const PRIMARY = "#3b82f6";
 // extra_link: 단일 URL(레거시) 또는 JSON 배열 호환
+// extra_link: 단일URL(레거시), URL배열, 또는 객체배열 [{img,cat,link}] 호환
 const getExtraLinks = (val) => {
   if (!val) return [];
   if (Array.isArray(val)) return val;
   try { const arr = JSON.parse(val); if (Array.isArray(arr)) return arr; } catch {}
-  return [val]; // 단일 URL
+  return [val];
 };
+const extraImg = (item) => typeof item === "string" ? item : item?.img || item;
+const extraCat = (item) => typeof item === "object" ? item?.cat : null;
+const extraUrl = (item) => typeof item === "object" ? item?.link : null;
 const hasExtra = (m) => m && getExtraLinks(m.extra_link).length > 0;
 const maskNick = (nick) => { const n = nick || "?"; return n.length <= 2 ? n[0] + "*" : n.slice(0, 2) + "*".repeat(Math.max(1, n.length - 2)); };
 const fmt = d => d ? new Date(d).toLocaleDateString("ko-KR", { year: "numeric", month: "long", day: "numeric" }) : "";
@@ -901,6 +905,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   const [missionEditMode, setMissionEditMode] = useState(false);
   const [extraAddMode, setExtraAddMode] = useState(false); // 추가활동만 추가 모드
   const [extraCategory, setExtraCategory] = useState(null); // "comment"|"like"|"share"|"other"
+  const [extraLink, setExtraLink] = useState(""); // 추가활동 SNS 링크
   const fileInputRef = useRef(null);
   const extraFileInputRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -1440,13 +1445,23 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     {vM[selDay].screenshot_url && <img src={vM[selDay].screenshot_url} alt="인증" style={{ marginTop: 8, maxWidth: "100%", maxHeight: 300, objectFit: "contain", borderRadius: 10, display: "block", border: "1px solid " + bdr }} />}
                     {hasExtra(vM[selDay]) && (
                       <div style={{ marginTop: 10 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", marginBottom: 6 }}>추가활동 ({getExtraLinks(vM[selDay].extra_link).length}개)</div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          {getExtraLinks(vM[selDay].extra_link).map((url, i) => (
-                            <a key={i} href={url} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>
-                              <img src={url} alt={`추가활동 ${i + 1}`} style={{ width: 100, height: 70, objectFit: "cover", borderRadius: 8, display: "block", border: "1px solid rgba(245,158,11,0.2)" }} />
-                            </a>
-                          ))}
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#f59e0b", marginBottom: 6 }}>추가활동 ({getExtraLinks(vM[selDay].extra_link).length}개, +{getExtraLinks(vM[selDay].extra_link).length * 0.5}점)</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {getExtraLinks(vM[selDay].extra_link).map((item, i) => {
+                            const catLabels = { comment: "댓글", like: "좋아요", share: "공유", other: "기타" };
+                            return (
+                              <div key={i} style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 10px", borderRadius: 8, background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.1)" }}>
+                                <a href={extraImg(item)} target="_blank" rel="noopener noreferrer"><img src={extraImg(item)} alt={`추가활동 ${i + 1}`} style={{ width: 70, height: 50, objectFit: "cover", borderRadius: 6, display: "block", flexShrink: 0 }} /></a>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    {extraCat(item) && <span style={{ fontSize: 10, fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.12)", padding: "1px 8px", borderRadius: 99 }}>{catLabels[extraCat(item)] || extraCat(item)}</span>}
+                                    <span style={{ fontSize: 10, color: C.muted }}>+0.5점</span>
+                                  </div>
+                                  {extraUrl(item) && <a href={extraUrl(item)} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", marginTop: 2 }}>{extraUrl(item)}</a>}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
@@ -1478,6 +1493,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                           {extraCategory === "share" && "공유/리포스트한 화면을 캡처해주세요"}
                           {extraCategory === "other" && "기타 추가활동 화면을 캡처해주세요"}
                         </div>
+                        <input value={extraLink} onChange={e => setExtraLink(e.target.value)} placeholder="인증 SNS 링크 (선택)" style={{ width: "100%", padding: "10px 14px", borderRadius: 8, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: "inherit", marginBottom: 8 }} />
                         <input ref={extraFileInputRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) { setExtraFile(f); const r = new FileReader(); r.onload = ev => setExtraPreview(ev.target.result); r.readAsDataURL(f); } }} style={{ display: "none" }} />
                         <div onClick={() => extraFileInputRef.current?.click()}
                           {...makeDragProps("extra")} onPaste={handlePaste("extra")} tabIndex={0}
@@ -1503,17 +1519,18 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                               if (upErr) throw upErr;
                               const { data: { publicUrl } } = supabase.storage.from("uploads").getPublicUrl(path);
                               const existing = getExtraLinks(vM[selDay].extra_link);
-                              const updated = JSON.stringify([...existing, publicUrl]);
+                              const newEntry = { img: publicUrl, cat: extraCategory, link: extraLink.trim() || null };
+                              const updated = JSON.stringify([...existing, newEntry]);
                               await supabase.from("challenge_missions").update({ extra_link: updated }).eq("id", vM[selDay].id);
                               setMissions(prev => prev.map(m => m.id === vM[selDay].id ? { ...m, extra_link: updated } : m));
-                              setExtraAddMode(false); setExtraFile(null); setExtraPreview(""); setExtraCategory(null);
+                              setExtraAddMode(false); setExtraFile(null); setExtraPreview(""); setExtraCategory(null); setExtraLink("");
                               showToast(`추가활동이 등록되었습니다! (${existing.length + 1}개, +${(existing.length + 1) * 0.5}점)`);
                             } catch (e) { alert("업로드 실패: " + e.message); }
                             setBusy(false);
                           }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", background: extraFile ? "#f59e0b" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: extraFile ? "#fff" : C.muted, fontSize: 13, fontWeight: 700, cursor: extraFile ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
                             {busy ? "저장 중..." : "추가활동 저장"}
                           </button>
-                          <button onClick={() => { setExtraAddMode(false); setExtraFile(null); setExtraPreview(""); setExtraCategory(null); }} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>취소</button>
+                          <button onClick={() => { setExtraAddMode(false); setExtraFile(null); setExtraPreview(""); setExtraCategory(null); setExtraLink(""); }} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>취소</button>
                         </div>}
                       </div>
                     )}
