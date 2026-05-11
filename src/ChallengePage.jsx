@@ -25,30 +25,46 @@ function RunnerChar({ nick, color, running, size = 40 }) {
   return (
     <svg width={size} height={size * 1.25} viewBox="0 0 40 50">
       {running ? (<>
-        {/* 프레임 A — 오른다리 뒤, 왼무릎 앞 */}
+        {/* Contact 자세 — 앞발 착지, 뒷발 뒤로 뻗음 */}
         <g className="run-pose-a">
-          <path d="M18,30 L28,40 L32,39" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          <path d="M18,30 L12,24 L11,34" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          <line x1="21" y1="17" x2="17" y2="31" stroke={c} strokeWidth="5" strokeLinecap="round" />
-          <path d="M20,21 L27,27" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
-          <path d="M20,21 L14,18 L15,13" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          {/* 뒷다리: 뒤로 대각선 쭉 뻗음 */}
+          <path d="M18,31 Q24,36 30,43" stroke={c} strokeWidth="4" strokeLinecap="round" fill="none" />
+          <line x1="30" y1="43" x2="33" y2="42" stroke={c} strokeWidth="3" strokeLinecap="round" />
+          {/* 앞다리: 앞으로 뻗어 착지 */}
+          <path d="M18,31 L10,40" stroke={c} strokeWidth="4" strokeLinecap="round" fill="none" />
+          <line x1="10" y1="40" x2="7" y2="40" stroke={c} strokeWidth="3" strokeLinecap="round" />
+          {/* 몸통 */}
+          <line x1="22" y1="18" x2="18" y2="32" stroke={c} strokeWidth="5" strokeLinecap="round" />
+          {/* 뒷팔: 뒤로 뻗음 */}
+          <path d="M21,22 L28,28" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+          {/* 앞팔: 앞쪽 위로 구부림 */}
+          <path d="M21,22 L15,19 L16,13" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </g>
-        {/* 프레임 B — 왼다리 뒤, 오른무릎 앞 */}
+        {/* Air 자세 — 무릎 높이 올리고 뒷발 접힘 */}
         <g className="run-pose-b">
-          <path d="M18,30 L8,40 L5,39" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          <path d="M18,30 L25,25 L26,35" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          <line x1="21" y1="17" x2="17" y2="31" stroke={c} strokeWidth="5" strokeLinecap="round" />
-          <path d="M20,21 L13,27" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
-          <path d="M20,21 L26,18 L25,13" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          {/* 뒷다리: 뒤 접힘 */}
+          <path d="M18,31 L24,38 L22,44" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          {/* 앞다리: 무릎 높이 올림 */}
+          <path d="M18,31 L12,25 L11,33" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          {/* 몸통 */}
+          <line x1="22" y1="18" x2="18" y2="32" stroke={c} strokeWidth="5" strokeLinecap="round" />
+          {/* 뒷팔: 아래로 */}
+          <path d="M21,22 L14,28" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+          {/* 앞팔: 위로 구부림 */}
+          <path d="M21,22 L27,19 L26,13" stroke={c} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </g>
-        <circle cx="23" cy="9" r="9" fill={c} stroke="#fff" strokeWidth="2" />
-        <text x="23" y="13" textAnchor="middle" fontSize="9" fontWeight="800" fill="#fff">{ini}</text>
+        {/* 머리 */}
+        <circle cx="24" cy="10" r="9" fill={c} stroke="#fff" strokeWidth="2" />
+        <text x="24" y="14" textAnchor="middle" fontSize="9" fontWeight="800" fill="#fff">{ini}</text>
       </>) : (<>
-        <path d="M20,30 L16,44 L13,44" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-        <path d="M20,30 L24,44 L27,44" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        {/* 서있는 준비 자세 */}
+        <path d="M20,30 L17,42" stroke={c} strokeWidth="4" strokeLinecap="round" fill="none" />
+        <line x1="17" y1="42" x2="14" y2="42" stroke={c} strokeWidth="3" strokeLinecap="round" />
+        <path d="M20,30 L23,42" stroke={c} strokeWidth="4" strokeLinecap="round" fill="none" />
+        <line x1="23" y1="42" x2="26" y2="42" stroke={c} strokeWidth="3" strokeLinecap="round" />
         <line x1="20" y1="18" x2="20" y2="31" stroke={c} strokeWidth="5" strokeLinecap="round" />
-        <path d="M20,22 L14,27" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
-        <path d="M20,22 L26,27" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
+        <path d="M20,23 L14,28" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
+        <path d="M20,23 L26,28" stroke={c} strokeWidth="3" strokeLinecap="round" fill="none" />
         <circle cx="20" cy="10" r="9" fill={c} stroke="#fff" strokeWidth="2" />
         <text x="20" y="14" textAnchor="middle" fontSize="9" fontWeight="800" fill="#fff">{ini}</text>
       </>)}
@@ -1356,10 +1372,18 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
         )}
 
         {/* 미니 레이스 트랙 */}
-        {!isViewing && missions.filter(m => m.day > 0).length > 0 && (() => {
+        {!isViewing && (() => {
           const rMap = {};
-          missions.forEach(m => { if (!rMap[m.uid]) rMap[m.uid] = { nick: m.nick, uid: m.uid, days: {} }; if (!rMap[m.uid].days[m.day]) rMap[m.uid].days[m.day] = m; });
-          const runners = Object.values(rMap).sort((a, b) => calcScore(b.days) - calcScore(a.days)).slice(0, 20);
+          missions.forEach(m => { if (m.day > 0 && !rMap[m.uid]) rMap[m.uid] = { nick: m.nick, uid: m.uid, days: {} }; if (m.day > 0 && rMap[m.uid] && !rMap[m.uid].days[m.day]) rMap[m.uid].days[m.day] = m; });
+          // 0점 참가자도 추가 (application_count 기반)
+          const totalParticipants = ch.application_count || Object.keys(rMap).length;
+          const zeroCount = Math.max(0, totalParticipants - Object.keys(rMap).length);
+          for (let z = 0; z < Math.min(zeroCount, 15); z++) {
+            const zid = `zero_${z}`;
+            if (!rMap[zid]) rMap[zid] = { nick: `${z + 1}`, uid: zid, days: {} };
+          }
+          const runners = Object.values(rMap).sort((a, b) => calcScore(b.days) - calcScore(a.days)).slice(0, 25);
+          if (runners.length === 0) return null;
           const topScore = Math.max(...runners.map(r => calcScore(r.days)), 1);
           const medalC = { 1: "#f59e0b", 2: "#94a3b8", 3: "#cd7f32" };
           let prevS = -1, prevR = 0;
