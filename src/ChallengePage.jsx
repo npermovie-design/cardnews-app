@@ -23,17 +23,14 @@ function RunnerChar({ nick, color, running, size = 40 }) {
   const headSize = Math.round(size * 0.38);
   return (
     <div style={{ position: "relative", width: size, height: size * 1.1 }}>
-      {/* GIF 달리기 — mix-blend-mode로 흰 배경 제거 */}
-      <img
-        src="/runner.gif"
-        alt=""
-        style={{
-          width: size, height: size * 1.1, objectFit: "contain",
-          mixBlendMode: "multiply",
-          opacity: running ? 1 : 0,
-          display: "block",
-        }}
-      />
+      {/* WebM 달리기 — 투명 배경 */}
+      {running && (
+        <video
+          src="/runner.webm"
+          autoPlay loop muted playsInline
+          style={{ width: size, height: size * 1.1, objectFit: "contain", display: "block" }}
+        />
+      )}
       {/* 서있는 자세 (0점) */}
       {!running && (
         <svg width={size} height={size * 1.1} viewBox="0 0 40 44" style={{ position: "absolute", top: 0, left: 0 }}>
