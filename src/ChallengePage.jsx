@@ -326,7 +326,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
 
           {/* 참여자용 미션 게시판 바로가기 (상단 고정) */}
           {isParticipant && (
-            <div onClick={() => openBoard(ch)} style={{ background: "linear-gradient(135deg, #1A1A2E, #2d2d5e)", borderRadius: 16, padding: mob ? "20px 18px" : "22px 28px", marginBottom: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, transition: "transform 0.15s" }}
+            <div onClick={() => openBoard(ch)} style={{ background: `linear-gradient(135deg, ${PRIMARY}, #60a5fa)`, borderRadius: 16, padding: mob ? "20px 18px" : "22px 28px", marginBottom: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, transition: "transform 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
               onMouseLeave={e => e.currentTarget.style.transform = "none"}>
               <div>
