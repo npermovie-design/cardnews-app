@@ -139,8 +139,14 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
     // 관리자 또는 참여 확정자만 접근 가능
     if (!user) { showToast("로그인 후 이용할 수 있습니다"); if (typeof window.__onLoginRequest === "function") window.__onLoginRequest(); return; }
     if (!isAdmin) {
-      const { data: appCheck } = await supabase.from("challenge_applications").select("status").eq("challenge_id", ch.id).eq("uid", user.uid).single();
-      if (!appCheck || appCheck.status !== "confirmed") { showToast("참여가 확정된 회원만 미션 게시판에 입장할 수 있습니다"); return; }
+      // 이미 로컬에 확정 상태가 있으면 DB 재조회 생략
+      if (myApp?.status === "confirmed") { /* OK */ }
+      else {
+        try {
+          const { data: appCheck } = await supabase.from("challenge_applications").select("status").eq("challenge_id", ch.id).eq("uid", user.uid).maybeSingle();
+          if (!appCheck || appCheck.status !== "confirmed") { showToast("참여가 확정된 회원만 미션 게시판에 입장할 수 있습니다"); return; }
+        } catch { showToast("접근 권한을 확인할 수 없습니다. 다시 시도해주세요."); return; }
+      }
     }
     setSel(ch); try { setMissions(await loadMissions(ch.id)); } catch { setMissions([]); } setView("board"); window.scrollTo(0, 0); window.history.pushState(null, "", "/growth/" + ch.id + "/board"); document.title = `미션 게시판 - ${ch.title} | SNS메이킷`;
   };
