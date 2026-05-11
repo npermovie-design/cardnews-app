@@ -707,9 +707,13 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
       {/* 현황판 탭 */}
       {/* 순위표 탭 */}
       {dtab === "ranking" && (() => {
-        const medalColors = ["#f59e0b", "#94a3b8", "#cd7f32"];
-        const medalLabels = ["1st", "2nd", "3rd"];
-        const top3 = rankData.slice(0, 3);
+        const scores = rankData.map(m => calcRankScore(m.days));
+        const maxScore = Math.max(...scores, 1);
+        const getRank = (idx) => {
+          if (idx === 0) return 1;
+          return scores[idx] === scores[idx - 1] ? getRank(idx - 1) : idx + 1;
+        };
+        const medalColors = { 1: "#f59e0b", 2: "#94a3b8", 3: "#cd7f32" };
         return (
           <div>
             {rankData.length === 0 ? (
@@ -717,54 +721,72 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                 <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>아직 순위 데이터가 없습니다</div>
                 <div style={{ fontSize: 13 }}>참가자들이 인증을 시작하면 순위가 표시됩니다</div>
               </div>
-            ) : (<>
-              {/* 포디움 */}
-              <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", gap: mob ? 8 : 16, marginBottom: 24 }}>
-                {[1, 0, 2].map(rank => {
-                  const m = top3[rank];
-                  if (!m) return <div key={rank} style={{ flex: 1 }} />;
-                  const score = calcRankScore(m.days);
-                  const pct = Math.round((m.count / totalDays) * 100);
-                  const isFirst = rank === 0;
-                  return (
-                    <div key={rank} style={{ flex: 1, maxWidth: 200, textAlign: "center" }}>
-                      <div style={{
-                        background: card, border: `2px solid ${medalColors[rank]}`, borderRadius: 18,
-                        padding: isFirst ? (mob ? "24px 12px" : "28px 18px") : (mob ? "18px 10px" : "20px 14px"),
-                        transform: isFirst ? "scale(1.06)" : "none",
-                        boxShadow: isFirst ? `0 8px 28px ${medalColors[rank]}30` : "0 2px 8px rgba(0,0,0,0.04)",
-                      }}>
-                        <div style={{ width: isFirst ? 52 : 42, height: isFirst ? 52 : 42, borderRadius: "50%", background: medalColors[rank], display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 10px", fontSize: isFirst ? 20 : 16, fontWeight: 900, color: "#fff" }}>{rank + 1}</div>
-                        <div style={{ fontSize: mob ? 14 : 16, fontWeight: 800, color: C.text, marginBottom: 6 }}>{maskNick(m.nick)}</div>
-                        <div style={{ fontSize: isFirst ? 32 : 24, fontWeight: 900, color: medalColors[rank], lineHeight: 1 }}>{score}</div>
-                        <div style={{ fontSize: 11, color: C.muted, marginTop: 6 }}>점 · {m.count}일 인증 · {pct}%</div>
-                      </div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: medalColors[rank], marginTop: 8 }}>{medalLabels[rank]}</div>
-                    </div>
-                  );
-                })}
-              </div>
-              {/* 4위부터 */}
-              {rankData.length > 3 && (
-                <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 14, overflow: "hidden" }}>
-                  {rankData.slice(3).map((m, i) => {
-                    const score = calcRankScore(m.days);
+            ) : (
+              <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 20, padding: mob ? "20px 16px" : "28px 24px" }}>
+                {/* 마라톤 헤더 */}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: C.text }}>마라톤 순위표</div>
+                  <div style={{ fontSize: 12, color: C.muted }}>🏁 FINISH → {maxScore}점</div>
+                </div>
+                {/* 전체 마라톤 트랙 */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {rankData.map((m, idx) => {
+                    const score = scores[idx];
+                    const rank = getRank(idx);
                     const pct = Math.round((m.count / totalDays) * 100);
+                    const runPct = Math.max(8, (score / maxScore) * 85);
+                    const medal = medalColors[rank];
+                    const isTied = idx > 0 && scores[idx] === scores[idx - 1];
                     return (
-                      <div key={m.uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 18px", borderBottom: i < rankData.length - 4 ? "1px solid " + bdr : "none" }}>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: C.muted, width: 30, textAlign: "center" }}>{i + 4}</span>
-                        <div style={{ width: 30, height: 30, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(m.nick || "?")[0]}</div>
-                        <div style={{ flex: 1 }}>
-                          <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{maskNick(m.nick)}</span>
-                          <span style={{ fontSize: 11, color: C.muted, marginLeft: 8 }}>{m.count}일 ({pct}%)</span>
+                      <div key={m.uid}>
+                        {/* 이름 + 순위 + 점수 */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 13, fontWeight: 900, color: medal || C.muted, width: 22 }}>{rank}</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{maskNick(m.nick)}</span>
+                          {isTied && <span style={{ fontSize: 9, fontWeight: 700, color: "#f59e0b", background: "rgba(245,158,11,0.1)", padding: "1px 6px", borderRadius: 99 }}>동점</span>}
+                          <span style={{ fontSize: 12, fontWeight: 800, color: medal || "#f59e0b", marginLeft: "auto" }}>{score}점</span>
+                          <span style={{ fontSize: 10, color: C.muted }}>{m.count}일 ({pct}%)</span>
                         </div>
-                        <span style={{ fontSize: 18, fontWeight: 800, color: "#f59e0b" }}>{score}점</span>
+                        {/* 트랙 레인 */}
+                        <div style={{ position: "relative", height: 32, borderRadius: 99, background: isDark ? "rgba(255,255,255,0.03)" : "#f8f9fa", border: "1px solid " + bdr, overflow: "hidden" }}>
+                          {/* 트랙 점선 */}
+                          {[20, 40, 60, 80].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, top: 0, bottom: 0, width: 1, background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }} />)}
+                          {/* 주행 거리 */}
+                          <div className="track-anim" style={{ position: "absolute", top: 2, left: 2, bottom: 2, width: `${runPct}%`, borderRadius: 99, background: medal ? `linear-gradient(90deg, ${medal}30, ${medal}15)` : "rgba(59,130,246,0.1)" }} />
+                          {/* 달리기 캐릭터 */}
+                          <div className={score > 0 ? "run-anim" : ""} style={{ position: "absolute", left: `calc(${runPct}% - 12px)`, top: 1, transition: "left 0.8s ease" }}>
+                            <svg width="28" height="28" viewBox="0 0 28 28">
+                              {/* 머리 (프로필) */}
+                              <circle cx="14" cy="7" r="6" fill={medal || PRIMARY} />
+                              <text x="14" y="9.5" textAnchor="middle" fontSize="7" fontWeight="800" fill="#fff">{(m.nick || "?")[0]}</text>
+                              {/* 몸통 */}
+                              <line x1="14" y1="13" x2="14" y2="19" stroke={medal || PRIMARY} strokeWidth="2" strokeLinecap="round" />
+                              {score > 0 ? (<>
+                                {/* 팔 (달리기) */}
+                                <line className="arm-anim-l" x1="14" y1="14" x2="9" y2="18" stroke={medal || PRIMARY} strokeWidth="1.5" strokeLinecap="round" />
+                                <line className="arm-anim-r" x1="14" y1="14" x2="19" y2="18" stroke={medal || PRIMARY} strokeWidth="1.5" strokeLinecap="round" />
+                                {/* 다리 (달리기) */}
+                                <line className="leg-anim-l" x1="14" y1="19" x2="10" y2="26" stroke={medal || PRIMARY} strokeWidth="1.5" strokeLinecap="round" />
+                                <line className="leg-anim-r" x1="14" y1="19" x2="18" y2="26" stroke={medal || PRIMARY} strokeWidth="1.5" strokeLinecap="round" />
+                              </>) : (<>
+                                {/* 팔 (서 있기) */}
+                                <line x1="14" y1="15" x2="10" y2="19" stroke={medal || PRIMARY} strokeWidth="1.5" strokeLinecap="round" />
+                                <line x1="14" y1="15" x2="18" y2="19" stroke={medal || PRIMARY} strokeWidth="1.5" strokeLinecap="round" />
+                                {/* 다리 (서 있기) */}
+                                <line x1="14" y1="19" x2="11" y2="26" stroke={medal || PRIMARY} strokeWidth="1.5" strokeLinecap="round" />
+                                <line x1="14" y1="19" x2="17" y2="26" stroke={medal || PRIMARY} strokeWidth="1.5" strokeLinecap="round" />
+                              </>)}
+                            </svg>
+                          </div>
+                          {/* 골인 깃발 */}
+                          <div style={{ position: "absolute", right: 6, top: 6, fontSize: 16 }}>🏁</div>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
-              )}
-            </>)}
+              </div>
+            )}
           </div>
         );
       })()}

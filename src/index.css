@@ -28,6 +28,32 @@ button:hover:not(:disabled) {
   filter: brightness(1.06);
 }
 
+@keyframes runBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.run-anim {
+  animation: runBounce 0.35s ease-in-out infinite;
+}
+@keyframes trackSlide {
+  from { width: 5%; }
+}
+.track-anim {
+  animation: trackSlide 0.8s ease-out;
+}
+@keyframes legRun {
+  0%, 100% { transform: rotate(-25deg); }
+  50% { transform: rotate(25deg); }
+}
+@keyframes armRun {
+  0%, 100% { transform: rotate(25deg); }
+  50% { transform: rotate(-25deg); }
+}
+.leg-anim-l { animation: legRun 0.3s ease-in-out infinite; transform-origin: top center; }
+.leg-anim-r { animation: legRun 0.3s ease-in-out infinite 0.15s; transform-origin: top center; }
+.arm-anim-l { animation: armRun 0.3s ease-in-out infinite; transform-origin: top center; }
+.arm-anim-r { animation: armRun 0.3s ease-in-out infinite 0.15s; transform-origin: top center; }
+
 body {
   font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
   -webkit-font-smoothing: antialiased;
