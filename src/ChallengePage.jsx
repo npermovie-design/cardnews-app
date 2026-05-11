@@ -25,50 +25,32 @@ function RunnerChar({ nick, color, running, size = 40 }) {
   return (
     <svg width={size} height={size * 1.25} viewBox="0 0 40 50">
       {running ? (<>
-        {/* 자세 A — 오른다리 뒤로 뻗음, 왼다리 앞 올림 */}
+        {/* 프레임 A — 오른다리 뒤, 왼무릎 앞 */}
         <g className="run-pose-a">
-          {/* 뒷다리(오른) — 뒤아래로 뻗음 */}
-          <line x1="18" y1="31" x2="27" y2="40" stroke={c} strokeWidth="4" strokeLinecap="round" />
-          <line x1="27" y1="40" x2="31" y2="39" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-          {/* 앞다리(왼) — 무릎 올려 접음 */}
-          <line x1="18" y1="31" x2="13" y2="26" stroke={c} strokeWidth="4" strokeLinecap="round" />
-          <line x1="13" y1="26" x2="13" y2="35" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-          {/* 몸통 — 앞기울임 */}
-          <line x1="21" y1="19" x2="18" y2="32" stroke={c} strokeWidth="5" strokeLinecap="round" />
-          {/* 뒷팔(왼) — 뒤로 뻗음 */}
-          <line x1="20" y1="22" x2="27" y2="27" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-          {/* 앞팔(오른) — 앞으로 접어 올림 */}
-          <line x1="20" y1="22" x2="14" y2="20" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-          <line x1="14" y1="20" x2="15" y2="15" stroke={c} strokeWidth="3" strokeLinecap="round" />
+          <path d="M18,30 L28,40 L32,39" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          <path d="M18,30 L12,24 L11,34" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          <line x1="21" y1="17" x2="17" y2="31" stroke={c} strokeWidth="5" strokeLinecap="round" />
+          <path d="M20,21 L27,27" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
+          <path d="M20,21 L14,18 L15,13" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </g>
-        {/* 자세 B — 반대 (왼다리 뒤, 오른다리 앞) */}
+        {/* 프레임 B — 왼다리 뒤, 오른무릎 앞 */}
         <g className="run-pose-b">
-          {/* 뒷다리(왼) */}
-          <line x1="18" y1="31" x2="10" y2="40" stroke={c} strokeWidth="4" strokeLinecap="round" />
-          <line x1="10" y1="40" x2="7" y2="39" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-          {/* 앞다리(오른) — 무릎 올림 */}
-          <line x1="18" y1="31" x2="24" y2="27" stroke={c} strokeWidth="4" strokeLinecap="round" />
-          <line x1="24" y1="27" x2="23" y2="36" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-          {/* 몸통 */}
-          <line x1="21" y1="19" x2="18" y2="32" stroke={c} strokeWidth="5" strokeLinecap="round" />
-          {/* 뒷팔(오른) */}
-          <line x1="20" y1="22" x2="13" y2="27" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-          {/* 앞팔(왼) — 접어 올림 */}
-          <line x1="20" y1="22" x2="26" y2="20" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-          <line x1="26" y1="20" x2="25" y2="15" stroke={c} strokeWidth="3" strokeLinecap="round" />
+          <path d="M18,30 L8,40 L5,39" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          <path d="M18,30 L25,25 L26,35" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          <line x1="21" y1="17" x2="17" y2="31" stroke={c} strokeWidth="5" strokeLinecap="round" />
+          <path d="M20,21 L13,27" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
+          <path d="M20,21 L26,18 L25,13" stroke={c} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </g>
-        <circle cx="23" cy="10" r="10" fill={c} stroke="#fff" strokeWidth="2" />
-        <text x="23" y="14" textAnchor="middle" fontSize="10" fontWeight="800" fill="#fff">{ini}</text>
+        <circle cx="23" cy="9" r="9" fill={c} stroke="#fff" strokeWidth="2" />
+        <text x="23" y="13" textAnchor="middle" fontSize="9" fontWeight="800" fill="#fff">{ini}</text>
       </>) : (<>
-        <line x1="20" y1="32" x2="16" y2="46" stroke={c} strokeWidth="4" strokeLinecap="round" />
-        <line x1="16" y1="46" x2="13" y2="46" stroke={c} strokeWidth="3" strokeLinecap="round" />
-        <line x1="20" y1="32" x2="24" y2="46" stroke={c} strokeWidth="4" strokeLinecap="round" />
-        <line x1="24" y1="46" x2="27" y2="46" stroke={c} strokeWidth="3" strokeLinecap="round" />
-        <line x1="20" y1="20" x2="20" y2="33" stroke={c} strokeWidth="5" strokeLinecap="round" />
-        <line x1="20" y1="24" x2="13" y2="29" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-        <line x1="20" y1="24" x2="27" y2="29" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-        <circle cx="20" cy="11" r="10" fill={c} stroke="#fff" strokeWidth="2" />
-        <text x="20" y="15" textAnchor="middle" fontSize="10" fontWeight="800" fill="#fff">{ini}</text>
+        <path d="M20,30 L16,44 L13,44" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <path d="M20,30 L24,44 L27,44" stroke={c} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <line x1="20" y1="18" x2="20" y2="31" stroke={c} strokeWidth="5" strokeLinecap="round" />
+        <path d="M20,22 L14,27" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
+        <path d="M20,22 L26,27" stroke={c} strokeWidth="3.5" strokeLinecap="round" fill="none" />
+        <circle cx="20" cy="10" r="9" fill={c} stroke="#fff" strokeWidth="2" />
+        <text x="20" y="14" textAnchor="middle" fontSize="9" fontWeight="800" fill="#fff">{ini}</text>
       </>)}
     </svg>
   );
@@ -788,7 +770,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                 <div style={{ position: "relative", height: 160, borderRadius: 16, background: isDark ? "rgba(255,255,255,0.02)" : "#f8faf8", border: "1px solid " + bdr, overflow: "visible" }}>
                   <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, height: 3, borderRadius: 2, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb" }} />
                   {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 0, height: 18, width: 1, borderLeft: "1px dashed " + (isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)") }} />)}
-                  <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 3, background: "#22c55e", borderRadius: "0 16px 16px 0" }} />
+                  <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 0, background: "transparent", borderRadius: "0 16px 16px 0" }} />
                   <div style={{ position: "absolute", right: 8, top: 10, fontSize: 28 }}>🏁</div>
                   {rankData.map((m, idx) => {
                     const score = scores[idx];
@@ -1390,7 +1372,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
               <div style={{ position: "relative", height: 140, borderRadius: 16, background: isDark ? "rgba(255,255,255,0.02)" : "#f8faf8", border: "1px solid " + bdr }}>
                 <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, height: 3, borderRadius: 2, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb" }} />
                 {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 0, height: 18, width: 1, borderLeft: "1px dashed " + (isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)") }} />)}
-                <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 3, background: "#22c55e", borderRadius: "0 16px 16px 0" }} />
+                <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 0, background: "transparent", borderRadius: "0 16px 16px 0" }} />
                 <div style={{ position: "absolute", right: 8, top: 10, fontSize: 24 }}>🏁</div>
                 {runners.map((r, i) => {
                   const sc = calcScore(r.days);
