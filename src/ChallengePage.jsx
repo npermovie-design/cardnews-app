@@ -778,7 +778,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                     <path d="M0,60 L0,40 Q80,15 180,35 Q280,5 380,30 Q480,10 580,25 Q680,8 800,35 L800,60 Z" fill={isDark ? "#1e3a1e" : "#7dab72"} opacity="0.5" />
                   </svg>
                   {/* 구름 */}
-                  {[{y:10,s:60,d:0},{y:24,s:45,d:8},{y:6,s:55,d:16},{y:30,s:38,d:24}].map((cl,i) => (
+                  {[{y:10,s:60,d:0},{y:24,s:45,d:5},{y:6,s:55,d:10},{y:30,s:38,d:15},{y:14,s:50,d:20},{y:20,s:42,d:25}].map((cl,i) => (
                     <svg key={`cl${i}`} className="cloud-drift" style={{ position: "absolute", top: cl.y, animationDelay: `${cl.d}s` }} width={cl.s} height={cl.s * 0.4} viewBox="0 0 60 24">
                       <ellipse cx="30" cy="18" rx="28" ry="6" fill="#fff" opacity="0.85" />
                       <ellipse cx="22" cy="13" rx="14" ry="8" fill="#fff" opacity="0.85" />
@@ -815,8 +815,20 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                   </div>
                   {/* 거리 마커 */}
                   {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 22, height: 10, width: 1, background: "rgba(255,255,255,0.2)" }} />)}
-                  {/* 골인 */}
-                  <div style={{ position: "absolute", right: 10, bottom: 28, fontSize: 28 }}>🏁</div>
+                  {/* 골인 깃발 */}
+                  <svg style={{ position: "absolute", right: 8, bottom: 20 }} width="36" height="48" viewBox="0 0 36 48">
+                    {/* 깃대 */}
+                    <line x1="4" y1="4" x2="4" y2="46" stroke="#555" strokeWidth="3" strokeLinecap="round" />
+                    <circle cx="4" cy="4" r="3" fill="#f59e0b" />
+                    {/* 체크무늬 깃발 */}
+                    <g>
+                      {[0,1,2,3].map(r => [0,1,2,3,4].map(c => (
+                        <rect key={`${r}${c}`} x={6 + c * 6} y={6 + r * 5} width="6" height="5" fill={(r + c) % 2 === 0 ? "#1a1a1a" : "#fff"} stroke="rgba(0,0,0,0.1)" strokeWidth="0.3" />
+                      )))}
+                    </g>
+                    {/* FINISH 텍스트 */}
+                    <text x="20" y="36" textAnchor="middle" fontSize="5" fontWeight="800" fill="#ef4444">FINISH</text>
+                  </svg>
                   {rankData.map((m, idx) => {
                     const score = scores[idx];
                     const runPct = Math.max(2, (score / maxScore) * 82);
@@ -1417,22 +1429,50 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 <span style={{ fontSize: 14, fontWeight: 800, color: C.text }}>레이스 현황</span>
                 <span style={{ fontSize: 11, color: C.muted }}>🏁 {topScore}점</span>
               </div>
-              <div style={{ position: "relative", height: 140, borderRadius: 16, background: isDark ? "rgba(255,255,255,0.02)" : "linear-gradient(180deg, #e0f2fe 0%, #f0fdf4 60%, #dcfce7 100%)", border: "1px solid " + bdr, overflow: "hidden" }}>
-                {/* 구름 + 나무 */}
-                <div className="cloud-drift" style={{ position: "absolute", top: 8, left: "15%", fontSize: 14, opacity: 0.35 }}>☁️</div>
-                <div className="cloud-drift" style={{ position: "absolute", top: 14, left: "55%", fontSize: 12, opacity: 0.25, animationDelay: "5s" }}>☁️</div>
-                <div style={{ position: "absolute", bottom: 12, left: "20%", fontSize: 16, opacity: 0.25 }}>🌳</div>
-                <div style={{ position: "absolute", bottom: 12, left: "60%", fontSize: 14, opacity: 0.2 }}>🌲</div>
-                <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, height: 3, borderRadius: 2, background: "rgba(0,0,0,0.06)" }} />
-                {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 0, height: 14, width: 1, borderLeft: "1px dashed rgba(0,0,0,0.06)" }} />)}
-                <div style={{ position: "absolute", right: 8, top: 8, fontSize: 22 }}>🏁</div>
+              <div style={{ position: "relative", height: 160, borderRadius: 16, overflow: "hidden", border: "1px solid " + bdr }}>
+                {/* 하늘 */}
+                <div style={{ position: "absolute", inset: 0, background: isDark ? "#1a1a2e" : "linear-gradient(180deg, #87CEEB 0%, #B0E0E6 40%, #d4edda 70%, #8fbc8f 85%, #6b8e23 100%)" }} />
+                {/* 산 */}
+                <svg style={{ position: "absolute", bottom: 22, left: 0, right: 0 }} viewBox="0 0 800 60" preserveAspectRatio="none" height="35">
+                  <path d="M0,60 L0,40 Q80,15 180,35 Q280,5 380,30 Q480,10 580,25 Q680,8 800,35 L800,60 Z" fill={isDark ? "#1e3a1e" : "#7dab72"} opacity="0.5" />
+                </svg>
+                {/* 구름 */}
+                {[{y:6,s:40,d:0},{y:14,s:30,d:10}].map((cl,i) => (
+                  <svg key={`mcl${i}`} className="cloud-drift" style={{ position: "absolute", top: cl.y, animationDelay: `${cl.d}s` }} width={cl.s} height={cl.s * 0.4} viewBox="0 0 60 24">
+                    <ellipse cx="30" cy="18" rx="28" ry="6" fill="#fff" opacity="0.8" />
+                    <ellipse cx="22" cy="13" rx="14" ry="8" fill="#fff" opacity="0.8" />
+                    <ellipse cx="38" cy="11" rx="16" ry="9" fill="#fff" opacity="0.8" />
+                  </svg>
+                ))}
+                {/* 나무 */}
+                {[{s:32,d:0},{s:26,d:8},{s:36,d:16}].map((t,i) => (
+                  <div key={`mtr${i}`} className="tree-pass" style={{ position: "absolute", bottom: 14, animationDelay: `${t.d}s`, animationDuration: `${14 + i * 3}s` }}>
+                    <svg width={t.s} height={t.s * 1.5} viewBox="0 0 20 30">
+                      <rect x="8.5" y="18" width="3" height="12" rx="1" fill="#5a3e28" />
+                      <path d="M10,2 L3,14 L6,14 L2,22 L18,22 L14,14 L17,14 Z" fill="#2d5016" />
+                    </svg>
+                  </div>
+                ))}
+                {/* 흙길 */}
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 18, background: "linear-gradient(180deg, #b89a5a 0%, #c9a96e 30%, #d4b87a 100%)", borderRadius: "0 0 16px 16px", overflow: "hidden", boxShadow: "inset 0 2px 3px rgba(0,0,0,0.12)" }}>
+                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: "#4a7c3f" }} />
+                  <div className="ground-scroll" style={{ position: "absolute", top: 3, left: 0, width: "200%", height: "100%", backgroundImage: "radial-gradient(circle 1.5px, rgba(0,0,0,0.06) 1px, transparent 1px)", backgroundSize: "10px 7px" }} />
+                </div>
+                {/* 거리 마커 */}
+                {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 14, height: 8, width: 1, background: "rgba(255,255,255,0.2)" }} />)}
+                {/* 골인 깃발 */}
+                <svg style={{ position: "absolute", right: 6, bottom: 14 }} width="28" height="38" viewBox="0 0 36 48">
+                  <line x1="4" y1="4" x2="4" y2="46" stroke="#555" strokeWidth="3" strokeLinecap="round" />
+                  <circle cx="4" cy="4" r="3" fill="#f59e0b" />
+                  {[0,1,2,3].map(r => [0,1,2,3,4].map(c => <rect key={`f${r}${c}`} x={6 + c * 6} y={6 + r * 5} width="6" height="5" fill={(r + c) % 2 === 0 ? "#1a1a1a" : "#fff"} />))}
+                </svg>
                 {runners.map((r, i) => {
                   const sc = calcScore(r.days);
                   const rank = sc === prevS ? prevR : i + 1; prevS = sc; prevR = rank;
                   const pct = Math.max(2, (sc / topScore) * 82);
                   const tied = (i > 0 && calcScore(runners[i-1].days) === sc) || (i < runners.length - 1 && calcScore(runners[i+1].days) === sc);
                   return (
-                    <div key={r.uid} className={`${sc > 0 ? "run-anim" : ""} ${tied && sc > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${pct}% - 22px)`, bottom: 12, transition: "left 1s ease", zIndex: runners.length - i, animationDelay: `${i * 0.4}s` }}>
+                    <div key={r.uid} className={`${sc > 0 ? "run-anim" : ""} ${tied && sc > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${Math.max(5, 5 + pct * 0.8)}% - 22px)`, bottom: 10, transition: "left 1s ease", zIndex: runners.length - i, animationDelay: `${i * 0.4}s` }}>
                       <RunnerChar nick={r.nick} color={medalC[rank] || PRIMARY} running={sc > 0} size={60} />
                     </div>
                   );
