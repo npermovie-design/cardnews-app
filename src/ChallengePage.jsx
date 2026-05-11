@@ -166,7 +166,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
           <div style={{ display: "inline-block", background: PRIMARY, color: "#fff", fontSize: 12, fontWeight: 700, padding: "5px 16px", borderRadius: 99, marginBottom: 20 }}>BOOTCAMP</div>
           <h1 style={{ fontSize: mob ? "clamp(26px,6vw,38px)" : "clamp(36px,5vw,52px)", fontWeight: 700, color: "#1a1a1a", lineHeight: 1.3, marginBottom: 14, letterSpacing: "-0.02em" }}>
             함께 성장하는<br/>
-            <span style={{ background: `linear-gradient(135deg, ${PRIMARY}, #60a5fa)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>SNS 부트캠프</span>
+            <span style={{ color: PRIMARY }}>SNS 부트캠프</span>
           </h1>
           <p style={{ fontSize: mob ? 14 : 17, color: "#4a5568", lineHeight: 1.7, marginBottom: 32 }}>
             부트캠프, 클래스, 스터디, 모임까지 다양한 프로그램을 운영합니다.<br/>
@@ -174,7 +174,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
           </p>
           {isAdmin && (
             <button onClick={() => { setSel(null); setView("editor"); }}
-              style={{ padding: "16px 36px", borderRadius: 99, border: "none", background: "#1A1A2E", color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "transform 0.18s", fontFamily: "inherit" }}
+              style={{ padding: "16px 36px", borderRadius: 99, border: "none", background: PRIMARY, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "transform 0.18s", fontFamily: "inherit" }}
               onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={e => e.currentTarget.style.transform = "none"}>
               + 새 부트캠프 만들기
             </button>
@@ -377,7 +377,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
                 <StartProofUploader ch={ch} C={C} bdr={bdr} isDark={isDark} user={user} myApp={myApp} setMyApp={setMyApp} compact />
               </div>
             ) : canApply ? (
-              <button onClick={() => { setView("apply"); window.scrollTo(0, 0); }} style={ctaBtn("#1A1A2E")}>신청하기</button>
+              <button onClick={() => { setView("apply"); window.scrollTo(0, 0); }} style={ctaBtn(PRIMARY)}>신청하기</button>
             ) : null}
             {isAdmin && <button onClick={() => openAdmin(ch)} style={{ ...ctaBtn("transparent"), border: "1px solid " + bdr, color: C.muted, marginLeft: 12, boxShadow: "none" }}>관리자 보기</button>}
           </div>
@@ -447,7 +447,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
 
 /* ── 공통 CTA 버튼 스타일 ── */
 function ctaBtn(bg) {
-  return { padding: "16px 40px", borderRadius: 99, border: "none", background: bg, color: "#fff", fontSize: 17, fontWeight: 700, cursor: "pointer", boxShadow: bg === "#1A1A2E" ? "0 4px 16px rgba(0,0,0,0.15)" : `0 4px 16px ${bg}40`, fontFamily: "inherit", transition: "transform 0.18s" };
+  return { padding: "16px 40px", borderRadius: 99, border: "none", background: bg, color: "#fff", fontSize: 17, fontWeight: 700, cursor: "pointer", boxShadow: `0 4px 16px ${bg}40`, fontFamily: "inherit", transition: "all 0.18s" };
 }
 
 /* ── 섹션 ── */
@@ -575,7 +575,7 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
           </div>
 
           <button disabled={!ok || busy} onClick={async () => { setBusy(true); try { const start_screenshot_url = startFile ? await uploadChallengeProof(ch.id, user, startFile, "start") : ""; await onSubmit({ ...f, start_screenshot_url }); } catch(e) { alert("오류: " + e.message); } setBusy(false); }}
-            style={{ width: "100%", padding: "16px", borderRadius: 99, border: "none", background: ok ? "#1A1A2E" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: ok ? "#fff" : C.muted, fontSize: 16, fontWeight: 700, cursor: ok ? "pointer" : "not-allowed", marginTop: 28, opacity: busy ? 0.7 : 1, fontFamily: "inherit" }}>
+            style={{ width: "100%", padding: "16px", borderRadius: 99, border: "none", background: ok ? PRIMARY : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: ok ? "#fff" : C.muted, fontSize: 16, fontWeight: 700, cursor: ok ? "pointer" : "not-allowed", marginTop: 28, opacity: busy ? 0.7 : 1, fontFamily: "inherit" }}>
             {busy ? "인증 이미지 저장 중..." : "참여하기"}
           </button>
         </div>
@@ -653,7 +653,7 @@ function StartProofUploader({ ch, C, bdr, isDark, user, myApp, setMyApp, compact
             style={{ display: "block", border: `1.5px dashed ${preview ? PRIMARY : bdr}`, borderRadius: 10, padding: preview ? 0 : "16px 12px", textAlign: "center", cursor: "pointer", color: C.muted, fontSize: 12, overflow: "hidden", outline: "none", transition: "all 0.2s" }}>
             {preview ? <img src={preview} alt="시작 인증 미리보기" style={{ width: "100%", maxHeight: compact ? 130 : 180, objectFit: "cover", display: "block" }} /> : (<><div>클릭, 드래그 또는 캡처 후 Ctrl+V</div><div style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>팔로워/조회수/방문자 수 화면</div></>)}
           </div>
-          {file && <button disabled={busy} onClick={submit} style={{ width: "100%", marginTop: 10, padding: "10px 12px", borderRadius: 10, border: "none", background: "#1A1A2E", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{busy ? "저장 중..." : "시작 인증 저장"}</button>}
+          {file && <button disabled={busy} onClick={submit} style={{ width: "100%", marginTop: 10, padding: "10px 12px", borderRadius: 10, border: "none", background: PRIMARY, color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{busy ? "저장 중..." : "시작 인증 저장"}</button>}
         </>
       )}
     </div>
@@ -942,7 +942,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
 
         {/* 관리자: 다른 멤버 보기 배너 */}
         {isViewing && (
-          <div style={{ background: "linear-gradient(135deg, #1A1A2E, #2d2d5e)", borderRadius: 14, padding: "14px 20px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ background: PRIMARY, borderRadius: 14, padding: "14px 20px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ width: 32, height: 32, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>{(viewAsMember.nick || "?")[0]}</div>
               <div>
@@ -965,7 +965,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
             </div>
           </div>
           <div style={{ width: "100%", height: 8, borderRadius: 99, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb", overflow: "hidden" }}>
-            <div style={{ height: "100%", borderRadius: 99, background: `linear-gradient(90deg, ${PRIMARY}, #60a5fa)`, width: `${vPct}%`, transition: "width 0.4s ease" }} />
+            <div style={{ height: "100%", borderRadius: 99, background: PRIMARY, width: `${vPct}%`, transition: "width 0.4s ease" }} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11, color: C.muted }}>
             <span>Day 1</span>
@@ -1045,7 +1045,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     {weekScores.map((ws, i) => (
                       <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: ws > 0 ? PRIMARY : C.muted }}>{ws > 0 ? ws.toFixed(1) : ""}</div>
-                        <div style={{ width: "100%", maxWidth: 32, height: `${Math.max(4, (ws / maxWeekScore) * 60)}px`, borderRadius: 4, background: ws > 0 ? `linear-gradient(180deg, ${PRIMARY}, #60a5fa)` : (isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb"), transition: "height 0.3s" }} />
+                        <div style={{ width: "100%", maxWidth: 32, height: `${Math.max(4, (ws / maxWeekScore) * 60)}px`, borderRadius: 4, background: ws > 0 ? PRIMARY : (isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb"), transition: "height 0.3s" }} />
                         <div style={{ fontSize: 9, color: C.muted }}>{i + 1}주</div>
                       </div>
                     ))}
@@ -1082,7 +1082,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <button onClick={openStartProof} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid " + bdr, background: myApp?.start_screenshot_url ? "rgba(34,197,94,0.08)" : (isDark ? "rgba(255,255,255,0.04)" : "#fff"), color: myApp?.start_screenshot_url ? "#16a34a" : C.text, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>시작 데이터</button>
-                <button onClick={() => openMissionProof(nextMissionDay)} style={{ padding: "10px 16px", borderRadius: 10, border: "none", background: "#1A1A2E", color: "#fff", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>오늘/미완료 인증</button>
+                <button onClick={() => openMissionProof(nextMissionDay)} style={{ padding: "10px 16px", borderRadius: 10, border: "none", background: PRIMARY, color: "#fff", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>오늘/미완료 인증</button>
                 <button onClick={openEndProof} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid " + bdr, background: myApp?.end_screenshot_url ? "rgba(34,197,94,0.08)" : (isDark ? "rgba(255,255,255,0.04)" : "#fff"), color: myApp?.end_screenshot_url ? "#16a34a" : C.text, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>마지막 데이터</button>
               </div>
             </div>
@@ -1225,7 +1225,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                       style={{ display: "block", border: `1.5px dashed ${endProofPreview ? PRIMARY : bdr}`, borderRadius: 12, padding: endProofPreview ? 0 : "22px 16px", textAlign: "center", cursor: "pointer", overflow: "hidden", fontSize: 13, color: C.muted, background: isDark ? "rgba(255,255,255,0.02)" : "#fafafa", outline: "none", transition: "all 0.2s" }}>
                       {endProofPreview ? <img src={endProofPreview} alt="종료 인증 미리보기" style={{ width: "100%", maxHeight: 240, objectFit: "cover", display: "block" }} /> : (<><div>클릭, 드래그 또는 캡처 후 Ctrl+V</div><div style={{ fontSize: 11, opacity: 0.6, marginTop: 4 }}>마지막 팔로워/조회수/방문자 수 화면</div></>)}
                     </div>
-                    {endProofFile && <button disabled={endProofBusy} onClick={submitEndProof} style={{ width: "100%", marginTop: 10, padding: "12px 14px", borderRadius: 10, border: "none", background: "#1A1A2E", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{endProofBusy ? "저장 중..." : "종료 인증 저장"}</button>}
+                    {endProofFile && <button disabled={endProofBusy} onClick={submitEndProof} style={{ width: "100%", marginTop: 10, padding: "12px 14px", borderRadius: 10, border: "none", background: PRIMARY, color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>{endProofBusy ? "저장 중..." : "종료 인증 저장"}</button>}
                   </div>
                 ) : null}
               </div>
@@ -1331,7 +1331,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     })()}
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <button disabled={(!link.trim() && !screenshotFile && !missionEditMode) || busy} onClick={submit}
-                        style={{ padding: "11px 24px", borderRadius: 99, border: "none", background: (link.trim() || screenshotFile || missionEditMode) ? "#1A1A2E" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: (link.trim() || screenshotFile || missionEditMode) ? "#fff" : C.muted, fontSize: 14, fontWeight: 700, cursor: (link.trim() || screenshotFile || missionEditMode) ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+                        style={{ padding: "11px 24px", borderRadius: 99, border: "none", background: (link.trim() || screenshotFile || missionEditMode) ? PRIMARY : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: (link.trim() || screenshotFile || missionEditMode) ? "#fff" : C.muted, fontSize: 14, fontWeight: 700, cursor: (link.trim() || screenshotFile || missionEditMode) ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
                         {uploading ? "업로드 중..." : busy ? "등록 중..." : missionEditMode ? "수정 저장" : "인증하기"}
                       </button>
                       {missionEditMode && <button onClick={() => { setMissionEditMode(false); setLink(""); setMemo(""); setScreenshotFile(null); setScreenshotPreview(null); setExtraFile(null); setExtraPreview(""); }} style={{ padding: "10px 16px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>취소</button>}
@@ -1411,7 +1411,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                         </div>
                         {/* 진행률 바 */}
                         <div style={{ width: "100%", height: 6, borderRadius: 99, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb", marginBottom: 12 }}>
-                          <div style={{ height: "100%", borderRadius: 99, background: memberPct >= 80 ? "#22c55e" : `linear-gradient(90deg, ${PRIMARY}, #60a5fa)`, width: `${memberPct}%`, transition: "width 0.4s" }} />
+                          <div style={{ height: "100%", borderRadius: 99, background: memberPct >= 80 ? "#22c55e" : PRIMARY, width: `${memberPct}%`, transition: "width 0.4s" }} />
                         </div>
                         {/* Day별 인증 현황 (작은 도트) */}
                         <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
@@ -1603,7 +1603,7 @@ function FreeBoard({ ch, C, bdr, card, isDark, mob, user }) {
     <div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
         <div style={{ fontSize: 13, color: C.muted }}>{posts.length}개 글</div>
-        {user && <button onClick={() => setWriting(!writing)} style={{ padding: "10px 22px", borderRadius: 99, border: "none", background: writing ? C.muted : "#1A1A2E", color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{writing ? "취소" : "글쓰기"}</button>}
+        {user && <button onClick={() => setWriting(!writing)} style={{ padding: "10px 22px", borderRadius: 99, border: "none", background: writing ? C.muted : PRIMARY, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>{writing ? "취소" : "글쓰기"}</button>}
       </div>
 
       {/* 글쓰기 폼 */}
@@ -1998,7 +1998,7 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                                       <span style={{ fontSize: 12, fontWeight: 800, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "5px 12px", borderRadius: 99 }}>{Object.keys(p.days).length}/{totalDays}일 ({rate}%)</span>
                                       <span style={{ fontSize: 12, fontWeight: 800, color: "#f59e0b", background: "rgba(245,158,11,0.08)", padding: "5px 12px", borderRadius: 99 }}>{totalScore}점</span>
                                       {rate >= 100 && <span style={{ fontSize: 12, fontWeight: 800, color: "#8b5cf6", background: "rgba(139,92,246,0.08)", padding: "5px 12px", borderRadius: 99 }}>완주</span>}
-                                      {onViewMember && <button onClick={e => { e.stopPropagation(); onViewMember({ uid: p.uid, nick: p.nick, days: p.days, count: Object.keys(p.days).length }); }} style={{ padding: "5px 14px", borderRadius: 99, border: "none", background: "#1A1A2E", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>미션보드 상세</button>}
+                                      {onViewMember && <button onClick={e => { e.stopPropagation(); onViewMember({ uid: p.uid, nick: p.nick, days: p.days, count: Object.keys(p.days).length }); }} style={{ padding: "5px 14px", borderRadius: 99, border: "none", background: PRIMARY, color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>미션보드 상세</button>}
                                     </div>
                                   </div>
 
@@ -2097,7 +2097,7 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                                               {weekS.map((ws, i) => (
                                                 <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
                                                   <div style={{ fontSize: 9, fontWeight: 700, color: ws > 0 ? PRIMARY : C.muted }}>{ws > 0 ? ws.toFixed(1) : ""}</div>
-                                                  <div style={{ width: "100%", maxWidth: 28, height: `${Math.max(3, (ws / maxWS) * 45)}px`, borderRadius: 3, background: ws > 0 ? `linear-gradient(180deg, ${PRIMARY}, #60a5fa)` : (isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb") }} />
+                                                  <div style={{ width: "100%", maxWidth: 28, height: `${Math.max(3, (ws / maxWS) * 45)}px`, borderRadius: 3, background: ws > 0 ? PRIMARY : (isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb") }} />
                                                   <div style={{ fontSize: 8, color: C.muted }}>{i + 1}주</div>
                                                 </div>
                                               ))}
@@ -2304,7 +2304,7 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
           <div style={{ display: "flex", gap: 10, marginTop: 32 }}>
             {ch?.id && <button onClick={() => onDelete(ch.id)} style={{ padding: "14px 24px", borderRadius: 99, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "#ef4444", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>삭제</button>}
             <button disabled={!f.title || saving} onClick={async () => { setSaving(true); await onSave(f); setSaving(false); }}
-              style={{ flex: 1, padding: "16px", borderRadius: 99, border: "none", background: f.title ? "#1A1A2E" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: f.title ? "#fff" : C.muted, fontSize: 16, fontWeight: 700, cursor: f.title ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+              style={{ flex: 1, padding: "16px", borderRadius: 99, border: "none", background: f.title ? PRIMARY : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: f.title ? "#fff" : C.muted, fontSize: 16, fontWeight: 700, cursor: f.title ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
               {saving ? "저장 중..." : "저장하기"}
             </button>
           </div>

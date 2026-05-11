@@ -20,6 +20,14 @@ textarea:not([id]):not([class]):not([name]):not([placeholder]) {
   padding: 0;
 }
 
+button:active:not(:disabled) {
+  transform: scale(0.97) !important;
+  opacity: 0.85;
+}
+button:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
 body {
   font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
   -webkit-font-smoothing: antialiased;
