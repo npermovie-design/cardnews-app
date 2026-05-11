@@ -876,6 +876,8 @@ function ProofDayCell({ title, date, done, active, C, bdr, card, isDark, mob, on
 /* ═══ MissionBoard ═════════════════════════════════════════ */
 function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, missions, setMissions, isParticipant, onBack }) {
   const isAdmin = user?.role === "admin";
+  const [toast, setToast] = useState("");
+  const showToast = msg => { setToast(msg); setTimeout(() => setToast(""), 3000); };
   const [selDay, setSelDay] = useState(null);
   const [proofPanel, setProofPanel] = useState(null);
   const [link, setLink] = useState("");
@@ -1118,6 +1120,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
       onDragOver={e => e.preventDefault()}
       onDrop={e => e.preventDefault()}
       style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)", position: "relative" }}>
+      {toast && <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: PRIMARY, color: "#fff", padding: "12px 24px", borderRadius: 99, fontSize: 14, fontWeight: 700, boxShadow: "0 8px 32px rgba(59,130,246,0.3)" }}>{toast}</div>}
 
 
       <div style={{ maxWidth: 860, margin: "0 auto", padding: mob ? "24px 16px 80px" : "40px 20px 100px" }}>
