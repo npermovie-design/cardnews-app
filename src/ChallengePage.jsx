@@ -777,6 +777,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
     };
   }, []);
   const [missionEditMode, setMissionEditMode] = useState(false);
+  const [extraAddMode, setExtraAddMode] = useState(false); // 추가활동만 추가 모드
   const fileInputRef = useRef(null);
   const extraFileInputRef = useRef(null);
   const [busy, setBusy] = useState(false);
@@ -1195,7 +1196,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 const wknd = isWeekend(d);
                 return (
                   <div key={d}
-                    onClick={() => { setSelDay(selDay === d ? null : d); setProofPanel(null); setMissionEditMode(false); }}
+                    onClick={() => { setSelDay(selDay === d ? null : d); setProofPanel(null); setMissionEditMode(false); setExtraAddMode(false); }}
                     onDragOver={e => { e.preventDefault(); setDragOverDay(d); }}
                     onDragEnter={e => { e.preventDefault(); setDragOverDay(d); }}
                     onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOverDay(null); }}
@@ -1316,7 +1317,52 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     {vM[selDay].screenshot_url && <img src={vM[selDay].screenshot_url} alt="인증" style={{ marginTop: 8, maxWidth: "100%", maxHeight: 300, objectFit: "contain", borderRadius: 10, display: "block", border: "1px solid " + bdr }} />}
                     {vM[selDay].extra_link && <a href={vM[selDay].extra_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 10, textDecoration: "none" }}><img src={vM[selDay].extra_link} alt="추가 활동" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 8, display: "block" }} /><span style={{ display: "block", fontSize: 11, color: "#f59e0b", fontWeight: 700, marginTop: 4 }}>추가활동 사진</span></a>}
                     {(() => { const s = scoreBreakdown(selDay, vM[selDay]); return s ? <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10, fontSize: 11 }}><span style={{ color: C.muted }}>기본 {s.base}점</span>{s.bonus > 0 && <span style={{ color: "#f59e0b" }}>추가 +{s.bonus}점</span>}{s.penalty > 0 && <span style={{ color: "#ef4444" }}>지연 -{s.penalty}점</span>}<span style={{ color: PRIMARY, fontWeight: 800 }}>총 {s.total}점</span></div> : null; })()}
-                    {!isViewing && <button onClick={() => beginMissionEdit(vM[selDay])} style={{ marginTop: 12, padding: "8px 14px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>인증 다시 올리기</button>}
+                    {!isViewing && (
+                      <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                        {!vM[selDay].extra_link && <button onClick={() => { setExtraAddMode(true); setExtraFile(null); setExtraPreview(""); }} style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: "rgba(245,158,11,0.1)", color: "#f59e0b", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>추가활동 올리기 (+0.5점)</button>}
+                        <button onClick={() => beginMissionEdit(vM[selDay])} style={{ padding: "8px 14px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>전체 다시 올리기</button>
+                      </div>
+                    )}
+                    {/* 추가활동만 추가 모드 */}
+                    {extraAddMode && !isViewing && (
+                      <div style={{ marginTop: 12, padding: "14px 16px", borderRadius: 12, background: "rgba(245,158,11,0.04)", border: "1px solid rgba(245,158,11,0.15)" }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#f59e0b", marginBottom: 8 }}>추가활동 사진 첨부 (+0.5점)</div>
+                        <input ref={extraFileInputRef} type="file" accept="image/*" onChange={e => { const f = e.target.files?.[0]; if (f) { setExtraFile(f); const r = new FileReader(); r.onload = ev => setExtraPreview(ev.target.result); r.readAsDataURL(f); } }} style={{ display: "none" }} />
+                        <div onClick={() => extraFileInputRef.current?.click()}
+                          {...makeDragProps("extra")} onPaste={handlePaste("extra")} tabIndex={0}
+                          style={{ border: `1.5px dashed ${extraPreview ? "#f59e0b" : bdr}`, borderRadius: 10, padding: extraPreview ? 0 : "14px 12px", textAlign: "center", cursor: "pointer", background: isDark ? "rgba(245,158,11,0.04)" : "rgba(245,158,11,0.03)", overflow: "hidden", outline: "none" }}>
+                          {extraPreview ? (
+                            <div style={{ position: "relative" }}>
+                              <img src={extraPreview} alt="추가활동" style={{ width: "100%", maxHeight: 160, objectFit: "cover", display: "block" }} />
+                              <button onClick={e => { e.stopPropagation(); setExtraFile(null); setExtraPreview(""); }} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer", fontSize: 12, display: "flex", alignItems: "center", justifyContent: "center" }}>x</button>
+                            </div>
+                          ) : (
+                            <div style={{ fontSize: 12, color: C.muted }}>댓글, 좋아요 등 추가활동 스크린샷</div>
+                          )}
+                        </div>
+                        <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                          <button disabled={!extraFile || busy} onClick={async () => {
+                            if (!extraFile || !vM[selDay]) return;
+                            setBusy(true);
+                            try {
+                              const ext = extraFile.name.split(".").pop();
+                              const path = `challenge/${ch.id}/${user.uid}/extra_${selDay}_${Date.now()}.${ext}`;
+                              const { error: upErr } = await supabase.storage.from("challenge-proofs").upload(path, extraFile, { upsert: true });
+                              if (upErr) throw upErr;
+                              const { data: { publicUrl } } = supabase.storage.from("challenge-proofs").getPublicUrl(path);
+                              await supabase.from("challenge_missions").update({ extra_link: publicUrl }).eq("id", vM[selDay].id);
+                              setMissions(prev => prev.map(m => m.id === vM[selDay].id ? { ...m, extra_link: publicUrl } : m));
+                              setExtraAddMode(false); setExtraFile(null); setExtraPreview("");
+                              showToast("추가활동이 등록되었습니다! +0.5점");
+                            } catch (e) { alert("업로드 실패: " + e.message); }
+                            setBusy(false);
+                          }} style={{ flex: 1, padding: "10px", borderRadius: 10, border: "none", background: extraFile ? "#f59e0b" : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: extraFile ? "#fff" : C.muted, fontSize: 13, fontWeight: 700, cursor: extraFile ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
+                            {busy ? "저장 중..." : "추가활동 저장"}
+                          </button>
+                          <button onClick={() => { setExtraAddMode(false); setExtraFile(null); setExtraPreview(""); }} style={{ padding: "10px 16px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>취소</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ) : !isViewing && (selDay <= currentDayNum && user && isParticipant) ? (
                   <div style={{ marginBottom: 16 }}>
