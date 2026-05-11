@@ -765,39 +765,37 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                   <div style={{ fontSize: 18, fontWeight: 800, color: C.text }}>마라톤 레이스</div>
                   <div style={{ fontSize: 12, color: C.muted }}>🏁 {maxScore}점</div>
                 </div>
-                {/* 큰 트랙 — 마리오 스타일 */}
+                {/* 큰 트랙 — 풍경 */}
                 <div style={{ position: "relative", height: 220, borderRadius: 16, overflow: "hidden", border: "1px solid " + bdr }}>
-                  {/* 하늘 */}
-                  <div style={{ position: "absolute", inset: 0, background: isDark ? "#1a1a2e" : "linear-gradient(180deg, #5bb5f0 0%, #8ed0f8 50%, #d4eefc 100%)" }} />
-                  {/* 뒤 둥근 언덕 */}
-                  <svg style={{ position: "absolute", bottom: 28, left: 0, width: "100%" }} viewBox="0 0 800 90" preserveAspectRatio="none" height="70">
-                    <ellipse cx="130" cy="90" rx="180" ry="75" fill="#a8d48c" />
-                    <ellipse cx="420" cy="90" rx="220" ry="85" fill="#9acf7e" />
-                    <ellipse cx="700" cy="90" rx="160" ry="65" fill="#a8d48c" />
+                  {/* 하늘 그라데이션 */}
+                  <div style={{ position: "absolute", inset: 0, background: isDark ? "#1a1a2e" : "linear-gradient(180deg, #87CEEB 0%, #B0E0E6 40%, #d4edda 70%, #8fbc8f 85%, #6b8e23 100%)" }} />
+                  {/* 뒷 산 */}
+                  <svg style={{ position: "absolute", bottom: 30, left: 0, right: 0 }} viewBox="0 0 800 80" preserveAspectRatio="none" height="60">
+                    <path d="M0,80 L0,50 Q100,10 200,45 Q300,15 400,40 Q500,5 600,35 Q700,20 800,50 L800,80 Z" fill={isDark ? "#2d2d5e" : "#a8c8a0"} opacity="0.4" />
                   </svg>
-                  {/* 구름 (납작 타원) */}
-                  {[{y:12,s:65,d:0},{y:28,s:48,d:9},{y:8,s:58,d:18},{y:34,s:40,d:25}].map((cl,i) => (
-                    <svg key={`cl${i}`} className="cloud-drift" style={{ position: "absolute", top: cl.y, animationDelay: `${cl.d}s` }} width={cl.s} height={cl.s * 0.35} viewBox="0 0 80 28">
-                      <ellipse cx="40" cy="20" rx="38" ry="8" fill="#fff" opacity="0.9" />
-                      <ellipse cx="28" cy="14" rx="18" ry="10" fill="#fff" opacity="0.9" />
-                      <ellipse cx="52" cy="12" rx="20" ry="11" fill="#fff" opacity="0.9" />
-                      <ellipse cx="40" cy="9" rx="13" ry="9" fill="#fff" opacity="0.85" />
+                  {/* 앞 산 */}
+                  <svg style={{ position: "absolute", bottom: 22, left: 0, right: 0 }} viewBox="0 0 800 60" preserveAspectRatio="none" height="45">
+                    <path d="M0,60 L0,40 Q80,15 180,35 Q280,5 380,30 Q480,10 580,25 Q680,8 800,35 L800,60 Z" fill={isDark ? "#1e3a1e" : "#7dab72"} opacity="0.5" />
+                  </svg>
+                  {/* 구름 */}
+                  {[{y:10,s:60,d:0},{y:24,s:45,d:8},{y:6,s:55,d:16},{y:30,s:38,d:24}].map((cl,i) => (
+                    <svg key={`cl${i}`} className="cloud-drift" style={{ position: "absolute", top: cl.y, animationDelay: `${cl.d}s` }} width={cl.s} height={cl.s * 0.4} viewBox="0 0 60 24">
+                      <ellipse cx="30" cy="18" rx="28" ry="6" fill="#fff" opacity="0.85" />
+                      <ellipse cx="22" cy="13" rx="14" ry="8" fill="#fff" opacity="0.85" />
+                      <ellipse cx="38" cy="11" rx="16" ry="9" fill="#fff" opacity="0.85" />
+                      <ellipse cx="30" cy="8" rx="10" ry="7" fill="#fff" opacity="0.8" />
                     </svg>
                   ))}
-                  {/* 둥근 나무 (마리오 스타일 — 지나가기) */}
-                  {[{h:75,w:32,d:0},{h:60,w:26,d:5},{h:85,w:36,d:11},{h:50,w:22,d:17},{h:70,w:30,d:23}].map((t,i) => (
-                    <div key={`mt${i}`} className="tree-pass" style={{ position: "absolute", bottom: 24, animationDuration: `${14 + i * 2}s`, animationDelay: `${t.d}s` }}>
-                      <svg width={t.w} height={t.h} viewBox="0 0 40 85">
-                        <rect x="16" y="48" width="8" height="37" rx="3" fill="#2d8a30" stroke="#1e6e22" strokeWidth="1" />
-                        <ellipse cx="20" cy="32" rx="18" ry="20" fill="#32a836" />
-                        <ellipse cx="20" cy="18" rx="14" ry="16" fill="#3cb840" />
-                        <ellipse cx="20" cy="10" rx="10" ry="10" fill="#45c44a" />
-                        <ellipse cx="13" cy="16" rx="4" ry="6" fill="rgba(255,255,255,0.3)" />
-                        <ellipse cx="14" cy="35" rx="3" ry="5" fill="rgba(255,255,255,0.2)" />
+                  {/* 나무 — 지나가기 */}
+                  {[{s:50,d:0},{s:38,d:6},{s:55,d:12},{s:34,d:18},{s:46,d:24}].map((t,i) => (
+                    <div key={`tr${i}`} className="tree-pass" style={{ position: "absolute", bottom: 16, animationDelay: `${t.d}s`, animationDuration: `${15 + i * 2}s` }}>
+                      <svg width={t.s} height={t.s * 1.5} viewBox="0 0 20 30">
+                        <rect x="8.5" y="18" width="3" height="12" rx="1" fill="#5a3e28" />
+                        <path d="M10,2 L3,14 L6,14 L2,22 L18,22 L14,14 L17,14 Z" fill="#2d5016" />
                       </svg>
                     </div>
                   ))}
-                  {/* SNS 컬러 아이콘 지나가기 */}
+                  {/* SNS 컬러 아이콘 */}
                   {[
                     {c:"#E1306C",d:"M12,2.16c2.71,0,3.06.01,4.12.06,1,.05,1.54.2,1.9.33a3.17,3.17,0,0,1,1.18.77,3.17,3.17,0,0,1,.77,1.18c.13.36.28.9.33,1.9.05,1.06.06,1.41.06,4.12s-.01,3.06-.06,4.12c-.05,1-.2,1.54-.33,1.9a3.39,3.39,0,0,1-1.95,1.95c-.36.13-.9.28-1.9.33-1.06.05-1.41.06-4.12.06s-3.06-.01-4.12-.06c-1-.05-1.54-.2-1.9-.33A3.17,3.17,0,0,1,4.82,19.4a3.17,3.17,0,0,1-.77-1.18c-.13-.36-.28-.9-.33-1.9C3.67,15.26,3.66,14.91,3.66,12.2s.01-3.06.06-4.12c.05-1,.2-1.54.33-1.9A3.17,3.17,0,0,1,4.82,5,3.17,3.17,0,0,1,6,4.22c.36-.13.9-.28,1.9-.33C8.94,3.84,9.29,3.83,12,3.83M12,2C9.28,2,8.94,2.01,7.88,2.06s-1.8.22-2.44.47A4.9,4.9,0,0,0,3.7,3.7,4.9,4.9,0,0,0,2.53,5.44c-.25.64-.42,1.37-.47,2.44S2,9.28,2,12s.01,3.06.06,4.12.22,1.8.47,2.44A4.9,4.9,0,0,0,3.7,20.3a4.9,4.9,0,0,0,1.74,1.17c.64.25,1.37.42,2.44.47S9.28,22,12,22s3.06-.01,4.12-.06,1.8-.22,2.44-.47A5.14,5.14,0,0,0,21.47,18.56c.25-.64.42-1.37.47-2.44S22,14.72,22,12s-.01-3.06-.06-4.12-.22-1.8-.47-2.44A4.9,4.9,0,0,0,20.3,3.7a4.9,4.9,0,0,0-1.74-1.17c-.64-.25-1.37-.42-2.44-.47S14.72,2,12,2Z M12,6.86A5.14,5.14,0,1,0,17.14,12,5.14,5.14,0,0,0,12,6.86Zm0,8.47A3.33,3.33,0,1,1,15.33,12,3.33,3.33,0,0,1,12,15.33ZM18.54,6.66a1.2,1.2,0,1,1-1.2-1.2A1.2,1.2,0,0,1,18.54,6.66Z"},
                     {c:"#FF0000",d:"M23,9.71a8.5,8.5,0,0,0-.91-4.13,2.92,2.92,0,0,0-1.72-1.12A69.28,69.28,0,0,0,12,4a69.28,69.28,0,0,0-8.37.46A2.92,2.92,0,0,0,1.91,5.58,8.5,8.5,0,0,0,1,9.71a44.56,44.56,0,0,0,0,4.58,8.5,8.5,0,0,0,.91,4.13,2.92,2.92,0,0,0,1.72,1.12A69.28,69.28,0,0,0,12,20a69.28,69.28,0,0,0,8.37-.46,2.92,2.92,0,0,0,1.72-1.12,8.5,8.5,0,0,0,.91-4.13,44.56,44.56,0,0,0,0-4.58ZM9.74,14.85V8.44l5.6,3.21Z"},
@@ -806,21 +804,14 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                     {c:"#25D366",d:"M12,2A10,10,0,0,0,3.07,17.44L2,22l4.7-1.24A10,10,0,1,0,12,2Zm5.4,14.12c-.22.63-1.3,1.22-1.79,1.26s-.49.36-3.08-.64S8.7,13.16,8.5,12.9a6.52,6.52,0,0,1-1.37-3.44A3.77,3.77,0,0,1,8.32,6.9a1.25,1.25,0,0,1,.91-.43c.22,0,.45,0,.65,0s.52-.1.82.63.93,2.27,1,2.44a.6.6,0,0,1,0,.57,2.17,2.17,0,0,1-.33.55c-.16.18-.34.4-.49.54s-.31.3-.13.59a8.74,8.74,0,0,0,1.61,2,7.93,7.93,0,0,0,2.33,1.44c.29.14.46.12.63-.07s.73-.85.92-1.15.38-.24.64-.14,1.66.78,1.94.93.47.22.54.34A2.37,2.37,0,0,1,17.4,16.12Z"},
                   ].map((icon, i) => (
                     <div key={`si${i}`} className="sns-float" style={{ position: "absolute", top: 8 + (i % 3) * 25, animationDelay: `${i * 4.5}s`, animationDuration: `${22 + i * 3}s` }}>
-                      <svg width={22 + (i % 2) * 6} height={22 + (i % 2) * 6} viewBox="0 0 24 24" style={{ opacity: 0.2 }}><path d={icon.d} fill={icon.c} /></svg>
+                      <svg width={26 + (i % 2) * 6} height={26 + (i % 2) * 6} viewBox="0 0 24 24" style={{ opacity: 0.7 }}><path d={icon.d} fill={icon.c} /></svg>
                     </div>
                   ))}
-                  {/* 앞 덤불 */}
-                  <svg style={{ position: "absolute", bottom: 24, left: 0, width: "100%" }} viewBox="0 0 800 25" preserveAspectRatio="none" height="18">
-                    <ellipse cx="80" cy="25" rx="55" ry="16" fill="#2d8a30" />
-                    <ellipse cx="240" cy="25" rx="75" ry="20" fill="#32a836" />
-                    <ellipse cx="430" cy="25" rx="65" ry="18" fill="#2d8a30" />
-                    <ellipse cx="600" cy="25" rx="85" ry="22" fill="#32a836" />
-                    <ellipse cx="760" cy="25" rx="45" ry="14" fill="#2d8a30" />
-                  </svg>
-                  {/* 흙길 바닥 */}
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 28, background: "#c9a96e", borderRadius: "0 0 16px 16px", overflow: "hidden" }}>
-                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "#45a832" }} />
-                    <div className="ground-scroll" style={{ position: "absolute", top: 4, left: 0, width: "200%", height: "100%", backgroundImage: "repeating-linear-gradient(90deg, rgba(0,0,0,0.04) 0px, transparent 1px, transparent 16px)", backgroundSize: "16px 100%" }} />
+                  {/* 흙길 바닥 + 자갈 */}
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 26, background: "linear-gradient(180deg, #b89a5a 0%, #c9a96e 30%, #d4b87a 100%)", borderRadius: "0 0 16px 16px", overflow: "hidden", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.15)" }}>
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: "#4a7c3f" }} />
+                    {/* 자갈 패턴 */}
+                    <div className="ground-scroll" style={{ position: "absolute", top: 5, left: 0, width: "200%", height: "100%", backgroundImage: "radial-gradient(circle 2px, rgba(0,0,0,0.08) 1px, transparent 1px), radial-gradient(circle 1.5px, rgba(255,255,255,0.1) 1px, transparent 1px)", backgroundSize: "12px 8px, 18px 10px", backgroundPosition: "0 0, 6px 4px" }} />
                   </div>
                   {/* 거리 마커 */}
                   {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 22, height: 10, width: 1, background: "rgba(255,255,255,0.2)" }} />)}
@@ -833,7 +824,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                     const c = medal || PRIMARY;
                     const isTied = (idx > 0 && scores[idx] === scores[idx - 1]) || (idx < scores.length - 1 && scores[idx] === scores[idx + 1]);
                     return (
-                      <div key={m.uid} className={`${score > 0 ? "run-anim" : ""} ${isTied && score > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${Math.max(10, 10 + runPct * 0.8)}% - 24px)`, bottom: 22, transition: "left 1s ease", zIndex: rankData.length - idx, animationDelay: `${idx * 0.3}s` }}>
+                      <div key={m.uid} className={`${score > 0 ? "run-anim" : ""} ${isTied && score > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${Math.max(10, 10 + runPct * 0.8)}% - 24px)`, bottom: 14, transition: "left 1s ease", zIndex: rankData.length - idx, animationDelay: `${idx * 0.3}s` }}>
                         <RunnerChar nick={m.nick} color={c} running={score > 0} size={66} />
                       </div>
                     );

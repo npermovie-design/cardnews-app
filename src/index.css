@@ -52,8 +52,10 @@ button:hover:not(:disabled) {
 }
 
 @keyframes treePass {
-  0% { transform: translateX(calc(100vw)); }
-  100% { transform: translateX(-60px); }
+  0% { transform: translateX(calc(100vw + 60px)); opacity: 0; }
+  5% { opacity: 1; }
+  95% { opacity: 1; }
+  100% { transform: translateX(-80px); opacity: 0; }
 }
 .tree-pass {
   animation: treePass 15s linear infinite;
