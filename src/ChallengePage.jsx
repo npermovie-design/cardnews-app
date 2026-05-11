@@ -1574,36 +1574,15 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     </div>
 
                     <input value={memo} onChange={e => setMemo(e.target.value)} placeholder="메모 (선택)" style={{ ...inp, marginBottom: 8 }} />
-                    <div style={{ fontSize: 12, fontWeight: 600, color: "#f59e0b", marginBottom: 6, marginTop: 4 }}>추가 활동 (가산점 +0.5점)</div>
-                    <div style={{ marginBottom: 12 }}>
-                      <input ref={extraFileInputRef} type="file" accept="image/*" onChange={handleExtraScreenshot} style={{ display: "none" }} />
-                      <div onClick={safeClick(() => extraFileInputRef.current?.click())}
-                        {...makeDragProps("extra")} onPaste={handlePaste("extra")} tabIndex={0}
-                        style={{ border: `1.5px dashed ${dragTarget === "extra" ? "#f59e0b" : extraPreview ? "#f59e0b" : bdr}`, borderRadius: 12, padding: extraPreview ? 0 : "16px 14px", textAlign: "center", cursor: "pointer", background: dragTarget === "extra" ? "rgba(245,158,11,0.1)" : (isDark ? "rgba(245,158,11,0.04)" : "rgba(245,158,11,0.03)"), overflow: "hidden", outline: "none", transition: "all 0.2s" }}>
-                        {extraPreview ? (
-                          <div style={{ position: "relative" }}>
-                            <img src={extraPreview} alt="추가 활동 미리보기" style={{ width: "100%", maxHeight: 180, objectFit: "cover", display: "block" }} />
-                            <button onClick={e => { e.stopPropagation(); setExtraFile(null); setExtraPreview(""); }} style={{ position: "absolute", top: 8, right: 8, width: 24, height: 24, borderRadius: "50%", background: "rgba(0,0,0,0.6)", color: "#fff", border: "none", cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>x</button>
-                          </div>
-                        ) : (
-                          <>
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="1.7" style={{ display: "block", margin: "0 auto 8px" }}><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                            <div style={{ fontSize: 13, color: C.muted, marginBottom: 4 }}>클릭, 드래그 또는 캡처 후 Ctrl+V로 붙여넣기</div>
-                            <div style={{ fontSize: 11, color: C.muted, opacity: 0.6 }}>선택, 최대 5MB</div>
-                          </>
-                        )}
-                      </div>
-                    </div>
                     {/* 예상 점수 미리보기 */}
                     {(() => {
                       const base = isWeekend(selDay) ? 2 : 1;
-                      const bonus = extraFile || (missionEditMode && myMissions[selDay]?.extra_link) ? 0.5 : 0;
-                      const expectedScore = base + bonus;
+                      const expectedScore = base;
                       return (
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, padding: "10px 14px", borderRadius: 10, background: isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.1)" }}>
                           <span style={{ fontSize: 12, color: C.muted }}>이번 인증</span>
                           <span style={{ fontSize: 14, fontWeight: 800, color: PRIMARY }}>+{expectedScore}점</span>
-                          <span style={{ fontSize: 11, color: C.muted }}>({isWeekend(selDay) ? "주말 2점" : "평일 1점"}{bonus > 0 ? " + 추가 0.5점" : ""})</span>
+                          <span style={{ fontSize: 11, color: C.muted }}>({isWeekend(selDay) ? "주말 2점" : "평일 1점"}) · 인증 후 추가활동 가산</span>
                           <span style={{ marginLeft: "auto", fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>현재 {myScore}점 / {myChecked}일</span>
                         </div>
                       );
