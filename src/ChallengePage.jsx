@@ -757,7 +757,7 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                     const isTied = (idx > 0 && scores[idx] === scores[idx - 1]) || (idx < scores.length - 1 && scores[idx] === scores[idx + 1]);
                     return (
                       <div key={m.uid} className={`${score > 0 ? "run-anim" : ""} ${isTied && score > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${Math.max(5, 5 + runPct * 0.82)}% - 20px)`, bottom: 12, transition: "left 1s ease", zIndex: rankData.length - idx, animationDelay: `${idx * 0.3}s` }}>
-                        <RunnerChar nick={m.nick} color={c} running={score > 0} size={66} />
+                        <RunnerChar nick={m.nick} color={c} running={score > 0} size={Math.max(28, 66 - (getRank(idx) - 1) * 5)} />
                       </div>
                     );
                   })}
@@ -1360,7 +1360,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                   const tied = (i > 0 && calcScore(runners[i-1].days) === sc) || (i < runners.length - 1 && calcScore(runners[i+1].days) === sc);
                   return (
                     <div key={r.uid} className={`${sc > 0 ? "run-anim" : ""} ${tied && sc > 0 ? "jockey-anim" : ""}`} style={{ position: "absolute", left: `calc(${Math.max(5, 5 + pct * 0.82)}% - 18px)`, bottom: 10, transition: "left 1s ease", zIndex: runners.length - i, animationDelay: `${i * 0.4}s` }}>
-                      <RunnerChar nick={r.nick} color={medalC[rank] || PRIMARY} running={sc > 0} size={60} />
+                      <RunnerChar nick={r.nick} color={medalC[rank] || PRIMARY} running={sc > 0} size={Math.max(24, 60 - (rank - 1) * 5)} />
                     </div>
                   );
                 })}
