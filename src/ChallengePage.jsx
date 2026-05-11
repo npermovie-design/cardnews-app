@@ -21,37 +21,38 @@ const hasExtra = (m) => m && getExtraLinks(m.extra_link).length > 0;
 function RunnerChar({ nick, color, running, size = 40 }) {
   const c = color;
   const ini = (nick || "?")[0];
-  // 큰 프로필 머리 + 작은 몸/팔다리
+  const sc = size / 40; // scale
   return (
-    <svg width={size} height={size * 1.2} viewBox="0 0 40 48" className={running ? "runner-flip" : ""}>
+    <svg width={size} height={size * 1.25} viewBox="0 0 40 50">
       {running ? (<>
-        {/* 뒷다리 (뻗음) */}
-        <line x1="20" y1="32" x2="30" y2="40" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-        <line x1="30" y1="40" x2="28" y2="47" stroke={c} strokeWidth="3" strokeLinecap="round" />
-        {/* 앞다리 (접힘) */}
-        <line x1="20" y1="32" x2="14" y2="38" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-        <line x1="14" y1="38" x2="17" y2="47" stroke={c} strokeWidth="3" strokeLinecap="round" />
-        {/* 몸통 */}
-        <line x1="22" y1="22" x2="19" y2="33" stroke={c} strokeWidth="4.5" strokeLinecap="round" />
-        {/* 뒷팔 */}
-        <line x1="21" y1="25" x2="28" y2="30" stroke={c} strokeWidth="3" strokeLinecap="round" />
-        {/* 앞팔 */}
-        <line x1="21" y1="25" x2="13" y2="26" stroke={c} strokeWidth="3" strokeLinecap="round" />
-        {/* 머리 — 큰 프로필 아이콘 */}
-        <circle cx="23" cy="12" r="11" fill={c} stroke="#fff" strokeWidth="2" />
-        <text x="23" y="16" textAnchor="middle" fontSize="11" fontWeight="800" fill="#fff">{ini}</text>
-      </>) : (<>
-        {/* 다리 */}
-        <line x1="20" y1="32" x2="16" y2="46" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-        <line x1="20" y1="32" x2="24" y2="46" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
-        {/* 몸통 */}
-        <line x1="20" y1="22" x2="20" y2="33" stroke={c} strokeWidth="4.5" strokeLinecap="round" />
-        {/* 팔 */}
-        <line x1="20" y1="25" x2="13" y2="30" stroke={c} strokeWidth="3" strokeLinecap="round" />
-        <line x1="20" y1="25" x2="27" y2="30" stroke={c} strokeWidth="3" strokeLinecap="round" />
+        {/* 뒷다리 — 뒤로 대각선 뻗음 + 발 */}
+        <line x1="18" y1="32" x2="28" y2="42" stroke={c} strokeWidth="4" strokeLinecap="round" />
+        <line x1="28" y1="42" x2="32" y2="41" stroke={c} strokeWidth="3" strokeLinecap="round" />
+        {/* 앞다리 — 무릎 높이 올림 + 종아리 아래로 */}
+        <line x1="18" y1="32" x2="12" y2="26" stroke={c} strokeWidth="4" strokeLinecap="round" />
+        <line x1="12" y1="26" x2="12" y2="36" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
+        <line x1="12" y1="36" x2="9" y2="36" stroke={c} strokeWidth="3" strokeLinecap="round" />
+        {/* 몸통 — 살짝 앞으로 */}
+        <line x1="21" y1="20" x2="18" y2="33" stroke={c} strokeWidth="5" strokeLinecap="round" />
+        {/* 뒷팔 — 뒤로 뻗음 */}
+        <line x1="20" y1="23" x2="28" y2="20" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
+        {/* 앞팔 — 앞으로 접어 올림 */}
+        <line x1="20" y1="23" x2="15" y2="20" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
+        <line x1="15" y1="20" x2="16" y2="15" stroke={c} strokeWidth="3" strokeLinecap="round" />
         {/* 머리 */}
-        <circle cx="20" cy="12" r="11" fill={c} stroke="#fff" strokeWidth="2" />
-        <text x="20" y="16" textAnchor="middle" fontSize="11" fontWeight="800" fill="#fff">{ini}</text>
+        <circle cx="23" cy="11" r="10" fill={c} stroke="#fff" strokeWidth="2" />
+        <text x="23" y="15" textAnchor="middle" fontSize="10" fontWeight="800" fill="#fff">{ini}</text>
+      </>) : (<>
+        {/* 서있는 자세 */}
+        <line x1="20" y1="32" x2="16" y2="46" stroke={c} strokeWidth="4" strokeLinecap="round" />
+        <line x1="16" y1="46" x2="13" y2="46" stroke={c} strokeWidth="3" strokeLinecap="round" />
+        <line x1="20" y1="32" x2="24" y2="46" stroke={c} strokeWidth="4" strokeLinecap="round" />
+        <line x1="24" y1="46" x2="27" y2="46" stroke={c} strokeWidth="3" strokeLinecap="round" />
+        <line x1="20" y1="20" x2="20" y2="33" stroke={c} strokeWidth="5" strokeLinecap="round" />
+        <line x1="20" y1="24" x2="13" y2="29" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
+        <line x1="20" y1="24" x2="27" y2="29" stroke={c} strokeWidth="3.5" strokeLinecap="round" />
+        <circle cx="20" cy="11" r="10" fill={c} stroke="#fff" strokeWidth="2" />
+        <text x="20" y="15" textAnchor="middle" fontSize="10" fontWeight="800" fill="#fff">{ini}</text>
       </>)}
     </svg>
   );
@@ -1369,21 +1370,23 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
           const medalC = { 1: "#f59e0b", 2: "#94a3b8", 3: "#cd7f32" };
           let prevS = -1, prevR = 0;
           return (
-            <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 14, padding: "12px 16px", marginBottom: 16, overflow: "visible" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: C.muted }}>레이스 현황</span>
-                <span style={{ fontSize: 10, color: C.muted }}>🏁 {topScore}점</span>
+            <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: mob ? "16px 14px" : "20px 22px", marginBottom: 20, overflow: "visible" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <span style={{ fontSize: 14, fontWeight: 800, color: C.text }}>레이스 현황</span>
+                <span style={{ fontSize: 11, color: C.muted }}>🏁 {topScore}점</span>
               </div>
-              <div style={{ position: "relative", height: 52, borderRadius: 10, background: isDark ? "rgba(255,255,255,0.02)" : "#f8faf8", border: "1px solid " + bdr }}>
-                <div style={{ position: "absolute", bottom: 6, left: 0, right: 0, height: 2, borderRadius: 2, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb" }} />
-                <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 2, background: "#22c55e", borderRadius: "0 10px 10px 0" }} />
+              <div style={{ position: "relative", height: 80, borderRadius: 14, background: isDark ? "rgba(255,255,255,0.02)" : "#f8faf8", border: "1px solid " + bdr }}>
+                <div style={{ position: "absolute", bottom: 8, left: 0, right: 0, height: 3, borderRadius: 2, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb" }} />
+                {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 0, height: 14, width: 1, borderLeft: "1px dashed " + (isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)") }} />)}
+                <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 3, background: "#22c55e", borderRadius: "0 14px 14px 0" }} />
+                <div style={{ position: "absolute", right: 6, top: 8, fontSize: 18 }}>🏁</div>
                 {runners.map((r, i) => {
                   const sc = calcScore(r.days);
                   const rank = sc === prevS ? prevR : i + 1; prevS = sc; prevR = rank;
-                  const pct = Math.max(2, (sc / topScore) * 80);
+                  const pct = Math.max(2, (sc / topScore) * 82);
                   return (
-                    <div key={r.uid} className={sc > 0 ? "run-anim" : ""} style={{ position: "absolute", left: `calc(${pct}% - 10px)`, bottom: 8, transition: "left 1s ease", zIndex: runners.length - i }}>
-                      <RunnerChar nick={r.nick} color={medalC[rank] || PRIMARY} running={sc > 0} size={28} />
+                    <div key={r.uid} className={sc > 0 ? "run-anim" : ""} style={{ position: "absolute", left: `calc(${pct}% - 16px)`, bottom: 10, transition: "left 1s ease", zIndex: runners.length - i }}>
+                      <RunnerChar nick={r.nick} color={medalC[rank] || PRIMARY} running={sc > 0} size={42} />
                     </div>
                   );
                 })}
