@@ -431,8 +431,8 @@ function ctaBtn(bg) {
 
 /* ── 섹션 ── */
 /* ── 추가활동 독립 탭 ── */
-function ExtraActivityTab({ ch, C, bdr, card, isDark, mob, user, missions, setMissions, isParticipant, isAdmin, vM, totalDays, currentDayNum, dayDate, showToast }) {
-  const [selDay, setSelDay] = useState(null);
+function ExtraActivityTab({ ch, C, bdr, card, isDark, mob, user, missions, setMissions, isParticipant, isAdmin, vM, totalDays, currentDayNum, dayDate, showToast, fixedDay }) {
+  const [selDay, setSelDay] = useState(fixedDay || null);
   const [category, setCategory] = useState(null);
   const [snsLink, setSnsLink] = useState("");
   const [file, setFile] = useState(null);
@@ -486,7 +486,7 @@ function ExtraActivityTab({ ch, C, bdr, card, isDark, mob, user, missions, setMi
           {/* 왼쪽: 업로드 폼 */}
           <div>
             {/* Day 선택 */}
-            <div style={{ marginBottom: 16 }}>
+            {!fixedDay && <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 8 }}>Day 선택</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                 {certifiedDays.map(d => {
@@ -500,7 +500,7 @@ function ExtraActivityTab({ ch, C, bdr, card, isDark, mob, user, missions, setMi
                   );
                 })}
               </div>
-            </div>
+            </div>}
 
             {selDay && (<>
               {/* 카테고리 */}
@@ -1444,7 +1444,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
 
         {/* 탭 */}
         <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "1px solid " + bdr }}>
-          {[["calendar", "날짜별 체크"], ["extra", "추가활동"], ["members", "참가자 현황"], ["feed", "전체 피드"], ["my", isViewing ? `${viewAsMember.nick} 기록` : "내 기록"], ["board", "자유게시판"]].map(([v, l]) => (
+          {[["calendar", "날짜별 체크"], ["members", "참가자 현황"], ["feed", "전체 피드"], ["my", isViewing ? `${viewAsMember.nick} 기록` : "내 기록"], ["board", "자유게시판"]].map(([v, l]) => (
             <button key={v} onClick={() => { setTab(v); if (v === "members") setViewAsMember(null); }} style={{ padding: "12px 20px", border: "none", cursor: "pointer", fontSize: 14, fontWeight: tab === v ? 700 : 500, background: "transparent", color: tab === v ? PRIMARY : C.muted, borderBottom: tab === v ? `2px solid ${PRIMARY}` : "2px solid transparent", marginBottom: -1, fontFamily: "inherit", transition: "all 0.15s" }}>{l}</button>
           ))}
         </div>
@@ -1593,7 +1593,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 </div>
                 {/* 서브 탭 */}
                 <div style={{ display: "flex", gap: 0, marginBottom: 16, borderBottom: "1px solid " + bdr }}>
-                  {[["my", "내 인증"], ["others", `참가자 (${(allByDay[selDay] || []).length}명)`]].map(([id, label]) => (
+                  {[["my", "내 인증"], ["dayExtra", "추가활동"], ["others", `참가자 (${(allByDay[selDay] || []).length}명)`]].map(([id, label]) => (
                     <button key={id} onClick={() => setDaySubTab(id)} style={{ padding: "8px 18px", border: "none", cursor: "pointer", fontSize: 13, fontWeight: daySubTab === id ? 700 : 500, background: "transparent", color: daySubTab === id ? PRIMARY : C.muted, borderBottom: daySubTab === id ? `2px solid ${PRIMARY}` : "2px solid transparent", marginBottom: -1, fontFamily: "inherit" }}>{label}</button>
                   ))}
                 </div>
@@ -1766,6 +1766,20 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 )}
                 </>)}
 
+                {/* Day별 추가활동 */}
+                {daySubTab === "dayExtra" && !isViewing && isParticipant && vM[selDay] && (
+                  <ExtraActivityTab
+                    ch={ch} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob}
+                    user={user} missions={missions} setMissions={setMissions}
+                    isParticipant={isParticipant} isAdmin={isAdmin}
+                    vM={vM} totalDays={totalDays} currentDayNum={currentDayNum}
+                    dayDate={dayDate} showToast={showToast} fixedDay={selDay}
+                  />
+                )}
+                {daySubTab === "dayExtra" && (!isParticipant || !vM[selDay]) && (
+                  <div style={{ textAlign: "center", padding: "32px 16px", color: C.muted, fontSize: 13 }}>먼저 이 Day의 미션을 인증해주세요</div>
+                )}
+
                 {/* 참가자 인증 목록 */}
                 {daySubTab === "others" && ((allByDay[selDay] || []).length === 0 ? (
                   <div style={{ textAlign: "center", padding: "32px 16px", color: C.muted, fontSize: 13 }}>아직 이 Day에 인증한 참가자가 없습니다</div>
@@ -1795,17 +1809,6 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
               </div>
             )}
           </div>
-        )}
-
-        {/* ── 탭: 추가활동 ── */}
-        {tab === "extra" && (
-          <ExtraActivityTab
-            ch={ch} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob}
-            user={user} missions={missions} setMissions={setMissions}
-            isParticipant={isParticipant} isAdmin={isAdmin}
-            vM={vM} totalDays={totalDays} currentDayNum={currentDayNum}
-            dayDate={dayDate} showToast={showToast}
-          />
         )}
 
         {/* ── 탭: 참가자 현황 ── */}
