@@ -168,7 +168,7 @@ function PointsExhausted({ isDark, isGuest, title }) {
         <div style={{ fontSize:14, color:muted, lineHeight:2, marginBottom:28 }}>
           {isGuest
             ? <><b style={{color:text}}>비회원 무료 5회</b>를 모두 사용하셨어요.<br/>회원가입 후 <b style={{color:"#a5b4fc"}}>5회 보너스</b>를 받으세요!</>
-            : <><b style={{color:text}}>{title}</b> 생성에 이용 횟수가 필요해요.<br/>횟수를 충전하거나 관리자에게 문의해주세요.</>
+            : <><b style={{color:text}}>{title}</b> 생성에 이용권이 필요해요.<br/>이용권을 구매하거나 관리자에게 문의해주세요.</>
           }
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -176,13 +176,13 @@ function PointsExhausted({ isDark, isGuest, title }) {
             <button onClick={() => { if(typeof window.__onLoginRequest==="function") window.__onLoginRequest(); else window.location.hash="#home"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"#3b82f6", color:"#fff", fontSize:15, fontWeight:800 }}>
-              🚀 회원가입 / 로그인하기
+              회원가입 / 로그인하기
             </button>
           ) : (
             <button onClick={() => { window.location.hash = "#pricing"; }}
               style={{ width:"100%", padding:"14px", borderRadius:12, border:"none", cursor:"pointer",
                 background:"#3b82f6", color:"#fff", fontSize:15, fontWeight:800 }}>
-              💎 횟수 충전하기
+              이용권 구매하기
             </button>
           )}
           <button onClick={() => window.open("https://open.kakao.com/o/gIw9vTFg", "_blank")}

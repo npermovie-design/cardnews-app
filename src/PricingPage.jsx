@@ -69,9 +69,10 @@ const COMMON_FEATURES = [
 ];
 
 const FAQ_LIST = [
-  { q: "결제 수단은 무엇인가요?", a: "Visa, Mastercard, PayPal 등 해외 결제가 가능합니다. LemonSqueezy를 통해 안전하게 처리됩니다." },
+  { q: "결제 수단은 무엇인가요?", a: "Visa, Mastercard, PayPal 등 해외 결제가 가능합니다. LemonSqueezy를 통해 안전하게 처리됩니다. (Apple Pay, 가상계좌는 지원하지 않습니다.)" },
   { q: "플랜 변경이나 취소는 어떻게 하나요?", a: "마이페이지에서 언제든 변경하거나 취소할 수 있습니다. 취소 시 현재 결제 주기가 끝날 때까지 이용 가능합니다." },
-  { q: "횟수가 남으면 다음 달로 이월되나요?", a: "미사용 횟수는 다음 달로 이월되지 않습니다. 매월 결제일에 초기화됩니다." },
+  { q: "이용권 횟수가 남으면 이월되나요?", a: "미사용 이용권은 다음 결제 주기로 이월되지 않습니다. 월간 구독은 매월, 연간 구독은 매년 결제일에 초기화됩니다. 구독 만료 시 잔여 이용권은 소멸됩니다." },
+  { q: "이용권 유효기간은 어떻게 되나요?", a: "이용권은 구매일로부터 최대 1년 이내 사용 가능합니다. 월간 구독 시 해당 월 내, 연간 구독 시 해당 연도 내 사용해야 하며, 기간 만료 시 잔여 이용권은 자동 소멸됩니다." },
   { q: "체험권은 어떻게 받을 수 있나요?", a: "체험권은 관리자가 대상 회원에게 직접 부여합니다. 공개 페이지에서 사용자가 직접 체험을 시작하는 방식은 제공하지 않습니다." },
   { q: "NaverBot 자동발행이란?", a: "설정한 키워드를 기반으로 매일 자동으로 네이버 블로그에 글을 작성하고 발행하는 기능입니다. Pro 플랜 이상에서 사용 가능합니다." },
   { q: "환불 정책은 어떻게 되나요?", a: "구매 후 7일 이내 미사용 상태에서 요청 시 전액 환불이 가능합니다. 고객센터 문의하기를 통해 요청해주세요." },
@@ -425,6 +426,29 @@ export function PricingPage({ navigate, C, user, onLogin }) {
             )}
           </div>
         ))}
+      </div>
+
+      {/* 이용 정책 */}
+      <div style={{ maxWidth: 700, margin: "40px auto 0", background: isDark ? "rgba(255,255,255,0.03)" : "#f9fafb", border: "1px solid " + C.border, borderRadius: 16, padding: "24px 28px" }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 14 }}>이용권 정책 안내</div>
+        <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.8 }}>
+          <div style={{ marginBottom: 8 }}>
+            <strong style={{ color: C.text }}>이용권 유효기간</strong><br/>
+            - 월간 구독: 해당 결제 주기(1개월) 내 사용 가능, 미사용분 이월 불가<br/>
+            - 연간 구독: 해당 결제 주기(1년) 내 사용 가능, 미사용분 이월 불가<br/>
+            - 이용권은 구매일로부터 최대 1년 이내 유효합니다
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            <strong style={{ color: C.text }}>구독 만료 시</strong><br/>
+            - 구독 취소 또는 만료 시 잔여 이용권은 자동 소멸됩니다<br/>
+            - 잔여 이용권의 환금, 양도, 이월은 불가합니다
+          </div>
+          <div>
+            <strong style={{ color: C.text }}>결제 수단</strong><br/>
+            - Visa, Mastercard, PayPal을 통한 결제를 지원합니다<br/>
+            - Apple Pay, 가상계좌는 지원하지 않습니다
+          </div>
+        </div>
       </div>
     </div>
   );

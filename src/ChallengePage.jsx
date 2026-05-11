@@ -324,6 +324,19 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             </div>
           )}
 
+          {/* 참여자용 미션 게시판 바로가기 (상단 고정) */}
+          {isParticipant && (
+            <div onClick={() => openBoard(ch)} style={{ background: "linear-gradient(135deg, #1A1A2E, #2d2d5e)", borderRadius: 16, padding: mob ? "20px 18px" : "22px 28px", marginBottom: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, transition: "transform 0.15s" }}
+              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "none"}>
+              <div>
+                <div style={{ fontSize: mob ? 16 : 18, fontWeight: 800, color: "#fff", marginBottom: 4 }}>미션 게시판 입장</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>오늘의 인증을 등록하세요</div>
+              </div>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          )}
+
           {/* 빠른 이동 */}
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 36, padding: "16px 0", borderBottom: "1px solid " + bdr }}>
             {[
@@ -413,6 +426,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
 
   /* ═══ ADMIN ══════════════════════════════════════════════ */
   if (view === "admin" && sel) return <AdminPanel ch={sel} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} apps={apps} setApps={setApps} onBack={() => { setView("detail"); window.scrollTo(0, 0); }} onEdit={() => { setView("editor"); window.scrollTo(0, 0); }}
+    onViewMember={async (member) => { setSel(sel); try { setMissions(await loadMissions(sel.id)); } catch { setMissions([]); } setView("board"); window.scrollTo(0, 0); setTimeout(() => { setViewAsMember(member); setTab("calendar"); }, 100); }}
     onStatus={async (id, s) => { await updateApplicationStatus(id, s); setApps(p => p.map(a => a.id === id ? { ...a, status: s } : a)); showToast(s === "confirmed" ? "참여 확정!" : "상태 변경 완료"); }}
     onDelete={async (id) => { if (!confirm("이 신청자를 삭제하시겠습니까?")) return; await supabase.from("challenge_applications").delete().eq("id", id); setApps(p => p.filter(a => a.id !== id)); const newCount = Math.max(0, (sel.application_count || 1) - 1); await supabase.from("challenges").update({ application_count: newCount }).eq("id", sel.id); setSel(p => ({ ...p, application_count: newCount })); showToast("신청자 삭제 완료"); }}
     onBadge={async (app) => {
@@ -708,6 +722,8 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   const extraFileInputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState("calendar");
+  const [expandedMember, setExpandedMember] = useState(null);
+  const [viewAsMember, setViewAsMember] = useState(null); // 관리자용: 특정 멤버 미션보드 보기 { uid, nick, days, count }
   const inp = { width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
 
   const totalDays = parseInt(ch.duration) || 10;
@@ -734,6 +750,14 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   const availableMissionCount = Math.max(0, Math.min(totalDays, currentDayNum));
   const incompleteDays = Array.from({ length: availableMissionCount }, (_, i) => i + 1).filter(d => !myMissions[d]);
   const incompleteCount = incompleteDays.length;
+
+  // 관리자 뷰: 다른 멤버의 미션보드를 볼 때 사용
+  const vM = viewAsMember ? viewAsMember.days : myMissions;
+  const vChecked = viewAsMember ? viewAsMember.count : myChecked;
+  const vPct = viewAsMember ? Math.round((vChecked / totalDays) * 100) : pct;
+  const vScore = viewAsMember ? calcScore(viewAsMember.days) : null;
+  const vIncomplete = viewAsMember ? Array.from({ length: availableMissionCount }, (_, i) => i + 1).filter(d => !vM[d]) : incompleteDays;
+  const isViewing = !!viewAsMember; // 관리자가 다른 멤버를 보고 있는지
 
   // 스크린샷 선택 핸들러
   const applyFile = (file, target) => {
@@ -916,18 +940,32 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
         <h2 style={{ fontSize: mob ? 20 : 24, fontWeight: 700, color: C.text, marginBottom: 4 }}>{ch.title}</h2>
         <p style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>{ch.daily_mission || "매일 미션을 수행하고 인증 링크를 등록하세요"}</p>
 
+        {/* 관리자: 다른 멤버 보기 배너 */}
+        {isViewing && (
+          <div style={{ background: "linear-gradient(135deg, #1A1A2E, #2d2d5e)", borderRadius: 14, padding: "14px 20px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ width: 32, height: 32, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff" }}>{(viewAsMember.nick || "?")[0]}</div>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: "#fff" }}>{viewAsMember.nick}님의 미션보드</div>
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>관리자 열람 모드</div>
+              </div>
+            </div>
+            <button onClick={() => { setViewAsMember(null); setTab("members"); }} style={{ padding: "8px 16px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.2)", background: "transparent", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>목록으로</button>
+          </div>
+        )}
+
         {/* 진행률 바 */}
         <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: "20px 22px", marginBottom: 24, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-            <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>내 진행률</span>
+            <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{isViewing ? `${viewAsMember.nick}의 진행률` : "내 진행률"}</span>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>{myScore}점</span>
-              {incompleteCount > 0 && <span style={{ fontSize: 12, color: "#ef4444", fontWeight: 800 }}>미완료 {incompleteCount}개</span>}
-              <span style={{ fontSize: 14, fontWeight: 700, color: PRIMARY }}>{myChecked}/{totalDays}일 ({pct}%)</span>
+              <span style={{ fontSize: 12, color: "#f59e0b", fontWeight: 700 }}>{isViewing ? vScore : myScore}점</span>
+              {vIncomplete.length > 0 && <span style={{ fontSize: 12, color: "#ef4444", fontWeight: 800 }}>미완료 {vIncomplete.length}개</span>}
+              <span style={{ fontSize: 14, fontWeight: 700, color: PRIMARY }}>{vChecked}/{totalDays}일 ({vPct}%)</span>
             </div>
           </div>
           <div style={{ width: "100%", height: 8, borderRadius: 99, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb", overflow: "hidden" }}>
-            <div style={{ height: "100%", borderRadius: 99, background: `linear-gradient(90deg, ${PRIMARY}, #60a5fa)`, width: `${pct}%`, transition: "width 0.4s ease" }} />
+            <div style={{ height: "100%", borderRadius: 99, background: `linear-gradient(90deg, ${PRIMARY}, #60a5fa)`, width: `${vPct}%`, transition: "width 0.4s ease" }} />
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11, color: C.muted }}>
             <span>Day 1</span>
@@ -936,7 +974,106 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
           </div>
         </div>
 
-        {isParticipant && (
+        {/* 관리자 분석 지표 */}
+        {isViewing && (() => {
+          const days = viewAsMember.days;
+          const doneList = Object.entries(days).sort(([a],[b]) => Number(a) - Number(b));
+          let maxStreak = 0, curStreak = 0;
+          for (let d = 1; d <= currentDayNum; d++) {
+            if (days[d]) { curStreak++; if (curStreak > maxStreak) maxStreak = curStreak; } else curStreak = 0;
+          }
+          let currentStreak = 0;
+          for (let d = currentDayNum; d >= 1; d--) {
+            if (days[d]) currentStreak++; else break;
+          }
+          const lateCount = doneList.filter(([,m]) => lateDaysFor(m) > 0).length;
+          const latePct = doneList.length > 0 ? Math.round((lateCount / doneList.length) * 100) : 0;
+          const extraCount = doneList.filter(([,m]) => m.extra_link).length;
+          const extraPct = doneList.length > 0 ? Math.round((extraCount / doneList.length) * 100) : 0;
+          const hourBuckets = Array(24).fill(0);
+          doneList.forEach(([,m]) => { if (m.created_at) hourBuckets[new Date(m.created_at).getHours()]++; });
+          const maxHourVal = Math.max(...hourBuckets, 1);
+          const weekScores = [];
+          for (let w = 0; w < Math.ceil(totalDays / 7); w++) {
+            let ws = 0;
+            for (let d = w * 7 + 1; d <= Math.min((w + 1) * 7, totalDays); d++) {
+              if (days[d]) ws += scoreForMission(d, days[d]);
+            }
+            weekScores.push(ws);
+          }
+          const maxWeekScore = Math.max(...weekScores, 1);
+          const cumScores = [];
+          let cum = 0;
+          for (let d = 1; d <= Math.min(totalDays, currentDayNum); d++) {
+            if (days[d]) cum += scoreForMission(d, days[d]);
+            cumScores.push(cum);
+          }
+          const maxCum = Math.max(cum, 1);
+          const statCard = (label, value, sub, color) => (
+            <div style={{ flex: 1, minWidth: mob ? 130 : 150, background: card, border: "1px solid " + bdr, borderRadius: 14, padding: "16px 18px" }}>
+              <div style={{ fontSize: 11, color: C.muted, marginBottom: 6 }}>{label}</div>
+              <div style={{ fontSize: 24, fontWeight: 800, color }}>{value}</div>
+              {sub && <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{sub}</div>}
+            </div>
+          );
+          return (
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+                {statCard("현재 연속 인증", `${currentStreak}일`, `최대 ${maxStreak}일`, "#22c55e")}
+                {statCard("추가활동 비율", `${extraPct}%`, `${extraCount}/${doneList.length}회`, "#f59e0b")}
+                {statCard("지연 인증 비율", `${latePct}%`, `${lateCount}회 지연`, latePct > 30 ? "#ef4444" : "#22c55e")}
+                {statCard("일평균 점수", doneList.length > 0 ? (cum / Math.min(currentDayNum, totalDays)).toFixed(1) : "0", `총 ${cum}점`, PRIMARY)}
+              </div>
+              <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 14, padding: "18px 20px", marginBottom: 12 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 12 }}>누적 점수 추이</div>
+                {cumScores.length > 0 ? (
+                  <svg width="100%" height="120" viewBox={`0 0 ${Math.max(cumScores.length * 20, 40)} 120`} preserveAspectRatio="none" style={{ display: "block" }}>
+                    <defs><linearGradient id="cumGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={PRIMARY} stopOpacity="0.3"/><stop offset="100%" stopColor={PRIMARY} stopOpacity="0.02"/></linearGradient></defs>
+                    <path d={`M0,120 ${cumScores.map((s, i) => `L${i * 20},${120 - (s / maxCum) * 100}`).join(" ")} L${(cumScores.length - 1) * 20},120 Z`} fill="url(#cumGrad)" />
+                    <polyline fill="none" stroke={PRIMARY} strokeWidth="2" points={cumScores.map((s, i) => `${i * 20},${120 - (s / maxCum) * 100}`).join(" ")} />
+                    {cumScores.map((s, i) => days[i + 1] ? <circle key={i} cx={i * 20} cy={120 - (s / maxCum) * 100} r="3" fill={PRIMARY} /> : null)}
+                  </svg>
+                ) : <div style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: 20 }}>데이터 없음</div>}
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.muted, marginTop: 4 }}>
+                  <span>Day 1</span><span>Day {cumScores.length || 1}</span>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 10, marginBottom: 12, flexDirection: mob ? "column" : "row" }}>
+                <div style={{ flex: 1, background: card, border: "1px solid " + bdr, borderRadius: 14, padding: "18px 20px" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 12 }}>주간 점수</div>
+                  <div style={{ display: "flex", gap: 6, alignItems: "flex-end", height: 80 }}>
+                    {weekScores.map((ws, i) => (
+                      <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, color: ws > 0 ? PRIMARY : C.muted }}>{ws > 0 ? ws.toFixed(1) : ""}</div>
+                        <div style={{ width: "100%", maxWidth: 32, height: `${Math.max(4, (ws / maxWeekScore) * 60)}px`, borderRadius: 4, background: ws > 0 ? `linear-gradient(180deg, ${PRIMARY}, #60a5fa)` : (isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb"), transition: "height 0.3s" }} />
+                        <div style={{ fontSize: 9, color: C.muted }}>{i + 1}주</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ flex: 1, background: card, border: "1px solid " + bdr, borderRadius: 14, padding: "18px 20px" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 12 }}>인증 시간대</div>
+                  <div style={{ display: "flex", gap: 1, alignItems: "flex-end", height: 80 }}>
+                    {hourBuckets.map((cnt, h) => (
+                      <div key={h} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                        <div style={{ width: "100%", height: `${Math.max(2, (cnt / maxHourVal) * 60)}px`, borderRadius: 2, background: cnt > 0 ? (h < 6 ? "#8b5cf6" : h < 12 ? "#f59e0b" : h < 18 ? "#22c55e" : "#3b82f6") : (isDark ? "rgba(255,255,255,0.04)" : "#f3f4f6"), transition: "height 0.3s" }} />
+                        {h % 6 === 0 && <div style={{ fontSize: 8, color: C.muted }}>{h}시</div>}
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 12, marginTop: 8, fontSize: 10, color: C.muted }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 3 }}><span style={{ width: 6, height: 6, borderRadius: 2, background: "#8b5cf6" }} />새벽</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 3 }}><span style={{ width: 6, height: 6, borderRadius: 2, background: "#f59e0b" }} />오전</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 3 }}><span style={{ width: 6, height: 6, borderRadius: 2, background: "#22c55e" }} />오후</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 3 }}><span style={{ width: 6, height: 6, borderRadius: 2, background: "#3b82f6" }} />저녁</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {isParticipant && !isViewing && (
           <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: mob ? "16px" : "18px 20px", marginBottom: 24, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
             <div style={{ display: "flex", alignItems: mob ? "stretch" : "center", justifyContent: "space-between", gap: 12, flexDirection: mob ? "column" : "row" }}>
               <div>
@@ -957,8 +1094,8 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
 
         {/* 탭 */}
         <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "1px solid " + bdr }}>
-          {[["calendar", "날짜별 체크"], ["members", "참가자 현황"], ["feed", "전체 피드"], ["my", "내 기록"], ["board", "자유게시판"]].map(([v, l]) => (
-            <button key={v} onClick={() => setTab(v)} style={{ padding: "12px 20px", border: "none", cursor: "pointer", fontSize: 14, fontWeight: tab === v ? 700 : 500, background: "transparent", color: tab === v ? PRIMARY : C.muted, borderBottom: tab === v ? `2px solid ${PRIMARY}` : "2px solid transparent", marginBottom: -1, fontFamily: "inherit", transition: "all 0.15s" }}>{l}</button>
+          {[["calendar", "날짜별 체크"], ["members", "참가자 현황"], ["feed", "전체 피드"], ["my", isViewing ? `${viewAsMember.nick} 기록` : "내 기록"], ["board", "자유게시판"]].map(([v, l]) => (
+            <button key={v} onClick={() => { setTab(v); if (v === "members") setViewAsMember(null); }} style={{ padding: "12px 20px", border: "none", cursor: "pointer", fontSize: 14, fontWeight: tab === v ? 700 : 500, background: "transparent", color: tab === v ? PRIMARY : C.muted, borderBottom: tab === v ? `2px solid ${PRIMARY}` : "2px solid transparent", marginBottom: -1, fontFamily: "inherit", transition: "all 0.15s" }}>{l}</button>
           ))}
         </div>
 
@@ -966,7 +1103,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
         {tab === "calendar" && (
           <div>
             {/* 드래그 안내 */}
-            {isParticipant && (
+            {isParticipant && !isViewing && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 14px", borderRadius: 10, background: isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.1)" }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={PRIMARY} strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                 <span style={{ fontSize: 12, color: C.muted }}>Day 셀에 <strong style={{ color: C.text }}>이미지를 드래그해서 놓거나</strong>, 클릭 후 <strong style={{ color: C.text }}>Ctrl+V로 붙여넣기</strong>하면 바로 인증됩니다</span>
@@ -974,7 +1111,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
             )}
             {/* Day 그리드 */}
             <div style={{ display: "grid", gridTemplateColumns: mob ? "repeat(5, 1fr)" : "repeat(7, 1fr)", gap: 8, marginBottom: 24 }}>
-              {isParticipant && (
+              {isParticipant && !isViewing && (
                 <ProofDayCell
                   title="시작 인증"
                   date={startProofDate}
@@ -989,7 +1126,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 />
               )}
               {Array.from({ length: totalDays }, (_, i) => i + 1).map(d => {
-                const checked = !!myMissions[d];
+                const checked = !!vM[d];
                 const today = isToday(d);
                 const past = isPast(d);
                 const missed = past && !checked && !isWeekend(d); // 주말 미인증은 miss 아님
@@ -1038,7 +1175,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                   </div>
                 );
               })}
-              {isParticipant && (
+              {isParticipant && !isViewing && (
                 <ProofDayCell
                   title="종료 인증"
                   date={endProofDate}
@@ -1105,22 +1242,24 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                   <button onClick={() => { setSelDay(null); setMissionEditMode(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 18 }}>x</button>
                 </div>
 
-                {/* 내 인증 상태 */}
-                {myMissions[selDay] && !missionEditMode ? (
+                {/* 인증 상태 */}
+                {vM[selDay] && (!missionEditMode || isViewing) ? (
                   <div style={{ background: "rgba(34,197,94,0.06)", border: "1px solid rgba(34,197,94,0.15)", borderRadius: 12, padding: "14px 18px", marginBottom: 16 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
                       <span style={{ fontSize: 14, fontWeight: 700, color: "#22c55e" }}>인증 완료</span>
-                      {lateDaysFor(myMissions[selDay]) > 0 && <span style={{ fontSize: 11, fontWeight: 800, color: "#ef4444", background: "rgba(239,68,68,0.1)", padding: "2px 8px", borderRadius: 99 }}>지연 -{lateDaysFor(myMissions[selDay]) * 0.5}점</span>}
-                      <span style={{ fontSize: 11, fontWeight: 800, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "2px 8px", borderRadius: 99 }}>{scoreForMission(selDay, myMissions[selDay])}점</span>
+                      {lateDaysFor(vM[selDay]) > 0 && <span style={{ fontSize: 11, fontWeight: 800, color: "#ef4444", background: "rgba(239,68,68,0.1)", padding: "2px 8px", borderRadius: 99 }}>지연 -{lateDaysFor(vM[selDay]) * 0.5}점</span>}
+                      <span style={{ fontSize: 11, fontWeight: 800, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "2px 8px", borderRadius: 99 }}>{scoreForMission(selDay, vM[selDay])}점</span>
+                      <span style={{ fontSize: 11, color: C.muted, marginLeft: "auto" }}>{new Date(vM[selDay].created_at).toLocaleString("ko-KR")}</span>
                     </div>
-                    <a href={myMissions[selDay].link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: PRIMARY, wordBreak: "break-all" }}>{myMissions[selDay].link}</a>
-                    {myMissions[selDay].body && <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>{myMissions[selDay].body}</div>}
-                    {myMissions[selDay].extra_link && <a href={myMissions[selDay].extra_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 10, textDecoration: "none" }}><img src={myMissions[selDay].extra_link} alt="추가 활동" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 8, display: "block" }} /><span style={{ display: "block", fontSize: 11, color: "#f59e0b", fontWeight: 700, marginTop: 4 }}>추가활동 사진</span></a>}
-                    {(() => { const s = scoreBreakdown(selDay, myMissions[selDay]); return s ? <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10, fontSize: 11 }}><span style={{ color: C.muted }}>기본 {s.base}점</span>{s.bonus > 0 && <span style={{ color: "#f59e0b" }}>추가 +{s.bonus}점</span>}{s.penalty > 0 && <span style={{ color: "#ef4444" }}>지연 -{s.penalty}점</span>}<span style={{ color: PRIMARY, fontWeight: 800 }}>총 {s.total}점</span></div> : null; })()}
-                    <button onClick={() => beginMissionEdit(myMissions[selDay])} style={{ marginTop: 12, padding: "8px 14px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>인증 다시 올리기</button>
+                    {vM[selDay].link && <a href={vM[selDay].link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: PRIMARY, wordBreak: "break-all" }}>{vM[selDay].link}</a>}
+                    {vM[selDay].body && <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>{vM[selDay].body}</div>}
+                    {vM[selDay].screenshot_url && <img src={vM[selDay].screenshot_url} alt="인증" style={{ marginTop: 8, maxWidth: "100%", maxHeight: 300, objectFit: "contain", borderRadius: 10, display: "block", border: "1px solid " + bdr }} />}
+                    {vM[selDay].extra_link && <a href={vM[selDay].extra_link} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", marginTop: 10, textDecoration: "none" }}><img src={vM[selDay].extra_link} alt="추가 활동" style={{ width: 120, height: 80, objectFit: "cover", borderRadius: 8, display: "block" }} /><span style={{ display: "block", fontSize: 11, color: "#f59e0b", fontWeight: 700, marginTop: 4 }}>추가활동 사진</span></a>}
+                    {(() => { const s = scoreBreakdown(selDay, vM[selDay]); return s ? <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 10, fontSize: 11 }}><span style={{ color: C.muted }}>기본 {s.base}점</span>{s.bonus > 0 && <span style={{ color: "#f59e0b" }}>추가 +{s.bonus}점</span>}{s.penalty > 0 && <span style={{ color: "#ef4444" }}>지연 -{s.penalty}점</span>}<span style={{ color: PRIMARY, fontWeight: 800 }}>총 {s.total}점</span></div> : null; })()}
+                    {!isViewing && <button onClick={() => beginMissionEdit(vM[selDay])} style={{ marginTop: 12, padding: "8px 14px", borderRadius: 10, border: "1px solid " + bdr, background: "transparent", color: C.muted, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>인증 다시 올리기</button>}
                   </div>
-                ) : (selDay <= currentDayNum && user && isParticipant) ? (
+                ) : !isViewing && (selDay <= currentDayNum && user && isParticipant) ? (
                   <div style={{ marginBottom: 16 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{missionEditMode ? "인증 다시 올리기" : "인증 링크 등록"}</span>
@@ -1199,7 +1338,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     </div>
                   </div>
                 ) : (
-                  <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>{!user ? "로그인 후 참여할 수 있습니다" : !isParticipant ? "참가 신청 후 인증할 수 있습니다" : isFuture(selDay) ? "아직 시작되지 않은 Day입니다" : "인증 기간이 지났습니다"}</div>
+                  <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>{isViewing ? "미인증" : !user ? "로그인 후 참여할 수 있습니다" : !isParticipant ? "참가 신청 후 인증할 수 있습니다" : isFuture(selDay) ? "아직 시작되지 않은 Day입니다" : "인증 기간이 지났습니다"}</div>
                 )}
 
                 {/* 해당 Day 전체 참가자 인증 목록 */}
@@ -1251,19 +1390,23 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     const memberPct = Math.round((mem.count / totalDays) * 100);
                     const memberScore = calcScore(mem.days);
                     return (
-                      <div key={mem.uid} style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: "18px 22px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+                      <div key={mem.uid} style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: "18px 22px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", cursor: isAdmin ? "pointer" : "default" }}
+                        onClick={() => { if (isAdmin) { setViewAsMember(mem); setTab("calendar"); setSelDay(null); } }}>
                         {/* 참가자 헤더 */}
                         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
                           <div style={{ width: 36, height: 36, borderRadius: "50%", background: idx === 0 ? "#f59e0b" : idx === 1 ? "#94a3b8" : idx === 2 ? "#cd7f32" : PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>
                             {idx < 3 ? ["1","2","3"][idx] : (mem.nick || "?")[0]}
                           </div>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{(mem.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (mem.nick || "?").length - 1))}</div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{isAdmin ? (mem.nick || "?") : (mem.nick || "?").slice(0, 1) + "*".repeat(Math.max(1, (mem.nick || "?").length - 1))}</div>
                             <div style={{ fontSize: 12, color: C.muted }}>{mem.count}/{totalDays}일 인증 ({memberPct}%)</div>
                           </div>
-                          <div style={{ textAlign: "right" }}>
-                            <div style={{ fontSize: 20, fontWeight: 700, color: "#f59e0b" }}>{memberScore}점</div>
-                            <div style={{ fontSize: 11, color: C.muted }}>{memberPct}%</div>
+                          <div style={{ textAlign: "right", display: "flex", alignItems: "center", gap: 12 }}>
+                            <div>
+                              <div style={{ fontSize: 20, fontWeight: 700, color: "#f59e0b" }}>{memberScore}점</div>
+                              <div style={{ fontSize: 11, color: C.muted }}>{memberPct}%</div>
+                            </div>
+                            {isAdmin && <span style={{ fontSize: 11, color: PRIMARY, fontWeight: 700 }}>상세 보기 &rarr;</span>}
                           </div>
                         </div>
                         {/* 진행률 바 */}
@@ -1277,7 +1420,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                             const past = d <= currentDayNum;
                             return (
                               <div key={d} title={`Day ${d}${done ? " - " + (mem.days[d].link || "인증완료") : ""}`}
-                                onClick={() => { if (done && mem.days[d].link) window.open(mem.days[d].link, "_blank"); }}
+                                onClick={e => { e.stopPropagation(); if (done && mem.days[d].link) window.open(mem.days[d].link, "_blank"); }}
                                 style={{ width: mob ? 16 : 20, height: mob ? 16 : 20, borderRadius: 4, fontSize: 8, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", cursor: done ? "pointer" : "default",
                                   background: done ? "rgba(34,197,94,0.15)" : past ? "rgba(239,68,68,0.06)" : (isDark ? "rgba(255,255,255,0.04)" : "#f3f4f6"),
                                   color: done ? "#22c55e" : past ? "rgba(239,68,68,0.3)" : "transparent",
@@ -1291,7 +1434,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                           {Object.entries(mem.days).sort(([a],[b]) => Number(b) - Number(a)).slice(0, 3).map(([d, m]) => (
                             m.link ? <div key={d} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}>
                               <span style={{ color: PRIMARY, fontWeight: 700, flexShrink: 0 }}>Day {d}</span>
-                              <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ color: C.muted, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.link}</a>
+                              <a href={m.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ color: C.muted, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.link}</a>
                             </div> : null
                           ))}
                         </div>
@@ -1347,11 +1490,11 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
         {/* ── 탭: 내 기록 ── */}
         {tab === "my" && (
           <div>
-            <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>총 {myChecked}일 인증 완료 / {totalDays}일</div>
+            <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>총 {vChecked}일 인증 완료 / {totalDays}일</div>
             {totalDays > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {Array.from({ length: totalDays }, (_, i) => i + 1).map(d => {
-                  const m = myMissions[d];
+                  const m = vM[d];
                   const dt = dayDate(d);
                   const past = d <= currentDayNum;
                   return (
@@ -1617,7 +1760,7 @@ function PublicLinkBoard({ challengeId, C, bdr, card, isDark, mob, title, isAdmi
 }
 
 /* ═══ AdminPanel ═══════════════════════════════════════════ */
-function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onStatus, onDelete, onBadge }) {
+function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onStatus, onDelete, onBadge, onViewMember }) {
   const SL = { pending: ["대기", "#f59e0b"], paid: ["결제완료", PRIMARY], confirmed: ["참여확정", "#22c55e"], cancelled: ["취소", "#ef4444"] };
   const [proofFilter, setProofFilter] = useState("all");
   const [adminTab, setAdminTab] = useState("applicants"); // "applicants" | "missions"
@@ -1855,6 +1998,7 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                                       <span style={{ fontSize: 12, fontWeight: 800, color: PRIMARY, background: "rgba(59,130,246,0.08)", padding: "5px 12px", borderRadius: 99 }}>{Object.keys(p.days).length}/{totalDays}일 ({rate}%)</span>
                                       <span style={{ fontSize: 12, fontWeight: 800, color: "#f59e0b", background: "rgba(245,158,11,0.08)", padding: "5px 12px", borderRadius: 99 }}>{totalScore}점</span>
                                       {rate >= 100 && <span style={{ fontSize: 12, fontWeight: 800, color: "#8b5cf6", background: "rgba(139,92,246,0.08)", padding: "5px 12px", borderRadius: 99 }}>완주</span>}
+                                      {onViewMember && <button onClick={e => { e.stopPropagation(); onViewMember({ uid: p.uid, nick: p.nick, days: p.days, count: Object.keys(p.days).length }); }} style={{ padding: "5px 14px", borderRadius: 99, border: "none", background: "#1A1A2E", color: "#fff", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>미션보드 상세</button>}
                                     </div>
                                   </div>
 
@@ -1887,6 +2031,96 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                                       </div>
                                     </div>
                                   )}
+
+                                  {/* 분석 지표 */}
+                                  {(() => {
+                                    const doneList = Object.entries(p.days).sort(([a],[b]) => Number(a) - Number(b));
+                                    const doneCount = doneList.length;
+                                    let maxStrk = 0, curStrk = 0, nowStrk = 0;
+                                    for (let d = 1; d <= Math.min(totalDays, Math.floor((Date.now() - new Date(ch.start_date || Date.now()).getTime()) / 86400000) + 1); d++) {
+                                      if (p.days[d]) { curStrk++; if (curStrk > maxStrk) maxStrk = curStrk; } else curStrk = 0;
+                                    }
+                                    for (let d = Math.min(totalDays, Math.floor((Date.now() - new Date(ch.start_date || Date.now()).getTime()) / 86400000) + 1); d >= 1; d--) {
+                                      if (p.days[d]) nowStrk++; else break;
+                                    }
+                                    const lateN = doneList.filter(([,m]) => lateDays(m) > 0).length;
+                                    const extraN = doneList.filter(([,m]) => m.extra_link).length;
+                                    const hourBk = Array(24).fill(0);
+                                    doneList.forEach(([,m]) => { if (m.created_at) hourBk[new Date(m.created_at).getHours()]++; });
+                                    const maxH = Math.max(...hourBk, 1);
+                                    const weekS = [];
+                                    for (let w = 0; w < Math.ceil(totalDays / 7); w++) {
+                                      let ws = 0;
+                                      for (let d = w * 7 + 1; d <= Math.min((w + 1) * 7, totalDays); d++) {
+                                        if (p.days[d]) ws += scoreFor(d, p.days[d]);
+                                      }
+                                      weekS.push(ws);
+                                    }
+                                    const maxWS = Math.max(...weekS, 1);
+                                    const cumS = []; let cm = 0;
+                                    const curDay = Math.min(totalDays, Math.floor((Date.now() - new Date(ch.start_date || Date.now()).getTime()) / 86400000) + 1);
+                                    for (let d = 1; d <= curDay; d++) { if (p.days[d]) cm += scoreFor(d, p.days[d]); cumS.push(cm); }
+                                    const maxCm = Math.max(cm, 1);
+
+                                    const sc = (label, val, sub, color) => (
+                                      <div style={{ flex: 1, minWidth: 120, background: card, border: "1px solid " + bdr, borderRadius: 12, padding: "14px 16px" }}>
+                                        <div style={{ fontSize: 10, color: C.muted, marginBottom: 4 }}>{label}</div>
+                                        <div style={{ fontSize: 22, fontWeight: 800, color }}>{val}</div>
+                                        {sub && <div style={{ fontSize: 10, color: C.muted, marginTop: 2 }}>{sub}</div>}
+                                      </div>
+                                    );
+                                    return (
+                                      <div style={{ marginBottom: 20 }}>
+                                        <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 10 }}>분석 지표</div>
+                                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+                                          {sc("현재 연속", `${nowStrk}일`, `최대 ${maxStrk}일`, "#22c55e")}
+                                          {sc("추가활동", `${doneCount > 0 ? Math.round(extraN / doneCount * 100) : 0}%`, `${extraN}/${doneCount}회`, "#f59e0b")}
+                                          {sc("지연률", `${doneCount > 0 ? Math.round(lateN / doneCount * 100) : 0}%`, `${lateN}회`, lateN > doneCount * 0.3 ? "#ef4444" : "#22c55e")}
+                                          {sc("일평균", curDay > 0 ? (cm / curDay).toFixed(1) : "0", `총 ${totalScore}점`, PRIMARY)}
+                                        </div>
+                                        {/* 누적 점수 */}
+                                        <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 12, padding: "14px 16px", marginBottom: 10 }}>
+                                          <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 8 }}>누적 점수 추이</div>
+                                          {cumS.length > 0 ? (
+                                            <svg width="100%" height="80" viewBox={`0 0 ${Math.max(cumS.length * 16, 32)} 80`} preserveAspectRatio="none" style={{ display: "block" }}>
+                                              <defs><linearGradient id={`cg-${p.uid}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={PRIMARY} stopOpacity="0.25"/><stop offset="100%" stopColor={PRIMARY} stopOpacity="0.02"/></linearGradient></defs>
+                                              <path d={`M0,80 ${cumS.map((s, i) => `L${i * 16},${80 - (s / maxCm) * 65}`).join(" ")} L${(cumS.length - 1) * 16},80 Z`} fill={`url(#cg-${p.uid})`} />
+                                              <polyline fill="none" stroke={PRIMARY} strokeWidth="1.5" points={cumS.map((s, i) => `${i * 16},${80 - (s / maxCm) * 65}`).join(" ")} />
+                                            </svg>
+                                          ) : <div style={{ fontSize: 11, color: C.muted, textAlign: "center", padding: 12 }}>데이터 없음</div>}
+                                        </div>
+                                        <div style={{ display: "flex", gap: 10, flexDirection: mob ? "column" : "row" }}>
+                                          {/* 주간 점수 */}
+                                          <div style={{ flex: 1, background: card, border: "1px solid " + bdr, borderRadius: 12, padding: "14px 16px" }}>
+                                            <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 8 }}>주간 점수</div>
+                                            <div style={{ display: "flex", gap: 4, alignItems: "flex-end", height: 60 }}>
+                                              {weekS.map((ws, i) => (
+                                                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                                                  <div style={{ fontSize: 9, fontWeight: 700, color: ws > 0 ? PRIMARY : C.muted }}>{ws > 0 ? ws.toFixed(1) : ""}</div>
+                                                  <div style={{ width: "100%", maxWidth: 28, height: `${Math.max(3, (ws / maxWS) * 45)}px`, borderRadius: 3, background: ws > 0 ? `linear-gradient(180deg, ${PRIMARY}, #60a5fa)` : (isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb") }} />
+                                                  <div style={{ fontSize: 8, color: C.muted }}>{i + 1}주</div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                          {/* 시간대 */}
+                                          <div style={{ flex: 1, background: card, border: "1px solid " + bdr, borderRadius: 12, padding: "14px 16px" }}>
+                                            <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 8 }}>인증 시간대</div>
+                                            <div style={{ display: "flex", gap: 1, alignItems: "flex-end", height: 60 }}>
+                                              {hourBk.map((cnt, h) => (
+                                                <div key={h} style={{ flex: 1 }}>
+                                                  <div style={{ width: "100%", height: `${Math.max(2, (cnt / maxH) * 45)}px`, borderRadius: 1, background: cnt > 0 ? (h < 6 ? "#8b5cf6" : h < 12 ? "#f59e0b" : h < 18 ? "#22c55e" : "#3b82f6") : (isDark ? "rgba(255,255,255,0.03)" : "#f3f4f6") }} />
+                                                </div>
+                                              ))}
+                                            </div>
+                                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: C.muted, marginTop: 3 }}>
+                                              <span>0시</span><span>6시</span><span>12시</span><span>18시</span><span>24시</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
 
                                   {/* 일별 인증 상세 */}
                                   <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 10 }}>일별 인증 상세</div>

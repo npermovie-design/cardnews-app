@@ -318,8 +318,8 @@ const T = {
     cn_mobileHome: "홈", cn_mobileMake: "만들기", cn_mobileEdit: "편집",
     cn_freeUsedUp: "무료 이용권을 모두 사용했어요", cn_pointsUsedUp: "횟수가 모두 소진됐어요",
     cn_guestLimitMsg1: "비회원 무료 5회를 모두 사용하셨어요.", cn_guestLimitMsg2: "회원가입 후 5회 보너스를 받으세요!",
-    cn_memberLimitMsg1: "카드뉴스 생성에 이용 횟수가 필요해요.", cn_memberLimitMsg2: "횟수를 충전하거나 관리자에게 문의해주세요.",
-    cn_signupLogin: "회원가입 / 로그인하기", cn_chargePoints: "횟수 충전하기", cn_contactAdmin: "관리자에게 문의하기",
+    cn_memberLimitMsg1: "카드뉴스 생성에 이용 횟수가 필요해요.", cn_memberLimitMsg2: "이용권을 구매하거나 관리자에게 문의해주세요.",
+    cn_signupLogin: "회원가입 / 로그인하기", cn_chargePoints: "이용권 구매하기", cn_contactAdmin: "관리자에게 문의하기",
     cn_pointsShort: "횟수 부족",
     cn_readFailed: "페이지 읽기 실패", cn_readEmpty: "페이지 내용을 읽을 수 없어요. 다른 URL을 시도해보세요.",
     cn_jsonNotFound: "JSON을 찾을 수 없어요. 다시 시도해주세요.",
@@ -401,7 +401,7 @@ const T = {
     whatDocCreate: "어떤 문서를 작성할까요?", docSelectDesc: "문서 유형을 선택하면 AI가 작성해드려요",
     recentDocs: "최근 작성한 문서", docLabel: "문서",
     roleAdmin: "관리자", roleNormal: "일반회원",
-    heldCredits: "잔여 횟수", chargeBtn: "충전하기",
+    heldCredits: "잔여 이용권", chargeBtn: "이용권 구매",
     joinDateLabel: "가입일", lastLoginLabel: "마지막 로그인", emailLabel: "이메일", logoutBtn: "로그아웃",
     autoWriteBadge: "자동 글쓰기",
     autoWriteTitle: "설정한 시간에 자동으로\n블로그 글이 발행됩니다",
@@ -413,8 +413,8 @@ const T = {
     pointInsufficient: "이용 횟수가 부족합니다", pointDeductInfo: "이용 횟수 차감 안내",
     pointNeeded: "이 작업에는 ", pointNeededSuffix: "가 필요합니다.",
     pointWillDeduct: "이 작업을 진행하면 ", pointWillDeductSuffix: "가 차감됩니다.",
-    proceedQ: "진행하시겠습니까?", heldPointsLabel: "잔여 횟수: ",
-    cancelBtn2: "취소", chargePoints: "충전하기", proceedBtn: "진행",
+    proceedQ: "진행하시겠습니까?", heldPointsLabel: "잔여 이용권: ",
+    cancelBtn2: "취소", chargePoints: "이용권 구매", proceedBtn: "진행",
     videoGenProgress: "영상 생성 중...", videoGenDone: "영상 생성 완료!",
     completedOf: "개 완료 · 클릭하여 확인", clickToCheck: "클릭하여 결과 확인",
     loadingGeneric: "로딩 중...",
@@ -786,7 +786,7 @@ const T = {
     aig_gen_model: "모델 이미지 생성 (1회)", aig_generating: "모델 이미지 생성 중...",
     aig_gen_subtitle: "AI가 모델 이미지를 생성하고 있어요\n예상 시간: 15~25초",
     aig_gen_done: "생성 완료!", aig_gen_done_desc: "모델 이미지가 생성되었어요",
-    aig_download_png: "PNG 다운로드", aig_regen: "다시 생성하기", aig_charge: "충전하기",
+    aig_download_png: "PNG 다운로드", aig_regen: "다시 생성하기", aig_charge: "이용권 구매",
     aig_layout: "레이아웃 구성", aig_style_apply: "스타일 적용", aig_detail_add: "디테일 추가",
     // LogoGenerator
     lg_style_select: "① 로고 스타일 선택 *", lg_selected: "선택됨", lg_info_input: "② 정보 입력",
@@ -824,8 +824,8 @@ const T = {
     // AutoPublisher
     ap_admin_only: "관리자 전용 기능", ap_admin_only_desc: "자동발행 기능은 현재 관리자만 사용할 수 있습니다.",
     // YtBlogGenerator
-    yt_free_used: "무료 이용권을 모두 사용했어요", yt_points_used: "횟수가 모두 소진됐어요",
-    yt_signup: "회원가입 / 로그인하기", yt_charge: "횟수 충전하기", yt_contact: "관리자에게 문의하기",
+    yt_free_used: "무료 이용권을 모두 사용했어요", yt_points_used: "이용권이 모두 소진됐어요",
+    yt_signup: "회원가입 / 로그인하기", yt_charge: "이용권 구매하기", yt_contact: "관리자에게 문의하기",
   },
 
   en: {
