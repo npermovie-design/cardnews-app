@@ -20,10 +20,6 @@ textarea:not([id]):not([class]):not([name]):not([placeholder]) {
   padding: 0;
 }
 
-dotlottie-wc, dotlottie-wc canvas {
-  background: transparent !important;
-}
-
 button:active:not(:disabled) {
   transform: scale(0.97) !important;
   opacity: 0.85;

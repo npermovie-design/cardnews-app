@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, lazy, Suspense } from "react";
+const DotLottieReact = lazy(() => import("@lottiefiles/dotlottie-react").then(m => ({ default: m.DotLottieReact })));
 import { supabase, uploadFileToStorage } from "./storage";
 import { RichEditor } from "./BoardComponents.jsx";
 import DOMPurify from "dompurify";
@@ -23,11 +24,15 @@ function RunnerChar({ nick, color, running, size = 40 }) {
   const headSize = Math.round(size * 0.4);
   return (
     <div style={{ position: "relative", width: size, height: size * 1.2 }}>
-      {/* Lottie 달리기 애니메이션 — 배경 투명 처리 */}
-      <div style={{ mixBlendMode: "multiply" }} dangerouslySetInnerHTML={{ __html: running
-        ? `<dotlottie-wc src="https://lottie.host/e7e086e2-678c-4bfb-bca1-eb2a807a2713/IYDVGD8pRq.lottie" style="width:${size}px;height:${size * 1.2}px;display:block;background:transparent" autoplay loop></dotlottie-wc>`
-        : `<dotlottie-wc src="https://lottie.host/e7e086e2-678c-4bfb-bca1-eb2a807a2713/IYDVGD8pRq.lottie" style="width:${size}px;height:${size * 1.2}px;display:block;background:transparent;opacity:0.4" speed="0"></dotlottie-wc>`
-      }} />
+      {/* Lottie 달리기 애니메이션 */}
+      <Suspense fallback={null}>
+        <DotLottieReact
+          src="https://lottie.host/e7e086e2-678c-4bfb-bca1-eb2a807a2713/IYDVGD8pRq.lottie"
+          loop={running} autoplay={running}
+          style={{ width: size, height: size * 1.2, opacity: running ? 1 : 0.4, background: "transparent" }}
+          renderConfig={{ autoResize: true }}
+        />
+      </Suspense>
       {/* 프로필 이니셜 — 머리 위치에 맞춤 */}
       <div style={{
         position: "absolute", top: Math.round(size * 0.05), left: "50%", transform: "translateX(-40%)",
