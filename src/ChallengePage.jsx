@@ -26,12 +26,13 @@ function RunnerChar({ nick, color, running, size = 40 }) {
     <div style={{ position: "relative", width: size, height: size * 1.2 }}>
       {/* Lottie 달리기 애니메이션 */}
       <Suspense fallback={null}>
-        <DotLottieReact
-          src="https://lottie.host/e7e086e2-678c-4bfb-bca1-eb2a807a2713/IYDVGD8pRq.lottie"
-          loop={running} autoplay={running}
-          style={{ width: size, height: size * 1.2, opacity: running ? 1 : 0.4, background: "transparent" }}
-          renderConfig={{ autoResize: true }}
-        />
+        <div style={{ mixBlendMode: "multiply" }}>
+          <DotLottieReact
+            src="https://lottie.host/e7e086e2-678c-4bfb-bca1-eb2a807a2713/IYDVGD8pRq.lottie"
+            loop={running} autoplay={running}
+            style={{ width: size, height: size * 1.2, opacity: running ? 1 : 0.4 }}
+          />
+        </div>
       </Suspense>
       {/* 프로필 이니셜 — 머리 위치에 맞춤 */}
       <div style={{
