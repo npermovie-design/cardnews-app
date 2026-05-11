@@ -41,6 +41,16 @@ button:hover:not(:disabled) {
 .track-anim {
   animation: trackSlide 0.8s ease-out;
 }
+@keyframes cloudDrift {
+  0% { transform: translateX(-60px); opacity: 0; }
+  10% { opacity: 0.7; }
+  90% { opacity: 0.7; }
+  100% { transform: translateX(calc(100vw)); opacity: 0; }
+}
+.cloud-drift {
+  animation: cloudDrift 25s linear infinite;
+}
+
 @keyframes jockey {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(8px); }

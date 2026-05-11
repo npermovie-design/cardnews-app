@@ -765,12 +765,42 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                   <div style={{ fontSize: 18, fontWeight: 800, color: C.text }}>마라톤 레이스</div>
                   <div style={{ fontSize: 12, color: C.muted }}>🏁 {maxScore}점</div>
                 </div>
-                {/* 큰 트랙 — 일자 레이스 */}
-                <div style={{ position: "relative", height: 160, borderRadius: 16, background: isDark ? "rgba(255,255,255,0.02)" : "#fff", border: "1px solid " + bdr, overflow: "visible" }}>
-                  <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, height: 3, borderRadius: 2, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb" }} />
-                  {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 0, height: 18, width: 1, borderLeft: "1px dashed " + (isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)") }} />)}
-                  <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 0, background: "transparent", borderRadius: "0 16px 16px 0" }} />
-                  <div style={{ position: "absolute", right: 8, top: 10, fontSize: 28 }}>🏁</div>
+                {/* 큰 트랙 — 배경 풍경 */}
+                <div style={{ position: "relative", height: 200, borderRadius: 16, overflow: "hidden", border: "1px solid " + bdr }}>
+                  {/* 하늘 그라데이션 */}
+                  <div style={{ position: "absolute", inset: 0, background: isDark ? "#1a1a2e" : "linear-gradient(180deg, #87CEEB 0%, #B0E0E6 40%, #d4edda 70%, #8fbc8f 85%, #6b8e23 100%)" }} />
+                  {/* 뒷 산 (원경) */}
+                  <svg style={{ position: "absolute", bottom: 30, left: 0, right: 0 }} viewBox="0 0 800 80" preserveAspectRatio="none" height="60">
+                    <path d="M0,80 L0,50 Q100,10 200,45 Q300,15 400,40 Q500,5 600,35 Q700,20 800,50 L800,80 Z" fill={isDark ? "#2d2d5e" : "#a8c8a0"} opacity="0.4" />
+                  </svg>
+                  {/* 앞 산 (중경) */}
+                  <svg style={{ position: "absolute", bottom: 20, left: 0, right: 0 }} viewBox="0 0 800 60" preserveAspectRatio="none" height="45">
+                    <path d="M0,60 L0,40 Q80,15 180,35 Q280,5 380,30 Q480,10 580,25 Q680,8 800,35 L800,60 Z" fill={isDark ? "#1e3a1e" : "#7dab72"} opacity="0.5" />
+                  </svg>
+                  {/* 구름 — SVG로 깔끔하게 */}
+                  {[{x:"8%",y:10,s:50,d:0},{x:"35%",y:18,s:35,d:4},{x:"62%",y:8,s:45,d:8},{x:"85%",y:22,s:30,d:12}].map((cl,i) => (
+                    <svg key={i} className="cloud-drift" style={{ position: "absolute", top: cl.y, left: cl.x, animationDelay: `${cl.d}s`, opacity: 0.7 }} width={cl.s} height={cl.s * 0.5} viewBox="0 0 60 30">
+                      <ellipse cx="30" cy="20" rx="28" ry="10" fill="#fff" />
+                      <ellipse cx="20" cy="15" rx="15" ry="10" fill="#fff" />
+                      <ellipse cx="38" cy="13" rx="18" ry="11" fill="#fff" />
+                      <ellipse cx="28" cy="10" rx="12" ry="9" fill="#fff" />
+                    </svg>
+                  ))}
+                  {/* 나무 (SVG) — 원근감: 뒤쪽 작고 연하게, 앞쪽 크고 진하게 */}
+                  {[{x:"12%",s:18,o:0.3},{x:"30%",s:22,o:0.35},{x:"52%",s:16,o:0.25},{x:"72%",s:24,o:0.4},{x:"88%",s:14,o:0.2}].map((t,i) => (
+                    <svg key={i} style={{ position: "absolute", bottom: 14, left: t.x, opacity: t.o }} width={t.s} height={t.s * 1.5} viewBox="0 0 20 30">
+                      <rect x="8.5" y="18" width="3" height="12" rx="1" fill="#5a3e28" />
+                      <path d="M10,2 L3,14 L6,14 L2,22 L18,22 L14,14 L17,14 Z" fill="#2d5016" />
+                    </svg>
+                  ))}
+                  {/* 잔디 바닥 */}
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 16, background: isDark ? "#1a2e1a" : "#4a7c3f", borderRadius: "0 0 16px 16px" }} />
+                  {/* 트랙 라인 */}
+                  <div style={{ position: "absolute", bottom: 12, left: 0, right: 0, height: 3, background: "rgba(255,255,255,0.4)" }} />
+                  {/* 거리 마커 */}
+                  {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 8, height: 12, width: 1, background: "rgba(255,255,255,0.3)" }} />)}
+                  {/* 골인 */}
+                  <div style={{ position: "absolute", right: 10, bottom: 16, fontSize: 28 }}>🏁</div>
                   {rankData.map((m, idx) => {
                     const score = scores[idx];
                     const runPct = Math.max(2, (score / maxScore) * 82);
@@ -1377,11 +1407,15 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 <span style={{ fontSize: 14, fontWeight: 800, color: C.text }}>레이스 현황</span>
                 <span style={{ fontSize: 11, color: C.muted }}>🏁 {topScore}점</span>
               </div>
-              <div style={{ position: "relative", height: 140, borderRadius: 16, background: isDark ? "rgba(255,255,255,0.02)" : "#fff", border: "1px solid " + bdr }}>
-                <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, height: 3, borderRadius: 2, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb" }} />
-                {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 0, height: 18, width: 1, borderLeft: "1px dashed " + (isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)") }} />)}
-                <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 0, background: "transparent", borderRadius: "0 16px 16px 0" }} />
-                <div style={{ position: "absolute", right: 8, top: 10, fontSize: 24 }}>🏁</div>
+              <div style={{ position: "relative", height: 140, borderRadius: 16, background: isDark ? "rgba(255,255,255,0.02)" : "linear-gradient(180deg, #e0f2fe 0%, #f0fdf4 60%, #dcfce7 100%)", border: "1px solid " + bdr, overflow: "hidden" }}>
+                {/* 구름 + 나무 */}
+                <div className="cloud-drift" style={{ position: "absolute", top: 8, left: "15%", fontSize: 14, opacity: 0.35 }}>☁️</div>
+                <div className="cloud-drift" style={{ position: "absolute", top: 14, left: "55%", fontSize: 12, opacity: 0.25, animationDelay: "5s" }}>☁️</div>
+                <div style={{ position: "absolute", bottom: 12, left: "20%", fontSize: 16, opacity: 0.25 }}>🌳</div>
+                <div style={{ position: "absolute", bottom: 12, left: "60%", fontSize: 14, opacity: 0.2 }}>🌲</div>
+                <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, height: 3, borderRadius: 2, background: "rgba(0,0,0,0.06)" }} />
+                {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 0, height: 14, width: 1, borderLeft: "1px dashed rgba(0,0,0,0.06)" }} />)}
+                <div style={{ position: "absolute", right: 8, top: 8, fontSize: 22 }}>🏁</div>
                 {runners.map((r, i) => {
                   const sc = calcScore(r.days);
                   const rank = sc === prevS ? prevR : i + 1; prevS = sc; prevR = rank;
