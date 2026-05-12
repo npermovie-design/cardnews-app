@@ -395,7 +395,7 @@ const navItems = document.querySelectorAll(".nav-item");
 const panels = document.querySelectorAll(".panel");
 
 // 로그인 없이 접근 가능한 패널 (홈만)
-const LOGIN_FREE_PANELS = ["home", "pricing", "about", "video-editor", "manual-write", "cardnews"];
+const LOGIN_FREE_PANELS = ["home", "pricing", "about", "video-editor", "manual-write", "link-write", "file-write", "cardnews"];
 // 네이버 계정 필요 패널
 const ACCOUNT_REQUIRED_PANELS = ["naver-blog", "naver-cafe"];
 
@@ -471,6 +471,14 @@ function goToPanel(name) {
   if (btn) {
     openNavGroupFor(btn);
     btn.click();
+  } else {
+    // 사이드바에 없는 패널 (link-write, file-write 등) 직접 전환
+    if (!LOGIN_FREE_PANELS.includes(name) && !state.loggedIn) {
+      showModal("로그인 필요", "메이킷 계정에 먼저 로그인해주세요.", "로그인하러 가기", () => goToPanel("home"));
+      return;
+    }
+    panels.forEach((p) => p.classList.toggle("hidden", p.dataset.panel !== name));
+    document.querySelector(".sidebar")?.classList.remove("ve-hidden");
   }
 }
 
@@ -970,7 +978,7 @@ async function renderHomeDashboard() {
   }
   box.innerHTML = recent.map(h => `
     <div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border-soft);gap:10px;">
-      <div style="width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0;"></div>
+      <div style="width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
       <div style="flex:1;min-width:0;">
         <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(h.title || "")}</div>
         <div style="font-size:11px;color:var(--text-dim);">${escapeHtml(h.time || "")} · ${escapeHtml(h.naver_id || "")}</div>
@@ -994,8 +1002,8 @@ async function renderDashboardAutopilot() {
   card.style.display = "";
   const badge = $("dashboardAutopilotBadge");
   badge.textContent = "운영 중";
-  badge.style.background = "var(--success-soft)";
-  badge.style.color = "#065f46";
+  badge.style.background = "var(--accent-soft)";
+  badge.style.color = "var(--accent)";
 
   const startDate = ap.started_at ? new Date(ap.started_at).toLocaleDateString("ko-KR") : "-";
   let endText = "무기한";
@@ -1070,7 +1078,7 @@ function updateSidebarQuota() {
   var pct = limit >= 99999 ? 100 : Math.min(100, Math.round((left / limit) * 100));
   $("quotaText").textContent = limit >= 99999 ? "무제한" : left + " / " + limit;
   $("quotaBar").style.width = pct + "%";
-  $("quotaBar").style.background = pct < 20 ? "#ef4444" : pct < 50 ? "#f59e0b" : "var(--accent)";
+  $("quotaBar").style.background = pct < 20 ? "#ef4444" : pct < 50 ? "#60a5fa" : "var(--accent)";
 
   // 수동 글쓰기 횟수 표시도 동기화
   var wq = $("writeQuotaInfo");
@@ -1938,7 +1946,7 @@ async function _loadClassesTab(container) {
           '<div style="padding:12px 14px;">' +
             '<div style="display:flex;gap:6px;margin-bottom:6px;">' +
               '<span style="background:#3b82f6;color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">' + (typeLabel[c.type] || "VOD") + '</span>' +
-              '<span style="background:' + (c.pricing === "free" ? "#10b981" : "#f59e0b") + ';color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">' + (pricingLabel[c.pricing] || "유료") + '</span>' +
+              '<span style="background:' + (c.pricing === "free" ? "#3b82f6" : "#60a5fa") + ';color:#fff;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">' + (pricingLabel[c.pricing] || "유료") + '</span>' +
             '</div>' +
             '<h3 style="font-size:15px;font-weight:700;margin:0 0 4px;line-height:1.3;">' + escapeHtml(c.title || "") + '</h3>' +
             '<p style="font-size:12px;color:var(--text-dim);margin:0 0 8px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">' + escapeHtml(c.desc || "") + '</p>' +
@@ -2040,9 +2048,9 @@ async function loadFeedbackList() {
       return;
     }
     const catLabels = { feature: "기능 요청", bug: "버그 신고", improve: "개선 제안", other: "기타" };
-    const catColors = { feature: "#3b82f6", bug: "#ef4444", improve: "#f59e0b", other: "#888" };
+    const catColors = { feature: "#3b82f6", bug: "#ef4444", improve: "#60a5fa", other: "#94a3b8" };
     const statusLabels = { pending: "검토 대기", reviewed: "검토 중", done: "반영 완료", rejected: "보류" };
-    const statusColors = { pending: "#888", reviewed: "#3b82f6", done: "#10b981", rejected: "#ef4444" };
+    const statusColors = { pending: "#94a3b8", reviewed: "#3b82f6", done: "#2563eb", rejected: "#ef4444" };
 
     listEl.innerHTML = data.map((f) => `
       <div style="padding:12px 0;border-bottom:1px solid #f0f0f0;">
@@ -2340,8 +2348,8 @@ document.querySelectorAll(".publish-target-tab").forEach(function(tab) {
       t.style.borderBottomColor = "transparent";
     });
     tab.classList.add("active");
-    tab.style.color = tab.dataset.target === "cafe" ? "#16a34a" : "var(--accent)";
-    tab.style.borderBottomColor = tab.dataset.target === "cafe" ? "#22c55e" : "var(--accent)";
+    tab.style.color = "var(--accent)";
+    tab.style.borderBottomColor = "var(--accent)";
     _publishTarget = tab.dataset.target;
     var blogSec = $("blogQuickSection");
     var cafeSec = $("cafeQuickSection");
@@ -2434,6 +2442,102 @@ if ($("quickStartBtn")) $("quickStartBtn").addEventListener("click", async () =>
     $("quickStartBtn").textContent = "1개 바로 발행";
   }
 });
+// ── 블로그 지금 발행 ──
+// 블로그 지금발행 글길이 칩 이벤트
+(function() {
+  var chips = document.getElementById("quickBlogLengthChips");
+  if (chips) chips.addEventListener("click", function(e) {
+    var btn = e.target.closest(".chip");
+    if (!btn) return;
+    chips.querySelectorAll(".chip").forEach(function(c) { c.classList.remove("active"); });
+    btn.classList.add("active");
+  });
+})();
+
+if ($("quickBlogStartBtn")) $("quickBlogStartBtn").addEventListener("click", async () => {
+  const theme = ($("quickBlogTheme") && $("quickBlogTheme").value.trim()) || "";
+  if (!theme) return showModal("알림", "키워드를 입력하세요.", "확인");
+  if (!state.loggedIn) return showModal("알림", "먼저 메이킷 계정에 로그인하세요.", "확인");
+  if (!(await canUseExperience("quick"))) return;
+  var _wq = await checkWriteLimit();
+  if (!_wq.canUse) return showModal("한도 초과", "이번 달 사용 한도를 모두 사용했습니다.", "구독하기", () => bridge.openExternal("https://snsmakeit.com/programs"));
+
+  const cfg = await bridge.loadConfig() || {};
+  const naverId = selectedNaverAccount || cfg.naver_id;
+  if (!naverId) return showModal("알림", "먼저 네이버 계정을 등록해주세요.\n(왼쪽 메뉴 > 계정 설정)", "확인");
+
+  const category = ($("quickBlogCategory") && $("quickBlogCategory").value.trim()) || "";
+  const template = ($("quickBlogTemplate") && $("quickBlogTemplate").value.trim()) || "";
+  const lengthChip = document.querySelector("#quickBlogLengthChips .chip.active");
+  const wordCount = lengthChip ? lengthChip.dataset.value : "medium";
+
+  const merged = {
+    ...cfg,
+    naver_id: naverId,
+    autopilot: {
+      theme,
+      category,
+      subtype: "info",
+      tone: "friendly",
+      speech: "polite_yo",
+      wordCount,
+      quote_style: "postit",
+      accent_color: "#2DB400",
+      color_mode: "text",
+      use_sticker: "off",
+      use_gif: false,
+      interval: "random",
+      template,
+      posts_per_day: 1,
+      duration_days: 1,
+      started_at: new Date().toISOString(),
+      active: true,
+    },
+  };
+  await bridge.saveConfig(merged);
+
+  addLog(`[블로그 지금 발행] 키워드: "${theme}"${category ? ", 메뉴: " + category : ""}${template ? ", 템플릿: " + template : ""}, 길이: ${wordCount} — 1개 발행 시작`);
+  state.botRunning = true;
+  $("quickBlogStartBtn").disabled = true;
+  $("quickBlogStartBtn").textContent = "발행 중...";
+  goToPanel("execlog");
+  showStopBtn();
+  showProgress();
+
+  try {
+    const r = await bridge.runOnce(merged);
+    if (r.ok && r.result && r.result.status === "ok") {
+      playSound("success");
+      const posts = r.result.posts || [];
+      const sp = posts.filter(p => p.url);
+      await markExperienceUsed("quick", sp.length);
+      showModal("발행 완료", `${sp.length}개 발행 성공!${sp.map((p,i) => `\n${i+1}. ${p.title||p.topic}`).join("")}`, "확인");
+      for (const p of posts) {
+        if (p.url) {
+          addLog(`[발행] ${p.title || ""}`);
+          addLog(`[링크] ${p.url}`);
+          await addPublishHistory({ title: p.title||p.topic||"블로그", topic: p.topic||"", url: p.url, naver_id: naverId, type: "blog" });
+        }
+      }
+      if (sp.length > 0) bridge.openExternal(sp[sp.length-1].url);
+      notify(`발행 완료 (${sp.length}개)`, sp.map(p=>p.title||p.topic).join(", "), sp.length>0 ? ()=>bridge.openExternal(sp[sp.length-1].url) : null);
+      syncQuotaFromServer();
+    } else {
+      const err = (r.result && r.result.message) || r.error || "실패";
+      playSound("fail");
+      showModal("발행 실패", _friendlyError(err), "확인");
+      addLog(`[블로그 지금 발행] 실패: ${_friendlyError(err)}`);
+      notify("발행 실패", _friendlyError(err));
+    }
+  } finally {
+    state.botRunning = false;
+    hideStopBtn();
+    hideProgress();
+    $("quickBlogStartBtn").disabled = false;
+    $("quickBlogStartBtn").textContent = "1개 바로 발행";
+  }
+});
+
 if ($("autopilotBackBtn")) $("autopilotBackBtn").addEventListener("click", () => showBlogMode(null));
 
 let selectedNaverAccount = "";  // 선택된 네이버 계정 (빈 문자열 = 기본 계정)
@@ -3164,8 +3268,14 @@ function showCafeMode(mode) {
   if ($("cafeAutopilotView")) $("cafeAutopilotView").style.display = mode === "autopilot" ? "" : "none";
 }
 if ($("cafeModeAutopilot")) $("cafeModeAutopilot").addEventListener("click", () => showCafeMode("autopilot"));
+// 카페 독립 패널에서 수동/링크/파일 → 블로그 패널 공유 (플랫폼 자동 전환 없음 — 각 패널에 플랫폼 칩이 있음)
+if ($("cafeModeManualWrite")) $("cafeModeManualWrite").addEventListener("click", function() { goToPanel("manual-write"); });
+if ($("cafeModeLinkWrite")) $("cafeModeLinkWrite").addEventListener("click", function() { goToPanel("link-write"); });
+if ($("cafeModeFileWrite")) $("cafeModeFileWrite").addEventListener("click", function() { goToPanel("file-write"); });
+
 // 자동 글쓰기 > 카페 자동 운영 / 수동 글쓰기 (MutationObserver로 동적 바인딩)
 function bindModeCards() {
+  // 블로그 탭 카드
   var cafeCard = $("modeCafeAutopilot");
   if (cafeCard && !cafeCard._bound) {
     cafeCard._bound = true;
@@ -3177,6 +3287,32 @@ function bindModeCards() {
     manualCard._bound = true;
     manualCard.style.cursor = "pointer";
     manualCard.addEventListener("click", function() { goToPanel("manual-write"); });
+  }
+  var linkCard = $("modeLinkWrite");
+  if (linkCard && !linkCard._bound) {
+    linkCard._bound = true;
+    linkCard.addEventListener("click", function() { goToPanel("link-write"); });
+  }
+  var fileCard = $("modeFileWrite");
+  if (fileCard && !fileCard._bound) {
+    fileCard._bound = true;
+    fileCard.addEventListener("click", function() { goToPanel("file-write"); });
+  }
+  // 카페 탭 카드
+  var cafeManual = $("modeCafeManualWrite");
+  if (cafeManual && !cafeManual._bound) {
+    cafeManual._bound = true;
+    cafeManual.addEventListener("click", function() { goToPanel("manual-write"); });
+  }
+  var cafeLink = $("modeCafeLinkWrite");
+  if (cafeLink && !cafeLink._bound) {
+    cafeLink._bound = true;
+    cafeLink.addEventListener("click", function() { goToPanel("link-write"); });
+  }
+  var cafeFile = $("modeCafeFileWrite");
+  if (cafeFile && !cafeFile._bound) {
+    cafeFile._bound = true;
+    cafeFile.addEventListener("click", function() { goToPanel("file-write"); });
   }
 }
 bindModeCards();
@@ -3564,6 +3700,57 @@ if ($("runCafeBtn")) {
     }
   });
 }
+
+// ── 카페 지금 발행 (글쓰기 탭 + naver-cafe 패널) ──
+async function _quickCafePublish(prefix) {
+  const cafeId = ($(prefix + "Id") && $(prefix + "Id").value.trim()) || "";
+  const cafeNumber = ($(prefix + "Number") && $(prefix + "Number").value.trim()) || "";
+  const menuId = ($(prefix + "MenuId") && $(prefix + "MenuId").value.trim()) || "";
+  const boardName = ($(prefix + "BoardName") && $(prefix + "BoardName").value.trim()) || "";
+  const theme = ($(prefix + "Theme") && $(prefix + "Theme").value.trim()) || "";
+  if (!cafeId || !cafeNumber || !menuId) return showModal("알림", "카페 URL 이름, 카페 번호, 게시판 번호를 모두 입력하세요.", "확인");
+  if (!theme) return showModal("알림", "키워드를 입력하세요.", "확인");
+  if (!state.loggedIn) return showModal("알림", "먼저 메이킷 계정에 로그인하세요.", "확인");
+
+  const cfg = await bridge.loadConfig() || {};
+  const naverId = selectedNaverAccount || cfg.naver_id;
+  if (!naverId) return showModal("알림", "먼저 네이버 계정을 등록해주세요.\n(왼쪽 메뉴 > 계정 설정)", "확인");
+
+  const btn = $(prefix + "StartBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "발행 중..."; }
+
+  const merged = {
+    ...cfg,
+    naver_id: naverId,
+    cafe: { cafe_id: cafeId, cafe_number: cafeNumber, menu_id: menuId, board_name: boardName },
+    write: { keyword: theme, subtype: "info", tone: "friendly", speech: "polite_yo", wordCount: "medium" },
+    _cafe_mode: true,
+  };
+  await bridge.saveConfig(merged);
+
+  addLog(`[카페 지금 발행] 키워드: "${theme}" — 1개 발행 시작`);
+  goToPanel("execlog");
+
+  await showModalAsync("안내", "카페 글 작성을 위해 크롬 브라우저가 자동으로 실행됩니다.\n완료될 때까지 기다려주세요. (1~3분 소요)", "확인");
+  const r = await bridge.runOnce(merged);
+
+  if (btn) { btn.disabled = false; btn.textContent = "1개 바로 발행"; }
+
+  if (r.ok && r.result && r.result.status === "ok") {
+    playSound("success");
+    showModal("카페 발행 완료", `글이 성공적으로 발행되었습니다.\n\n제목: ${r.result.title || ""}`, "확인");
+    addPublishHistory({ title: r.result.title, url: r.result.post_url, naver_id: naverId, type: "cafe" });
+    if (r.result.post_url) bridge.openExternal(r.result.post_url);
+    syncQuotaFromServer();
+  } else {
+    const err = (r.result && r.result.message) || r.error || "실패";
+    playSound("fail");
+    showModal("카페 발행 실패", _friendlyError(err), "확인");
+    addLog(`[카페 지금 발행] 실패: ${_friendlyError(err)}`);
+  }
+}
+if ($("quickCafeStartBtn")) $("quickCafeStartBtn").addEventListener("click", () => _quickCafePublish("quickCafe"));
+if ($("quickCafe2StartBtn")) $("quickCafe2StartBtn").addEventListener("click", () => _quickCafePublish("quickCafe2"));
 
 // ── 초기 (UI 블로킹 최소화) ──
 // 1단계: 동기 UI 즉시 렌더
@@ -4107,7 +4294,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var dur = p.duration ? Math.floor(p.duration/60) + ":" + String(Math.floor(p.duration%60)).padStart(2,"0") : "";
       html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s;" onmouseenter="this.style.background=\'rgba(0,191,165,0.08)\'" onmouseleave="this.style.background=\'transparent\'" onclick="window._veLoadProject(\'' + p.id + '\')">'
         + '<div style="width:40px;height:28px;background:#1e1e36;border-radius:4px;display:flex;align-items:center;justify-content:center;">'
-        + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#00bfa5" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>'
+        + '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg></div>'
         + '<div style="flex:1;min-width:0;">'
         + '<div style="font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (p.name || p.fileName || "프로젝트") + '</div>'
         + '<div style="font-size:11px;color:var(--text-dim);">' + date + (dur ? " / " + dur : "") + (p.subtitleCount ? " / 자막 " + p.subtitleCount + "개" : "") + '</div>'
@@ -4397,7 +4584,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
                   var startX = tx - fullW / 2;
                   ctx.textAlign = "left";
                   if (strokeW > 0) { ctx.strokeStyle = strokeCol; ctx.lineWidth = strokeW; ctx.lineJoin = "round"; ctx.strokeText(l, startX, ly); }
-                  ctx.fillStyle = anim === "karaoke" ? "#FFFF00" : "#00bfa5";
+                  ctx.fillStyle = anim === "karaoke" ? "#FFFF00" : "#3b82f6";
                   ctx.fillText(highlighted, startX, ly);
                   ctx.fillStyle = col;
                   ctx.fillText(remaining, startX + hlW, ly);
@@ -4412,7 +4599,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               });
               // 선택된 자막 라운딩 박스
               if (_selectedClipIdx === si) {
-                ctx.strokeStyle = "#00bfa5";
+                ctx.strokeStyle = "#3b82f6";
                 ctx.lineWidth = 2;
                 ctx.setLineDash([6, 3]);
                 var selBx = tx - maxW / 2 - padX - 2;
@@ -4471,7 +4658,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               ctx.drawImage(ov._img, ox, oy, ow, oh);
               // 선택된 오버레이면 테두리 표시
               if (ov === _dragOv || ov._selected) {
-                ctx.strokeStyle = "#00bfa5"; ctx.lineWidth = 3; ctx.setLineDash([6, 3]);
+                ctx.strokeStyle = "#3b82f6"; ctx.lineWidth = 3; ctx.setLineDash([6, 3]);
                 ctx.strokeRect(ox, oy, ow, oh);
                 ctx.setLineDash([]);
                 // 리사이즈 핸들
@@ -4498,7 +4685,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       ov = document.createElement("div");
       ov.id = "veLoadingOverlay";
       ov.style.cssText = "position:fixed;inset:0;background:rgba(10,10,26,0.95);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;cursor:wait;";
-      ov.innerHTML = '<div style="width:56px;height:56px;border:4px solid #1e293b;border-top-color:#00bfa5;border-radius:50%;animation:spin 0.7s linear infinite;"></div>' +
+      ov.innerHTML = '<div style="width:56px;height:56px;border:4px solid #1e293b;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.7s linear infinite;"></div>' +
         '<div id="veLoadingText" style="color:#e2e8f0;font-size:16px;margin-top:20px;font-weight:700;text-align:center;max-width:400px;line-height:1.6;"></div>' +
         '<div id="veLoadingSub" style="color:#64748b;font-size:12px;margin-top:8px;text-align:center;"></div>';
       document.body.appendChild(ov);
@@ -4838,7 +5025,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var html = effects.map(function(ef, i) {
       var active = ef === current;
       return "<button data-eff='" + ef + "' style='padding:6px 12px;font-size:12px;border:none;border-radius:6px;cursor:pointer;" +
-        "background:" + (active ? "#00bfa5" : "#1e1e3a") + ";color:" + (active ? "#fff" : "#94a3b8") + ";font-weight:600;'>" + labels[i] + "</button>";
+        "background:" + (active ? "#3b82f6" : "#1e1e3a") + ";color:" + (active ? "#fff" : "#94a3b8") + ";font-weight:600;'>" + labels[i] + "</button>";
     }).join("");
     showModal("자막 #" + (idx + 1) + " 효과", "", "닫기");
     // 모달 메시지에 버튼 삽입
@@ -4850,7 +5037,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         btn.addEventListener("click", function() {
           s._anim = btn.dataset.eff;
           msgEl.querySelectorAll("[data-eff]").forEach(function(b) {
-            b.style.background = b.dataset.eff === s._anim ? "#00bfa5" : "#1e1e3a";
+            b.style.background = b.dataset.eff === s._anim ? "#3b82f6" : "#1e1e3a";
             b.style.color = b.dataset.eff === s._anim ? "#fff" : "#94a3b8";
           });
         });
@@ -4906,7 +5093,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       if (!items.length) { results.innerHTML = "<div style='color:#64748b;font-size:11px;padding:8px;'>결과 없음</div>"; return; }
 
       results.innerHTML = items.map(function(it, i) {
-        return "<img src='" + it.thumb + "' data-full='" + it.full + "' data-type='" + it.type + "' style='width:60px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;' onmouseover=\"this.style.borderColor='#00bfa5'\" onmouseout=\"this.style.borderColor='transparent'\">";
+        return "<img src='" + it.thumb + "' data-full='" + it.full + "' data-type='" + it.type + "' style='width:60px;height:60px;object-fit:cover;border-radius:6px;cursor:pointer;border:2px solid transparent;' onmouseover=\"this.style.borderColor='#3b82f6'\" onmouseout=\"this.style.borderColor='transparent'\">";
       }).join("");
 
       // 클릭 시 타임라인에 삽입
@@ -5152,7 +5339,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     presetContainer.innerHTML = CAPTION_PRESETS.map(function(p, i) {
       var previewBg = p.bg === "none" ? "transparent" : (p.bgColor + (p.bgOpacity > 50 ? "" : "80"));
       var borderCol = p.bg === "none" ? "transparent" : p.bgColor;
-      return "<div class='caption-preset-card' data-preset='" + i + "' style='cursor:pointer;padding:8px 4px;border-radius:8px;border:2px solid #2a2a4a;background:#0f0f23;text-align:center;transition:all 0.15s;" + (i === 0 ? "border-color:#00bfa5;" : "") + "'>" +
+      return "<div class='caption-preset-card' data-preset='" + i + "' style='cursor:pointer;padding:8px 4px;border-radius:8px;border:2px solid #2a2a4a;background:#0f0f23;text-align:center;transition:all 0.15s;" + (i === 0 ? "border-color:#3b82f6;" : "") + "'>" +
         "<div style='height:32px;display:flex;align-items:center;justify-content:center;margin-bottom:4px;'>" +
         "<span style='font-size:11px;font-weight:800;color:" + p.color + ";" +
         (p.bg !== "none" ? "background:" + p.bgColor + ";padding:2px 6px;border-radius:" + p.round + "px;opacity:0.9;" : "") +
@@ -5195,7 +5382,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       syncChip("veSubColorChips", p.color);
       // 카드 선택 표시
       presetContainer.querySelectorAll(".caption-preset-card").forEach(function(c) { c.style.borderColor = "#2a2a4a"; });
-      card.style.borderColor = "#00bfa5";
+      card.style.borderColor = "#3b82f6";
     });
   }
 
@@ -5752,7 +5939,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         "<div style='width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;'>"+(i+1)+"</div>"+
         "<div style='flex:1;min-width:0;'><div style='font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>"+escapeHtml(t)+"</div>"+
         "<div style='font-size:10px;color:var(--text-dim);margin-top:2px;'>"+fT(s.start_seconds||0)+" ~ "+fT(s.end_seconds||0)+"</div></div>"+
-        "<div style='padding:3px 8px;border-radius:6px;background:"+(sc>=70?"rgba(16,185,129,0.1)":"rgba(251,191,36,0.1)")+";font-size:11px;font-weight:700;color:"+(sc>=70?"#10b981":"#f59e0b")+";'>"+sc+"점</div></div>";
+        "<div style='padding:3px 8px;border-radius:6px;background:"+(sc>=70?"rgba(59,130,246,0.1)":"rgba(59,130,246,0.06)")+";font-size:11px;font-weight:700;color:"+(sc>=70?"#2563eb":"#60a5fa")+";'>"+sc+"점</div></div>";
     }).join("");
   }
 
@@ -5930,9 +6117,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     list.innerHTML = ve.recommendedClips.map(function(c, i) {
       var dur = Math.max(0, c.end_seconds - c.start_seconds);
       return "<div data-short-idx='" + i + "' style='padding:10px 8px;border:1px solid #1e1e3a;border-radius:8px;margin-bottom:6px;background:#101026;cursor:pointer;'>" +
-        "<div style='display:flex;align-items:center;gap:8px;margin-bottom:5px;'><span style='width:22px;height:22px;border-radius:50%;background:#00bfa5;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;'>" + (i + 1) + "</span>" +
+        "<div style='display:flex;align-items:center;gap:8px;margin-bottom:5px;'><span style='width:22px;height:22px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;'>" + (i + 1) + "</span>" +
         "<div style='flex:1;min-width:0;font-size:12px;font-weight:800;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml(c.hook || c.title || "추천 구간") + "</div>" +
-        "<span style='font-size:11px;font-weight:800;color:#22c55e;'>" + Math.round(c.score || 0) + "점</span></div>" +
+        "<span style='font-size:11px;font-weight:800;color:#60a5fa;'>" + Math.round(c.score || 0) + "점</span></div>" +
         "<div style='font-size:11px;color:#94a3b8;margin-bottom:4px;'>" + fmtTime(c.start_seconds) + " ~ " + fmtTime(c.end_seconds) + " · 약 " + Math.round(dur) + "초</div>" +
         "<div style='font-size:11px;color:#64748b;line-height:1.45;'>" + escapeHtml(c.reason || "") + "</div></div>";
     }).join("");
@@ -5993,7 +6180,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         var left = (cursor / totalShortDur * 100).toFixed(2) + "%";
         var width = (clipDur / totalShortDur * 100).toFixed(2) + "%";
         cursor += clipDur;
-        var colors = ["#009688", "#00897b", "#00796b", "#00bfa5"];
+        var colors = ["#009688", "#00897b", "#00796b", "#3b82f6"];
         var color = colors[i % colors.length];
         return "<div data-vclip='" + i + "' title='" + escapeHtml(c.title || c.label) + "' style='position:absolute;top:2px;bottom:2px;left:" + left + ";width:" + width +
           ";background:" + color + ";border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid " + color + "99;'>" +
@@ -6018,7 +6205,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     track.innerHTML = ve.videoClips.map(function(c, i) {
       var left = (c.start / dur * 100).toFixed(2) + "%";
       var width = ((c.end - c.start) / dur * 100).toFixed(2) + "%";
-      var colors = ["#009688", "#00897b", "#00796b", "#00bfa5"];
+      var colors = ["#009688", "#00897b", "#00796b", "#3b82f6"];
       var color = colors[i % colors.length];
       return "<div data-vclip='" + i + "' style='position:absolute;top:2px;bottom:2px;left:" + left + ";width:" + width +
         ";background:" + color + ";border-radius:3px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid " + color + "80;'>" +
@@ -6033,7 +6220,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         var idx = parseInt(el.dataset.vclip);
         // 비디오 클립 선택 표시
         track.querySelectorAll("[data-vclip]").forEach(function(e) { e.style.outline = "none"; e.style.boxShadow = "none"; });
-        el.style.outline = "2px solid #00bfa5"; el.style.boxShadow = "0 0 8px rgba(0,191,165,0.4)";
+        el.style.outline = "2px solid #3b82f6"; el.style.boxShadow = "0 0 8px rgba(0,191,165,0.4)";
         var c = ve.videoClips[idx];
         if (c) { var video = $("veVideo"); if (video) video.currentTime = c.start; }
       });
@@ -6067,7 +6254,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     }
     list.innerHTML = ve.videoClips.map(function(c, i) {
       return "<div style='display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid #1e1e3a;cursor:pointer;' data-vci='" + i + "'>" +
-        "<span style='font-size:11px;font-weight:700;color:#00bfa5;min-width:30px;'>V" + (i + 1) + "</span>" +
+        "<span style='font-size:11px;font-weight:700;color:#3b82f6;min-width:30px;'>V" + (i + 1) + "</span>" +
         "<span style='font-size:11px;color:#94a3b8;'>" + fmtTime(c.start) + " ~ " + fmtTime(c.end) + "</span>" +
         "<span style='font-size:10px;color:#475569;margin-left:auto;'>" + (c.end - c.start).toFixed(1) + "초</span></div>";
     }).join("");
@@ -6087,7 +6274,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     track.innerHTML=ve.overlays.map(function(ov,i){
       var left=(ov.startTime/dur*100).toFixed(2)+"%";
       var width=((ov.endTime-ov.startTime)/dur*100).toFixed(2)+"%";
-      return "<div style='position:absolute;top:3px;bottom:3px;left:"+left+";width:"+width+";background:#8b5cf650;border:1px solid #8b5cf670;border-radius:3px;cursor:pointer;font-size:10px;color:#c4b5fd;padding:0 4px;overflow:hidden;white-space:nowrap;display:flex;align-items:center;justify-content:center;' title='이미지 "+(i+1)+"'>"+(i+1)+"</div>";
+      return "<div style='position:absolute;top:3px;bottom:3px;left:"+left+";width:"+width+";background:#3b82f640;border:1px solid #3b82f660;border-radius:3px;cursor:pointer;font-size:10px;color:#93c5fd;padding:0 4px;overflow:hidden;white-space:nowrap;display:flex;align-items:center;justify-content:center;' title='이미지 "+(i+1)+"'>"+(i+1)+"</div>";
     }).join("");
   }
 
@@ -6137,7 +6324,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       loadOv = document.createElement("div");
       loadOv.id = "veLoadingOverlay";
       loadOv.style.cssText = "position:absolute;inset:0;background:rgba(10,10,26,0.95);z-index:100;display:flex;align-items:center;justify-content:center;flex-direction:column;";
-      loadOv.innerHTML = '<div style="width:48px;height:48px;border:3px solid #334155;border-top-color:#00bfa5;border-radius:50%;animation:spin 0.7s linear infinite;"></div>' +
+      loadOv.innerHTML = '<div style="width:48px;height:48px;border:3px solid #334155;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.7s linear infinite;"></div>' +
         '<div id="veLoadingText" style="color:#94a3b8;font-size:15px;margin-top:16px;font-weight:600;">영상을 불러오는 중...</div>';
       $("veStep3").appendChild(loadOv);
       loadTxt = $("veLoadingText");
@@ -6305,7 +6492,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var chars=Math.floor(text.length*Math.min(1,elapsed/Math.max(0.5,dur*0.6)));
       text=text.slice(0,chars);
     } else if(subAnim==="karaoke"){
-      style+="color:#00bfa5;";
+      style+="color:#3b82f6;";
     } else if(subAnim==="bounce"){
       var sc=elapsed<0.2?0.5+elapsed*2.5:elapsed<0.35?1.1-(elapsed-0.2)*0.67:1;
       style+="display:inline-block;transform:scale("+sc+");";
@@ -6322,7 +6509,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     list.innerHTML=ve.subtitles.map(function(s,i){
       var st=s.start_seconds!=null?s.start_seconds:(s.start||0);
       return "<div class='ve-sub-row' data-idx='"+i+"' data-sub-idx='"+i+"' style='display:flex;gap:6px;padding:6px 6px;border-bottom:1px solid #1e1e3a;cursor:pointer;align-items:center;transition:background 0.15s;border-radius:3px;'>" +
-        "<span style='font-size:11px;font-weight:700;color:#00bfa5;min-width:40px;font-variant-numeric:tabular-nums;'>"+fmtTime(st)+"</span>"+
+        "<span style='font-size:11px;font-weight:700;color:#3b82f6;min-width:40px;font-variant-numeric:tabular-nums;'>"+fmtTime(st)+"</span>"+
         "<input type='text' value='"+escapeHtml(s.text||"")+"' data-idx='"+i+"' class='ve-sub-edit' style='flex:1;border:none;background:transparent;color:#e2e8f0;font-size:12px;outline:none;padding:3px 6px;font-family:inherit;min-width:0;border-radius:4px;' onfocus=\"this.style.background='#1e1e3a'\" onblur=\"this.style.background='transparent'\">" +
         "<button data-idx='"+i+"' class='ve-sub-del' style='border:none;background:none;color:#64748b;cursor:pointer;font-size:12px;padding:3px 6px;flex-shrink:0;font-weight:700;'>X</button></div>";
     }).join("");
@@ -6522,7 +6709,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if (!blocks) return;
     blocks.querySelectorAll("[data-idx]").forEach(function(el) {
       var i = parseInt(el.dataset.idx);
-      el.style.outline = (i === idx) ? "2px solid #00bfa5" : "none";
+      el.style.outline = (i === idx) ? "2px solid #3b82f6" : "none";
       el.style.outlineOffset = (i === idx) ? "-1px" : "";
       el.style.boxShadow = (i === idx) ? "0 0 8px rgba(0,191,165,0.4)" : "none";
     });
@@ -6930,9 +7117,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
             var clip = clips[ri] || {};
             var dur = Math.round((clip.end_seconds || 0) - (clip.start_seconds || 0));
             var fmtDur = Math.floor(dur/60) + ":" + String(dur%60).padStart(2,"0");
-            return "<div class='shorts-result-item' data-ri='" + ri + "' style='cursor:pointer;padding:10px;border-radius:10px;border:2px solid " + (ri === 0 ? "#00bfa5" : "var(--border-soft)") + ";margin-bottom:8px;background:var(--bg-elev);transition:border-color 0.15s;'>" +
+            return "<div class='shorts-result-item' data-ri='" + ri + "' style='cursor:pointer;padding:10px;border-radius:10px;border:2px solid " + (ri === 0 ? "#3b82f6" : "var(--border-soft)") + ";margin-bottom:8px;background:var(--bg-elev);transition:border-color 0.15s;'>" +
               "<div style='display:flex;align-items:center;gap:8px;margin-bottom:5px;'>" +
-              "<div style='width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#00bfa5,#009688);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:12px;flex-shrink:0;'>" + (ri+1) + "</div>" +
+              "<div style='width:28px;height:28px;border-radius:6px;background:linear-gradient(135deg,#3b82f6,#009688);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:12px;flex-shrink:0;'>" + (ri+1) + "</div>" +
               "<div style='flex:1;min-width:0;'>" +
               "<div style='font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml(clip.title || ("쇼츠 " + (ri+1))) + "</div>" +
               "<div style='font-size:10px;color:var(--text-dim);'>" + fmtDur + "</div>" +
@@ -6962,7 +7149,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
               var t = $("veResultTitle"); if (t) t.textContent = clip.title || ("쇼츠 " + (ri+1));
               var d = $("veResultDesc"); if (d) d.textContent = clip.description || "";
               s5.querySelectorAll(".shorts-result-item").forEach(function(c) { c.style.borderColor = "var(--border-soft)"; });
-              el.style.borderColor = "#00bfa5";
+              el.style.borderColor = "#3b82f6";
             });
           });
           s5.querySelectorAll(".shorts-folder-btn").forEach(function(btn) {
@@ -7012,7 +7199,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   var allTags = {}; // { catId: [{id, label, color, count}] }
   var boardCats = [
     { id: "info", label: "정보공유", color: "#3b82f6" },
-    { id: "qna", label: "질문답변", color: "#f59e0b" }
+    { id: "qna", label: "질문답변", color: "#60a5fa" }
   ];
 
   function sbFetch(path) {
@@ -7443,7 +7630,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       return { label: "진행중", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" };
     if (ch.recruit_end && new Date(ch.recruit_end) < now)
       return { label: "진행중", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" };
-    return { label: "모집중", color: "#22c55e", bg: "rgba(34,197,94,0.1)" };
+    return { label: "모집중", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" };
   }
   function dday(d) { if (!d) return ""; var diff = Math.ceil((new Date(d) - new Date()) / 86400000); return diff > 0 ? "D-" + diff : diff === 0 ? "D-DAY" : "마감"; }
   function fmtDate(d) { return d ? new Date(d).toLocaleDateString("ko-KR") : ""; }
@@ -7580,6 +7767,43 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   const SPEECH_MAP = { polite_yo: "~요 체", formal: "~합니다 체", casual: "반말 체", mixed: "혼합 체" };
   const LENGTH_TOKENS = { short: 4000, medium: 8000, long: 16000 };
   let _refContent = "";
+  var _writeUploadedImages = []; // PC에서 업로드한 이미지 (base64 data URL)
+
+  // 뒤로가기 버튼
+  $("writeBackBtn")?.addEventListener("click", () => { goToPanel("naver-blog"); showBlogMode(null); });
+
+  // PC 이미지 업로드
+  $("writeImageUploadBtn")?.addEventListener("click", () => $("writeImageFileInput")?.click());
+  $("writeImageFileInput")?.addEventListener("change", function() {
+    _writeUploadedImages = [];
+    var preview = $("writeImageUploadPreview");
+    if (preview) { preview.innerHTML = ""; preview.style.display = "flex"; }
+    var count = this.files.length;
+    $("writeImageUploadCount").textContent = count > 0 ? count + "개 선택됨" : "선택된 이미지 없음";
+    Array.from(this.files).forEach(function(f) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        _writeUploadedImages.push(e.target.result);
+        if (preview) {
+          var img = document.createElement("img");
+          img.src = e.target.result;
+          img.style.cssText = "width:60px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);";
+          preview.appendChild(img);
+        }
+      };
+      reader.readAsDataURL(f);
+    });
+  });
+
+  // 임시저장 (보관함에 저장)
+  $("writeSaveDraftBtn")?.addEventListener("click", () => {
+    var title = $("writeResultTitleInput")?.value || $("writeResultTitle")?.textContent || "임시저장";
+    var html = $("writeResultContent")?.innerHTML || "";
+    if (window._archiveSave) {
+      window._archiveSave({ type: "blog", title: "[임시] " + title, theme: $("writeTopic")?.value || "", preview: html.replace(/<[^>]*>/g, "").slice(0, 200), html: html, draft: true });
+    }
+    showModal("임시저장 완료", "보관함에 저장되었습니다. 보관함에서 다시 열 수 있습니다.", "확인");
+  });
 
   // 칩 셋업 (이벤트 위임 — 수동 글쓰기 전용)
   function chipVal(id, fb) { return $(id)?.querySelector(".chip.active")?.dataset.value || fb; }
@@ -7592,9 +7816,10 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     // 강조색 프리셋은 다중 선택 아님
     container.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
     chip.classList.add("active");
-    // 강조색 연동
-    if (container.id === "writeAccentPresets" && chip.dataset.value) {
-      if ($("writeAccentColor")) $("writeAccentColor").value = chip.dataset.value;
+    // 강조색 연동 ("없음"은 data-value="" → 빈 문자열)
+    if (container.id === "writeAccentPresets") {
+      if ($("writeAccentColor")) $("writeAccentColor").value = chip.dataset.value || "#000000";
+      if (!chip.dataset.value) $("writeAccentColor").value = "";
     }
   });
 
@@ -7933,15 +8158,19 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
       // 마크다운 ## 소제목도 변환
       rendered = rendered.replace(/^##\s+(.+)$/gm, '<div style="font-size:17px;font-weight:800;color:var(--text);margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--accent);">$1</div>');
 
-      // [image: ...] → 실제 이미지 (URL 크롤링 이미지 우선 사용) — 마크다운/줄바꿈 변환 전에 처리!
+      // [image: ...] → 실제 이미지 (PC 업로드 이미지 → URL 크롤링 이미지 → Pexels 검색 순)
       if (imageMode !== "none") {
         const imgTags = rendered.match(/\[image:\s*(.+?)\]/gi) || [];
         let refImgIdx = 0;
-        console.log("[write] 이미지 삽입 시작 — URL이미지:", _refImagesSelected?.length, "개, 모드:", _writeUrlMode, "태그:", imgTags.length, "개");
+        let uploadImgIdx = 0;
+        const allLocalImages = (_writeUploadedImages || []).concat(
+          (_writeUrlMode !== "text" && _refImagesSelected) ? _refImagesSelected : []
+        );
+        console.log("[write] 이미지 삽입 시작 — 로컬:", allLocalImages.length, "개, 태그:", imgTags.length, "개");
         for (const tag of imgTags) {
           const keyword = tag.match(/\[image:\s*(.+?)\]/i)?.[1] || topic;
-          if (_writeUrlMode !== "text" && _refImagesSelected && _refImagesSelected.length > 0 && refImgIdx < _refImagesSelected.length) {
-            rendered = rendered.replace(tag, '<img src="' + _refImagesSelected[refImgIdx] + '" alt="' + keyword + '" style="max-width:100%;border-radius:8px;margin:8px 0;">');
+          if (allLocalImages.length > 0 && refImgIdx < allLocalImages.length) {
+            rendered = rendered.replace(tag, '<img src="' + allLocalImages[refImgIdx] + '" alt="' + keyword + '" style="max-width:100%;border-radius:8px;margin:8px 0;">');
             refImgIdx++;
           } else {
             const urls = await searchImages(keyword, 1);
@@ -7987,8 +8216,10 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
       $("writeResultContent").contentEditable = "true";
       $("writeResultContent").style.outline = "none";
       $("writeResultContent").style.minHeight = "200px";
-      var finalTitle = extractedTitle || (full.split("\n")[0].replace(/^#+\s*/, "").trim()).slice(0, 50) || "생성된 글";
+      var userTitle = $("writeTitle")?.value.trim();
+      var finalTitle = userTitle || extractedTitle || (full.split("\n")[0].replace(/^#+\s*/, "").trim()).slice(0, 50) || "생성된 글";
       $("writeResultTitle").textContent = finalTitle;
+      if ($("writeResultTitleInput")) $("writeResultTitleInput").value = finalTitle;
 
       // 횟수 차감 + 표시 업데이트
       await markWriteUsed();
@@ -8029,7 +8260,10 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
         $("writeTitleSuggestions").style.display = "block";
         $("writeTitleList").innerHTML = titles.map(t => `<button class="chip" style="font-size:12px;">${escapeHtml(t.trim())}</button>`).join("");
         $("writeTitleList").querySelectorAll(".chip").forEach(c => {
-          c.addEventListener("click", () => navigator.clipboard.writeText(c.textContent));
+          c.addEventListener("click", () => {
+            if ($("writeResultTitleInput")) $("writeResultTitleInput").value = c.textContent;
+            navigator.clipboard.writeText(c.textContent);
+          });
         });
       }
     } catch {}
@@ -8192,7 +8426,7 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
     }
 
     var typeLabels = { blog: "글쓰기", cardnews: "카드뉴스", video: "영상편집" };
-    var typeColors = { blog: "#3b82f6", cardnews: "#8b5cf6", video: "#f59e0b" };
+    var typeColors = { blog: "#3b82f6", cardnews: "#60a5fa", video: "#2563eb" };
 
     container.innerHTML = filtered.map(function(a) {
       var date = new Date(a.ts);
@@ -8615,7 +8849,7 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
         try {
           if (bridge.mediaDownload) {
             var result = await bridge.mediaDownload(url, fname);
-            if (result.ok) { btn.textContent = "완료"; btn.style.background = "#10b981"; }
+            if (result.ok) { btn.textContent = "완료"; btn.style.background = "var(--accent-hov)"; }
             else if (result.error === "canceled") { btn.innerHTML = "<svg width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1='12' y1='15' x2='12' y2='3'/></svg> 저장"; btn.disabled = false; }
             else { btn.textContent = "실패"; btn.style.background = "#ef4444"; }
           } else {
@@ -8853,7 +9087,7 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
       if (bridge.mediaDownload) {
         var r = await bridge.mediaDownload(url, fname);
         btn.textContent = r.ok ? "완료" : (r.error === "canceled" ? "취소" : "실패");
-        if (r.ok) btn.style.background = "#10b981";
+        if (r.ok) btn.style.background = "var(--accent-hov)";
       } else { window.open(url, "_blank"); btn.textContent = "열림"; }
     } catch (e) { btn.textContent = "실패"; btn.style.background = "#ef4444"; }
     setTimeout(function() { btn.textContent = orig; btn.style.background = ""; btn.disabled = false; }, 2000);
@@ -8874,128 +9108,6 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
     document.body.appendChild(ov);
   };
 
-  // ══════ 메이킷 자료 ══════
-  var mkCat = "photo";
-  var mkQuery = "";
-  var mkAllFiles = [];
-  var MAKEIT_BASE = "D:/홈페이지/SNS메이킷/메이킷_자료실";
-
-  // 관리자 버튼 표시
-  function checkMkAdmin() {
-    var isAdmin = state && state.user && state.user.admin;
-    var addBtn = document.getElementById("mkAddFilesBtn");
-    var openBtn = document.getElementById("mkOpenFolderBtn");
-    if (addBtn) addBtn.style.display = isAdmin ? "" : "none";
-    if (openBtn) openBtn.style.display = isAdmin ? "" : "none";
-  }
-  // 로그인 상태 변경 감시
-  setInterval(checkMkAdmin, 2000);
-  checkMkAdmin();
-
-  // 파일 추가 (관리자)
-  var mkAddBtn = document.getElementById("mkAddFilesBtn");
-  if (mkAddBtn) mkAddBtn.addEventListener("click", async function() {
-    if (!bridge.mediaSelectFiles) return;
-    var paths = await bridge.mediaSelectFiles();
-    if (!paths.length) return;
-    // 현재 카테고리에 맞는 폴더로 복사
-    var destFolder = mkCat === "photo" ? "사진" : "영상";
-    if (bridge.mediaImportToMakeit) {
-      mkAddBtn.textContent = "추가 중..."; mkAddBtn.disabled = true;
-      await bridge.mediaImportToMakeit(paths, destFolder);
-      mkAddBtn.textContent = "파일 추가"; mkAddBtn.disabled = false;
-      renderMakeitFiles();
-    }
-  });
-
-  // 폴더 열기 (관리자)
-  var mkOpenBtn = document.getElementById("mkOpenFolderBtn");
-  if (mkOpenBtn) mkOpenBtn.addEventListener("click", function() {
-    var folder = mkCat === "photo" ? "사진" : "영상";
-    var fullPath = MAKEIT_BASE + "/" + folder;
-    if (bridge.openExternal) bridge.openExternal("file:///" + fullPath);
-  });
-
-  document.querySelectorAll(".mk-cat-btn").forEach(function(btn) {
-    btn.addEventListener("click", function() {
-      document.querySelectorAll(".mk-cat-btn").forEach(function(b) { b.classList.remove("active"); });
-      btn.classList.add("active");
-      mkCat = btn.dataset.mkCat;
-      mkQuery = "";
-      var input = document.getElementById("mkSearchInput");
-      if (input) input.value = "";
-      renderMakeitFiles();
-    });
-  });
-
-  // 검색
-  var mkSearchBtn = document.getElementById("mkSearchBtn");
-  if (mkSearchBtn) mkSearchBtn.addEventListener("click", function() {
-    mkQuery = (document.getElementById("mkSearchInput") || {}).value || "";
-    renderMakeitFiles();
-  });
-  var mkInput = document.getElementById("mkSearchInput");
-  if (mkInput) mkInput.addEventListener("keydown", function(e) { if (e.key === "Enter") { e.preventDefault(); if (mkSearchBtn) mkSearchBtn.click(); } });
-
-  // 패널 열릴 때 자동 로드
-  var mkPanel = document.querySelector('[data-panel="ml-makeit"]');
-  if (mkPanel) {
-    new MutationObserver(function() {
-      if (!mkPanel.classList.contains("hidden")) renderMakeitFiles();
-    }).observe(mkPanel, { attributes: true, attributeFilter: ["class"] });
-  }
-
-  async function renderMakeitFiles() {
-    var grid = document.getElementById("mkResults");
-    var countEl = document.getElementById("mkResultCount");
-    if (!grid) return;
-    grid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:20px 0;color:var(--text-dim);'>불러오는 중...</div>";
-
-    try {
-      if (!bridge.mediaGetMakeitFiles) return;
-      var files = await bridge.mediaGetMakeitFiles(mkCat);
-      // 검색 필터
-      if (mkQuery.trim()) {
-        var q = mkQuery.trim().toLowerCase();
-        files = files.filter(function(f) { return f.name.toLowerCase().indexOf(q) >= 0; });
-      }
-      if (countEl) countEl.textContent = files.length + "개 자료";
-      if (!files.length) {
-        grid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px 0;color:var(--text-dim);'>" + (mkQuery ? "'" + esc(mkQuery) + "' 검색 결과 없음" : "자료가 없습니다.") + "</div>";
-        return;
-      }
-      // makeit:// 프로토콜로 로컬 파일 접근
-      grid.innerHTML = files.map(function(f, i) {
-        var isVideo = /\.(mp4|webm)$/i.test(f.name);
-        var isGif = /\.gif$/i.test(f.name);
-        var badge = isGif ? "GIF" : isVideo ? "MP4" : "";
-        var mkUrl = "makeit://file/" + encodeURI(f.path.replace(/\\/g, "/"));
-        return "<div class='mk-card' data-mk-idx='" + i + "' style='border-radius:10px;overflow:hidden;border:1px solid var(--border-soft);background:var(--bg-card);box-shadow:var(--shadow);cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;'>" +
-          "<div style='position:relative;padding-top:66%;background:" + (isVideo ? "#1a1a2e" : "#f0f0f0") + ";overflow:hidden;'>" +
-          (isVideo
-            ? "<video src='" + mkUrl + "' preload='metadata' muted style='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;'></video>" +
-              "<div style='position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;'><div style='width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;'><svg width='14' height='14' viewBox='0 0 24 24' fill='#fff'><polygon points='5 3 19 12 5 21'/></svg></div></div>"
-            : "<img src='" + mkUrl + "' loading='lazy' style='position:absolute;inset:0;width:100%;height:100%;object-fit:cover;'>") +
-          (badge ? "<span style='position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.6);color:#fff;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;z-index:1;'>" + badge + "</span>" : "") +
-          "</div>" +
-          "<div style='padding:6px 8px;'><span style='font-size:10px;color:var(--text-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;'>" + esc(f.name) + "</span></div></div>";
-      }).join("");
-
-      // 클릭 → 미리보기
-      grid.querySelectorAll(".mk-card").forEach(function(card) {
-        card.addEventListener("click", function() {
-          var idx = parseInt(card.dataset.mkIdx);
-          var f = files[idx]; if (!f) return;
-          var isVideo = /\.(mp4|webm)$/i.test(f.name);
-          var mkUrl = "makeit://file/" + encodeURI(f.path.replace(/\\/g, "/"));
-          window._mlPreview(mkUrl, isVideo ? "video" : "photo");
-        });
-      });
-    } catch (e) {
-      grid.innerHTML = "<div style='grid-column:1/-1;text-align:center;padding:40px 0;color:var(--danger);'>로드 실패: " + esc(e.message || "") + "</div>";
-      console.error("[메이킷 자료]", e);
-    }
-  }
 })();
 
 // ── 영상 편집 허브: 모드 선택 → 패널 전환 ──
@@ -9009,4 +9121,729 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
   var vhVideoEdit = document.getElementById("vhVideoEdit");
   if (vhSlideshow) vhSlideshow.addEventListener("click", function() { showPanel("slideshow"); });
   if (vhVideoEdit) vhVideoEdit.addEventListener("click", function() { showPanel("video-editor"); });
+})();
+
+// ── 링크로 글쓰기 ──
+(function() {
+  const API = "https://snsmakeit.com/api";
+  const PLATFORM_PROMPTS = {
+    naver: "네이버 블로그에 적합한 SEO 최적화 글",
+    tistory: "티스토리 블로그에 적합한 마크다운 글",
+    instagram: "인스타그램 캡션 (해시태그 포함, 2200자 이내)",
+    thread: "스레드(Threads)용 짧은 글 (500자 이내)",
+    youtube: "유튜브 영상 대본 ([인트로][본문][아웃트로] 구조)",
+  };
+  const SPEECH_MAP = { polite_yo: "~요 체", formal: "~합니다 체", casual: "반말 체", mixed: "혼합 체" };
+  const LENGTH_TOKENS = { short: 4000, medium: 8000, long: 16000 };
+
+  var _linkRefContent = "";
+  var _linkRefImages = [];
+  var _linkRefImagesSelected = [];
+  var _linkUrlMode = "both";
+  var _linkOcrText = "";
+
+  // 뒤로가기
+  $("linkBackBtn")?.addEventListener("click", () => { goToPanel("naver-blog"); showBlogMode(null); });
+
+  // 임시저장
+  $("linkSaveDraftBtn")?.addEventListener("click", () => {
+    var title = $("linkResultTitleInput")?.value || "임시저장";
+    var html = $("linkResultContent")?.innerHTML || "";
+    if (window._archiveSave) {
+      window._archiveSave({ type: "blog", title: "[임시] " + title, theme: $("linkTopic")?.value || "", preview: html.replace(/<[^>]*>/g, "").slice(0, 200), html: html, draft: true });
+    }
+    showModal("임시저장 완료", "보관함에 저장되었습니다.", "확인");
+  });
+
+  function chipVal(id, fb) { return $(id)?.querySelector(".chip.active")?.dataset.value || fb; }
+
+  // 칩 이벤트 위임
+  document.querySelector('section[data-panel="link-write"]')?.addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    const container = chip.closest(".chips");
+    if (!container) return;
+    container.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+    chip.classList.add("active");
+    if (container.id === "linkAccentPresets") {
+      if ($("linkAccentColor")) $("linkAccentColor").value = chip.dataset.value || "";
+    }
+  });
+
+  // 스텝 전환
+  function linkGoStep(step) {
+    [1,2,3].forEach(s => {
+      const el = $("linkStep" + s);
+      if (el) el.classList.toggle("hidden", s !== step);
+    });
+    $("linkStepBar")?.querySelectorAll(".step-item").forEach(item => {
+      const s = parseInt(item.dataset.step);
+      item.classList.toggle("active", s === step);
+      item.classList.toggle("done", s < step);
+    });
+  }
+  $("linkStep1Next")?.addEventListener("click", () => {
+    if (!$("linkRefUrl")?.value.trim() && !_linkRefContent) return showModal("알림", "URL을 입력하고 '가져오기'를 눌러주세요.", "확인");
+    linkGoStep(2);
+  });
+  $("linkStep2Prev")?.addEventListener("click", () => linkGoStep(1));
+  $("linkStep2Next")?.addEventListener("click", () => linkGoStep(3));
+  $("linkStep3Prev")?.addEventListener("click", () => linkGoStep(2));
+
+  // URL 모드 칩
+  if ($("linkUrlModeChips")) {
+    $("linkUrlModeChips").addEventListener("click", function(e) {
+      var btn = e.target.closest(".chip"); if (!btn) return;
+      $("linkUrlModeChips").querySelectorAll(".chip").forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      _linkUrlMode = btn.dataset.value;
+      if ($("linkUrlPreview")) $("linkUrlPreview").style.display = (_linkUrlMode === "photo") ? "none" : _linkRefContent ? "block" : "none";
+      if ($("linkUrlImages")) $("linkUrlImages").style.display = (_linkUrlMode === "text") ? "none" : _linkRefImages.length ? "block" : "none";
+      if (_linkUrlMode === "ocr" && $("linkUrlImages")) $("linkUrlImages").style.display = _linkRefImages.length ? "block" : "none";
+    });
+  }
+
+  // URL 가져오기
+  $("linkUrlFetchBtn")?.addEventListener("click", async () => {
+    const url = $("linkRefUrl")?.value.trim(); if (!url) return;
+    $("linkUrlFetchBtn").textContent = "탐색 중..."; $("linkUrlFetchBtn").disabled = true;
+    _linkRefImages = []; _linkRefImagesSelected = [];
+    try {
+      let data;
+      try {
+        data = await bridge.invoke("url:crawl", url);
+        if (!data || !data.ok) throw new Error("crawl failed");
+      } catch(e) {
+        const res = await fetch(API + "/fetch-url-content?url=" + encodeURIComponent(url));
+        data = await res.json();
+      }
+      _linkRefContent = data.content || data.text || "";
+      _linkRefImages = data.images || [];
+      if (data.thumbnail && !_linkRefImages.includes(data.thumbnail)) _linkRefImages.unshift(data.thumbnail);
+
+      if ($("linkUrlMode")) $("linkUrlMode").style.display = "";
+      if (_linkRefContent && $("linkUrlPreview")) { $("linkUrlPreview").style.display = "block"; $("linkUrlPreview").textContent = _linkRefContent.slice(0, 300) + "..."; }
+
+      var imgCont = $("linkUrlImages");
+      if (imgCont && _linkRefImages.length > 0) {
+        imgCont.style.display = "block";
+        var html = '<div style="font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:8px;">페이지 이미지 (' + _linkRefImages.length + '개) — 클릭하여 선택/해제</div>';
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:400px;overflow-y:auto;padding:4px;">';
+        _linkRefImages.forEach(function(imgUrl, idx) {
+          html += '<div class="ref-img-item" data-idx="' + idx + '" style="cursor:pointer;border:2px solid var(--accent);border-radius:8px;overflow:hidden;position:relative;">';
+          html += '<img src="' + escapeHtml(imgUrl) + '" style="width:100%;height:100px;object-fit:cover;display:block;" onerror="this.parentElement.style.display=\'none\'">';
+          html += '<div class="ref-img-check" style="position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;text-align:center;line-height:20px;">v</div>';
+          html += '</div>';
+        });
+        html += '</div>';
+        imgCont.innerHTML = html;
+        _linkRefImagesSelected = _linkRefImages.slice();
+        imgCont.querySelectorAll(".ref-img-item").forEach(function(item) {
+          item.addEventListener("click", function() {
+            var idx = parseInt(item.dataset.idx);
+            var pos = _linkRefImagesSelected.indexOf(_linkRefImages[idx]);
+            if (pos >= 0) { _linkRefImagesSelected.splice(pos, 1); item.style.borderColor = "var(--border)"; item.querySelector(".ref-img-check").style.display = "none"; }
+            else { _linkRefImagesSelected.push(_linkRefImages[idx]); item.style.borderColor = "var(--accent)"; item.querySelector(".ref-img-check").style.display = ""; }
+          });
+        });
+      } else if (imgCont) { imgCont.style.display = "none"; }
+
+      // 주제 자동 추출
+      if (!$("linkTopic")?.value.trim() && data.title) $("linkTopic").value = data.title;
+    } catch { showModal("오류", "URL을 가져올 수 없습니다.", "확인"); }
+    $("linkUrlFetchBtn").textContent = "가져오기"; $("linkUrlFetchBtn").disabled = false;
+  });
+
+  // 이미지 검색
+  const _linkUsedImgs = new Set();
+  async function searchImages(query, count) {
+    try {
+      const res = await fetch(API + "/proxy?action=pexels&path=v1/search&query=" + encodeURIComponent(query) + "&per_page=8&orientation=landscape");
+      const data = await res.json();
+      const all = (data.photos || []).map(p => p.src?.large || p.src?.medium).filter(Boolean);
+      const fresh = all.filter(u => !_linkUsedImgs.has(u));
+      const pick = (fresh.length ? fresh : all).slice(0, count);
+      pick.forEach(u => _linkUsedImgs.add(u));
+      return pick;
+    } catch { return []; }
+  }
+
+  // 글 생성
+  $("linkGenerateBtn")?.addEventListener("click", async () => {
+    if (!_linkRefContent && !_linkRefImagesSelected.length) return showModal("알림", "URL을 입력하고 '가져오기'를 눌러주세요.", "확인");
+    if (!state.loggedIn) return showModal("로그인 필요", "먼저 메이킷 계정에 로그인해주세요.", "확인");
+    const quota = await checkWriteLimit();
+    if (!quota.canUse) return showModal("월간 한도 초과", `이번 달 한도(${quota.limit}회)를 모두 사용했습니다.`, "구독하기", () => bridge.openExternal("https://snsmakeit.com/programs"));
+
+    showQuotaConfirm("링크로 글쓰기", () => doLinkGenerate());
+  });
+
+  async function doLinkGenerate() {
+    // OCR 모드
+    if (_linkUrlMode === "ocr" && _linkRefImagesSelected.length > 0) {
+      $("linkWriteInputView").style.display = "none";
+      $("linkLoadingView").style.display = "block";
+      $("linkGenBar").style.width = "5%";
+      $("linkGenStatus").textContent = "사진 속 텍스트 인식 중...";
+      try { _linkOcrText = await extractTextFromImages(_linkRefImagesSelected); } catch { _linkOcrText = ""; }
+    }
+
+    const topic = $("linkTopic")?.value.trim() || "URL 내용 기반 글";
+    const platform = chipVal("linkPlatformChips", "naver");
+    const subtype = chipVal("linkSubtypeChips", "info");
+    const tone = chipVal("linkToneChips", "friendly");
+    const speech = SPEECH_MAP[chipVal("linkSpeechChips", "polite_yo")] || "~요 체";
+    const length = chipVal("linkLengthChips", "medium");
+    const imageMode = chipVal("linkImageChips", "auto");
+    const quoteStyle = chipVal("linkQuoteChips", "postit");
+    const accentColor = $("linkAccentColor")?.value || "";
+    const extra = $("linkExtra")?.value.trim() || "";
+    const platformGuide = PLATFORM_PROMPTS[platform] || PLATFORM_PROMPTS.naver;
+    const useGif = chipVal("linkGifChips", "on") === "on";
+
+    $("linkWriteInputView").style.display = "none";
+    $("linkLoadingView").style.display = "block";
+    $("linkResultView").style.display = "none";
+    $("linkGenBar").style.width = "10%";
+    $("linkGenPreview").textContent = "";
+
+    const prompt = `${platformGuide}을 작성해주세요.
+
+주제: ${topic}
+글 타입: ${subtype}
+글 톤: ${tone}
+말투: ${speech}
+${(_linkUrlMode !== "photo" && _linkRefContent) ? "\n[중요] 아래 URL에서 가져온 내용을 반드시 기반으로 글을 작성하세요. 이 내용의 핵심 정보, 제품명, 특징, 가격 등을 구체적으로 활용하세요:\n---\n" + _linkRefContent.slice(0, 3000) + "\n---\n" : ""}
+${_linkUrlMode === "ocr" && _linkOcrText ? "\n[중요] 아래는 이미지에서 추출한 텍스트입니다. 이 내용을 기반으로 글을 작성하세요:\n---\n" + _linkOcrText.slice(0, 2000) + "\n---\n" : ""}
+${extra ? "\n글 방향: " + extra : ""}
+
+글 구조 (반드시 이 형식으로):
+[TITLE]
+제목
+
+[BODY]
+도입부 (2~3문장)
+
+[SUBTITLE] 소제목1
+본문 (3~5문장)
+[image: 영문키워드 2~3단어]
+${quoteStyle !== "none" ? "[QUOTE] 핵심 인용 문장" : ""}
+
+[SUBTITLE] 소제목2
+본문 (3~5문장)
+[image: 영문키워드 2~3단어]
+
+(이 패턴을 4~5회 반복)
+
+${useGif ? "[gif: 한글키워드] 를 재미있는 부분에 1~2개 배치" : ""}
+${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
+
+[TAGS]
+태그1, 태그2, 태그3, ... (10개, # 없이 쉼표 구분)
+
+규칙:
+- [image: keyword]는 영문 2~3단어로 구체적 장면
+- [image:]는 전체 6~10개
+- 모든 섹션은 [SUBTITLE]로 시작
+- 마크다운 문법(#, ##, *, -) 절대 사용 금지
+- 이모지 아이콘 사용 금지
+- 배경색 형광펜 스타일 사용 금지`;
+
+    try {
+      const maxTok = LENGTH_TOKENS[length] || 5000;
+      let full = "";
+      const res = await fetch(API + "/ai-proxy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: maxTok, stream: true, messages: [{ role: "user", content: prompt }] }),
+      });
+      if (!res.ok) throw new Error("AI 서버 오류: " + res.status);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n"); buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const d = line.slice(6); if (d === "[DONE]") break;
+          try {
+            const delta = JSON.parse(d).choices?.[0]?.delta?.content || "";
+            if (delta) {
+              full += delta;
+              $("linkGenBar").style.width = Math.min(90, Math.floor((full.length / (maxTok * 2)) * 100)) + "%";
+              $("linkGenPreview").textContent = full.slice(-100);
+            }
+          } catch {}
+        }
+      }
+
+      $("linkGenBar").style.width = "100%";
+      $("linkGenStatus").textContent = "이미지를 삽입하고 있습니다...";
+
+      let rendered = full;
+      const titleMatch = rendered.match(/\[TITLE\]\s*\n([^\n]+)/);
+      const extractedTitle = titleMatch ? titleMatch[1].trim() : "";
+      rendered = rendered.replace(/\[TITLE\]\s*\n[^\n]+\n?/, "");
+      rendered = rendered.replace(/\[BODY\]\s*\n?/, "");
+
+      const tagsMatch = rendered.match(/\[TAGS\]\s*\n([^\n]+)/);
+      if (tagsMatch) {
+        const hashtags = tagsMatch[1].split(/[,，]/).map(t => "#" + t.trim().replace(/^#/, "").replace(/\s+/g, "")).filter(t => t.length > 1).join(" ");
+        rendered = rendered.replace(/\[TAGS\]\s*\n[^\n]+/, "\n\n" + hashtags);
+      }
+
+      rendered = rendered.replace(/\[SUBTITLE\]\s*([^\n\[]+)/g, '<div style="font-size:17px;font-weight:800;color:var(--text);margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--accent);">$1</div>');
+      rendered = rendered.replace(/^##\s+(.+)$/gm, '<div style="font-size:17px;font-weight:800;color:var(--text);margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--accent);">$1</div>');
+
+      if (imageMode !== "none") {
+        const imgTags = rendered.match(/\[image:\s*(.+?)\]/gi) || [];
+        let refImgIdx = 0;
+        for (const tag of imgTags) {
+          const keyword = tag.match(/\[image:\s*(.+?)\]/i)?.[1] || topic;
+          if (_linkUrlMode !== "text" && _linkRefImagesSelected.length > 0 && refImgIdx < _linkRefImagesSelected.length) {
+            rendered = rendered.replace(tag, '<img src="' + _linkRefImagesSelected[refImgIdx] + '" alt="' + keyword + '" style="max-width:100%;border-radius:8px;margin:8px 0;">');
+            refImgIdx++;
+          } else {
+            const urls = await searchImages(keyword, 1);
+            if (urls.length) rendered = rendered.replace(tag, '<img src="' + urls[0] + '" alt="' + keyword + '" style="max-width:100%;border-radius:8px;margin:8px 0;">');
+            else rendered = rendered.replace(tag, "");
+          }
+        }
+      } else { rendered = rendered.replace(/\[image:\s*.+?\]/gi, ""); }
+
+      const gifTags = rendered.match(/\[gif:\s*(.+?)\]/gi) || [];
+      for (const tag of gifTags) {
+        const keyword = tag.match(/\[gif:\s*(.+?)\]/i)?.[1] || topic;
+        try {
+          const gRes = await fetch(API + "/proxy?action=klipy&path=gifs/search&q=" + encodeURIComponent(keyword) + "&per_page=5&locale=ko_KR");
+          const gData = await gRes.json();
+          const items = gData?.data?.data || gData?.data || [];
+          const item = items[Math.floor(Math.random() * Math.min(items.length, 3))];
+          const gifUrl = item?.media_formats?.gif?.url || item?.media_formats?.tinygif?.url || item?.url || "";
+          if (gifUrl) rendered = rendered.replace(tag, '<img src="' + gifUrl + '" style="max-width:280px;border-radius:8px;margin:8px 0;">');
+          else rendered = rendered.replace(tag, "");
+        } catch { rendered = rendered.replace(tag, ""); }
+      }
+
+      rendered = rendered.replace(/\[QUOTE\]\s*(.+)/g, (_, text) => {
+        if (quoteStyle === "postit") return '<div style="background:#fffde7;border-left:4px solid #fbc02d;padding:12px 16px;margin:12px 0;border-radius:4px;color:#5d4037;font-style:italic;">' + text + '</div>';
+        if (quoteStyle === "vertical") return '<div style="border-left:3px solid #3b82f6;padding:8px 16px;margin:12px 0;color:var(--text-sub);">' + text + '</div>';
+        if (quoteStyle === "bubble") return '<div style="background:var(--bg-elev,#f3f4f6);border-radius:12px 12px 12px 2px;padding:12px 16px;margin:12px 0;color:var(--text-sub);">' + text + '</div>';
+        return text;
+      });
+
+      const boldColor = accentColor || "#2DB400";
+      rendered = rendered.replace(/\*\*(.+?)\*\*/g, '<strong style="color:' + boldColor + ';">$1</strong>');
+
+      $("linkLoadingView").style.display = "none";
+      $("linkResultView").style.display = "block";
+      $("linkResultContent").innerHTML = rendered.replace(/\n/g, "<br>");
+      var userTitle = $("linkTitle")?.value.trim();
+      var finalTitle = userTitle || extractedTitle || "생성된 글";
+      $("linkResultTitle").textContent = finalTitle;
+      if ($("linkResultTitleInput")) $("linkResultTitleInput").value = finalTitle;
+
+      await markWriteUsed();
+      if (typeof updateWriteQuota === "function") updateWriteQuota();
+
+      if (window._archiveSave) {
+        window._archiveSave({ type: "blog", title: finalTitle, theme: topic, preview: full.slice(0, 200).replace(/\[.*?\]/g, "").trim() });
+      }
+    } catch (e) {
+      $("linkLoadingView").style.display = "none";
+      $("linkWriteInputView").style.display = "block";
+      showModal("생성 실패", e.message, "확인");
+    }
+  }
+
+  // 복사
+  $("linkCopyBtn")?.addEventListener("click", () => {
+    const el = $("linkResultContent"); if (!el) return;
+    try {
+      navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([el.innerHTML], { type: "text/html" }), "text/plain": new Blob([el.innerText], { type: "text/plain" }) })]).then(() => {
+        $("linkCopyBtn").textContent = "복사됨!"; setTimeout(() => $("linkCopyBtn").textContent = "복사", 2000);
+      });
+    } catch { navigator.clipboard.writeText(el.innerText); }
+  });
+  $("linkHtmlCopyBtn")?.addEventListener("click", () => {
+    navigator.clipboard.writeText($("linkResultContent")?.innerHTML || "").then(() => {
+      $("linkHtmlCopyBtn").textContent = "복사됨!"; setTimeout(() => $("linkHtmlCopyBtn").textContent = "HTML 복사", 2000);
+    });
+  });
+  $("linkRetryBtn")?.addEventListener("click", () => {
+    $("linkResultView").style.display = "none";
+    $("linkWriteInputView").style.display = "block";
+    linkGoStep(1);
+  });
+})();
+
+// ── 파일로 글쓰기 ──
+(function() {
+  const API = "https://snsmakeit.com/api";
+  const PLATFORM_PROMPTS = {
+    naver: "네이버 블로그에 적합한 SEO 최적화 글",
+    tistory: "티스토리 블로그에 적합한 마크다운 글",
+    instagram: "인스타그램 캡션 (해시태그 포함, 2200자 이내)",
+    thread: "스레드(Threads)용 짧은 글 (500자 이내)",
+    youtube: "유튜브 영상 대본 ([인트로][본문][아웃트로] 구조)",
+  };
+  const SPEECH_MAP = { polite_yo: "~요 체", formal: "~합니다 체", casual: "반말 체", mixed: "혼합 체" };
+  const LENGTH_TOKENS = { short: 4000, medium: 8000, long: 16000 };
+
+  var _fileContent = "";
+  var _fileImages = []; // base64 or path
+
+  // 뒤로가기
+  $("fileBackBtn")?.addEventListener("click", () => { goToPanel("naver-blog"); showBlogMode(null); });
+
+  // 임시저장
+  $("fileSaveDraftBtn")?.addEventListener("click", () => {
+    var title = $("fileResultTitleInput")?.value || "임시저장";
+    var html = $("fileResultContent")?.innerHTML || "";
+    if (window._archiveSave) {
+      window._archiveSave({ type: "blog", title: "[임시] " + title, theme: $("fileTopic")?.value || "", preview: html.replace(/<[^>]*>/g, "").slice(0, 200), html: html, draft: true });
+    }
+    showModal("임시저장 완료", "보관함에 저장되었습니다.", "확인");
+  });
+
+  function chipVal(id, fb) { return $(id)?.querySelector(".chip.active")?.dataset.value || fb; }
+
+  // 칩 이벤트 위임
+  document.querySelector('section[data-panel="file-write"]')?.addEventListener("click", (e) => {
+    const chip = e.target.closest(".chip");
+    if (!chip) return;
+    const container = chip.closest(".chips");
+    if (!container) return;
+    container.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+    chip.classList.add("active");
+    if (container.id === "fileAccentPresets") {
+      if ($("fileAccentColor")) $("fileAccentColor").value = chip.dataset.value || "";
+    }
+    // 소스 전환
+    if (container.id === "fileSourceChips") {
+      const val = chip.dataset.value;
+      if ($("fileUploadSection")) $("fileUploadSection").style.display = val === "file" ? "" : "none";
+      if ($("fileFolderSection")) $("fileFolderSection").style.display = val === "folder" ? "" : "none";
+      if ($("fileDriveSection")) $("fileDriveSection").style.display = val === "drive" ? "" : "none";
+    }
+  });
+
+  // 스텝 전환
+  function fileGoStep(step) {
+    [1,2,3].forEach(s => {
+      const el = $("fileStep" + s);
+      if (el) el.classList.toggle("hidden", s !== step);
+    });
+    $("fileStepBar")?.querySelectorAll(".step-item").forEach(item => {
+      const s = parseInt(item.dataset.step);
+      item.classList.toggle("active", s === step);
+      item.classList.toggle("done", s < step);
+    });
+  }
+  $("fileStep1Next")?.addEventListener("click", () => {
+    const src = chipVal("fileSourceChips", "file");
+    if (src === "file" && !_fileContent && !_fileImages.length) return showModal("알림", "파일을 선택해주세요.", "확인");
+    if (src === "folder" && !$("fileFolderPath")?.textContent?.includes("/") && !$("fileFolderPath")?.textContent?.includes("\\")) return showModal("알림", "폴더를 선택해주세요.", "확인");
+    if (src === "drive" && !$("fileDriveUrl")?.value.trim()) return showModal("알림", "드라이브 링크를 입력해주세요.", "확인");
+    fileGoStep(2);
+  });
+  $("fileStep2Prev")?.addEventListener("click", () => fileGoStep(1));
+  $("fileStep2Next")?.addEventListener("click", () => fileGoStep(3));
+  $("fileStep3Prev")?.addEventListener("click", () => fileGoStep(2));
+
+  // 파일 업로드
+  var dropZone = $("fileDropZone");
+  var fileInput = $("fileInput");
+  if (dropZone && fileInput) {
+    dropZone.addEventListener("click", () => fileInput.click());
+    dropZone.addEventListener("dragover", (e) => { e.preventDefault(); dropZone.style.borderColor = "var(--accent)"; });
+    dropZone.addEventListener("dragleave", () => { dropZone.style.borderColor = "var(--border)"; });
+    dropZone.addEventListener("drop", (e) => { e.preventDefault(); dropZone.style.borderColor = "var(--border)"; handleFiles(e.dataTransfer.files); });
+    fileInput.addEventListener("change", () => { if (fileInput.files.length) handleFiles(fileInput.files); });
+  }
+
+  async function handleFiles(files) {
+    _fileContent = ""; _fileImages = [];
+    var listEl = $("fileList"); if (listEl) listEl.innerHTML = "";
+    var items = [];
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      items.push('<div style="font-size:12px;color:var(--text-sub);padding:4px 0;">' + escapeHtml(f.name) + ' (' + (f.size / 1024).toFixed(1) + 'KB)</div>');
+      if (/\.(png|jpg|jpeg|gif|webp)$/i.test(f.name)) {
+        _fileImages.push(f);
+      } else if (/\.(txt|md)$/i.test(f.name)) {
+        _fileContent += await f.text() + "\n\n";
+      } else if (/\.(docx|pdf|hwp|doc)$/i.test(f.name)) {
+        // 서버에서 텍스트 추출 시도
+        try {
+          var formData = new FormData();
+          formData.append("file", f);
+          var res = await fetch(API + "/extract-text", { method: "POST", body: formData });
+          var data = await res.json();
+          if (data.text) _fileContent += data.text + "\n\n";
+        } catch(e) {
+          console.warn("[file-write] extract failed:", f.name, e);
+          items.push('<div style="font-size:11px;color:#ef4444;padding:2px 0;">  텍스트 추출 실패</div>');
+        }
+      }
+    }
+    if (listEl) listEl.innerHTML = items.join("");
+  }
+
+  // 로컬 폴더 선택
+  $("fileFolderBtn")?.addEventListener("click", async () => {
+    try {
+      const result = await bridge.invoke("dialog:openFolder");
+      if (result && result.path) {
+        $("fileFolderPath").textContent = result.path;
+        // 폴더 내 파일 읽기
+        const recursive = $("fileFolderRecursive")?.checked || false;
+        const files = await bridge.invoke("folder:readFiles", { path: result.path, recursive: recursive, extensions: [".txt", ".md", ".docx", ".pdf", ".png", ".jpg", ".jpeg", ".gif", ".webp"] });
+        _fileContent = "";
+        _fileImages = [];
+        if (files && files.texts) _fileContent = files.texts.join("\n\n");
+        if (files && files.images) _fileImages = files.images;
+        $("fileFolderPath").textContent = result.path + " (" + ((files?.texts?.length || 0) + (files?.images?.length || 0)) + "개 파일)";
+      }
+    } catch (e) { console.warn("[file-write] folder select:", e); }
+  });
+
+  // 이미지 검색
+  const _fileUsedImgs = new Set();
+  async function searchImages(query, count) {
+    try {
+      const res = await fetch(API + "/proxy?action=pexels&path=v1/search&query=" + encodeURIComponent(query) + "&per_page=8&orientation=landscape");
+      const data = await res.json();
+      const all = (data.photos || []).map(p => p.src?.large || p.src?.medium).filter(Boolean);
+      const fresh = all.filter(u => !_fileUsedImgs.has(u));
+      const pick = (fresh.length ? fresh : all).slice(0, count);
+      pick.forEach(u => _fileUsedImgs.add(u));
+      return pick;
+    } catch { return []; }
+  }
+
+  // 글 생성
+  $("fileGenerateBtn")?.addEventListener("click", async () => {
+    const src = chipVal("fileSourceChips", "file");
+    // 드라이브 모드: 서버에서 파일 가져오기
+    if (src === "drive") {
+      const driveUrl = $("fileDriveUrl")?.value.trim();
+      if (!driveUrl) return showModal("알림", "드라이브 링크를 입력해주세요.", "확인");
+      $("fileWriteInputView").style.display = "none";
+      $("fileLoadingView").style.display = "block";
+      $("fileGenStatus").textContent = "드라이브에서 파일을 가져오는 중...";
+      $("fileGenBar").style.width = "5%";
+      try {
+        const recursive = $("fileDriveRecursive")?.checked || false;
+        const res = await fetch(API + "/fetch-drive-folder?url=" + encodeURIComponent(driveUrl) + "&recursive=" + recursive);
+        const data = await res.json();
+        if (data.texts) _fileContent = data.texts.join("\n\n");
+        if (data.images) _fileImages = data.images;
+      } catch(e) {
+        $("fileLoadingView").style.display = "none";
+        $("fileWriteInputView").style.display = "block";
+        return showModal("오류", "드라이브에서 파일을 가져올 수 없습니다: " + e.message, "확인");
+      }
+    }
+
+    if (!_fileContent && !_fileImages.length) return showModal("알림", "글감이 될 자료가 없습니다.", "확인");
+    if (!state.loggedIn) return showModal("로그인 필요", "먼저 메이킷 계정에 로그인해주세요.", "확인");
+    const quota = await checkWriteLimit();
+    if (!quota.canUse) return showModal("월간 한도 초과", `이번 달 한도(${quota.limit}회)를 모두 사용했습니다.`, "구독하기", () => bridge.openExternal("https://snsmakeit.com/programs"));
+
+    showQuotaConfirm("파일로 글쓰기", () => doFileGenerate());
+  });
+
+  async function doFileGenerate() {
+    const topic = $("fileTopic")?.value.trim() || "파일 내용 기반 글";
+    const platform = chipVal("filePlatformChips", "naver");
+    const subtype = chipVal("fileSubtypeChips", "info");
+    const tone = chipVal("fileToneChips", "friendly");
+    const speech = SPEECH_MAP[chipVal("fileSpeechChips", "polite_yo")] || "~요 체";
+    const length = chipVal("fileLengthChips", "medium");
+    const imageMode = chipVal("fileImageChips", "auto");
+    const quoteStyle = chipVal("fileQuoteChips", "postit");
+    const accentColor = $("fileAccentColor")?.value || "";
+    const extra = $("fileExtra")?.value.trim() || "";
+    const platformGuide = PLATFORM_PROMPTS[platform] || PLATFORM_PROMPTS.naver;
+    const useGif = chipVal("fileGifChips", "on") === "on";
+
+    $("fileWriteInputView").style.display = "none";
+    $("fileLoadingView").style.display = "block";
+    $("fileResultView").style.display = "none";
+    $("fileGenBar").style.width = "10%";
+    $("fileGenPreview").textContent = "";
+
+    const prompt = `${platformGuide}을 작성해주세요.
+
+주제: ${topic}
+글 타입: ${subtype}
+글 톤: ${tone}
+말투: ${speech}
+
+[중요] 아래는 파일에서 가져온 자료입니다. 이 내용을 기반으로 블로그 글을 작성하세요:
+---
+${_fileContent.slice(0, 4000)}
+---
+
+${extra ? "\n글 방향: " + extra : ""}
+
+글 구조 (반드시 이 형식으로):
+[TITLE]
+제목
+
+[BODY]
+도입부 (2~3문장)
+
+[SUBTITLE] 소제목1
+본문 (3~5문장)
+[image: 영문키워드 2~3단어]
+${quoteStyle !== "none" ? "[QUOTE] 핵심 인용 문장" : ""}
+
+[SUBTITLE] 소제목2
+본문 (3~5문장)
+[image: 영문키워드 2~3단어]
+
+(이 패턴을 4~5회 반복)
+
+${useGif ? "[gif: 한글키워드] 를 재미있는 부분에 1~2개 배치" : ""}
+${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
+
+[TAGS]
+태그1, 태그2, 태그3, ... (10개, # 없이 쉼표 구분)
+
+규칙:
+- [image: keyword]는 영문 2~3단어로 구체적 장면
+- [image:]는 전체 6~10개
+- 모든 섹션은 [SUBTITLE]로 시작
+- 마크다운 문법(#, ##, *, -) 절대 사용 금지
+- 이모지 아이콘 사용 금지
+- 배경색 형광펜 스타일 사용 금지`;
+
+    try {
+      const maxTok = LENGTH_TOKENS[length] || 5000;
+      let full = "";
+      const res = await fetch(API + "/ai-proxy", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: "claude-haiku-4-5", max_tokens: maxTok, stream: true, messages: [{ role: "user", content: prompt }] }),
+      });
+      if (!res.ok) throw new Error("AI 서버 오류: " + res.status);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n"); buffer = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          const d = line.slice(6); if (d === "[DONE]") break;
+          try {
+            const delta = JSON.parse(d).choices?.[0]?.delta?.content || "";
+            if (delta) {
+              full += delta;
+              $("fileGenBar").style.width = Math.min(90, Math.floor((full.length / (maxTok * 2)) * 100)) + "%";
+              $("fileGenPreview").textContent = full.slice(-100);
+            }
+          } catch {}
+        }
+      }
+
+      $("fileGenBar").style.width = "100%";
+      $("fileGenStatus").textContent = "이미지를 삽입하고 있습니다...";
+
+      let rendered = full;
+      const titleMatch = rendered.match(/\[TITLE\]\s*\n([^\n]+)/);
+      const extractedTitle = titleMatch ? titleMatch[1].trim() : "";
+      rendered = rendered.replace(/\[TITLE\]\s*\n[^\n]+\n?/, "");
+      rendered = rendered.replace(/\[BODY\]\s*\n?/, "");
+
+      const tagsMatch = rendered.match(/\[TAGS\]\s*\n([^\n]+)/);
+      if (tagsMatch) {
+        const hashtags = tagsMatch[1].split(/[,，]/).map(t => "#" + t.trim().replace(/^#/, "").replace(/\s+/g, "")).filter(t => t.length > 1).join(" ");
+        rendered = rendered.replace(/\[TAGS\]\s*\n[^\n]+/, "\n\n" + hashtags);
+      }
+
+      rendered = rendered.replace(/\[SUBTITLE\]\s*([^\n\[]+)/g, '<div style="font-size:17px;font-weight:800;color:var(--text);margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--accent);">$1</div>');
+      rendered = rendered.replace(/^##\s+(.+)$/gm, '<div style="font-size:17px;font-weight:800;color:var(--text);margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--accent);">$1</div>');
+
+      if (imageMode !== "none") {
+        const imgTags = rendered.match(/\[image:\s*(.+?)\]/gi) || [];
+        for (const tag of imgTags) {
+          const keyword = tag.match(/\[image:\s*(.+?)\]/i)?.[1] || topic;
+          const urls = await searchImages(keyword, 1);
+          if (urls.length) rendered = rendered.replace(tag, '<img src="' + urls[0] + '" alt="' + keyword + '" style="max-width:100%;border-radius:8px;margin:8px 0;">');
+          else rendered = rendered.replace(tag, "");
+        }
+      } else { rendered = rendered.replace(/\[image:\s*.+?\]/gi, ""); }
+
+      const gifTags = rendered.match(/\[gif:\s*(.+?)\]/gi) || [];
+      for (const tag of gifTags) {
+        const keyword = tag.match(/\[gif:\s*(.+?)\]/i)?.[1] || topic;
+        try {
+          const gRes = await fetch(API + "/proxy?action=klipy&path=gifs/search&q=" + encodeURIComponent(keyword) + "&per_page=5&locale=ko_KR");
+          const gData = await gRes.json();
+          const items = gData?.data?.data || gData?.data || [];
+          const item = items[Math.floor(Math.random() * Math.min(items.length, 3))];
+          const gifUrl = item?.media_formats?.gif?.url || item?.media_formats?.tinygif?.url || item?.url || "";
+          if (gifUrl) rendered = rendered.replace(tag, '<img src="' + gifUrl + '" style="max-width:280px;border-radius:8px;margin:8px 0;">');
+          else rendered = rendered.replace(tag, "");
+        } catch { rendered = rendered.replace(tag, ""); }
+      }
+
+      rendered = rendered.replace(/\[QUOTE\]\s*(.+)/g, (_, text) => {
+        if (quoteStyle === "postit") return '<div style="background:#fffde7;border-left:4px solid #fbc02d;padding:12px 16px;margin:12px 0;border-radius:4px;color:#5d4037;font-style:italic;">' + text + '</div>';
+        if (quoteStyle === "vertical") return '<div style="border-left:3px solid #3b82f6;padding:8px 16px;margin:12px 0;color:var(--text-sub);">' + text + '</div>';
+        if (quoteStyle === "bubble") return '<div style="background:var(--bg-elev,#f3f4f6);border-radius:12px 12px 12px 2px;padding:12px 16px;margin:12px 0;color:var(--text-sub);">' + text + '</div>';
+        return text;
+      });
+
+      const boldColor = accentColor || "#2DB400";
+      rendered = rendered.replace(/\*\*(.+?)\*\*/g, '<strong style="color:' + boldColor + ';">$1</strong>');
+
+      $("fileLoadingView").style.display = "none";
+      $("fileResultView").style.display = "block";
+      $("fileResultContent").innerHTML = rendered.replace(/\n/g, "<br>");
+      var userTitle = $("fileTitle")?.value.trim();
+      var finalTitle = userTitle || extractedTitle || "생성된 글";
+      $("fileResultTitle").textContent = finalTitle;
+      if ($("fileResultTitleInput")) $("fileResultTitleInput").value = finalTitle;
+
+      await markWriteUsed();
+      if (typeof updateWriteQuota === "function") updateWriteQuota();
+
+      if (window._archiveSave) {
+        window._archiveSave({ type: "blog", title: finalTitle, theme: topic, preview: full.slice(0, 200).replace(/\[.*?\]/g, "").trim() });
+      }
+    } catch (e) {
+      $("fileLoadingView").style.display = "none";
+      $("fileWriteInputView").style.display = "block";
+      showModal("생성 실패", e.message, "확인");
+    }
+  }
+
+  // 복사
+  $("fileCopyBtn")?.addEventListener("click", () => {
+    const el = $("fileResultContent"); if (!el) return;
+    try {
+      navigator.clipboard.write([new ClipboardItem({ "text/html": new Blob([el.innerHTML], { type: "text/html" }), "text/plain": new Blob([el.innerText], { type: "text/plain" }) })]).then(() => {
+        $("fileCopyBtn").textContent = "복사됨!"; setTimeout(() => $("fileCopyBtn").textContent = "복사", 2000);
+      });
+    } catch { navigator.clipboard.writeText(el.innerText); }
+  });
+  $("fileHtmlCopyBtn")?.addEventListener("click", () => {
+    navigator.clipboard.writeText($("fileResultContent")?.innerHTML || "").then(() => {
+      $("fileHtmlCopyBtn").textContent = "복사됨!"; setTimeout(() => $("fileHtmlCopyBtn").textContent = "HTML 복사", 2000);
+    });
+  });
+  $("fileRetryBtn")?.addEventListener("click", () => {
+    $("fileResultView").style.display = "none";
+    $("fileWriteInputView").style.display = "block";
+    fileGoStep(1);
+  });
 })();

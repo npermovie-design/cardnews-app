@@ -27,10 +27,10 @@
 
   /* --pink, --pink-soft 제거 (미사용 + 이름이 실제 파란색과 불일치) */
 
-  --success:     #10b981;
-  --success-soft:#d1fae5;
+  --success:     #3b82f6;
+  --success-soft:#eff6ff;
   --danger:      #ef4444;
-  --warn:        #f59e0b;
+  --warn:        #60a5fa;
 
   /* --gradient 제거 (미사용 + 단색이라 이름 불일치) */
 
@@ -253,7 +253,7 @@ body {
   flex-shrink: 0;
 }
 .dot-gray  { background: #cbd5e1; }
-.dot-green { background: var(--success); }
+.dot-green { background: var(--accent); }
 .dot-red   { background: var(--danger); }
 .user-text {
   font-size: 13px;
@@ -506,8 +506,8 @@ body {
   margin-bottom: 14px;
 }
 .plan-badge.active {
-  background: var(--success-soft);
-  color: #047857;
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 .plan-badge.active::before {
   content: "✓";
@@ -568,7 +568,7 @@ body {
   color: var(--text);
 }
 .plan-feature-value.ok {
-  color: #047857;
+  color: var(--accent);
 }
 .plan-feature-value.locked {
   color: var(--text-dim);
@@ -774,7 +774,7 @@ body {
   font-weight: 700;
 }
 .publish-progress-steps .step-done {
-  color: var(--success);
+  color: var(--accent);
 }
 
 /* ── Result ─────────────────────────────────────────────── */
@@ -782,7 +782,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: var(--success);
+  color: var(--accent);
   font-weight: 700;
   font-size: 14px;
 }
@@ -866,8 +866,8 @@ body {
   font-weight: 600;
 }
 .step-item.done {
-  background: var(--success-soft);
-  color: #065f46;
+  background: var(--accent-soft);
+  color: var(--accent);
   font-weight: 600;
 }
 .step-num {
@@ -888,7 +888,7 @@ body {
   color: #fff;
 }
 .step-item.done .step-num {
-  background: var(--success);
+  background: var(--accent);
   color: #fff;
 }
 
@@ -951,7 +951,7 @@ body {
   margin-top: 4px;
   flex-shrink: 0;
 }
-.history-dot.ok { background: var(--success); }
+.history-dot.ok { background: var(--accent); }
 .history-dot.fail { background: var(--danger); }
 .history-body { flex: 1; }
 .history-title {
@@ -1095,6 +1095,7 @@ body {
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.62);
   overflow: hidden;
+  margin-bottom: 2px;
 }
 .nav-group summary {
   list-style: none;
@@ -1128,7 +1129,7 @@ body {
 .nav-group .nav-item:first-of-type {
   margin-top: 0;
 }
-.nav-sub { padding-left: 14px; }
+.nav-sub { padding-left: 12px; font-size: 13px; min-height: 38px; padding-top: 8px; padding-bottom: 8px; }
 .nav-item[disabled] {
   opacity: 0.5;
   cursor: not-allowed;
@@ -1192,11 +1193,14 @@ body {
     height: 30px;
     flex: 0 0 30px;
   }
+  .mode-cards {
+    grid-template-columns: 1fr;
+  }
   .mode-card {
-    padding: 20px 18px;
+    padding: 18px 16px;
   }
   .mode-card-title {
-    font-size: 17px;
+    font-size: 15px;
   }
   .user-badge {
     padding: 6px 8px;
@@ -1305,34 +1309,35 @@ body {
 /* ── Mode cards (발행 방식 선택) ────────────────────────── */
 .mode-cards {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
   margin-bottom: 16px;
 }
 .mode-card {
-  background: var(--bg-card);
+  background: var(--bg-card, var(--bg-elev, #fff));
   border: 2px solid var(--border);
   border-radius: var(--radius);
-  padding: 26px 24px;
+  padding: 22px 20px;
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: var(--shadow);
+  position: relative;
 }
 .mode-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--accent) 15%, transparent);
   transform: translateY(-2px);
 }
 .mode-card-title {
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 700;
   color: var(--text);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .mode-card-desc {
-  font-size: 15px;
+  font-size: 13px;
   color: var(--text-sub);
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 /* ── Calendar ──────────────────────────────────────────── */
@@ -1393,7 +1398,7 @@ body {
   display: inline-block;
   line-height: 1.2;
 }
-.cal-badge.ok { background: var(--success); color: #fff; }
+.cal-badge.ok { background: var(--accent); color: #fff; }
 .cal-badge.fail { background: var(--danger); color: #fff; }
 .cal-badge.mixed { background: var(--accent); color: #fff; }
 
@@ -1565,7 +1570,7 @@ body {
 /* 내보내기 프로그레스 애니메이션 */
 #veExportBar, #veAnalyzeBar {
   transition: width 0.5s ease;
-  background: #00bfa5 !important;
+  background: #3b82f6 !important;
 }
 
 /* 프리뷰 영역 둥근 모서리 */

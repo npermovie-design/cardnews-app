@@ -9,26 +9,225 @@
   <style>
     [data-idx]:hover .trim-handle, [data-idx][style*="outline"] .trim-handle { opacity:0.9 !important; }
     #veTimeRuler { cursor:pointer; }
+
+    /* ═══════ 캡컷 다크 테마 ═══════ */
+    :root {
+      --ve-bg: #15171e;
+      --ve-bg-dark: #111318;
+      --ve-bg-panel: #1b1d24;
+      --ve-bg-surface: #1e2028;
+      --ve-border: #2a2c34;
+      --ve-border-soft: #222428;
+      --ve-text: #d4d6dc;
+      --ve-text-dim: #6b6e78;
+      --ve-text-muted: #44464e;
+      --ve-accent: #3b82f6;
+      --ve-accent-hover: #00d4b8;
+      --ve-accent-bg: rgba(0,191,165,0.10);
+      --ve-accent-border: rgba(0,191,165,0.25);
+    }
+    #veStep3 { font-family: -apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif; letter-spacing:-0.01em; color:var(--ve-text); }
+    #veStep3 *, #veStep3 *::before, #veStep3 *::after { box-sizing:border-box; }
+
+    /* ── 탭 버튼 (캡컷) ── */
+    .ve-tab-btn { transition:all 0.12s !important; position:relative; color:var(--ve-text-dim) !important; }
+    .ve-tab-btn:hover { color:var(--ve-text) !important; }
+    .ve-tab-btn.active { color:var(--ve-accent) !important; border-bottom-color:var(--ve-accent) !important; }
+    .ve-tab-btn svg { stroke:currentColor; }
+
+    /* ── 칩 버튼 (캡컷) ── */
+    #veStep3 .chip {
+      transition:all 0.12s !important;
+      border:1px solid var(--ve-border) !important;
+      background:var(--ve-bg-surface) !important;
+      color:var(--ve-text-dim) !important;
+      border-radius:4px !important;
+      font-weight:600 !important;
+      cursor:pointer;
+      font-size:11px !important;
+    }
+    #veStep3 .chip:hover {
+      border-color:var(--ve-text-muted) !important;
+      color:var(--ve-text) !important;
+    }
+    #veStep3 .chip.active {
+      border-color:var(--ve-accent) !important;
+      background:var(--ve-accent-bg) !important;
+      color:var(--ve-accent) !important;
+    }
+
+    /* ── 슬라이더 (캡컷) ── */
+    #veStep3 input[type="range"] {
+      -webkit-appearance:none !important;
+      height:2px !important;
+      background:var(--ve-border) !important;
+      border-radius:1px !important;
+      outline:none !important;
+      cursor:pointer;
+    }
+    #veStep3 input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance:none !important;
+      width:10px !important; height:10px !important;
+      border-radius:50% !important;
+      background:#fff !important;
+      box-shadow:0 1px 4px rgba(0,0,0,0.4) !important;
+      cursor:pointer !important;
+      border:none !important;
+    }
+    #veStep3 input[type="range"]::-webkit-slider-thumb:hover {
+      transform:scale(1.15);
+    }
+
+    /* ── 색상 선택기 (캡컷) ── */
+    #veStep3 input[type="color"] {
+      border:1px solid var(--ve-border) !important;
+      border-radius:4px !important;
+      cursor:pointer !important;
+      padding:1px !important;
+      background:var(--ve-bg-dark) !important;
+    }
+    #veStep3 input[type="color"]:hover { border-color:var(--ve-text-muted) !important; }
+
+    /* ── 아코디언 (캡컷) ── */
+    details.ve-section { border-radius:0 !important; overflow:hidden; margin-bottom:0 !important; }
+    details.ve-section > summary {
+      list-style:none !important;
+      display:flex !important;
+      align-items:center !important;
+      gap:6px !important;
+      padding:9px 12px !important;
+      border-top:1px solid var(--ve-border-soft) !important;
+      font-size:11px !important;
+      font-weight:600 !important;
+      color:var(--ve-text-dim) !important;
+      cursor:pointer !important;
+      user-select:none !important;
+      transition:color 0.12s;
+    }
+    details.ve-section > summary:hover { color:var(--ve-text) !important; }
+    details.ve-section > summary::-webkit-details-marker { display:none !important; }
+    details.ve-section > summary::before {
+      content:"" !important; display:inline-block !important;
+      width:0; height:0;
+      border-left:4px solid var(--ve-text-muted); border-top:3px solid transparent; border-bottom:3px solid transparent;
+      transition:transform 0.15s; flex-shrink:0;
+    }
+    details.ve-section[open] > summary::before { transform:rotate(90deg); border-left-color:var(--ve-accent); }
+    details.ve-section[open] > summary { color:var(--ve-text) !important; }
+    details.ve-section > div { padding:6px 12px 10px !important; }
+
+    /* ── 도구바 버튼 (캡컷) ── */
+    #veStep3 .ve-tool-btn {
+      transition:all 0.1s !important;
+      border-radius:4px !important;
+      font-weight:500 !important;
+      color:var(--ve-text-dim) !important;
+    }
+    #veStep3 .ve-tool-btn:hover {
+      background:rgba(255,255,255,0.05) !important;
+      color:var(--ve-text) !important;
+    }
+
+    /* ── 트랙 레인 (캡컷) ── */
+    .ve-track-lane { transition:background 0.1s; }
+    .ve-track-lane:hover { background:rgba(255,255,255,0.015) !important; }
+
+    /* ── 스크롤바 (캡컷 — 미니멀) ── */
+    #veStep3 ::-webkit-scrollbar { width:4px; height:4px; }
+    #veStep3 ::-webkit-scrollbar-track { background:transparent; }
+    #veStep3 ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.08); border-radius:2px; }
+    #veStep3 ::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.15); }
+
+    /* ── 속성 패널 섹션 라벨 ── */
+    #veStep3 .ve-tab-content .chips { display:flex; flex-wrap:wrap; }
+
+    /* ── select 드롭다운 ── */
+    #veStep3 select {
+      appearance:none !important;
+      -webkit-appearance:none !important;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236b6b88'/%3E%3C/svg%3E") !important;
+      background-repeat:no-repeat !important;
+      background-position:right 8px center !important;
+      padding-right:22px !important;
+    }
+
+    /* ── 프리뷰 (캡컷) ── */
+    #veVideoWrap { box-shadow:none !important; border:none !important; border-radius:0 !important; background:#000 !important; }
+
+    /* ── 내보내기 버튼 (캡컷 — 틸 라운드) ── */
+    #veExportBtn {
+      background:var(--ve-accent) !important;
+      box-shadow:none !important;
+      font-weight:700 !important;
+      border-radius:4px !important;
+    }
+    #veExportBtn:hover { background:var(--ve-accent-hover) !important; }
+
+    /* ── 플레이 버튼 (캡컷) ── */
+    #vePlayBtn { background:var(--ve-accent) !important; box-shadow:none !important; }
+    #vePlayBtn:hover { background:var(--ve-accent-hover) !important; transform:scale(1.05); }
+
+    /* ── 타임라인 (캡컷 — 더 어두운 톤) ── */
+    #veTimeline { background:var(--ve-bg-dark) !important; }
+
+    /* ═══ 패널 구조 (캡컷) ═══ */
+    .ve-panel-section {
+      padding:8px 12px;
+      border-bottom:1px solid var(--ve-border-soft);
+    }
+
+    /* ── 색상 칩 원형 ── */
+    #veSubColorChips .chip {
+      border-radius:50% !important;
+      border-width:2px !important;
+      min-width:0 !important;
+      font-size:0 !important;
+    }
+    #veSubColorChips .chip.active {
+      box-shadow:0 0 0 2px var(--ve-accent) !important;
+      border-color:#fff !important;
+    }
+
+    /* ── 패널 콘텐츠 ── */
+    #veStep3 .ve-tab-content { padding:0 !important; }
+    details.ve-section { margin:0 !important; border-bottom:1px solid var(--ve-border-soft); }
+    details.ve-section > summary { padding:9px 12px !important; border-top:none !important; margin:0 !important; }
+    details.ve-section > div { padding:4px 12px 10px !important; }
+
+    /* ── 자료실 검색바 ── */
+    .ml-input {
+      border:1px solid #dbeafe !important;
+      background:#fafbff !important;
+      font-size:14px !important;
+      transition:border-color 0.2s, box-shadow 0.2s !important;
+    }
+    .ml-input:focus {
+      border-color:#93c5fd !important;
+      box-shadow:0 0 0 3px rgba(59,130,246,0.08) !important;
+      outline:none !important;
+    }
   </style>
 </head>
 <body>
   <div class="app">
     <!-- ========== 사이드바 ========== -->
     <aside class="sidebar">
-      <div class="sidebar-header">
+      <div class="sidebar-header" style="border-bottom:1px solid var(--border);margin-bottom:0;padding-bottom:12px;">
         <div class="brand-title">SNS메이킷</div>
         <a class="brand-link" id="brandLink" href="#">snsmakeit.com</a>
       </div>
-      <!-- 사용자 + 등급 + 잔여 횟수 (상단) -->
-      <div id="sidebarUserArea" style="padding:10px 14px 8px;border-bottom:1px solid var(--border-soft);">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <div class="user-dot dot-gray" id="userDotTop"></div>
+      <!-- 사용자 + 등급 + 잔여 횟수 -->
+      <div id="sidebarUserArea" style="padding:10px 14px 10px;border-bottom:1px solid var(--border);flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="user-dot dot-gray" id="userDotTop" style="flex-shrink:0;"></div>
           <div style="flex:1;min-width:0;">
-            <div id="userNameTop" style="font-size:12px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">로그인 필요</div>
-            <div id="userPlanTop" style="font-size:10px;color:var(--text-dim);margin-top:1px;"></div>
+            <div style="display:flex;align-items:baseline;gap:6px;">
+              <span id="userNameTop" style="font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">로그인 필요</span>
+              <span id="userPlanTop" style="font-size:10px;color:var(--text-dim);white-space:nowrap;"></span>
+            </div>
           </div>
         </div>
-        <div id="quotaBarArea" style="display:none;margin-top:6px;">
+        <div id="quotaBarArea" style="display:none;margin-top:8px;">
           <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim);margin-bottom:3px;">
             <span>남은 횟수</span>
             <span id="quotaText">0 / 0</span>
@@ -40,64 +239,64 @@
       </div>
       <nav class="sidebar-nav">
         <button class="nav-item active" data-panel="home">
-          <span class="nav-icon nav-home"></span>홈
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>홈
         </button>
+        <button class="nav-item" data-panel="news-hub">
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>커뮤니티
+        </button>
+        <button class="nav-item" data-panel="naver-account">
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>계정 설정
+        </button>
+        <div style="height:1px;background:var(--border-soft);margin:4px 14px;"></div>
         <details class="nav-group" open>
           <summary>콘텐츠 제작</summary>
-          <button class="nav-item nav-sub" data-panel="naver-account">
-            <span class="nav-icon nav-account"></span>계정 설정
-          </button>
-          <button class="nav-item nav-sub" data-panel="manual-write">
-            <span class="nav-icon nav-write"></span>수동 글쓰기
-          </button>
           <button class="nav-item nav-sub" data-panel="naver-blog">
-            <span class="nav-icon nav-blog"></span>자동 글쓰기
+            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>글쓰기
           </button>
           <button class="nav-item nav-sub" data-panel="cardnews">
-            <span class="nav-icon nav-card"></span>카드뉴스
+            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></span>카드뉴스
           </button>
-          <button class="nav-item nav-sub" data-panel="video-editor">
-            <span class="nav-icon nav-ve"></span>영상 편집
-          </button>
-          <button class="nav-item nav-sub" data-panel="naver-cafe">
-            <span class="nav-icon nav-cafe"></span>카페
+          <button class="nav-item nav-sub" data-panel="video-hub">
+            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></span>영상 편집
           </button>
         </details>
         <details class="nav-group">
-          <summary>운영 관리</summary>
+          <summary>자료실</summary>
+          <button class="nav-item nav-sub" data-panel="ml-photo">
+            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>사진
+          </button>
+          <button class="nav-item nav-sub" data-panel="ml-gif">
+            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg></span>GIF
+          </button>
+          <button class="nav-item nav-sub" data-panel="ml-video">
+            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></span>영상
+          </button>
+        </details>
+        <details class="nav-group">
+          <summary>운영</summary>
           <button class="nav-item nav-sub" data-panel="archive">
-            <span class="nav-icon nav-archive"></span>보관함
+            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></span>보관함
           </button>
           <button class="nav-item nav-sub" data-panel="calendar">
-            <span class="nav-icon nav-calendar"></span>자동화 현황
+            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>자동화 현황
           </button>
           <button class="nav-item nav-sub" data-panel="execlog">
-            <span class="nav-icon nav-log"></span>실행 로그
+            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>실행 로그
           </button>
         </details>
+        <button class="nav-item nav-sub" data-panel="chat" style="display:none;">
+          <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>잡담방
+        </button>
         <details class="nav-group">
-          <summary>소식/도움</summary>
-          <button class="nav-item nav-sub" data-panel="notice">
-            <span class="nav-icon nav-notice"></span>공지사항
-          </button>
-          <button class="nav-item nav-sub" data-panel="community">
-            <span class="nav-icon nav-community"></span>커뮤니티
-          </button>
-          <!-- 잡담방 제거됨 -->
-          <button class="nav-item nav-sub hidden" data-panel="chat" style="display:none;">
-            <span class="nav-icon nav-chat"></span>잡담방
-          </button>
-          <button class="nav-item nav-sub" data-panel="challenge">
-            <span class="nav-icon nav-challenge"></span>SNS 챌린지
-          </button>
+          <summary>기타</summary>
           <button class="nav-item nav-sub" data-panel="pricing">
-            <span class="nav-icon nav-pricing"></span>가격정책
+            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>가격정책
           </button>
           <button class="nav-item nav-sub" data-panel="feedback">
-            <span class="nav-icon nav-feedback"></span>문의하기
+            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>문의하기
           </button>
           <button class="nav-item nav-sub" data-panel="about">
-            <span class="nav-icon nav-info"></span>정보
+            <span class="nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>정보
           </button>
         </details>
       </nav>
@@ -116,29 +315,91 @@
           <div class="card" style="cursor:default;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
               <span style="font-size:13px;font-weight:700;color:var(--accent);">업데이트</span>
+              <span style="font-size:11px;color:var(--text-dim);">2026-05-11</span>
+            </div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:8px;">v0.2.4 업데이트 안내</div>
+            <div style="font-size:13px;color:var(--text-sub);line-height:1.8;">
+              - 노트북 해상도별 UI 최적화 (1024~1440px 중간 해상도 대응)<br>
+              - 메뉴 구조 대폭 개편 (글쓰기 통합, 커뮤니티 허브)<br>
+              - 블로그/카페 글쓰기 통합 (탭 전환 방식)<br>
+              - 카드뉴스 디자인 다양화 (5가지 레이아웃 + 모든 슬라이드 사진 자동삽입)<br>
+              - 무료 자료실 추가 (사진/GIF/영상 검색 + 메이킷 자료)<br>
+              - 영상 편집기 캡컷 다크 테마 적용<br>
+              - 자막 더듬거림/반복 제거 강화<br>
+              - 이메일/비밀번호 직접 로그인 + 자동 로그인<br>
+              - 네이버 로그인 감지 개선<br>
+              - 홈페이지 exe 직접 다운로드 지원
+            </div>
+          </div>
+          <div class="card" style="cursor:default;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:13px;font-weight:700;color:var(--accent);">업데이트</span>
+              <span style="font-size:11px;color:var(--text-dim);">2026-05-09</span>
+            </div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:8px;">v0.2.3 업데이트 안내</div>
+            <div style="font-size:13px;color:var(--text-sub);line-height:1.8;">
+              - 영상 편집기 캡컷 스타일 UI 전면 리뉴얼<br>
+              - 자막 중복/반복 버그 수정 (유사 중복 + 시간 겹침 필터)<br>
+              - 영상 편집기 색상 틸(#3b82f6) 통일<br>
+              - 보안 강화 (외부 링크 URL 검증, IPC 리스너 누수 방지)<br>
+              - 보관함 영상 복원 기능 수정<br>
+              - 전체 앱 코드 품질 개선 및 데드코드 정리
+            </div>
+          </div>
+          <div class="card" style="cursor:default;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:13px;font-weight:700;color:var(--accent);">업데이트</span>
+              <span style="font-size:11px;color:var(--text-dim);">2026-05-08</span>
+            </div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:8px;">v0.2.2 업데이트 안내</div>
+            <div style="font-size:13px;color:var(--text-sub);line-height:1.8;">
+              - 숏폼 OpusClip 방식 리팩토링 (AI 하이라이트 추출)<br>
+              - 자막 프리셋 카드 9종 추가<br>
+              - ASS FontSize 스케일링 수정<br>
+              - 영상 로드 타임아웃 추가 (15초)<br>
+              - 보관함 영상 편집 데이터 저장
+            </div>
+          </div>
+          <div class="card" style="cursor:default;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:13px;font-weight:700;color:var(--accent);">업데이트</span>
               <span style="font-size:11px;color:var(--text-dim);">2026-04-28</span>
             </div>
-            <div style="font-size:14px;font-weight:600;margin-bottom:6px;">v0.1.8 업데이트 안내</div>
-            <div style="font-size:12px;color:var(--text-sub);line-height:1.7;">
-              - 구글 드라이브 폴더 기반 글감 자동 발행 기능 추가<br>
+            <div style="font-size:16px;font-weight:700;margin-bottom:8px;">v0.1.8 업데이트 안내</div>
+            <div style="font-size:13px;color:var(--text-sub);line-height:1.8;">
+              - 구글 드라이브 폴더 기반 글감 자동 발행<br>
               - 로그인 토큰 갱신 및 세션 유지 안정화<br>
-              - 초기 실행 브라우저 설치/확인 과정 개선<br>
+              - 초기 실행 브라우저 설치/확인 개선<br>
               - 대량 발행 타임아웃 및 중단 처리 안정화<br>
-              - 카테고리 선택, 2단계 발행 버튼 탐색 보강<br>
+              - 카테고리 선택, 발행 버튼 탐색 보강<br>
               - GIF/이미지/스티커 삽입 안정성 개선
             </div>
           </div>
           <div class="card" style="cursor:default;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-              <span style="font-size:13px;font-weight:700;color:var(--success);">안내</span>
+              <span style="font-size:13px;font-weight:700;color:var(--accent);">안내</span>
               <span style="font-size:11px;color:var(--text-dim);">2026-04-24</span>
             </div>
-            <div style="font-size:14px;font-weight:600;margin-bottom:6px;">v0.1.4 출시</div>
-            <div style="font-size:12px;color:var(--text-sub);line-height:1.7;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:8px;">v0.1.4 출시</div>
+            <div style="font-size:13px;color:var(--text-sub);line-height:1.8;">
               - 소제목 색상 적용 기능 추가<br>
               - 인용구 스타일 선택 기능<br>
               - SEO 최적화 프롬프트 강화<br>
               - 네이버 블로그/카페 자동 발행
+            </div>
+          </div>
+          <div class="card" style="cursor:default;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <span style="font-size:13px;font-weight:700;color:var(--accent);">안내</span>
+              <span style="font-size:11px;color:var(--text-dim);">2026-04-10</span>
+            </div>
+            <div style="font-size:16px;font-weight:700;margin-bottom:8px;">v0.1.0 출시</div>
+            <div style="font-size:13px;color:var(--text-sub);line-height:1.8;">
+              - SNS메이킷 데스크톱 프로그램 첫 출시<br>
+              - 네이버 블로그 자동 글쓰기<br>
+              - AI 글 생성 (Claude/GPT 기반)<br>
+              - 카드뉴스 에디터<br>
+              - 영상 편집기 (자막/숏폼)
             </div>
           </div>
         </div>
@@ -209,40 +470,7 @@
           <p class="panel-sub">네이버 블로그/카페 자동 글쓰기 솔루션</p>
         </div>
 
-        <div class="home-automation-hero">
-          <div>
-            <div class="home-kicker">AI 자동 발행</div>
-            <h2>주제만 넣으면 글 생성부터 네이버 발행까지 자동으로 진행합니다.</h2>
-            <p>블로그, 카페, 구글 드라이브 자료 기반 발행을 한 화면에서 운영합니다.</p>
-          </div>
-          <button class="btn btn-primary" id="homeStartBlogBtn">블로그 시작</button>
-        </div>
-
-        <div class="home-feature-grid">
-          <div class="home-feature-card">
-            <div class="home-feature-icon">B</div>
-            <div>
-              <h3>블로그 자동 발행</h3>
-              <p>키워드, 메뉴명, 톤을 정하면 SEO 글을 생성하고 네이버 블로그에 발행합니다.</p>
-            </div>
-          </div>
-          <div class="home-feature-card">
-            <div class="home-feature-icon">N</div>
-            <div>
-              <h3>카페 글 작성</h3>
-              <p>카페 분위기에 맞는 짧은 정보 글을 만들고 선택한 카페/게시판에 등록합니다.</p>
-            </div>
-          </div>
-          <div class="home-feature-card">
-            <div class="home-feature-icon">D</div>
-            <div>
-              <h3>드라이브 자료 발행</h3>
-              <p>구글 드라이브 폴더명과 파일을 글감으로 쓰고, 폴더 이미지를 본문에 넣습니다.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="panel-header" style="margin-top:24px;">
+        <div class="panel-header" style="margin-top:0;">
           <h1 style="font-size:18px;">메이킷 계정</h1>
           <p class="panel-sub">메이킷 계정으로 로그인하세요. 월/연간 구독자는 즉시 이용 가능합니다.</p>
         </div>
@@ -253,11 +481,27 @@
             <h3>로그인</h3>
           </div>
           <div class="form">
-            <button class="btn btn-primary btn-full btn-lg" id="browserLoginBtn">
+            <label>이메일</label>
+            <input type="email" id="makeitLoginEmail" placeholder="이메일 주소">
+            <label>비밀번호</label>
+            <input type="password" id="makeitLoginPw" placeholder="비밀번호">
+            <div style="display:flex;align-items:center;gap:8px;margin:8px 0 12px;">
+              <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:13px;color:var(--text-sub);cursor:pointer;">
+                <input type="checkbox" id="makeitSaveLogin" style="width:auto;min-height:auto;"> 로그인 정보 저장
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:13px;color:var(--text-sub);cursor:pointer;">
+                <input type="checkbox" id="makeitAutoLogin" style="width:auto;min-height:auto;"> 자동 로그인
+              </label>
+            </div>
+            <button class="btn btn-primary btn-full btn-lg" id="makeitDirectLoginBtn">
               로그인
             </button>
-            <div class="form-hint">
-              메이킷 계정으로 로그인합니다. Google 로그인 지원.<br>
+            <div style="text-align:center;margin:12px 0;font-size:12px;color:var(--text-dim);">또는</div>
+            <button class="btn btn-outline btn-full" id="browserLoginBtn">
+              Google 계정으로 로그인
+            </button>
+            <div class="form-hint" style="margin-top:10px;">
+              메이킷 계정 또는 Google 계정으로 로그인합니다.<br>
               월/연간 구독자는 로그인 즉시 이용 가능합니다.
             </div>
           </div>
@@ -273,6 +517,8 @@
           <div class="plan-title" id="planTitle">구독 정보 없음</div>
           <div class="plan-desc" id="planDesc">로그인 후 구독 상태가 표시됩니다.</div>
         </div>
+
+        <!-- 계정 설정은 사이드바 메뉴로 이동 -->
 
         <!-- 7일 Pro 체험권 안내 (관리자 부여 대상자 안내) -->
         <div class="card" id="proTrialBanner" style="display:none;background:#eff6ff;border:1px solid #bfdbfe;position:relative;overflow:hidden;">
@@ -291,44 +537,19 @@
           </div>
         </div>
 
-        <!-- 대시보드 -->
+        <!-- 대시보드 (숨김 — 자동화 현황에 통합, JS 호환용) -->
         <div id="homeDashboard" style="display:none;">
-          <div class="panel-header" style="margin-top:24px;">
-            <h1 style="font-size:18px;">발행 현황</h1>
+          <div style="display:none;">
+            <span id="dashWeekCount">0</span><span id="dashSuccessRate">-</span><span id="dashTotalCount">0</span>
+            <div id="dashAutopilotStatus"><div id="dashApBadge"></div><div id="dashApInfo"></div></div>
+            <div id="dashRecentPosts"></div>
           </div>
-
-          <!-- 통계 카드 -->
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px;">
-            <div class="card" style="text-align:center;padding:14px 10px;">
-              <div style="font-size:22px;font-weight:800;color:var(--accent);" id="dashWeekCount">0</div>
-              <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">이번 주 발행</div>
-            </div>
-            <div class="card" style="text-align:center;padding:14px 10px;">
-              <div style="font-size:22px;font-weight:800;color:var(--success);" id="dashSuccessRate">-</div>
-              <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">성공률</div>
-            </div>
-            <div class="card" style="text-align:center;padding:14px 10px;">
-              <div style="font-size:22px;font-weight:800;color:var(--text);" id="dashTotalCount">0</div>
-              <div style="font-size:11px;color:var(--text-dim);margin-top:2px;">전체 발행</div>
-            </div>
-          </div>
-
-          <!-- 자동 운영 상태 -->
-          <div class="card" id="dashAutopilotStatus" style="display:none;margin-bottom:16px;">
-            <div class="card-header">
-              <h3>자동 운영</h3>
-              <div id="dashApBadge" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--success-soft);color:#065f46;">운영 중</div>
-            </div>
-            <div id="dashApInfo" style="font-size:13px;line-height:1.7;color:var(--text-sub);"></div>
-          </div>
-
-          <!-- 최근 발행 글 -->
-          <div class="card">
-            <div class="card-header"><h3>최근 발행</h3></div>
-            <div id="dashRecentPosts" style="font-size:13px;">
-              <div style="color:var(--text-dim);padding:8px 0;">발행 이력이 없습니다.</div>
-            </div>
-          </div>
+        </div>
+        <!-- 홈 소식 미리보기 (숨김 — JS 호환용) -->
+        <div style="display:none;">
+          <div id="homeNoticePreview"></div>
+          <div id="homeCommunityPreview"></div>
+          <div id="homeChallengePreview"></div>
         </div>
       </section>
 
@@ -396,6 +617,14 @@
           <p class="panel-sub">블로그와 카페 자동화에서 공통으로 사용할 네이버 계정을 관리합니다.</p>
         </div>
 
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+            <strong>안내사항</strong><br>
+            계정 정보는 <strong>PC에만 암호화 저장</strong>되며 외부 서버로 전송되지 않습니다.<br>
+            2단계 인증이 설정된 계정은 자동 로그인이 제한될 수 있습니다.
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-header"><h3>저장된 계정</h3></div>
           <div id="naverAccountList" class="form" style="margin-bottom:8px;">
@@ -449,42 +678,127 @@
       <!-- 네이버 블로그 자동화 -->
       <section class="panel hidden" data-panel="naver-blog">
         <div class="panel-header">
-          <h1>네이버 블로그</h1>
-          <p class="panel-sub">블로그 글을 자동으로 생성하고 발행합니다.</p>
+          <h1>글쓰기</h1>
+          <p class="panel-sub">AI가 글 생성부터 네이버 발행까지 자동으로 진행합니다.</p>
         </div>
 
         <!-- 발행 방식 선택 (첫 화면) -->
         <div id="blogModeSelect">
-          <div class="card" style="background:#fffbeb;border:1px solid #fbbf24;margin-bottom:16px;">
-            <div style="font-size:13px;color:#92400e;line-height:1.6;">
+          <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+            <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
               <strong>안내사항</strong><br>
               블로그 글은 품질 유지를 위해 <strong>하루 3회 이내</strong> 작성을 권장합니다.<br>
               그 이상 작성 시 네이버 저품질 판정을 받을 수 있으며, 이로 인한 불이익은 책임지지 않습니다.
             </div>
           </div>
-          <!-- 빠른 시작 -->
-          <div class="card" style="background:#eff6ff;border:2px solid var(--accent);margin-bottom:16px;padding:20px;">
-            <div style="font-size:16px;font-weight:800;color:var(--accent);margin-bottom:8px;">빠른 시작</div>
-            <div style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">키워드와 메뉴명만 입력하면 나머지는 AI가 알아서 설정합니다.</div>
-            <div class="form">
-              <div style="display:flex;gap:8px;">
-                <input type="text" id="quickTheme" placeholder="키워드 (예: 부동산 투자, 건강관리)" style="flex:2;">
-                <input type="text" id="quickCategory" placeholder="메뉴명" style="flex:1;">
+          <!-- 발행 대상 선택 -->
+          <div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border-soft);">
+            <button class="publish-target-tab active" data-target="blog" style="flex:1;padding:12px 0;font-size:15px;font-weight:800;border:none;background:transparent;color:var(--accent);cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;transition:all 0.15s;">블로그</button>
+            <button class="publish-target-tab" data-target="cafe" style="flex:1;padding:12px 0;font-size:15px;font-weight:800;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all 0.15s;">카페</button>
+          </div>
+
+          <!-- 블로그 모드 선택 -->
+          <div id="blogQuickSection">
+            <!-- 블로그 지금 발행 -->
+            <div class="card" style="background:var(--accent-soft);border:2px solid var(--accent);margin-bottom:16px;padding:20px;">
+              <div style="font-size:16px;font-weight:800;color:var(--accent);margin-bottom:8px;">블로그 지금 발행</div>
+              <div style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">키워드만 입력하면 AI가 글을 생성하고 바로 발행합니다.</div>
+              <div class="form">
+                <input type="text" id="quickBlogTheme" placeholder="키워드 (예: 부동산 투자, 건강관리, 심리상담)">
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                  <div style="flex:1;">
+                    <label style="font-size:11px;font-weight:600;color:var(--text-dim);margin-bottom:4px;display:block;">메뉴명</label>
+                    <input type="text" id="quickBlogCategory" placeholder="예: IT·컴퓨터" style="font-size:13px;">
+                  </div>
+                  <div style="flex:1;">
+                    <label style="font-size:11px;font-weight:600;color:var(--text-dim);margin-bottom:4px;display:block;">템플릿명</label>
+                    <input type="text" id="quickBlogTemplate" placeholder="선택사항" style="font-size:13px;">
+                  </div>
+                </div>
+                <div style="margin-top:8px;">
+                  <label style="font-size:11px;font-weight:600;color:var(--text-dim);margin-bottom:4px;display:block;">글 길이</label>
+                  <div class="chips" id="quickBlogLengthChips" style="gap:6px;">
+                    <button class="chip" data-value="short" style="flex:1;padding:8px 0;font-size:12px;">짧게<span style="display:block;font-size:10px;color:var(--text-dim);font-weight:400;margin-top:2px;">~1,000자</span></button>
+                    <button class="chip active" data-value="medium" style="flex:1;padding:8px 0;font-size:12px;">보통<span style="display:block;font-size:10px;color:var(--text-dim);font-weight:400;margin-top:2px;">~2,000자</span></button>
+                    <button class="chip" data-value="long" style="flex:1;padding:8px 0;font-size:12px;">길게<span style="display:block;font-size:10px;color:var(--text-dim);font-weight:400;margin-top:2px;">~3,000자</span></button>
+                  </div>
+                </div>
+                <button class="btn btn-full btn-lg" id="quickBlogStartBtn" style="margin-top:12px;background:var(--accent);color:#fff;border:none;font-weight:700;border-radius:10px;padding:14px;font-size:15px;cursor:pointer;">1개 바로 발행</button>
               </div>
-              <input type="text" id="quickTitle" placeholder="글 제목 직접 입력 (비우면 AI 자동 생성)" style="margin-top:8px;">
-              <input type="text" id="quickTemplate" placeholder="네이버 블로그 템플릿 이름 (선택)" style="margin-top:8px;">
-              <button class="btn btn-primary btn-full btn-lg" id="quickStartBtn" style="margin-top:10px;">1개 바로 발행</button>
+            </div>
+            <div style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:12px;">또는 상세 설정으로 발행하기</div>
+            <div class="mode-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div class="mode-card" id="modeAutopilot" style="border:2px solid var(--accent);position:relative;cursor:pointer;">
+                <div style="position:absolute;top:-1px;right:12px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:0 0 6px 6px;">추천</div>
+                <div class="mode-card-title" style="color:var(--accent);">자동 글쓰기</div>
+                <div class="mode-card-desc">키워드만 넣으면 AI가 글 생성부터 블로그 발행까지 전자동으로 진행합니다.</div>
+              </div>
+              <div class="mode-card" id="modeManualWrite" style="cursor:pointer;">
+                <div class="mode-card-title">수동 글쓰기</div>
+                <div class="mode-card-desc">주제를 입력하면 AI가 글을 생성하고, 수정 후 발행합니다.</div>
+              </div>
+              <div class="mode-card" id="modeLinkWrite" style="cursor:pointer;">
+                <div class="mode-card-title">링크로 글쓰기</div>
+                <div class="mode-card-desc">URL을 입력하면 내용을 분석해 블로그 글을 자동 생성합니다.</div>
+              </div>
+              <div class="mode-card" id="modeFileWrite" style="cursor:pointer;">
+                <div class="mode-card-title">파일로 글쓰기</div>
+                <div class="mode-card-desc">파일, 폴더, 드라이브의 자료를 글감으로 블로그 글을 생성합니다.</div>
+              </div>
+            </div>
+            <!-- 빠른시작 숨김 (기존 JS 호환용) -->
+            <div style="display:none;">
+              <input type="text" id="quickTheme"><input type="text" id="quickCategory">
+              <input type="text" id="quickTitle"><input type="text" id="quickTemplate">
+              <button id="quickStartBtn"></button>
             </div>
           </div>
 
-          <div style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:12px;">또는 상세 설정으로 발행하기</div>
-
-          <div class="mode-cards">
-            <div class="mode-card" id="modeAutopilot" style="width:100%;">
-              <div class="mode-card-title">자동 운영</div>
-              <div class="mode-card-desc">키워드, 스타일, 분량, 인용구 등 세부 설정으로 자동 발행합니다. 구글 드라이브 사진/자료도 함께 사용할 수 있습니다.</div>
+          <!-- 카페 모드 선택 -->
+          <div id="cafeQuickSection" style="display:none;">
+            <!-- 카페 지금 발행 -->
+            <div class="card" style="background:var(--accent-soft);border:2px solid var(--accent);margin-bottom:16px;padding:20px;">
+              <div style="font-size:16px;font-weight:800;color:var(--accent);margin-bottom:8px;">카페 지금 발행</div>
+              <div style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">카페 정보와 키워드를 입력하면 AI가 글을 생성하고 바로 발행합니다.</div>
+              <div class="form">
+                <div style="display:flex;gap:8px;">
+                  <input type="text" id="quickCafeId" placeholder="카페 URL 이름 (예: test123)" style="flex:1;">
+                  <input type="text" id="quickCafeNumber" placeholder="카페 번호" style="flex:1;">
+                </div>
+                <div style="display:flex;gap:8px;margin-top:8px;">
+                  <input type="text" id="quickCafeMenuId" placeholder="게시판 번호" style="flex:1;">
+                  <input type="text" id="quickCafeBoardName" placeholder="게시판 이름" style="flex:1;">
+                </div>
+                <input type="text" id="quickCafeTheme" placeholder="키워드 (예: 경제 뉴스, 부동산)" style="margin-top:8px;">
+                <button class="btn btn-full btn-lg" id="quickCafeStartBtn" style="margin-top:10px;background:var(--accent);color:#fff;border:none;font-weight:700;border-radius:10px;padding:14px;font-size:15px;cursor:pointer;">1개 바로 발행</button>
+              </div>
+            </div>
+            <div style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:12px;">또는 상세 설정으로 발행하기</div>
+            <div class="mode-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div class="mode-card" id="modeCafeAutopilot" style="cursor:pointer;border:2px solid var(--accent);position:relative;">
+                <div style="position:absolute;top:-1px;right:12px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:0 0 6px 6px;">추천</div>
+                <div class="mode-card-title" style="color:var(--accent);">자동 글쓰기</div>
+                <div class="mode-card-desc">키워드를 설정하면 매일 자동으로 카페에 글을 발행합니다.</div>
+              </div>
+              <div class="mode-card" id="modeCafeManualWrite" style="cursor:pointer;">
+                <div class="mode-card-title">수동 글쓰기</div>
+                <div class="mode-card-desc">주제를 입력하면 AI가 카페 글을 생성하고, 수정 후 발행합니다.</div>
+              </div>
+              <div class="mode-card" id="modeCafeLinkWrite" style="cursor:pointer;">
+                <div class="mode-card-title">링크로 글쓰기</div>
+                <div class="mode-card-desc">URL을 입력하면 내용을 분석해 카페 글을 자동 생성합니다.</div>
+              </div>
+              <div class="mode-card" id="modeCafeFileWrite" style="cursor:pointer;">
+                <div class="mode-card-title">파일로 글쓰기</div>
+                <div class="mode-card-desc">파일, 폴더, 드라이브의 자료를 글감으로 카페 글을 생성합니다.</div>
+              </div>
             </div>
           </div>
+
+          <!-- 숨김 호환용 -->
+          <div id="modeDriveAutopilot" style="display:none;"></div>
+          <div id="publishTargetChips" style="display:none;"><button class="chip active" data-value="blog"></button></div>
+          <div id="cafeQuickSettings" style="display:none;"></div>
         </div>
 
         <!-- 자동 운영 화면 -->
@@ -518,23 +832,13 @@
                 <textarea id="autopilotPrompt" rows="3" placeholder="예: 이미지 먼저 보여주고, 짧은 문단으로 쉽게 써줘. 핵심 단어는 굵게 강조해줘." style="padding:10px 14px;border:1px solid var(--border);border-radius:10px;font-size:13px;font-family:inherit;resize:vertical;background:var(--bg-elev);color:var(--text);"></textarea>
                 <div class="form-hint">영상처럼 이미지가 먼저 나오고, 짧은 문단과 핵심 강조가 있는 글 방식으로 기본 작성됩니다.</div>
 
-                <div style="margin-top:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg-elev);">
-                  <label style="display:flex;align-items:center;gap:8px;margin:0;font-size:13px;font-weight:700;color:var(--text);cursor:pointer;">
-                    <input type="checkbox" id="driveToggle" style="width:auto;accent-color:var(--accent);">
-                    구글 드라이브 사진/자료 사용
-                  </label>
-                  <div class="form-hint" style="margin-top:4px;">원하는 사진과 자료를 구글 드라이브에서 불러와 본문에 함께 넣습니다. (Pro 이상)</div>
-                </div>
-                <div id="driveSourceSection" style="display:none;margin-top:10px;">
-                  <label>구글 드라이브 자료 폴더 <span class="req">*</span></label>
-                  <input type="text" id="driveFolderUrl" placeholder="예: https://drive.google.com/drive/folders/...">
-                  <div class="row">
-                    <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:12px;color:var(--text-sub);">
-                      <input type="checkbox" id="driveRecursive" style="width:auto;"> 하위 폴더 포함
-                    </label>
-                  </div>
-                  <div class="form-hint">폴더 안의 문서/텍스트 파일을 글감으로 쓰고, 이미지 파일은 본문 중간에 함께 삽입합니다. 폴더는 링크가 있는 사용자가 볼 수 있게 공유되어 있어야 합니다.</div>
-                </div>
+                <!-- 사진/자료 소스는 '링크로 글쓰기', '파일로 글쓰기' 모드로 이동 -->
+                <div id="driveSourceToggle" style="display:none;"><button class="chip active" data-value="none"></button></div>
+                <div id="urlSourceSection" style="display:none;"></div>
+                <div id="driveSourceSection" style="display:none;"></div>
+                <div id="folderSourceSection" style="display:none;"></div>
+                <input type="hidden" id="apRefUrl"><div id="apUrlMode" style="display:none;"></div>
+                <div id="apUrlPreview" style="display:none;"></div><div id="apUrlImages" style="display:none;"></div>
               </div>
             </div>
             <div class="wiz-nav">
@@ -828,19 +1132,49 @@
           <p class="panel-sub">카페에 자동으로 글을 작성합니다.</p>
         </div>
 
-        <div class="card" style="background:#fffbeb;border:1px solid #fbbf24;margin-bottom:16px;">
-          <div style="font-size:13px;color:#92400e;line-height:1.6;">
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
             <strong>안내사항</strong><br>
             카페 글은 해당 카페의 규칙을 준수하세요. 스팸성 글은 카페 강퇴 및 네이버 계정 제재를 받을 수 있습니다.
           </div>
         </div>
 
-        <!-- 카페 모드 선택 -->
+        <!-- 카페 지금 발행 -->
         <div id="cafeModeSelect">
-          <div class="mode-cards">
-            <div class="mode-card" id="cafeModeAutopilot">
-              <div class="mode-card-title">자동 운영</div>
+          <div class="card" style="background:var(--accent-soft);border:2px solid var(--accent);margin-bottom:16px;padding:20px;">
+            <div style="font-size:16px;font-weight:800;color:var(--accent);margin-bottom:8px;">카페 지금 발행</div>
+            <div style="font-size:13px;color:var(--text-sub);margin-bottom:14px;">카페 정보와 키워드를 입력하면 AI가 글을 생성하고 바로 발행합니다.</div>
+            <div class="form">
+              <div style="display:flex;gap:8px;">
+                <input type="text" id="quickCafe2Id" placeholder="카페 URL 이름 (예: test123)" style="flex:1;">
+                <input type="text" id="quickCafe2Number" placeholder="카페 번호" style="flex:1;">
+              </div>
+              <div style="display:flex;gap:8px;margin-top:8px;">
+                <input type="text" id="quickCafe2MenuId" placeholder="게시판 번호" style="flex:1;">
+                <input type="text" id="quickCafe2BoardName" placeholder="게시판 이름" style="flex:1;">
+              </div>
+              <input type="text" id="quickCafe2Theme" placeholder="키워드 (예: 경제 뉴스, 부동산)" style="margin-top:8px;">
+              <button class="btn btn-full btn-lg" id="quickCafe2StartBtn" style="margin-top:10px;background:var(--accent);color:#fff;border:none;font-weight:700;border-radius:10px;padding:14px;font-size:15px;cursor:pointer;">1개 바로 발행</button>
+            </div>
+          </div>
+          <div style="text-align:center;font-size:12px;color:var(--text-dim);margin-bottom:12px;">또는 상세 설정으로 발행하기</div>
+          <div class="mode-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div class="mode-card" id="cafeModeAutopilot" style="border:2px solid var(--accent);position:relative;">
+              <div style="position:absolute;top:-1px;right:12px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:0 0 6px 6px;">추천</div>
+              <div class="mode-card-title" style="color:var(--accent);">자동 글쓰기</div>
               <div class="mode-card-desc">키워드를 설정하면 자동으로 카페에 글을 발행합니다.</div>
+            </div>
+            <div class="mode-card" id="cafeModeManualWrite">
+              <div class="mode-card-title">수동 글쓰기</div>
+              <div class="mode-card-desc">주제를 입력하면 AI가 카페 글을 생성합니다.</div>
+            </div>
+            <div class="mode-card" id="cafeModeLinkWrite">
+              <div class="mode-card-title">링크로 글쓰기</div>
+              <div class="mode-card-desc">URL 내용을 분석해 카페 글을 자동 생성합니다.</div>
+            </div>
+            <div class="mode-card" id="cafeModeFileWrite">
+              <div class="mode-card-title">파일로 글쓰기</div>
+              <div class="mode-card-desc">파일, 폴더, 드라이브 자료로 카페 글을 생성합니다.</div>
             </div>
           </div>
         </div>
@@ -910,11 +1244,19 @@
           <p class="panel-sub">발행 이력과 자동 운영 상태를 확인하세요.</p>
         </div>
 
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+            <strong>안내사항</strong><br>
+            자동 운영 중에는 PC가 켜져 있어야 하며, 예약된 시간에 자동으로 글이 발행됩니다.<br>
+            발행 실패 시 로그를 확인하고 계정 상태를 점검해주세요.
+          </div>
+        </div>
+
         <!-- 자동 운영 상태 카드 -->
         <div class="card" id="dashboardAutopilotCard" style="display:none;">
           <div class="card-header">
             <h3>자동 운영</h3>
-            <div id="dashboardAutopilotBadge" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--success-soft);color:#065f46;">운영 중</div>
+            <div id="dashboardAutopilotBadge" style="font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;background:var(--accent-soft);color:var(--accent);">운영 중</div>
           </div>
           <div id="dashboardAutopilotInfo" style="font-size:13px;line-height:1.8;color:var(--text-sub);"></div>
           <div style="margin-top:12px;">
@@ -954,6 +1296,14 @@
           <p class="panel-sub">자동화 실행 중 진행상황과 에러가 여기에 표시됩니다.</p>
         </div>
 
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+            <strong>안내사항</strong><br>
+            실행 중에는 브라우저 창이 자동으로 열릴 수 있습니다. 완료될 때까지 <strong>창을 닫지 마세요.</strong><br>
+            에러 발생 시 로그를 복사해 고객센터에 문의하면 빠르게 해결할 수 있습니다.
+          </div>
+        </div>
+
         <!-- 진행 상황 프로그레스바 -->
         <div class="publish-progress" id="publishProgress" style="display:none;">
           <div class="publish-progress-title" id="progressTitle">발행 준비 중...</div>
@@ -980,11 +1330,143 @@
         </div>
       </section>
 
+      <!-- 무료 사진 -->
+      <section class="panel hidden" data-panel="ml-photo">
+        <div class="panel-header">
+          <h1>무료 사진</h1>
+          <p class="panel-sub">Pexels 제공 | 상업적 사용 가능한 고해상도 사진</p>
+        </div>
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+            <strong>안내사항</strong><br>
+            모든 사진은 <strong>상업적 사용이 가능</strong>하며 별도 출처 표기 없이 자유롭게 사용할 수 있습니다.<br>
+            클릭하면 원본 해상도로 다운로드됩니다.
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <div style="flex:1;position:relative;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="ml-input" data-ml-type="photo" placeholder="사진 검색 (예: 사무실, 음식, 여행...)" style="width:100%;padding:12px 14px 12px 40px;border-radius:10px;">
+          </div>
+          <button class="btn btn-primary ml-search-btn" data-ml-type="photo" style="padding:12px 24px;border-radius:10px;font-weight:700;white-space:nowrap;">검색</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="business">비즈니스</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="nature">자연</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="food">음식</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="office">사무실</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="people">사람</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="city">도시</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="technology">기술</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="photo" data-q="travel">여행</button>
+        </div>
+        <div class="ml-grid" data-ml-type="photo" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;">
+          <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-dim);font-size:14px;">검색어를 입력하세요.</div>
+        </div>
+        <div class="ml-more-wrap" data-ml-type="photo" style="display:none;text-align:center;margin-top:20px;">
+          <button class="btn btn-outline ml-more-btn" data-ml-type="photo" style="padding:12px 32px;">더 보기</button>
+        </div>
+      </section>
+
+      <!-- 무료 GIF -->
+      <section class="panel hidden" data-panel="ml-gif">
+        <div class="panel-header">
+          <h1>무료 GIF</h1>
+          <p class="panel-sub">Klipy 제공 | 움짤/리액션 GIF 검색</p>
+        </div>
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+            <strong>안내사항</strong><br>
+            GIF는 블로그 글에 삽입하면 움직이는 이미지로 표시됩니다.<br>
+            파일 크기가 클 수 있으므로 <strong>글당 2~3개</strong> 정도가 적당합니다.
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <div style="flex:1;position:relative;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="ml-input" data-ml-type="gif" placeholder="GIF 검색 (예: 축하, 웃음, 리액션...)" style="width:100%;padding:12px 14px 12px 40px;border-radius:10px;">
+          </div>
+          <button class="btn btn-primary ml-search-btn" data-ml-type="gif" style="padding:12px 24px;border-radius:10px;font-weight:700;white-space:nowrap;">검색</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="gif" data-q="thumbs up">좋아요</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="gif" data-q="celebration">축하</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="gif" data-q="laugh">웃음</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="gif" data-q="surprised">놀람</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="gif" data-q="cute">귀여운</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="gif" data-q="sad">슬픔</button>
+        </div>
+        <div class="ml-grid" data-ml-type="gif" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;">
+          <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-dim);font-size:14px;">검색어를 입력하세요.</div>
+        </div>
+        <div class="ml-more-wrap" data-ml-type="gif" style="display:none;text-align:center;margin-top:20px;">
+          <button class="btn btn-outline ml-more-btn" data-ml-type="gif" style="padding:12px 32px;">더 보기</button>
+        </div>
+      </section>
+
+      <!-- 무료 영상 -->
+      <section class="panel hidden" data-panel="ml-video">
+        <div class="panel-header">
+          <h1>무료 영상</h1>
+          <p class="panel-sub">Pixabay 제공 | 상업적 사용 가능한 영상 클립</p>
+        </div>
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+            <strong>안내사항</strong><br>
+            모든 영상은 <strong>상업적 사용이 가능</strong>하며 출처 표기 없이 자유롭게 사용할 수 있습니다.<br>
+            슬라이드 영상이나 편집 소스로 활용하기 좋습니다.
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <div style="flex:1;position:relative;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" stroke-linecap="round" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" class="ml-input" data-ml-type="video" placeholder="영상 검색 (예: 하늘, 바다, 도시...)" style="width:100%;padding:12px 14px 12px 40px;border-radius:10px;">
+          </div>
+          <button class="btn btn-primary ml-search-btn" data-ml-type="video" style="padding:12px 24px;border-radius:10px;font-weight:700;white-space:nowrap;">검색</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="video" data-q="nature">자연</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="video" data-q="city">도시</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="video" data-q="sky">하늘</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="video" data-q="ocean">바다</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="video" data-q="abstract">추상</button>
+          <button class="btn btn-outline btn-sm ml-qtag" data-ml-type="video" data-q="business">비즈니스</button>
+        </div>
+        <div class="ml-grid" data-ml-type="video" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">
+          <div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--text-dim);font-size:14px;">검색어를 입력하세요.</div>
+        </div>
+        <div class="ml-more-wrap" data-ml-type="video" style="display:none;text-align:center;margin-top:20px;">
+          <button class="btn btn-outline ml-more-btn" data-ml-type="video" style="padding:12px 32px;">더 보기</button>
+        </div>
+      </section>
+
+      <!-- 커뮤니티 허브 — 기존 패널을 탭으로 전환 표시 -->
+      <section class="panel hidden" data-panel="news-hub">
+        <div class="panel-header">
+          <h1>커뮤니티</h1>
+          <p class="panel-sub">공지사항, 커뮤니티, 부트캠프를 한 곳에서 확인하세요.</p>
+        </div>
+        <div style="display:flex;gap:0;border-bottom:2px solid var(--border-soft);margin-bottom:16px;">
+          <button class="hub-tab-btn active" data-hub-panel="notice" style="flex:1;padding:12px 0;font-size:14px;font-weight:700;border:none;background:transparent;color:var(--accent);cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;">공지사항</button>
+          <button class="hub-tab-btn" data-hub-panel="community" style="flex:1;padding:12px 0;font-size:14px;font-weight:700;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">커뮤니티</button>
+          <button class="hub-tab-btn" data-hub-panel="challenge" style="flex:1;padding:12px 0;font-size:14px;font-weight:700;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">부트캠프</button>
+          <button class="hub-tab-btn" data-hub-panel="classes" style="flex:1;padding:12px 0;font-size:14px;font-weight:700;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">클래스</button>
+        </div>
+        <div id="hubInlineContent"></div>
+      </section>
+
       <!-- 보관함 패널 -->
       <section class="panel hidden" data-panel="archive">
         <div class="panel-header">
           <h1>보관함</h1>
           <p class="panel-sub">글쓰기, 영상편집 등 작업 내역을 저장하고 다시 열 수 있습니다.</p>
+        </div>
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+            <strong>안내사항</strong><br>
+            작업 내역은 <strong>PC에 자동 저장</strong>되며, 언제든 불러와 수정하거나 재발행할 수 있습니다.<br>
+            불필요한 항목은 삭제하여 보관함을 깔끔하게 관리하세요.
+          </div>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:16px;">
           <button class="chip active" data-archive-filter="all">전체</button>
@@ -1001,7 +1483,7 @@
       <section class="panel hidden" data-panel="about">
         <div class="panel-header">
           <h1>정보</h1>
-          <p class="panel-sub">SNS메이킷 v0.1.2</p>
+          <p class="panel-sub">SNS메이킷 v0.2.3</p>
         </div>
         <div class="card">
           <div class="about-item">
@@ -1010,11 +1492,11 @@
           </div>
           <div class="about-item">
             <div class="about-label">지원 플랜</div>
-            <div class="about-value">Starter / Pro / Business</div>
+            <div class="about-value">Basic / Pro / Business</div>
           </div>
           <div class="about-item">
             <div class="about-label">빌드</div>
-            <div class="about-value">0.1.2 · Electron 28 · Python 3.12</div>
+            <div class="about-value">0.2.3 · Electron 28 · Python 3.12</div>
           </div>
         </div>
       </section>
@@ -1051,10 +1533,10 @@
           <div class="form">
             <label>카테고리</label>
             <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;" id="feedbackCatChips">
-              <button class="chip active" data-value="feature" style="padding:8px 16px;border-radius:8px;border:1.5px solid #3b82f6;background:#3b82f615;color:#3b82f6;font-size:13px;font-weight:700;cursor:pointer;">기능 요청</button>
-              <button class="chip" data-value="bug" style="padding:8px 16px;border-radius:8px;border:1px solid #e5e7eb;background:transparent;color:#888;font-size:13px;font-weight:500;cursor:pointer;">버그 신고</button>
-              <button class="chip" data-value="improve" style="padding:8px 16px;border-radius:8px;border:1px solid #e5e7eb;background:transparent;color:#888;font-size:13px;font-weight:500;cursor:pointer;">개선 제안</button>
-              <button class="chip" data-value="other" style="padding:8px 16px;border-radius:8px;border:1px solid #e5e7eb;background:transparent;color:#888;font-size:13px;font-weight:500;cursor:pointer;">기타</button>
+              <button class="chip active" data-value="feature" style="padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">기능 요청</button>
+              <button class="chip" data-value="bug" style="padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">버그 신고</button>
+              <button class="chip" data-value="improve" style="padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">개선 제안</button>
+              <button class="chip" data-value="other" style="padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">기타</button>
             </div>
 
             <label>제목</label>
@@ -1085,6 +1567,252 @@
 
       <!-- ========== 숏폼 생성 ========== -->
       <!-- ========== 영상 편집기 (통합) ========== -->
+      <!-- 영상 편집 허브 (모드 선택) -->
+      <section class="panel hidden" data-panel="video-hub">
+        <div class="panel-header">
+          <h1>영상 편집</h1>
+          <p class="panel-sub">영상 편집 방식을 선택하세요</p>
+        </div>
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+            <strong>안내사항</strong><br>
+            영상 편집은 <strong>횟수가 차감</strong>됩니다. 내보내기 시 1회 차감되며, 미리보기는 무료입니다.<br>
+            긴 영상은 처리 시간이 오래 걸릴 수 있으니 여유를 두고 작업하세요.
+          </div>
+        </div>
+        <div class="mode-cards" style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div class="mode-card" id="vhVideoEdit" style="flex:1;min-width:200px;cursor:pointer;border:2px solid var(--accent);position:relative;">
+            <div style="position:absolute;top:-1px;right:12px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:0 0 6px 6px;">추천</div>
+            <div class="mode-card-title" style="color:var(--accent);">영상 자동 편집</div>
+            <div class="mode-card-desc">영상 파일을 넣으면 AI가 분석하고 자막, 하이라이트, 숏폼을 자동 편집합니다.</div>
+          </div>
+          <div class="mode-card" id="vhSlideshow" style="flex:1;min-width:200px;cursor:pointer;">
+            <div class="mode-card-title">슬라이드 영상</div>
+            <div class="mode-card-desc">음악과 사진을 넣으면 가사 자막, 모션 효과, 전환까지 자동으로 영상을 생성합니다.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 슬라이드 영상 생성기 v3 -->
+      <section class="panel hidden" data-panel="slideshow">
+        <div class="panel-header">
+          <h1 style="font-size:18px;">슬라이드 영상</h1>
+          <p class="panel-sub">음악과 사진만 넣으면 자동으로 완성합니다</p>
+        </div>
+
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+            <strong>안내사항</strong><br>
+            음악을 먼저 넣으면 <strong>가사와 타이밍이 자동 계산</strong>됩니다.<br>
+            사진은 음악 길이에 맞춰 자동 배치되며, 순서를 드래그로 변경할 수 있습니다.
+          </div>
+        </div>
+
+        <!-- 스텝 인디케이터 -->
+        <div id="ssStepBar" style="display:flex;gap:0;margin-bottom:16px;">
+          <div class="ss-step-ind active" data-step="1" style="flex:1;text-align:center;padding:10px 0;font-size:12px;font-weight:700;border-bottom:3px solid var(--accent);color:var(--accent);cursor:pointer;">1. 음악</div>
+          <div class="ss-step-ind" data-step="2" style="flex:1;text-align:center;padding:10px 0;font-size:12px;font-weight:700;border-bottom:3px solid var(--border);color:var(--text-dim);cursor:pointer;">2. 사진</div>
+          <div class="ss-step-ind" data-step="3" style="flex:1;text-align:center;padding:10px 0;font-size:12px;font-weight:700;border-bottom:3px solid var(--border);color:var(--text-dim);cursor:pointer;">3. 자막/효과</div>
+          <div class="ss-step-ind" data-step="4" style="flex:1;text-align:center;padding:10px 0;font-size:12px;font-weight:700;border-bottom:3px solid var(--border);color:var(--text-dim);cursor:pointer;">4. 생성</div>
+        </div>
+
+        <!-- STEP 1: 음악 -->
+        <div id="ssStep1" class="ss-step-panel">
+          <div class="card">
+            <h3 style="font-size:15px;font-weight:700;margin:0 0 4px;">배경음악 선택</h3>
+            <p style="font-size:12px;color:var(--text-dim);margin:0 0 16px;">음악을 넣으면 가사를 자동으로 찾고, 사진 타이밍도 자동 계산됩니다</p>
+            <div id="ssBgmDropZone" style="padding:32px 20px;border:2px dashed var(--border);border-radius:12px;text-align:center;cursor:pointer;transition:all .2s;">
+              <div style="font-size:28px;margin-bottom:6px;color:var(--accent);">&#9835;</div>
+              <div style="font-weight:600;font-size:14px;">음악 파일을 드래그하거나 클릭</div>
+              <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">MP3, WAV, OGG, M4A</div>
+            </div>
+            <input type="file" id="ssBgmInput" accept="audio/*" style="display:none;">
+            <div id="ssBgmInfo" style="display:none;margin-top:12px;">
+              <div style="padding:12px 14px;background:var(--bg-dim);border-radius:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div>
+                    <div id="ssBgmName" style="font-size:14px;font-weight:600;"></div>
+                    <div id="ssBgmDuration" style="font-size:12px;color:var(--text-dim);margin-top:2px;"></div>
+                  </div>
+                  <div style="display:flex;gap:6px;">
+                    <button class="btn btn-sm btn-outline" id="ssBgmPlay" style="font-size:11px;padding:4px 12px;">재생</button>
+                    <button class="btn btn-sm" id="ssBgmClear" style="font-size:11px;padding:4px 12px;color:#ef4444;">변경</button>
+                  </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:10px;">
+                  <label style="font-size:11px;color:var(--text-dim);">볼륨</label>
+                  <input type="range" id="ssBgmVolume" min="0" max="100" value="50" style="flex:1;">
+                  <span id="ssBgmVolLabel" style="font-size:11px;color:var(--text-dim);">50%</span>
+                </div>
+              </div>
+              <!-- 가사 자동 탐색 상태 -->
+              <div id="ssLyricsStatus" style="margin-top:10px;padding:10px 14px;background:var(--bg-dim);border-radius:10px;display:none;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div id="ssLyricsSpinner" style="width:16px;height:16px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+                  <span id="ssLyricsStatusText" style="font-size:12px;">가사를 찾고 있습니다...</span>
+                </div>
+              </div>
+              <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+              <!-- 가사 미리보기 -->
+              <div id="ssLyricsPreview" style="display:none;margin-top:10px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                  <span style="font-size:12px;font-weight:600;">자동 생성된 가사</span>
+                  <button class="btn btn-sm btn-outline" id="ssLyricsEdit" style="font-size:11px;">수정</button>
+                </div>
+                <div id="ssLyricsText" style="max-height:120px;overflow-y:auto;padding:10px;background:var(--bg-dim);border-radius:8px;font-size:12px;line-height:1.6;white-space:pre-wrap;"></div>
+              </div>
+              <textarea id="ssLyricsEditArea" style="display:none;width:100%;min-height:120px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;resize:vertical;margin-top:10px;box-sizing:border-box;" placeholder="가사를 직접 입력하거나 수정하세요..."></textarea>
+            </div>
+            <audio id="ssBgmAudio" style="display:none;"></audio>
+          </div>
+          <button class="btn btn-primary" id="ssNext1" style="width:100%;margin-top:12px;padding:12px;font-size:14px;font-weight:700;display:none;">다음: 사진 추가 ></button>
+        </div>
+
+        <!-- STEP 2: 사진 -->
+        <div id="ssStep2" class="ss-step-panel" style="display:none;">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+              <div>
+                <h3 style="font-size:15px;font-weight:700;margin:0;">사진 추가</h3>
+                <p id="ssPhotoHint" style="font-size:12px;color:var(--text-dim);margin:2px 0 0;"></p>
+              </div>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-outline btn-sm" id="ssAddPhotos" style="font-size:12px;">+ 추가</button>
+                <button class="btn btn-sm" id="ssClearAll" style="font-size:12px;color:#ef4444;display:none;">전체 삭제</button>
+              </div>
+            </div>
+            <input type="file" id="ssFileInput" accept="image/*" multiple style="display:none;">
+            <div id="ssPhotos" style="display:flex;flex-direction:column;gap:6px;"></div>
+            <div id="ssPhotoEmpty" style="padding:28px;text-align:center;color:var(--text-dim);font-size:13px;border:2px dashed var(--border);border-radius:12px;cursor:pointer;">
+              클릭하여 사진을 추가하세요 (여러 장 선택 가능)
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <button class="btn btn-outline" id="ssPrev2" style="padding:12px;font-size:13px;">< 이전</button>
+            <button class="btn btn-primary" id="ssNext2" style="flex:1;padding:12px;font-size:14px;font-weight:700;display:none;">다음: 자막/효과 ></button>
+          </div>
+        </div>
+
+        <!-- STEP 3: 자막 타임라인 + 효과 -->
+        <div id="ssStep3" class="ss-step-panel" style="display:none;">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <h3 style="font-size:15px;font-weight:700;margin:0;">자막 타임라인</h3>
+              <div style="display:flex;gap:6px;">
+                <button class="btn btn-outline btn-sm" id="ssSubAddSeg" style="font-size:11px;">+ 구간 추가</button>
+                <button class="btn btn-sm" id="ssSubClearAll" style="font-size:11px;color:#ef4444;">전체 삭제</button>
+              </div>
+            </div>
+            <p style="font-size:12px;color:var(--text-dim);margin:0 0 10px;">음악 타이밍에 맞춰 자막이 표시됩니다. 시간과 텍스트를 수정할 수 있습니다.</p>
+            <div id="ssTimeline" style="display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto;"></div>
+            <div id="ssTimelineEmpty" style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px;">
+              음악을 넣으면 자동으로 가사 타임라인이 생성됩니다.
+            </div>
+          </div>
+
+          <!-- 자막 스타일 -->
+          <div class="card" style="margin-top:12px;" id="ssSubStyleCard">
+            <h3 style="font-size:15px;font-weight:700;margin:0 0 12px;">자막 스타일</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">폰트</label>
+                <select id="ssSubFont" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                  <option value="pretendard" selected>프리텐다드 (기본)</option>
+                  <option value="round">나눔스퀘어라운드 (둥근)</option>
+                  <option value="malgun">맑은고딕</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">자막 배경</label>
+                <select id="ssSubBgStyle" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                  <option value="box" selected>반투명 박스</option>
+                  <option value="outline">테두리만</option>
+                  <option value="none">없음</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top:12px;">
+            <h3 style="font-size:15px;font-weight:700;margin:0 0 12px;">영상 효과</h3>
+            <p style="font-size:12px;color:var(--text-dim);margin:0 0 12px;">자동으로 적용됩니다. 원하는 스타일만 선택하세요.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div>
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">사진 모션</label>
+                <select id="ssMotion" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                  <option value="kenburns" selected>켄 번즈 (자동)</option>
+                  <option value="zoom">줌 인/아웃</option>
+                  <option value="pan">좌우 패닝</option>
+                  <option value="none">정지</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">전환 효과</label>
+                <select id="ssTransition" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                  <option value="fade" selected>페이드</option>
+                  <option value="none">컷</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">색감 보정</label>
+                <select id="ssColorGrade" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                  <option value="none" selected>원본</option>
+                  <option value="warm">따뜻한 톤</option>
+                  <option value="cool">차가운 톤</option>
+                  <option value="vintage">빈티지</option>
+                  <option value="bw">흑백</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px;">해상도</label>
+                <select id="ssResolution" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+                  <option value="1080x1920">세로 (1080x1920)</option>
+                  <option value="1920x1080" selected>가로 (1920x1080)</option>
+                  <option value="1080x1080">정사각 (1080x1080)</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top:12px;">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+                <input type="checkbox" id="ssFadeInOut" checked>
+                <span style="font-size:12px;">영상 시작/끝 페이드 인/아웃</span>
+              </label>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <button class="btn btn-outline" id="ssPrev3" style="padding:12px;font-size:13px;">< 이전</button>
+            <button class="btn btn-primary" id="ssNext3" style="flex:1;padding:12px;font-size:14px;font-weight:700;">다음: 생성 ></button>
+          </div>
+        </div>
+
+        <!-- STEP 4: 생성 -->
+        <div id="ssStep4" class="ss-step-panel" style="display:none;">
+          <div class="card">
+            <h3 style="font-size:15px;font-weight:700;margin:0 0 12px;">영상 미리보기</h3>
+            <div id="ssSummary" style="font-size:13px;line-height:1.8;"></div>
+          </div>
+          <button class="btn btn-primary" id="ssGenerate" style="width:100%;margin-top:12px;padding:14px;font-size:15px;font-weight:700;">영상 생성</button>
+          <div id="ssProgress" style="display:none;margin-top:12px;">
+            <div style="background:var(--bg-dim);border-radius:8px;overflow:hidden;height:8px;">
+              <div id="ssProgressBar" style="height:100%;background:linear-gradient(90deg,#3b82f6,#6366f1);width:0%;transition:width .3s;border-radius:8px;"></div>
+            </div>
+            <div id="ssProgressLabel" style="font-size:12px;color:var(--text-dim);margin-top:6px;text-align:center;"></div>
+          </div>
+          <div id="ssResult" style="display:none;margin-top:16px;">
+            <div class="card" style="text-align:center;padding:24px;">
+              <div style="font-size:16px;font-weight:700;margin-bottom:12px;color:var(--accent);">영상 생성 완료!</div>
+              <video id="ssResultVideo" controls style="max-width:100%;border-radius:8px;margin-bottom:12px;"></video>
+              <div style="display:flex;gap:8px;justify-content:center;">
+                <button class="btn btn-primary" id="ssSaveAs">다른 이름으로 저장</button>
+                <button class="btn btn-outline" id="ssOpenFolder">폴더 열기</button>
+                <button class="btn btn-outline" id="ssRestart">새 영상 만들기</button>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-outline" id="ssPrev4" style="width:100%;margin-top:8px;padding:10px;font-size:13px;">< 이전 단계</button>
+        </div>
+      </section>
+
       <section class="panel hidden" data-panel="video-editor">
         <!-- Step 1: 업로드 -->
         <div id="veStep1">
@@ -1092,17 +1820,29 @@
             <h1 style="font-size:18px;">영상 편집기</h1>
             <p class="panel-sub">영상을 넣으면 AI가 분석하고 자동 편집합니다</p>
           </div>
+          <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+            <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+              <strong>안내사항</strong><br>
+              영상 파일은 <strong>여러 개를 한번에</strong> 넣을 수 있으며, 자동으로 합쳐집니다.<br>
+              자막, 하이라이트 추출 등은 AI가 자동 분석하며, 내보내기 시 횟수가 차감됩니다.
+            </div>
+          </div>
           <div class="card">
             <div class="form">
-              <button class="btn btn-outline btn-full" id="veSelectFile" style="margin-top:0;padding:20px;font-size:14px;">영상 파일 선택 (MP4, MOV, MKV, AVI)</button>
+              <button class="btn btn-outline btn-full" id="veSelectFile" style="margin-top:0;padding:28px 20px;font-size:14px;border:2px dashed var(--border);border-radius:12px;transition:all 0.2s;display:flex;flex-direction:column;align-items:center;gap:8px;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="color:var(--accent);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                <span>영상 파일 선택 (여러 개 가능)</span>
+                <span style="font-size:11px;color:var(--text-dim);font-weight:400;">MP4, MOV, MKV, AVI, WebM · 드래그앤드롭 가능</span>
+              </button>
               <div id="veFileInfo" style="display:none;margin-top:10px;padding:10px 12px;border-radius:8px;background:var(--bg-elev);font-size:12px;color:var(--text-sub);"></div>
+              <div id="veFileList" style="display:none;margin-top:8px;display:flex;flex-direction:column;gap:4px;"></div>
+              <button class="btn btn-outline btn-sm" id="veAddMore" style="display:none;margin-top:8px;font-size:12px;">+ 영상 추가</button>
 
               <!-- 시퀀스 비율 설정 -->
-              <label style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text-sub);">시퀀스 비율</label>
+              <label style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text-sub);">영상 유형</label>
               <div class="chips" id="veInitRatioChips" style="margin-top:6px;">
-                <button class="chip active" data-value="landscape" style="flex:1;padding:10px 0;font-size:13px;">16:9 가로</button>
-                <button class="chip" data-value="portrait" style="flex:1;padding:10px 0;font-size:13px;">9:16 세로</button>
-                <button class="chip" data-value="square" style="flex:1;padding:10px 0;font-size:13px;">1:1 정사각</button>
+                <button class="chip active" data-value="landscape" style="flex:1;padding:10px 0;font-size:13px;">롱폼 (16:9)</button>
+                <button class="chip" data-value="portrait" style="flex:1;padding:10px 0;font-size:13px;">숏폼 (9:16)</button>
               </div>
 
               <div id="veShortsPlanInput" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-elev);">
@@ -1112,6 +1852,36 @@
                 <label style="font-size:12px;font-weight:700;color:var(--text-sub);">숏폼 길이</label>
                 <div class="chips" id="veClipDurationChips" style="gap:4px;margin-top:6px;"><button class="chip" data-value="15" style="flex:1;padding:7px 0;font-size:12px;">15초</button><button class="chip" data-value="30" style="flex:1;padding:7px 0;font-size:12px;">30초</button><button class="chip active" data-value="45" style="flex:1;padding:7px 0;font-size:12px;">45초</button><button class="chip" data-value="60" style="flex:1;padding:7px 0;font-size:12px;">1분</button><button class="chip" data-value="90" style="flex:1;padding:7px 0;font-size:12px;">1분30초</button></div>
                 <div style="font-size:11px;color:var(--text-dim);line-height:1.5;margin-top:8px;">AI가 선택한 길이에 맞춰 조회 가능성이 높은 구간을 자동 추천합니다.</div>
+
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft);">
+                  <label style="font-size:12px;font-weight:700;color:var(--text-sub);">영상 장르</label>
+                  <div class="chips" id="veGenreChips" style="gap:4px;margin-top:6px;margin-bottom:10px;flex-wrap:wrap;">
+                    <button class="chip active" data-value="auto" style="padding:6px 12px;font-size:12px;">자동</button>
+                    <button class="chip" data-value="lecture" style="padding:6px 12px;font-size:12px;">강의</button>
+                    <button class="chip" data-value="vlog" style="padding:6px 12px;font-size:12px;">브이로그</button>
+                    <button class="chip" data-value="marketing" style="padding:6px 12px;font-size:12px;">마케팅</button>
+                    <button class="chip" data-value="interview" style="padding:6px 12px;font-size:12px;">인터뷰</button>
+                    <button class="chip" data-value="podcast" style="padding:6px 12px;font-size:12px;">팟캐스트</button>
+                  </div>
+
+                  <label style="font-size:12px;font-weight:700;color:var(--text-sub);">처리 구간</label>
+                  <div style="display:flex;gap:8px;align-items:center;margin-top:6px;margin-bottom:10px;">
+                    <input type="text" id="veRangeStart" value="0:00" style="width:50px;font-size:12px;padding:6px 8px;text-align:center;" readonly>
+                    <input type="range" id="veRangeSliderStart" min="0" max="100" value="0" style="flex:1;accent-color:#3b82f6;height:5px;">
+                    <input type="range" id="veRangeSliderEnd" min="0" max="100" value="100" style="flex:1;accent-color:#3b82f6;height:5px;">
+                    <input type="text" id="veRangeEnd" value="끝" style="width:50px;font-size:12px;padding:6px 8px;text-align:center;" readonly>
+                  </div>
+                </div>
+
+                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft);">
+                  <label style="font-size:12px;font-weight:700;color:var(--text-sub);">브랜드명 <span style="font-weight:400;color:var(--text-dim);">(선택)</span></label>
+                  <input type="text" id="veBrandName" placeholder="채널명 또는 브랜드명" style="width:100%;font-size:12px;padding:8px 10px;margin-top:6px;margin-bottom:10px;">
+                  <label style="font-size:12px;font-weight:700;color:var(--text-sub);">로고 이미지 <span style="font-weight:400;color:var(--text-dim);">(선택)</span></label>
+                  <div style="display:flex;gap:6px;margin-top:6px;">
+                    <input type="text" id="veBrandLogo" placeholder="로고 파일 경로" style="flex:1;font-size:12px;padding:8px 10px;" readonly>
+                    <button class="btn btn-outline btn-sm" id="veBrandLogoBtn" style="white-space:nowrap;">선택</button>
+                  </div>
+                </div>
               </div>
 
               <!-- 저장 폴더 설정 -->
@@ -1135,6 +1905,10 @@
               </div>
 
               <button class="btn btn-primary btn-full btn-lg" id="veAnalyzeBtn" style="margin-top:14px;" disabled>AI 분석 시작</button>
+              <button class="btn btn-outline btn-full" id="veProjectListBtn" style="margin-top:8px;display:flex;align-items:center;justify-content:center;gap:6px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+                프로젝트 보관함
+              </button>
             </div>
           </div>
         </div>
@@ -1152,144 +1926,179 @@
           </div>
         </div>
 
-        <!-- Step 3: NLE 편집기 -->
+        <!-- Step 3: NLE 편집기 (캡컷 레이아웃) -->
         <div id="veStep3" style="display:none;">
-          <!-- 상단 툴바 -->
-          <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;background:#0f0f23;border-bottom:1px solid #2a2a4a;flex-shrink:0;">
-            <button id="veBackToUpload" style="padding:6px 12px;font-size:12px;background:#2a2a4a;border:none;color:#cbd5e1;border-radius:6px;cursor:pointer;display:flex;align-items:center;gap:4px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>돌아가기
+          <!-- 상단 헤더 바 (캡컷) -->
+          <div style="display:flex;align-items:center;gap:6px;padding:0 10px;height:34px;background:var(--ve-bg-dark);border-bottom:1px solid var(--ve-border-soft);flex-shrink:0;">
+            <button id="veBackToUpload" class="ve-tool-btn" style="padding:4px 6px;background:transparent;border:none;color:#5a5a72;border-radius:4px;cursor:pointer;display:flex;align-items:center;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
             </button>
-            <div style="font-size:13px;font-weight:600;color:#e2e8f0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="veFileName2"></div>
-            <!-- 비율 표시 (읽기 전용) -->
-            <span id="veRatioLabel" style="font-size:11px;color:#475569;padding:4px 10px;background:#0a0a1a;border-radius:5px;"></span>
-            <select id="veExportRes" style="padding:5px 8px;font-size:11px;background:#0a0a1a;color:#94a3b8;border:1px solid #2a2a4a;border-radius:6px;cursor:pointer;">
-              <option value="original">원본 해상도</option>
-              <option value="1080" selected>FHD (1080p)</option>
-              <option value="2160">4K (2160p)</option>
-              <option value="720">HD (720p)</option>
+            <span style="font-size:10px;color:#3a3a50;margin-right:4px;">|</span>
+            <div style="font-size:12px;font-weight:600;color:#8e8ea8;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="veFileName2"></div>
+            <span id="veRatioLabel" style="font-size:10px;color:#4e4e66;"></span>
+            <select id="veExportRes" style="padding:2px 18px 2px 6px;font-size:10px;background:#0c0c16;color:#5a5a72;border:1px solid #252538;border-radius:4px;cursor:pointer;outline:none;">
+              <option value="original">원본</option>
+              <option value="1080" selected>1080p</option>
+              <option value="2160">4K</option>
+              <option value="720">720p</option>
             </select>
-            <button id="veExportBtn" style="padding:7px 18px;font-size:12px;font-weight:700;border:none;border-radius:8px;cursor:pointer;color:#fff;background:#3b82f6;display:flex;align-items:center;gap:5px;">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>내보내기
+            <button id="veSaveProjectBtn" class="ve-tool-btn" style="padding:3px 8px;border:none;border-radius:4px;cursor:pointer;color:#5a5a72;background:transparent;" title="저장 (Ctrl+S)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+            </button>
+            <button id="veExportBtn" style="padding:5px 14px;font-size:11px;font-weight:700;border:none;border-radius:4px;cursor:pointer;color:#fff;background:var(--ve-accent);display:flex;align-items:center;gap:4px;">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>내보내기
             </button>
           </div>
 
-          <!-- 중앙: 프리뷰 + 속성 -->
+          <!-- 아이콘 탭 행 (캡컷) -->
+          <div style="display:flex;gap:0;background:var(--ve-bg-dark);flex-shrink:0;border-bottom:1px solid var(--ve-border);padding:0 8px;">
+            <button class="ve-tab-btn active" data-ve-tab="sub" style="padding:10px 14px;font-size:11px;font-weight:600;border:none;background:transparent;color:#5a5a72;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.12s;display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="6" y1="14" x2="18" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg>자막
+            </button>
+            <button class="ve-tab-btn" data-ve-tab="clip" style="padding:10px 14px;font-size:11px;font-weight:600;border:none;background:transparent;color:#5a5a72;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.12s;display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>클립
+            </button>
+            <button class="ve-tab-btn" data-ve-tab="image" style="padding:10px 14px;font-size:11px;font-weight:600;border:none;background:transparent;color:#5a5a72;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.12s;display:flex;flex-direction:column;align-items:center;gap:3px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>미디어
+            </button>
+          </div>
+
+          <!-- 메인 레이아웃: 좌측 콘텐츠 + 중앙 프리뷰 -->
           <div id="veMainLayout" style="display:flex;flex:1;min-height:0;overflow:hidden;">
-            <!-- 프리뷰 -->
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;background:#111125;padding:10px;">
-              <div id="veVideoWrap" style="position:relative;background:#000;border-radius:8px;overflow:hidden;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;">
+            <!-- 좌측 아이콘 사이드바 (숨김 — JS 호환용) -->
+            <div class="ve-left-sidebar" style="display:none;">
+              <button class="ve-sidebar-icon active" data-ve-tab="sub"></button>
+              <button class="ve-sidebar-icon" data-ve-tab="clip"></button>
+              <button class="ve-sidebar-icon" data-ve-tab="image"></button>
+              <button class="ve-sidebar-icon" id="veSubRegenBtn2"></button>
+              <button class="ve-sidebar-icon" id="veSilenceQuickBtn"></button>
+              <button class="ve-sidebar-icon" id="veAiGifQuickBtn"></button>
+            </div>
+
+            <!-- 중앙: 프리뷰 (캡컷) -->
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;background:var(--ve-bg-dark);">
+              <!-- 프리뷰 헤더 -->
+              <div style="display:flex;align-items:center;padding:0 12px;height:24px;background:var(--ve-bg);border-bottom:1px solid var(--ve-border-soft);flex-shrink:0;">
+                <span style="font-size:10px;color:var(--ve-text-muted);font-weight:600;">플레이어</span>
+                <div style="flex:1;"></div>
+                <span id="veRatioLabel2" style="font-size:10px;color:var(--ve-text-muted);"></span>
+              </div>
+              <div id="veVideoWrap" style="position:relative;background:#000;overflow:hidden;flex:1;min-height:0;display:flex;align-items:center;justify-content:center;">
                 <video id="veVideo" style="max-width:100%;max-height:100%;object-fit:contain;display:block;"></video>
                 <div id="veSubOverlay" style="position:absolute;left:0;right:0;bottom:24px;text-align:center;pointer-events:none;padding:0 16px;"></div>
-                <!-- 로딩 오버레이 -->
-                <div id="veLoadingOverlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;flex-direction:column;z-index:5;">
-                  <div style="width:40px;height:40px;border:3px solid #334155;border-top-color:#3b82f6;border-radius:50%;animation:spin 0.7s linear infinite;"></div>
-                  <div id="veLoadingText" style="color:#94a3b8;font-size:13px;margin-top:12px;">불러오는 중...</div>
+                <div id="veLoadingOverlay" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.92);align-items:center;justify-content:center;flex-direction:column;z-index:5;">
+                  <div style="width:32px;height:32px;border:2px solid #252538;border-top-color:var(--ve-accent);border-radius:50%;animation:spin 0.7s linear infinite;"></div>
+                  <div id="veLoadingText" style="color:#6e6e88;font-size:11px;margin-top:10px;">불러오는 중...</div>
                 </div>
               </div>
-              <!-- 재생 컨트롤 -->
-              <div style="display:flex;align-items:center;gap:10px;padding:8px 0 2px;">
-                <button id="vePlayBtn" style="width:36px;height:36px;border-radius:50%;border:none;background:#3b82f6;color:#fff;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;">&#9654;</button>
-                <span id="veTimeDisplay" style="font-size:13px;color:#64748b;font-variant-numeric:tabular-nums;min-width:90px;">0:00 / 0:00</span>
-                <button id="veSpeedBtn" style="padding:4px 10px;font-size:11px;border:none;border-radius:4px;cursor:pointer;color:#94a3b8;background:#1e1e3a;font-weight:700;">1x</button>
-                <input type="range" id="veSeekBar" min="0" max="1000" value="0" style="flex:1;accent-color:#3b82f6;height:5px;">
+              <!-- 재생 컨트롤 바 (캡컷) -->
+              <div style="display:flex;align-items:center;gap:10px;padding:5px 14px;background:var(--ve-bg);border-top:1px solid var(--ve-border-soft);flex-shrink:0;">
+                <button id="vePlayBtn" style="width:26px;height:26px;border-radius:50%;border:none;background:var(--ve-accent);color:#fff;cursor:pointer;font-size:9px;display:flex;align-items:center;justify-content:center;">&#9654;</button>
+                <span id="veTimeDisplay" style="font-size:11px;color:#5a5a72;font-variant-numeric:tabular-nums;">0:00 / 0:00</span>
+                <input type="range" id="veSeekBar" min="0" max="1000" value="0" style="flex:1;">
+                <button id="veSpeedBtn" style="padding:2px 6px;font-size:10px;border:none;border-radius:3px;cursor:pointer;color:#5a5a72;background:transparent;font-weight:700;">1x</button>
               </div>
             </div>
 
-            <!-- 속성 패널 -->
-            <div style="width:280px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;background:#16162e;border-left:1px solid #2a2a4a;">
-              <div style="display:flex;gap:0;border-bottom:1px solid #2a2a4a;">
-                <button class="ve-tab-btn active" data-ve-tab="sub" style="flex:1;padding:10px 0;font-size:13px;font-weight:700;border:none;background:transparent;color:#94a3b8;cursor:pointer;border-bottom:2px solid transparent;">자막</button>
-                <button class="ve-tab-btn" data-ve-tab="clip" style="flex:1;padding:10px 0;font-size:13px;font-weight:700;border:none;background:transparent;color:#94a3b8;cursor:pointer;border-bottom:2px solid transparent;">이미지</button>
-                <button class="ve-tab-btn" data-ve-tab="image" style="flex:1;padding:10px 0;font-size:13px;font-weight:700;border:none;background:transparent;color:#94a3b8;cursor:pointer;border-bottom:2px solid transparent;">라이브러리</button>
-              </div>
-              <!-- AI 자동생성 도구 바 -->
-              <div style="display:flex;gap:4px;padding:8px 12px;border-bottom:1px solid #2a2a4a;background:#12122a;">
-                <button id="veSubRegenBtn2" style="flex:1;padding:8px 0;font-size:12px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#2563eb;">자막 재생성</button>
-                <button id="veSilenceQuickBtn" style="flex:1;padding:8px 0;font-size:12px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#1d4ed8;">무음 제거</button>
-                <button id="veAiGifQuickBtn" style="flex:1;padding:8px 0;font-size:12px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#1e40af;">AI 짤</button>
-              </div>
-              <div style="flex:1;overflow-y:auto;padding:12px;">
-                <!-- 자막 -->
+            <!-- 좌측 콘텐츠 패널 (캡컷, order:-1) -->
+            <div style="width:240px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;background:var(--ve-bg-panel);border-right:1px solid var(--ve-border-soft);order:-1;">
+              <span id="vePanelTitle" style="display:none;"></span>
+              <div style="flex:1;overflow-y:auto;padding:0;">
+                <!-- ═══ 자막 탭 ═══ -->
                 <div id="veTabSub" class="ve-tab-content">
-                  <!-- 자막 ON/OFF + 무음제거 -->
-                  <div style="display:flex;gap:6px;margin-bottom:8px;">
-                    <div class="chips" id="veSubChips" style="flex:1;gap:3px;"><button class="chip active" data-value="on" style="flex:1;padding:5px 0;font-size:11px;">자막 ON</button><button class="chip" data-value="off" style="flex:1;padding:5px 0;font-size:11px;">OFF</button></div>
-                    <div class="chips" id="veSilenceChips" style="flex:1;gap:3px;"><button class="chip" data-value="on" style="flex:1;padding:5px 0;font-size:11px;">무음제거</button><button class="chip active" data-value="off" style="flex:1;padding:5px 0;font-size:11px;">유지</button></div>
+                  <!-- 컨트롤 바 (한 줄) -->
+                  <div style="display:flex;gap:4px;padding:10px 12px;border-bottom:1px solid #1e1e30;">
+                    <div class="chips" id="veSubChips" style="flex:1;gap:3px;"><button class="chip active" data-value="on" style="flex:1;padding:6px 0;font-size:11px;">자막 ON</button><button class="chip" data-value="off" style="flex:1;padding:6px 0;font-size:11px;">OFF</button></div>
+                    <div class="chips" id="veSilenceChips" style="flex:1;gap:3px;"><button class="chip" data-value="on" style="flex:1;padding:6px 0;font-size:11px;">무음제거</button><button class="chip active" data-value="off" style="flex:1;padding:6px 0;font-size:11px;">유지</button></div>
                   </div>
-                  <div id="veSilenceOpts" style="display:none;margin-bottom:8px;padding:6px;background:#0f0f23;border-radius:6px;">
-                    <div style="font-size:10px;color:#94a3b8;margin-bottom:3px;">무음 감지 기준</div>
-                    <div class="chips" id="veSilenceThreshChips" style="gap:2px;">
-                      <button class="chip" data-value="0.3" style="flex:1;padding:4px 0;font-size:10px;">0.3초</button>
-                      <button class="chip active" data-value="0.5" style="flex:1;padding:4px 0;font-size:10px;">0.5초</button>
-                      <button class="chip" data-value="1.0" style="flex:1;padding:4px 0;font-size:10px;">1.0초</button>
-                      <button class="chip" data-value="2.0" style="flex:1;padding:4px 0;font-size:10px;">2.0초</button>
+                  <!-- 무음 옵션 (접힘) -->
+                  <div id="veSilenceOpts" style="display:none;padding:10px 12px;background:#0e0e1a;border-bottom:1px solid #1e1e30;">
+                    <div style="font-size:11px;color:#6b6b88;margin-bottom:6px;">무음 감지 기준</div>
+                    <div class="chips" id="veSilenceThreshChips" style="gap:4px;">
+                      <button class="chip" data-value="0.3" style="flex:1;padding:5px 0;font-size:11px;">0.3초</button>
+                      <button class="chip active" data-value="0.5" style="flex:1;padding:5px 0;font-size:11px;">0.5초</button>
+                      <button class="chip" data-value="1.0" style="flex:1;padding:5px 0;font-size:11px;">1.0초</button>
+                      <button class="chip" data-value="2.0" style="flex:1;padding:5px 0;font-size:11px;">2.0초</button>
                     </div>
-                    <button id="veSilenceRunBtn" style="width:100%;margin-top:6px;padding:6px;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#3b82f6;">무음 구간 자동 제거</button>
-                    <button id="veSilenceUndoBtn" style="display:none;width:100%;margin-top:4px;padding:6px;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#f87171;background:#1e1e3a;">되돌리기</button>
-                    <button id="veSubRegenBtn" style="display:none;width:100%;margin-top:4px;padding:6px;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#10b981;">자막 재생성</button>
+                    <button id="veSilenceRunBtn" style="width:100%;margin-top:6px;padding:7px;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:var(--ve-accent);">무음 구간 자동 제거</button>
+                    <button id="veSilenceUndoBtn" style="display:none;width:100%;margin-top:4px;padding:7px;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#f87171;background:#1e1e3a;">되돌리기</button>
+                    <button id="veSubRegenBtn" style="display:none;width:100%;margin-top:4px;padding:7px;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:var(--accent);">자막 재생성</button>
                   </div>
 
-                  <!-- 기본 설정 (항상 표시) -->
-                  <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                    <div style="font-size:13px;color:#94a3b8;min-width:28px;">크기</div>
-                    <input type="range" id="veSubSize" min="16" max="56" value="38" style="flex:1;accent-color:#3b82f6;height:5px;">
-                    <span id="veSubSizeLabel" style="color:#e2e8f0;font-weight:600;font-size:13px;min-width:36px;">38px</span>
-                  </div>
-                  <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
-                    <div style="font-size:12px;color:#94a3b8;min-width:20px;">색</div>
-                    <input type="color" id="veSubColor" value="#FFFFFF" style="width:28px;height:26px;border:1px solid #2a2a4a;border-radius:5px;cursor:pointer;padding:0;background:#16162e;">
-                    <div class="chips" id="veSubColorChips" style="gap:3px;flex:1;"><button class="chip" data-value="#FFFFFF" style="padding:4px;font-size:0;width:24px;height:24px;border-radius:50%;background:#FFFFFF;border:2px solid #333;"></button><button class="chip" data-value="#FFFF00" style="padding:4px;font-size:0;width:24px;height:24px;border-radius:50%;background:#FFFF00;border:2px solid #333;"></button><button class="chip" data-value="#00FF00" style="padding:4px;font-size:0;width:24px;height:24px;border-radius:50%;background:#00FF00;border:2px solid #333;"></button><button class="chip" data-value="#FF6B6B" style="padding:4px;font-size:0;width:24px;height:24px;border-radius:50%;background:#FF6B6B;border:2px solid #333;"></button><button class="chip" data-value="#60A5FA" style="padding:4px;font-size:0;width:24px;height:24px;border-radius:50%;background:#60A5FA;border:2px solid #333;"></button></div>
-                    <div class="chips" id="veSubLineChips" style="gap:3px;"><button class="chip active" data-value="1" style="padding:5px 10px;font-size:12px;">1줄</button><button class="chip" data-value="2" style="padding:5px 10px;font-size:12px;">2줄</button></div>
+                  <!-- 프리셋 (메인 UI) -->
+                  <div style="padding:10px 12px;border-bottom:1px solid #1e1e30;">
+                    <div id="veCaptionPresets" style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;"></div>
                   </div>
 
-                  <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                    <div style="font-size:13px;color:#94a3b8;min-width:50px;">글자 수</div>
-                    <input type="range" id="veSubMaxChars" min="5" max="30" value="15" style="flex:1;accent-color:#3b82f6;height:5px;">
-                    <span id="veSubMaxCharsLabel" style="color:#e2e8f0;font-weight:600;font-size:13px;min-width:30px;">15자</span>
+                  <!-- 자막 리스트 (항상 표시) -->
+                  <div style="padding:8px 12px;border-bottom:1px solid #1e1e30;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                      <span style="font-size:11px;font-weight:700;color:#8e8ea8;text-transform:uppercase;letter-spacing:0.04em;">자막 리스트</span>
+                      <span id="veSubCount" style="font-size:10px;color:#5a5a72;font-weight:600;">0개</span>
+                    </div>
+                    <div id="veSubtitleList" style="max-height:200px;overflow-y:auto;"></div>
                   </div>
-                  <!-- 접이식: 스타일 -->
-                  <details class="ve-section" style="margin-bottom:6px;">
-                    <summary style="font-size:13px;font-weight:700;color:#94a3b8;cursor:pointer;padding:8px 0;border-top:1px solid #1e1e3a;user-select:none;">스타일</summary>
-                    <div style="padding:4px 0 8px;">
-                      <div style="display:flex;gap:6px;margin-bottom:6px;">
-                        <div style="flex:1;"><div style="font-size:12px;color:#64748b;margin-bottom:3px;">테두리</div><div class="chips" id="veSubStrokeChips" style="gap:3px;"><button class="chip active" data-value="0" style="padding:4px 8px;font-size:12px;">없음</button><button class="chip" data-value="2" style="padding:4px 8px;font-size:12px;">얇게</button><button class="chip" data-value="4" style="padding:4px 8px;font-size:12px;">굵게</button></div></div>
-                        <div style="flex:1;"><div style="font-size:12px;color:#64748b;margin-bottom:3px;">그림자</div><div class="chips" id="veSubShadowChips" style="gap:3px;"><button class="chip active" data-value="none" style="padding:4px 6px;font-size:12px;">없음</button><button class="chip" data-value="soft" style="padding:4px 6px;font-size:12px;">부드럽게</button><button class="chip" data-value="hard" style="padding:4px 6px;font-size:12px;">강하게</button></div></div>
+
+                  <!-- 고급 설정 (접힘) -->
+                  <details class="ve-section">
+                    <summary>크기 / 색상</summary>
+                    <div>
+                      <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
+                        <span style="font-size:11px;color:#6e6e88;min-width:28px;">크기</span>
+                        <input type="range" id="veSubSize" min="16" max="56" value="38" style="flex:1;">
+                        <span id="veSubSizeLabel" style="color:#b0b0c8;font-weight:700;font-size:11px;min-width:32px;text-align:right;">38px</span>
                       </div>
-                      <div style="display:flex;gap:6px;margin-bottom:6px;">
-                        <div style="flex:1;"><div style="font-size:12px;color:#64748b;margin-bottom:3px;">배경</div><div class="chips" id="veSubBgChips" style="gap:3px;"><button class="chip active" data-value="box" style="padding:4px 8px;font-size:12px;">박스</button><button class="chip" data-value="none" style="padding:4px 8px;font-size:12px;">없음</button><button class="chip" data-value="full" style="padding:4px 8px;font-size:12px;">전체</button></div></div>
-                        <div style="flex:1;"><div style="font-size:12px;color:#64748b;margin-bottom:3px;">둥글기</div><div class="chips" id="veSubRoundChips" style="gap:3px;"><button class="chip active" data-value="0" style="padding:4px 6px;font-size:12px;">없음</button><button class="chip" data-value="4" style="padding:4px 6px;font-size:12px;">약간</button><button class="chip" data-value="12" style="padding:4px 6px;font-size:12px;">둥글게</button><button class="chip" data-value="24" style="padding:4px 6px;font-size:12px;">알약</button></div></div>
+                      <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;">
+                        <input type="color" id="veSubColor" value="#FFFFFF" style="width:28px;height:26px;">
+                        <div class="chips" id="veSubColorChips" style="gap:3px;flex:1;"><button class="chip" data-value="#FFFFFF" style="padding:0;width:24px;height:24px;border-radius:50%;background:#FFFFFF;"></button><button class="chip" data-value="#FFFF00" style="padding:0;width:24px;height:24px;border-radius:50%;background:#FFFF00;"></button><button class="chip" data-value="#00FF00" style="padding:0;width:24px;height:24px;border-radius:50%;background:#00FF00;"></button><button class="chip" data-value="#FF6B6B" style="padding:0;width:24px;height:24px;border-radius:50%;background:#FF6B6B;"></button><button class="chip" data-value="#60A5FA" style="padding:0;width:24px;height:24px;border-radius:50%;background:#60A5FA;"></button></div>
+                        <div class="chips" id="veSubLineChips" style="gap:2px;"><button class="chip active" data-value="1" style="padding:4px 8px;font-size:10px;">1줄</button><button class="chip" data-value="2" style="padding:4px 8px;font-size:10px;">2줄</button></div>
+                      </div>
+                      <div style="display:flex;gap:10px;align-items:center;">
+                        <span style="font-size:11px;color:#6e6e88;min-width:28px;">글자</span>
+                        <input type="range" id="veSubMaxChars" min="5" max="30" value="15" style="flex:1;">
+                        <span id="veSubMaxCharsLabel" style="color:#b0b0c8;font-weight:700;font-size:11px;min-width:28px;text-align:right;">15자</span>
+                      </div>
+                    </div>
+                  </details>
+
+                  <details class="ve-section">
+                    <summary>스타일</summary>
+                    <div>
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                        <div><div style="font-size:10px;color:#5a5a72;margin-bottom:3px;">테두리</div><div class="chips" id="veSubStrokeChips" style="gap:2px;"><button class="chip active" data-value="0" style="padding:4px 6px;font-size:10px;">없음</button><button class="chip" data-value="2" style="padding:4px 6px;font-size:10px;">얇게</button><button class="chip" data-value="4" style="padding:4px 6px;font-size:10px;">굵게</button></div></div>
+                        <div><div style="font-size:10px;color:#5a5a72;margin-bottom:3px;">그림자</div><div class="chips" id="veSubShadowChips" style="gap:2px;"><button class="chip active" data-value="none" style="padding:4px 5px;font-size:10px;">없음</button><button class="chip" data-value="soft" style="padding:4px 5px;font-size:10px;">소프트</button><button class="chip" data-value="hard" style="padding:4px 5px;font-size:10px;">하드</button></div></div>
+                      </div>
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                        <div><div style="font-size:10px;color:#5a5a72;margin-bottom:3px;">배경</div><div class="chips" id="veSubBgChips" style="gap:2px;"><button class="chip active" data-value="box" style="padding:4px 6px;font-size:10px;">박스</button><button class="chip" data-value="none" style="padding:4px 6px;font-size:10px;">없음</button><button class="chip" data-value="full" style="padding:4px 6px;font-size:10px;">전체</button></div></div>
+                        <div><div style="font-size:10px;color:#5a5a72;margin-bottom:3px;">둥글기</div><div class="chips" id="veSubRoundChips" style="gap:2px;"><button class="chip active" data-value="0" style="padding:4px 5px;font-size:10px;">0</button><button class="chip" data-value="4" style="padding:4px 5px;font-size:10px;">4</button><button class="chip" data-value="12" style="padding:4px 5px;font-size:10px;">12</button><button class="chip" data-value="24" style="padding:4px 5px;font-size:10px;">24</button></div></div>
                       </div>
                       <div style="display:flex;gap:6px;align-items:center;">
-                        <span style="font-size:12px;color:#64748b;">테두리</span><input type="color" id="veSubStrokeColor" value="#000000" style="width:24px;height:22px;border:1px solid #2a2a4a;border-radius:4px;cursor:pointer;padding:0;background:#16162e;">
-                        <span style="font-size:12px;color:#64748b;">배경</span><input type="color" id="veSubBgColor" value="#000000" style="width:24px;height:22px;border:1px solid #2a2a4a;border-radius:4px;cursor:pointer;padding:0;background:#16162e;">
-                        <input type="range" id="veSubBgOpacity" min="0" max="100" value="60" style="flex:1;accent-color:#3b82f6;height:4px;" title="배경 투명도">
+                        <span style="font-size:10px;color:#5a5a72;">테두리</span><input type="color" id="veSubStrokeColor" value="#000000" style="width:24px;height:22px;">
+                        <span style="font-size:10px;color:#5a5a72;">배경</span><input type="color" id="veSubBgColor" value="#000000" style="width:24px;height:22px;">
+                        <input type="range" id="veSubBgOpacity" min="0" max="100" value="60" style="flex:1;" title="배경 투명도">
                       </div>
                     </div>
                   </details>
 
-                  <!-- 접이식: 애니메이션 -->
-                  <details class="ve-section" style="margin-bottom:6px;">
-                    <summary style="font-size:13px;font-weight:700;color:#94a3b8;cursor:pointer;padding:8px 0;border-top:1px solid #1e1e3a;user-select:none;">애니메이션</summary>
-                    <div style="padding:4px 0 8px;">
-                      <div class="chips" id="veSubAnimChips" style="gap:3px;flex-wrap:wrap;"><button class="chip active" data-value="none" style="padding:5px 10px;font-size:12px;">없음</button><button class="chip" data-value="fade" style="padding:5px 10px;font-size:12px;">페이드</button><button class="chip" data-value="highlight" style="padding:5px 10px;font-size:12px;">하이라이트</button><button class="chip" data-value="typewriter" style="padding:5px 10px;font-size:12px;">타이핑</button><button class="chip" data-value="karaoke" style="padding:5px 10px;font-size:12px;">가라오케</button><button class="chip" data-value="bounce" style="padding:5px 10px;font-size:12px;">바운스</button><button class="chip" data-value="slide-up" style="padding:5px 10px;font-size:12px;">슬라이드</button><button class="chip" data-value="glow" style="padding:5px 10px;font-size:12px;">글로우</button><button class="chip" data-value="shake" style="padding:5px 10px;font-size:12px;">흔들기</button><button class="chip" data-value="scale" style="padding:5px 10px;font-size:12px;">확대</button></div>
+                  <details class="ve-section">
+                    <summary>애니메이션</summary>
+                    <div>
+                      <div class="chips" id="veSubAnimChips" style="gap:3px;flex-wrap:wrap;"><button class="chip active" data-value="none" style="padding:5px 9px;font-size:11px;">없음</button><button class="chip" data-value="fade" style="padding:5px 9px;font-size:11px;">페이드</button><button class="chip" data-value="highlight" style="padding:5px 9px;font-size:11px;">하이라이트</button><button class="chip" data-value="typewriter" style="padding:5px 9px;font-size:11px;">타이핑</button><button class="chip" data-value="karaoke" style="padding:5px 9px;font-size:11px;">가라오케</button><button class="chip" data-value="bounce" style="padding:5px 9px;font-size:11px;">바운스</button><button class="chip" data-value="slide-up" style="padding:5px 9px;font-size:11px;">슬라이드</button><button class="chip" data-value="glow" style="padding:5px 9px;font-size:11px;">글로우</button><button class="chip" data-value="shake" style="padding:5px 9px;font-size:11px;">흔들기</button><button class="chip" data-value="scale" style="padding:5px 9px;font-size:11px;">확대</button></div>
                     </div>
                   </details>
 
-                  <!-- 접이식: 다국어 -->
-                  <details class="ve-section" style="margin-bottom:6px;">
-                    <summary style="font-size:13px;font-weight:700;color:#94a3b8;cursor:pointer;padding:8px 0;border-top:1px solid #1e1e3a;user-select:none;">다국어 자막</summary>
-                    <div style="padding:4px 0 8px;">
-                      <div class="chips" id="veSubLangChips" style="gap:3px;flex-wrap:wrap;margin-bottom:8px;"><button class="chip active" data-value="none" style="padding:5px 10px;font-size:12px;">없음</button><button class="chip" data-value="en" style="padding:5px 10px;font-size:12px;">영어</button><button class="chip" data-value="ja" style="padding:5px 10px;font-size:12px;">일본어</button><button class="chip" data-value="zh" style="padding:5px 10px;font-size:12px;">중국어</button><button class="chip" data-value="es" style="padding:5px 10px;font-size:12px;">스페인어</button></div>
-                      <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
-                        <span style="font-size:13px;color:#64748b;">번역 크기</span>
-                        <input type="range" id="veSubTransSize" min="12" max="40" value="24" style="flex:1;accent-color:#3b82f6;height:5px;">
-                        <span id="veSubTransSizeLabel" style="color:#e2e8f0;font-weight:600;font-size:13px;min-width:36px;">24px</span>
+                  <details class="ve-section">
+                    <summary>다국어 자막</summary>
+                    <div>
+                      <div class="chips" id="veSubLangChips" style="gap:3px;flex-wrap:wrap;margin-bottom:8px;"><button class="chip active" data-value="none" style="padding:5px 9px;font-size:11px;">없음</button><button class="chip" data-value="en" style="padding:5px 9px;font-size:11px;">영어</button><button class="chip" data-value="ja" style="padding:5px 9px;font-size:11px;">일본어</button><button class="chip" data-value="zh" style="padding:5px 9px;font-size:11px;">중국어</button><button class="chip" data-value="es" style="padding:5px 9px;font-size:11px;">스페인어</button></div>
+                      <div style="display:flex;gap:8px;align-items:center;">
+                        <span style="font-size:10px;color:#5a5a72;">크기</span>
+                        <input type="range" id="veSubTransSize" min="12" max="40" value="24" style="flex:1;">
+                        <span id="veSubTransSizeLabel" style="color:#b0b0c8;font-weight:700;font-size:11px;min-width:32px;text-align:right;">24px</span>
                       </div>
-                      <button id="veTranslateSubBtn" style="display:none;width:100%;padding:8px;font-size:13px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:#3b82f6;">번역 자막 생성</button>
+                      <button id="veTranslateSubBtn" style="display:none;width:100%;margin-top:8px;padding:7px;font-size:11px;font-weight:700;border:none;border-radius:5px;cursor:pointer;color:#fff;background:var(--ve-accent);">번역 자막 생성</button>
                     </div>
                   </details>
-                  <div id="veSubtitleList" style="display:none;"></div>
-                  <span id="veSubCount" style="display:none;">0개</span>
                 </div>
                 <!-- 클립 -->
                 <div id="veTabClip" class="ve-tab-content" style="display:none;">
@@ -1343,7 +2152,7 @@
                   <!-- 이미지/GIF 검색 -->
                   <div style="display:flex;gap:4px;margin-bottom:8px;">
                     <input type="text" id="veImgSearchInput" placeholder="이미지/GIF 검색..." style="flex:1;padding:6px 10px;font-size:12px;background:#0f0f23;border:1px solid #2a2a4a;border-radius:6px;color:#e2e8f0;outline:none;">
-                    <button id="veImgSearchBtn" style="padding:6px 12px;font-size:12px;border:none;border-radius:6px;cursor:pointer;color:#fff;background:#3b82f6;font-weight:600;">검색</button>
+                    <button id="veImgSearchBtn" style="padding:6px 12px;font-size:12px;border:none;border-radius:6px;cursor:pointer;color:#fff;background:var(--ve-accent);font-weight:600;">검색</button>
                   </div>
                   <div style="display:flex;gap:3px;margin-bottom:8px;">
                     <button class="chip active" data-imgsrc="gif" style="flex:1;padding:5px;font-size:11px;">GIF</button>
@@ -1368,77 +2177,77 @@
                   </div>
                 </div>
               </div>
+              <!-- AI 퀵 도구는 도구바로 통합됨 -->
             </div>
           </div>
 
-          <!-- 도구 바 (타임라인 위) -->
-          <div style="display:flex;align-items:center;gap:3px;padding:4px 12px;background:#0f0f23;border-top:1px solid #2a2a4a;flex-shrink:0;">
-            <button id="veSplitBtn" title="분할 (S)" style="padding:4px 10px;font-size:11px;border:none;border-radius:4px;cursor:pointer;color:#cbd5e1;background:#1a1a3a;display:flex;align-items:center;gap:4px;">
+          <!-- 도구 바 -->
+          <div style="display:flex;align-items:center;gap:2px;padding:3px 14px;background:var(--ve-bg);border-top:1px solid var(--ve-border);flex-shrink:0;height:32px;">
+            <button id="veSplitBtn" title="분할 (S)" class="ve-tool-btn" style="padding:4px 10px;font-size:11px;border:none;border-radius:4px;cursor:pointer;color:#8b8ba8;background:transparent;display:flex;align-items:center;gap:4px;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="22"/></svg>분할
             </button>
-            <button id="veDeleteClipBtn" title="삭제 (Del)" style="padding:4px 10px;font-size:11px;border:none;border-radius:4px;cursor:pointer;color:#f87171;background:#1a1a3a;display:flex;align-items:center;gap:4px;">
+            <button id="veDeleteClipBtn" title="삭제 (Del)" class="ve-tool-btn" style="padding:4px 10px;font-size:11px;border:none;border-radius:4px;cursor:pointer;color:#f87171;background:transparent;display:flex;align-items:center;gap:4px;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>삭제
             </button>
-            <button id="veCopyClipBtn" title="복사" style="padding:4px 10px;font-size:11px;border:none;border-radius:4px;cursor:pointer;color:#cbd5e1;background:#1a1a3a;display:flex;align-items:center;gap:4px;">
+            <button id="veCopyClipBtn" title="복사" class="ve-tool-btn" style="padding:4px 10px;font-size:11px;border:none;border-radius:4px;cursor:pointer;color:#8b8ba8;background:transparent;display:flex;align-items:center;gap:4px;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>복사
             </button>
-            <button id="veCropBtn" title="자르기" style="padding:4px 10px;font-size:11px;border:none;border-radius:4px;cursor:pointer;color:#cbd5e1;background:#1a1a3a;display:flex;align-items:center;gap:4px;">
+            <button id="veCropBtn" title="자르기" class="ve-tool-btn" style="padding:4px 10px;font-size:11px;border:none;border-radius:4px;cursor:pointer;color:#8b8ba8;background:transparent;display:flex;align-items:center;gap:4px;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/></svg>자르기
             </button>
-            <div style="width:1px;height:16px;background:#2a2a4a;margin:0 4px;"></div>
-            <button id="veAutoImageBtn" title="AI 짤 자동 삽입" style="padding:4px 10px;font-size:11px;border:none;border-radius:4px;cursor:pointer;color:#cbd5e1;background:#1a1a3a;display:flex;align-items:center;gap:4px;">
+            <div style="width:1px;height:16px;background:#252542;margin:0 6px;"></div>
+            <button id="veAutoImageBtn" title="AI 짤 자동 삽입" class="ve-tool-btn" style="padding:4px 10px;font-size:11px;border:none;border-radius:4px;cursor:pointer;color:#8b8ba8;background:transparent;display:flex;align-items:center;gap:4px;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>AI 짤
             </button>
             <div style="flex:1;"></div>
-            <span id="veSelectedInfo" style="font-size:10px;color:#475569;"></span>
+            <span id="veSelectedInfo" style="font-size:10px;color:#525268;"></span>
           </div>
           <!-- 리사이즈 핸들 -->
-          <div id="veTimelineResizeHandle" style="height:5px;background:#0a0a1a;cursor:ns-resize;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
-            <div style="width:40px;height:3px;background:#334155;border-radius:2px;"></div>
+          <div id="veTimelineResizeHandle" style="height:4px;background:#0c0c1e;cursor:ns-resize;flex-shrink:0;display:flex;align-items:center;justify-content:center;">
+            <div style="width:36px;height:2px;background:#333358;border-radius:1px;"></div>
           </div>
           <!-- 하단: 타임라인 -->
-          <div style="background:#0a0a1a;border-top:1px solid #2a2a4a;flex-shrink:0;height:220px;display:flex;flex-direction:column;" id="veTimeline">
-            <div style="display:flex;align-items:center;gap:8px;padding:5px 14px;background:#0f0f23;border-bottom:1px solid #1a1a3a;flex-shrink:0;">
-              <span style="font-size:11px;color:#475569;font-weight:700;letter-spacing:0.05em;">TIMELINE</span>
-              <button id="veShortcutBtn" style="padding:3px 10px;font-size:10px;border:none;border-radius:4px;cursor:pointer;color:#64748b;background:#1a1a3a;margin-left:6px;">단축키 안내</button>
+          <div style="background:#0c0c1e;border-top:1px solid #1e1e36;flex-shrink:0;height:200px;display:flex;flex-direction:column;" id="veTimeline">
+            <div style="display:flex;align-items:center;gap:6px;padding:4px 14px;background:#12122a;border-bottom:1px solid #1e1e36;flex-shrink:0;height:28px;">
+              <span style="font-size:10px;color:#525268;font-weight:700;letter-spacing:0.08em;">TIMELINE</span>
+              <button id="veShortcutBtn" style="padding:2px 8px;font-size:9px;border:1px solid #333358;border-radius:3px;cursor:pointer;color:#525268;background:transparent;transition:all 0.15s;" onmouseenter="this.style.background='#1e1e36'" onmouseleave="this.style.background='transparent'">단축키</button>
               <div style="flex:1;"></div>
-              <span id="veTimelinePos" style="font-size:12px;color:#475569;font-variant-numeric:tabular-nums;">00:00 / 00:00</span>
-              <div style="display:flex;gap:2px;margin-left:8px;">
-                <button id="veZoomOut" style="border:none;background:#1a1a3a;color:#64748b;width:28px;height:24px;border-radius:4px;cursor:pointer;font-size:15px;line-height:1;">−</button>
-                <button id="veZoomIn" style="border:none;background:#1a1a3a;color:#64748b;width:28px;height:24px;border-radius:4px;cursor:pointer;font-size:15px;line-height:1;">+</button>
+              <span id="veTimelinePos" style="font-size:11px;color:#525268;font-variant-numeric:tabular-nums;">00:00 / 00:00</span>
+              <div style="display:flex;gap:2px;margin-left:6px;">
+                <button id="veZoomOut" style="border:1px solid #333358;background:transparent;color:#6b6b88;width:24px;height:22px;border-radius:3px;cursor:pointer;font-size:14px;line-height:1;transition:all 0.15s;" onmouseenter="this.style.background='#1e1e36'" onmouseleave="this.style.background='transparent'">−</button>
+                <button id="veZoomIn" style="border:1px solid #333358;background:transparent;color:#6b6b88;width:24px;height:22px;border-radius:3px;cursor:pointer;font-size:14px;line-height:1;transition:all 0.15s;" onmouseenter="this.style.background='#1e1e36'" onmouseleave="this.style.background='transparent'">+</button>
               </div>
             </div>
             <div id="veTimelineWrapper" style="position:relative;display:flex;flex-direction:column;flex:1;overflow-x:auto;overflow-y:hidden;">
             <div style="display:flex;align-items:center;gap:6px;padding:0 12px;flex-shrink:0;">
-              <span style="width:50px;"></span>
-              <div id="veTimeRuler" style="flex:1;position:relative;height:22px;border-bottom:1px solid #1a1a3a;overflow:hidden;"></div>
+              <span style="width:44px;"></span>
+              <div id="veTimeRuler" style="flex:1;position:relative;height:20px;border-bottom:1px solid #1e1e36;overflow:hidden;"></div>
             </div>
             <div id="veTracksArea" style="position:relative;padding:0 12px;flex:1;overflow-y:auto;">
-              <div id="vePlayhead" style="position:absolute;top:-26px;bottom:0;width:2px;background:#ff4444;z-index:20;left:0;pointer-events:none;will-change:transform;">
+              <div id="vePlayhead" style="position:absolute;top:-24px;bottom:0;width:2px;background:#ff4444;z-index:20;left:0;pointer-events:none;will-change:transform;">
                 <div style="width:10px;height:10px;background:#ff4444;border-radius:2px;position:absolute;top:0;left:-4px;clip-path:polygon(0 0,100% 0,50% 100%);"></div>
               </div>
-              <!-- 트랙 추가 버튼 영역 -->
               <div style="display:flex;align-items:center;gap:4px;padding:2px 0;">
-                <span style="font-size:11px;color:#475569;width:50px;text-align:right;font-weight:700;"></span>
-                <button id="veAddTrackBtn" style="padding:2px 8px;font-size:10px;border:none;border-radius:3px;cursor:pointer;color:#64748b;background:#1a1a3a;" title="트랙 추가">+ 트랙</button>
+                <span style="width:44px;"></span>
+                <button id="veAddTrackBtn" style="padding:2px 8px;font-size:9px;border:1px solid #252542;border-radius:3px;cursor:pointer;color:#525268;background:transparent;transition:all 0.15s;" title="트랙 추가" onmouseenter="this.style.background='#1e1e36'" onmouseleave="this.style.background='transparent'">+ 트랙</button>
               </div>
-              <div style="display:flex;align-items:center;gap:6px;padding:3px 0;">
-                <span style="font-size:11px;color:#8b5cf6;width:50px;text-align:right;font-weight:700;">IMG</span>
-                <div id="veTrackImages" class="ve-track-lane" style="flex:1;position:relative;height:32px;background:#0c0c1e;border-radius:4px;overflow:hidden;cursor:pointer;border:1px solid #1a1a3a;"></div>
+              <div style="display:flex;align-items:center;gap:6px;padding:2px 0;">
+                <span style="font-size:10px;color:var(--accent);width:44px;text-align:right;font-weight:600;opacity:0.8;">IMG</span>
+                <div id="veTrackImages" class="ve-track-lane" style="flex:1;position:relative;height:28px;background:#0a0a1a;border-radius:3px;overflow:hidden;cursor:pointer;border:1px solid #1e1e36;"></div>
               </div>
-              <div style="display:flex;align-items:center;gap:6px;padding:3px 0;">
-                <span style="font-size:11px;color:#3b82f6;width:50px;text-align:right;font-weight:700;">V1</span>
-                <div class="ve-track-lane" style="flex:1;position:relative;height:44px;background:#0c0c1e;border-radius:4px;overflow:hidden;cursor:pointer;border:1px solid #1a1a3a;">
-                  <div id="veTrackVideo" style="position:absolute;inset:1px;background:#2563eb;border-radius:3px;opacity:0.9;"></div>
+              <div style="display:flex;align-items:center;gap:6px;padding:2px 0;">
+                <span style="font-size:10px;color:#3b82f6;width:44px;text-align:right;font-weight:600;opacity:0.8;">V1</span>
+                <div class="ve-track-lane" style="flex:1;position:relative;height:38px;background:#0a0a1a;border-radius:3px;overflow:hidden;cursor:pointer;border:1px solid #1e1e36;">
+                  <div id="veTrackVideo" style="position:absolute;inset:1px;background:linear-gradient(180deg,#009688,#00796b);border-radius:2px;opacity:0.85;"></div>
                 </div>
               </div>
-              <div style="display:flex;align-items:center;gap:6px;padding:3px 0;">
-                <span style="font-size:11px;color:#06b6d4;width:50px;text-align:right;font-weight:700;">T1</span>
-                <div id="veTimelineBlocks" class="ve-track-lane" style="flex:1;position:relative;height:44px;background:#0c0c1e;border-radius:4px;overflow:hidden;cursor:pointer;border:1px solid #1a1a3a;"></div>
+              <div style="display:flex;align-items:center;gap:6px;padding:2px 0;">
+                <span style="font-size:10px;color:#06b6d4;width:44px;text-align:right;font-weight:600;opacity:0.8;">T1</span>
+                <div id="veTimelineBlocks" class="ve-track-lane" style="flex:1;position:relative;height:38px;background:#0a0a1a;border-radius:3px;overflow:hidden;cursor:pointer;border:1px solid #1e1e36;"></div>
               </div>
-              <div style="display:flex;align-items:center;gap:6px;padding:3px 0;">
-                <span style="font-size:11px;color:#6366f1;width:50px;text-align:right;font-weight:700;">A1</span>
-                <div id="veTrackAudio" class="ve-track-lane" style="flex:1;position:relative;height:40px;background:#0c0c1e;border-radius:4px;overflow:hidden;cursor:pointer;border:1px solid #1a1a3a;"></div>
+              <div style="display:flex;align-items:center;gap:6px;padding:2px 0;">
+                <span style="font-size:10px;color:#6366f1;width:44px;text-align:right;font-weight:600;opacity:0.8;">A1</span>
+                <div id="veTrackAudio" class="ve-track-lane" style="flex:1;position:relative;height:34px;background:#0a0a1a;border-radius:3px;overflow:hidden;cursor:pointer;border:1px solid #1e1e36;"></div>
               </div>
             </div><!-- /veTracksArea -->
             </div><!-- /veTimelineWrapper -->
@@ -1447,14 +2256,17 @@
 
         <!-- Step 4: 내보내기 중 -->
         <div id="veStep4" style="display:none;">
-          <div class="card" style="text-align:center;padding:32px 20px;">
-            <div style="font-size:32px;font-weight:800;color:var(--accent);" id="veExportPct">0%</div>
-            <div style="font-size:14px;font-weight:600;color:var(--text);margin:8px 0 4px;" id="veExportLabel">렌더링 중...</div>
-            <div style="font-size:11px;color:var(--text-dim);" id="veExportSub">로컬 PC에서 직접 처리합니다</div>
-            <div style="height:4px;background:var(--border);border-radius:2px;margin-top:16px;overflow:hidden;">
-              <div id="veExportBar" style="height:100%;background:var(--accent);width:0%;border-radius:2px;transition:width 0.3s;"></div>
+          <div style="display:flex;align-items:center;justify-content:center;min-height:60vh;">
+            <div class="card" style="text-align:center;padding:40px 32px;max-width:420px;width:100%;">
+              <div style="width:64px;height:64px;margin:0 auto 20px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;"></div>
+              <div style="font-size:42px;font-weight:800;color:var(--accent);letter-spacing:-0.02em;" id="veExportPct">0%</div>
+              <div style="font-size:15px;font-weight:600;color:var(--text);margin:8px 0 4px;" id="veExportLabel">렌더링 중...</div>
+              <div style="font-size:12px;color:var(--text-dim);" id="veExportSub">로컬 PC에서 직접 처리합니다</div>
+              <div style="height:6px;background:var(--border);border-radius:3px;margin-top:20px;overflow:hidden;">
+                <div id="veExportBar" style="height:100%;width:0%;border-radius:3px;transition:width 0.5s ease;background:var(--ve-accent);"></div>
+              </div>
+              <button class="btn btn-outline btn-sm" id="veExportCancel" style="margin-top:18px;">취소</button>
             </div>
-            <button class="btn btn-outline btn-sm" id="veExportCancel" style="margin-top:14px;">취소</button>
           </div>
         </div>
 
@@ -1465,8 +2277,17 @@
       <!-- 수동 글쓰기 -->
       <section class="panel hidden" data-panel="manual-write">
         <div class="panel-header">
-          <h1>AI 글쓰기</h1>
-          <p class="panel-sub">주제를 입력하면 AI가 블로그 글을 생성합니다.</p>
+          <button class="btn btn-back" id="writeBackBtn" style="margin-bottom:8px;">← 글쓰기 선택</button>
+          <h1>수동 글쓰기</h1>
+          <p class="panel-sub">주제를 입력하면 AI가 블로그 글을 생성합니다. 생성 후 수정/발행할 수 있습니다.</p>
+        </div>
+
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+            <strong>안내사항</strong><br>
+            주제를 <strong>구체적으로</strong> 입력할수록 높은 품질의 글이 생성됩니다.<br>
+            생성된 글은 발행 전 미리보기에서 수정할 수 있으며, 글 생성 시 1회가 차감됩니다.
+          </div>
         </div>
 
         <div id="writeInputView">
@@ -1493,15 +2314,25 @@
               </div>
             </div>
             <div class="card form" style="padding:18px;margin-top:10px;">
+              <label>제목 <span class="optional">(선택 — 미입력 시 AI가 자동 생성)</span></label>
+              <input type="text" id="writeTitle" placeholder="예: 제주도 여행 필수 코스 TOP 10" style="font-size:15px;padding:14px;">
+
               <label>주제 / 키워드 <span class="req">*</span></label>
               <input type="text" id="writeTopic" placeholder="예: 제주도 3박4일 여행 코스 추천" style="font-size:15px;padding:14px;">
 
-              <label>참고 URL <span class="optional">(선택)</span></label>
-              <div style="display:flex;gap:6px;">
-                <input type="text" id="writeRefUrl" placeholder="https://... 참고할 글이나 뉴스 URL" style="flex:1;">
-                <button class="btn btn-outline btn-sm" id="writeUrlFetchBtn" style="white-space:nowrap;">가져오기</button>
+              <!-- 참고 URL은 '링크로 글쓰기' 모드로 이동 -->
+              <input type="hidden" id="writeRefUrl">
+              <div id="writeUrlMode" style="display:none;"></div>
+              <div id="writeUrlPreview" style="display:none;"></div>
+              <div id="writeUrlImages" style="display:none;"></div>
+
+              <label>PC 이미지 첨부 <span class="optional">(선택)</span></label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <button class="btn btn-outline btn-sm" id="writeImageUploadBtn" style="white-space:nowrap;">이미지 선택</button>
+                <span id="writeImageUploadCount" style="font-size:12px;color:var(--text-dim);">선택된 이미지 없음</span>
+                <input type="file" id="writeImageFileInput" multiple accept=".png,.jpg,.jpeg,.gif,.webp" style="display:none;">
               </div>
-              <div id="writeUrlPreview" style="display:none;margin-top:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text-sub);line-height:1.6;max-height:80px;overflow-y:auto;"></div>
+              <div id="writeImageUploadPreview" style="display:none;margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;"></div>
 
               <label>원하는 글 방향 <span class="optional">(선택)</span></label>
               <textarea id="writeExtra" rows="2" placeholder="예: 이미지 먼저 보여주고, 짧은 문단으로 쉽게 써줘. 핵심 단어는 굵게 강조해줘."></textarea>
@@ -1650,17 +2481,23 @@
         <!-- 결과 -->
         <div id="writeResultView" style="display:none;">
           <div class="card" style="padding:18px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
               <h3 style="margin:0;font-size:16px;font-weight:700;" id="writeResultTitle">생성된 글</h3>
-              <div style="display:flex;gap:6px;">
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
                 <button class="btn btn-primary btn-sm" id="writeCopyBtn">복사</button>
                 <button class="btn btn-outline btn-sm" id="writeHtmlCopyBtn">HTML 복사</button>
+                <button class="btn btn-outline btn-sm" id="writeSaveDraftBtn">임시저장</button>
                 <button class="btn btn-outline btn-sm" id="writeRetryBtn">다시 생성</button>
               </div>
             </div>
+            <!-- 제목 수정 -->
+            <div style="margin-bottom:10px;">
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;">제목 (클릭하여 수정)</label>
+              <input type="text" id="writeResultTitleInput" style="width:100%;font-size:15px;font-weight:700;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);" placeholder="제목을 입력하세요">
+            </div>
             <!-- 제목 추천 -->
             <div id="writeTitleSuggestions" style="display:none;margin-bottom:10px;">
-              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;">추천 제목</label>
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px;">추천 제목 (클릭하면 위 제목에 적용)</label>
               <div id="writeTitleList" class="chips"></div>
             </div>
             <!-- SEO 키워드 -->
@@ -1681,11 +2518,418 @@
         </div>
       </section>
 
+      <!-- 링크로 글쓰기 -->
+      <section class="panel hidden" data-panel="link-write">
+        <div class="panel-header">
+          <button class="btn btn-back" id="linkBackBtn" style="margin-bottom:8px;">← 글쓰기 선택</button>
+          <h1>링크로 글쓰기</h1>
+          <p class="panel-sub">URL을 입력하면 내용을 분석해 블로그 글을 자동 생성합니다.</p>
+        </div>
+
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+            <strong>안내사항</strong><br>
+            뉴스, 블로그, 공식 사이트 등 <strong>대부분의 URL</strong>을 지원합니다.<br>
+            원본 내용을 참고하여 새로운 글을 생성하며, 단순 복사가 아닌 재작성됩니다.
+          </div>
+        </div>
+
+        <div id="linkWriteInputView">
+          <div class="step-bar" id="linkStepBar">
+            <div class="step-item active" data-step="1"><span class="step-num">1</span> URL 입력</div>
+            <div class="step-item" data-step="2"><span class="step-num">2</span> 스타일 설정</div>
+            <div class="step-item" data-step="3"><span class="step-num">3</span> 꾸미기</div>
+          </div>
+
+          <div id="linkWriteQuotaInfo" style="font-size:12px;color:var(--text-dim);text-align:right;margin-bottom:6px;"></div>
+
+          <!-- Step 1: URL 입력 -->
+          <div class="wiz-step" id="linkStep1">
+            <div class="card" style="padding:16px 18px;">
+              <label style="display:block;font-size:13px;font-weight:700;color:var(--text-sub);margin-bottom:10px;">플랫폼</label>
+              <div class="chips" id="linkPlatformChips">
+                <button class="chip active" data-value="naver">네이버 블로그</button>
+                <button class="chip" data-value="tistory">티스토리</button>
+                <button class="chip" data-value="instagram">인스타그램</button>
+                <button class="chip" data-value="thread">스레드</button>
+                <button class="chip" data-value="youtube">유튜브 대본</button>
+              </div>
+            </div>
+            <div class="card form" style="padding:18px;margin-top:10px;">
+              <label>참고 URL <span class="req">*</span></label>
+              <div style="display:flex;gap:6px;">
+                <input type="text" id="linkRefUrl" placeholder="https://... 참고할 글이나 뉴스 URL" style="flex:1;font-size:15px;padding:14px;">
+                <button class="btn btn-outline btn-sm" id="linkUrlFetchBtn" style="white-space:nowrap;">가져오기</button>
+              </div>
+              <div id="linkUrlMode" style="display:none;margin-top:8px;">
+                <div class="chips" id="linkUrlModeChips" style="gap:4px;">
+                  <button class="chip active" data-value="both" style="font-size:11px;padding:5px 12px;">글+사진 함께</button>
+                  <button class="chip" data-value="photo" style="font-size:11px;padding:5px 12px;">사진만 삽입</button>
+                  <button class="chip" data-value="text" style="font-size:11px;padding:5px 12px;">글만 참고</button>
+                  <button class="chip" data-value="ocr" style="font-size:11px;padding:5px 12px;">사진 속 텍스트 활용</button>
+                </div>
+              </div>
+              <div id="linkUrlPreview" style="display:none;margin-top:8px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:12px;color:var(--text-sub);line-height:1.6;max-height:80px;overflow-y:auto;"></div>
+              <div id="linkUrlImages" style="display:none;margin-top:8px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;"></div>
+
+              <label>제목 <span class="optional">(선택 — 미입력 시 AI가 자동 생성)</span></label>
+              <input type="text" id="linkTitle" placeholder="예: 직접 제목을 지정하세요">
+
+              <label>주제 / 키워드 <span class="optional">(선택)</span></label>
+              <input type="text" id="linkTopic" placeholder="미입력 시 URL 내용에서 자동 추출">
+
+              <label>원하는 글 방향 <span class="optional">(선택)</span></label>
+              <textarea id="linkExtra" rows="2" placeholder="예: 이미지 먼저 보여주고, 짧은 문단으로 쉽게 써줘."></textarea>
+            </div>
+            <div class="wiz-nav">
+              <div></div>
+              <button class="btn btn-primary" id="linkStep1Next">다음: 스타일 설정</button>
+            </div>
+          </div>
+
+          <!-- Step 2: 스타일 (수동 글쓰기와 동일) -->
+          <div class="wiz-step hidden" id="linkStep2">
+            <div class="card">
+              <div class="card-header"><h3>글 스타일</h3></div>
+              <div class="form">
+                <label>글 타입</label>
+                <div class="chips" id="linkSubtypeChips">
+                  <button class="chip active" data-value="info">정보성 글</button>
+                  <button class="chip" data-value="visit">체험·방문후기</button>
+                  <button class="chip" data-value="travel">여행 후기</button>
+                  <button class="chip" data-value="product">제품 후기</button>
+                  <button class="chip" data-value="column">칼럼</button>
+                  <button class="chip" data-value="article">기사 방식</button>
+                </div>
+                <label>글 톤</label>
+                <div class="chips" id="linkToneChips">
+                  <button class="chip active" data-value="friendly">친근·정보형</button>
+                  <button class="chip" data-value="diary">일기형</button>
+                  <button class="chip" data-value="review">리뷰형</button>
+                  <button class="chip" data-value="professional">전문형</button>
+                </div>
+                <label>말투</label>
+                <div class="chips" id="linkSpeechChips">
+                  <button class="chip active" data-value="polite_yo">~요 체</button>
+                  <button class="chip" data-value="formal">~합니다 체</button>
+                  <button class="chip" data-value="casual">반말 체</button>
+                  <button class="chip" data-value="mixed">혼합 체</button>
+                </div>
+                <label>분량</label>
+                <div class="chips" id="linkLengthChips">
+                  <button class="chip" data-value="short">보통 (1~1.5K)</button>
+                  <button class="chip active" data-value="medium">길게 (2~3K)</button>
+                  <button class="chip" data-value="long">아주 길게 (4K+)</button>
+                </div>
+              </div>
+            </div>
+            <div class="wiz-nav">
+              <button class="btn btn-outline" id="linkStep2Prev">이전</button>
+              <button class="btn btn-primary" id="linkStep2Next">다음: 꾸미기</button>
+            </div>
+          </div>
+
+          <!-- Step 3: 꾸미기 -->
+          <div class="wiz-step hidden" id="linkStep3">
+            <div class="card">
+              <div class="card-header"><h3>꾸미기</h3></div>
+              <div class="form">
+                <label>사진 삽입</label>
+                <div class="chips" id="linkImageChips">
+                  <button class="chip active" data-value="auto">자동 삽입</button>
+                  <button class="chip" data-value="none">없음</button>
+                </div>
+                <label>짤/GIF</label>
+                <div class="chips" id="linkGifChips">
+                  <button class="chip active" data-value="on">사용</button>
+                  <button class="chip" data-value="off">안함</button>
+                </div>
+                <label>인용구 스타일</label>
+                <div class="chips" id="linkQuoteChips">
+                  <button class="chip active" data-value="postit">포스트잇</button>
+                  <button class="chip" data-value="따옴표">따옴표</button>
+                  <button class="chip" data-value="vertical">버티컬 라인</button>
+                  <button class="chip" data-value="bubble">말풍선</button>
+                  <button class="chip" data-value="none">없음</button>
+                </div>
+                <label>키워드 강조색</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="color" id="linkAccentColor" value="#2DB400" style="width:34px;height:28px;border:1px solid var(--border);border-radius:6px;cursor:pointer;">
+                  <div class="chips" id="linkAccentPresets">
+                    <button class="chip" data-value="#2DB400" style="background:#2DB400;color:#fff;min-width:auto;padding:3px 8px;font-size:11px;">초록</button>
+                    <button class="chip" data-value="#FF6B35" style="background:#FF6B35;color:#fff;min-width:auto;padding:3px 8px;font-size:11px;">주황</button>
+                    <button class="chip" data-value="#4A90D9" style="background:#4A90D9;color:#fff;min-width:auto;padding:3px 8px;font-size:11px;">파랑</button>
+                    <button class="chip" data-value="" style="min-width:auto;padding:3px 8px;font-size:11px;">없음</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="wiz-nav">
+              <button class="btn btn-outline" id="linkStep3Prev">이전</button>
+              <button class="btn btn-primary btn-lg" id="linkGenerateBtn">AI 글 생성</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 생성 중 -->
+        <div id="linkLoadingView" style="display:none;">
+          <div class="card" style="padding:48px 20px;text-align:center;">
+            <div style="width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;"></div>
+            <div style="font-size:15px;font-weight:600;color:var(--text);" id="linkGenStatus">글을 생성하고 있습니다...</div>
+            <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;max-width:320px;margin:16px auto 0;">
+              <div id="linkGenBar" style="height:100%;background:var(--accent);width:0%;border-radius:2px;transition:width 0.5s;"></div>
+            </div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:14px;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.6;" id="linkGenPreview"></div>
+          </div>
+        </div>
+
+        <!-- 결과 -->
+        <div id="linkResultView" style="display:none;">
+          <div class="card" style="padding:18px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <h3 style="margin:0;font-size:16px;font-weight:700;" id="linkResultTitle">생성된 글</h3>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="btn btn-primary btn-sm" id="linkCopyBtn">복사</button>
+                <button class="btn btn-outline btn-sm" id="linkHtmlCopyBtn">HTML 복사</button>
+                <button class="btn btn-outline btn-sm" id="linkSaveDraftBtn">임시저장</button>
+                <button class="btn btn-outline btn-sm" id="linkRetryBtn">다시 생성</button>
+              </div>
+            </div>
+            <div style="margin-bottom:10px;">
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;">제목 (클릭하여 수정)</label>
+              <input type="text" id="linkResultTitleInput" style="width:100%;font-size:15px;font-weight:700;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);" placeholder="제목을 입력하세요">
+            </div>
+            <div id="linkResultContent" style="font-size:14px;line-height:2;color:var(--text);white-space:pre-wrap;max-height:55vh;overflow-y:auto;padding:16px 18px;background:var(--bg);border:1px solid var(--border);border-radius:10px;" contenteditable="true"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 파일로 글쓰기 -->
+      <section class="panel hidden" data-panel="file-write">
+        <div class="panel-header">
+          <button class="btn btn-back" id="fileBackBtn" style="margin-bottom:8px;">← 글쓰기 선택</button>
+          <h1>파일로 글쓰기</h1>
+          <p class="panel-sub">파일, 폴더, 드라이브의 자료를 글감으로 블로그 글을 자동 생성합니다.</p>
+        </div>
+
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+            <strong>안내사항</strong><br>
+            TXT, DOCX, PDF, HWP 문서와 이미지 파일을 지원합니다.<br>
+            파일 내용을 AI가 분석하여 <strong>블로그에 적합한 형태</strong>로 자동 변환합니다.
+          </div>
+        </div>
+
+        <div id="fileWriteInputView">
+          <div class="step-bar" id="fileStepBar">
+            <div class="step-item active" data-step="1"><span class="step-num">1</span> 자료 선택</div>
+            <div class="step-item" data-step="2"><span class="step-num">2</span> 스타일 설정</div>
+            <div class="step-item" data-step="3"><span class="step-num">3</span> 꾸미기</div>
+          </div>
+
+          <div id="fileWriteQuotaInfo" style="font-size:12px;color:var(--text-dim);text-align:right;margin-bottom:6px;"></div>
+
+          <!-- Step 1: 자료 선택 -->
+          <div class="wiz-step" id="fileStep1">
+            <div class="card" style="padding:16px 18px;">
+              <label style="display:block;font-size:13px;font-weight:700;color:var(--text-sub);margin-bottom:10px;">플랫폼</label>
+              <div class="chips" id="filePlatformChips">
+                <button class="chip active" data-value="naver">네이버 블로그</button>
+                <button class="chip" data-value="tistory">티스토리</button>
+                <button class="chip" data-value="instagram">인스타그램</button>
+                <button class="chip" data-value="thread">스레드</button>
+                <button class="chip" data-value="youtube">유튜브 대본</button>
+              </div>
+            </div>
+            <div class="card form" style="padding:18px;margin-top:10px;">
+              <label>자료 소스 선택 <span class="req">*</span></label>
+              <div class="chips" id="fileSourceChips" style="margin-bottom:12px;">
+                <button class="chip active" data-value="file">파일 업로드</button>
+                <button class="chip" data-value="folder">로컬 폴더</button>
+                <button class="chip" data-value="drive">드라이브</button>
+              </div>
+
+              <!-- 파일 업로드 -->
+              <div id="fileUploadSection">
+                <div style="border:2px dashed var(--border);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:border-color 0.2s;" id="fileDropZone">
+                  <div style="font-size:14px;font-weight:600;color:var(--text-sub);margin-bottom:6px;">파일을 드래그하거나 클릭해서 선택</div>
+                  <div style="font-size:12px;color:var(--text-dim);">txt, docx, pdf, hwp, 이미지 파일 지원</div>
+                  <input type="file" id="fileInput" multiple accept=".txt,.docx,.pdf,.hwp,.doc,.png,.jpg,.jpeg,.gif,.webp" style="display:none;">
+                </div>
+                <div id="fileList" style="margin-top:8px;"></div>
+              </div>
+
+              <!-- 로컬 폴더 -->
+              <div id="fileFolderSection" style="display:none;">
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <button class="btn btn-outline btn-sm" id="fileFolderBtn" style="white-space:nowrap;">폴더 선택</button>
+                  <span id="fileFolderPath" style="font-size:12px;color:var(--text-dim);">선택 안 됨</span>
+                </div>
+                <div class="row" style="margin-top:6px;">
+                  <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:12px;color:var(--text-sub);">
+                    <input type="checkbox" id="fileFolderRecursive" style="width:auto;"> 하위 폴더 포함
+                  </label>
+                </div>
+                <div class="form-hint">PC 폴더의 텍스트/이미지 파일을 글감으로 사용합니다.</div>
+              </div>
+
+              <!-- 드라이브 -->
+              <div id="fileDriveSection" style="display:none;">
+                <label>드라이브 폴더 링크 <span style="font-size:11px;color:var(--text-dim);">(구글 드라이브, 네이버 MYBOX 등)</span></label>
+                <input type="text" id="fileDriveUrl" placeholder="예: https://drive.google.com/drive/folders/... 또는 네이버 MYBOX 공유 링크">
+                <div class="row" style="margin-top:6px;">
+                  <label style="display:flex;align-items:center;gap:6px;margin:0;font-size:12px;color:var(--text-sub);">
+                    <input type="checkbox" id="fileDriveRecursive" style="width:auto;"> 하위 폴더 포함
+                  </label>
+                </div>
+                <div class="form-hint">폴더 안의 문서/텍스트 파일을 글감으로, 이미지 파일은 본문에 삽입합니다. 링크가 공유 설정이어야 합니다.</div>
+              </div>
+
+              <label style="margin-top:14px;">제목 <span class="optional">(선택 — 미입력 시 AI가 자동 생성)</span></label>
+              <input type="text" id="fileTitle" placeholder="예: 직접 제목을 지정하세요">
+
+              <label>주제 / 키워드 <span class="optional">(선택)</span></label>
+              <input type="text" id="fileTopic" placeholder="미입력 시 파일 내용에서 자동 추출">
+
+              <label>원하는 글 방향 <span class="optional">(선택)</span></label>
+              <textarea id="fileExtra" rows="2" placeholder="예: 이미지 먼저 보여주고, 짧은 문단으로 쉽게 써줘."></textarea>
+            </div>
+            <div class="wiz-nav">
+              <div></div>
+              <button class="btn btn-primary" id="fileStep1Next">다음: 스타일 설정</button>
+            </div>
+          </div>
+
+          <!-- Step 2: 스타일 -->
+          <div class="wiz-step hidden" id="fileStep2">
+            <div class="card">
+              <div class="card-header"><h3>글 스타일</h3></div>
+              <div class="form">
+                <label>글 타입</label>
+                <div class="chips" id="fileSubtypeChips">
+                  <button class="chip active" data-value="info">정보성 글</button>
+                  <button class="chip" data-value="visit">체험·방문후기</button>
+                  <button class="chip" data-value="travel">여행 후기</button>
+                  <button class="chip" data-value="product">제품 후기</button>
+                  <button class="chip" data-value="column">칼럼</button>
+                  <button class="chip" data-value="article">기사 방식</button>
+                </div>
+                <label>글 톤</label>
+                <div class="chips" id="fileToneChips">
+                  <button class="chip active" data-value="friendly">친근·정보형</button>
+                  <button class="chip" data-value="diary">일기형</button>
+                  <button class="chip" data-value="review">리뷰형</button>
+                  <button class="chip" data-value="professional">전문형</button>
+                </div>
+                <label>말투</label>
+                <div class="chips" id="fileSpeechChips">
+                  <button class="chip active" data-value="polite_yo">~요 체</button>
+                  <button class="chip" data-value="formal">~합니다 체</button>
+                  <button class="chip" data-value="casual">반말 체</button>
+                  <button class="chip" data-value="mixed">혼합 체</button>
+                </div>
+                <label>분량</label>
+                <div class="chips" id="fileLengthChips">
+                  <button class="chip" data-value="short">보통 (1~1.5K)</button>
+                  <button class="chip active" data-value="medium">길게 (2~3K)</button>
+                  <button class="chip" data-value="long">아주 길게 (4K+)</button>
+                </div>
+              </div>
+            </div>
+            <div class="wiz-nav">
+              <button class="btn btn-outline" id="fileStep2Prev">이전</button>
+              <button class="btn btn-primary" id="fileStep2Next">다음: 꾸미기</button>
+            </div>
+          </div>
+
+          <!-- Step 3: 꾸미기 -->
+          <div class="wiz-step hidden" id="fileStep3">
+            <div class="card">
+              <div class="card-header"><h3>꾸미기</h3></div>
+              <div class="form">
+                <label>사진 삽입</label>
+                <div class="chips" id="fileImageChips">
+                  <button class="chip active" data-value="auto">자동 삽입</button>
+                  <button class="chip" data-value="none">없음</button>
+                </div>
+                <label>짤/GIF</label>
+                <div class="chips" id="fileGifChips">
+                  <button class="chip active" data-value="on">사용</button>
+                  <button class="chip" data-value="off">안함</button>
+                </div>
+                <label>인용구 스타일</label>
+                <div class="chips" id="fileQuoteChips">
+                  <button class="chip active" data-value="postit">포스트잇</button>
+                  <button class="chip" data-value="따옴표">따옴표</button>
+                  <button class="chip" data-value="vertical">버티컬 라인</button>
+                  <button class="chip" data-value="bubble">말풍선</button>
+                  <button class="chip" data-value="none">없음</button>
+                </div>
+                <label>키워드 강조색</label>
+                <div style="display:flex;gap:8px;align-items:center;">
+                  <input type="color" id="fileAccentColor" value="#2DB400" style="width:34px;height:28px;border:1px solid var(--border);border-radius:6px;cursor:pointer;">
+                  <div class="chips" id="fileAccentPresets">
+                    <button class="chip" data-value="#2DB400" style="background:#2DB400;color:#fff;min-width:auto;padding:3px 8px;font-size:11px;">초록</button>
+                    <button class="chip" data-value="#FF6B35" style="background:#FF6B35;color:#fff;min-width:auto;padding:3px 8px;font-size:11px;">주황</button>
+                    <button class="chip" data-value="#4A90D9" style="background:#4A90D9;color:#fff;min-width:auto;padding:3px 8px;font-size:11px;">파랑</button>
+                    <button class="chip" data-value="" style="min-width:auto;padding:3px 8px;font-size:11px;">없음</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="wiz-nav">
+              <button class="btn btn-outline" id="fileStep3Prev">이전</button>
+              <button class="btn btn-primary btn-lg" id="fileGenerateBtn">AI 글 생성</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 생성 중 -->
+        <div id="fileLoadingView" style="display:none;">
+          <div class="card" style="padding:48px 20px;text-align:center;">
+            <div style="width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 16px;"></div>
+            <div style="font-size:15px;font-weight:600;color:var(--text);" id="fileGenStatus">글을 생성하고 있습니다...</div>
+            <div style="height:4px;background:var(--border);border-radius:2px;overflow:hidden;max-width:320px;margin:16px auto 0;">
+              <div id="fileGenBar" style="height:100%;background:var(--accent);width:0%;border-radius:2px;transition:width 0.5s;"></div>
+            </div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:14px;max-width:400px;margin-left:auto;margin-right:auto;line-height:1.6;" id="fileGenPreview"></div>
+          </div>
+        </div>
+
+        <!-- 결과 -->
+        <div id="fileResultView" style="display:none;">
+          <div class="card" style="padding:18px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+              <h3 style="margin:0;font-size:16px;font-weight:700;" id="fileResultTitle">생성된 글</h3>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button class="btn btn-primary btn-sm" id="fileCopyBtn">복사</button>
+                <button class="btn btn-outline btn-sm" id="fileHtmlCopyBtn">HTML 복사</button>
+                <button class="btn btn-outline btn-sm" id="fileSaveDraftBtn">임시저장</button>
+                <button class="btn btn-outline btn-sm" id="fileRetryBtn">다시 생성</button>
+              </div>
+            </div>
+            <div style="margin-bottom:10px;">
+              <label style="display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:4px;">제목 (클릭하여 수정)</label>
+              <input type="text" id="fileResultTitleInput" style="width:100%;font-size:15px;font-weight:700;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text);" placeholder="제목을 입력하세요">
+            </div>
+            <div id="fileResultContent" style="font-size:14px;line-height:2;color:var(--text);white-space:pre-wrap;max-height:55vh;overflow-y:auto;padding:16px 18px;background:var(--bg);border:1px solid var(--border);border-radius:10px;" contenteditable="true"></div>
+          </div>
+        </div>
+      </section>
+
       <!-- 카드뉴스 -->
       <section class="panel hidden" data-panel="cardnews">
         <div class="panel-header">
           <h1>카드뉴스</h1>
           <p class="panel-sub">내용을 입력하거나 AI로 기획하면 카드뉴스 슬라이드를 자동 생성합니다.</p>
+        </div>
+
+        <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
+          <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
+            <strong>안내사항</strong><br>
+            카드뉴스는 <strong>인스타그램, 블로그</strong> 등에 바로 사용할 수 있는 이미지로 생성됩니다.<br>
+            AI 기획 기능으로 주제만 입력하면 슬라이드 구성까지 자동으로 완성합니다.
+          </div>
         </div>
 
         <!-- ① 입력/기획 -->
@@ -1750,60 +2994,89 @@
           </div>
         </div>
 
-        <!-- ③ 편집/결과 -->
+        <!-- ③ 편집/결과 (캔바/미리캔버스 스타일) -->
         <div id="cardResultView" style="display:none;">
-          <!-- 상단 액션 -->
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-            <h3 style="margin:0;font-size:16px;font-weight:700;">슬라이드 편집</h3>
+          <!-- 상단 헤더 바 -->
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:8px 0;border-bottom:1px solid var(--border-soft);">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button class="btn btn-outline btn-sm" id="cardRetryBtn" style="padding:6px 12px;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+              </button>
+              <h3 style="margin:0;font-size:15px;font-weight:700;">슬라이드 편집</h3>
+            </div>
             <div style="display:flex;gap:6px;">
-              <button class="btn btn-outline btn-sm" id="cardAddSlideBtn">슬라이드 추가</button>
-              <button class="btn btn-primary btn-sm" id="cardDownloadAllBtn">전체 다운로드</button>
-              <button class="btn btn-outline btn-sm" id="cardRetryBtn">처음부터</button>
+              <button class="btn btn-outline btn-sm" id="cardAddSlideBtn" style="font-size:12px;">+ 슬라이드</button>
+              <button class="btn btn-primary btn-sm" id="cardDownloadAllBtn" style="font-size:12px;padding:8px 16px;">전체 다운로드</button>
             </div>
           </div>
 
-          <!-- 슬라이드 탭 -->
-          <div class="chips" id="cardSlideTabs" style="margin-bottom:10px;flex-wrap:wrap;"></div>
+          <!-- 슬라이드 탭 (미리캔버스 스타일 — 가로 스크롤) -->
+          <div style="overflow-x:auto;margin-bottom:12px;padding-bottom:4px;">
+            <div class="chips" id="cardSlideTabs" style="flex-wrap:nowrap;gap:4px;"></div>
+          </div>
 
-          <!-- Fabric 캔버스 에디터 -->
-          <div style="display:flex;gap:14px;align-items:start;">
-            <!-- 좌측: 캔버스 -->
-            <div style="flex:1;text-align:center;">
-              <div style="display:inline-block;position:relative;border-radius:8px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,0.2);">
+          <!-- 에디터 영역 (좌측 도구 + 중앙 캔버스 + 우측 속성) -->
+          <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--bg-elev);min-height:560px;">
+
+            <!-- 좌측: 도구 사이드바 -->
+            <div style="width:52px;flex-shrink:0;background:#f8f9fc;border-right:1px solid var(--border-soft);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:4px;">
+              <button class="btn btn-outline btn-sm" id="cardAddTitleBtn" title="제목 추가" style="width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
+              </button>
+              <button class="btn btn-outline btn-sm" id="cardAddBodyBtn" title="본문 추가" style="width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="17" y1="10" x2="3" y2="10"/><line x1="21" y1="6" x2="3" y2="6"/><line x1="21" y1="14" x2="3" y2="14"/><line x1="17" y1="18" x2="3" y2="18"/></svg>
+              </button>
+              <button class="btn btn-outline btn-sm" id="cardAddBadgeBtn" title="뱃지 추가" style="width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="8" width="18" height="8" rx="4"/></svg>
+              </button>
+              <div style="height:1px;width:28px;background:var(--border-soft);margin:4px 0;"></div>
+              <button class="btn btn-outline btn-sm" id="cardSearchBgBtn" title="배경 사진" style="width:38px;height:38px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:8px;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              </button>
+              <input type="color" id="cardBgColor" value="#0a0a0a" title="배경색" style="width:32px;height:32px;border:1px solid var(--border);border-radius:6px;cursor:pointer;padding:1px;">
+            </div>
+
+            <!-- 중앙: 캔버스 -->
+            <div style="flex:1;display:flex;align-items:center;justify-content:center;background:#e5e5e5;padding:20px;min-height:500px;">
+              <div style="display:inline-block;position:relative;border-radius:4px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.15);">
                 <canvas id="cardFabricCanvas"></canvas>
               </div>
             </div>
+
             <!-- 우측: 속성 패널 -->
-            <div style="width:240px;flex-shrink:0;">
-              <div class="card form" style="padding:14px;">
-                <label style="font-size:12px;margin:0 0 6px;">배경</label>
-                <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px;">
-                  <input type="color" id="cardBgColor" value="#1c1c1e" style="width:32px;height:28px;border:1px solid var(--border);border-radius:4px;cursor:pointer;">
-                  <button class="btn btn-outline btn-sm" id="cardSearchBgBtn" style="font-size:11px;">사진 검색</button>
-                </div>
+            <div style="width:200px;flex-shrink:0;background:#fafbfc;border-left:1px solid var(--border-soft);padding:14px;overflow-y:auto;">
+              <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:10px;">선택 요소</div>
 
-                <label style="font-size:12px;margin:0 0 6px;">텍스트 추가</label>
-                <div style="display:flex;gap:4px;margin-bottom:8px;">
-                  <button class="btn btn-outline btn-sm" id="cardAddTitleBtn" style="font-size:11px;">제목</button>
-                  <button class="btn btn-outline btn-sm" id="cardAddBodyBtn" style="font-size:11px;">본문</button>
-                  <button class="btn btn-outline btn-sm" id="cardAddBadgeBtn" style="font-size:11px;">뱃지</button>
-                </div>
+              <div style="margin-bottom:12px;">
+                <label style="font-size:11px;color:var(--text-sub);margin-bottom:4px;display:block;">글자 색상</label>
+                <input type="color" id="cardSelColor" value="#ffffff" style="width:100%;height:28px;border:1px solid var(--border);border-radius:4px;cursor:pointer;">
+              </div>
 
-                <label style="font-size:12px;margin:0 0 6px;">선택 요소</label>
-                <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
-                  <label style="font-size:11px;margin:0;">색상</label>
-                  <input type="color" id="cardSelColor" value="#ffffff" style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;cursor:pointer;">
-                  <label style="font-size:11px;margin:0;">크기</label>
-                  <input type="number" id="cardSelSize" value="28" min="8" max="120" style="width:50px;padding:4px;border:1px solid var(--border);border-radius:4px;font-size:11px;">
-                </div>
-                <div style="display:flex;gap:4px;margin-bottom:8px;">
-                  <button class="btn btn-outline btn-sm" id="cardSelBold" style="font-size:11px;font-weight:900;">B</button>
-                  <button class="btn btn-outline btn-sm" id="cardSelDelete" style="font-size:11px;color:#ef4444;">삭제</button>
-                  <button class="btn btn-outline btn-sm" id="cardSelDuplicate" style="font-size:11px;">복제</button>
-                </div>
+              <div style="margin-bottom:12px;">
+                <label style="font-size:11px;color:var(--text-sub);margin-bottom:4px;display:block;">글자 크기</label>
+                <input type="number" id="cardSelSize" value="28" min="8" max="120" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;">
+              </div>
 
-                <label style="font-size:12px;margin:0 0 6px;">오버레이</label>
-                <input type="range" id="cardOverlay" min="0" max="80" value="50" style="width:100%;">
+              <div style="display:flex;gap:4px;margin-bottom:14px;">
+                <button class="btn btn-outline btn-sm" id="cardSelBold" style="flex:1;font-size:12px;font-weight:900;padding:6px 0;">B</button>
+                <button class="btn btn-outline btn-sm" id="cardSelDuplicate" style="flex:1;font-size:11px;padding:6px 0;">복제</button>
+                <button class="btn btn-outline btn-sm" id="cardSelDelete" style="flex:1;font-size:11px;padding:6px 0;color:#ef4444;">삭제</button>
+              </div>
+
+              <div style="height:1px;background:var(--border-soft);margin:10px 0;"></div>
+
+              <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">오버레이 강도</div>
+              <input type="range" id="cardOverlay" min="0" max="80" value="60" style="width:100%;">
+
+              <div style="height:1px;background:var(--border-soft);margin:12px 0;"></div>
+
+              <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;">빠른 색상</div>
+              <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:8px;">
+                <div class="card-color-chip" data-color="#0a0a0a" style="width:100%;aspect-ratio:1;background:#0a0a0a;border-radius:4px;cursor:pointer;border:1px solid var(--border);"></div>
+                <div class="card-color-chip" data-color="#1a2e1a" style="width:100%;aspect-ratio:1;background:#1a2e1a;border-radius:4px;cursor:pointer;border:1px solid var(--border);"></div>
+                <div class="card-color-chip" data-color="#1a1a2e" style="width:100%;aspect-ratio:1;background:#1a1a2e;border-radius:4px;cursor:pointer;border:1px solid var(--border);"></div>
+                <div class="card-color-chip" data-color="#cc0000" style="width:100%;aspect-ratio:1;background:#cc0000;border-radius:4px;cursor:pointer;border:1px solid var(--border);"></div>
+                <div class="card-color-chip" data-color="#ffffff" style="width:100%;aspect-ratio:1;background:#ffffff;border-radius:4px;cursor:pointer;border:1px solid var(--border);"></div>
               </div>
             </div>
           </div>
@@ -1839,5 +3112,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
   <script src="app.js"></script>
   <script src="cardnews.js"></script>
+  <script src="slideshow.js"></script>
 </body>
 </html>

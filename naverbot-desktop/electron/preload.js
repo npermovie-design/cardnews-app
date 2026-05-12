@@ -64,8 +64,6 @@ contextBridge.exposeInMainWorld("nbBridge", {
   mediaGetLocalFiles: () => ipcRenderer.invoke("media:getLocalFiles"),
   mediaImportFiles: (paths) => ipcRenderer.invoke("media:importFiles", paths),
   mediaDeleteFile: (path) => ipcRenderer.invoke("media:deleteFile", path),
-  mediaGetMakeitFiles: (cat) => ipcRenderer.invoke("media:getMakeitFiles", cat),
-  mediaImportToMakeit: (paths, dest) => ipcRenderer.invoke("media:importToMakeit", paths, dest),
   mediaFileToDataUrl: (path) => ipcRenderer.invoke("media:fileToDataUrl", path),
   mediaGetThumbnail: (path) => ipcRenderer.invoke("media:getThumbnail", path),
 

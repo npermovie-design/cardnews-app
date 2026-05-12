@@ -51,7 +51,7 @@
 
     function addTexts() {
       var layout = slide._layoutType || "center";
-      var accentColors = ["#c8ff00", "#ff8c00", "#ff4444", "#00bfa5", "#ffd700"];
+      var accentColors = ["#c8ff00", "#ff8c00", "#ff4444", "#3b82f6", "#ffd700"];
       var accentColor = accentColors[slide.index ? (slide.index % accentColors.length) : 0];
       var F = "'Malgun Gothic', sans-serif";
 

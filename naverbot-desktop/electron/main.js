@@ -385,37 +385,7 @@ function createWindow() {
   );
 }
 
-// ── 커스텀 프로토콜: makeit:// (로컬 파일 안전 제공) ──
-protocol.registerSchemesAsPrivileged([
-  { scheme: "makeit", privileges: { bypassCSP: true, stream: true, supportFetchAPI: true } }
-]);
-
 app.whenReady().then(async () => {
-  // makeit:// 프로토콜 핸들러 등록
-  protocol.handle("makeit", (req) => {
-    try {
-      const url = new URL(req.url);
-      // makeit://file/D:/path/to/file.mp4 → D:/path/to/file.mp4
-      let filePath = decodeURIComponent(url.pathname);
-      if (process.platform === "win32" && filePath.startsWith("/")) filePath = filePath.slice(1);
-      const resolved = path.resolve(filePath);
-      // 보안: 메이킷_자료실 폴더 내 파일만 허용
-      const allowedBase = path.resolve("D:/홈페이지/SNS메이킷/메이킷_자료실");
-      if (!resolved.startsWith(allowedBase)) {
-        return new Response("Forbidden", { status: 403 });
-      }
-      const { createReadStream, existsSync } = require("fs");
-      if (!existsSync(resolved)) return new Response("Not Found", { status: 404 });
-      const ext = path.extname(resolved).toLowerCase();
-      const mimes = { ".jpg":"image/jpeg", ".jpeg":"image/jpeg", ".png":"image/png", ".gif":"image/gif", ".webp":"image/webp", ".svg":"image/svg+xml", ".mp4":"video/mp4", ".webm":"video/webm" };
-      const mime = mimes[ext] || "application/octet-stream";
-      const stream = createReadStream(resolved);
-      return new Response(stream, { headers: { "Content-Type": mime } });
-    } catch (e) {
-      return new Response("Error: " + e.message, { status: 500 });
-    }
-  });
-
   createWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
@@ -1012,36 +982,6 @@ ipcMain.handle("media:deleteFile", async (_, filePath) => {
   try { fs.unlinkSync(filePath); return { ok: true }; } catch (e) { return { ok: false }; }
 });
 
-// ── IPC: 메이킷 자료실 파일 목록 ──
-ipcMain.handle("media:getMakeitFiles", (_, cat) => {
-  const fs = require("fs");
-  const base = "D:/홈페이지/SNS메이킷/메이킷_자료실";
-  const exts = /\.(jpg|jpeg|png|gif|webp|mp4|webm|svg)$/i;
-  let results = [];
-
-  function scanDir(dir, prefix) {
-    if (!fs.existsSync(dir)) return;
-    fs.readdirSync(dir).forEach(f => {
-      if (f.startsWith("_")) return;
-      const full = path.join(dir, f);
-      const stat = fs.statSync(full);
-      if (stat.isDirectory()) {
-        scanDir(full, (prefix ? prefix + "/" : "") + f);
-      } else if (exts.test(f)) {
-        results.push({ name: (prefix ? prefix + "/" : "") + f, path: full });
-      }
-    });
-  }
-
-  if (cat === "photo") {
-    scanDir(path.join(base, "사진"), "");
-  } else if (cat === "video") {
-    scanDir(path.join(base, "영상"), "");
-  } else {
-    scanDir(path.join(base, "영상", cat), "");
-  }
-  return results;
-});
 
 // ── IPC: 로컬 파일 → data URL 변환 (미리보기용) ──
 ipcMain.handle("media:fileToDataUrl", (_, filePath) => {
@@ -1070,20 +1010,6 @@ ipcMain.handle("media:getThumbnail", (_, filePath) => {
   } catch (e) { return null; }
 });
 
-// ── IPC: 메이킷 자료실에 파일 복사 (관리자) ──
-ipcMain.handle("media:importToMakeit", (_, filePaths, destFolder) => {
-  const base = "D:/홈페이지/SNS메이킷/메이킷_자료실";
-  const destDir = path.join(base, destFolder || "사진");
-  if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
-  const imported = [];
-  for (const src of filePaths) {
-    const name = path.basename(src);
-    const dest = path.join(destDir, name);
-    if (!fs.existsSync(dest)) fs.copyFileSync(src, dest);
-    imported.push(name);
-  }
-  return { ok: true, count: imported.length };
-});
 
 // ── IPC: Playwright URL 크롤링 (이미지+텍스트 추출) ──
 ipcMain.handle("url:crawl", async (_, url) => {
