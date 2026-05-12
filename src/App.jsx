@@ -412,7 +412,8 @@ export default function App() {
       async (event, session) => {
         if (isLoggingOut.current) return;
 
-        if (event === "SIGNED_OUT" || !session) {
+        // 명시적 로그아웃만 user 초기화 (TOKEN_REFRESHED 중 일시적 null session 무시)
+        if (event === "SIGNED_OUT") {
           setLocalUser(null); setUserState(null); return;
         }
 
@@ -1049,9 +1050,7 @@ export default function App() {
           <NavBtn id="programs" label="제품" />
           <NavBtn id="class" label="클래스" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
-          {/* 성장 프로그램 */}
           <NavBtn id="challenge" label="성장 프로그램" />
-          {/* 커뮤니티 */}
           <div style={{ position: "relative" }}>
             <DropBtn id="community" label={t("community")} open={openMenu==="board"} active={isBoard} onClick={() => setOpenMenu(m => m==="board"?null:"board")} />
             {openMenu==="board" && (

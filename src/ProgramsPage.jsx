@@ -113,9 +113,9 @@ const CATEGORIES = [
 ];
 
 const AUTOMATION_DOWNLOAD = {
-  fileName: "SNSMakeIt-Setup-0.2.4.exe",
-  url: "https://github.com/npermovie-design/cardnews-app/releases/download/app-v0.2.4/SNSMakeIt-Setup-0.2.4.exe",
-  size: "430MB",
+  fileName: "SNSMakeIt-Setup-0.2.4.zip",
+  url: "https://github.com/npermovie-design/cardnews-app/releases/download/app-v0.2.4/SNSMakeIt-Setup-0.2.4.zip",
+  size: "429MB",
   version: "v0.2.4",
 };
 const AUTOMATION_DOWNLOAD_READY = Boolean(AUTOMATION_DOWNLOAD.url);
@@ -1198,12 +1198,11 @@ export default function ProgramsPage({ C, navigate }) {
   useEffect(() => { const h = () => setWinW(window.innerWidth); window.addEventListener("resize", h); return () => window.removeEventListener("resize", h); }, []);
   const isMobile = winW < 768;
   const isTablet = winW >= 768 && winW < 1100;
-  const isSmallLaptop = winW >= 1100 && winW < 1400;
 
   useEffect(() => {
-    document.title = "SNS 자동화 도구 - SNS메이킷";
-    updateMeta("og:title", "SNS 자동화 도구 - SNS메이킷");
-    updateMeta("og:description", "블로그 글쓰기, SNS 자동 발행, 키워드 분석, 카드뉴스 제작까지. 복잡한 SNS 운영을 하나의 도구로 간편하게 관리하세요.");
+    document.title = "제품 및 서비스 - SNS메이킷";
+    updateMeta("og:title", "제품 및 서비스 - SNS메이킷");
+    updateMeta("og:description", "블로그 자동 발행 프로그램, AI 글쓰기, 영상 제작, 카드뉴스까지. SNS 운영에 필요한 모든 도구를 만나보세요.");
     updateMeta("og:url", "https://snsmakeit.com/programs");
     updateMeta("og:image", "https://snsmakeit.com/og-default.png");
     updateMeta("og:type", "website");
@@ -1211,221 +1210,172 @@ export default function ProgramsPage({ C, navigate }) {
 
   const isDark = C.bg?.includes("0a") || C.bg?.includes("#10") || C.bg?.includes("242");
   const BG = isDark ? C.bg : "#fff";
-  const BG2 = isDark ? "rgba(255,255,255,0.02)" : "#f9fafb";
+  const BG2 = isDark ? "rgba(255,255,255,0.02)" : "#f8fafc";
   const BDR = C.border;
   const SUB = C.muted;
+  const B = BRAND;
 
+  /* 섹션 공통 스타일 */
+  const sectionHead = (title, desc) => (
+    <div style={{ textAlign:"center", marginBottom:isMobile?32:56 }}>
+      <h2 style={{ fontSize:isMobile?26:40, fontWeight:800, margin:0, color:INK, lineHeight:1.25, letterSpacing:-0.5 }}>{title}</h2>
+      {desc && <p style={{ fontSize:isMobile?15:17, color:SUB, marginTop:12, lineHeight:1.7, maxWidth:640, marginLeft:"auto", marginRight:"auto" }}>{desc}</p>}
+    </div>
+  );
+
+  const imgBox = (src, alt) => (
+    <div style={{ borderRadius:16, overflow:"hidden", border:`1px solid ${BDR}`, boxShadow:"0 4px 24px rgba(0,0,0,0.06)" }}>
+      <img src={src} alt={alt} loading="lazy" style={{ width:"100%", display:"block" }} />
+    </div>
+  );
+
+  const checkItem = (text) => (
+    <div key={text} style={{ display:"flex", alignItems:"flex-start", gap:10, fontSize:14, color:INK, lineHeight:1.6 }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={B} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0, marginTop:3 }}><polyline points="20 6 9 17 4 12"/></svg>
+      {text}
+    </div>
+  );
 
   return (
-    <div style={{ minHeight: "100vh", background: BG, color: C.text, fontFamily: "'Pretendard Variable','Pretendard',-apple-system,system-ui,sans-serif" }}>
+    <div style={{ minHeight:"100vh", background:BG, color:C.text, fontFamily:"'Pretendard Variable','Pretendard',-apple-system,system-ui,sans-serif" }}>
       <style>{`
-        .pg-card{transition:transform .2s,box-shadow .2s}.pg-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,0.08)}
         .pg-faq summary::-webkit-details-marker{display:none}.pg-faq summary{list-style:none}
-        .pg-feat-row{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
-        @media(max-width:1100px){.pg-feat-row{gap:32px !important}}
-        @media(max-width:768px){.pg-feat-row{grid-template-columns:1fr !important;gap:24px !important}.pg-hide-m{display:none !important}}
+        .pg-row{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center}
+        @media(max-width:900px){.pg-row{grid-template-columns:1fr !important;gap:28px !important}}
+        .pg-nav-link{padding:10px 20px;border-radius:99px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;border:none;background:transparent;transition:all .15s}
+        .pg-nav-link:hover{background:${B}08}
+        .pg-nav-active{background:${B} !important;color:#fff !important}
       `}</style>
 
       {/* ══════ HERO ══════ */}
-      <section style={{ position:"relative", overflow:"hidden", padding: isMobile?"100px 20px 60px": isTablet?"120px 24px 80px":"140px 24px 100px", textAlign:"center", background: isDark?"linear-gradient(180deg,#0f0d1f,#1a1830)":"linear-gradient(180deg, #e8f0ff 0%, #f5f9ff 50%, #fff 100%)" }}>
-        <div style={{ maxWidth: 800, margin: "0 auto", position:"relative", zIndex:2 }}>
-          <div style={{ display:"inline-flex", alignItems:"center", padding:"6px 16px", borderRadius:99, background:isDark?"rgba(59,130,246,0.12)":`${BRAND}08`, border:`1px solid ${isDark?"rgba(59,130,246,0.2)":`${BRAND}20`}`, color:BRAND, fontSize:13, fontWeight:700, marginBottom:20 }}>
-            SNS 운영을 더 쉽게
-          </div>
-          <h1 style={{ fontSize:isMobile?36: isTablet?46:60, lineHeight:1.1, letterSpacing:-1.5, margin:"0 0 20px", fontWeight:800 }}>
-            콘텐츠 제작부터<br/>발행까지, 한 번에
+      <section style={{ padding:isMobile?"100px 20px 48px":"140px 24px 72px", textAlign:"center", background:isDark?"linear-gradient(180deg,#0f0d1f,#1a1830)":"linear-gradient(180deg,#f0f5ff 0%,#f8faff 50%,#fff 100%)" }}>
+        <div style={{ maxWidth:780, margin:"0 auto" }}>
+          <h1 style={{ fontSize:isMobile?30:52, lineHeight:1.15, letterSpacing:-1, margin:"0 0 18px", fontWeight:800 }}>
+            SNS 운영을 위한{isMobile?<br/>:" "}모든 도구
           </h1>
-          <p style={{ maxWidth:520, margin:"0 auto 36px", fontSize:isMobile?16: isTablet?17:19, color:SUB, lineHeight:1.7 }}>
-            블로그 글쓰기, 카드뉴스, 키워드 분석, 자동 발행까지.{!isMobile&&<br/>}복잡한 SNS 운영을 하나의 플랫폼으로 해결하세요.
+          <p style={{ maxWidth:560, margin:"0 auto 32px", fontSize:isMobile?15:17, color:SUB, lineHeight:1.7 }}>
+            블로그 자동 발행부터 AI 글쓰기까지.{!isMobile&&<br/>}하나의 플랫폼에서 시작하세요.
           </p>
-          <div style={{ display:"flex", justifyContent:"center", gap:12, flexWrap:"wrap" }}>
+          <div style={{ display:"flex", justifyContent:"center", gap:12, flexWrap:"wrap", marginBottom:16 }}>
             <a href={AUTOMATION_DOWNLOAD.url} download={AUTOMATION_DOWNLOAD.fileName}
-              style={{ padding: isMobile?"14px 28px":"15px 36px", borderRadius:99, border:"none", background:"#1a1a1a", color:"#fff", fontSize:isMobile?15: isTablet?16:17, fontWeight:600, textDecoration:"none", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              프로그램 다운로드
+              style={{ padding:"14px 32px", borderRadius:99, background:B, color:"#fff", fontSize:15, fontWeight:600, textDecoration:"none", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/><polyline points="7 11 12 16 17 11"/><line x1="12" y1="4" x2="12" y2="16"/></svg>
+              프로그램 다운받기 (Windows)
             </a>
-            <button onClick={() => navigate?.("pricing")} style={{ padding: isMobile?"14px 28px":"15px 36px", borderRadius:99, border:`1px solid ${isDark?"rgba(255,255,255,0.15)":"#cbd5e0"}`, background:"transparent", color:C.text, fontSize:isMobile?15: isTablet?16:17, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
-              요금 알아보기
+            <button onClick={() => navigate?.("pricing")} style={{ padding:"14px 32px", borderRadius:99, border:`1px solid ${isDark?"rgba(255,255,255,0.15)":"#d1d5db"}`, background:"transparent", color:C.text, fontSize:15, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+              요금 보기
             </button>
           </div>
+          <div style={{ fontSize:12, color:SUB, opacity:0.7 }}>{AUTOMATION_DOWNLOAD.version} / {AUTOMATION_DOWNLOAD.size} · Mac 버전 개발 중</div>
         </div>
       </section>
 
-      {/* ══════ 주요 기능 — imweb 스타일 교대 레이아웃 ══════ */}
-      <section style={{ maxWidth:1100, margin:"0 auto", padding:isMobile?"60px 20px": isTablet?"80px 28px":"100px 40px" }}>
-        <div style={{ textAlign:"center", marginBottom:isMobile?40: isTablet?48:64 }}>
-          <div style={{ fontSize:13, fontWeight:700, color:BRAND, marginBottom:8 }}>주요 기능</div>
-          <h2 style={{ fontSize:isMobile?28: isTablet?34:42, fontWeight:800, margin:0, color:INK, lineHeight:1.2, letterSpacing:-0.5 }}>SNS 운영에 필요한 모든 도구</h2>
-        </div>
 
-        <div style={{ display:"flex", flexDirection:"column", gap:isMobile?40:56 }}>
-          {[
-            {
-              icon:"write", color:BRAND, badge:"AI 글쓰기",
-              title:"주제만 입력하면\n콘텐츠가 완성됩니다",
-              desc:"블로그 글, 인스타 캡션, 카드뉴스 텍스트까지. AI가 SEO 최적화된 구조로 작성하고 이미지와 인용구까지 자동 배치합니다.",
-              points:["SEO 최적화 글 구조","이미지/인용구 자동 삽입","네이버, 인스타, 스레드 지원"],
-              illustration: (
-                <div style={{ background:BG2, border:`1px solid ${BDR}`, borderRadius:16, padding:20 }}>
-                  <div style={{ background:BG, border:`1px solid ${BDR}`, borderRadius:12, padding:16 }}>
-                    <div style={{ display:"flex", gap:6, marginBottom:12 }}>
-                      <div style={{ width:8, height:8, borderRadius:99, background:"#ef4444" }}/><div style={{ width:8, height:8, borderRadius:99, background:"#f59e0b" }}/><div style={{ width:8, height:8, borderRadius:99, background:"#22c55e" }}/>
-                    </div>
-                    <div style={{ fontSize:13, fontWeight:700, color:INK, marginBottom:8 }}>AI 글 생성</div>
-                    <div style={{ height:6, borderRadius:3, background:`${BRAND}15`, marginBottom:6 }}/>
-                    <div style={{ height:6, borderRadius:3, background:`${BRAND}10`, width:"75%", marginBottom:6 }}/>
-                    <div style={{ height:6, borderRadius:3, background:`${BRAND}08`, width:"60%", marginBottom:12 }}/>
-                    <div style={{ display:"flex", gap:6 }}>
-                      <div style={{ flex:1, height:48, borderRadius:8, background:isDark?"rgba(255,255,255,0.04)":"#f0f4ff" }}/>
-                      <div style={{ flex:1, height:48, borderRadius:8, background:isDark?"rgba(255,255,255,0.04)":"#f0fdf4" }}/>
-                    </div>
-                  </div>
-                </div>
-              ),
-            },
-            {
-              icon:"publish", color:BRAND2, badge:"자동 발행",
-              title:"여러 SNS에\n동시에 발행하세요",
-              desc:"네이버 블로그, 카페, 인스타그램, 스레드까지. 한 번 만든 콘텐츠를 각 플랫폼에 맞게 자동으로 발행합니다.",
-              points:["네이버 블로그/카페 자동 발행","인스타그램, 스레드 발행","하루 최대 10회 자동 운영"],
-              illustration: (
-                <div style={{ background:BG2, border:`1px solid ${BDR}`, borderRadius:16, padding:20 }}>
-                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                    {[{name:"네이버 블로그",status:"발행 완료",color:"#22c55e"},{name:"인스타그램",status:"발행 중...",color:"#f59e0b"},{name:"스레드",status:"대기",color:SUB}].map(p => (
-                      <div key={p.name} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", borderRadius:10, background:BG, border:`1px solid ${BDR}` }}>
-                        <div style={{ width:8, height:8, borderRadius:99, background:p.color, flexShrink:0 }}/>
-                        <span style={{ fontSize:13, fontWeight:600, color:INK, flex:1 }}>{p.name}</span>
-                        <span style={{ fontSize:11, fontWeight:600, color:p.color }}>{p.status}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ),
-            },
-            {
-              icon:"chart", color:ACCENT, badge:"키워드 분석",
-              title:"트렌드 키워드로\n검색 노출을 높이세요",
-              desc:"네이버, 구글에서 실시간으로 수집한 320개 이상의 트렌드 키워드를 확인하고 바로 콘텐츠에 반영합니다.",
-              points:["실시간 320+ 키워드","검색량/경쟁도 분석","원클릭 콘텐츠 연결"],
-              illustration: (
-                <div style={{ background:BG2, border:`1px solid ${BDR}`, borderRadius:16, padding:20 }}>
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                    {["블로그 마케팅","네이버 SEO","SNS 자동화","키워드 분석","부업 추천","콘텐츠 전략","1인 사업","트렌드"].map((t,i) => (
-                      <span key={t} style={{ fontSize:12, padding:"6px 12px", borderRadius:8, background:i<2?BRAND:(isDark?"rgba(255,255,255,0.04)":"#fff"), color:i<2?"#fff":INK, fontWeight:600, border:i<2?"none":`1px solid ${BDR}` }}>{t}</span>
-                    ))}
-                  </div>
-                  <div style={{ display:"flex", alignItems:"flex-end", gap:4, height:60, marginTop:16 }}>
-                    {[30,55,40,70,45,85,60,90,50,75].map((h,i) => (
-                      <div key={i} style={{ flex:1, height:`${h}%`, borderRadius:3, background:i>=8?BRAND:`${BRAND}20` }}/>
-                    ))}
-                  </div>
-                </div>
-              ),
-            },
-            {
-              icon:"image", color:"#ec4899", badge:"디자인 도구",
-              title:"카드뉴스, 썸네일도\nAI로 만드세요",
-              desc:"인스타 카드뉴스, 블로그 썸네일, 상세페이지 이미지까지. 전문 디자이너 없이도 퀄리티 있는 비주얼을 제작합니다.",
-              points:["카드뉴스 자동 생성","썸네일/커버 이미지","SNS별 최적 사이즈"],
-              illustration: (
-                <div style={{ background:BG2, border:`1px solid ${BDR}`, borderRadius:16, padding:20 }}>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                    {[{r:"4/5",c:"#ec4899"},{r:"1/1",c:BRAND},{r:"1/1",c:"#f59e0b"},{r:"4/5",c:"#8b5cf6"}].map((s,i) => (
-                      <div key={i} style={{ aspectRatio:s.r, borderRadius:10, background:`${s.c}12`, border:`1px solid ${s.c}20`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                        <div style={{ width:20, height:20, borderRadius:6, background:`${s.c}25` }}/>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ),
-            },
-          ].map((feat, idx) => (
-            <div key={feat.badge} className="pg-feat-row" style={{ direction: !isMobile && idx%2===1 ? "rtl" : "ltr" }}>
-              <div style={{ direction:"ltr" }}>{feat.illustration}</div>
-              <div style={{ direction:"ltr" }}>
-                <span style={{ display:"inline-block", fontSize:12, fontWeight:700, color:feat.color, background:`${feat.color}10`, padding:"4px 12px", borderRadius:99, marginBottom:12 }}>{feat.badge}</span>
-                <h3 style={{ fontSize:isMobile?22:26, fontWeight:800, color:INK, margin:"0 0 12px", lineHeight:1.3, whiteSpace:"pre-line" }}>{feat.title}</h3>
-                <p style={{ fontSize:15, color:SUB, lineHeight:1.7, margin:"0 0 16px" }}>{feat.desc}</p>
-                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                  {feat.points.map(p => (
-                    <div key={p} style={{ display:"flex", alignItems:"center", gap:8, fontSize:14, color:INK }}>
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={feat.color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      {p}
-                    </div>
-                  ))}
-                </div>
+      {/* ══════ 1. 블로그 자동 발행 ══════ */}
+      <section id="blog" style={{ padding:isMobile?"64px 20px":"100px 24px" }}>
+        <div style={{ maxWidth:1060, margin:"0 auto" }}>
+          {sectionHead(
+            "블로그 자동 발행",
+            "테마만 입력하면 AI가 글을 작성하고 네이버 블로그에 자동 발행합니다. 주제 설정, 스타일, 발행까지 3단계로 완성합니다."
+          )}
+
+          {/* 메인 스크린샷 */}
+          <div style={{ marginBottom:isMobile?48:80 }}>
+            {imgBox("/screenshots/service/2.png", "블로그 자동 운영과 수동 글쓰기")}
+          </div>
+
+          {/* 주제 설정 */}
+          <div className="pg-row" style={{ marginBottom:isMobile?48:80 }}>
+            <div>{imgBox("/screenshots/service/3.png", "주제 설정")}</div>
+            <div>
+              <h3 style={{ fontSize:isMobile?20:26, fontWeight:800, color:INK, margin:"0 0 14px", lineHeight:1.3 }}>주제 설정</h3>
+              <p style={{ fontSize:15, color:SUB, lineHeight:1.7, margin:"0 0 20px" }}>키워드를 입력하면 AI가 최신 트렌드를 분석해 글감을 생성합니다. 글 방향, 드라이브 자료 연동까지 한 화면에서 설정합니다.</p>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {["키워드 순환 발행 (쉼표로 구분)","글 방향 자유 설정","구글 드라이브 사진/자료 연동"].map(checkItem)}
               </div>
             </div>
-          ))}
+          </div>
+
+          {/* 스타일 설정 */}
+          <div className="pg-row" style={{ marginBottom:isMobile?48:80, direction:isMobile?"ltr":"rtl" }}>
+            <div style={{ direction:"ltr" }}>{imgBox("/screenshots/service/4.png", "스타일 설정")}</div>
+            <div style={{ direction:"ltr" }}>
+              <h3 style={{ fontSize:isMobile?20:26, fontWeight:800, color:INK, margin:"0 0 14px", lineHeight:1.3 }}>스타일 설정</h3>
+              <p style={{ fontSize:15, color:SUB, lineHeight:1.7, margin:"0 0 20px" }}>6가지 글 타입, 4가지 톤, 4가지 말투, 3단계 분량을 조합해 원하는 스타일로 글을 생성합니다.</p>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {["글 타입 6종 (정보성, 체험, 여행, 제품, 칼럼, 기사)","글 톤 4종 + 말투 4종 조합","분량: 1~1.5K / 2~3K / 4K+"].map(checkItem)}
+              </div>
+            </div>
+          </div>
+
+          {/* 꾸미기 + 글 구조 */}
+          <div className="pg-row" style={{ marginBottom:isMobile?48:80 }}>
+            <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+              {imgBox("/screenshots/service/5.png", "꾸미기")}
+              {imgBox("/screenshots/service/6.png", "글 구조")}
+            </div>
+            <div>
+              <h3 style={{ fontSize:isMobile?20:26, fontWeight:800, color:INK, margin:"0 0 14px", lineHeight:1.3 }}>꾸미기 + 글 구조</h3>
+              <p style={{ fontSize:15, color:SUB, lineHeight:1.7, margin:"0 0 20px" }}>인용구, 키워드 강조, 소제목 밑줄, 스티커/짤 삽입, Q&A(AEO) 구조까지 세부 설정을 조정합니다.</p>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {["인용구 6종 + 키워드 강조색 5종","글색/배경색/둘다 강조 방식","Q&A(AEO) 위치 + 장단점/추천 구조"].map(checkItem)}
+              </div>
+            </div>
+          </div>
+
+          {/* 발행 설정 */}
+          <div className="pg-row" style={{ marginBottom:isMobile?48:80, direction:isMobile?"ltr":"rtl" }}>
+            <div style={{ direction:"ltr" }}>{imgBox("/screenshots/service/7.png", "발행 설정")}</div>
+            <div style={{ direction:"ltr" }}>
+              <h3 style={{ fontSize:isMobile?20:26, fontWeight:800, color:INK, margin:"0 0 14px", lineHeight:1.3 }}>발행 설정</h3>
+              <p style={{ fontSize:15, color:SUB, lineHeight:1.7, margin:"0 0 20px" }}>발행 글 수, 글 간격(8종), 예약 발행, 네이버 블로그 템플릿, 메뉴 순환, 프리셋 저장까지.</p>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {["랜덤~시간 분산 8가지 글 간격","네이버 블로그 템플릿 연동","프리셋으로 설정 저장/재사용"].map(checkItem)}
+              </div>
+            </div>
+          </div>
+
+          {/* 계정 설정 */}
+          <div className="pg-row">
+            <div>{imgBox("/screenshots/service/1.png", "네이버 계정 설정")}</div>
+            <div>
+              <h3 style={{ fontSize:isMobile?20:26, fontWeight:800, color:INK, margin:"0 0 14px", lineHeight:1.3 }}>네이버 계정 연결</h3>
+              <p style={{ fontSize:15, color:SUB, lineHeight:1.7, margin:"0 0 20px" }}>네이버 ID로 로그인하면 세션이 저장되어 이후 자동 발행됩니다. 여러 계정을 등록하면 순환 발행도 가능합니다.</p>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {["로그인 한 번이면 세션 자동 유지","다중 계정 등록 + 순환 발행","초기화 후 재설정 지원"].map(checkItem)}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ textAlign:"center", marginTop:isMobile?40:56 }}>
+            <a href={AUTOMATION_DOWNLOAD.url} download={AUTOMATION_DOWNLOAD.fileName}
+              style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"14px 32px", borderRadius:99, background:B, color:"#fff", fontSize:15, fontWeight:600, textDecoration:"none" }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/><polyline points="7 11 12 16 17 11"/><line x1="12" y1="4" x2="12" y2="16"/></svg>
+              프로그램 다운받기 (Windows)
+            </a>
+            <div style={{ fontSize:13, color:SUB, marginTop:10 }}>{AUTOMATION_DOWNLOAD.version} / {AUTOMATION_DOWNLOAD.size} · Mac 버전 개발 중</div>
+          </div>
         </div>
       </section>
 
-      {/* ══════ 시작 안내 4단계 ══════ */}
-      <section style={{ background:BG2, padding:isMobile?"60px 20px":"100px 24px" }}>
-        <div style={{ maxWidth:1100, margin:"0 auto" }}>
-          <div style={{ textAlign:"center", marginBottom:isMobile?32:48 }}>
-            <div style={{ fontSize:13, fontWeight:700, color:BRAND, marginBottom:8 }}>시작 안내</div>
-            <h2 style={{ fontSize:isMobile?28:40, fontWeight:800, margin:0, color:INK, lineHeight:1.2 }}>4단계로 시작하세요</h2>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"repeat(4,1fr)", gap:isMobile?12:20 }}>
-            {[
-              {step:"01", icon:"publish", title:"회원가입", desc:"SNS메이킷에 가입하고 무료 5회 체험을 시작합니다.", color:BRAND},
-              {step:"02", icon:"write", title:"콘텐츠 생성", desc:"AI 도구로 블로그 글, 카드뉴스, SNS 콘텐츠를 만듭니다.", color:BRAND2},
-              {step:"03", icon:"folder", title:"SNS 연결", desc:"네이버, 인스타그램 등 발행할 SNS 계정을 연결합니다.", color:ACCENT},
-              {step:"04", icon:"repeat", title:"자동 발행", desc:"콘텐츠를 원하는 SNS에 자동으로 발행합니다.", color:"#ec4899"},
-            ].map(s => (
-              <div key={s.step} className="pg-card" style={{ background:BG, border:`1px solid ${BDR}`, borderRadius:20, padding:isMobile?"18px 16px":"28px 22px", textAlign:"center" }}>
-                <div style={{ fontSize:32, fontWeight:900, color:`${s.color}30`, marginBottom:12 }}>{s.step}</div>
-                <div style={{ fontSize:16, fontWeight:800, color:INK, marginBottom:8 }}>{s.title}</div>
-                <div style={{ fontSize:13, color:SUB, lineHeight:1.65 }}>{s.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ══════ 기술 스택 / 신뢰 ══════ */}
-      <section style={{ padding:isMobile?"60px 20px":"80px 24px" }}>
-        <div style={{ maxWidth:1100, margin:"0 auto" }}>
-          <div style={{ textAlign:"center", marginBottom:36 }}>
-            <h2 style={{ fontSize:isMobile?24:32, fontWeight:800, color:INK, margin:0 }}>안정적인 기술 기반</h2>
-            <p style={{ fontSize:15, color:SUB, marginTop:8 }}>검증된 기술 스택으로 안정적인 서비스를 제공합니다</p>
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(4,1fr)", gap:16 }}>
-            {[
-              {icon:"clock", title:"안정적인 인프라", desc:"Supabase + Vercel 기반"},
-              {icon:"repeat", title:"AI 자동화", desc:"GPT 기반 콘텐츠 생성"},
-              {icon:"folder", title:"드라이브 연동", desc:"Google Drive 자료 활용"},
-              {icon:"chart", title:"실시간 분석", desc:"키워드/트렌드 모니터링"},
-            ].map(t => (
-              <div key={t.title} style={{ textAlign:"center", padding:isMobile?"20px 14px":"28px 20px" }}>
-                <div style={{ fontSize:15, fontWeight:700, color:INK, marginBottom:4 }}>{t.title}</div>
-                <div style={{ fontSize:12, color:SUB }}>{t.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <hr style={{ border:"none", borderTop:`1px solid ${BDR}`, margin:0 }} />
 
       {/* ══════ FAQ ══════ */}
-      <section style={{ background:BG2, padding:isMobile?"60px 20px":"100px 24px" }}>
+      <section style={{ padding:isMobile?"64px 20px":"100px 24px" }}>
         <div style={{ maxWidth:860, margin:"0 auto" }}>
-          <div style={{ textAlign:"center", marginBottom:isMobile?28:40 }}>
-            <h2 style={{ fontSize:isMobile?26:36, fontWeight:800, margin:0, lineHeight:1.3, color:INK }}>자주 묻는 질문</h2>
-          </div>
+          {sectionHead("자주 묻는 질문")}
           <div style={{ display:"grid", gap:8 }}>
             {[
-              ["SNS메이킷은 어떤 서비스인가요?","블로그 글쓰기, 카드뉴스 제작, 키워드 분석, SNS 자동 발행 등 SNS 운영에 필요한 도구를 하나로 모은 올인원 플랫폼입니다."],
-              ["무료로 사용할 수 있나요?","회원가입 시 5회 무료 체험이 제공됩니다. 이후 월 $9.9부터 시작하는 플랜으로 업그레이드할 수 있습니다."],
-              ["어떤 SNS 플랫폼을 지원하나요?","네이버 블로그, 네이버 카페 자동 발행을 지원하며, 웹에서는 인스타그램, 스레드, 유튜브용 콘텐츠를 생성할 수 있습니다."],
-              ["자동 발행은 어떻게 되나요?","데스크톱 프로그램을 설치하면 주제 입력만으로 글 작성부터 발행까지 자동 처리됩니다. Pro 플랜에서 하루 3~10회 가능합니다."],
-              ["콘텐츠 품질은 어떤가요?","AI가 SEO 최적화된 글 구조를 잡고, 인용구, 소제목, 이미지를 포함해 발행 가능한 형태로 정리합니다."],
+              ["SNS메이킷은 어떤 서비스인가요?","블로그 자동 발행 프로그램과 AI 글쓰기를 제공하는 SNS 콘텐츠 자동화 플랫폼입니다."],
+              ["무료로 사용할 수 있나요?","회원가입 시 5회 무료 체험이 제공됩니다. 데스크톱 프로그램도 무료로 다운로드할 수 있으며, 이후 월 $9.9부터 시작하는 플랜으로 업그레이드 가능합니다."],
+              ["웹 도구와 프로그램의 차이가 뭔가요?","웹에서는 브라우저로 AI 글쓰기, 영상 제작이 가능합니다. 데스크톱 프로그램은 네이버 블로그 자동 발행, 드라이브 연동 등 자동화 기능에 특화되어 있습니다."],
+              ["어떤 SNS 플랫폼을 지원하나요?","데스크톱 프로그램은 네이버 블로그 자동 발행을 지원합니다. 웹에서는 인스타그램, 스레드, 유튜브용 콘텐츠를 생성할 수 있습니다."],
               ["상업적으로 사용 가능한가요?","네, 생성된 모든 콘텐츠는 상업적으로 자유롭게 사용할 수 있습니다."],
             ].map(([q,a],i) => (
-              <details key={q} className="pg-faq" open={i===0} style={{ borderRadius:14, border:`1px solid ${i===0?`${BRAND}30`:BDR}`, background:BG, overflow:"hidden" }}>
+              <details key={q} className="pg-faq" open={i===0} style={{ borderRadius:12, border:`1px solid ${BDR}`, background:BG, overflow:"hidden" }}>
                 <summary style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:16, cursor:"pointer", padding:isMobile?"16px 18px":"18px 22px", color:INK, fontSize:isMobile?15:16, fontWeight:700 }}>
                   <span>{q}</span>
-                  <svg width="18" height="18" viewBox="0 0 20 20" style={{ flexShrink:0, transition:"transform .2s" }}><path d="M5 7.5L10 12.5L15 7.5" stroke={SUB} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+                  <svg width="18" height="18" viewBox="0 0 20 20" style={{ flexShrink:0 }}><path d="M5 7.5L10 12.5L15 7.5" stroke={SUB} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
                 </summary>
                 <div style={{ padding:isMobile?"0 18px 16px":"0 22px 20px", color:SUB, fontSize:14, lineHeight:1.8 }}>{a}</div>
               </details>
@@ -1434,33 +1384,24 @@ export default function ProgramsPage({ C, navigate }) {
         </div>
       </section>
 
-      {/* ══════ 다운로드 + CTA ══════ */}
-      <section style={{ padding:isMobile?"60px 20px 80px":"100px 24px 120px" }}>
-        <div style={{ maxWidth:860, margin:"0 auto", textAlign:"center" }}>
-          <h2 style={{ fontSize:isMobile?28:40, fontWeight:800, color:INK, margin:"0 0 14px", lineHeight:1.15 }}>지금 바로 시작하세요</h2>
-          <p style={{ fontSize:16, color:SUB, marginBottom:32, lineHeight:1.6 }}>
-            복잡한 SNS 운영, 이제 쉽게 시작하세요.{!isMobile&&<br/>}무료 체험으로 먼저 확인해보세요.
+      {/* ══════ 최종 CTA ══════ */}
+      <section style={{ background:BG2, padding:isMobile?"64px 20px 80px":"100px 24px 120px" }}>
+        <div style={{ maxWidth:700, margin:"0 auto", textAlign:"center" }}>
+          <h2 style={{ fontSize:isMobile?26:38, fontWeight:800, color:INK, margin:"0 0 14px", lineHeight:1.2 }}>지금 바로 시작하세요</h2>
+          <p style={{ fontSize:15, color:SUB, marginBottom:28, lineHeight:1.6 }}>
+            무료 체험으로 먼저 확인해보세요.
           </p>
-          <div style={{ display:"flex", justifyContent:"center", gap:12, flexWrap:"wrap", marginBottom:24 }}>
+          <div style={{ display:"flex", justifyContent:"center", gap:12, flexWrap:"wrap", marginBottom:16 }}>
             <a href={AUTOMATION_DOWNLOAD.url} download={AUTOMATION_DOWNLOAD.fileName}
-              style={{ padding:"15px 36px", borderRadius:99, border:"none", background:"#1a1a1a", color:"#fff", fontSize:16, fontWeight:600, textDecoration:"none", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8 }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              프로그램 다운로드
+              style={{ padding:"14px 32px", borderRadius:99, background:B, color:"#fff", fontSize:15, fontWeight:600, textDecoration:"none", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/><polyline points="7 11 12 16 17 11"/><line x1="12" y1="4" x2="12" y2="16"/></svg>
+              프로그램 다운받기 (Windows)
             </a>
-            <button onClick={() => navigate?.("pricing")} style={{ padding:"15px 36px", borderRadius:99, border:`1px solid ${isDark?"rgba(255,255,255,0.15)":"#cbd5e0"}`, background:"transparent", color:C.text, fontSize:16, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
-              요금 알아보기
+            <button onClick={() => navigate?.("pricing")} style={{ padding:"14px 32px", borderRadius:99, border:`1px solid ${isDark?"rgba(255,255,255,0.15)":"#d1d5db"}`, background:"transparent", color:C.text, fontSize:15, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+              요금 보기
             </button>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:12, maxWidth:500, margin:"0 auto" }}>
-            <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${BDR}`, background:BG2, fontSize:13, color:SUB }}>
-              <div style={{ fontWeight:700, color:INK, marginBottom:2 }}>Windows</div>
-              {AUTOMATION_DOWNLOAD.version} · {AUTOMATION_DOWNLOAD.size}
-            </div>
-            <div style={{ padding:"14px 18px", borderRadius:12, border:`1px solid ${BDR}`, background:BG2, fontSize:13, color:SUB }}>
-              <div style={{ fontWeight:700, color:INK, marginBottom:2 }}>Mac</div>
-              준비 중
-            </div>
-          </div>
+          <div style={{ fontSize:12, color:SUB, opacity:0.7 }}>{AUTOMATION_DOWNLOAD.version} / {AUTOMATION_DOWNLOAD.size} · Mac 버전 개발 중</div>
         </div>
       </section>
     </div>
