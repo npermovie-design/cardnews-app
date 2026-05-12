@@ -2766,17 +2766,30 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
     price: 0, max_participants: 0, duration: "10", platform: "모든 SNS", daily_mission: "매일 1포스팅",
     target_audience: "", process: "", rules: "", rewards: "", refund_policy: "", community_link: "", status: "recruiting", type: "challenge", application_count: 0, host_name: user?.nick || "", badge_image: "", badge_title: "",
   });
+  const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [thumb, setThumb] = useState(ch?.thumbnail || "");
+  const [dragOver, setDragOver] = useState(false);
+  const thumbRef = useRef(null);
+  const badgeRef = useRef(null);
   const up = (k, v) => sf(p => ({ ...p, [k]: v }));
-  const inp = { width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
-  const ta = { ...inp, resize: "vertical", minHeight: 90 };
+  const inp = { width: "100%", padding: "14px 16px", borderRadius: 12, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit", transition: "border-color 0.15s" };
 
-  const handleThumb = async e => {
-    const file = e.target.files?.[0]; if (!file) return;
+  const STEPS = [
+    { num: 1, label: "기본 정보", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> },
+    { num: 2, label: "상세 설명", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> },
+    { num: 3, label: "일정/설정", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
+    { num: 4, label: "규칙/보상", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> },
+  ];
+  const totalSteps = STEPS.length;
+  const canNext = step === 1 ? !!f.title : true;
+
+  const handleThumbUpload = async file => {
+    if (!file) return;
     const r = new FileReader(); r.onload = ev => setThumb(ev.target.result); r.readAsDataURL(file);
     try { const url = await uploadFileToStorage(file, `challenges/thumb_${Date.now()}.${file.name.split(".").pop()}`); up("thumbnail", url); } catch(err) { alert("업로드 실패: " + err.message); }
   };
+  const handleDrop = e => { e.preventDefault(); setDragOver(false); handleThumbUpload(e.dataTransfer?.files?.[0]); };
 
   return (
     <div style={{ background: isDark ? "transparent" : "#f9fafb", minHeight: "calc(100vh - 64px)" }}>
@@ -2784,77 +2797,145 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
         <button onClick={onBack} style={{ background: "none", border: "none", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 24, display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit" }}>
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg> 목록으로
         </button>
-        <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 24, padding: mob ? "28px 20px" : "40px 36px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 32 }}>{ch ? "성장 프로그램 수정" : "새 성장 프로그램"}</h2>
 
-          <Fld label="제목 *" C={C}><input value={f.title} onChange={e => up("title", e.target.value)} placeholder="예: SNS 수익화 10일 성장 프로그램" style={inp} /></Fld>
-          <Fld label="한줄 소개" C={C}><input value={f.subtitle} onChange={e => up("subtitle", e.target.value)} placeholder="카드에 표시될 짧은 설명" style={inp} /></Fld>
-          <Fld label="썸네일" C={C}>{thumb && <img src={thumb} alt="" style={{ width: "100%", maxHeight: 200, objectFit: "cover", borderRadius: 14, marginBottom: 10, display: "block" }} />}<input type="file" accept="image/*" onChange={handleThumb} style={{ fontSize: 13 }} /></Fld>
-          <Fld label="상세 설명 (이미지 삽입 가능)" C={C}><RichEditor value={f.description} onChange={v => up("description", v)} isDark={isDark} /></Fld>
-          <Fld label="추천 대상" C={C}><RichEditor value={f.target_audience} onChange={v => up("target_audience", v)} isDark={isDark} /></Fld>
-          <Fld label="진행 방식" C={C}><RichEditor value={f.process} onChange={v => up("process", v)} isDark={isDark} /></Fld>
-          <Fld label="규칙" C={C}><RichEditor value={f.rules} onChange={v => up("rules", v)} isDark={isDark} /></Fld>
-          <Fld label="보상 구조" C={C}><RichEditor value={f.rewards} onChange={v => up("rewards", v)} isDark={isDark} /></Fld>
-          <Fld label="환불 정책" C={C}><RichEditor value={f.refund_policy} onChange={v => up("refund_policy", v)} isDark={isDark} /></Fld>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Fld label="모집 시작" C={C}><input type="date" value={f.recruit_start} onChange={e => up("recruit_start", e.target.value)} style={inp} /></Fld>
-            <Fld label="모집 마감" C={C}><input type="date" value={f.recruit_end} onChange={e => up("recruit_end", e.target.value)} style={inp} /></Fld>
-            <Fld label="성장 프로그램 시작" C={C}><input type="date" value={f.start_date} onChange={e => up("start_date", e.target.value)} style={inp} /></Fld>
-            <Fld label="성장 프로그램 종료" C={C}><input type="date" value={f.end_date} onChange={e => up("end_date", e.target.value)} style={inp} /></Fld>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-            <Fld label="참가비 (원)" C={C}><input type="number" value={f.price} onChange={e => up("price", +e.target.value)} style={inp} /></Fld>
-            <Fld label="최대 인원" C={C}><input type="number" value={f.max_participants} onChange={e => up("max_participants", +e.target.value)} style={inp} /></Fld>
-            <Fld label="기간 (일)" C={C}><input value={f.duration} onChange={e => up("duration", e.target.value)} style={inp} /></Fld>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <Fld label="플랫폼" C={C}><input value={f.platform} onChange={e => up("platform", e.target.value)} style={inp} /></Fld>
-            <Fld label="일일 미션" C={C}><input value={f.daily_mission} onChange={e => up("daily_mission", e.target.value)} style={inp} /></Fld>
-          </div>
-          <Fld label="진행자 이름" C={C}><input value={f.host_name || ""} onChange={e => up("host_name", e.target.value)} placeholder="성장 프로그램 진행자 이름" style={inp} /></Fld>
-          <Fld label="커뮤니티 링크" C={C}><input value={f.community_link} onChange={e => up("community_link", e.target.value)} placeholder="카카오 오픈채팅, 디스코드 등" style={inp} /></Fld>
-          <Fld label="달성 뱃지" C={C}>
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              {f.badge_image && <img src={f.badge_image} alt="뱃지" style={{ width: 64, height: 64, objectFit: "contain", borderRadius: 8 }} />}
-              <div style={{ flex: 1 }}>
-                <input value={f.badge_title || ""} onChange={e => up("badge_title", e.target.value)} placeholder="뱃지 이름 (예: SNS 성장 프로그램 2기)" style={{ ...inp, marginBottom: 8 }} />
-                <input value={f.badge_image || ""} onChange={e => up("badge_image", e.target.value)} placeholder="뱃지 이미지 URL" style={inp} />
-                <input type="file" accept="image/*" style={{ marginTop: 8, fontSize: 12 }} onChange={async e => {
-                  const file = e.target.files?.[0]; if (!file) return;
-                  const path = `badges/badge_${Date.now()}.${file.name.split(".").pop()}`;
-                  const { error } = await uploadFileToStorage("public-assets", path, file);
-                  if (!error) { const url = `https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/public-assets/${path}`; up("badge_image", url); }
-                }} />
+        {/* 스텝 인디케이터 */}
+        <div style={{ display: "flex", gap: 0, marginBottom: 28 }}>
+          {STEPS.map((s, i) => {
+            const done = step > s.num;
+            const active = step === s.num;
+            return (
+              <div key={s.num} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", cursor: "pointer", position: "relative" }} onClick={() => setStep(s.num)}>
+                {i > 0 && <div style={{ position: "absolute", top: 16, left: "-50%", right: "50%", height: 2, background: done ? PRIMARY : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), zIndex: 0 }} />}
+                <div style={{ width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 800, zIndex: 1, transition: "all 0.2s", background: done ? PRIMARY : active ? (isDark ? "rgba(59,130,246,0.2)" : "rgba(59,130,246,0.1)") : "transparent", color: done ? "#fff" : active ? PRIMARY : C.muted, border: `2px solid ${done || active ? PRIMARY : (isDark ? "rgba(255,255,255,0.15)" : "#d1d5db")}` }}>
+                  {done ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg> : s.num}
+                </div>
+                <div style={{ fontSize: 11, fontWeight: active ? 700 : 500, color: active ? PRIMARY : C.muted, marginTop: 6, textAlign: "center", whiteSpace: "nowrap" }}>
+                  {!mob && s.label}
+                </div>
               </div>
-            </div>
-          </Fld>
-          <Fld label="유형" C={C}>
-            <div style={{ display: "flex", gap: 8 }}>
-              {[["challenge", "성장 프로그램"], ["class", "클래스"], ["meetup", "모임"], ["study", "스터디"]].map(([v, l]) => {
-                const tc = TYPE_MAP[v]?.color || PRIMARY;
-                return (
-                  <button key={v} onClick={() => up("type", v)}
-                    style={{ flex: 1, padding: "10px", borderRadius: 10, border: `1.5px solid ${f.type === v ? tc : bdr}`, background: f.type === v ? tc + "12" : "transparent", color: f.type === v ? tc : C.muted, fontSize: 13, fontWeight: f.type === v ? 700 : 500, cursor: "pointer", fontFamily: "inherit" }}>{l}</button>
-                );
-              })}
-            </div>
-          </Fld>
-          <Fld label="상태" C={C}>
-            <div style={{ display: "flex", gap: 8 }}>
-              {[["recruiting", "모집중"], ["ongoing", "진행중"], ["completed", "완료"]].map(([v, l]) => {
-                const sc = STATUS_MAP[v]?.color || PRIMARY;
-                return <button key={v} onClick={() => up("status", v)} style={{ flex: 1, padding: "10px", borderRadius: 99, border: "1.5px solid " + (f.status === v ? sc : bdr), background: f.status === v ? sc + "12" : "transparent", color: f.status === v ? sc : C.muted, fontSize: 13, fontWeight: f.status === v ? 700 : 500, cursor: "pointer", fontFamily: "inherit" }}>{l}</button>;
-              })}
-            </div>
-          </Fld>
+            );
+          })}
+        </div>
 
-          <div style={{ display: "flex", gap: 10, marginTop: 32 }}>
-            {ch?.id && <button onClick={() => onDelete(ch.id)} style={{ padding: "14px 24px", borderRadius: 99, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "#ef4444", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>삭제</button>}
-            <button disabled={!f.title || saving} onClick={async () => { setSaving(true); await onSave(f); setSaving(false); }}
-              style={{ flex: 1, padding: "16px", borderRadius: 99, border: "none", background: f.title ? PRIMARY : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: f.title ? "#fff" : C.muted, fontSize: 16, fontWeight: 700, cursor: f.title ? "pointer" : "not-allowed", fontFamily: "inherit" }}>
-              {saving ? "저장 중..." : "저장하기"}
-            </button>
+        <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 24, padding: mob ? "28px 20px" : "40px 36px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 28 }}>
+            <span style={{ color: PRIMARY }}>{STEPS[step - 1].icon}</span>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: C.text, margin: 0 }}>
+              {ch ? "프로그램 수정" : "새 프로그램"} — {STEPS[step - 1].label}
+            </h2>
+            <span style={{ fontSize: 12, color: C.muted, marginLeft: "auto" }}>{step}/{totalSteps}</span>
+          </div>
+
+          {/* ── Step 1: 기본 정보 ── */}
+          {step === 1 && <>
+            <Fld label="프로그램 이름 *" C={C}><input value={f.title} onChange={e => up("title", e.target.value)} placeholder="예: SNS 수익화 10일 성장 프로그램" style={inp} /></Fld>
+            <Fld label="한줄 소개" C={C}><input value={f.subtitle} onChange={e => up("subtitle", e.target.value)} placeholder="카드에 표시될 짧은 설명" style={inp} /></Fld>
+            <Fld label="유형" C={C}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+                {[["challenge", "성장 프로그램"], ["class", "클래스"], ["meetup", "모임"], ["study", "스터디"]].map(([v, l]) => {
+                  const tc = TYPE_MAP[v]?.color || PRIMARY;
+                  return <button key={v} onClick={() => up("type", v)} style={{ padding: "12px 8px", borderRadius: 12, border: `2px solid ${f.type === v ? tc : bdr}`, background: f.type === v ? tc + "12" : "transparent", color: f.type === v ? tc : C.muted, fontSize: 13, fontWeight: f.type === v ? 700 : 500, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>{l}</button>;
+                })}
+              </div>
+            </Fld>
+            <Fld label="커버 이미지" C={C}>
+              <div onClick={() => thumbRef.current?.click()} onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleDrop}
+                style={{ border: `2px dashed ${dragOver ? PRIMARY : bdr}`, borderRadius: 16, padding: thumb ? 0 : "40px 20px", textAlign: "center", cursor: "pointer", transition: "all 0.2s", background: dragOver ? (isDark ? "rgba(59,130,246,0.08)" : "rgba(59,130,246,0.04)") : "transparent", overflow: "hidden", position: "relative" }}>
+                {thumb ? (
+                  <div style={{ position: "relative" }}>
+                    <img src={thumb} alt="" style={{ width: "100%", maxHeight: 240, objectFit: "cover", display: "block" }} />
+                    <div style={{ position: "absolute", bottom: 10, right: 10, background: "rgba(0,0,0,0.6)", color: "#fff", padding: "6px 14px", borderRadius: 99, fontSize: 12, fontWeight: 600 }}>변경</div>
+                  </div>
+                ) : (
+                  <>
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={isDark ? "rgba(255,255,255,0.25)" : "#aaa"} strokeWidth="1.5" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: C.muted, marginTop: 12 }}>클릭하거나 이미지를 드래그하세요</div>
+                    <div style={{ fontSize: 12, color: isDark ? "rgba(255,255,255,0.25)" : "#bbb", marginTop: 4 }}>권장: 1200x630px</div>
+                  </>
+                )}
+                <input ref={thumbRef} type="file" accept="image/*" onChange={e => handleThumbUpload(e.target.files?.[0])} style={{ display: "none" }} />
+              </div>
+            </Fld>
+            <Fld label="진행자 이름" C={C}><input value={f.host_name || ""} onChange={e => up("host_name", e.target.value)} placeholder="프로그램 진행자" style={inp} /></Fld>
+          </>}
+
+          {/* ── Step 2: 상세 설명 ── */}
+          {step === 2 && <>
+            <Fld label="상세 설명" C={C}><RichEditor value={f.description} onChange={v => up("description", v)} isDark={isDark} /></Fld>
+            <Fld label="추천 대상" C={C}><RichEditor value={f.target_audience} onChange={v => up("target_audience", v)} isDark={isDark} /></Fld>
+            <Fld label="진행 방식" C={C}><RichEditor value={f.process} onChange={v => up("process", v)} isDark={isDark} /></Fld>
+          </>}
+
+          {/* ── Step 3: 일정/설정 ── */}
+          {step === 3 && <>
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.muted, marginBottom: 12 }}>모집 기간</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+              <Fld label="시작일" C={C}><input type="date" value={f.recruit_start} onChange={e => up("recruit_start", e.target.value)} style={inp} /></Fld>
+              <Fld label="마감일" C={C}><input type="date" value={f.recruit_end} onChange={e => up("recruit_end", e.target.value)} style={inp} /></Fld>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: C.muted, marginBottom: 12 }}>진행 기간</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 20 }}>
+              <Fld label="시작일" C={C}><input type="date" value={f.start_date} onChange={e => up("start_date", e.target.value)} style={inp} /></Fld>
+              <Fld label="종료일" C={C}><input type="date" value={f.end_date} onChange={e => up("end_date", e.target.value)} style={inp} /></Fld>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 20 }}>
+              <Fld label="참가비 (원)" C={C}><input type="number" value={f.price} onChange={e => up("price", +e.target.value)} placeholder="0 = 무료" style={inp} /></Fld>
+              <Fld label="최대 인원" C={C}><input type="number" value={f.max_participants} onChange={e => up("max_participants", +e.target.value)} style={inp} /></Fld>
+              <Fld label="기간 (일)" C={C}><input value={f.duration} onChange={e => up("duration", e.target.value)} style={inp} /></Fld>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <Fld label="플랫폼" C={C}><input value={f.platform} onChange={e => up("platform", e.target.value)} style={inp} /></Fld>
+              <Fld label="일일 미션" C={C}><input value={f.daily_mission} onChange={e => up("daily_mission", e.target.value)} style={inp} /></Fld>
+            </div>
+            <Fld label="상태" C={C}>
+              <div style={{ display: "flex", gap: 8 }}>
+                {[["recruiting", "모집중"], ["ongoing", "진행중"], ["completed", "완료"]].map(([v, l]) => {
+                  const sc = STATUS_MAP[v]?.color || PRIMARY;
+                  return <button key={v} onClick={() => up("status", v)} style={{ flex: 1, padding: "12px", borderRadius: 12, border: "2px solid " + (f.status === v ? sc : bdr), background: f.status === v ? sc + "12" : "transparent", color: f.status === v ? sc : C.muted, fontSize: 13, fontWeight: f.status === v ? 700 : 500, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>{l}</button>;
+                })}
+              </div>
+            </Fld>
+          </>}
+
+          {/* ── Step 4: 규칙/보상 ── */}
+          {step === 4 && <>
+            <Fld label="규칙" C={C}><RichEditor value={f.rules} onChange={v => up("rules", v)} isDark={isDark} /></Fld>
+            <Fld label="보상 구조" C={C}><RichEditor value={f.rewards} onChange={v => up("rewards", v)} isDark={isDark} /></Fld>
+            <Fld label="환불 정책" C={C}><RichEditor value={f.refund_policy} onChange={v => up("refund_policy", v)} isDark={isDark} /></Fld>
+            <Fld label="커뮤니티 링크" C={C}><input value={f.community_link} onChange={e => up("community_link", e.target.value)} placeholder="카카오 오픈채팅, 디스코드 등" style={inp} /></Fld>
+            <Fld label="달성 뱃지" C={C}>
+              <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                <div onClick={() => badgeRef.current?.click()} style={{ width: 72, height: 72, borderRadius: 14, border: `2px dashed ${bdr}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", overflow: "hidden", flexShrink: 0, background: isDark ? "rgba(255,255,255,0.04)" : "#fafafa" }}>
+                  {f.badge_image ? <img src={f.badge_image} alt="뱃지" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>}
+                  <input ref={badgeRef} type="file" accept="image/*" style={{ display: "none" }} onChange={async e => {
+                    const file = e.target.files?.[0]; if (!file) return;
+                    const path = `badges/badge_${Date.now()}.${file.name.split(".").pop()}`;
+                    try { const url = await uploadFileToStorage(file, path); up("badge_image", url); } catch {}
+                  }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <input value={f.badge_title || ""} onChange={e => up("badge_title", e.target.value)} placeholder="뱃지 이름 (예: SNS 성장 프로그램 2기)" style={inp} />
+                </div>
+              </div>
+            </Fld>
+          </>}
+
+          {/* ── 하단 버튼 ── */}
+          <div style={{ display: "flex", gap: 10, marginTop: 32, alignItems: "center" }}>
+            {ch?.id && step === 4 && <button onClick={() => onDelete(ch.id)} style={{ padding: "14px 20px", borderRadius: 12, border: "1px solid rgba(239,68,68,0.2)", background: "transparent", color: "#ef4444", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>삭제</button>}
+            {step > 1 && <button onClick={() => setStep(s => s - 1)} style={{ padding: "14px 24px", borderRadius: 12, border: `1px solid ${bdr}`, background: "transparent", color: C.text, fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>이전</button>}
+            <div style={{ flex: 1 }} />
+            {step < totalSteps ? (
+              <button disabled={!canNext} onClick={() => setStep(s => s + 1)}
+                style={{ padding: "14px 36px", borderRadius: 12, border: "none", background: canNext ? PRIMARY : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: canNext ? "#fff" : C.muted, fontSize: 15, fontWeight: 700, cursor: canNext ? "pointer" : "not-allowed", fontFamily: "inherit", transition: "all 0.15s" }}>
+                다음
+              </button>
+            ) : (
+              <button disabled={!f.title || saving} onClick={async () => { setSaving(true); await onSave(f); setSaving(false); }}
+                style={{ padding: "14px 36px", borderRadius: 12, border: "none", background: f.title ? PRIMARY : (isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb"), color: f.title ? "#fff" : C.muted, fontSize: 15, fontWeight: 700, cursor: f.title ? "pointer" : "not-allowed", fontFamily: "inherit", transition: "all 0.15s" }}>
+                {saving ? "저장 중..." : "저장하기"}
+              </button>
+            )}
           </div>
         </div>
       </div>
