@@ -6,7 +6,7 @@ CREATE POLICY "admin_full_access" ON challenge_applications
   FOR ALL
   TO authenticated
   USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.uid = auth.uid() AND profiles.role = 'admin')
+    EXISTS (SELECT 1 FROM users WHERE users.uid = auth.uid()::text AND users.role = 'admin')
   );
 
 -- Users can view their own applications
@@ -38,7 +38,7 @@ CREATE POLICY "admin_modify_challenges" ON challenges
   FOR INSERT OR UPDATE OR DELETE
   TO authenticated
   USING (
-    EXISTS (SELECT 1 FROM profiles WHERE profiles.uid = auth.uid() AND profiles.role = 'admin')
+    EXISTS (SELECT 1 FROM users WHERE users.uid = auth.uid()::text AND users.role = 'admin')
   );
 
 -- Secure function for public participant list (no personal info)

@@ -128,13 +128,13 @@ CREATE POLICY "public_read" ON class_comments FOR SELECT TO anon, authenticated 
 
 -- Admin full access on classes/lessons/schedules
 CREATE POLICY "admin_manage" ON classes FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.uid = auth.uid() AND profiles.role IN ('admin', 'instructor')));
+  USING (EXISTS (SELECT 1 FROM users WHERE users.uid = auth.uid()::text AND users.role IN ('admin', 'instructor')));
 CREATE POLICY "admin_manage" ON class_lessons FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.uid = auth.uid() AND profiles.role IN ('admin', 'instructor')));
+  USING (EXISTS (SELECT 1 FROM users WHERE users.uid = auth.uid()::text AND users.role IN ('admin', 'instructor')));
 CREATE POLICY "admin_manage" ON class_live_schedules FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.uid = auth.uid() AND profiles.role IN ('admin', 'instructor')));
+  USING (EXISTS (SELECT 1 FROM users WHERE users.uid = auth.uid()::text AND users.role IN ('admin', 'instructor')));
 CREATE POLICY "admin_manage" ON class_subtitles FOR ALL TO authenticated
-  USING (EXISTS (SELECT 1 FROM profiles WHERE profiles.uid = auth.uid() AND profiles.role IN ('admin', 'instructor')));
+  USING (EXISTS (SELECT 1 FROM users WHERE users.uid = auth.uid()::text AND users.role IN ('admin', 'instructor')));
 
 -- Users manage their own progress/notes/reviews/comments
 CREATE POLICY "own_progress" ON class_progress FOR ALL TO authenticated USING (uid = auth.uid());

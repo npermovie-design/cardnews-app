@@ -1,1 +1,0 @@
--- Placeholder for migration already recorded on the remote Supabase project.
