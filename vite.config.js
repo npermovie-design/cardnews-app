@@ -22,7 +22,7 @@ export default defineConfig({
   },
   build: {
     target: 'es2020',
-    chunkSizeWarningLimit: 600,
+    chunkSizeWarningLimit: 5000,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -33,6 +33,8 @@ export default defineConfig({
           if (id.includes('i18n.jsx') || id.includes('i18n-pages.js')) return 'i18n';
           if (id.includes('dompurify')) return 'purify';
           if (id.includes('framer-motion')) return 'framer';
+          if (id.includes('@splinetool') || id.includes('spline')) return 'spline';
+          if (id.includes('@dimforge') || id.includes('rapier')) return 'physics';
         },
       },
     },
