@@ -187,7 +187,7 @@
     { "source": "/api/naverbot/hot-manifest", "destination": "/api/naverbot?action=hot-manifest" },
     { "source": "/api/naverbot/version-check", "destination": "/api/naverbot?action=version-check" },
 
-    { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|_vercel|naver[0-9a-f]+\\.html|naverbot-auth\\.html|naverbot-callback|index\\.html).*)", "destination": "/api/render" }
+    { "source": "/((?!api/|robots\\.txt|og-image\\.png|favicon\\.svg|icon-|logo\\.png|manifest\\.json|sw\\.js|assets/|screenshots/|_vercel|naver[0-9a-f]+\\.html|naverbot-auth\\.html|naverbot-callback|index\\.html).*)", "destination": "/api/render" }
   ],
   "crons": [
     {
