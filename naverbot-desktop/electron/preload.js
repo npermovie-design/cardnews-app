@@ -119,7 +119,7 @@ contextBridge.exposeInMainWorld("nbBridge", {
 
   // ── 슬라이드 영상 ──
   invoke: (channel, ...args) => {
-    const allowed = ["slideshow:generate", "slideshow:bgmDuration", "slideshow:extractLyrics", "slideshow:saveAs", "slideshow:openFolder", "dialog:selectFolder"];
+    const allowed = ["slideshow:generate", "slideshow:bgmDuration", "slideshow:extractLyrics", "slideshow:saveAs", "slideshow:openFolder", "dialog:selectFolder", "url:crawl"];
     if (allowed.includes(channel)) return ipcRenderer.invoke(channel, ...args);
     return Promise.reject(new Error("blocked channel: " + channel));
   },

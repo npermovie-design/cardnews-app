@@ -1085,6 +1085,34 @@ ipcMain.handle("media:importToMakeit", (_, filePaths, destFolder) => {
   return { ok: true, count: imported.length };
 });
 
+// ── IPC: Playwright URL 크롤링 (이미지+텍스트 추출) ──
+ipcMain.handle("url:crawl", async (_, url) => {
+  if (!url) return { ok: false, error: "URL 필요" };
+  const pythonPath = getPythonPath();
+  const crawlScript = path.join(__dirname, "python", "crawl_url.py");
+  // crawl_url.py가 없으면 기본 폴더도 확인
+  const scriptPath = fs.existsSync(crawlScript) ? crawlScript : path.join(__dirname, "..", "python", "crawl_url.py");
+  if (!fs.existsSync(scriptPath)) return { ok: false, error: "crawl_url.py를 찾을 수 없습니다" };
+
+  const env = getPythonEnv();
+  return new Promise((resolve) => {
+    const proc = spawn(pythonPath, [scriptPath, url], { env, windowsHide: true, timeout: 30000 });
+    let stdout = "", stderr = "";
+    proc.stdout.on("data", d => { stdout += d.toString(); });
+    proc.stderr.on("data", d => { stderr += d.toString(); });
+    proc.on("close", (code) => {
+      try {
+        const result = JSON.parse(stdout);
+        resolve(result);
+      } catch {
+        console.error("[url:crawl] parse error:", stdout.slice(0, 200), stderr.slice(0, 200));
+        resolve({ ok: false, error: "크롤링 실패: " + (stderr.slice(0, 100) || "응답 파싱 오류") });
+      }
+    });
+    proc.on("error", (e) => resolve({ ok: false, error: e.message }));
+  });
+});
+
 // ── IPC: 폴더 선택 다이얼로그 ──
 ipcMain.handle("dialog:selectFolder", async () => {
   const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {

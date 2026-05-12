@@ -2246,11 +2246,18 @@ if ($("apUrlFetchBtn")) {
   $("apUrlFetchBtn").addEventListener("click", async function() {
     var url = $("apRefUrl") ? $("apRefUrl").value.trim() : "";
     if (!url) return;
-    $("apUrlFetchBtn").textContent = "가져오는 중..."; $("apUrlFetchBtn").disabled = true;
+    $("apUrlFetchBtn").textContent = "탐색 중..."; $("apUrlFetchBtn").disabled = true;
     _apRefImages = []; _apRefImagesSelected = [];
     try {
-      var res = await fetch(API + "/fetch-url-content?url=" + encodeURIComponent(url));
-      var data = await res.json();
+      // Playwright 브라우저 탐색 (로컬) → 실패 시 API 폴백
+      var data;
+      try {
+        data = await bridge.invoke("url:crawl", url);
+        if (!data || !data.ok) throw new Error("crawl failed");
+      } catch(e) {
+        var res = await fetch("https://snsmakeit.com/api/fetch-url-content?url=" + encodeURIComponent(url));
+        data = await res.json();
+      }
       _apRefContent = data.content || data.text || "";
       _apRefImages = data.images || [];
       if (data.thumbnail && !_apRefImages.includes(data.thumbnail)) _apRefImages.unshift(data.thumbnail);
@@ -2263,11 +2270,12 @@ if ($("apUrlFetchBtn")) {
       var imgCont = $("apUrlImages");
       if (imgCont && _apRefImages.length > 0) {
         imgCont.style.display = "block";
-        var html = '<div style="font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:6px;">이미지 (' + _apRefImages.length + '개) — 클릭으로 선택/해제</div>';
-        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;">';
+        var html = '<div style="font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:6px;">이미지 (' + _apRefImages.length + '개) — 클릭으로 선택/해제, 마우스 올리면 원본 미리보기</div>';
+        html += '<div id="apImgHover" style="display:none;position:fixed;z-index:9999;pointer-events:none;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.3);overflow:hidden;max-width:400px;max-height:400px;"><img style="display:block;max-width:400px;max-height:400px;object-fit:contain;"></div>';
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:400px;overflow-y:auto;padding:4px;">';
         _apRefImages.forEach(function(imgUrl, idx) {
           html += '<div class="ap-img-item" data-idx="' + idx + '" style="cursor:pointer;border:2px solid var(--accent);border-radius:6px;overflow:hidden;position:relative;">';
-          html += '<img src="' + escapeHtml(imgUrl) + '" style="width:100%;height:60px;object-fit:cover;display:block;" onerror="this.parentElement.style.display=\'none\'">';
+          html += '<img src="' + escapeHtml(imgUrl) + '" style="width:100%;height:100px;object-fit:cover;display:block;" onerror="this.parentElement.style.display=\'none\'" data-full="' + escapeHtml(imgUrl) + '">';
           html += '<div class="ap-img-chk" style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;text-align:center;line-height:16px;">v</div>';
           html += '</div>';
         });
@@ -2282,6 +2290,22 @@ if ($("apUrlFetchBtn")) {
             else { _apRefImagesSelected.push(_apRefImages[idx]); item.style.borderColor = "var(--accent)"; item.querySelector(".ap-img-chk").style.display = ""; }
           });
         });
+        // 호버 팝업
+        var hoverEl = imgCont.querySelector("#apImgHover");
+        if (hoverEl) {
+          imgCont.addEventListener("mousemove", function(e) {
+            var img = e.target.closest("img[data-full]");
+            if (img) {
+              hoverEl.style.display = "block";
+              hoverEl.querySelector("img").src = img.dataset.full;
+              var x = e.clientX + 16, y = e.clientY - 200;
+              if (x + 420 > window.innerWidth) x = e.clientX - 420;
+              if (y < 10) y = e.clientY + 16;
+              hoverEl.style.left = x + "px"; hoverEl.style.top = y + "px";
+            } else { hoverEl.style.display = "none"; }
+          });
+          imgCont.addEventListener("mouseleave", function() { hoverEl.style.display = "none"; });
+        }
       }
     } catch(e) { console.error("[ap url fetch]", e); }
     $("apUrlFetchBtn").textContent = "가져오기"; $("apUrlFetchBtn").disabled = false;
@@ -2937,7 +2961,7 @@ $("startAutopilotBtn").addEventListener("click", async () => {
       ref_mode: blogAutopilotSourceMode === "url" ? _apUrlMode : "",
       drive_folder_url: blogAutopilotSourceMode === "drive" ? driveFolderUrl : "",
       drive_recursive: driveRecursive,
-      drive_images_per_post: 4,
+      drive_images_per_post: (_apRefImagesSelected && _apRefImagesSelected.length > 0) ? Math.min(_apRefImagesSelected.length, 10) : 4,
       drive_image_limit: Math.max(12, postCount * 4),
       template: ($("autopilotTemplate") && $("autopilotTemplate").value.trim()) || "",
       subtype: apSubtype,
@@ -7554,7 +7578,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     youtube: "유튜브 영상 대본 ([인트로][본문][아웃트로] 구조)",
   };
   const SPEECH_MAP = { polite_yo: "~요 체", formal: "~합니다 체", casual: "반말 체", mixed: "혼합 체" };
-  const LENGTH_TOKENS = { short: 2500, medium: 5000, long: 8000 };
+  const LENGTH_TOKENS = { short: 4000, medium: 8000, long: 16000 };
   let _refContent = "";
 
   // 칩 셋업 (이벤트 위임 — 수동 글쓰기 전용)
@@ -7646,11 +7670,18 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 
   $("writeUrlFetchBtn")?.addEventListener("click", async () => {
     const url = $("writeRefUrl")?.value.trim(); if (!url) return;
-    $("writeUrlFetchBtn").textContent = "가져오는 중..."; $("writeUrlFetchBtn").disabled = true;
+    $("writeUrlFetchBtn").textContent = "탐색 중..."; $("writeUrlFetchBtn").disabled = true;
     _refImages = []; _refImagesSelected = [];
     try {
-      const res = await fetch(API + "/fetch-url-content?url=" + encodeURIComponent(url));
-      const data = await res.json();
+      // Playwright 브라우저 탐색 (로컬) → 실패 시 API 폴백
+      let data;
+      try {
+        data = await bridge.invoke("url:crawl", url);
+        if (!data || !data.ok) throw new Error("crawl failed");
+      } catch(e) {
+        const res = await fetch(API + "/fetch-url-content?url=" + encodeURIComponent(url));
+        data = await res.json();
+      }
       _refContent = data.content || data.text || "";
       _refImages = data.images || [];
       if (data.thumbnail && !_refImages.includes(data.thumbnail)) _refImages.unshift(data.thumbnail);
@@ -7665,11 +7696,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var imgContainer = $("writeUrlImages");
       if (imgContainer && _refImages.length > 0) {
         imgContainer.style.display = "block";
-        var html = '<div style="font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:8px;">페이지 이미지 (' + _refImages.length + '개) — 클릭하여 글에 사용할 이미지 선택</div>';
-        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;">';
+        var html = '<div style="font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:8px;">페이지 이미지 (' + _refImages.length + '개) — 클릭하여 선택/해제, 마우스 올리면 원본 미리보기</div>';
+        html += '<div id="refImgHover" style="display:none;position:fixed;z-index:9999;pointer-events:none;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.3);overflow:hidden;max-width:400px;max-height:400px;"><img style="display:block;max-width:400px;max-height:400px;object-fit:contain;"></div>';
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;max-height:400px;overflow-y:auto;padding:4px;">';
         _refImages.forEach(function(imgUrl, idx) {
           html += '<div class="ref-img-item" data-idx="' + idx + '" style="cursor:pointer;border:2px solid var(--border);border-radius:8px;overflow:hidden;transition:all 0.15s;position:relative;">';
-          html += '<img src="' + escapeHtml(imgUrl) + '" style="width:100%;height:70px;object-fit:cover;display:block;" onerror="this.parentElement.style.display=\'none\'">';
+          html += '<img src="' + escapeHtml(imgUrl) + '" style="width:100%;height:100px;object-fit:cover;display:block;" onerror="this.parentElement.style.display=\'none\'" data-full="' + escapeHtml(imgUrl) + '">';
           html += '<div class="ref-img-check" style="display:none;position:absolute;top:4px;right:4px;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;text-align:center;line-height:20px;">v</div>';
           html += '</div>';
         });
@@ -7699,6 +7731,26 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
             }
           });
         });
+
+        // 호버 시 원본 이미지 팝업
+        var hoverEl = imgContainer.querySelector("#refImgHover");
+        if (hoverEl) {
+          imgContainer.addEventListener("mousemove", function(e) {
+            var img = e.target.closest("img[data-full]");
+            if (img) {
+              hoverEl.style.display = "block";
+              hoverEl.querySelector("img").src = img.dataset.full;
+              var x = e.clientX + 16, y = e.clientY - 200;
+              if (x + 420 > window.innerWidth) x = e.clientX - 420;
+              if (y < 10) y = e.clientY + 16;
+              hoverEl.style.left = x + "px";
+              hoverEl.style.top = y + "px";
+            } else {
+              hoverEl.style.display = "none";
+            }
+          });
+          imgContainer.addEventListener("mouseleave", function() { hoverEl.style.display = "none"; });
+        }
       } else if (imgContainer) {
         imgContainer.style.display = "none";
         imgContainer.innerHTML = "";
@@ -7788,8 +7840,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 글 톤: ${tone}
 말투: ${speech}
 ${category ? "콘텐츠 분야: " + category : ""}
-${(_writeUrlMode !== "photo" && _refContent) ? "\n참고 자료:\n" + _refContent.slice(0, 2000) : ""}
-${_writeUrlMode === "ocr" && _ocrExtractedText ? "\n사진에서 추출한 텍스트:\n" + _ocrExtractedText.slice(0, 2000) : ""}
+${(_writeUrlMode !== "photo" && _refContent) ? "\n[중요] 아래 URL에서 가져온 내용을 반드시 기반으로 글을 작성하세요. 이 내용의 핵심 정보, 제품명, 특징, 가격 등을 구체적으로 활용하세요:\n---\n" + _refContent.slice(0, 3000) + "\n---\n" : ""}
+${_writeUrlMode === "ocr" && _ocrExtractedText ? "\n[중요] 아래는 이미지에서 추출한 텍스트입니다. 이 내용을 기반으로 글을 작성하세요:\n---\n" + _ocrExtractedText.slice(0, 2000) + "\n---\n" : ""}
 ${extra ? "\n글 방향: " + extra : ""}
 
 글 구조 (반드시 이 형식으로):
@@ -7820,7 +7872,7 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
 
 규칙:
 - [image: keyword]는 영문 2~3단어로 구체적 장면. 예: [image: jeju beach sunset]
-- [image:]는 전체 4~6개
+- [image:]는 전체 6~10개 (가능한 많이 삽입)
 - 모든 섹션은 [SUBTITLE]로 시작
 - 마크다운 문법(#, ##, *, -) 절대 사용 금지
 - 이모지 아이콘 사용 금지
@@ -7877,15 +7929,17 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
       }
 
       // [SUBTITLE] → 소제목 스타일
-      rendered = rendered.replace(/\[SUBTITLE\]\s*(.+)/g, '<div style="font-size:17px;font-weight:800;color:var(--text);margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--accent);">$1</div>');
+      rendered = rendered.replace(/\[SUBTITLE\]\s*([^\n\[]+)/g, '<div style="font-size:17px;font-weight:800;color:var(--text);margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--accent);">$1</div>');
+      // 마크다운 ## 소제목도 변환
+      rendered = rendered.replace(/^##\s+(.+)$/gm, '<div style="font-size:17px;font-weight:800;color:var(--text);margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--accent);">$1</div>');
 
-      // [image: ...] → 실제 이미지 (URL 크롤링 이미지 우선 사용)
+      // [image: ...] → 실제 이미지 (URL 크롤링 이미지 우선 사용) — 마크다운/줄바꿈 변환 전에 처리!
       if (imageMode !== "none") {
         const imgTags = rendered.match(/\[image:\s*(.+?)\]/gi) || [];
-        let refImgIdx = 0; // URL 크롤링 이미지 인덱스
+        let refImgIdx = 0;
+        console.log("[write] 이미지 삽입 시작 — URL이미지:", _refImagesSelected?.length, "개, 모드:", _writeUrlMode, "태그:", imgTags.length, "개");
         for (const tag of imgTags) {
           const keyword = tag.match(/\[image:\s*(.+?)\]/i)?.[1] || topic;
-          // URL에서 가져온 이미지가 있으면 우선 사용 (text 모드면 스킵)
           if (_writeUrlMode !== "text" && _refImagesSelected && _refImagesSelected.length > 0 && refImgIdx < _refImagesSelected.length) {
             rendered = rendered.replace(tag, '<img src="' + _refImagesSelected[refImgIdx] + '" alt="' + keyword + '" style="max-width:100%;border-radius:8px;margin:8px 0;">');
             refImgIdx++;

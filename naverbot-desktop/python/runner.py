@@ -1029,9 +1029,10 @@ def run_autopilot() -> dict:
     except Exception:
         pass  # 체크 실패해도 발행 시도는 진행
 
-    # 3. 뉴스/트렌드에서 글감 추출
-    # 참고 글 URL 기능은 UI에서 제거되어 실행 중에는 항상 사용하지 않음.
-    ref_url = ""
+    # 3. 참고 URL + 뉴스/트렌드에서 글감 추출
+    ref_url = ap.get("ref_url", "")
+    ref_content = ap.get("ref_content", "")
+    ref_images = ap.get("ref_images", [])
     ref_style = ""
     ref_format = {}
 
@@ -1656,11 +1657,23 @@ def run_once() -> dict:
         fields["extra"] = cafe_extra + (fields.get("extra", "") or "")
     user_extra = ""
 
-    # 참고 글 URL 기능은 UI에서 제거되어 실행 중에는 항상 사용하지 않음.
-    ref_url = ""
+    # 참고 URL에서 가져온 콘텐츠/이미지 활용
+    ref_url = ap.get("ref_url", "") or ""
+    ref_content = ap.get("ref_content", "") or ""
+    ref_images = ap.get("ref_images", []) or []
     ref_style = ""
     ref_fmt = None
     ref_prompt = ""
+    if ref_content:
+        ref_prompt = f"\n\n[중요] 아래 URL에서 가져온 내용을 반드시 기반으로 글을 작성하세요:\n---\n{ref_content[:3000]}\n---\n"
+    if ref_images:
+        # URL 문자열을 drive_images 호환 객체로 변환
+        class _UrlImg:
+            def __init__(self, url):
+                self.image_url = url
+                self.name = url.split("/")[-1].split("?")[0]
+                self.folder_id = ""
+        drive_images = [_UrlImg(u) if isinstance(u, str) else u for u in ref_images] + drive_images
     if ref_url and not is_cafe:
         emit({"status": "progress", "step": "analyze", "message": "참고 글 스타일 분석 중..."})
         try:
@@ -1710,7 +1723,8 @@ def run_once() -> dict:
             if imgs_per >= 2:
                 img_rule = f"\n- [image:] 마커를 연속 {imgs_per}장씩 배치 (참고 글처럼). 1장씩 흩뿌리지 말 것."
 
-            ref_prompt = (
+            _saved_url_ref = ref_prompt  # URL 콘텐츠 기반 프롬프트 보존
+            ref_prompt = _saved_url_ref + "\n" + (
                 "[최우선 지시 — 참고 글의 방식만 반영해 새 글 작성]\n"
                 "아래 참고 글을 원문 복사하지 말고, 새 주제에 맞는 완전히 새로운 문장으로 작성하세요.\n"
                 "반영할 것은 구성 방식과 리듬입니다:\n"
