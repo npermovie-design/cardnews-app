@@ -1347,14 +1347,6 @@ export default function ProgramsPage({ C, navigate }) {
             </div>
           </div>
 
-          <div style={{ textAlign:"center", marginTop:isMobile?40:56 }}>
-            <a href={AUTOMATION_DOWNLOAD.url} download={AUTOMATION_DOWNLOAD.fileName}
-              style={{ display:"inline-flex", alignItems:"center", gap:8, padding:"14px 32px", borderRadius:99, background:B, color:"#fff", fontSize:15, fontWeight:600, textDecoration:"none" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/><polyline points="7 11 12 16 17 11"/><line x1="12" y1="4" x2="12" y2="16"/></svg>
-              프로그램 다운받기 (Windows)
-            </a>
-            <div style={{ fontSize:13, color:SUB, marginTop:10 }}>{AUTOMATION_DOWNLOAD.version} / {AUTOMATION_DOWNLOAD.size} · Mac 버전 개발 중</div>
-          </div>
         </div>
       </section>
 
@@ -1391,17 +1383,11 @@ export default function ProgramsPage({ C, navigate }) {
           <p style={{ fontSize:15, color:SUB, marginBottom:28, lineHeight:1.6 }}>
             무료 체험으로 먼저 확인해보세요.
           </p>
-          <div style={{ display:"flex", justifyContent:"center", gap:12, flexWrap:"wrap", marginBottom:16 }}>
-            <a href={AUTOMATION_DOWNLOAD.url} download={AUTOMATION_DOWNLOAD.fileName}
-              style={{ padding:"14px 32px", borderRadius:99, background:B, color:"#fff", fontSize:15, fontWeight:600, textDecoration:"none", fontFamily:"inherit", display:"flex", alignItems:"center", gap:8 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 17v2a2 2 0 002 2h12a2 2 0 002-2v-2"/><polyline points="7 11 12 16 17 11"/><line x1="12" y1="4" x2="12" y2="16"/></svg>
-              프로그램 다운받기 (Windows)
-            </a>
-            <button onClick={() => navigate?.("pricing")} style={{ padding:"14px 32px", borderRadius:99, border:`1px solid ${isDark?"rgba(255,255,255,0.15)":"#d1d5db"}`, background:"transparent", color:C.text, fontSize:15, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+          <div style={{ display:"flex", justifyContent:"center", gap:12, flexWrap:"wrap" }}>
+            <button onClick={() => navigate?.("pricing")} style={{ padding:"14px 32px", borderRadius:99, background:B, color:"#fff", border:"none", fontSize:15, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
               요금 보기
             </button>
           </div>
-          <div style={{ fontSize:12, color:SUB, opacity:0.7 }}>{AUTOMATION_DOWNLOAD.version} / {AUTOMATION_DOWNLOAD.size} · Mac 버전 개발 중</div>
         </div>
       </section>
     </div>

@@ -93,7 +93,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   const isDark = theme === "dark";
   const bdr = C.border;
   const card = C.card || (isDark ? "rgba(255,255,255,0.03)" : "#fff");
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "moderator";
   const [mob, setMob] = useState(typeof window !== "undefined" && window.innerWidth < 768);
   useEffect(() => { const h = () => setMob(window.innerWidth < 768); window.addEventListener("resize", h); return () => window.removeEventListener("resize", h); }, []);
 
@@ -1084,7 +1084,7 @@ function ProofDayCell({ title, date, done, active, C, bdr, card, isDark, mob, on
 
 /* ═══ MissionBoard ═════════════════════════════════════════ */
 function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, missions, setMissions, isParticipant, onBack }) {
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "moderator";
   const [toast, setToast] = useState("");
   const showToast = msg => { setToast(msg); setTimeout(() => setToast(""), 3000); };
   const [selDay, setSelDay] = useState(null);
