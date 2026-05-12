@@ -161,6 +161,22 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
     })();
   }, []);
 
+  // 포커스/탭 복귀 시 현재 뷰 데이터 새로고침
+  useEffect(() => {
+    const refresh = async () => {
+      if (sel?.id && view === "detail") {
+        if (user?.uid) try { setMyApp(await loadMyApplication(sel.id, user.uid)); } catch {}
+        try { setPublicApps(await loadPublicApplicants(sel.id)); } catch {}
+      }
+      if (view === "list") {
+        try { const data = await loadChallenges(); setChallenges(data); } catch {}
+      }
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [sel?.id, view, user?.uid]);
+
   const openDetail = async ch => {
     setSel(ch); setView("detail"); window.scrollTo(0, 0);
     window.history.pushState(null, "", "/growth/" + ch.id);
@@ -1086,6 +1102,20 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   const [endProofEditing, setEndProofEditing] = useState(false);
   const [dragOverDay, setDragOverDay] = useState(null); // 드래그 중인 Day 셀 하이라이트
   const boardRef = useRef(null);
+
+  // 포커스/탭 복귀 시 미션 데이터 자동 새로고침
+  useEffect(() => {
+    if (!ch?.id) return;
+    const refresh = () => { loadMissions(ch.id).then(d => setMissions(d)).catch(() => {}); };
+    const onFocus = () => refresh();
+    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [ch?.id]);
 
   // 전역: 브라우저 기본 파일 열기 차단
   useEffect(() => {
