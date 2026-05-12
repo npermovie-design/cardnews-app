@@ -122,7 +122,7 @@ const AUTOMATION_DOWNLOAD_READY = Boolean(AUTOMATION_DOWNLOAD.url);
 
 const AUTOMATION_SECTIONS = [
   {
-    title: "블로그 자동 발행",
+    title: "SNS 자동 발행",
     desc: "주제 입력부터 AI 글 작성, 이미지/인용구/스티커 배치, 네이버 블로그 발행까지 전 과정을 자동화합니다.",
     points: ["AI SEO 글 생성", "URL 참고 글 탐색", "수동 글쓰기", "다중 계정 순환 발행"],
   },
@@ -290,7 +290,7 @@ const DEMO_PRODUCTS = [
       { type: "image", value: "/screenshots/naverbot/setup-4-steps.png", alt: "설치부터 첫 발행까지 4단계" },
       { type: "divider" },
 
-      { type: "heading", value: "블로그 자동 발행" },
+      { type: "heading", value: "SNS 자동 발행" },
       { type: "text", value: "테마와 카테고리만 입력하면 AI가 SEO 최적화된 블로그 글을 자동 생성하고 네이버 블로그에 발행합니다." },
       { type: "image", value: "/screenshots/naverbot/feature-quick-publish.png", alt: "1분 만에 블로그 글 완성" },
       { type: "text", value: "- 빠른 시작: 테마 + 카테고리만 입력하면 1개 바로 발행\n- AI 글 자동 생성: 최신 뉴스/트렌드 분석 후 SEO 최적화 본문 작성\n- 다중 테마 순환: 쉼표로 여러 테마 입력 시 순환하며 발행\n- 카테고리 자동 선택: 네이버 블로그 카테고리 정확 매칭" },
@@ -1202,7 +1202,7 @@ export default function ProgramsPage({ C, navigate }) {
   useEffect(() => {
     document.title = "제품 및 서비스 - SNS메이킷";
     updateMeta("og:title", "제품 및 서비스 - SNS메이킷");
-    updateMeta("og:description", "블로그 자동 발행 프로그램, AI 글쓰기, 영상 제작, 카드뉴스까지. SNS 운영에 필요한 모든 도구를 만나보세요.");
+    updateMeta("og:description", "SNS 자동 발행 프로그램과 AI 글쓰기. SNS 운영에 필요한 모든 도구를 만나보세요.");
     updateMeta("og:url", "https://snsmakeit.com/programs");
     updateMeta("og:image", "https://snsmakeit.com/og-default.png");
     updateMeta("og:type", "website");
@@ -1254,7 +1254,7 @@ export default function ProgramsPage({ C, navigate }) {
             SNS 운영을 위한{isMobile?<br/>:" "}모든 도구
           </h1>
           <p style={{ maxWidth:560, margin:"0 auto 32px", fontSize:isMobile?15:17, color:SUB, lineHeight:1.7 }}>
-            블로그 자동 발행부터 AI 글쓰기까지.{!isMobile&&<br/>}하나의 플랫폼에서 시작하세요.
+            네이버 블로그부터 인스타, 유튜브까지.{!isMobile&&<br/>}AI가 글을 쓰고 자동으로 발행합니다.
           </p>
           <div style={{ display:"flex", justifyContent:"center", gap:12, flexWrap:"wrap", marginBottom:16 }}>
             <a href={AUTOMATION_DOWNLOAD.url} download={AUTOMATION_DOWNLOAD.fileName}
@@ -1271,12 +1271,12 @@ export default function ProgramsPage({ C, navigate }) {
       </section>
 
 
-      {/* ══════ 1. 블로그 자동 발행 ══════ */}
+      {/* ══════ 1. SNS 자동 발행 ══════ */}
       <section id="blog" style={{ padding:isMobile?"64px 20px":"100px 24px" }}>
         <div style={{ maxWidth:1060, margin:"0 auto" }}>
           {sectionHead(
-            "블로그 자동 발행",
-            "테마만 입력하면 AI가 글을 작성하고 네이버 블로그에 자동 발행합니다. 주제 설정, 스타일, 발행까지 3단계로 완성합니다."
+            "SNS 자동 발행",
+            "키워드만 입력하면 AI가 글을 작성하고 네이버 블로그에 자동 발행합니다. 주제 → 스타일 → 발행, 3단계로 완성합니다."
           )}
 
           {/* 메인 스크린샷 */}
@@ -1358,10 +1358,10 @@ export default function ProgramsPage({ C, navigate }) {
           {sectionHead("자주 묻는 질문")}
           <div style={{ display:"grid", gap:8 }}>
             {[
-              ["SNS메이킷은 어떤 서비스인가요?","블로그 자동 발행 프로그램과 AI 글쓰기를 제공하는 SNS 콘텐츠 자동화 플랫폼입니다."],
+              ["SNS메이킷은 어떤 서비스인가요?","AI가 글을 작성하고 네이버 블로그에 자동 발행하는 SNS 콘텐츠 자동화 플랫폼입니다."],
               ["무료로 사용할 수 있나요?","회원가입 시 5회 무료 체험이 제공됩니다. 데스크톱 프로그램도 무료로 다운로드할 수 있으며, 이후 월 $9.9부터 시작하는 플랜으로 업그레이드 가능합니다."],
-              ["웹 도구와 프로그램의 차이가 뭔가요?","웹에서는 브라우저로 AI 글쓰기, 영상 제작이 가능합니다. 데스크톱 프로그램은 네이버 블로그 자동 발행, 드라이브 연동 등 자동화 기능에 특화되어 있습니다."],
-              ["어떤 SNS 플랫폼을 지원하나요?","데스크톱 프로그램은 네이버 블로그 자동 발행을 지원합니다. 웹에서는 인스타그램, 스레드, 유튜브용 콘텐츠를 생성할 수 있습니다."],
+              ["웹 도구와 프로그램의 차이가 뭔가요?","웹에서는 브라우저로 AI 글쓰기, 영상 제작이 가능합니다. 데스크톱 프로그램은 네이버 SNS 자동 발행, 드라이브 연동 등 자동화 기능에 특화되어 있습니다."],
+              ["어떤 SNS 플랫폼을 지원하나요?","데스크톱 프로그램은 네이버 SNS 자동 발행을 지원합니다. 웹에서는 인스타그램, 스레드, 유튜브용 콘텐츠를 생성할 수 있습니다."],
               ["상업적으로 사용 가능한가요?","네, 생성된 모든 콘텐츠는 상업적으로 자유롭게 사용할 수 있습니다."],
             ].map(([q,a],i) => (
               <details key={q} className="pg-faq" open={i===0} style={{ borderRadius:12, border:`1px solid ${BDR}`, background:BG, overflow:"hidden" }}>

@@ -233,6 +233,16 @@ export default function AdminPage({ C, user: adminUser }) {
       showToast("Pro 한 달 체험권 부여 완료");
     }
   };
+  const toggleModerator = async (member) => {
+    const isMod = member.role === "moderator";
+    const action = isMod ? "해제" : "부여";
+    if (!window.confirm(`${member.email || member.nick}에게 성장 프로그램 관리 권한을 ${action}할까요?`)) return;
+    const newRole = isMod ? "member" : "moderator";
+    const { error } = await supabase.from("users").update({ role: newRole }).eq("uid", member.uid);
+    if (error) { showToast(`권한 변경 실패: ${error.message}`); return; }
+    setMembers2(prev => prev.map(m => m.uid === member.uid ? { ...m, role: newRole } : m));
+    showToast(`성장 프로그램 관리 권한 ${action} 완료`);
+  };
   // ── 회원별 횟수 내역 로드 ──
   const loadMemberHistory = async (uid) => {
     if (memberHistory[uid]) return;
@@ -1237,6 +1247,10 @@ export default function AdminPage({ C, user: adminUser }) {
                             <button onClick={e => { e.stopPropagation(); grantProTrial(m); }}
                               style={{ width: "100%", padding: "6px 0", borderRadius: 6, border: `1px solid ${bdr}`, background: isDark ? "rgba(59,130,246,0.12)" : "rgba(59,130,246,0.06)", color: "#2563eb", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
                               Pro 체험 부여
+                            </button>
+                            <button onClick={e => { e.stopPropagation(); toggleModerator(m); }}
+                              style={{ width: "100%", padding: "6px 0", borderRadius: 6, border: `1px solid ${bdr}`, marginTop: 4, background: m.role === "moderator" ? (isDark ? "rgba(249,115,22,0.15)" : "rgba(249,115,22,0.08)") : (isDark ? "rgba(16,185,129,0.12)" : "rgba(16,185,129,0.06)"), color: m.role === "moderator" ? "#f97316" : "#10b981", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
+                              {m.role === "moderator" ? "프로그램 권한 해제" : "프로그램 권한 부여"}
                             </button>
                             {trial && <div style={{ fontSize: 10, color: "#2563eb", marginTop: 6, fontWeight: 600 }}>~{new Date(trial.expires_at).toLocaleDateString("ko-KR")} 까지</div>}
                           </div>
