@@ -113,10 +113,10 @@ const CATEGORIES = [
 ];
 
 const AUTOMATION_DOWNLOAD = {
-  fileName: "SNSMakeIt-Setup-0.2.5.zip",
-  url: "https://github.com/npermovie-design/cardnews-app/releases/download/app-v0.2.5/SNSMakeIt-Setup-0.2.5.zip",
+  fileName: "SNSMakeIt-Setup-0.2.6.zip",
+  url: "https://github.com/npermovie-design/cardnews-app/releases/download/app-v0.2.6/SNSMakeIt-Setup-0.2.6.zip",
   size: "452MB",
-  version: "v0.2.5",
+  version: "v0.2.6",
 };
 const AUTOMATION_DOWNLOAD_READY = Boolean(AUTOMATION_DOWNLOAD.url);
 
@@ -276,13 +276,13 @@ const INTERACTIVE_FLOW = [
 
 const DEMO_PRODUCTS = [
   {
-    id: 1, title: "SNS메이킷 프로그램 v0.2.5",
+    id: 1, title: "SNS메이킷 프로그램 v0.2.6",
     desc: "테마만 입력하면 AI가 네이버 블로그 글을 자동 생성하고, 카테고리 선택부터 이미지 삽입, 발행까지 한 번에 처리합니다. 빠른 시작 모드로 1분 안에 첫 발행이 가능합니다.",
     category: "automation", price: 0, priceLabel: "무료",
-    version: "v0.2.5", platform: "Windows 10/11",
+    version: "v0.2.6", platform: "Windows 10/11",
     fileSize: "430MB", downloadCount: 180, viewCount: 420,
     tags: ["자동화", "블로그", "네이버", "글쓰기", "SEO", "영상편집"],
-    downloadUrl: "https://github.com/npermovie-design/cardnews-app/releases/download/app-v0.2.5/SNSMakeIt-Setup-0.2.5.exe",
+    downloadUrl: "https://github.com/npermovie-design/cardnews-app/releases/download/app-v0.2.6/SNSMakeIt-Setup-0.2.6.exe",
     thumbnail: "https://ckzjnpzadeovrasucjmu.supabase.co/storage/v1/object/public/uploads/automation-thumb.png",
     detailContent: [
       { type: "heading", value: "SNS메이킷 프로그램이란?" },

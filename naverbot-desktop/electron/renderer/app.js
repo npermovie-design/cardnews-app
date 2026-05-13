@@ -3868,6 +3868,23 @@ bridge.loadConfig().then(async cfg => {
         }
       }
 
+      // 최종 verify 실패 시 깨끗하게 로그아웃 (토큰 만료/키 변경 대응)
+      if (!r.ok || !r.result || r.result.status !== "ok") {
+        addLog("[계정] 인증 만료, 다시 로그인해주세요.");
+        state.loggedIn = false;
+        state.user = null;
+        setUserBadge("로그인 필요", "gray");
+        const loginCard = document.getElementById("loginCard");
+        if (loginCard) loginCard.style.display = "";
+        renderPlanCard(null);
+        // 만료된 토큰 삭제
+        const cc = (await bridge.loadConfig()) || {};
+        delete cc.makeit_access_token;
+        delete cc.makeit_refresh_token;
+        delete cc.makeit_token_expires;
+        await bridge.saveConfig(cc);
+      }
+
       handleVerifyResult(r, cfg.makeit_email || "");
       if (r.ok && r.result) {
         const c = (await bridge.loadConfig()) || {};
