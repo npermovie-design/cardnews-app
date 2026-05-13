@@ -3816,6 +3816,14 @@ bridge.loadConfig().then(async cfg => {
   renderCalendar();
   renderDashboardAutopilot();
 
+  // 홈 버전 표시
+  if (bridge.getAppVersion) {
+    bridge.getAppVersion().then(function(v) {
+      var badge = document.getElementById("homeVersionBadge");
+      if (badge) badge.textContent = "v" + v;
+    }).catch(function(){});
+  }
+
   // 자동 로그인 (즉시 UI 반영)
   const savedEmail = cfg.makeit_email || "";
   const isAdminBoot = ADMIN_EMAILS.includes(savedEmail.toLowerCase());
