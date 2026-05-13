@@ -319,6 +319,14 @@ function setupAutoUpdater() {
   if (!autoUpdater) return;
 
   autoUpdater.on("update-available", (info) => {
+    // 다운그레이드 방지: 서버 버전이 현재보다 낮으면 무시
+    const current = app.getVersion();
+    const remote = info.version;
+    const cmp = (a, b) => { const pa = a.split(".").map(Number), pb = b.split(".").map(Number); for (let i = 0; i < 3; i++) { if ((pa[i]||0) !== (pb[i]||0)) return (pa[i]||0) - (pb[i]||0); } return 0; };
+    if (cmp(remote, current) <= 0) {
+      console.log(`[AutoUpdater] 다운그레이드 방지: 서버 ${remote} <= 현재 ${current}, 무시`);
+      return;
+    }
     console.log("[AutoUpdater] 새 버전:", info.version);
     if (mainWindow) mainWindow.webContents.send("exe-update:available", {
       version: info.version,

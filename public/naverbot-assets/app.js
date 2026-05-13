@@ -1550,7 +1550,7 @@ $("browserLoginBtn").addEventListener("click", handleBrowserLogin);
 
 // ── 직접 이메일/비번 로그인 + 저장 + 자동 로그인 ──
 const SB_LOGIN_URL = "https://ckzjnpzadeovrasucjmu.supabase.co";
-const SB_LOGIN_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrempucHphZGVvdnJhc3Vjam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5MTA4NTcsImV4cCI6MjA4OTQ4Njg1N30.qgRa-YIm_ttKYTAcFI3xxXAADGPNPUU1bb7EVz_-Ljs";
+const SB_LOGIN_KEY = "sb_publishable_TRn4PuhwKeH5yhkCJmL8JQ_Ee3HXQnf";
 
 // 저장된 로그인 정보 복원
 (async function restoreSavedLogin() {
