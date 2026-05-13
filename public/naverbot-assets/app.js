@@ -3816,15 +3816,18 @@ bridge.loadConfig().then(async cfg => {
   renderCalendar();
   renderDashboardAutopilot();
 
-  // 홈 + 정보 버전 표시
+  // 버전 표시 (상단 브랜드 + 홈 + 정보)
   if (bridge.getAppVersion) {
     bridge.getAppVersion().then(function(v) {
+      var ver = "v" + v;
+      var brandTag = document.getElementById("brandVersionTag");
+      if (brandTag) brandTag.textContent = ver;
       var badge = document.getElementById("homeVersionBadge");
-      if (badge) badge.textContent = "v" + v;
+      if (badge) badge.textContent = ver;
       var aboutSub = document.getElementById("aboutVersionSub");
-      if (aboutSub) aboutSub.textContent = "SNS메이킷 v" + v;
+      if (aboutSub) aboutSub.textContent = "SNS메이킷 " + ver;
       var aboutBuild = document.getElementById("aboutBuildInfo");
-      if (aboutBuild) aboutBuild.textContent = "v" + v;
+      if (aboutBuild) aboutBuild.textContent = ver;
     }).catch(function(){});
   }
 

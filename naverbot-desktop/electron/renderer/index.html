@@ -213,7 +213,7 @@
     <!-- ========== 사이드바 ========== -->
     <aside class="sidebar">
       <div class="sidebar-header" style="border-bottom:1px solid var(--border);margin-bottom:0;padding-bottom:12px;">
-        <div class="brand-title">SNS메이킷</div>
+        <div class="brand-title">SNS메이킷 <span id="brandVersionTag" style="font-size:10px;font-weight:600;color:var(--text-dim);"></span></div>
         <a class="brand-link" id="brandLink" href="#">snsmakeit.com</a>
       </div>
       <!-- 사용자 + 등급 + 잔여 횟수 -->
@@ -547,6 +547,29 @@
           <div id="homeNoticePreview"></div>
           <div id="homeCommunityPreview"></div>
           <div id="homeChallengePreview"></div>
+        </div>
+
+        <!-- 업데이트 사항 -->
+        <div class="card" style="margin-top:16px;">
+          <div class="card-header"><h3>업데이트 내역</h3></div>
+          <div id="homeUpdateLog" style="font-size:13px;color:var(--text-sub);line-height:1.8;">
+            <div style="margin-bottom:12px;">
+              <div style="font-weight:700;color:var(--text);margin-bottom:4px;">v0.2.6</div>
+              <div>- 전체 기능 안내사항 추가</div>
+              <div>- 블로그/카페 지금발행 추가 (메뉴명/템플릿/글길이)</div>
+              <div>- 색상 파란색 계열 통일</div>
+              <div>- Supabase API 키 교체 (로그인 복구)</div>
+              <div>- 부트캠프 → 크루잉 명칭 변경</div>
+              <div>- 메이킷 자료 메뉴 제거</div>
+            </div>
+            <div>
+              <div style="font-weight:700;color:var(--text);margin-bottom:4px;">v0.2.4</div>
+              <div>- 숏폼 OpusClip 방식 하이라이트 추출</div>
+              <div>- 자막 렌더링 수정</div>
+              <div>- 홈 소식 섹션 추가</div>
+              <div>- 7일 Pro 체험권 시스템</div>
+            </div>
+          </div>
         </div>
       </section>
 
