@@ -256,8 +256,10 @@ const EXE_PLAN_RULES = {
     monthlyVideoLimit: 99999,
     dailyAutoPosts: 3,
     canSchedule: true,
-    canCafe: false,
-    desc: "콘텐츠 생성 월 200회 · 영상 제한 없음 · 자동 발행 하루 3개",
+    canCafe: true,
+    canCafeAuto: false,
+    cafeDailyLimit: 1,
+    desc: "콘텐츠 생성 월 200회 · 영상 제한 없음 · 자동 발행 하루 3개 · 카페 하루 1개",
   },
   premium: {
     label: "Business",
@@ -268,7 +270,9 @@ const EXE_PLAN_RULES = {
     dailyAutoPosts: 10,
     canSchedule: true,
     canCafe: true,
-    desc: "콘텐츠 생성 월 700회 · 영상 제한 없음 · 자동 발행 하루 10개",
+    canCafeAuto: true,
+    cafeDailyLimit: 5,
+    desc: "콘텐츠 생성 월 700회 · 영상 제한 없음 · 자동 발행 하루 10개 · 카페 하루 5개",
   },
   admin: {
     label: "Admin",
@@ -363,7 +367,7 @@ function renderPlanFeatures(rules, user = state.user) {
       </div>
       <div class="plan-feature">
         <div class="plan-feature-label">카페 발행</div>
-        <div class="plan-feature-value ${rules.canCafe ? "ok" : "locked"}">${rules.canCafe ? "가능" : "Business 이상"}</div>
+        <div class="plan-feature-value ${rules.canCafe ? "ok" : "locked"}">${rules.canCafe ? (rules.canCafeAuto ? "자동운영 가능" : "하루 " + (rules.cafeDailyLimit || 1) + "개") : "Pro 이상"}</div>
       </div>
       <div class="plan-feature">
         <div class="plan-feature-label">예약 발행</div>
@@ -380,7 +384,11 @@ function requireExeFeature(feature, message) {
   }
   const rules = getExePlanRules();
   if (feature === "cafe" && !rules.canCafe) {
-    showModal("Business 기능", message || "카페 발행은 Business 이상에서 사용할 수 있습니다.", "구독하기", () => bridge.openExternal("https://snsmakeit.com/pricing"));
+    showModal("Pro 기능", message || "카페 발행은 Pro 이상에서 사용할 수 있습니다.", "구독하기", () => bridge.openExternal("https://snsmakeit.com/pricing"));
+    return false;
+  }
+  if (feature === "cafeAuto" && !rules.canCafeAuto) {
+    showModal("Business 기능", message || "카페 자동 운영은 Business 이상에서 사용할 수 있습니다.", "구독하기", () => bridge.openExternal("https://snsmakeit.com/pricing"));
     return false;
   }
   if (feature === "schedule" && !rules.canSchedule) {
@@ -507,7 +515,7 @@ function renderPricingPanel() {
   box.innerHTML = `
     <strong>${escapeHtml(planLabel)}</strong>${escapeHtml(expiresText)}<br>
     ${escapeHtml(rules.desc)}<br>
-    ${escapeHtml(postLimit)} · ${escapeHtml(videoLimit)} · ${escapeHtml(autoLimit)} · 카페 발행: ${rules.canCafe ? "가능" : "Business 이상"}
+    ${escapeHtml(postLimit)} · ${escapeHtml(videoLimit)} · ${escapeHtml(autoLimit)} · 카페: ${rules.canCafe ? (rules.canCafeAuto ? "자동운영" : "하루 " + (rules.cafeDailyLimit || 1) + "개") : "Pro 이상"}
   `;
 }
 
@@ -3453,7 +3461,7 @@ if ($("cafeApCount")) {
 }
 
 if ($("startCafeApBtn")) $("startCafeApBtn").addEventListener("click", async () => {
-  if (!requireExeFeature("cafe", "카페 자동 운영은 Business 이상에서 사용할 수 있습니다.")) return;
+  if (!requireExeFeature("cafeAuto", "카페 자동 운영은 Business 이상에서 사용할 수 있습니다.")) return;
   const theme = $("cafeApTheme").value.trim();
   if (!theme) return showModal("알림","키워드를 입력하세요","확인");
   const cafeId = ($("cafeApCafeId") && $("cafeApCafeId").value.trim()) || "";
