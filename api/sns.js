@@ -1513,7 +1513,17 @@ async function handleAdmin(req, res) {
     }
 
     if (action === "ai_logs") {
-      const { data, error } = await sb.from("point_history").select("*").order("created_at", { ascending: false }).limit(200);
+      const days = parseInt(req.query.days) || 30;
+      const since = new Date(Date.now() - days * 86400000).toISOString();
+      const { data, error } = await sb.from("point_history").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(500);
+      if (error) throw error;
+      return res.status(200).json({ logs: data || [] });
+    }
+
+    if (action === "program_logs") {
+      const days = parseInt(req.query.days) || 30;
+      const since = new Date(Date.now() - days * 86400000).toISOString();
+      const { data, error } = await sb.from("naverbot_posts_log").select("*").gte("created_at", since).order("created_at", { ascending: false }).limit(500);
       if (error) throw error;
       return res.status(200).json({ logs: data || [] });
     }

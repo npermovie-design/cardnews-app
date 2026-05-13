@@ -86,6 +86,9 @@ export default function AdminPage({ C, user: adminUser }) {
   const [ptInputs, setPtInputs] = useState({});
   const [aiLogs, setAiLogs] = useState([]);
   const [aiLogsLoading, setAiLogsLoading] = useState(false);
+  const [programLogs, setProgramLogs] = useState([]);
+  const [programLogsLoading, setProgramLogsLoading] = useState(false);
+  const [logPeriod, setLogPeriod] = useState("week");
   const [guestSearch, setGuestSearch] = useState("");
   const [postSearch, setPostSearch] = useState("");
   const [postPage, setPostPage] = useState(1);
@@ -178,13 +181,29 @@ export default function AdminPage({ C, user: adminUser }) {
     setLoadingPosts(false);
   };
 
-  const loadAiLogs = async () => {
+  const periodDays = { day: 1, week: 7, month: 30 };
+  const loadAiLogs = async (period) => {
+    const days = periodDays[period || logPeriod] || 7;
     setAiLogsLoading(true);
     try {
-      const { logs } = await adminApi("ai_logs");
+      const { logs } = await adminApi("ai_logs", `&days=${days}`);
       setAiLogs(logs || []);
     } catch {}
     setAiLogsLoading(false);
+  };
+  const loadProgramLogs = async (period) => {
+    const days = periodDays[period || logPeriod] || 7;
+    setProgramLogsLoading(true);
+    try {
+      const { logs } = await adminApi("program_logs", `&days=${days}`);
+      setProgramLogs(logs || []);
+    } catch {}
+    setProgramLogsLoading(false);
+  };
+  const switchLogPeriod = (p) => {
+    setLogPeriod(p);
+    loadAiLogs(p);
+    loadProgramLogs(p);
   };
 
   // ── 구독/체험권 로드 ──
@@ -261,7 +280,7 @@ export default function AdminPage({ C, user: adminUser }) {
 
   useEffect(() => {
     if (auth) {
-      loadMembers(); loadVideos(); loadPosts(); loadBoardCats(); loadAiLogs(); loadDailySignups(); loadDailyAiUsage();
+      loadMembers(); loadVideos(); loadPosts(); loadBoardCats(); loadAiLogs(); loadProgramLogs(); loadDailySignups(); loadDailyAiUsage();
       loadSubs(); loadTrials();
       adminApi("online_count").then(d=>setOnlineCount(d.count||0)).catch(()=>{});
     }
@@ -899,107 +918,127 @@ export default function AdminPage({ C, user: adminUser }) {
             </div>
           </div>
 
-          {/* ── AI 설정 현황 ── */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:14, marginBottom:24 }}>
-            {[
-              { label: "비회원 무료 횟수", value: FREE_GUEST + "회", color: "#22c55e" },
-              { label: "회원 무료 횟수",   value: FREE_MEMBER + "회", color: "#546FFF" },
-              { label: "AI 1회 기준",      value: "1회 차감", color: "#f59e0b" },
-            ].map(r => (
-              <div key={r.label} style={{ padding:"18px 22px", borderRadius:14, background:panelBg, border:`1px solid ${panelBorder}`, display:"flex", alignItems:"center", gap:14 }}>
-                <div style={{ width:42, height:42, borderRadius:12, background:`${r.color}14`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <div style={{ width:14, height:14, borderRadius:99, background:r.color }}/>
-                </div>
-                <div>
-                  <div style={{ fontSize:22, fontWeight:900, color:C.text }}>{r.value}</div>
-                  <div style={{ fontSize:11, color:isDark?"rgba(255,255,255,0.4)":"#94a3b8", marginTop:2 }}>{r.label}</div>
-                </div>
-              </div>
+          {/* ── 기간 선택 ── */}
+          <div style={{ display:"flex", gap:6, marginBottom:20 }}>
+            {[["day","일간"],["week","주간"],["month","월간"]].map(([k,l]) => (
+              <button key={k} onClick={() => switchLogPeriod(k)}
+                style={{ padding:"8px 20px", borderRadius:10, border:`1px solid ${logPeriod===k?accent:panelBorder}`, background:logPeriod===k?accent:"transparent", color:logPeriod===k?"#fff":C.text, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>
+                {l}
+              </button>
             ))}
           </div>
 
-          {/* ── AI 사용 로그 ── */}
-          <div style={cardStyle}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-              <div style={{ fontSize:16, fontWeight:800, color:C.text }}>AI 사용 로그</div>
-              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                <span style={{ fontSize:11, color:isDark?"rgba(255,255,255,0.35)":"#94a3b8" }}>최근 200건</span>
-                <button onClick={loadAiLogs} disabled={aiLogsLoading}
-                  style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${panelBorder}`, background:panelBg, color:accent, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
-                  {aiLogsLoading ? "로딩..." : "새로고침"}
-                </button>
-              </div>
+          {/* ── 요약 카드 ── */}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:12, marginBottom:20 }}>
+            {(() => {
+              const totalUse = aiOnly.length;
+              const uniqueUsers = new Set(aiOnly.map(l => l.uid)).size;
+              const totalProgram = programLogs.length;
+              const periodLabel = {day:"오늘",week:"이번 주",month:"이번 달"}[logPeriod];
+              return [
+                { label: `AI 사용 (${periodLabel})`, value: totalUse + "회", color: accent },
+                { label: "활성 사용자", value: uniqueUsers + "명", color: "#60a5fa" },
+                { label: `프로그램 발행 (${periodLabel})`, value: totalProgram + "건", color: "#2563eb" },
+                { label: "사용자당 평균", value: uniqueUsers ? (totalUse/uniqueUsers).toFixed(1) + "회" : "-", color: "#93c5fd" },
+              ].map(r => (
+                <div key={r.label} style={{ padding:"16px 18px", borderRadius:14, background:panelBg, border:`1px solid ${panelBorder}` }}>
+                  <div style={{ fontSize:24, fontWeight:900, color:r.color }}>{r.value}</div>
+                  <div style={{ fontSize:11, color:C.muted, marginTop:4 }}>{r.label}</div>
+                </div>
+              ));
+            })()}
+          </div>
+
+          {/* ── 기능별 + 사용자별 분석 ── */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:20 }}>
+            <div style={cardStyle}>
+              <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:12 }}>기능별 사용</div>
+              {reasonEntries.length === 0 ? <div style={{ color:C.muted, fontSize:13 }}>데이터 없음</div> :
+                reasonEntries.slice(0,8).map(([r,c],i) => (
+                  <div key={r} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                    <div style={{ width:8, height:8, borderRadius:99, background:donutColors[i%donutColors.length], flexShrink:0 }}/>
+                    <span style={{ fontSize:13, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r}</span>
+                    <span style={{ fontSize:13, fontWeight:800, color:accent }}>{c}</span>
+                  </div>
+                ))
+              }
             </div>
-            {aiLogs.length === 0 ? (
-              <div style={{ textAlign:"center", padding:40, color:C.muted, fontSize:13 }}>
-                {aiLogsLoading ? "로딩중..." : "아직 사용 기록이 없습니다."}
-              </div>
-            ) : (
-              <>
-                {/* AI 기능별 + 사용자별 */}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:18, padding:"16px 20px", borderRadius:12, background:isDark?"rgba(255,255,255,0.02)":"#fafbfe" }}>
-                  <div>
-                    <div style={{ fontSize:12, fontWeight:700, color:isDark?"rgba(255,255,255,0.5)":"#64748b", marginBottom:10 }}>기능별 사용 횟수</div>
-                    {reasonEntries.slice(0,8).map(([r,c],i) => (
-                      <div key={r} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                        <span style={{ width:6, height:6, borderRadius:99, background:donutColors[i%donutColors.length], flexShrink:0 }}/>
-                        <span style={{ fontSize:12, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r}</span>
-                        <span style={{ fontSize:12, fontWeight:700, color:accent }}>{c}회</span>
-                      </div>
-                    ))}
+            <div style={cardStyle}>
+              <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:12 }}>사용자 TOP 5</div>
+              {(() => {
+                const byUser = {};
+                aiOnly.forEach(l => { byUser[l.uid||"unknown"] = (byUser[l.uid||"unknown"]||0)+1; });
+                const top = Object.entries(byUser).sort((a,b)=>b[1]-a[1]).slice(0,5);
+                if (!top.length) return <div style={{ color:C.muted, fontSize:13 }}>데이터 없음</div>;
+                return top.map(([uid,c],i) => {
+                  const nick = members.find(m=>m.uid===uid)?.nick || uid?.slice(0,8) || "?";
+                  return (
+                    <div key={uid} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                      <div style={{ width:24, height:24, borderRadius:99, background:`${accent}15`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color:accent, flexShrink:0 }}>{i+1}</div>
+                      <span style={{ fontSize:13, color:C.text, flex:1 }}>{nick}</span>
+                      <span style={{ fontSize:13, fontWeight:800, color:accent }}>{c}회</span>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+
+          {/* ── AI 사용 로그 (카드형) ── */}
+          <div style={cardStyle}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div style={{ fontSize:14, fontWeight:800, color:C.text }}>AI 사용 로그</div>
+              <button onClick={() => loadAiLogs()} disabled={aiLogsLoading}
+                style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${panelBorder}`, background:panelBg, color:accent, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                {aiLogsLoading ? "로딩..." : "새로고침"}
+              </button>
+            </div>
+            <div style={{ maxHeight:400, overflowY:"auto", display:"flex", flexDirection:"column", gap:6 }}>
+              {aiLogs.length === 0 ? (
+                <div style={{ textAlign:"center", padding:40, color:C.muted, fontSize:13 }}>{aiLogsLoading ? "로딩중..." : "사용 기록이 없습니다."}</div>
+              ) : aiLogs.slice(0,100).map((l,i) => {
+                const nick = members.find(m=>m.uid===l.uid)?.nick || l.uid?.slice(0,8) || "?";
+                const deltaVal = l.created_at&&l.created_at<"2026-05-03"?Math.round((l.delta||0)/30):Math.round(l.delta);
+                return (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:10, background:isDark?"rgba(255,255,255,0.02)":"#fafbfe", border:`1px solid ${isDark?"rgba(255,255,255,0.04)":"#f0f1f4"}` }}>
+                    <div style={{ flex:"0 0 80px", fontSize:13, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nick}</div>
+                    <div style={{ flex:1, fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{l.reason||"-"}</div>
+                    <div style={{ flex:"0 0 60px", textAlign:"right" }}>
+                      <span style={{ fontWeight:700, fontSize:12, padding:"2px 8px", borderRadius:99, background:l.delta>0?`${accent}15`:"rgba(239,68,68,0.1)", color:l.delta>0?accent:"#ef4444" }}>{l.delta>0?"+":""}{deltaVal}</span>
+                    </div>
+                    <div style={{ flex:"0 0 110px", fontSize:11, color:C.muted, textAlign:"right" }}>{l.created_at ? new Date(l.created_at).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) : "-"}</div>
                   </div>
-                  <div>
-                    <div style={{ fontSize:12, fontWeight:700, color:isDark?"rgba(255,255,255,0.5)":"#64748b", marginBottom:10 }}>사용자별 TOP5</div>
-                    {(() => {
-                      const byUser = {};
-                      aiOnly.forEach(l => { byUser[l.uid||"unknown"] = (byUser[l.uid||"unknown"]||0)+1; });
-                      return Object.entries(byUser).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([uid,c],i) => {
-                        const nick = members.find(m=>m.uid===uid)?.nick || uid?.slice(0,8) || "?";
-                        return (
-                          <div key={uid} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                            <div style={{ width:22, height:22, borderRadius:99, background:`${donutColors[i]}18`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:800, color:donutColors[i], flexShrink:0 }}>{i+1}</div>
-                            <span style={{ fontSize:12, color:C.text, flex:1 }}>{nick}</span>
-                            <span style={{ fontSize:12, fontWeight:700, color:accent }}>{c}회</span>
-                          </div>
-                        );
-                      });
-                    })()}
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── 프로그램 발행 로그 ── */}
+          <div style={{ ...cardStyle, marginTop:16 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div style={{ fontSize:14, fontWeight:800, color:C.text }}>프로그램 발행 로그</div>
+              <button onClick={() => loadProgramLogs()} disabled={programLogsLoading}
+                style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${panelBorder}`, background:panelBg, color:accent, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                {programLogsLoading ? "로딩..." : "새로고침"}
+              </button>
+            </div>
+            <div style={{ maxHeight:400, overflowY:"auto", display:"flex", flexDirection:"column", gap:6 }}>
+              {programLogs.length === 0 ? (
+                <div style={{ textAlign:"center", padding:40, color:C.muted, fontSize:13 }}>{programLogsLoading ? "로딩중..." : "발행 기록이 없습니다."}</div>
+              ) : programLogs.slice(0,100).map((l,i) => {
+                const nick = members.find(m=>m.uid===l.license_key)?.nick || l.license_key?.slice(0,8) || "?";
+                return (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:10, background:isDark?"rgba(255,255,255,0.02)":"#fafbfe", border:`1px solid ${isDark?"rgba(255,255,255,0.04)":"#f0f1f4"}` }}>
+                    <div style={{ flex:"0 0 80px", fontSize:13, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nick}</div>
+                    <div style={{ flex:1, fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{l.title || l.topic || "-"}</div>
+                    <div style={{ flex:"0 0 60px", textAlign:"center" }}>
+                      <span style={{ fontSize:11, padding:"2px 8px", borderRadius:99, background:`${accent}15`, color:accent, fontWeight:600 }}>{l.tokens_used ? l.tokens_used+"tk" : "1회"}</span>
+                    </div>
+                    <div style={{ flex:"0 0 110px", fontSize:11, color:C.muted, textAlign:"right" }}>{l.created_at ? new Date(l.created_at).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) : "-"}</div>
                   </div>
-                </div>
-                {/* 로그 테이블 */}
-                <div style={{ overflowX:"auto", maxHeight:320, overflowY:"auto", borderRadius:10 }}>
-                  <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
-                    <thead>
-                      <tr style={{ position:"sticky", top:0, background:isDark?"#1a1730":"#fff", zIndex:1 }}>
-                        {[{l:"사용자",a:"left"},{l:"기능",a:"left"},{l:"차감",a:"right"},{l:"잔여",a:"right"},{l:"일시",a:"left"}].map(h => (
-                          <th key={h.l} style={{ padding:"10px 12px", textAlign:h.a, color:isDark?"rgba(255,255,255,0.35)":"#94a3b8", fontWeight:600, borderBottom:`2px solid ${isDark?"rgba(255,255,255,0.06)":"#eef0f6"}` }}>{h.l}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {aiLogs.slice(0,50).map((l,i) => {
-                        const nick = members.find(m=>m.uid===l.uid)?.nick || l.uid?.slice(0,8) || "?";
-                        const deltaVal = l.created_at&&l.created_at<"2026-05-03"?Math.round((l.delta||0)/30):Math.round(l.delta);
-                        const balVal = l.created_at&&l.created_at<"2026-05-03"?Math.floor((l.balance||0)/30):Math.floor(l.balance||0);
-                        return (
-                          <tr key={i} style={{ transition:"background 0.15s" }}
-                            onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.02)":"#fafbfe"}
-                            onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                            <td style={{ padding:"10px 12px", fontWeight:600, color:C.text }}>{nick}</td>
-                            <td style={{ padding:"10px 12px", color:isDark?"rgba(255,255,255,0.5)":"#64748b" }}>{l.reason||"-"}</td>
-                            <td style={{ padding:"10px 12px", textAlign:"right" }}>
-                              <span style={{ fontWeight:700, fontSize:12, padding:"2px 10px", borderRadius:99, background:l.delta>0?"rgba(34,197,94,0.1)":"rgba(239,68,68,0.1)", color:l.delta>0?"#22c55e":"#ef4444" }}>{l.delta>0?"+":""}{deltaVal}회</span>
-                            </td>
-                            <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:600, color:C.text }}>{balVal}회</td>
-                            <td style={{ padding:"10px 12px", color:isDark?"rgba(255,255,255,0.35)":"#94a3b8", fontSize:11 }}>{l.created_at ? new Date(l.created_at).toLocaleString("ko-KR") : "-"}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
+                );
+              })}
+            </div>
           </div>
 
           {/* ── 검색엔진 노출 안내 ── */}
