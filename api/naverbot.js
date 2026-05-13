@@ -350,12 +350,26 @@ async function chargeWriteQuotaForAccount(uid, plan) {
   };
 }
 
-function stripMarkdown(text) {
-  return text
+async function recordProgramUsage(uid, reason = "데스크톱 콘텐츠 생성", feature = "write") {
+  if (!uid) return;
+  const title = String(reason || "데스크톱 콘텐츠 생성").slice(0, 120);
+  const topic = feature === "video" ? "video" : "write";
+  const { error } = await supabase
+    .from("naverbot_posts_log")
+    .insert({
+      license_key: uid,
+      topic,
+      title,
+      tokens_used: 0,
+    });
+  if (error) console.error("[naverbot] 사용 로그 기록 실패:", error.message);
+}
+
+function stripMarkdown(text, preserveBold = false) {
+  let cleaned = text
     .replace(/\[\[(?:\/|bold|underline|italic|strike|font-size:[^\]]+|font:[^\]]+|color:[^\]]+|bg:[^\]]+|background:[^\]]+|highlight:[^\]]+)\]\]/gi, "")
     .replace(/\[(?:\/|underline|font-size|color|bg|background|highlight)(?::[^\]]*)?\]/gi, "")
     .replace(/^#{1,6}\s+/gm, "")
-    .replace(/\*\*([^*]+)\*\*/g, "$1")
     .replace(/__([^_]+)__/g, "$1")
     .replace(/(?<!\*)\*(?!\*)([^*\n]+)\*(?!\*)/g, "$1")
     .replace(/(?<!_)_(?!_)([^_\n]+)_(?!_)/g, "$1")
@@ -365,8 +379,9 @@ function stripMarkdown(text) {
     .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
     .replace(/```[\s\S]*?```/g, "")
     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F2FF}]/gu, "")
-    .replace(/[★●■▶♥☆→◆◇▷▼△▲※◎○☑✓✔✕✗✘]/g, "")  // 특수기호 제거
-    .trim();
+    .replace(/[★●■▶♥☆→◆◇▷▼△▲※◎○☑✓✔✕✗✘]/g, "");  // 특수기호 제거
+  if (!preserveBold) cleaned = cleaned.replace(/\*\*([^*]+)\*\*/g, "$1");
+  return cleaned.trim();
 }
 
 function parseResponse(text, fallbackKeyword) {
@@ -391,7 +406,7 @@ function parseResponse(text, fallbackKeyword) {
     placeholders.push(m);
     return `PIXMARK${placeholders.length - 1}PIXEND`;
   });
-  let cleanBody = stripMarkdown(protectedBody);
+  let cleanBody = stripMarkdown(protectedBody, true);
   cleanBody = cleanBody.replace(/PIXMARK(\d+)PIXEND/g, (_, i) => placeholders[Number(i)] || "");
 
   const title = stripMarkdown(titleMatch ? titleMatch[1].trim() : fallbackKeyword.slice(0, 30)).slice(0, 60);
@@ -585,6 +600,7 @@ async function handleContentGenerate(req, res) {
 
   const blocks = [];
   const usedImageUrls = []; // 중복 방지
+  let insertedGif = false;
   for (const blk of rawBlocks) {
     if (blk.type === "text" || blk.type === "subtitle" || blk.type === "quote") {
       blocks.push(blk);
@@ -606,7 +622,17 @@ async function handleContentGenerate(req, res) {
       const gif = await searchGif(blk.keyword);
       if (gif) {
         blocks.push({ type: "image", url: gif.url, alt: blk.keyword, keyword: blk.keyword, isGif: true });
+        insertedGif = true;
       }
+    }
+  }
+
+  if (useGif && !insertedGif) {
+    const gif = await searchGif(fields.keyword);
+    if (gif) {
+      const gifBlock = { type: "image", url: gif.url, alt: fields.keyword, keyword: fields.keyword, isGif: true };
+      const insertAt = Math.min(blocks.length, Math.max(2, Math.floor(blocks.length / 2)));
+      blocks.splice(insertAt, 0, gifBlock);
     }
   }
 
@@ -686,7 +712,7 @@ const INLINE_HTML = `<!DOCTYPE html>
 <style>body{font-family:sans-serif;background:#fafafa;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
 .card{max-width:420px;padding:40px;background:#fff;border-radius:18px;box-shadow:0 4px 24px rgba(0,0,0,.06);text-align:center}
 h1{font-size:22px;margin-bottom:10px}p{color:#6b7280;margin-bottom:20px}
-.btn{display:block;width:100%;padding:13px;background:#ef4f5f;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:10px}
+.btn{display:block;width:100%;padding:13px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:10px}
 .btn-google{background:#fff;color:#111;border:1px solid #e5e7eb}
 input{width:100%;padding:11px 14px;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;margin-top:10px}
 </style></head><body><div class="card" id="card"><div>로딩 중...</div></div>
@@ -709,9 +735,13 @@ function handleLoginPage(req, res) {
   res.setHeader("Cache-Control", "no-store, max-age=0, must-revalidate");
   res.setHeader("X-Frame-Options", "SAMEORIGIN");
 
+  const supabaseUrl = String(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").trim();
+  const supabaseAnonKey = String(process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || "").trim();
   const html = (loadHtml() || INLINE_HTML)
-    .replaceAll("__SUPABASE_URL__", process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "")
-    .replaceAll("__SUPABASE_ANON_KEY__", process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || "");
+    .replaceAll('"__SUPABASE_URL__"', JSON.stringify(supabaseUrl))
+    .replaceAll('"__SUPABASE_ANON_KEY__"', JSON.stringify(supabaseAnonKey))
+    .replaceAll("__SUPABASE_URL__", supabaseUrl)
+    .replaceAll("__SUPABASE_ANON_KEY__", supabaseAnonKey);
   return res.status(200).send(html);
 }
 
@@ -784,7 +814,7 @@ function handleUpdate(req, res) {
   return res.status(200).json({
     ok: true,
     version: String(process.env.NAVERBOT_LATEST_VERSION || "0.2.3").trim(),
-    download_url: String(process.env.NAVERBOT_DOWNLOAD_URL || "https://snsmakeit.com/pricing").trim(),
+    download_url: String(process.env.NAVERBOT_DOWNLOAD_URL || "https://snsmakeit.com/programs").trim(),
     notes: process.env.NAVERBOT_UPDATE_NOTES || "새 버전이 준비되었습니다. 최신 설치 파일을 다운로드해 업데이트하세요.",
     required: String(process.env.NAVERBOT_UPDATE_REQUIRED || "").toLowerCase() === "true",
   });
@@ -797,7 +827,7 @@ function handleHotManifest(req, res) {
   if (req.method !== "GET") return res.status(405).json({ ok: false, error: "GET only" });
 
   const baseUrl = "https://snsmakeit.com/naverbot-assets";
-  const version = String(process.env.NAVERBOT_RENDERER_VERSION || "0").trim();
+  const version = String(process.env.NAVERBOT_RENDERER_VERSION || "20260513-shorts-insight").trim();
 
   // version이 "0"이면 핫 업데이트 비활성 (배포 전)
   if (version === "0") {
@@ -807,6 +837,7 @@ function handleHotManifest(req, res) {
   return res.status(200).json({
     version,
     files: [
+      { name: "index.html", url: `${baseUrl}/index.html?v=${version}` },
       { name: "style.css", url: `${baseUrl}/style.css?v=${version}` },
       { name: "app.js", url: `${baseUrl}/app.js?v=${version}` },
       { name: "cardnews.js", url: `${baseUrl}/cardnews.js?v=${version}` },
@@ -823,7 +854,7 @@ function handleVersionCheck(req, res) {
   const clientVersion = req.query.v || "0.0.0";
   const minVersion = String(process.env.NAVERBOT_MIN_VERSION || "0.2.3").trim();
   const latestVersion = String(process.env.NAVERBOT_LATEST_VERSION || minVersion).trim();
-  const downloadUrl = String(process.env.NAVERBOT_DOWNLOAD_URL || "https://snsmakeit.com/pricing").trim();
+  const downloadUrl = String(process.env.NAVERBOT_DOWNLOAD_URL || "https://snsmakeit.com/programs").trim();
 
   const compare = (a, b) => {
     const pa = String(a).split(".").map(n => parseInt(n, 10) || 0);
@@ -865,6 +896,7 @@ async function handleUseQuota(req, res) {
     const isAdmin = plan === "admin";
 
     if (isAdmin) {
+      await recordProgramUsage(uid, reason || (normalizedFeature === "video" ? "데스크톱 영상 편집" : "데스크톱 콘텐츠 생성"), normalizedFeature);
       return res.status(200).json({ ok: true, remaining: 999999 });
     }
 
@@ -891,6 +923,7 @@ async function handleUseQuota(req, res) {
         .eq("uid", uid);
       if (updateErr) return safeError(res, 500, "체험 횟수 차감 실패", updateErr);
 
+      await recordProgramUsage(uid, reason || (normalizedFeature === "video" ? "데스크톱 영상 편집" : "데스크톱 콘텐츠 생성"), normalizedFeature);
       return res.status(200).json({ ok: true, feature: normalizedFeature, monthly_used: newUsed, monthly_limit: limit });
     }
 
@@ -907,6 +940,7 @@ async function handleUseQuota(req, res) {
         }
         return safeError(res, 500, "횟수 차감 실패", error);
       }
+      await recordProgramUsage(uid, reason || (normalizedFeature === "video" ? "데스크톱 영상 편집" : "데스크톱 콘텐츠 생성"), normalizedFeature);
       return res.status(200).json({ ok: true, remaining: Math.max(0, Number(newPoints || 0)) });
     }
 
@@ -923,6 +957,7 @@ async function handleUseQuota(req, res) {
     if (!qr.ok) {
       return res.status(200).json({ ok: false, error: qr.error || "월간 한도 초과", feature: qr.feature || normalizedFeature, monthly_used: qr.monthly_used ?? qr.used, monthly_limit: qr.monthly_limit ?? qr.limit });
     }
+    await recordProgramUsage(uid, reason || (normalizedFeature === "video" ? "데스크톱 영상 편집" : "데스크톱 콘텐츠 생성"), normalizedFeature);
     return res.status(200).json({ ok: true, feature: qr.feature || normalizedFeature, monthly_used: qr.monthly_used, monthly_limit: qr.monthly_limit });
   } catch (e) {
     return safeError(res, 500, "횟수 처리 실패", e);

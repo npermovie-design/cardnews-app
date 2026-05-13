@@ -919,6 +919,7 @@ def run_autopilot() -> dict:
 
     theme = ap.get("theme", "")
     posts_per_day = ap.get("posts_per_day", 3)
+    save_to_naver_draft = bool(ap.get("save_to_naver_draft"))
     duration_days = ap.get("duration_days", 0)
     started_at = ap.get("started_at", "")
 
@@ -1362,7 +1363,8 @@ def run_autopilot() -> dict:
                 max_images=int(ap.get("drive_images_per_post", 4) or 4),
             )
 
-        emit({"status": "progress", "step": "publish", "message": f"[5/{total_steps}] 블로그 발행 중 ({i+1}/{run_count}번째): \"{post.title[:40]}\" (약 30~90초 소요)"})
+        action_label = "네이버 저장" if save_to_naver_draft else "블로그 발행"
+        emit({"status": "progress", "step": "publish", "message": f"[5/{total_steps}] {action_label} 중 ({i+1}/{run_count}번째): \"{post.title[:40]}\" (약 30~90초 소요)"})
 
         # 밑줄 설정
         use_underline = ap.get("use_underline", write.get("use_underline", False))
@@ -1398,10 +1400,11 @@ def run_autopilot() -> dict:
             bg_color=accent_color,
             color_mode=color_mode,
             use_underline=use_underline,
+            save_draft=save_to_naver_draft,
         )
 
         if result["success"]:
-            results.append({
+            success_item = {
                 "topic": keyword,
                 "category": topic_category,
                 "title": post.title,
@@ -1409,8 +1412,15 @@ def run_autopilot() -> dict:
                 "_angle": chosen_angle,
                 "drive_folder_id": getattr(drive_item, "folder_id", "") if drive_item else "",
                 "drive_folder_name": getattr(drive_item, "folder_name", "") if drive_item else "",
-            })
-            emit({"status": "progress", "step": "publish", "message": f"발행 성공 ({i+1}/{run_count}): \"{post.title}\" → {result['post_url']}"})
+            }
+            if result.get("draft_saved"):
+                success_item["draft_saved"] = True
+                success_item["url"] = ""
+            results.append(success_item)
+            if result.get("draft_saved"):
+                emit({"status": "progress", "step": "publish", "message": f"네이버 저장 성공 ({i+1}/{run_count}): \"{post.title}\""})
+            else:
+                emit({"status": "progress", "step": "publish", "message": f"발행 성공 ({i+1}/{run_count}): \"{post.title}\" → {result['post_url']}"})
             consecutive_failures = 0  # 성공 시 리셋
         else:
             results.append({
@@ -1426,6 +1436,11 @@ def run_autopilot() -> dict:
 
         # 다음 글 발행 전 대기 (사용자 설정 간격)
         if i < run_count - 1:
+            if save_to_naver_draft:
+                wait = random.randint(4, 8)
+                emit({"status": "progress", "step": "wait", "message": f"다음 글 저장 준비 중... ({wait}초) ({i+1}/{run_count} 완료)"})
+                time.sleep(wait)
+                continue
             interval = ap.get("interval", "random")
             if interval == "random":
                 wait = random.randint(60, 300)
@@ -1465,7 +1480,7 @@ def run_autopilot() -> dict:
 
     # ── 실패한 글 자동 재시도 (1회) ──
     failed = [r for r in results if r.get("error") and not r.get("_retried")]
-    if failed:
+    if failed and not save_to_naver_draft:
         emit({"status": "progress", "step": "retry", "message": f"실패한 {len(failed)}개 글 재시도 중..."})
         for fi, fail_item in enumerate(failed):
             if False:  # 재시도 중단 플래그 (향후 구현)
@@ -1518,9 +1533,10 @@ def run_autopilot() -> dict:
             except Exception as e:
                 emit({"status": "progress", "step": "retry", "message": f"재시도 실패: {e}"})
 
-    success_count = sum(1 for r in results if "url" in r)
+    success_count = sum(1 for r in results if r.get("url") or r.get("draft_saved"))
     fail_count = sum(1 for r in results if r.get("error"))
-    msg = f"자동 운영 완료: {success_count}/{run_count}개 발행 성공"
+    action_done = "네이버 저장" if save_to_naver_draft else "발행"
+    msg = f"자동 운영 완료: {success_count}/{run_count}개 {action_done} 성공"
     if fail_count > 0:
         msg += f" ({fail_count}개 실패)"
     return {

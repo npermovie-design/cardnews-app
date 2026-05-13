@@ -1480,6 +1480,45 @@ def _apply_text_color_to_keywords(page: Page, target, keyword: str, color_hex: s
     return count
 
 
+def _highlight_terms_from_keyword(keyword: str) -> list[str]:
+    """긴 글감 제목에서 실제 본문에 등장하기 쉬운 핵심 단어를 추출한다."""
+    import re
+    stop = {
+        "그리고", "하지만", "있는", "없는", "위한", "대한", "관련", "정리",
+        "방법", "가이드", "추천", "비추천", "이유", "핵심", "완벽",
+    }
+    terms: list[str] = []
+    for part in re.split(r"[\s,，·|/\\\-–—:()\[\]{}'\"“”]+", str(keyword or "")):
+        part = part.strip()
+        if len(part) < 2 or part in stop:
+            continue
+        if re.fullmatch(r"\d+", part):
+            continue
+        if part not in terms:
+            terms.append(part)
+        if len(terms) >= 5:
+            break
+    return terms
+
+
+def _apply_accent_to_terms(page: Page, target, terms: list[str], color_hex: str, color_mode: str = "text") -> int:
+    """강조 문구/키워드 후보 여러 개에 글색 또는 배경색을 적용."""
+    applied = 0
+    seen: set[str] = set()
+    for term in terms:
+        term = str(term or "").strip()
+        if len(term) < 2 or term in seen:
+            continue
+        seen.add(term)
+        if color_mode in ("text", "both"):
+            applied += _apply_text_color_to_keywords(page, target, term, color_hex)
+            page.wait_for_timeout(120)
+        if color_mode in ("bg", "both"):
+            applied += _apply_bg_color_to_keywords(page, target, term, color_hex)
+            page.wait_for_timeout(120)
+    return applied
+
+
 def _apply_color_to_subtitles(page: Page, target, color_hex: str) -> int:
     """소제목(sectionTitle) 컴포넌트의 텍스트에 색상 적용.
 
@@ -3130,6 +3169,7 @@ def _input_body_blocks(target, blocks: list[dict], page: Page = None,
 
         import re as _re
         emphasis_phrases = []  # post-processing용: 볼드+색상 적용할 텍스트 수집
+        expected_text_chars = 0
 
         first_block = True
         for i, blk in enumerate(blocks):
@@ -3141,6 +3181,7 @@ def _input_body_blocks(target, blocks: list[dict], page: Page = None,
                 content = blk.get("content", "").strip()
                 if not content:
                     continue
+                expected_text_chars += len(content.replace("**", "").strip())
                 if first_block:
                     first_block = False
                 # ** 마커에서 강조 텍스트 수집 (나중에 post-processing)
@@ -3163,6 +3204,7 @@ def _input_body_blocks(target, blocks: list[dict], page: Page = None,
                 content = blk.get("content", "").strip()
                 if not content:
                     continue
+                expected_text_chars += len(content)
                 if first_block:
                     first_block = False
                 section_count += 1
@@ -3183,6 +3225,7 @@ def _input_body_blocks(target, blocks: list[dict], page: Page = None,
                 content = blk.get("content", "").strip()
                 if not content:
                     continue
+                expected_text_chars += len(content)
                 # SE API의 layout 값 매핑 (가장 정확한 방식)
                 # 네이버 SE 내부 layout 값: quotation_line, quotation_underline 등
                 SE_LAYOUT_MAP = {
@@ -3265,7 +3308,17 @@ def _input_body_blocks(target, blocks: list[dict], page: Page = None,
             _apply_color_to_quotes(page, toolbar, accent_color)
         _clear_strikethrough(page, toolbar)
 
-        # ★ post-processing: 키워드 강조색 적용 (color_mode에 따라 글색/배경색/둘다)
+        # ★ post-processing: 강조 문구 + 키워드 강조색 적용 (color_mode에 따라 글색/배경색/둘다)
+        if bg_color:
+            terms = []
+            terms.extend(emphasis_phrases[:10])
+            if keyword:
+                terms.append(keyword)
+                terms.extend(_highlight_terms_from_keyword(keyword))
+            if terms:
+                applied = _apply_accent_to_terms(page, toolbar, terms, bg_color, color_mode)
+                logger.info(f"  post-processing: 강조색 적용 {applied}회")
+
         if keyword and bg_color:
             if color_mode in ("text", "both"):
                 logger.info(f"  post-processing: 키워드 포인트 글색 '{keyword}' → {bg_color}")
@@ -3382,6 +3435,9 @@ def _input_body_blocks(target, blocks: list[dict], page: Page = None,
                     page.wait_for_timeout(1500)
             except Exception as e:
                 logger.info(f"  스티커 삽입 실패: {e}")
+
+        if page and not _wait_for_editor_text_ready(page, toolbar, expected_text_chars):
+            logger.warning("본문 일부가 아직 에디터에 충분히 반영되지 않았을 수 있음")
 
         return True
     except Exception as e:
@@ -3591,6 +3647,34 @@ def _move_cursor_after_last_component(page: Page, target) -> bool:
         return True
     except Exception:
         return False
+
+
+def _editor_text_length(target) -> int:
+    try:
+        return int(target.evaluate("""() => {
+            const container = document.querySelector('.se-main-container');
+            return ((container && container.innerText) || document.body.innerText || '').replace(/\\s+/g, '').length;
+        }""") or 0)
+    except Exception:
+        return 0
+
+
+def _wait_for_editor_text_ready(page: Page, target, expected_chars: int, timeout_ms: int = 9000) -> bool:
+    """저장/발행 전에 에디터 텍스트가 충분히 반영될 때까지 기다린다."""
+    if expected_chars <= 0:
+        page.wait_for_timeout(1200)
+        return True
+    min_chars = max(120, int(expected_chars * 0.55))
+    deadline = time.time() + (timeout_ms / 1000)
+    last_len = 0
+    while time.time() < deadline:
+        last_len = _editor_text_length(target)
+        if last_len >= min_chars:
+            page.wait_for_timeout(1800)
+            return True
+        page.wait_for_timeout(500)
+    logger.warning(f"에디터 본문 반영 대기 부족: {last_len}/{min_chars}자")
+    return last_len >= max(80, int(expected_chars * 0.35))
 
 
 def _upload_image_to_editor(page: Page, target, image_path: str) -> bool:
@@ -4174,6 +4258,80 @@ def _select_category(page: Page, target, category_name: str) -> bool:
         return False
 
 
+def _save_draft(page: Page, target=None) -> bool:
+    """네이버 글쓰기 에디터 상단의 저장 버튼을 클릭한다."""
+    save_selectors = [
+        "button:has-text('저장')",
+        "[role='button']:has-text('저장')",
+        "button[class*='save']",
+        "button[class*='Save']",
+        "a:has-text('저장')",
+    ]
+
+    def _visible_save_button(ctx):
+        for sel in save_selectors:
+            try:
+                for el in ctx.query_selector_all(sel):
+                    try:
+                        if not el.is_visible():
+                            continue
+                        text = (el.inner_text() or "").strip()
+                        if "발행" in text:
+                            continue
+                        if "저장" in text or "save" in (el.get_attribute("class") or "").lower():
+                            return el
+                    except Exception:
+                        continue
+            except Exception:
+                continue
+        return None
+
+    try:
+        _dismiss_blocking_popups(page, target)
+        contexts = list(_iter_contexts(page, target))
+        for ctx in contexts:
+            btn = _visible_save_button(ctx)
+            if not btn:
+                continue
+            try:
+                btn.click()
+            except Exception:
+                btn.click(force=True)
+            page.wait_for_timeout(1800)
+            logger.info("네이버 에디터 저장 버튼 클릭 완료")
+            return True
+
+        # selector 매칭이 실패하면 우상단 영역에서 텍스트가 저장인 버튼을 JS로 클릭한다.
+        for ctx in contexts:
+            try:
+                clicked = ctx.evaluate("""() => {
+                    const nodes = Array.from(document.querySelectorAll('button, a, [role="button"]'));
+                    const ranked = nodes
+                      .map((el) => {
+                        const r = el.getBoundingClientRect();
+                        const text = (el.innerText || el.textContent || '').trim();
+                        return { el, r, text };
+                      })
+                      .filter(({ r, text }) => r.width > 0 && r.height > 0 && text.includes('저장') && !text.includes('발행'))
+                      .sort((a, b) => (b.r.y < 120 ? 1 : 0) - (a.r.y < 120 ? 1 : 0) || b.r.x - a.r.x);
+                    if (!ranked.length) return false;
+                    ranked[0].el.click();
+                    return true;
+                }""")
+                if clicked:
+                    page.wait_for_timeout(1800)
+                    logger.info("네이버 에디터 저장 버튼 JS 클릭 완료")
+                    return True
+            except Exception:
+                continue
+
+        logger.error("네이버 에디터 저장 버튼 못 찾음")
+        return False
+    except Exception as e:
+        logger.error(f"네이버 저장 버튼 클릭 실패: {e}")
+        return False
+
+
 def publish_to_naver_blog(
     user_id: str,
     naver_id: str,
@@ -4195,6 +4353,7 @@ def publish_to_naver_blog(
     bg_color: str = "",
     color_mode: str = "text",
     use_underline: bool = False,
+    save_draft: bool = False,
 ) -> dict:
     """네이버 블로그에 글 발행.
 
@@ -4313,6 +4472,15 @@ def publish_to_naver_blog(
 
             # 5. 태그 — 본문 하단 해시태그로 자동등록되므로 별도 입력 불필요
             _clear_strikethrough(page, target)
+
+            # 6. 발행 또는 네이버 임시저장
+            if save_draft:
+                page.wait_for_timeout(2500)
+                if not _save_draft(page, target=target):
+                    return {"success": False, "post_url": None, "draft_saved": False, "error": "저장 실패 (에디터 상단 저장 버튼 확인 필요)"}
+
+                logger.info("네이버 임시저장 성공")
+                return {"success": True, "post_url": "", "draft_saved": True, "error": None}
 
             # 6. 발행 (카테고리는 발행 패널에서 선택)
             if not _publish(page, target=target, category=category):

@@ -1113,8 +1113,10 @@
               </div>
             </div>
             <div class="wiz-nav">
-              <button class="btn btn-outline" id="apStep3Prev">이전</button>
-              <button class="btn btn-primary btn-lg" id="startAutopilotBtn">발행 시작</button>
+              <button class="btn btn-outline ap-nav-prev" id="apStep3Prev">이전</button>
+              <button class="btn btn-outline btn-lg ap-action-btn" id="saveAutopilotDraftBtn">보관함 저장</button>
+              <button class="btn btn-outline btn-lg ap-action-btn" id="saveNaverDraftBtn">네이버 저장</button>
+              <button class="btn btn-primary btn-lg ap-action-btn ap-primary-action" id="startAutopilotBtn">발행 시작</button>
               <button class="btn btn-outline" id="blogResetBtn" style="margin-left:auto;">새로 시작하기</button>
             </div>
             <div id="stopAutopilotBtn" style="display:none;"></div>
@@ -1580,15 +1582,15 @@
             긴 영상은 처리 시간이 오래 걸릴 수 있으니 여유를 두고 작업하세요.
           </div>
         </div>
-        <div class="mode-cards" style="display:flex;gap:12px;flex-wrap:wrap;">
-          <div class="mode-card" id="vhVideoEdit" style="flex:1;min-width:200px;cursor:pointer;border:2px solid var(--accent);position:relative;">
+        <div class="mode-cards video-mode-picks" style="display:grid;grid-template-columns:repeat(2,minmax(240px,1fr));gap:12px;">
+          <div class="mode-card" id="vhShortsEdit" style="cursor:pointer;border:2px solid var(--accent);position:relative;">
             <div style="position:absolute;top:-1px;right:12px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;padding:3px 10px;border-radius:0 0 6px 6px;">추천</div>
-            <div class="mode-card-title" style="color:var(--accent);">영상 자동 편집</div>
-            <div class="mode-card-desc">영상 파일을 넣으면 AI가 분석하고 자막, 하이라이트, 숏폼을 자동 편집합니다.</div>
+            <div class="mode-card-title" style="color:var(--accent);">쇼츠 만들기</div>
+            <div class="mode-card-desc">긴 영상에서 AI가 좋은 구간을 골라 여러 개의 쇼츠 결과물로 나눕니다.</div>
           </div>
-          <div class="mode-card" id="vhSlideshow" style="flex:1;min-width:200px;cursor:pointer;">
-            <div class="mode-card-title">슬라이드 영상</div>
-            <div class="mode-card-desc">음악과 사진을 넣으면 가사 자막, 모션 효과, 전환까지 자동으로 영상을 생성합니다.</div>
+          <div class="mode-card" id="vhLongformEdit" style="cursor:pointer;">
+            <div class="mode-card-title">롱폼 편집</div>
+            <div class="mode-card-desc">가로 영상을 자막, 무음 제거, 이미지 삽입 중심으로 다듬습니다.</div>
           </div>
         </div>
       </section>
@@ -1817,8 +1819,8 @@
         <!-- Step 1: 업로드 -->
         <div id="veStep1">
           <div class="panel-header">
-            <h1 style="font-size:18px;">영상 편집기</h1>
-            <p class="panel-sub">영상을 넣으면 AI가 분석하고 자동 편집합니다</p>
+            <h1 id="veModeTitle" style="font-size:18px;">쇼츠 만들기</h1>
+            <p class="panel-sub" id="veModeSub">긴 영상에서 쇼츠 후보를 자동으로 뽑고, 결과물별로 수정합니다</p>
           </div>
           <div class="card" style="background:var(--accent-soft);border:1px solid var(--primary-border);margin-bottom:16px;">
             <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">
@@ -1838,57 +1840,20 @@
               <div id="veFileList" style="display:none;margin-top:8px;display:flex;flex-direction:column;gap:4px;"></div>
               <button class="btn btn-outline btn-sm" id="veAddMore" style="display:none;margin-top:8px;font-size:12px;">+ 영상 추가</button>
 
-              <!-- 시퀀스 비율 설정 -->
-              <label style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text-sub);">영상 유형</label>
-              <div class="chips" id="veInitRatioChips" style="margin-top:6px;">
+              <label class="ve-mode-switch-row" style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text-sub);">작업 방식</label>
+              <div class="ve-mode-switch ve-mode-switch-row" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px;">
+                <button type="button" class="ve-mode-card active" data-mode="portrait">
+                  <strong>쇼츠</strong>
+                  <span>여러 결과물을 개별 수정</span>
+                </button>
+                <button type="button" class="ve-mode-card" data-mode="landscape">
+                  <strong>롱폼</strong>
+                  <span>한 편의 영상 편집</span>
+                </button>
+              </div>
+              <div class="chips" id="veInitRatioChips" style="display:none;margin-top:6px;">
                 <button class="chip active" data-value="landscape" style="flex:1;padding:10px 0;font-size:13px;">롱폼 (16:9)</button>
                 <button class="chip" data-value="portrait" style="flex:1;padding:10px 0;font-size:13px;">숏폼 (9:16)</button>
-              </div>
-
-              <div id="veShortsPlanInput" style="display:none;margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--bg-elev);">
-                <div style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:8px;">숏폼 자동 생성 설정</div>
-                <label style="font-size:12px;font-weight:700;color:var(--text-sub);">만들 개수</label>
-                <div class="chips" id="veClipCountChipsStart" style="gap:4px;margin-top:6px;margin-bottom:10px;"><button class="chip" data-value="1" style="flex:1;padding:7px 0;font-size:12px;">1개</button><button class="chip" data-value="2" style="flex:1;padding:7px 0;font-size:12px;">2개</button><button class="chip active" data-value="3" style="flex:1;padding:7px 0;font-size:12px;">3개</button><button class="chip" data-value="4" style="flex:1;padding:7px 0;font-size:12px;">4개</button><button class="chip" data-value="5" style="flex:1;padding:7px 0;font-size:12px;">5개</button></div>
-                <label style="font-size:12px;font-weight:700;color:var(--text-sub);">숏폼 길이</label>
-                <div class="chips" id="veClipDurationChips" style="gap:4px;margin-top:6px;"><button class="chip" data-value="15" style="flex:1;padding:7px 0;font-size:12px;">15초</button><button class="chip" data-value="30" style="flex:1;padding:7px 0;font-size:12px;">30초</button><button class="chip active" data-value="45" style="flex:1;padding:7px 0;font-size:12px;">45초</button><button class="chip" data-value="60" style="flex:1;padding:7px 0;font-size:12px;">1분</button><button class="chip" data-value="90" style="flex:1;padding:7px 0;font-size:12px;">1분30초</button></div>
-                <div style="font-size:11px;color:var(--text-dim);line-height:1.5;margin-top:8px;">AI가 선택한 길이에 맞춰 조회 가능성이 높은 구간을 자동 추천합니다.</div>
-
-                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft);">
-                  <label style="font-size:12px;font-weight:700;color:var(--text-sub);">영상 장르</label>
-                  <div class="chips" id="veGenreChips" style="gap:4px;margin-top:6px;margin-bottom:10px;flex-wrap:wrap;">
-                    <button class="chip active" data-value="auto" style="padding:6px 12px;font-size:12px;">자동</button>
-                    <button class="chip" data-value="lecture" style="padding:6px 12px;font-size:12px;">강의</button>
-                    <button class="chip" data-value="vlog" style="padding:6px 12px;font-size:12px;">브이로그</button>
-                    <button class="chip" data-value="marketing" style="padding:6px 12px;font-size:12px;">마케팅</button>
-                    <button class="chip" data-value="interview" style="padding:6px 12px;font-size:12px;">인터뷰</button>
-                    <button class="chip" data-value="podcast" style="padding:6px 12px;font-size:12px;">팟캐스트</button>
-                  </div>
-
-                  <label style="font-size:12px;font-weight:700;color:var(--text-sub);">처리 구간</label>
-                  <div style="display:flex;gap:8px;align-items:center;margin-top:6px;margin-bottom:10px;">
-                    <input type="text" id="veRangeStart" value="0:00" style="width:50px;font-size:12px;padding:6px 8px;text-align:center;" readonly>
-                    <input type="range" id="veRangeSliderStart" min="0" max="100" value="0" style="flex:1;accent-color:#3b82f6;height:5px;">
-                    <input type="range" id="veRangeSliderEnd" min="0" max="100" value="100" style="flex:1;accent-color:#3b82f6;height:5px;">
-                    <input type="text" id="veRangeEnd" value="끝" style="width:50px;font-size:12px;padding:6px 8px;text-align:center;" readonly>
-                  </div>
-                </div>
-
-                <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft);">
-                  <label style="font-size:12px;font-weight:700;color:var(--text-sub);">브랜드명 <span style="font-weight:400;color:var(--text-dim);">(선택)</span></label>
-                  <input type="text" id="veBrandName" placeholder="채널명 또는 브랜드명" style="width:100%;font-size:12px;padding:8px 10px;margin-top:6px;margin-bottom:10px;">
-                  <label style="font-size:12px;font-weight:700;color:var(--text-sub);">로고 이미지 <span style="font-weight:400;color:var(--text-dim);">(선택)</span></label>
-                  <div style="display:flex;gap:6px;margin-top:6px;">
-                    <input type="text" id="veBrandLogo" placeholder="로고 파일 경로" style="flex:1;font-size:12px;padding:8px 10px;" readonly>
-                    <button class="btn btn-outline btn-sm" id="veBrandLogoBtn" style="white-space:nowrap;">선택</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- 저장 폴더 설정 -->
-              <label style="margin-top:14px;font-size:13px;font-weight:700;color:var(--text-sub);">저장 폴더</label>
-              <div style="display:flex;gap:6px;margin-top:6px;">
-                <input type="text" id="veOutputDir" placeholder="기본: 영상 파일과 같은 폴더" style="flex:1;font-size:12px;padding:8px 10px;">
-                <button class="btn btn-outline btn-sm" id="veSelectOutputDir" style="white-space:nowrap;">폴더 선택</button>
               </div>
 
               <!-- 숏폼 추천 (세로 비율 선택 시에만) -->
@@ -1929,9 +1894,10 @@
         <!-- Step 3: NLE 편집기 (캡컷 레이아웃) -->
         <div id="veStep3" style="display:none;">
           <!-- 상단 헤더 바 (캡컷) -->
-          <div style="display:flex;align-items:center;gap:6px;padding:0 10px;height:34px;background:var(--ve-bg-dark);border-bottom:1px solid var(--ve-border-soft);flex-shrink:0;">
-            <button id="veBackToUpload" class="ve-tool-btn" style="padding:4px 6px;background:transparent;border:none;color:#5a5a72;border-radius:4px;cursor:pointer;display:flex;align-items:center;">
+          <div class="ve-topbar" style="display:flex;align-items:center;gap:6px;padding:0 10px;height:34px;background:var(--ve-bg-dark);border-bottom:1px solid var(--ve-border-soft);flex-shrink:0;">
+            <button id="veBackToUpload" class="ve-tool-btn ve-top-btn" style="padding:4px 6px;background:transparent;border:none;color:#5a5a72;border-radius:4px;cursor:pointer;display:flex;align-items:center;">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+              <span>처음으로</span>
             </button>
             <span style="font-size:10px;color:#3a3a50;margin-right:4px;">|</span>
             <div style="font-size:12px;font-weight:600;color:#8e8ea8;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="veFileName2"></div>
@@ -1942,16 +1908,18 @@
               <option value="2160">4K</option>
               <option value="720">720p</option>
             </select>
-            <button id="veSaveProjectBtn" class="ve-tool-btn" style="padding:3px 8px;border:none;border-radius:4px;cursor:pointer;color:#5a5a72;background:transparent;" title="저장 (Ctrl+S)">
+            <button id="veAdvancedToggleBtn" class="ve-tool-btn ve-top-btn" style="padding:3px 8px;border:none;border-radius:4px;cursor:pointer;color:#5a5a72;background:transparent;" title="복사, 자르기, 세부 설정 보기">고급 편집</button>
+            <button id="veSaveProjectBtn" class="ve-tool-btn ve-top-btn" style="padding:3px 8px;border:none;border-radius:4px;cursor:pointer;color:#5a5a72;background:transparent;" title="저장 (Ctrl+S)">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+              <span>저장</span>
             </button>
-            <button id="veExportBtn" style="padding:5px 14px;font-size:11px;font-weight:700;border:none;border-radius:4px;cursor:pointer;color:#fff;background:var(--ve-accent);display:flex;align-items:center;gap:4px;">
+            <button id="veExportBtn" class="ve-export-main" style="padding:5px 14px;font-size:11px;font-weight:700;border:none;border-radius:4px;cursor:pointer;color:#fff;background:var(--ve-accent);display:flex;align-items:center;gap:4px;">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>내보내기
             </button>
           </div>
 
           <!-- 아이콘 탭 행 (캡컷) -->
-          <div style="display:flex;gap:0;background:var(--ve-bg-dark);flex-shrink:0;border-bottom:1px solid var(--ve-border);padding:0 8px;">
+          <div class="ve-tabs" style="display:flex;gap:0;background:var(--ve-bg-dark);flex-shrink:0;border-bottom:1px solid var(--ve-border);padding:0 8px;">
             <button class="ve-tab-btn active" data-ve-tab="sub" style="padding:10px 14px;font-size:11px;font-weight:600;border:none;background:transparent;color:#5a5a72;cursor:pointer;border-bottom:2px solid transparent;transition:all 0.12s;display:flex;flex-direction:column;align-items:center;gap:3px;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="3" width="20" height="18" rx="2"/><line x1="6" y1="14" x2="18" y2="14"/><line x1="8" y1="18" x2="16" y2="18"/></svg>자막
             </button>
@@ -1976,7 +1944,7 @@
             </div>
 
             <!-- 중앙: 프리뷰 (캡컷) -->
-            <div style="flex:1;min-width:0;display:flex;flex-direction:column;background:var(--ve-bg-dark);">
+            <div class="ve-preview-column" style="flex:1;min-width:0;display:flex;flex-direction:column;background:var(--ve-bg-dark);">
               <!-- 프리뷰 헤더 -->
               <div style="display:flex;align-items:center;padding:0 12px;height:24px;background:var(--ve-bg);border-bottom:1px solid var(--ve-border-soft);flex-shrink:0;">
                 <span style="font-size:10px;color:var(--ve-text-muted);font-weight:600;">플레이어</span>
@@ -2000,8 +1968,25 @@
               </div>
             </div>
 
+            <!-- 우측: 쇼츠 분석 / 화면 설정 -->
+            <div id="veShortsInsightPanel" class="ve-insight-panel" style="width:280px;flex-shrink:0;display:none;flex-direction:column;overflow:hidden;background:var(--ve-bg-panel);border-left:1px solid var(--ve-border-soft);">
+              <div style="padding:14px 14px 10px;border-bottom:1px solid #1e1e30;">
+                <div style="font-size:13px;font-weight:900;color:#e2e8f0;">랭킹 분석</div>
+                <div style="font-size:11px;color:#64748b;margin-top:4px;">선택한 쇼츠의 점수 이유와 화면 설정</div>
+              </div>
+              <div id="veShortsInsightBody" style="flex:1;overflow-y:auto;padding:12px 14px;"></div>
+              <div style="padding:12px 14px;border-top:1px solid #1e1e30;">
+                <label style="display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11px;font-weight:800;color:#94a3b8;margin-bottom:8px;">
+                  <span>배경색</span>
+                  <input type="color" id="veCanvasBgColor" value="#000000" style="width:32px;height:26px;border:1px solid #334155;border-radius:6px;background:#0f172a;">
+                </label>
+                <label style="display:block;font-size:11px;font-weight:800;color:#94a3b8;margin-bottom:6px;">가운데 영상 크기 <span id="veVideoScaleLabel" style="float:right;color:#cbd5e1;">100%</span></label>
+                <input type="range" id="veVideoScale" min="80" max="150" value="100" step="5" style="width:100%;">
+              </div>
+            </div>
+
             <!-- 좌측 콘텐츠 패널 (캡컷, order:-1) -->
-            <div style="width:240px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;background:var(--ve-bg-panel);border-right:1px solid var(--ve-border-soft);order:-1;">
+            <div class="ve-side-panel" style="width:240px;flex-shrink:0;display:flex;flex-direction:column;overflow:hidden;background:var(--ve-bg-panel);border-right:1px solid var(--ve-border-soft);order:-1;">
               <span id="vePanelTitle" style="display:none;"></span>
               <div style="flex:1;overflow-y:auto;padding:0;">
                 <!-- ═══ 자막 탭 ═══ -->
@@ -2133,15 +2118,16 @@
                   <div id="veOvEmpty" style="color:#475569;padding:20px 0;text-align:center;font-size:13px;">
                     캔버스에서 이미지를 클릭하면<br>여기서 옵션을 수정할 수 있습니다.
                   </div>
-                  <div id="veSegmentsCard" style="margin-top:14px;display:none;">
+                  <div id="veSegmentsCard" class="ve-advanced-only" style="margin-top:14px;display:none;">
                     <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">AI 하이라이트</div>
                     <div id="veSegmentsList" style="font-size:12px;color:#64748b;max-height:200px;overflow-y:auto;"></div>
                   </div>
                   <div id="veShortsOpts" style="display:none;">
-                    <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">숏폼 생성 설정</div>
-                    <div class="chips" id="veClipCountChips" style="gap:4px;"><button class="chip" data-value="1" style="flex:1;padding:6px 0;font-size:12px;">1</button><button class="chip" data-value="2" style="flex:1;padding:6px 0;font-size:12px;">2</button><button class="chip active" data-value="3" style="flex:1;padding:6px 0;font-size:12px;">3</button><button class="chip" data-value="4" style="flex:1;padding:6px 0;font-size:12px;">4</button><button class="chip" data-value="5" style="flex:1;padding:6px 0;font-size:12px;">5</button></div>
-                    <div class="chips" id="veClipDurationChipsEdit" style="gap:4px;margin-top:6px;"><button class="chip" data-value="15" style="flex:1;padding:6px 0;font-size:12px;">15초</button><button class="chip" data-value="30" style="flex:1;padding:6px 0;font-size:12px;">30초</button><button class="chip active" data-value="45" style="flex:1;padding:6px 0;font-size:12px;">45초</button><button class="chip" data-value="60" style="flex:1;padding:6px 0;font-size:12px;">1분</button><button class="chip" data-value="90" style="flex:1;padding:6px 0;font-size:12px;">1:30</button></div>
-                    <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin:12px 0 6px;">AI 추천 숏폼 리스트</div>
+                    <div class="ve-advanced-only" style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:6px;">숏폼 생성 설정</div>
+                    <div class="chips ve-advanced-only" id="veClipCountChips" style="gap:4px;"><button class="chip" data-value="1" style="flex:1;padding:6px 0;font-size:12px;">1</button><button class="chip" data-value="2" style="flex:1;padding:6px 0;font-size:12px;">2</button><button class="chip active" data-value="3" style="flex:1;padding:6px 0;font-size:12px;">3</button><button class="chip" data-value="4" style="flex:1;padding:6px 0;font-size:12px;">4</button><button class="chip" data-value="5" style="flex:1;padding:6px 0;font-size:12px;">5</button></div>
+                    <div class="chips ve-advanced-only" id="veClipDurationChipsEdit" style="gap:4px;margin-top:6px;"><button class="chip" data-value="15" style="flex:1;padding:6px 0;font-size:12px;">15초</button><button class="chip" data-value="30" style="flex:1;padding:6px 0;font-size:12px;">30초</button><button class="chip active" data-value="45" style="flex:1;padding:6px 0;font-size:12px;">45초</button><button class="chip" data-value="60" style="flex:1;padding:6px 0;font-size:12px;">1분</button><button class="chip" data-value="90" style="flex:1;padding:6px 0;font-size:12px;">1:30</button></div>
+                    <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin:12px 0 6px;">쇼츠 결과물</div>
+                    <div style="font-size:11px;color:#64748b;line-height:1.45;margin-bottom:6px;">카드를 선택하면 해당 쇼츠만 타임라인과 자막에 표시됩니다.</div>
                     <div id="veShortsPlanList" style="font-size:12px;color:#64748b;max-height:260px;overflow-y:auto;"></div>
                   </div>
                   <div id="veLongformOpts" style="display:none;"></div>
@@ -2182,7 +2168,7 @@
           </div>
 
           <!-- 도구 바 -->
-          <div style="display:flex;align-items:center;gap:2px;padding:3px 14px;background:var(--ve-bg);border-top:1px solid var(--ve-border);flex-shrink:0;height:32px;">
+          <div class="ve-editbar" style="display:flex;align-items:center;gap:2px;padding:3px 14px;background:var(--ve-bg);border-top:1px solid var(--ve-border);flex-shrink:0;height:32px;">
             <button id="veSplitBtn" title="분할 (S)" class="ve-tool-btn" style="padding:4px 10px;font-size:11px;border:none;border-radius:4px;cursor:pointer;color:#8b8ba8;background:transparent;display:flex;align-items:center;gap:4px;">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="22"/></svg>분할
             </button>
@@ -2208,7 +2194,7 @@
           </div>
           <!-- 하단: 타임라인 -->
           <div style="background:#0c0c1e;border-top:1px solid #1e1e36;flex-shrink:0;height:200px;display:flex;flex-direction:column;" id="veTimeline">
-            <div style="display:flex;align-items:center;gap:6px;padding:4px 14px;background:#12122a;border-bottom:1px solid #1e1e36;flex-shrink:0;height:28px;">
+            <div class="ve-timeline-head" style="display:flex;align-items:center;gap:6px;padding:4px 14px;background:#12122a;border-bottom:1px solid #1e1e36;flex-shrink:0;height:28px;">
               <span style="font-size:10px;color:#525268;font-weight:700;letter-spacing:0.08em;">TIMELINE</span>
               <button id="veShortcutBtn" style="padding:2px 8px;font-size:9px;border:1px solid #333358;border-radius:3px;cursor:pointer;color:#525268;background:transparent;transition:all 0.15s;" onmouseenter="this.style.background='#1e1e36'" onmouseleave="this.style.background='transparent'">단축키</button>
               <div style="flex:1;"></div>
@@ -2506,14 +2492,6 @@
               <div id="writeSeoList" class="chips"></div>
             </div>
             <div id="writeResultContent" style="font-size:14px;line-height:2;color:var(--text);white-space:pre-wrap;max-height:55vh;overflow-y:auto;padding:16px 18px;background:var(--bg);border:1px solid var(--border);border-radius:10px;"></div>
-            <!-- AI 이미지 생성 -->
-            <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
-              <button class="btn btn-outline btn-sm" id="writeAiImageBtn">AI 대표 이미지 생성</button>
-              <div id="writeAiImageStatus" style="font-size:12px;color:var(--text-dim);"></div>
-            </div>
-            <div id="writeAiImageResult" style="display:none;margin-top:10px;">
-              <img id="writeAiImageImg" style="max-width:100%;border-radius:8px;cursor:pointer;" title="클릭하여 다운로드">
-            </div>
           </div>
         </div>
       </section>

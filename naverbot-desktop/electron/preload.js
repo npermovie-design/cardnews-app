@@ -93,6 +93,7 @@ contextBridge.exposeInMainWorld("nbBridge", {
 
   // ── 영상 편집 (로컬 ffmpeg) ──
   videoSelectFile: () => ipcRenderer.invoke("video:selectFile"),
+  videoImportUrl: (url) => ipcRenderer.invoke("video:importUrl", url),
   videoConcat: (paths) => ipcRenderer.invoke("video:concat", paths),
   videoSelectImage: () => ipcRenderer.invoke("video:selectImage"),
   videoProbe: (filePath) => ipcRenderer.invoke("video:probe", filePath),

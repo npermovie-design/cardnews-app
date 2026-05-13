@@ -898,8 +898,22 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   margin-top: 16px;
   margin-bottom: 16px;
+}
+.wiz-nav .ap-action-btn {
+  flex: 0 1 138px;
+  min-width: 118px;
+  padding: 13px 14px;
+  font-size: 15px;
+  white-space: nowrap;
+}
+.wiz-nav .ap-primary-action {
+  flex-basis: 150px;
+}
+.wiz-nav .ap-nav-prev {
+  flex: 0 0 auto;
 }
 /* 뒤로 버튼 (모드 선택으로 돌아감) — 화살표 포함 */
 .btn-back {
@@ -1585,3 +1599,212 @@ body {
 /* details 토글 애니메이션 */
 #veStep3 details summary::before { content: '\25B6'; display: inline-block; margin-right: 6px; font-size: 9px; transition: transform 0.2s; }
 #veStep3 details[open] summary::before { transform: rotate(90deg); }
+
+/* 영상 편집기 간단 모드: 기본 화면은 핵심 조작만 보이게 정리 */
+#veStep3 .ve-topbar {
+  height: 46px !important;
+  padding: 0 16px !important;
+  gap: 8px !important;
+  background: #111827 !important;
+  border-bottom-color: #243044 !important;
+}
+#veStep3 .ve-top-btn,
+#veStep3 .ve-export-main {
+  min-height: 30px !important;
+  padding: 0 12px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  border-radius: 7px !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+}
+#veStep3 .ve-top-btn {
+  color: #cbd5e1 !important;
+  background: #1f2937 !important;
+  border: 1px solid #334155 !important;
+}
+#veStep3 .ve-top-btn:hover { background: #273449 !important; }
+#veStep3 .ve-export-main {
+  min-width: 92px !important;
+  color: #fff !important;
+  background: #0ea5a4 !important;
+  box-shadow: 0 8px 20px rgba(14,165,164,0.2) !important;
+}
+#veStep3 .ve-tabs {
+  padding: 8px 12px !important;
+  gap: 8px !important;
+  background: #0f172a !important;
+  border-bottom-color: #1f2937 !important;
+}
+#veStep3 .ve-tab-btn {
+  flex-direction: row !important;
+  gap: 7px !important;
+  padding: 8px 14px !important;
+  border-radius: 8px !important;
+  border: 1px solid transparent !important;
+  border-bottom: 1px solid transparent !important;
+  color: #94a3b8 !important;
+  background: transparent !important;
+}
+#veStep3 .ve-tab-btn svg,
+#veStep3 .ve-top-btn svg,
+#veStep3 .ve-editbar .ve-tool-btn svg {
+  display: none !important;
+}
+#veStep3 .ve-tab-btn.active {
+  color: #ecfeff !important;
+  background: #12343b !important;
+  border-color: #1f6f78 !important;
+}
+#veStep3 .ve-side-panel {
+  width: clamp(240px, 22vw, 300px) !important;
+  background: #111827 !important;
+  border-right-color: #243044 !important;
+}
+#veStep3 .ve-insight-panel {
+  width: clamp(230px, 20vw, 280px) !important;
+  background: #111827 !important;
+  border-left-color: #243044 !important;
+}
+#veShortsInsightPanel > div:last-child {
+  display: none !important;
+}
+#veStep3 .ve-preview-column {
+  background: #0b1120 !important;
+}
+#veStep3 .ve-editbar {
+  height: 42px !important;
+  padding: 6px 16px !important;
+  gap: 8px !important;
+  background: #111827 !important;
+  border-top-color: #243044 !important;
+}
+#veStep3 .ve-editbar .ve-tool-btn {
+  min-height: 28px !important;
+  padding: 0 12px !important;
+  border-radius: 7px !important;
+  background: #1f2937 !important;
+  border: 1px solid #334155 !important;
+  color: #cbd5e1 !important;
+  font-weight: 800 !important;
+}
+#veStep3 .ve-timeline-head {
+  height: 34px !important;
+  padding: 6px 16px !important;
+  background: #111827 !important;
+  border-bottom-color: #243044 !important;
+}
+#veTimeline {
+  height: 0 !important;
+  background: #0b1120 !important;
+  border-top: 0 !important;
+  overflow: hidden !important;
+}
+#veStep3.ve-advanced-open #veTimeline {
+  height: 220px !important;
+  border-top: 1px solid #243044 !important;
+}
+#veStep3:not(.ve-advanced-open) details.ve-section,
+#veStep3:not(.ve-advanced-open) .ve-advanced-only,
+#veStep3:not(.ve-advanced-open) #veCopyClipBtn,
+#veStep3:not(.ve-advanced-open) #veCropBtn,
+#veStep3:not(.ve-advanced-open) #veAddTrackBtn,
+#veStep3:not(.ve-advanced-open) #veShortcutBtn,
+#veStep3:not(.ve-advanced-open) #veTimelineResizeHandle {
+  display: none !important;
+}
+#veStep3:not(.ve-advanced-open) #veSubtitleList {
+  max-height: 260px !important;
+}
+#veStep3:not(.ve-advanced-open) #veShortsPlanList {
+  max-height: calc(100vh - 250px) !important;
+}
+#veStep3 #veVideoWrap {
+  border: 1px solid #243044 !important;
+}
+#veStep3 select,
+#veStep3 input[type="text"] {
+  border-radius: 7px !important;
+}
+
+@media (max-width: 1360px), (max-height: 760px) {
+  #veStep3 .ve-topbar {
+    height: 40px !important;
+    padding: 0 10px !important;
+  }
+  #veStep3 .ve-tabs {
+    padding: 6px 8px !important;
+    gap: 6px !important;
+  }
+  #veStep3 .ve-tab-btn {
+    padding: 7px 10px !important;
+    font-size: 11px !important;
+  }
+  #veStep3 .ve-side-panel {
+    width: 252px !important;
+  }
+  #veStep3 .ve-insight-panel {
+    width: 236px !important;
+  }
+  #veStep3 .ve-editbar {
+    height: 36px !important;
+    padding: 4px 10px !important;
+  }
+  #veStep3:not(.ve-advanced-open) #veShortsPlanList {
+    max-height: calc(100vh - 220px) !important;
+  }
+}
+
+@media (max-width: 1120px) {
+  #veStep3 .ve-insight-panel {
+    display: none !important;
+  }
+  #veStep3 .ve-side-panel {
+    width: 260px !important;
+  }
+}
+
+.video-mode-picks .mode-card,
+.ve-mode-card {
+  text-align: left;
+  border-radius: 8px !important;
+}
+.ve-mode-card {
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text);
+  cursor: pointer;
+  padding: 14px;
+}
+.ve-mode-card strong {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.ve-mode-card span {
+  display: block;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+.ve-mode-card.active {
+  border-color: var(--accent) !important;
+  background: rgba(14,165,164,0.12) !important;
+  color: var(--accent) !important;
+}
+.ve-mode-card.active span {
+  color: var(--text-sub) !important;
+}
+.ve-mode-switch-row {
+  display: none !important;
+}
+
+/* 사용하지 않는 슬라이드 영상 생성기는 UI에서 제거 */
+#vhSlideshow,
+.panel[data-panel="slideshow"],
+#veShortsRecommend {
+  display: none !important;
+}

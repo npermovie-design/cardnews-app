@@ -606,6 +606,21 @@ export async function changePoints(uid, delta, reason) {
   }
 }
 
+export async function recordSaasAiUsage(reason = "웹 AI 사용", feature = "write", cost = 1) {
+  try {
+    const token = await getAuthToken();
+    if (!token) return false;
+    const res = await fetch("/api/sns?action=ai-usage-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ reason, feature, cost }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 // ── DB: 출석체크 (보상 폐지 — 하위 호환 stub) ─────────────────────────
 export async function fetchAttendance() { return []; }
 export async function addAttendance() { return { ok: false, duplicate: false };
@@ -824,6 +839,7 @@ export async function useAiOnce(user, setUserState, cost = POINTS.AI_USE, reason
 
   if (used < limit) {
     setAiUsage({ ...usage, [key]: used + 1 });
+    if (user?.uid) recordSaasAiUsage(reason, feature, 1);
     return true;
   }
   if (user && (user.points || 0) >= absCost) {

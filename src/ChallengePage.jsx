@@ -52,6 +52,18 @@ const TYPE_MAP = {
   study:     { label: "스터디",   color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
 };
 const PURPOSE_OPTIONS = ["SNS 수익화", "꾸준한 습관 만들기", "브랜딩 / 퍼스널브랜드", "마케팅 실력 향상", "기타"];
+const DAILY_ENCOURAGEMENTS = [
+  "오늘의 작은 인증이 내일의 흐름을 만듭니다.",
+  "완벽한 하루보다, 기록한 하루가 더 오래 남습니다.",
+  "꾸준함은 재능보다 늦게 보이지만 더 멀리 갑니다.",
+  "오늘 한 번 올린 사람이 내일도 더 쉽게 시작합니다.",
+  "비교보다 중요한 건 어제보다 하나 더 해낸 기록입니다.",
+  "작은 실행이 쌓이면 나만의 기준이 됩니다.",
+  "멈추지 않는 사람이 결국 보이는 결과를 만듭니다.",
+  "오늘의 인증은 나를 증명하는 가장 쉬운 방법입니다.",
+  "흔들려도 괜찮습니다. 다시 올리면 흐름은 이어집니다.",
+  "성장은 큰 결심보다 작은 반복에서 시작됩니다.",
+];
 
 /* ── Supabase CRUD ─────────────────────────────────────── */
 async function loadChallenges() { const { data } = await supabase.from("challenges").select("*").order("created_at", { ascending: false }); return data || []; }
@@ -85,6 +97,53 @@ async function uploadChallengeProof(challengeId, user, file, kind) {
   const { data } = supabase.storage.from("uploads").getPublicUrl(path);
   return data?.publicUrl || "";
 }
+async function loadChallengePromoSummaries(challenges = []) {
+  const ids = challenges.map(ch => ch.id).filter(Boolean);
+  if (ids.length === 0) return {};
+  const { data } = await supabase
+    .from("challenge_missions")
+    .select("id,challenge_id,uid,nick,day,title,body,link,screenshot_url,extra_link,created_at")
+    .in("challenge_id", ids)
+    .or("day.gt.0,day.eq.-2");
+  const byChallenge = {};
+  (data || []).forEach(row => {
+    if (!byChallenge[row.challenge_id]) byChallenge[row.challenge_id] = [];
+    byChallenge[row.challenge_id].push(row);
+  });
+  const result = {};
+  challenges.forEach(ch => {
+    const startDate = ch.start_date ? new Date(ch.start_date) : new Date();
+    const dayDate = d => { const dt = new Date(startDate); dt.setDate(dt.getDate() + d - 1); return dt; };
+    const isWeekend = d => { const dow = dayDate(d).getDay(); return dow === 0 || dow === 6; };
+    const localDateOnly = dt => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+    const lateDaysFor = m => { if (!m?.created_at || Number(m.day) <= 0) return 0; return Math.max(0, Math.floor((localDateOnly(new Date(m.created_at)) - localDateOnly(dayDate(Number(m.day)))) / 86400000)); };
+    const scoreFor = (day, m) => {
+      const base = isWeekend(Number(day)) ? 2 : 1;
+      const bonus = getExtraLinks(m.extra_link).length * 0.5;
+      const penalty = Math.min(base + bonus, lateDaysFor(m) * 0.5);
+      return Math.max(0, base + bonus - penalty);
+    };
+    const calcScore = days => Object.entries(days).reduce((sum, [d, m]) => sum + scoreFor(d, m), 0);
+    const rankMap = {};
+    const promoMap = {};
+    (byChallenge[ch.id] || []).forEach(m => {
+      const day = Number(m.day);
+      if (day > 0) {
+        if (!rankMap[m.uid]) rankMap[m.uid] = { uid: m.uid, nick: m.nick, days: {}, count: 0 };
+        if (!rankMap[m.uid].days[day]) { rankMap[m.uid].days[day] = m; rankMap[m.uid].count++; }
+      } else if (day === -2 && m.body === "approved") {
+        if (!promoMap[m.uid] || new Date(m.created_at || 0) > new Date(promoMap[m.uid].created_at || 0)) promoMap[m.uid] = m;
+      }
+    });
+    result[ch.id] = Object.values(rankMap)
+      .map(r => ({ ...r, score: calcScore(r.days) }))
+      .filter(r => r.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3)
+      .map((r, idx) => ({ ...r, rank: idx + 1, promo: promoMap[r.uid] }));
+  });
+  return result;
+}
 
 /* ═══════════════════════════════════════════════════════════
    ChallengePage
@@ -103,6 +162,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   const [myApp, setMyApp] = useState(null);
   const [apps, setApps] = useState([]);
   const [missions, setMissions] = useState([]);
+  const [challengePromos, setChallengePromos] = useState({});
   const [publicApps, setPublicApps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState("");
@@ -129,6 +189,9 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
     canon.href = url;
   };
   const resetSeo = () => { document.title = "크루잉 - SNS메이킷"; };
+  const refreshListPromos = async (list = challenges) => {
+    try { setChallengePromos(await loadChallengePromoSummaries(list)); } catch { setChallengePromos({}); }
+  };
 
   useEffect(() => {
     (async () => {
@@ -145,6 +208,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
           }
         } catch {}
         setChallenges(data);
+        refreshListPromos(data);
         // URL에 challengeId가 있으면 해당 챌린지 바로 열기
         if (initialChallengeId) {
           const ch = data.find(c => c.id === initialChallengeId);
@@ -169,13 +233,30 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
         try { setPublicApps(await loadPublicApplicants(sel.id)); } catch {}
       }
       if (view === "list") {
-        try { const data = await loadChallenges(); setChallenges(data); } catch {}
+        try { const data = await loadChallenges(); setChallenges(data); refreshListPromos(data); } catch {}
       }
     };
     const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
     document.addEventListener("visibilitychange", onVisible);
     return () => document.removeEventListener("visibilitychange", onVisible);
   }, [sel?.id, view, user?.uid]);
+
+  useEffect(() => {
+    if (view !== "list" || challenges.length === 0) return;
+    const refresh = () => refreshListPromos(challenges);
+    const timer = setInterval(refresh, 30000);
+    let channel = null;
+    try {
+      channel = supabase
+        .channel("challenge-list-promos")
+        .on("postgres_changes", { event: "*", schema: "public", table: "challenge_missions" }, refresh)
+        .subscribe();
+    } catch {}
+    return () => {
+      clearInterval(timer);
+      try { if (channel) supabase.removeChannel(channel); } catch {}
+    };
+  }, [view, challenges]);
 
   const openDetail = async ch => {
     setSel(ch); setView("detail"); window.scrollTo(0, 0);
@@ -219,12 +300,8 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
     <div style={{ background: isDark ? "transparent" : "#fff", minHeight: "calc(100vh - 64px)" }}>
       {Toast}
 
-      {/* 히어로 - 사이트 톤 (밝은 블루 그라데이션) */}
-      <div style={{ background: "linear-gradient(180deg, #E8F0FF 0%, #F5F9FF 50%, #fff 100%)", padding: mob ? "56px 20px 48px" : "80px 40px 64px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        {/* 글로우 블롭 */}
-        <div style={{ position: "absolute", top: -60, left: "30%", width: 300, height: 300, borderRadius: "50%", background: "rgba(59,130,246,0.08)", filter: "blur(100px)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: -40, right: "20%", width: 250, height: 250, borderRadius: "50%", background: "rgba(52,199,89,0.06)", filter: "blur(80px)", pointerEvents: "none" }} />
-
+      {/* 히어로 - 홈페이지 블루/화이트 톤 */}
+      <div style={{ background: "#f5f9ff", borderBottom: "1px solid #e8eefc", padding: mob ? "56px 20px 48px" : "80px 40px 64px", textAlign: "center", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "relative", maxWidth: 700, margin: "0 auto" }}>
           <div style={{ display: "inline-block", background: PRIMARY, color: "#fff", fontSize: 12, fontWeight: 700, padding: "5px 16px", borderRadius: 99, marginBottom: 20 }}>BOOTCAMP</div>
           <h1 style={{ fontSize: mob ? "clamp(26px,6vw,38px)" : "clamp(36px,5vw,52px)", fontWeight: 700, color: "#1a1a1a", lineHeight: 1.3, marginBottom: 14, letterSpacing: "-0.02em" }}>
@@ -267,7 +344,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
                       <img src={ch.thumbnail} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     </div>
                   ) : (
-                    <div style={{ width: "100%", aspectRatio: "16/9", background: "linear-gradient(135deg, #E8F0FF, #f0f4ff)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div style={{ width: "100%", aspectRatio: "16/9", background: "#f5f9ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ fontSize: 14, fontWeight: 700, color: PRIMARY, background: "rgba(59,130,246,0.1)", padding: "8px 20px", borderRadius: 99 }}>CHALLENGE</span>
                     </div>
                   )}
@@ -284,6 +361,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
                     <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, marginBottom: 16, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                       {ch.subtitle || ch.description?.replace(/<[^>]*>/g, "").slice(0, 100)}
                     </div>
+                    <ChallengeCardPromos promos={challengePromos[ch.id]} C={C} bdr={bdr} isDark={isDark} isAdmin={isAdmin} onOpen={() => openDetail(ch)} />
                     <div style={{ display: "flex", alignItems: "center", gap: 16, paddingTop: 14, borderTop: "1px solid " + bdr, fontSize: 12, color: C.muted }}>
                       {[
                         [<svg key="c" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>, `${ch.duration || "10"}일`],
@@ -316,7 +394,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
       <div style={{ background: isDark ? "transparent" : "#fff", minHeight: "calc(100vh - 64px)" }}>
         {Toast}
         {/* 상단 - 밝은 블루 배경 */}
-        <div style={{ background: "linear-gradient(180deg, #E8F0FF 0%, #F5F9FF 100%)", padding: mob ? "24px 16px 32px" : "32px 40px 48px" }}>
+        <div style={{ background: "#f5f9ff", borderBottom: "1px solid #e8eefc", padding: mob ? "24px 16px 32px" : "32px 40px 48px" }}>
           <div style={{ maxWidth: 800, margin: "0 auto" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
               <button onClick={back} style={{ background: "rgba(0,0,0,0.04)", border: "none", color: "#4a5568", padding: "8px 16px", borderRadius: 99, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, fontFamily: "inherit" }}>
@@ -364,32 +442,34 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
             ))}
           </div>
 
+          <ChallengePromoShowcase ch={ch} C={C} bdr={bdr} card={card} isDark={isDark} mob={mob} isAdmin={isAdmin} />
+
           {/* 참여자 현황 - 요약 */}
           {publicApps.length > 0 && (
-            <div style={{ marginBottom: 24, padding: "16px 20px", borderRadius: 14, background: isDark ? "rgba(255,255,255,0.03)" : "#f9fafb", border: "1px solid " + bdr, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <div style={{ marginBottom: 16, padding: "12px 14px", borderRadius: 14, background: isDark ? "rgba(255,255,255,0.03)" : "#f9fafb", border: "1px solid " + bdr, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ display: "flex" }}>
                   {publicApps.slice(0, 5).map((a, i) => (
-                    <div key={a.id} style={{ width: 28, height: 28, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff", marginLeft: i > 0 ? -8 : 0, border: "2px solid " + (isDark ? "#1a1a2e" : "#f9fafb"), zIndex: 5 - i }}>{(a.name || "?")[0]}</div>
+                    <div key={a.id} style={{ width: 24, height: 24, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#fff", marginLeft: i > 0 ? -7 : 0, border: "2px solid " + (isDark ? "#1a1a2e" : "#f9fafb"), zIndex: 5 - i }}>{(a.name || "?")[0]}</div>
                   ))}
-                  {publicApps.length > 5 && <div style={{ width: 28, height: 28, borderRadius: "50%", background: isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: C.muted, marginLeft: -8, border: "2px solid " + (isDark ? "#1a1a2e" : "#f9fafb") }}>+{publicApps.length - 5}</div>}
+                  {publicApps.length > 5 && <div style={{ width: 24, height: 24, borderRadius: "50%", background: isDark ? "rgba(255,255,255,0.1)" : "#e5e7eb", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 8, fontWeight: 700, color: C.muted, marginLeft: -7, border: "2px solid " + (isDark ? "#1a1a2e" : "#f9fafb") }}>+{publicApps.length - 5}</div>}
                 </div>
-                <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{publicApps.length}명 참여 중</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: C.text }}>{publicApps.length}명 참여 중</span>
               </div>
-              <span style={{ fontSize: 12, fontWeight: 700, color: "#22c55e" }}>{publicApps.filter(a => a.status === "confirmed").length}명 확정</span>
+              <span style={{ fontSize: 12, fontWeight: 800, color: "#16a34a", background: "rgba(22,163,74,0.08)", padding: "5px 9px", borderRadius: 99 }}>{publicApps.filter(a => a.status === "confirmed").length}명 확정</span>
             </div>
           )}
 
           {/* 참여자/관리자 미션 게시판 바로가기 */}
           {(isParticipant || isAdmin) && (
-            <div onClick={() => openBoard(ch)} style={{ background: PRIMARY, borderRadius: 16, padding: mob ? "20px 18px" : "22px 28px", marginBottom: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, transition: "transform 0.15s" }}
+            <div onClick={() => openBoard(ch)} style={{ background: isDark ? "rgba(37,99,235,0.12)" : "#eff6ff", border: isDark ? "1px solid rgba(96,165,250,0.22)" : "1px solid #dbeafe", borderRadius: 14, padding: "13px 16px", marginBottom: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, transition: "transform 0.15s" }}
               onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
               onMouseLeave={e => e.currentTarget.style.transform = "none"}>
               <div>
-                <div style={{ fontSize: mob ? 16 : 18, fontWeight: 800, color: "#fff", marginBottom: 4 }}>미션 게시판 입장</div>
-                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)" }}>오늘의 인증을 등록하세요</div>
+                <div style={{ fontSize: 14, fontWeight: 900, color: PRIMARY, marginBottom: 3 }}>오늘 인증하러 가기</div>
+                <div style={{ fontSize: 12, color: C.muted }}>미션 게시판에서 인증과 홍보 슬롯을 관리합니다</div>
               </div>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={PRIMARY} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           )}
 
@@ -477,11 +557,11 @@ function ExtraActivityTab({ ch, C, bdr, card, isDark, mob, user, missions, setMi
   const fileRef = useRef(null);
   const catLabels = { comment: "댓글", like: "좋아요", share: "공유/리포스트", other: "기타" };
 
-  // 인증 완료된 Day만 선택 가능
-  const certifiedDays = [];
-  for (let d = 1; d <= Math.min(totalDays, currentDayNum); d++) {
-    if (vM[d]) certifiedDays.push(d);
-  }
+  // 추가활동은 안내 문구와 동일하게, 진행된 Day라면 본 미션 인증 전에도 등록 가능
+  const activeDayCount = Math.max(0, Math.min(totalDays, currentDayNum));
+  const selectableDays = fixedDay
+    ? (fixedDay <= activeDayCount ? [fixedDay] : [])
+    : Array.from({ length: activeDayCount }, (_, i) => i + 1);
 
   const handleFile = e => { const f = e.target.files?.[0]; if (f) { setFile(f); const r = new FileReader(); r.onload = ev => setPreview(ev.target.result); r.readAsDataURL(f); } };
 
@@ -519,10 +599,10 @@ function ExtraActivityTab({ ch, C, bdr, card, isDark, mob, user, missions, setMi
         댓글, 좋아요, 공유 등 추가활동을 올리면 <strong style={{ color: "#f59e0b" }}>각 +0.5점</strong> 가산됩니다. 미션 인증 없이도 올릴 수 있습니다.
       </div>
 
-      {!fixedDay && certifiedDays.length === 0 ? (
+      {selectableDays.length === 0 ? (
         <div style={{ textAlign: "center", padding: "48px 20px", color: C.muted, border: "1px dashed " + bdr, borderRadius: 16 }}>
-          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>아직 인증된 Day가 없습니다</div>
-          <div style={{ fontSize: 13 }}>Day를 선택하면 추가활동을 올릴 수 있습니다</div>
+          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>아직 추가활동을 올릴 수 있는 Day가 없습니다</div>
+          <div style={{ fontSize: 13 }}>크루잉 시작 후 진행된 Day에 추가활동을 올릴 수 있습니다</div>
         </div>
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 20 }}>
@@ -532,8 +612,8 @@ function ExtraActivityTab({ ch, C, bdr, card, isDark, mob, user, missions, setMi
             {!fixedDay && <div style={{ marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 8 }}>Day 선택</div>
               <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {certifiedDays.map(d => {
-                  const extraCount = getExtraLinks(vM[d].extra_link).length;
+                {selectableDays.map(d => {
+                  const extraCount = getExtraLinks(vM[d]?.extra_link).length;
                   return (
                     <button key={d} onClick={() => setSelDay(d)}
                       style={{ padding: "8px 14px", borderRadius: 10, border: selDay === d ? `2px solid ${PRIMARY}` : "1px solid " + bdr, background: selDay === d ? "rgba(59,130,246,0.08)" : card, color: selDay === d ? PRIMARY : C.text, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", position: "relative" }}>
@@ -638,6 +718,154 @@ function Sect({ title, children, C, bdr }) {
   </div>;
 }
 
+function ChallengeCardPromos({ promos = [], C, bdr, isDark, isAdmin, onOpen }) {
+  if (!promos || promos.length === 0) {
+    return (
+      <div onClick={e => { e.stopPropagation(); onOpen?.(); }} style={{ marginBottom: 14, padding: "10px 10px", borderRadius: 12, border: "1px dashed " + bdr, background: isDark ? "rgba(255,255,255,0.025)" : "#f8fafc", cursor: "pointer" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <span style={{ fontSize: 11, fontWeight: 900, color: C.text }}>상위 참여자 TOP3</span>
+          <span style={{ fontSize: 10, color: C.muted }}>인증 집계 전</span>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div onClick={e => { e.stopPropagation(); onOpen?.(); }} style={{ marginBottom: 14, padding: "10px 10px", borderRadius: 12, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.025)" : "#f8fafc", cursor: "pointer" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 8 }}>
+        <span style={{ fontSize: 11, fontWeight: 900, color: C.text }}>상위 참여자 TOP3</span>
+        <span style={{ fontSize: 10, fontWeight: 900, color: PRIMARY, background: isDark ? "rgba(37,99,235,0.16)" : "#eff6ff", padding: "3px 7px", borderRadius: 99 }}>실시간</span>
+      </div>
+      <div style={{ display: "flex", gap: 7, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+        {promos.map(item => {
+          const promo = item.promo;
+          const rankColor = ["#f59e0b", "#64748b", "#b45309"][item.rank - 1] || PRIMARY;
+          const body = (
+            <div style={{ width: 132, flexShrink: 0, cursor: promo?.link ? "pointer" : "inherit" }}>
+              <div style={{ position: "relative", width: 132, height: 74, borderRadius: 10, overflow: "hidden", background: isDark ? "rgba(255,255,255,0.04)" : "#eef6ff", border: "1px solid " + bdr }}>
+                {promo?.screenshot_url ? <img src={promo.screenshot_url} alt="" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /> : null}
+                <span style={{ position: "absolute", top: 5, left: 5, background: rankColor, color: "#fff", fontSize: 9, fontWeight: 900, padding: "2px 5px", borderRadius: 99 }}>{item.rank}위</span>
+                {promo?.link && <span style={{ position: "absolute", right: 5, bottom: 5, background: "rgba(255,255,255,0.92)", color: PRIMARY, fontSize: 9, fontWeight: 900, padding: "2px 5px", borderRadius: 99 }}>링크</span>}
+              </div>
+              <div style={{ fontSize: 10, fontWeight: 900, color: C.text, marginTop: 5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{promo?.title || `${isAdmin ? item.nick : maskNick(item.nick)} · 홍보 대기`}</div>
+            </div>
+          );
+          return promo?.link ? (
+            <a key={item.uid} href={promo.link} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()} style={{ textDecoration: "none" }}>
+              {body}
+            </a>
+          ) : <div key={item.uid}>{body}</div>;
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ChallengePromoShowcase({ ch, C, bdr, card, isDark, mob, isAdmin }) {
+  const [items, setItems] = useState([]);
+  const totalDays = Math.max(parseInt(ch.duration) || 10, 1);
+  const startDate = ch.start_date ? new Date(ch.start_date) : new Date();
+  const dayDate = d => { const dt = new Date(startDate); dt.setDate(dt.getDate() + d - 1); return dt; };
+  const isWeekend = d => { const dow = dayDate(d).getDay(); return dow === 0 || dow === 6; };
+  const localDateOnly = dt => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+  const lateDaysFor = m => { if (!m?.created_at || Number(m.day) <= 0) return 0; return Math.max(0, Math.floor((localDateOnly(new Date(m.created_at)) - localDateOnly(dayDate(Number(m.day)))) / 86400000)); };
+  const scoreFor = (day, m) => {
+    const base = isWeekend(Number(day)) ? 2 : 1;
+    const bonus = getExtraLinks(m.extra_link).length * 0.5;
+    const penalty = Math.min(base + bonus, lateDaysFor(m) * 0.5);
+    return Math.max(0, base + bonus - penalty);
+  };
+  const calcScore = days => Object.entries(days).reduce((sum, [d, m]) => sum + scoreFor(d, m), 0);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from("challenge_missions")
+          .select("id,uid,nick,day,title,body,link,screenshot_url,extra_link,created_at")
+          .eq("challenge_id", ch.id)
+          .or("day.gt.0,day.eq.-2");
+        const rows = data || [];
+        const rankMap = {};
+        rows.filter(m => Number(m.day) > 0).forEach(m => {
+          if (!rankMap[m.uid]) rankMap[m.uid] = { uid: m.uid, nick: m.nick, days: {}, count: 0 };
+          if (!rankMap[m.uid].days[m.day]) { rankMap[m.uid].days[m.day] = m; rankMap[m.uid].count++; }
+        });
+        const promoMap = {};
+        rows.filter(m => Number(m.day) === -2 && m.body === "approved").sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).forEach(m => {
+          if (m.uid && !promoMap[m.uid]) promoMap[m.uid] = m;
+        });
+        const ranked = Object.values(rankMap)
+          .map(r => ({ ...r, score: calcScore(r.days) }))
+          .filter(r => r.score > 0)
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3)
+          .map((r, idx) => ({ ...r, rank: idx + 1, promo: promoMap[r.uid] }));
+        setItems(ranked);
+      } catch {
+        setItems([]);
+      }
+    })();
+  }, [ch.id]);
+
+  if (items.length === 0) return (
+    <div style={{ marginBottom: 24, background: card, border: "1px dashed " + bdr, borderRadius: 18, padding: mob ? "16px" : "18px 20px", textAlign: "center" }}>
+            <div style={{ fontSize: 15, fontWeight: 900, color: C.text, marginBottom: 5 }}>현재 상위 참여자</div>
+      <div style={{ fontSize: 12, color: C.muted }}>인증 기록이 쌓이면 이곳에 상위 랭커와 홍보 슬롯이 표시됩니다.</div>
+    </div>
+  );
+
+  return (
+    <div style={{ marginBottom: 32, background: card, border: "1px solid " + bdr, borderRadius: 18, padding: mob ? "16px" : "18px 20px", boxShadow: isDark ? "none" : "0 4px 14px rgba(15,23,42,0.04)" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={PRIMARY} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M5 4H3v2a4 4 0 0 0 4 4"/><path d="M19 4h2v2a4 4 0 0 1-4 4"/></svg>
+            <div style={{ fontSize: 16, fontWeight: 900, color: C.text }}>현재 상위 참여자</div>
+          </div>
+          <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>TOP 3는 미션 게시판에서 홍보 이미지와 링크를 등록할 수 있습니다.</div>
+        </div>
+        <span style={{ fontSize: 11, fontWeight: 900, color: PRIMARY, background: isDark ? "rgba(37,99,235,0.16)" : "#eff6ff", border: isDark ? "1px solid rgba(96,165,250,0.22)" : "1px solid #dbeafe", padding: "6px 10px", borderRadius: 99 }}>
+          TOP 3 혜택
+        </span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : `repeat(${Math.min(items.length, 3)}, minmax(0, 1fr))`, gap: 10 }}>
+        {items.map(item => {
+          const promo = item.promo;
+          const href = promo?.link || "";
+          const rankColor = ["#f59e0b", "#64748b", "#b45309"][item.rank - 1] || PRIMARY;
+          const body = (
+            <div style={{ border: "1px solid " + bdr, borderRadius: 16, overflow: "hidden", background: isDark ? "rgba(255,255,255,0.025)" : "#fff", height: "100%" }}>
+              <div style={{ height: 118, background: isDark ? "rgba(255,255,255,0.04)" : "#f5f9ff", borderBottom: "1px solid " + bdr, position: "relative", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {promo?.screenshot_url ? (
+                  <img src={promo.screenshot_url} alt={`${item.nick || "랭커"} 홍보 이미지`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                ) : (
+                  <div style={{ textAlign: "center", color: C.muted }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 5 }}><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/></svg>
+                    <div style={{ fontSize: 11, fontWeight: 800 }}>홍보 슬롯 대기</div>
+                  </div>
+                )}
+                <span style={{ position: "absolute", top: 8, left: 8, background: rankColor, color: "#fff", fontSize: 11, fontWeight: 900, padding: "4px 8px", borderRadius: 99 }}>{item.rank}위</span>
+              </div>
+              <div style={{ padding: "13px 14px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <span style={{ width: 27, height: 27, borderRadius: "50%", background: rankColor, color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, flexShrink: 0 }}>{(item.nick || "?")[0]}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 900, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{isAdmin ? item.nick : maskNick(item.nick)}</div>
+                    <div style={{ fontSize: 11, color: C.muted }}>{item.score}점 · {item.count}일 인증</div>
+                  </div>
+                </div>
+                <div style={{ fontSize: 14, fontWeight: 900, color: C.text, lineHeight: 1.45, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{promo?.title || "TOP 3 홍보 슬롯 대기 중"}</div>
+                {href && <div style={{ marginTop: 8, fontSize: 12, color: PRIMARY, fontWeight: 900 }}>링크 보러가기</div>}
+              </div>
+            </div>
+          );
+          return href ? <a key={item.uid} href={href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>{body}</a> : <div key={item.uid}>{body}</div>;
+        })}
+      </div>
+    </div>
+  );
+}
+
 /* ── 상세 페이지 탭 분리 ── */
 function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, canApply, isAdmin, openBoard, openAdmin, onApply, user, myApp, setMyApp }) {
   const [dtab, setDtab] = useState("intro");
@@ -669,9 +897,9 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
 
   const tabs = [
     { id: "intro", label: "소개" },
-    { id: "ranking", label: "순위표" },
-    { id: "board", label: "현황판" },
-    { id: "detail", label: "상세 안내" },
+    { id: "ranking", label: "랭킹" },
+    { id: "board", label: "인증 현황" },
+    { id: "detail", label: "안내" },
     ...(!isParticipant && canApply && !hasApplied ? [{ id: "apply", label: "신청하기" }] : []),
     ...(isAdmin ? [{ id: "admin", label: "관리" }] : []),
   ];
@@ -679,16 +907,16 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
   return (
     <div>
       {/* 탭 바 */}
-      <div style={{ display: "flex", gap: 0, borderBottom: "1px solid " + bdr, marginBottom: 24 }}>
+      <div style={{ display: "flex", gap: 0, borderBottom: "1px solid " + bdr, marginBottom: 24, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         {tabs.map(t => (
           <button key={t.id} onClick={() => setDtab(t.id)}
-            style={{ padding: mob ? "12px 14px" : "12px 24px", border: "none", cursor: "pointer", fontSize: 14, fontWeight: dtab === t.id ? 700 : 500, background: "transparent", color: dtab === t.id ? PRIMARY : C.muted, borderBottom: dtab === t.id ? `2px solid ${PRIMARY}` : "2px solid transparent", marginBottom: -1, fontFamily: "inherit", transition: "all 0.15s" }}>
+            style={{ padding: mob ? "12px 14px" : "12px 24px", border: "none", cursor: "pointer", fontSize: 14, fontWeight: dtab === t.id ? 700 : 500, background: "transparent", color: dtab === t.id ? PRIMARY : C.muted, borderBottom: dtab === t.id ? `2px solid ${PRIMARY}` : "2px solid transparent", marginBottom: -1, fontFamily: "inherit", transition: "all 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}>
             {t.label}
           </button>
         ))}
         {(isParticipant || isAdmin) && (
           <button onClick={openBoard}
-            style={{ marginLeft: "auto", padding: "8px 20px", borderRadius: 99, border: "none", background: PRIMARY, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", alignSelf: "center", marginBottom: 4 }}>
+            style={{ marginLeft: mob ? 8 : "auto", padding: "8px 20px", borderRadius: 99, border: "none", background: PRIMARY, color: "#fff", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", alignSelf: "center", marginBottom: 4, whiteSpace: "nowrap", flexShrink: 0 }}>
             미션 게시판
           </button>
         )}
@@ -699,35 +927,13 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
         <div>
           {ch.description && <Sect title="프로그램 소개" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.description) }} /></Sect>}
           {ch.target_audience && <Sect title="이런 사람에게 추천해요" C={C} bdr={bdr}><div style={{ fontSize: 14, color: C.text, lineHeight: 1.9 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(ch.target_audience) }} /></Sect>}
-          {/* 미니 순위표 */}
-          {rankData.length > 0 && (
-            <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: mob ? "18px 16px" : "22px 24px", marginBottom: 24 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                  <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>실시간 순위</span>
-                </div>
-                <button onClick={() => setDtab("ranking")} style={{ fontSize: 12, fontWeight: 700, color: PRIMARY, background: "none", border: "none", cursor: "pointer", fontFamily: "inherit" }}>전체 보기 &rarr;</button>
-              </div>
-              {rankData.slice(0, 5).map((m, i) => {
-                const score = calcRankScore(m.days);
-                return (
-                  <div key={m.uid} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: i < Math.min(rankData.length, 5) - 1 ? "1px solid " + bdr : "none" }}>
-                    <span style={{ fontSize: 14, fontWeight: 900, color: i < 3 ? ["#f59e0b","#94a3b8","#cd7f32"][i] : C.muted, width: 24, textAlign: "center" }}>{i + 1}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: C.text, flex: 1 }}>{maskNick(m.nick)}</span>
-                    <span style={{ fontSize: 15, fontWeight: 800, color: "#f59e0b" }}>{score}점</span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
           {/* 하단 CTA */}
-          <div style={{ background: isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.12)", borderRadius: 20, padding: mob ? "28px 18px" : "36px 32px", textAlign: "center", marginTop: 24 }}>
-            <div style={{ fontSize: mob ? 18 : 24, fontWeight: 700, color: C.text, marginBottom: 12 }}>
-              {(isParticipant || isAdmin) ? "미션 게시판에 입장하세요" : hasApplied ? "신청이 완료되었습니다" : canApply ? "지금 바로 신청하세요" : "다음 프로그램을 기대해주세요"}
+          <div style={{ background: isDark ? "rgba(59,130,246,0.05)" : "#f8fafc", border: "1px solid " + bdr, borderRadius: 18, padding: mob ? "22px 16px" : "26px 24px", textAlign: "center", marginTop: 24 }}>
+            <div style={{ fontSize: mob ? 17 : 20, fontWeight: 900, color: C.text, marginBottom: 10 }}>
+              {(isParticipant || isAdmin) ? "오늘 인증을 이어가세요" : hasApplied ? "신청이 완료되었습니다" : canApply ? "참여 신청하기" : "다음 프로그램을 기대해주세요"}
             </div>
             {(isParticipant || isAdmin) ? (
-              <button onClick={openBoard} style={ctaBtn(PRIMARY)}>미션 게시판 입장</button>
+              <button onClick={openBoard} style={{ padding: "11px 20px", borderRadius: 99, border: "none", background: PRIMARY, color: "#fff", fontSize: 14, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>미션 게시판으로</button>
             ) : hasApplied ? (
               <div style={{ maxWidth: 420, margin: "0 auto" }}>
                 <p style={{ fontSize: 14, color: C.muted, marginBottom: 16 }}>관리자 확인 후 참여가 확정됩니다</p>
@@ -758,19 +964,19 @@ function DetailTabs({ ch, C, bdr, card, isDark, mob, isParticipant, hasApplied, 
                 <div style={{ fontSize: 13 }}>참가자들이 인증을 시작하면 순위가 표시됩니다</div>
               </div>
             ) : (<>
-              {/* 전체 레이스 트랙 (한눈에 보기) */}
+              {/* 전체 랭킹 흐름 */}
               <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 20, padding: mob ? "20px 14px" : "28px 24px", marginBottom: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: C.text }}>마라톤 레이스</div>
-                  <div style={{ fontSize: 12, color: C.muted }}>🏁 {maxScore}점</div>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: C.text }}>전체 랭킹 흐름</div>
+                    <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>점수 차이를 한눈에 확인할 수 있습니다</div>
+                  </div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: PRIMARY, background: isDark ? "rgba(37,99,235,0.16)" : "#eff6ff", border: isDark ? "1px solid rgba(96,165,250,0.22)" : "1px solid #dbeafe", padding: "6px 10px", borderRadius: 99 }}>최고 {maxScore}점</div>
                 </div>
-                {/* 큰 트랙 — 심플 */}
                 <div style={{ position: "relative", height: 120, borderRadius: 14, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.02)" : "#fff", overflow: "hidden" }}>
-                  {/* 바닥 라인 */}
                   <div style={{ position: "absolute", bottom: 12, left: 0, right: 0, height: 3, borderRadius: 2, background: isDark ? "rgba(255,255,255,0.08)" : "#e5e7eb" }} />
                   {[25, 50, 75].map(p => <div key={p} style={{ position: "absolute", left: `${p}%`, bottom: 6, height: 10, width: 1, background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)" }} />)}
-                  {/* 골인 */}
-                  <div style={{ position: "absolute", right: 8, bottom: 14, fontSize: 24 }}>🏁</div>
+                  <div style={{ position: "absolute", right: 10, bottom: 15, width: 2, height: 24, background: PRIMARY, opacity: 0.7 }} />
                   {rankData.map((m, idx) => {
                     const score = scores[idx];
                     const runPct = Math.max(2, (score / maxScore) * 82);
@@ -1117,6 +1323,45 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
     };
   }, [ch?.id]);
 
+  useEffect(() => {
+    if (!ch?.id) return;
+    loadApplications(ch.id).then(d => setBoardApps((d || []).filter(a => a.status === "confirmed"))).catch(() => setBoardApps([]));
+  }, [ch?.id]);
+
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(Date.now()), 60000);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    if (!ch?.id) return;
+    const localKey = `challenge_cheers_${ch.id}`;
+    const localMineKey = `challenge_my_cheers_${ch.id}_${user?.uid || "guest"}`;
+    const applyLocal = () => {
+      try { setCheerCounts(JSON.parse(localStorage.getItem(localKey) || "{}")); } catch { setCheerCounts({}); }
+      try {
+        const mine = JSON.parse(localStorage.getItem(localMineKey) || "[]");
+        setCheeredIds(Object.fromEntries(mine.map(id => [id, true])));
+      } catch { setCheeredIds({}); }
+    };
+    (async () => {
+      try {
+        const { data, error } = await supabase.from("challenge_cheers").select("mission_id,uid").eq("challenge_id", ch.id);
+        if (error) throw error;
+        const counts = {};
+        const mine = {};
+        (data || []).forEach(r => {
+          counts[r.mission_id] = (counts[r.mission_id] || 0) + 1;
+          if (r.uid === user?.uid) mine[r.mission_id] = true;
+        });
+        setCheerCounts(counts);
+        setCheeredIds(mine);
+      } catch {
+        applyLocal();
+      }
+    })();
+  }, [ch?.id, user?.uid]);
+
   // 전역: 브라우저 기본 파일 열기 차단
   useEffect(() => {
     const prevent = e => e.preventDefault();
@@ -1136,8 +1381,18 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   const extraFileInputRef = useRef(null);
   const [busy, setBusy] = useState(false);
   const [tab, setTab] = useState("calendar");
+  const [summaryTab, setSummaryTab] = useState("today");
   const [expandedMember, setExpandedMember] = useState(null);
   const [viewAsMember, setViewAsMember] = useState(null); // 관리자용: 특정 멤버 미션보드 보기 { uid, nick, days, count }
+  const [cheerCounts, setCheerCounts] = useState({});
+  const [cheeredIds, setCheeredIds] = useState({});
+  const [boardApps, setBoardApps] = useState([]);
+  const [nowTick, setNowTick] = useState(Date.now());
+  const [promoTitle, setPromoTitle] = useState("");
+  const [promoLink, setPromoLink] = useState("");
+  const [promoFile, setPromoFile] = useState(null);
+  const [promoPreview, setPromoPreview] = useState("");
+  const [promoBusy, setPromoBusy] = useState(false);
   const inp = { width: "100%", padding: "12px 16px", borderRadius: 10, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.06)" : "#fff", color: C.text, fontSize: 14, outline: "none", boxSizing: "border-box", fontFamily: "inherit" };
 
   const totalDays = parseInt(ch.duration) || 10;
@@ -1154,9 +1409,11 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
   const myMissions = {};
   const allByDay = {};
   missions.forEach(m => {
-    if (!allByDay[m.day]) allByDay[m.day] = [];
-    allByDay[m.day].push(m);
-    if (m.uid === user?.uid && !myMissions[m.day]) myMissions[m.day] = m;
+    const day = Number(m.day);
+    if (day <= 0) return;
+    if (!allByDay[day]) allByDay[day] = [];
+    allByDay[day].push(m);
+    if (m.uid === user?.uid && !myMissions[day]) myMissions[day] = m;
   });
 
   const myChecked = Object.keys(myMissions).length;
@@ -1270,6 +1527,226 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
     return score;
   };
   const myScore = calcScore(myMissions);
+  const participantStats = (() => {
+    const map = {};
+    missions.forEach(m => {
+      if (!m.uid || Number(m.day) <= 0) return;
+      if (!map[m.uid]) map[m.uid] = { uid: m.uid, nick: m.nick, days: {}, count: 0 };
+      if (!map[m.uid].days[m.day]) { map[m.uid].days[m.day] = m; map[m.uid].count++; }
+    });
+    return Object.values(map).sort((a, b) => calcScore(b.days) - calcScore(a.days));
+  })();
+  const myRank = user?.uid ? participantStats.findIndex(m => m.uid === user.uid) + 1 : 0;
+  const streakFor = (days) => {
+    let current = 0;
+    let longest = 0;
+    let run = 0;
+    for (let d = 1; d <= availableMissionCount; d++) {
+      if (days[d]) { run += 1; longest = Math.max(longest, run); }
+      else run = 0;
+    }
+    for (let d = availableMissionCount; d >= 1; d--) {
+      if (days[d]) current += 1;
+      else break;
+    }
+    return { current, longest };
+  };
+  const myStreak = streakFor(myMissions);
+  const todayMission = myMissions[todayNum];
+  const todayIsActive = currentDayNum >= 1 && currentDayNum <= totalDays;
+  const todayStatusText = todayIsActive
+    ? (todayMission ? "오늘 인증 완료" : "오늘 인증 대기")
+    : (currentDayNum < 1 ? "시작 전" : "챌린지 종료");
+  const todayEncouragement = DAILY_ENCOURAGEMENTS[(Math.max(todayNum, 1) - 1) % DAILY_ENCOURAGEMENTS.length];
+  const todayDoneCount = todayIsActive ? (allByDay[todayNum] || []).filter(m => Number(m.day) === todayNum).length : 0;
+  const confirmedParticipants = boardApps.length ? boardApps : participantStats;
+  const todayDoneUids = new Set((allByDay[todayNum] || []).map(m => m.uid).filter(Boolean));
+  const todayMissingMembers = todayIsActive
+    ? confirmedParticipants.filter(p => {
+        const uid = p.uid;
+        return uid && !todayDoneUids.has(uid);
+      })
+    : [];
+  const todayBaseCount = Math.max(confirmedParticipants.length, participantStats.length, todayDoneCount);
+  const todayRate = todayBaseCount > 0 ? Math.round(todayDoneCount / todayBaseCount * 100) : 0;
+  const streakBadge = (streak) => {
+    if (streak >= 7) return { label: "7일 연속", color: "#8b5cf6" };
+    if (streak >= 5) return { label: "5일 연속", color: "#2563eb" };
+    if (streak >= 3) return { label: "3일 연속", color: "#16a34a" };
+    return null;
+  };
+  const myStreakBadge = streakBadge(myStreak.current);
+  const deadlineText = (() => {
+    if (!todayIsActive) return currentDayNum < 1 ? "시작 전" : "종료됨";
+    const end = localDateOnly(new Date(nowTick));
+    end.setHours(23, 59, 59, 999);
+    const diff = Math.max(0, end.getTime() - nowTick);
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    return h > 0 ? `${h}시간 ${m}분 남음` : `${m}분 남음`;
+  })();
+  const nextGoalText = (() => {
+    if (!isParticipant) return "";
+    if (todayIsActive && !todayMission) return `오늘 인증하면 ${myScore + (isWeekend(todayNum) ? 2 : 1)}점이 됩니다`;
+    if (myStreak.current === 2) return "내일 인증하면 3일 연속 배지 달성";
+    if (myStreak.current === 4) return "내일 인증하면 5일 연속 배지 달성";
+    if (myStreak.current === 6) return "내일 인증하면 7일 연속 배지 달성";
+    if (myRank > 1) {
+      const ahead = participantStats[myRank - 2];
+      const gap = ahead ? Math.max(0, calcScore(ahead.days) - myScore) : 0;
+      if (gap > 0) return `${gap}점만 더 얻으면 앞 순위와 가까워집니다`;
+    }
+    if (incompleteCount > 0) return `미완료 ${incompleteCount}개 중 하나만 처리해도 흐름이 이어집니다`;
+    return "추가활동을 올리면 점수를 더 받을 수 있습니다";
+  })();
+  const recentMissions = missions
+    .filter(m => Number(m.day) > 0)
+    .slice()
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  const todayFirstMission = (allByDay[todayNum] || [])
+    .slice()
+    .sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0))[0];
+  const activeStreakLeader = participantStats
+    .map(p => ({ ...p, streak: streakFor(p.days) }))
+    .filter(p => p.streak.current > 0)
+    .sort((a, b) => b.streak.current - a.streak.current || calcScore(b.days) - calcScore(a.days))[0];
+  const quickActions = [
+    {
+      key: "today",
+      title: todayMission ? "오늘 인증 확인" : "오늘 인증 올리기",
+      desc: todayMission ? "이미 올린 인증을 확인하고 필요하면 수정하세요" : `마감 ${deadlineText} · 지금 올리면 흐름이 이어집니다`,
+      icon: <><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><path d="M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></>,
+      onClick: () => openMissionProof(todayNum),
+    },
+    {
+      key: "extra",
+      title: "추가활동 올리기",
+      desc: "댓글, 좋아요, 공유 인증으로 +0.5점씩 더 받을 수 있어요",
+      icon: <><path d="M12 5v14"/><path d="M5 12h14"/></>,
+      onClick: () => { setTab("calendar"); setProofPanel(null); setSelDay(todayNum); setDaySubTab("dayExtra"); setMissionEditMode(false); scrollToAuthPanel("challenge-day-proof-panel"); },
+    },
+    {
+      key: "feed",
+      title: "참가자 인증 보기",
+      desc: recentMissions[0] ? `${maskNick(recentMissions[0].nick)}님이 방금 Day ${recentMissions[0].day} 인증` : "첫 인증이 올라오면 여기에 표시됩니다",
+      icon: <><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></>,
+      onClick: () => { setTab("feed"); setSelDay(null); },
+    },
+  ];
+  const promoByUid = {};
+  missions
+    .filter(m => Number(m.day) === -2)
+    .slice()
+    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+    .forEach(m => {
+      if (m.uid && !promoByUid[m.uid]) promoByUid[m.uid] = m;
+    });
+  const topRankers = participantStats.filter(p => calcScore(p.days) > 0).slice(0, 3);
+  const myTopRank = user?.uid ? topRankers.findIndex(p => p.uid === user.uid) + 1 : 0;
+  const canUsePromoSlot = isParticipant && myTopRank >= 1 && myTopRank <= 3;
+  const myPromo = user?.uid ? promoByUid[user.uid] : null;
+  const promoStatusLabel = status => status === "approved" ? "승인됨" : status === "rejected" ? "반려됨" : "검수 대기";
+  const promoStatusColor = status => status === "approved" ? "#16a34a" : status === "rejected" ? "#ef4444" : "#b45309";
+  const cheerMission = async (mission) => {
+    if (!mission?.id || !user?.uid) {
+      showToast("로그인 후 응원할 수 있습니다");
+      return;
+    }
+    const id = mission.id;
+    const wasCheered = !!cheeredIds[id];
+    setCheeredIds(prev => ({ ...prev, [id]: !wasCheered }));
+    setCheerCounts(prev => ({ ...prev, [id]: Math.max(0, (prev[id] || 0) + (wasCheered ? -1 : 1)) }));
+    const localKey = `challenge_cheers_${ch.id}`;
+    const localMineKey = `challenge_my_cheers_${ch.id}_${user.uid}`;
+    try {
+      if (wasCheered) {
+        await supabase.from("challenge_cheers").delete().eq("challenge_id", ch.id).eq("mission_id", id).eq("uid", user.uid);
+      } else {
+        await supabase.from("challenge_cheers").insert({ id: `cc_${Date.now()}_${Math.random().toString(36).slice(2,8)}`, challenge_id: ch.id, mission_id: id, uid: user.uid, created_at: new Date().toISOString() });
+      }
+    } catch {
+      try {
+        const counts = JSON.parse(localStorage.getItem(localKey) || "{}");
+        counts[id] = Math.max(0, (counts[id] || 0) + (wasCheered ? -1 : 1));
+        localStorage.setItem(localKey, JSON.stringify(counts));
+        const mine = new Set(JSON.parse(localStorage.getItem(localMineKey) || "[]"));
+        if (wasCheered) mine.delete(id); else mine.add(id);
+        localStorage.setItem(localMineKey, JSON.stringify([...mine]));
+      } catch {}
+    }
+  };
+  const pickPromoFile = e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { alert("이미지만 올릴 수 있습니다."); return; }
+    if (file.size > 5 * 1024 * 1024) { alert("이미지는 5MB 이하만 가능합니다."); return; }
+    setPromoFile(file);
+    setPromoPreview(URL.createObjectURL(file));
+  };
+  const submitPromo = async () => {
+    if (!canUsePromoSlot) { showToast("현재 TOP 3만 홍보 슬롯을 사용할 수 있습니다"); return; }
+    if (!promoTitle.trim() && !promoLink.trim() && !promoFile && !myPromo?.screenshot_url) {
+      showToast("홍보 문구, 링크 또는 이미지를 입력해주세요");
+      return;
+    }
+    setPromoBusy(true);
+    try {
+      let imageUrl = myPromo?.screenshot_url || "";
+      if (promoFile) imageUrl = await uploadChallengeProof(ch.id, user, promoFile, "promo");
+      const payload = {
+        challenge_id: ch.id,
+        uid: user.uid,
+        nick: user.nick || "참가자",
+        day: -2,
+        title: promoTitle.trim() || myPromo?.title || "상위 랭커 홍보",
+        body: isAdmin ? "approved" : "pending",
+        link: promoLink.trim() || myPromo?.link || "",
+        screenshot_url: imageUrl,
+        extra_link: null,
+      };
+      if (myPromo?.id) {
+        const updated = await updateMission(myPromo.id, payload);
+        setMissions(p => p.map(m => m.id === myPromo.id ? updated : m));
+      } else {
+        const row = await submitMission(payload);
+        setMissions(p => [row, ...p]);
+      }
+      setPromoFile(null);
+      setPromoPreview("");
+      showToast(isAdmin ? "홍보 슬롯이 저장되었습니다" : "홍보 슬롯이 검수 대기로 저장되었습니다");
+    } catch (e) {
+      alert("홍보 슬롯 저장 실패: " + e.message);
+    }
+    setPromoBusy(false);
+  };
+  const removePromo = async () => {
+    if (!myPromo?.id) return;
+    if (!confirm("홍보 슬롯을 삭제하시겠습니까?")) return;
+    await supabase.from("challenge_missions").delete().eq("id", myPromo.id);
+    setMissions(p => p.filter(m => m.id !== myPromo.id));
+    setPromoTitle("");
+    setPromoLink("");
+    setPromoFile(null);
+    setPromoPreview("");
+    showToast("홍보 슬롯이 삭제되었습니다");
+  };
+  const updatePromoStatus = async (promo, status) => {
+    if (!promo?.id || !isAdmin) return;
+    const updated = await updateMission(promo.id, { body: status });
+    setMissions(p => p.map(m => m.id === promo.id ? updated : m));
+    showToast(status === "approved" ? "홍보 슬롯을 승인했습니다" : "홍보 슬롯을 반려했습니다");
+  };
+  const copyMissingMessage = async () => {
+    const names = todayMissingMembers.slice(0, 10).map(m => m.nick || m.name || m.email || "참가자").join(", ");
+    const more = todayMissingMembers.length > 10 ? ` 외 ${todayMissingMembers.length - 10}명` : "";
+    const msg = `[${ch.title}] Day ${todayNum} 인증 마감 ${deadlineText}. 아직 인증 전: ${names}${more}\n오늘 인증을 올리면 흐름이 이어집니다. 미션 게시판에서 인증 부탁드립니다.`;
+    try {
+      await navigator.clipboard.writeText(msg);
+      showToast("독려 문구를 복사했습니다");
+    } catch {
+      showToast("복사에 실패했습니다");
+    }
+  };
   const applyEndFile = (f) => {
     if (!f || !f.type.startsWith("image/")) return;
     if (f.size > 5 * 1024 * 1024) { alert("이미지는 5MB 이하만 업로드할 수 있습니다."); return; }
@@ -1355,6 +1832,211 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
         <h2 style={{ fontSize: mob ? 20 : 24, fontWeight: 700, color: C.text, marginBottom: 4 }}>{ch.title}</h2>
         <p style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>{ch.daily_mission || "매일 미션을 수행하고 인증 링크를 등록하세요"}</p>
 
+        {!isViewing && (
+          <div style={{ display: "flex", gap: 6, marginBottom: 14, overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 2 }}>
+            {[
+              ["today", "오늘"],
+              ["ranking", "랭킹"],
+              ["progress", "내 진행"],
+              ...(isAdmin ? [["admin", "관리"]] : []),
+            ].map(([key, label]) => (
+              <button key={key} onClick={() => setSummaryTab(key)}
+                style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", minWidth: 74, padding: "9px 14px", borderRadius: 99, border: summaryTab === key ? `1px solid ${PRIMARY}` : "1px solid " + bdr, background: summaryTab === key ? (isDark ? "rgba(37,99,235,0.16)" : "#eff6ff") : card, color: summaryTab === key ? PRIMARY : C.muted, fontSize: 13, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {summaryTab === "today" && isParticipant && !isViewing && (
+          <div style={{
+            background: card,
+            border: "1px solid " + bdr,
+            borderRadius: 20,
+            padding: mob ? "18px 16px" : "22px 24px",
+            marginBottom: 20,
+            boxShadow: isDark ? "none" : "0 8px 24px rgba(15,23,42,0.05)",
+          }}>
+            <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1.15fr 0.85fr", gap: mob ? 16 : 22, alignItems: "stretch" }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 99, background: isDark ? "rgba(37,99,235,0.18)" : "#eff6ff", color: PRIMARY, border: isDark ? "1px solid rgba(96,165,250,0.24)" : "1px solid #dbeafe", fontSize: 12, fontWeight: 900 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><path d="M3 10h18"/><path d="M5 4h14a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
+                    Day {todayNum}
+                  </span>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 10px", borderRadius: 99, background: todayMission ? (isDark ? "rgba(22,163,74,0.16)" : "#ecfdf5") : (isDark ? "rgba(245,158,11,0.14)" : "#fffbeb"), color: todayMission ? "#16a34a" : "#b45309", border: todayMission ? "1px solid rgba(22,163,74,0.18)" : "1px solid rgba(245,158,11,0.22)", fontSize: 12, fontWeight: 900 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">{todayMission ? <path d="M20 6 9 17l-5-5"/> : <><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></>}</svg>
+                    {todayStatusText}
+                  </span>
+                  <span style={{ display: "inline-flex", alignItems: "center", padding: "6px 10px", borderRadius: 99, background: isDark ? "rgba(255,255,255,0.04)" : "#f8fafc", color: C.muted, border: "1px solid " + bdr, fontSize: 12, fontWeight: 800 }}>
+                    마감 {deadlineText}
+                  </span>
+                </div>
+                <div style={{ fontSize: mob ? 20 : 24, fontWeight: 900, lineHeight: 1.28, marginBottom: 7, color: C.text, letterSpacing: 0 }}>
+                  {todayMission ? "오늘 인증까지 완료했습니다" : "오늘의 인증을 올리고 흐름을 이어가세요"}
+                </div>
+                <div style={{ fontSize: 13, color: C.muted, lineHeight: 1.6 }}>
+                  {todayMission ? "추가활동을 올리면 점수를 더 받을 수 있습니다." : (ch.daily_mission || "오늘 진행한 SNS 활동 화면을 인증해주세요.")}
+                </div>
+                <div style={{ marginTop: 14, padding: "12px 14px", borderRadius: 14, background: isDark ? "rgba(255,255,255,0.035)" : "#f5f9ff", border: isDark ? "1px solid rgba(255,255,255,0.07)" : "1px solid #e8eefc" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5, color: PRIMARY, fontSize: 11, fontWeight: 900 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5V5a2 2 0 0 1 2-2h11"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/><path d="M6 21h12a2 2 0 0 0 2-2V7"/></svg>
+                    오늘의 문장
+                  </div>
+                  <div style={{ fontSize: 13, lineHeight: 1.58, color: C.text, fontWeight: 700 }}>{todayEncouragement}</div>
+                </div>
+                {nextGoalText && (
+                  <div style={{ marginTop: 10, fontSize: 13, fontWeight: 800, color: PRIMARY }}>
+                    다음 목표: {nextGoalText}
+                  </div>
+                )}
+                {myStreakBadge && (
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, fontSize: 12, fontWeight: 900, color: "#16a34a", background: isDark ? "rgba(22,163,74,0.12)" : "#ecfdf5", border: "1px solid rgba(22,163,74,0.16)", padding: "6px 10px", borderRadius: 99 }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20"/><path d="m5 9 7-7 7 7"/></svg>
+                    {myStreakBadge.label}
+                  </div>
+                )}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 10, alignContent: "stretch" }}>
+                {[
+                  ["인증률", `${todayRate}%`, `${todayDoneCount}/${todayBaseCount || 0}명 완료`, <path d="M4 12h4l2 6 4-12 2 6h4"/>],
+                  ["연속", `${myStreak.current}일`, `최대 ${myStreak.longest}일`, <><path d="M12 2v20"/><path d="m5 9 7-7 7 7"/></>],
+                  ["순위", myRank ? `${myRank}위` : "-", `${participantStats.length}명 중`, <><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/></>],
+                  ["점수", `${myScore}점`, `${myChecked}/${totalDays}일`, <path d="M12 3 14.9 9l6.6.6-5 4.3 1.5 6.4L12 17l-6 3.3 1.5-6.4-5-4.3L9.1 9 12 3z"/>],
+                ].map(([label, value, sub, icon]) => (
+                  <div key={label} style={{ padding: "13px 12px", borderRadius: 15, background: isDark ? "rgba(255,255,255,0.035)" : "#ffffff", border: "1px solid " + bdr, minHeight: 92 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div style={{ fontSize: 11, color: C.muted, fontWeight: 800 }}>{label}</div>
+                      <div style={{ width: 28, height: 28, borderRadius: 9, background: isDark ? "rgba(37,99,235,0.16)" : "#eff6ff", color: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{icon}</svg>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: mob ? 18 : 20, color: C.text, fontWeight: 900, lineHeight: 1.1 }}>{value}</div>
+                    <div style={{ fontSize: 11, color: C.muted, marginTop: 6, fontWeight: 700 }}>{sub}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+              <button onClick={() => todayMission ? openMissionProof(todayNum) : openMissionProof(nextMissionDay)}
+                style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 16px", borderRadius: 99, border: "none", background: PRIMARY, color: "#fff", fontSize: 13, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                {todayMission ? "오늘 인증 보기" : "바로 인증하기"}
+              </button>
+              <button onClick={() => { setTab("feed"); setSelDay(null); }}
+                style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "10px 15px", borderRadius: 99, border: "1px solid " + bdr, background: isDark ? "rgba(255,255,255,0.035)" : "#fff", color: C.text, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                다른 참가자 보기
+              </button>
+            </div>
+          </div>
+        )}
+
+        {summaryTab === "ranking" && !isViewing && topRankers.length > 0 && (
+          <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 18, padding: mob ? "16px" : "18px 20px", marginBottom: 20, boxShadow: isDark ? "none" : "0 4px 14px rgba(15,23,42,0.04)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={PRIMARY} strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M5 4H3v2a4 4 0 0 0 4 4"/><path d="M19 4h2v2a4 4 0 0 1-4 4"/></svg>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>상위 랭커 홍보 슬롯</div>
+                </div>
+                <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>현재 TOP 3만 노출됩니다. 순위가 내려가면 저장된 홍보는 유지되지만 화면에서는 자동으로 숨겨집니다.</div>
+              </div>
+              {canUsePromoSlot && (
+                <span style={{ fontSize: 12, fontWeight: 900, color: PRIMARY, background: isDark ? "rgba(37,99,235,0.16)" : "#eff6ff", border: isDark ? "1px solid rgba(96,165,250,0.22)" : "1px solid #dbeafe", padding: "6px 10px", borderRadius: 99 }}>
+                  내 현재 순위 {myTopRank}위 · 홍보 가능
+                </span>
+              )}
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 10 }}>
+              {topRankers.map((ranker, idx) => {
+                const promo = promoByUid[ranker.uid];
+                const score = calcScore(ranker.days);
+                const rankColor = ["#f59e0b", "#64748b", "#b45309"][idx] || PRIMARY;
+                const promoStatus = promo?.body || "pending";
+                const promoApproved = promoStatus === "approved";
+                const href = promoApproved ? (promo?.link || "") : "";
+                const content = (
+                  <div style={{ border: "1px solid " + bdr, borderRadius: 16, overflow: "hidden", background: isDark ? "rgba(255,255,255,0.025)" : "#fff", minHeight: 190 }}>
+                    <div style={{ height: 96, background: isDark ? "rgba(255,255,255,0.04)" : "#f5f9ff", borderBottom: "1px solid " + bdr, position: "relative", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                      {promo?.screenshot_url ? (
+                        <img src={promo.screenshot_url} alt={`${ranker.nick || "랭커"} 홍보 이미지`} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      ) : (
+                        <div style={{ textAlign: "center", color: C.muted }}>
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 5 }}><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15l3-3 2 2 3-4 2 5"/></svg>
+                          <div style={{ fontSize: 11, fontWeight: 800 }}>홍보 이미지 대기</div>
+                        </div>
+                      )}
+                      <span style={{ position: "absolute", top: 8, left: 8, background: rankColor, color: "#fff", fontSize: 11, fontWeight: 900, padding: "4px 8px", borderRadius: 99 }}>{idx + 1}위</span>
+                    </div>
+                    <div style={{ padding: "12px 13px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+                        <span style={{ width: 26, height: 26, borderRadius: "50%", background: rankColor, color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 900, flexShrink: 0 }}>{(ranker.nick || "?")[0]}</span>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 900, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{isAdmin ? ranker.nick : maskNick(ranker.nick)}</div>
+                          <div style={{ fontSize: 11, color: C.muted }}>{score}점 · {Object.keys(ranker.days || {}).length}일 인증</div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: promo?.title ? C.text : C.muted, lineHeight: 1.4, minHeight: 36, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                        {promo?.title || "TOP 3가 되면 이 자리에 내 링크를 홍보할 수 있습니다"}
+                      </div>
+                      {promo && <div style={{ marginTop: 8, display: "inline-flex", alignItems: "center", fontSize: 10, fontWeight: 900, color: promoStatusColor(promoStatus), background: promoStatus === "approved" ? "rgba(22,163,74,0.08)" : promoStatus === "rejected" ? "rgba(239,68,68,0.08)" : "rgba(245,158,11,0.10)", padding: "3px 7px", borderRadius: 99 }}>{promoStatusLabel(promoStatus)}</div>}
+                      {href && <div style={{ marginTop: 8, fontSize: 11, color: PRIMARY, fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>링크 열기</div>}
+                      {isAdmin && promo && (
+                        <div style={{ display: "flex", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
+                          <button onClick={e => { e.preventDefault(); e.stopPropagation(); updatePromoStatus(promo, "approved"); }} style={{ padding: "5px 8px", borderRadius: 99, border: "none", background: "#16a34a", color: "#fff", fontSize: 10, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>승인</button>
+                          <button onClick={e => { e.preventDefault(); e.stopPropagation(); updatePromoStatus(promo, "rejected"); }} style={{ padding: "5px 8px", borderRadius: 99, border: "1px solid rgba(239,68,68,0.25)", background: "transparent", color: "#ef4444", fontSize: 10, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>반려</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+                return href ? <a key={ranker.uid} href={href} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none" }}>{content}</a> : <div key={ranker.uid}>{content}</div>;
+              })}
+            </div>
+
+            {isParticipant && (
+              <div style={{ marginTop: 14, borderTop: "1px solid " + bdr, paddingTop: 14 }}>
+                {canUsePromoSlot ? (
+                  <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "160px 1fr", gap: 12, alignItems: "stretch" }}>
+                    <div>
+                      <input id="challenge-ranker-promo-image" type="file" accept="image/*" onChange={pickPromoFile} style={{ display: "none" }} />
+                      <button onClick={() => document.getElementById("challenge-ranker-promo-image")?.click()}
+                        style={{ width: "100%", height: mob ? 120 : "100%", minHeight: 118, borderRadius: 14, border: "1.5px dashed " + bdr, background: isDark ? "rgba(255,255,255,0.025)" : "#f8fafc", cursor: "pointer", overflow: "hidden", padding: 0, fontFamily: "inherit" }}>
+                        {promoPreview || myPromo?.screenshot_url ? (
+                          <img src={promoPreview || myPromo?.screenshot_url} alt="내 홍보 이미지" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                        ) : (
+                          <span style={{ display: "flex", height: "100%", flexDirection: "column", alignItems: "center", justifyContent: "center", color: C.muted, gap: 6 }}>
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15l3-3 2 2 3-4 2 5"/></svg>
+                            <span style={{ fontSize: 12, fontWeight: 800 }}>이미지 등록</span>
+                          </span>
+                        )}
+                      </button>
+                    </div>
+                    <div>
+                      <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                        <input value={promoTitle} onChange={e => setPromoTitle(e.target.value)} placeholder={myPromo?.title || "홍보 문구 예: 제 인스타 콘텐츠 보러오세요"} style={inp} />
+                        <input value={promoLink} onChange={e => setPromoLink(e.target.value)} placeholder={myPromo?.link || "홍보 링크 https://..."} style={inp} />
+                      </div>
+                      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                        <button disabled={promoBusy} onClick={submitPromo}
+                          style={{ padding: "10px 16px", borderRadius: 99, border: "none", background: PRIMARY, color: "#fff", fontSize: 13, fontWeight: 900, cursor: promoBusy ? "not-allowed" : "pointer", fontFamily: "inherit" }}>
+                          {promoBusy ? "저장 중..." : myPromo ? "홍보 슬롯 수정" : "홍보 슬롯 등록"}
+                        </button>
+                        {myPromo && <button onClick={removePromo} style={{ padding: "9px 14px", borderRadius: 99, border: "1px solid rgba(239,68,68,0.25)", background: "transparent", color: "#ef4444", fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>삭제</button>}
+                        {myPromo && <span style={{ fontSize: 11, fontWeight: 900, color: promoStatusColor(myPromo.body || "pending"), background: (myPromo.body === "approved") ? "rgba(22,163,74,0.08)" : (myPromo.body === "rejected") ? "rgba(239,68,68,0.08)" : "rgba(245,158,11,0.10)", padding: "5px 9px", borderRadius: 99 }}>{promoStatusLabel(myPromo.body || "pending")}</span>}
+                        <span style={{ fontSize: 11, color: C.muted }}>승인된 홍보만 메인에 노출됩니다</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.5 }}>현재 TOP 3에 진입하면 이곳에서 내 이미지와 링크를 등록할 수 있습니다.</div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* 관리자: 다른 멤버 보기 배너 */}
         {isViewing && (
           <div style={{ background: PRIMARY, borderRadius: 14, padding: "14px 20px", marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1370,7 +2052,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
         )}
 
         {/* 미니 레이스 트랙 */}
-        {!isViewing && (() => {
+        {summaryTab === "ranking" && !isViewing && (() => {
           const rMap = {};
           missions.forEach(m => { if (m.day > 0 && !rMap[m.uid]) rMap[m.uid] = { nick: m.nick, uid: m.uid, days: {} }; if (m.day > 0 && rMap[m.uid] && !rMap[m.uid].days[m.day]) rMap[m.uid].days[m.day] = m; });
           // 점수 있는 참가자만 표시
@@ -1406,6 +2088,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
         })()}
 
         {/* 진행률 바 */}
+        {summaryTab === "progress" && (
         <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: "20px 22px", marginBottom: 24, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
             <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{isViewing ? `${viewAsMember.nick}의 진행률` : "내 진행률"}</span>
@@ -1424,6 +2107,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
             <span>Day {totalDays}</span>
           </div>
         </div>
+        )}
 
         {/* 관리자 분석 지표 */}
         {isViewing && (() => {
@@ -1479,8 +2163,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                 <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 12 }}>누적 점수 추이</div>
                 {cumScores.length > 0 ? (
                   <svg width="100%" height="120" viewBox={`0 0 ${Math.max(cumScores.length * 20, 40)} 120`} preserveAspectRatio="none" style={{ display: "block" }}>
-                    <defs><linearGradient id="cumGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={PRIMARY} stopOpacity="0.3"/><stop offset="100%" stopColor={PRIMARY} stopOpacity="0.02"/></linearGradient></defs>
-                    <path d={`M0,120 ${cumScores.map((s, i) => `L${i * 20},${120 - (s / maxCum) * 100}`).join(" ")} L${(cumScores.length - 1) * 20},120 Z`} fill="url(#cumGrad)" />
+                    <path d={`M0,120 ${cumScores.map((s, i) => `L${i * 20},${120 - (s / maxCum) * 100}`).join(" ")} L${(cumScores.length - 1) * 20},120 Z`} fill={isDark ? "rgba(59,130,246,0.10)" : "rgba(59,130,246,0.08)"} />
                     <polyline fill="none" stroke={PRIMARY} strokeWidth="2" points={cumScores.map((s, i) => `${i * 20},${120 - (s / maxCum) * 100}`).join(" ")} />
                     {cumScores.map((s, i) => days[i + 1] ? <circle key={i} cx={i * 20} cy={120 - (s / maxCum) * 100} r="3" fill={PRIMARY} /> : null)}
                   </svg>
@@ -1524,7 +2207,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
           );
         })()}
 
-        {isParticipant && !isViewing && (
+        {summaryTab === "progress" && isParticipant && !isViewing && (
           <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: mob ? "16px" : "18px 20px", marginBottom: 24, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
             <div style={{ display: "flex", alignItems: mob ? "stretch" : "center", justifyContent: "space-between", gap: 12, flexDirection: mob ? "column" : "row" }}>
               <div>
@@ -1543,16 +2226,65 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
           </div>
         )}
 
+        {summaryTab === "admin" && isAdmin && !isViewing && todayIsActive && (
+          <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: mob ? "16px" : "18px 20px", marginBottom: 24, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 900, color: C.text }}>오늘 미인증자</div>
+                <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>Day {todayNum} 기준 · 인증률 {todayRate}% · 마감 {deadlineText}</div>
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 900, color: todayMissingMembers.length ? "#ef4444" : "#16a34a", background: todayMissingMembers.length ? "rgba(239,68,68,0.08)" : "rgba(22,163,74,0.08)", padding: "6px 11px", borderRadius: 99 }}>
+                {todayMissingMembers.length ? `${todayMissingMembers.length}명 남음` : "전원 완료"}
+              </span>
+            </div>
+            {todayMissingMembers.length > 0 ? (
+              <>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {todayMissingMembers.slice(0, 24).map((m, i) => (
+                    <span key={m.uid || m.id || i} style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "7px 10px", borderRadius: 99, background: isDark ? "rgba(255,255,255,0.04)" : "#f8fafc", border: "1px solid " + bdr, fontSize: 12, fontWeight: 800, color: C.text }}>
+                      <span style={{ width: 20, height: 20, borderRadius: "50%", background: "rgba(59,130,246,0.10)", color: PRIMARY, display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900 }}>{(m.nick || m.name || "?")[0]}</span>
+                      {m.nick || m.name || m.email || m.uid}
+                    </span>
+                  ))}
+                  {todayMissingMembers.length > 24 && <span style={{ fontSize: 12, color: C.muted, padding: "7px 0" }}>외 {todayMissingMembers.length - 24}명</span>}
+                </div>
+                <button onClick={copyMissingMessage} style={{ marginTop: 12, display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 13px", borderRadius: 99, border: "none", background: PRIMARY, color: "#fff", fontSize: 12, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                  독려 문구 복사
+                </button>
+              </>
+            ) : (
+              <div style={{ fontSize: 13, color: C.muted, padding: "8px 0" }}>오늘 인증이 모두 완료됐습니다.</div>
+            )}
+          </div>
+        )}
+
         {/* 탭 */}
-        <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "1px solid " + bdr }}>
+        <div style={{ display: "flex", gap: 0, marginBottom: 24, borderBottom: "1px solid " + bdr, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
           {[["calendar", "날짜별 체크"], ["members", "참가자 현황"], ["feed", "전체 피드"], ["my", isViewing ? `${viewAsMember.nick} 기록` : "내 기록"], ["board", "자유게시판"]].map(([v, l]) => (
-            <button key={v} onClick={() => { setTab(v); if (v === "members") setViewAsMember(null); }} style={{ padding: "12px 20px", border: "none", cursor: "pointer", fontSize: 14, fontWeight: tab === v ? 700 : 500, background: "transparent", color: tab === v ? PRIMARY : C.muted, borderBottom: tab === v ? `2px solid ${PRIMARY}` : "2px solid transparent", marginBottom: -1, fontFamily: "inherit", transition: "all 0.15s" }}>{l}</button>
+            <button key={v} onClick={() => { setTab(v); if (v === "members") setViewAsMember(null); }} style={{ padding: "12px 20px", border: "none", cursor: "pointer", fontSize: 14, fontWeight: tab === v ? 700 : 500, background: "transparent", color: tab === v ? PRIMARY : C.muted, borderBottom: tab === v ? `2px solid ${PRIMARY}` : "2px solid transparent", marginBottom: -1, fontFamily: "inherit", transition: "all 0.15s", whiteSpace: "nowrap", flexShrink: 0 }}>{l}</button>
           ))}
         </div>
 
         {/* ── 탭: 날짜별 캘린더 체크 ── */}
         {tab === "calendar" && (
           <div>
+            {isParticipant && !isViewing && (
+              <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 16 }}>
+                {quickActions.map((action, idx) => (
+                  <button key={action.key} onClick={action.onClick}
+                    style={{ textAlign: "left", display: "flex", gap: 12, alignItems: "flex-start", padding: "14px 14px", borderRadius: 16, border: idx === 0 && !todayMission ? `1.5px solid ${PRIMARY}` : "1px solid " + bdr, background: idx === 0 && !todayMission ? (isDark ? "rgba(37,99,235,0.12)" : "#f5f9ff") : card, cursor: "pointer", fontFamily: "inherit", boxShadow: isDark ? "none" : "0 1px 2px rgba(0,0,0,0.03)" }}>
+                    <span style={{ width: 34, height: 34, borderRadius: 12, background: isDark ? "rgba(37,99,235,0.16)" : "#eff6ff", color: PRIMARY, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{action.icon}</svg>
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <span style={{ display: "block", fontSize: 13, fontWeight: 900, color: C.text, marginBottom: 4 }}>{action.title}</span>
+                      <span style={{ display: "block", fontSize: 11, lineHeight: 1.45, color: C.muted }}>{action.desc}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
             {/* 드래그 안내 */}
             {isParticipant && !isViewing && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, padding: "8px 14px", borderRadius: 10, background: isDark ? "rgba(59,130,246,0.06)" : "rgba(59,130,246,0.04)", border: "1px solid rgba(59,130,246,0.1)" }}>
@@ -1894,7 +2626,14 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                           <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{maskNick(m.nick)}</div>
                           {m.screenshot_url && <a href={m.screenshot_url} target="_blank" rel="noopener noreferrer"><img src={m.screenshot_url} alt="인증" style={{ width: 60, height: 40, objectFit: "cover", borderRadius: 6, marginTop: 4, display: "block" }} /></a>}
                           {m.link && !m.link.includes("supabase.co/storage") && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{m.link}</a>}
-                          {hasExtra(m) && <div style={{ display: "flex", gap: 4, marginTop: 4 }}>{getExtraLinks(m.extra_link).map((url, ei) => <a key={ei} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="추가활동" style={{ width: 50, height: 34, objectFit: "cover", borderRadius: 4, display: "block" }} /></a>)}</div>}
+                          {hasExtra(m) && <div style={{ display: "flex", gap: 4, marginTop: 4 }}>{getExtraLinks(m.extra_link).map((item, ei) => {
+                            const img = extraImg(item);
+                            return img ? <a key={ei} href={img} target="_blank" rel="noopener noreferrer"><img src={img} alt="추가활동" style={{ width: 50, height: 34, objectFit: "cover", borderRadius: 4, display: "block" }} /></a> : null;
+                          })}</div>}
+                          <button onClick={() => cheerMission(m)}
+                            style={{ marginTop: 6, padding: "5px 10px", borderRadius: 99, border: cheeredIds[m.id] ? "none" : "1px solid " + bdr, background: cheeredIds[m.id] ? PRIMARY : "transparent", color: cheeredIds[m.id] ? "#fff" : PRIMARY, fontSize: 11, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+                            응원 {cheerCounts[m.id] || 0}
+                          </button>
                         </div>
                         <span style={{ fontSize: 11, color: C.muted, flexShrink: 0 }}>{new Date(m.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</span>
                         {user?.role === "admin" && (
@@ -1931,7 +2670,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                   ["참가자", `${members.length}명`, PRIMARY],
                   ["총 인증", `${totalMissions}건`, "#22c55e"],
                   ["평균 달성률", `${avgPct}%`, "#f59e0b"],
-                  ["현재 Day", `${currentDayNum}`, C.muted],
+                  ["현재 Day", `${todayNum}`, C.muted],
                 ].map(([label, val, color]) => (
                   <div key={label} style={{ background: card, border: "1px solid " + bdr, borderRadius: 12, padding: "14px 12px", textAlign: "center" }}>
                     <div style={{ fontSize: 20, fontWeight: 800, color }}>{val}</div>
@@ -1946,6 +2685,8 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                   {members.map((mem, idx) => {
                     const memberPct = Math.round((mem.count / totalDays) * 100);
                     const memberScore = calcScore(mem.days);
+                    const memberStreak = streakFor(mem.days);
+                    const memberBadge = streakBadge(memberStreak.current);
                     return (
                       <div key={mem.uid} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 18px", borderBottom: idx < members.length - 1 ? "1px solid " + bdr : "none", cursor: isAdmin ? "pointer" : "default" }}
                         onClick={() => { if (isAdmin) { setViewAsMember(mem); setTab("calendar"); setSelDay(null); } }}>
@@ -1953,6 +2694,10 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                         <div style={{ width: 30, height: 30, borderRadius: "50%", background: idx < 3 ? ["#f59e0b","#94a3b8","#cd7f32"][idx] : PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(mem.nick || "?")[0]}</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{isAdmin ? (mem.nick || "?") : maskNick(mem.nick)}</div>
+                          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 5 }}>
+                            {memberBadge && <span style={{ fontSize: 10, fontWeight: 800, color: memberBadge.color, background: `${memberBadge.color}12`, padding: "2px 7px", borderRadius: 99 }}>{memberBadge.label}</span>}
+                            {memberStreak.current > 0 && <span style={{ fontSize: 10, fontWeight: 800, color: "#16a34a", background: "rgba(22,163,74,0.08)", padding: "2px 7px", borderRadius: 99 }}>연속 {memberStreak.current}일</span>}
+                          </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3 }}>
                             <div style={{ flex: 1, height: 4, borderRadius: 99, background: isDark ? "rgba(255,255,255,0.06)" : "#e5e7eb" }}>
                               <div style={{ height: "100%", borderRadius: 99, background: memberPct >= 80 ? "#22c55e" : PRIMARY, width: `${memberPct}%` }} />
@@ -1973,18 +2718,65 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
 
         {/* ── 탭: 전체 피드 ── */}
         {tab === "feed" && (() => {
-          const feedMissions = missions.filter(m => m.day > 0);
+          const feedMissions = recentMissions;
           const deleteMission = async (id) => {
             if (!confirm("이 인증 기록을 삭제하시겠습니까?")) return;
             await supabase.from("challenge_missions").delete().eq("id", id);
             setMissions(p => p.filter(x => x.id !== id));
           };
+          const feedHighlights = [
+            {
+              label: "최근 인증",
+              value: recentMissions[0] ? `${maskNick(recentMissions[0].nick)} · Day ${recentMissions[0].day}` : "-",
+              sub: recentMissions[0] ? new Date(recentMissions[0].created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "아직 인증이 없습니다",
+              icon: <><path d="M12 8v4l3 2"/><circle cx="12" cy="12" r="9"/></>,
+            },
+            {
+              label: "오늘 첫 인증",
+              value: todayFirstMission ? maskNick(todayFirstMission.nick) : "-",
+              sub: todayFirstMission ? `Day ${todayNum} · ${new Date(todayFirstMission.created_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}` : "아직 오늘 인증 전입니다",
+              icon: <><path d="M12 2v20"/><path d="m5 9 7-7 7 7"/></>,
+            },
+            {
+              label: "연속 참여",
+              value: activeStreakLeader ? maskNick(activeStreakLeader.nick) : "-",
+              sub: activeStreakLeader ? `${activeStreakLeader.streak.current}일 연속 진행 중` : "연속 인증자가 나오면 표시됩니다",
+              icon: <><path d="M4 12h4l2 6 4-12 2 6h4"/></>,
+            },
+          ];
           return feedMissions.length === 0 ? (
             <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted, border: "1px dashed " + bdr, borderRadius: 20 }}>
               <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>아직 인증이 없어요</div>
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "grid", gridTemplateColumns: mob ? "1fr" : "repeat(3, minmax(0, 1fr))", gap: 10, marginBottom: 6 }}>
+                {feedHighlights.map(item => (
+                  <div key={item.label} style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: "14px 14px", display: "flex", gap: 12, alignItems: "center", boxShadow: isDark ? "none" : "0 1px 2px rgba(0,0,0,0.03)" }}>
+                    <span style={{ width: 34, height: 34, borderRadius: 12, background: isDark ? "rgba(37,99,235,0.16)" : "#eff6ff", color: PRIMARY, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">{item.icon}</svg>
+                    </span>
+                    <span style={{ minWidth: 0 }}>
+                      <span style={{ display: "block", fontSize: 11, color: C.muted, fontWeight: 800, marginBottom: 3 }}>{item.label}</span>
+                      <span style={{ display: "block", fontSize: 14, color: C.text, fontWeight: 900, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.value}</span>
+                      <span style={{ display: "block", fontSize: 11, color: C.muted, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.sub}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, margin: "4px 2px 2px", flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 900, color: C.text }}>참가자 인증 피드</div>
+                  <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>최근 인증이 위로 올라옵니다. 응원을 누르면 참가자에게 작은 신호가 됩니다.</div>
+                </div>
+                {isParticipant && !todayMission && todayIsActive && (
+                  <button onClick={() => openMissionProof(todayNum)}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "9px 14px", borderRadius: 99, border: "none", background: PRIMARY, color: "#fff", fontSize: 12, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                    나도 인증하기
+                  </button>
+                )}
+              </div>
               {feedMissions.map(m => (
                 <div key={m.id} style={{ background: card, border: "1px solid " + bdr, borderRadius: 16, padding: "16px 20px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)", display: "flex", alignItems: "center", gap: 14 }}>
                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 700, color: "#fff", flexShrink: 0 }}>{(m.nick || "?")[0]}</div>
@@ -1998,7 +2790,17 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                     </div>
                     {m.body && <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>{m.body}</div>}
                     {m.link && <a href={m.link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 12, color: PRIMARY, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>{m.link}</a>}
-                    {hasExtra(m) && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>{getExtraLinks(m.extra_link).map((url, ei) => <a key={ei} href={url} target="_blank" rel="noopener noreferrer"><img src={url} alt="추가활동" style={{ width: 80, height: 54, objectFit: "cover", borderRadius: 6, display: "block", border: "1px solid rgba(245,158,11,0.2)" }} /></a>)}</div>}
+                    {hasExtra(m) && <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 8 }}>{getExtraLinks(m.extra_link).map((item, ei) => {
+                      const img = extraImg(item);
+                      return img ? <a key={ei} href={img} target="_blank" rel="noopener noreferrer"><img src={img} alt="추가활동" style={{ width: 80, height: 54, objectFit: "cover", borderRadius: 6, display: "block", border: "1px solid rgba(245,158,11,0.2)" }} /></a> : null;
+                    })}</div>}
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 10 }}>
+                      <button onClick={() => cheerMission(m)}
+                        style={{ padding: "6px 12px", borderRadius: 99, border: cheeredIds[m.id] ? "none" : "1px solid " + bdr, background: cheeredIds[m.id] ? PRIMARY : "transparent", color: cheeredIds[m.id] ? "#fff" : PRIMARY, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+                        응원 {cheerCounts[m.id] || 0}
+                      </button>
+                      <span style={{ fontSize: 11, color: C.muted }}>가볍게 응원하고 참여 흐름을 이어가세요</span>
+                    </div>
                   </div>
                   {user?.role === "admin" && (
                     <button onClick={() => deleteMission(m.id)} title="삭제" style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(239,68,68,0.5)", fontSize: 16, flexShrink: 0, padding: 4 }}>
@@ -2593,7 +3395,7 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                                       if (p.days[d]) nowStrk++; else break;
                                     }
                                     const lateN = doneList.filter(([,m]) => lateDays(m) > 0).length;
-                                    const extraN = doneList.filter(([,m]) => m.extra_link).length;
+                                    const extraN = doneList.reduce((sum, [,m]) => sum + getExtraLinks(m.extra_link).length, 0);
                                     const hourBk = Array(24).fill(0);
                                     doneList.forEach(([,m]) => { if (m.created_at) hourBk[new Date(m.created_at).getHours()]++; });
                                     const maxH = Math.max(...hourBk, 1);
@@ -2632,8 +3434,7 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                                           <div style={{ fontSize: 12, fontWeight: 700, color: C.text, marginBottom: 8 }}>누적 점수 추이</div>
                                           {cumS.length > 0 ? (
                                             <svg width="100%" height="80" viewBox={`0 0 ${Math.max(cumS.length * 16, 32)} 80`} preserveAspectRatio="none" style={{ display: "block" }}>
-                                              <defs><linearGradient id={`cg-${p.uid}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={PRIMARY} stopOpacity="0.25"/><stop offset="100%" stopColor={PRIMARY} stopOpacity="0.02"/></linearGradient></defs>
-                                              <path d={`M0,80 ${cumS.map((s, i) => `L${i * 16},${80 - (s / maxCm) * 65}`).join(" ")} L${(cumS.length - 1) * 16},80 Z`} fill={`url(#cg-${p.uid})`} />
+                                              <path d={`M0,80 ${cumS.map((s, i) => `L${i * 16},${80 - (s / maxCm) * 65}`).join(" ")} L${(cumS.length - 1) * 16},80 Z`} fill={isDark ? "rgba(59,130,246,0.10)" : "rgba(59,130,246,0.08)"} />
                                               <polyline fill="none" stroke={PRIMARY} strokeWidth="1.5" points={cumS.map((s, i) => `${i * 16},${80 - (s / maxCm) * 65}`).join(" ")} />
                                             </svg>
                                           ) : <div style={{ fontSize: 11, color: C.muted, textAlign: "center", padding: 12 }}>데이터 없음</div>}
@@ -2711,11 +3512,14 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
                                                   </a>
                                                 )}
                                                 {/* 추가활동 사진 */}
-                                                {hasExtra(m) && getExtraLinks(m.extra_link).map((url, ei) => (
-                                                  <a key={ei} href={url} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
-                                                    <img src={url} alt={`Day ${day} 추가활동 ${ei + 1}`} style={{ width: 100, height: 75, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(245,158,11,0.3)", display: "block" }} />
-                                                  </a>
-                                                ))}
+                                                {hasExtra(m) && getExtraLinks(m.extra_link).map((item, ei) => {
+                                                  const img = extraImg(item);
+                                                  return img ? (
+                                                    <a key={ei} href={img} target="_blank" rel="noopener noreferrer" style={{ flexShrink: 0 }}>
+                                                      <img src={img} alt={`Day ${day} 추가활동 ${ei + 1}`} style={{ width: 100, height: 75, objectFit: "cover", borderRadius: 10, border: "1px solid rgba(245,158,11,0.3)", display: "block" }} />
+                                                    </a>
+                                                  ) : null;
+                                                })}
                                                 {/* 텍스트 정보 */}
                                                 <div style={{ flex: 1, minWidth: 0 }}>
                                                   {m.link && (

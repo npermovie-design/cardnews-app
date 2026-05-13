@@ -1863,6 +1863,39 @@ async function handleReferralSignup(req, res) {
   }
 }
 
+async function handleAiUsageLog(req, res) {
+  try {
+    if (req.method !== "POST") return res.status(405).json({ error: "POST만 허용됩니다" });
+    const sb = getServiceClient();
+    if (!sb) return res.status(500).json({ error: "서버 설정 오류" });
+
+    const authHeader = req.headers.authorization || "";
+    if (!authHeader.startsWith("Bearer ")) return res.status(401).json({ error: "로그인이 필요합니다" });
+    const anonClient = createClient(process.env.SUPABASE_URL, process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || "");
+    const { data: { user } } = await anonClient.auth.getUser(authHeader.replace("Bearer ", ""));
+    if (!user?.id) return res.status(401).json({ error: "유효하지 않은 로그인입니다" });
+
+    const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : (req.body || {});
+    const reason = String(body.reason || "웹 AI 사용").slice(0, 120);
+    const feature = String(body.feature || "write").slice(0, 40);
+    const delta = -Math.max(1, Math.min(100, Number(body.cost || 1)));
+    const { data: row } = await sb.from("users").select("points").eq("uid", user.id).single();
+    const balance = Number(row?.points || 0);
+
+    const { error } = await sb.from("point_history").insert({
+      uid: user.id,
+      delta,
+      reason: `[웹 SaaS] ${reason}${feature ? ` (${feature})` : ""}`,
+      balance,
+      created_at: new Date().toISOString(),
+    });
+    if (error) throw error;
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    return res.status(500).json({ error: e.message || "AI 사용 로그 기록 실패" });
+  }
+}
+
 const ACTION_MAP = {
   publish: handlePublish,
   "multi-publish": handleMultiPublish,
@@ -1879,6 +1912,7 @@ const ACTION_MAP = {
   "track-log": handleTrackLog,
   "track-stats": handleTrackStats,
   "referral-signup": handleReferralSignup,
+  "ai-usage-log": handleAiUsageLog,
   "validate-email": handleValidateEmail,
 };
 

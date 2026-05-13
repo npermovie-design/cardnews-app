@@ -833,6 +833,8 @@ export default function App() {
     return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} setAiMenu={setAiMenu} />;
   };
 
+  const isAdminPage = page === "xk9m2p4q7" && user?.role === "admin";
+
   return (
     <div style={{
       minHeight: "100vh", background: C.bg, color: C.text,
@@ -1025,6 +1027,7 @@ export default function App() {
         </div>
       )}
 
+      {!isAdminPage && (<>
       {/* ── 네비게이션 ── */}
       <nav role="navigation" aria-label="메인 네비게이션" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, height: 60,
@@ -1347,6 +1350,7 @@ export default function App() {
           </div>
         </div>
       )}
+      </>)}
 
       {/* ── 페이지 ── */}
       {/* AI 페이지 — keep-alive: 한번 방문하면 항상 마운트, display로 숨김 */}
@@ -1359,7 +1363,7 @@ export default function App() {
       )}
       {/* 일반 페이지 — AI가 아닐 때만 표시 */}
       {page !== "ai" && (
-        <div style={{ paddingTop: 60 }} className="page-anim" key={page}>
+        <div style={{ paddingTop: isAdminPage ? 0 : 60 }} className="page-anim" key={page}>
           <Suspense fallback={<PageLoader />}>
             {renderPage()}
           </Suspense>
@@ -1367,10 +1371,10 @@ export default function App() {
       )}
 
       {/* ── 푸터 (AI 페이지에서는 콘텐츠 내부에 포함) ── */}
-      {page !== "ai" && <Footer C={C} navigateBoard={navigateBoard} navigateAi={navigateAi} navigate={navigate} />}
+      {page !== "ai" && !isAdminPage && <Footer C={C} navigateBoard={navigateBoard} navigateAi={navigateAi} navigate={navigate} />}
 
       {/* 실시간 채팅 위젯 */}
-      <ChatWidget user={user} C={C} />
+      {!isAdminPage && <ChatWidget user={user} C={C} />}
 
       {showScrollTop && (
         <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

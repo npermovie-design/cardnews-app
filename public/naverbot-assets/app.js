@@ -403,7 +403,7 @@ const navItems = document.querySelectorAll(".nav-item");
 const panels = document.querySelectorAll(".panel");
 
 // 로그인 없이 접근 가능한 패널 (홈만)
-const LOGIN_FREE_PANELS = ["home", "pricing", "about", "video-editor", "manual-write", "link-write", "file-write", "cardnews"];
+const LOGIN_FREE_PANELS = ["home", "pricing", "about", "video-hub", "video-editor", "manual-write", "link-write", "file-write", "cardnews"];
 // 네이버 계정 필요 패널
 const ACCOUNT_REQUIRED_PANELS = ["naver-blog", "naver-cafe"];
 
@@ -729,6 +729,8 @@ function showModal(title, message, btnText = "확인", onConfirm = null) {
     document.getElementById("modalMessage").textContent = message;
   }
   const confirmBtn = document.getElementById("modalConfirm");
+  const cancelBtn = document.getElementById("modalCancel");
+  if (cancelBtn) cancelBtn.textContent = "닫기";
   confirmBtn.textContent = btnText;
   confirmBtn.onclick = () => {
     overlay.style.display = "none";
@@ -744,6 +746,21 @@ function closeModal() {
 
 function showModalAsync(title, message, btnText = "확인") {
   return new Promise(resolve => showModal(title, message, btnText, resolve));
+}
+
+function showChoiceModal(title, message, yesText, noText) {
+  return new Promise(function(resolve) {
+    showModal(title, message, yesText || "진행", function() { resolve(true); });
+    var overlay = document.getElementById("modalOverlay");
+    var cancel = document.getElementById("modalCancel");
+    if (cancel) {
+      cancel.textContent = noText || "건너뛰기";
+      cancel.onclick = function() {
+        if (overlay) overlay.style.display = "none";
+        resolve(false);
+      };
+    }
+  });
 }
 
 // ── 효과음 ──
@@ -1436,11 +1453,11 @@ async function handleBrowserLogin() {
     return;
   }
   setLoginBtnState(true);
-  addLog("[계정] 로그인 창 여는 중...");
+  addLog("[계정] Google 로그인 페이지 여는 중...");
   setUserBadge("대기 중...", "gray");
   // 60초 후 자동 리셋 (로그인 창 닫힌 경우)
   setTimeout(() => { if (_loginInProgress) setLoginBtnState(false); }, 60000);
-  await bridge.openLoginWindow();
+  await bridge.openGoogleOAuth();
 }
 
 // Custom protocol 콜백 수신 (main.js가 전달)
@@ -3180,6 +3197,254 @@ $("startAutopilotBtn").addEventListener("click", async () => {
 
 });
 
+function renderAutopilotDraftHtml(blocks) {
+  return (blocks || []).map(function(b) {
+    if (!b) return "";
+    if (b.type === "subtitle") {
+      return '<div style="font-size:17px;font-weight:800;color:var(--text);margin:20px 0 8px;padding-bottom:4px;border-bottom:2px solid var(--accent);">' + escapeHtml(b.content || "") + '</div>';
+    }
+    if (b.type === "quote") {
+      return '<div style="background:#fffde7;border-left:4px solid #fbc02d;padding:12px 16px;margin:12px 0;border-radius:4px;color:#5d4037;font-style:italic;">' + escapeHtml(b.content || "") + '</div>';
+    }
+    if (b.type === "image" && b.url) {
+      return '<img src="' + escapeHtml(b.url) + '" alt="' + escapeHtml(b.alt || b.keyword || "") + '" style="max-width:100%;border-radius:8px;margin:8px 0;">';
+    }
+    return escapeHtml(b.content || b.text || "").replace(/\n/g, "<br>");
+  }).filter(Boolean).join("<br>");
+}
+
+function firstSettingValue(raw) {
+  return String(raw || "").split(/[,\n]/).map(function(v) { return v.trim(); }).filter(Boolean)[0] || "";
+}
+
+async function saveAutopilotDraftOnly() {
+  const btn = $("saveAutopilotDraftBtn");
+  const themeRaw = $("autopilotTheme")?.value.trim() || "";
+  const theme = firstSettingValue(themeRaw);
+  if (!theme) return showModal("알림", "키워드를 입력하세요", "확인");
+  if (!state.loggedIn) return showModal("로그인 필요", "먼저 메이킷 계정에 로그인해주세요.", "확인");
+  if (!window._archiveSave) return showModal("보관함 오류", "보관함 저장 기능을 불러오지 못했습니다.", "확인");
+
+  const cfg = (await bridge.loadConfig()) || {};
+  const token = cfg.makeit_access_token || "";
+  if (!token) return showModal("로그인 필요", "로그인 토큰이 없습니다. 다시 로그인해주세요.", "확인");
+
+  const category = firstSettingValue($("autopilotCategory")?.value || "");
+  const customPrompt = $("autopilotPrompt")?.value.trim() || "";
+  const refText = (typeof blogAutopilotSourceMode !== "undefined" && blogAutopilotSourceMode === "url" && _apUrlMode !== "photo")
+    ? String(_apRefContent || "").slice(0, 3000)
+    : "";
+  const userPrompt = [
+    customPrompt,
+    refText ? "[참고 자료]\n" + refText : "",
+    apAccentColor ? "중요 키워드는 자연스럽게 강조해서 작성." : "",
+  ].filter(Boolean).join("\n\n");
+
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "생성 후 저장 중...";
+  }
+  try {
+    const res = await fetch("https://snsmakeit.com/api/naverbot?action=content-generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        access_token: token,
+        subtype: apSubtype,
+        tone: apTone,
+        speech: apSpeech,
+        word_count: apWordCount,
+        fields: {
+          keyword: theme,
+          category: category,
+          extra: customPrompt.slice(0, 1800),
+        },
+        user_prompt: userPrompt,
+        use_gif: apGif === "on",
+        aeoPosition: state.aeoPosition || "top",
+        includeProsCons: state.includeProsCons !== false,
+      }),
+    });
+    const data = await res.json().catch(function() { return {}; });
+    if (!res.ok || !data.ok) throw new Error(data.error || "글 생성에 실패했습니다");
+
+    const title = data.title || theme;
+    const html = renderAutopilotDraftHtml(data.blocks || []);
+    const preview = (data.blocks || []).map(function(b) { return b.content || b.text || b.alt || ""; }).join(" ").slice(0, 200);
+    window._archiveSave({
+      type: "blog",
+      title: "[자동저장] " + title,
+      rawTitle: title,
+      theme: theme,
+      category: category,
+      preview: preview,
+      html: html,
+      draft: true,
+      data: {
+        title: title,
+        topic: theme,
+        html: html,
+        draft: true,
+        source: "autopilot-save",
+        settings: {
+          subtype: apSubtype,
+          tone: apTone,
+          speech: apSpeech,
+          wordCount: apWordCount,
+          category: category,
+        },
+      },
+    });
+    showModal("보관함 저장 완료", "자동글쓰기 설정으로 글을 생성해 보관함에 저장했습니다.\n발행은 진행하지 않았습니다.", "확인");
+  } catch (e) {
+    showModal("저장 실패", e.message || "보관함 저장 중 오류가 발생했습니다.", "확인");
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "보관함 저장";
+    }
+  }
+}
+
+if ($("saveAutopilotDraftBtn")) $("saveAutopilotDraftBtn").addEventListener("click", saveAutopilotDraftOnly);
+
+async function saveAutopilotToNaverDraft() {
+  if (state.botRunning) {
+    addLog("[네이버 저장] 이미 실행 중입니다. 현재 작업이 끝난 뒤 다시 시작하세요.");
+    return showModal("실행 중", "자동 운영이 이미 실행 중입니다.", "확인");
+  }
+  const btn = $("saveNaverDraftBtn");
+  const theme = $("autopilotTheme")?.value.trim() || "";
+  if (!theme) return showModal("알림", "키워드를 입력하세요", "확인");
+  const naverId = $("naverId")?.value.trim() || "";
+  if (!naverId) return showModal("알림", "네이버 계정을 설정하세요", "확인");
+  if (!state.loggedIn) return showModal("알림", "먼저 메이킷 계정에 로그인하세요", "확인");
+  if (blogAutopilotSourceMode === "drive" && isExperienceLimitedUser()) {
+    return showModal("Pro 플랜 필요", "구글 드라이브 자료 기반 자동 운영은 Pro 이상 플랜에서 이용할 수 있습니다.", "Pro 구독하기", () => bridge.openExternal("https://snsmakeit.com/pricing"));
+  }
+  if (!(await canUseExperience("autopilot"))) return;
+
+  const postCount = parseInt($("autopilotCount") ? $("autopilotCount").value : "3") || 3;
+  const rules = getExePlanRules();
+  if (rules.maxPostsPerRun > 0 && postCount > rules.maxPostsPerRun) {
+    return showModal(
+      "플랜 한도",
+      `${rules.label} 플랜은 1회 최대 ${rules.maxPostsPerRun}개까지 저장할 수 있습니다.\n현재 설정: ${postCount}개`,
+      rules.maxPostsPerRun <= 1 ? "구독하기" : "확인",
+      rules.maxPostsPerRun <= 1 ? () => bridge.openExternal("https://snsmakeit.com/pricing") : null
+    );
+  }
+
+  const tmplActive = $("apTemplateToggle") && $("apTemplateToggle").querySelector(".chip.active");
+  if (tmplActive && tmplActive.dataset.value === "yes") {
+    const tmplName = ($("autopilotTemplate") && $("autopilotTemplate").value.trim()) || "";
+    if (!tmplName) return showModal("알림", "템플릿 이름을 입력하세요", "확인");
+  }
+
+  const category = ($("autopilotCategory") && $("autopilotCategory").value.trim()) || "";
+  const categoryCount = parseInt(($("autopilotCategoryCount") && $("autopilotCategoryCount").value) || "1") || 1;
+  const customPrompt = ($("autopilotPrompt") && $("autopilotPrompt").value.trim()) || "";
+  const driveFolderUrl = ($("driveFolderUrl") && $("driveFolderUrl").value.trim()) || "";
+  const driveRecursive = blogAutopilotSourceMode === "drive" || !!($("driveRecursive") && $("driveRecursive").checked);
+  if (blogAutopilotSourceMode === "drive" && !driveFolderUrl) {
+    return showModal("알림", "구글 드라이브 폴더 링크를 입력하세요.", "확인");
+  }
+
+  const cfg = collectConfig();
+  const saved = (await bridge.loadConfig()) || {};
+  const merged = {
+    ...saved, ...cfg,
+    naver_id: selectedNaverAccount || saved.naver_id || cfg.naver_id,
+    autopilot: {
+      theme,
+      posts_per_day: postCount,
+      duration_days: 0,
+      started_at: new Date().toISOString(),
+      active: true,
+      save_to_naver_draft: true,
+      category,
+      category_count: categoryCount,
+      interval: "random",
+      custom_prompt: customPrompt,
+      ref_url: blogAutopilotSourceMode === "url" ? ($("apRefUrl") ? $("apRefUrl").value.trim() : "") : "",
+      ref_content: (blogAutopilotSourceMode === "url" && _apUrlMode !== "photo") ? _apRefContent : "",
+      ref_images: (blogAutopilotSourceMode === "url" && _apUrlMode !== "text") ? _apRefImagesSelected : [],
+      ref_mode: blogAutopilotSourceMode === "url" ? _apUrlMode : "",
+      drive_folder_url: blogAutopilotSourceMode === "drive" ? driveFolderUrl : "",
+      drive_recursive: driveRecursive,
+      drive_images_per_post: (_apRefImagesSelected && _apRefImagesSelected.length > 0) ? Math.min(_apRefImagesSelected.length, 10) : 4,
+      drive_image_limit: Math.max(12, postCount * 4),
+      template: ($("autopilotTemplate") && $("autopilotTemplate").value.trim()) || "",
+      subtype: apSubtype,
+      tone: apTone,
+      speech: apSpeech,
+      wordCount: apWordCount,
+      quote_style: apQuoteStyle,
+      accent_color: apAccentColor,
+      color_mode: apColorMode,
+      use_sticker: apSticker,
+      use_underline: state.useUnderline === "on",
+      use_gif: apGif === "on",
+      aeoPosition: state.aeoPosition,
+      schedule_mode: "now",
+      schedule_time: "",
+    }
+  };
+  await bridge.saveConfig(merged);
+
+  addLog(`[네이버 저장] 자동글쓰기 생성 후 네이버 에디터 저장 버튼 클릭 시작 — 키워드: "${theme}", ${postCount}개`);
+  state.botRunning = true;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "저장 중...";
+  }
+  if ($("startAutopilotBtn")) $("startAutopilotBtn").disabled = true;
+  goToPanel("execlog");
+  showStopBtn();
+  showProgress();
+
+  try {
+    const r = await bridge.runOnce(merged);
+    if (r.ok && r.result && r.result.status === "ok") {
+      playSound("success");
+      const posts = r.result.posts || [];
+      const savedPosts = posts.filter(p => p.draft_saved);
+      const failPosts = posts.filter(p => p.error);
+      await markExperienceUsed("autopilot", savedPosts.length > 0 ? 1 : 0);
+      let msg = savedPosts.length > 0
+        ? `${savedPosts.length}개 글을 네이버 글쓰기 보관함에 저장했습니다.`
+        : (r.result.message || "네이버 저장 완료");
+      if (savedPosts.length > 0) {
+        savedPosts.forEach((p, i) => { msg += `\n${i+1}. ${p.title || p.topic}`; });
+      }
+      if (failPosts.length > 0) {
+        msg += `\n\n${failPosts.length}개 실패:`;
+        failPosts.forEach((p) => { msg += `\n- ${p.topic || ""}: ${p.error || ""}`; });
+      }
+      showModal("네이버 저장 완료", msg, "확인");
+      addLog(`[네이버 저장] ${r.result.message || "완료"}`);
+      syncQuotaFromServer();
+    } else {
+      const err = (r.result && r.result.message) || r.error || "실패";
+      playSound("fail");
+      showModal("네이버 저장 실패", _friendlyError(err), "확인");
+      addLog(`[네이버 저장] 실패: ${_friendlyError(err)}`);
+    }
+  } finally {
+    state.botRunning = false;
+    hideStopBtn();
+    hideProgress();
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = "네이버 저장";
+    }
+    if ($("startAutopilotBtn")) $("startAutopilotBtn").disabled = false;
+    if ($("stopAutopilotBtn")) $("stopAutopilotBtn").style.display = "none";
+  }
+}
+
+if ($("saveNaverDraftBtn")) $("saveNaverDraftBtn").addEventListener("click", saveAutopilotToNaverDraft);
+
 // 자동 운영 중지
 $("stopAutopilotBtn").addEventListener("click", async () => {
   await bridge.stopBot();
@@ -4161,7 +4426,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 (function initVideoEditor() {
   if (!bridge.videoSelectFile) return;
   var API_URL = "https://shorts-factory-r33o.onrender.com";
-  var ve = { filePath:null, fileInfo:null, fileId:null, segments:[], subtitles:[], videoClips:[], recommendedClips:[], type:"landscape", clipCount:3, clipDuration:45, subEnabled:true, silenceRemove:false, subSize:38, subColor:"#FFFFFF", duration:0 };
+  var ve = { filePath:null, fileInfo:null, fileId:null, segments:[], subtitles:[], videoClips:[], recommendedClips:[], type:"landscape", clipCount:3, clipDuration:45, subEnabled:true, silenceRemove:false, subSize:38, subColor:"#FFFFFF", bgColor:"#000000", videoScale:1, duration:0 };
   // 보관함에서 영상 복원 시 접근할 수 있도록 window에 노출
   window._ve = ve;
 
@@ -4238,12 +4503,16 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       segments: ve.segments,
       videoClips: ve.videoClips,
       recommendedClips: ve.recommendedClips,
+      selectedShortIndex: ve.selectedShortIndex || 0,
+      removedShorts: ve._removedShorts || {},
       clipCount: ve.clipCount,
       clipDuration: ve.clipDuration,
       subEnabled: ve.subEnabled,
       silenceRemove: ve.silenceRemove,
       subSize: ve.subSize,
       subColor: ve.subColor,
+      bgColor: ve.bgColor,
+      videoScale: ve.videoScale,
       overlays: (ve.overlays || []).map(function(ov) {
         return { x:ov.x, y:ov.y, w:ov.w, h:ov.h, src:ov._originalSrc||ov.src, startTime:ov.startTime, endTime:ov.endTime, shape:ov.shape, opacity:ov.opacity, anim:ov.anim, _isGif:ov._isGif };
       }),
@@ -4273,12 +4542,16 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     ve.segments = d.segments || [];
     ve.videoClips = d.videoClips || [];
     ve.recommendedClips = d.recommendedClips || [];
+    ve.selectedShortIndex = d.selectedShortIndex || 0;
+    ve._removedShorts = d.removedShorts || {};
     ve.clipCount = d.clipCount || 3;
     ve.clipDuration = d.clipDuration || 45;
     ve.subEnabled = d.subEnabled !== false;
     ve.silenceRemove = !!d.silenceRemove;
     ve.subSize = d.subSize || 38;
     ve.subColor = d.subColor || "#FFFFFF";
+    ve.bgColor = d.bgColor || "#000000";
+    ve.videoScale = d.videoScale || 1;
     ve.overlays = (d.overlays || []).map(function(ov) { ov._originalSrc = ov.src; return ov; });
     ve._projectId = d.id;
     if (d.style) {
@@ -4472,7 +4745,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var ctx = _veCanvasCtx;
       var cw = _veCanvas.width, ch = _veCanvas.height;
 
-      ctx.fillStyle = "#000";
+      ctx.fillStyle = ve.bgColor || "#000000";
       ctx.fillRect(0, 0, cw, ch);
 
       if (video.readyState >= 2) {
@@ -4484,27 +4757,48 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           var dw = vw * scale, dh = vh * scale;
           ctx.drawImage(video, (cw - dw) / 2, (ch - dh) / 2, dw, dh);
         } else if (_veRatio === "portrait") {
-          var bgScale = Math.max(cw / vw, ch / vh);
-          var bgW = vw * bgScale, bgH = vh * bgScale;
-          ctx.save();
-          ctx.filter = "blur(12px)";
-          ctx.globalAlpha = 0.75;
-          ctx.drawImage(video, (cw - bgW) / 2, (ch - bgH) / 2, bgW, bgH);
-          ctx.restore();
-          var fgScale = Math.min(cw / vw, ch / vh);
+          var scaleMul = Math.max(0.8, Math.min(1.5, Number(ve.videoScale || 1)));
+          var fgScale = Math.min(cw / vw, ch / vh) * scaleMul;
           var fgW = vw * fgScale, fgH = vh * fgScale;
           ctx.drawImage(video, (cw - fgW) / 2, (ch - fgH) / 2, fgW, fgH);
         } else {
-          var bgScale2 = Math.max(cw / vw, ch / vh);
-          var bgW2 = vw * bgScale2, bgH2 = vh * bgScale2;
-          ctx.save();
-          ctx.filter = "blur(10px)";
-          ctx.globalAlpha = 0.75;
-          ctx.drawImage(video, (cw - bgW2) / 2, (ch - bgH2) / 2, bgW2, bgH2);
-          ctx.restore();
-          var fgScale2 = Math.min(cw / vw, ch / vh);
+          var scaleMul2 = Math.max(0.8, Math.min(1.5, Number(ve.videoScale || 1)));
+          var fgScale2 = Math.min(cw / vw, ch / vh) * scaleMul2;
           var fgW2 = vw * fgScale2, fgH2 = vh * fgScale2;
           ctx.drawImage(video, (cw - fgW2) / 2, (ch - fgH2) / 2, fgW2, fgH2);
+        }
+
+        var titleClip = isShortsMode() ? ((ve.videoClips || [])[getSelectedShortIndex()] || null) : null;
+        var titleText = titleClip && (titleClip.title || titleClip.hook);
+        if (titleText) {
+          titleText = String(titleText).replace(/^쇼츠\s*\d+\s*:?\s*/i, "").trim();
+          var titleSize = Math.max(16, Math.round(cw * 0.045));
+          var titleY = Math.round(ch * 0.075);
+          ctx.save();
+          ctx.font = "900 " + titleSize + "px 'Malgun Gothic', 'Pretendard', sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          var maxTitleW = Math.round(cw * 0.82);
+          var words = titleText.split(/\s+/);
+          var lines = [], line = "";
+          words.forEach(function(w) {
+            var test = line ? line + " " + w : w;
+            if (ctx.measureText(test).width > maxTitleW && line) { lines.push(line); line = w; }
+            else line = test;
+          });
+          if (line) lines.push(line);
+          lines = lines.slice(0, 2);
+          var lineH = titleSize * 1.25;
+          var boxW = Math.min(cw - 36, Math.max.apply(null, lines.map(function(l){ return ctx.measureText(l).width; })) + 34);
+          var boxH = lines.length * lineH + 20;
+          var bx = (cw - boxW) / 2, by = titleY - 8;
+          ctx.fillStyle = "rgba(0,0,0,0.58)";
+          ctx.beginPath();
+          ctx.roundRect ? ctx.roundRect(bx, by, boxW, boxH, 10) : ctx.rect(bx, by, boxW, boxH);
+          ctx.fill();
+          ctx.fillStyle = "#ffffff";
+          lines.forEach(function(l, li) { ctx.fillText(l, cw / 2, titleY + li * lineH); });
+          ctx.restore();
         }
 
         // 자막 캔버스 위 직접 그리기
@@ -5143,7 +5437,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   });
 
   // 탭 전환 (좌측 사이드바 + 숨겨진 탭 버튼 동기화)
-  var vePanelTitles = {sub:"자막", clip:"이미지", image:"미디어"};
+  var vePanelTitles = {sub:"자막", clip:"쇼츠/클립", image:"미디어"};
   function veActivateTab(tab) {
     // 숨겨진 탭 버튼 동기화
     document.querySelectorAll(".ve-tab-btn").forEach(function(b){
@@ -5336,6 +5630,57 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     }catch(e){hideVeLoading();showModal("실패",e.message||"AI 짤 삽입 실패","확인");}
     autoImgBtn.disabled=false; autoImgBtn.innerHTML=_origImgBtnHtml;
   }
+  function doAutoGifInsertForShorts() {
+    return;
+  }
+  function openVideoCanvasSettings() {
+    showModal("화면 설정", "", "적용", function() {
+      var bg = document.getElementById("_veBgColorModal");
+      var sc = document.getElementById("_veVideoScaleModal");
+      if (bg) ve.bgColor = bg.value || "#000000";
+      if (sc) ve.videoScale = Math.max(0.8, Math.min(1.5, (parseInt(sc.value, 10) || 100) / 100));
+      _needsRedraw = true;
+      renderShortsInsightPanel();
+    });
+    var msg = document.getElementById("modalMessage");
+    if (msg) {
+      var pct = Math.round(Number(ve.videoScale || 1) * 100);
+      msg.innerHTML = "<div style='display:grid;gap:14px;text-align:left;'>" +
+        "<label style='display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;color:#334155;font-weight:800;'>배경색 <input id='_veBgColorModal' type='color' value='" + escapeHtml(ve.bgColor || "#000000") + "' style='width:42px;height:30px;border:1px solid #cbd5e1;border-radius:6px;'></label>" +
+        "<label style='display:block;font-size:13px;color:#334155;font-weight:800;'>영상 크기 <span id='_veScaleModalLabel' style='float:right;color:#64748b;'>" + pct + "%</span><input id='_veVideoScaleModal' type='range' min='80' max='150' step='5' value='" + pct + "' style='width:100%;margin-top:8px;'></label>" +
+        "</div>";
+      var slider = document.getElementById("_veVideoScaleModal");
+      var label = document.getElementById("_veScaleModalLabel");
+      if (slider && label) slider.addEventListener("input", function() { label.textContent = slider.value + "%"; });
+    }
+  }
+  function ensureScreenSettingsButton() {
+    var exportBtn = $("veExportBtn");
+    if (!exportBtn || $("veScreenSettingsBtn")) return;
+    var btn = document.createElement("button");
+    btn.id = "veScreenSettingsBtn";
+    btn.className = "ve-tool-btn ve-top-btn";
+    btn.type = "button";
+    btn.title = "배경색과 영상 크기";
+    btn.style.cssText = "padding:3px 8px;border:none;border-radius:4px;cursor:pointer;color:#5a5a72;background:transparent;";
+    btn.textContent = "화면 설정";
+    btn.addEventListener("click", openVideoCanvasSettings);
+    exportBtn.parentNode.insertBefore(btn, exportBtn);
+  }
+  var bgColorInput = $("veCanvasBgColor");
+  if (bgColorInput) bgColorInput.addEventListener("input", function() {
+    ve.bgColor = bgColorInput.value || "#000000";
+    _needsRedraw = true;
+    renderShortsInsightPanel();
+  });
+  var videoScaleInput = $("veVideoScale");
+  if (videoScaleInput) videoScaleInput.addEventListener("input", function() {
+    ve.videoScale = Math.max(0.8, Math.min(1.5, (parseInt(videoScaleInput.value, 10) || 100) / 100));
+    var label = $("veVideoScaleLabel");
+    if (label) label.textContent = Math.round(ve.videoScale * 100) + "%";
+    _needsRedraw = true;
+    renderShortsInsightPanel();
+  });
   chipG("veClipCountChips",function(v){ve.clipCount=parseInt(v); syncShortsControls(); renderShortsPlanList();});
   chipG("veClipCountChipsStart",function(v){ve.clipCount=parseInt(v); syncShortsControls(); renderShortsPlanList();});
   chipG("veClipDurationChips",function(v){ve.clipDuration=parseInt(v); syncShortsControls(); renderShortsPlanList();});
@@ -5419,8 +5764,117 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   // 무음제거 간격
   var _silenceThresh = 0.5;
   chipG("veSilenceThreshChips",function(v){ _silenceThresh=parseFloat(v); });
+
+  async function runSilenceRemoval() {
+    if(!ve.filePath) throw new Error("먼저 영상을 불러와주세요.");
+    var silRunBtn=$("veSilenceRunBtn");
+    if (silRunBtn) { silRunBtn.disabled=true; silRunBtn.textContent="무음 감지 중..."; }
+    showVeLoading("무음 구간을 감지하고 있습니다...\n(영상 길이에 따라 10~30초 소요)");
+
+    try{
+      var detectResult=await bridge.videoDetectSilence({filePath:ve.filePath,threshold:-30,minDuration:_silenceThresh});
+      if(!detectResult.ok) throw new Error(detectResult.error||"무음 감지 실패");
+      var silences=detectResult.silences||[];
+      if(!silences.length){hideVeLoading();showModal("결과","무음 구간이 없습니다.","확인");return false;}
+
+      showVeLoading("영상에서 무음 구간을 잘라내는 중...\n" + silences.length + "개 구간 · 재인코딩 없이 빠르게 처리합니다");
+
+      var removeResult=await bridge.videoRemoveSilence({filePath:ve.filePath,silences:silences,outputDir:ve._outputDir||null});
+      if(!removeResult.ok) throw new Error(removeResult.error||"무음 제거 실패");
+
+      if (!ve._origFilePath) ve._origFilePath = ve.filePath;
+      ve._prevFilePath = ve.filePath;
+      ve._prevSubtitles = JSON.parse(JSON.stringify(ve.subtitles));
+      ve._prevDuration = ve.duration;
+
+      ve.filePath = removeResult.outputPath;
+      var video = $("veVideo");
+      if (video) { video.src = "file:///" + ve.filePath.replace(/\\/g, "/"); video.load(); }
+
+      var keeps2 = [];
+      var cur2 = 0;
+      for (var si2 = 0; si2 < silences.length; si2++) {
+        if (silences[si2].start > cur2 + 0.05) keeps2.push({ origStart: cur2, origEnd: silences[si2].start });
+        cur2 = silences[si2].end;
+      }
+      if (cur2 < (ve._prevDuration || 9999) - 0.1) keeps2.push({ origStart: cur2, origEnd: ve._prevDuration || 9999 });
+
+      var newDur = keeps2.reduce(function(a, k) { return a + (k.origEnd - k.origStart); }, 0);
+      var cumT = 0;
+      keeps2.forEach(function(k) { k.newStart = cumT; cumT += (k.origEnd - k.origStart); });
+
+      function remap(origT) {
+        for (var ki = 0; ki < keeps2.length; ki++) {
+          var k = keeps2[ki];
+          if (origT >= k.origStart && origT <= k.origEnd) return k.newStart + (origT - k.origStart);
+        }
+        for (var kj = 0; kj < keeps2.length; kj++) {
+          if (origT < keeps2[kj].origStart) return keeps2[kj].newStart;
+        }
+        return cumT;
+      }
+
+      var newSubs = [];
+      ve.subtitles.forEach(function(s) {
+        var origSt = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+        var origEn = s.end_seconds != null ? s.end_seconds : (s.end || origSt + 2);
+        var inSilence = false;
+        for (var si3 = 0; si3 < silences.length; si3++) {
+          if (origSt >= silences[si3].start && origEn <= silences[si3].end) { inSilence = true; break; }
+          var overlap = Math.max(0, Math.min(origEn, silences[si3].end) - Math.max(origSt, silences[si3].start));
+          if (overlap / Math.max(0.1, origEn - origSt) > 0.7) { inSilence = true; break; }
+        }
+        if (inSilence) return;
+        var newSt = Math.min(remap(origSt), newDur);
+        var newEn = Math.min(remap(origEn), newDur);
+        if (newEn - newSt < 0.05) return;
+        if (s.start_seconds != null) { s.start_seconds = Math.round(newSt * 100) / 100; s.end_seconds = Math.round(newEn * 100) / 100; }
+        else { s.start = Math.round(newSt * 100) / 100; s.end = Math.round(newEn * 100) / 100; }
+        newSubs.push(s);
+      });
+      ve.subtitles = newSubs;
+      ve.duration = newDur;
+      ve._removedSilences = silences;
+      ve.videoClips = [{ start: 0, end: newDur, label: "전체 영상" }];
+
+      renderVideoTrack(); renderClipList(); renderAudioWaveform();
+      showVeLoading("자막을 새로 생성하고 있습니다...");
+      try {
+        var sttResult = await bridge.videoUploadAndAnalyze(ve.filePath, 5);
+        if (sttResult.ok) {
+          var sttData = sttResult.analyzeData;
+          ve.subtitles = [];
+          var sttSubs = sttData.all_subs || sttData.full_transcript;
+          if (sttSubs && Array.isArray(sttSubs)) ve.subtitles = sttSubs;
+        }
+      } catch (sttErr) { console.warn("[무음제거] 자막 재생성 실패:", sttErr.message); }
+      ve.subtitles = cleanupSubtitles(ve.subtitles).filter(function(s) {
+        return (s.start_seconds != null ? s.start_seconds : (s.start || 0)) < newDur;
+      });
+      ve.subtitles.forEach(function(s) {
+        if (s.end_seconds != null && s.end_seconds > newDur) s.end_seconds = newDur;
+        if (s.end != null && s.end > newDur) s.end = newDur;
+      });
+      renderSubList(); renderTimeline();
+      var totalCut = silences.reduce(function(a, s) { return a + (s.end - s.start); }, 0);
+      hideVeLoading();
+      showModal("무음제거 완료", silences.length + "개 구간 제거 (총 " + totalCut.toFixed(1) + "초)\n원본: " + fmtTime(ve._prevDuration) + " → 결과: " + fmtTime(newDur), "확인");
+      var undoBtn = $("veSilenceUndoBtn");
+      if (undoBtn && ve._prevFilePath) undoBtn.style.display = "";
+      return true;
+    } catch(e) {
+      hideVeLoading();
+      showModal("무음제거 실패", e.message || "오류", "확인");
+      throw e;
+    } finally {
+      if (silRunBtn) { silRunBtn.disabled=false; silRunBtn.textContent="무음 구간 자동 제거 실행"; }
+    }
+  }
+
   // 무음 구간 자동 제거 실행 (ffmpeg 기반)
   var silRunBtn=$("veSilenceRunBtn"); if(silRunBtn) silRunBtn.addEventListener("click",async function(){
+    try { await runSilenceRemoval(); } catch(e) {}
+    return;
     if(!ve.filePath){showModal("알림","먼저 영상을 불러와주세요.","확인");return;}
     silRunBtn.disabled=true; silRunBtn.textContent="무음 감지 중...";
     showVeLoading("무음 구간을 감지하고 있습니다...\n(영상 길이에 따라 10~30초 소요)");
@@ -5814,7 +6268,15 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   var slider=$("veSubSize"); if(slider) slider.addEventListener("input",function(e){ve.subSize=parseInt(e.target.value);var l=$("veSubSizeLabel");if(l)l.textContent=ve.subSize+"px"; _needsRedraw=true;});
   var cp=$("veSubColor"); if(cp) cp.addEventListener("input",function(e){ve.subColor=e.target.value; _needsRedraw=true;});
 
-  if(bridge.onVideoProgress) bridge.onVideoProgress(function(d){ var s4=$("veStep4"); if(s4&&s4.style.display!=="none") setProg("veExportPct","veExportBar","veExportSub",d.percent,d.clip?"클립 "+d.clip+"/"+d.total:""); });
+  var _veUrlImporting = false;
+  if(bridge.onVideoProgress) bridge.onVideoProgress(function(d){
+    var s4=$("veStep4");
+    if(s4&&s4.style.display!=="none") setProg("veExportPct","veExportBar","veExportSub",d.percent,d.clip?"클립 "+d.clip+"/"+d.total:"");
+    if(_veUrlImporting && $("veUrlStatus")) {
+      $("veUrlStatus").style.display = "";
+      $("veUrlStatus").textContent = (d.label || "가져오는 중...") + (d.percent != null ? " " + d.percent + "%" : "");
+    }
+  });
 
   // 파일 선택 (다중 지원)
   var veFiles = []; // 다중 영상 파일 경로
@@ -5864,6 +6326,34 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       else if(paths.length===1) { veFiles=[paths[0]]; veLoadFile(paths[0]); renderVeFileList(); }
     }});
   }
+  var importUrlBtn=$("veImportUrlBtn"); if(importUrlBtn) {
+    importUrlBtn.addEventListener("click",async function(){
+      var input=$("veUrlInput");
+      var status=$("veUrlStatus");
+      var url=input?input.value.trim():"";
+      if(!url) return showModal("알림","가져올 영상 URL을 입력해주세요.","확인");
+      if(!bridge.videoImportUrl) return showModal("오류","현재 앱 버전에서 URL 가져오기를 지원하지 않습니다.","확인");
+      importUrlBtn.disabled=true;
+      importUrlBtn.textContent="가져오는 중...";
+      _veUrlImporting = true;
+      if(status){status.style.display="";status.textContent="URL 영상을 준비하는 중...";}
+      try {
+        var r=await bridge.videoImportUrl(url);
+        if(!r || !r.ok) throw new Error((r && r.error) || "URL 영상 가져오기 실패");
+        veFiles=[r.filePath];
+        await veLoadFile(r.filePath);
+        renderVeFileList();
+        if(status){status.style.display="";status.innerHTML="<strong>가져오기 완료</strong> · "+escapeHtml(r.filePath.split(/[\\/]/).pop());}
+      } catch(e) {
+        if(status){status.style.display="";status.innerHTML="<span style='color:#ef4444;'>"+escapeHtml(e.message||"URL 영상 가져오기 실패")+"</span>";}
+        showModal("가져오기 실패",e.message||"URL 영상을 가져올 수 없습니다.","확인");
+      } finally {
+        _veUrlImporting = false;
+        importUrlBtn.disabled=false;
+        importUrlBtn.textContent="가져오기";
+      }
+    });
+  }
   var addMoreBtn=$("veAddMore"); if(addMoreBtn) {
     addMoreBtn.addEventListener("click",async function(){
       var r=await bridge.videoSelectFile(); if(!r.ok) return;
@@ -5873,41 +6363,35 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     });
   }
 
-  // 시퀀스 비율 칩 (Step1) + 숏폼 추천 토글
-  chipG("veInitRatioChips", function(v) {
+  function selectVideoEditMode(v) {
     ve.type = v;
-    var rec = $("veShortsRecommend");
+    document.querySelectorAll(".ve-mode-card[data-mode]").forEach(function(card) {
+      card.classList.toggle("active", card.dataset.mode === v);
+    });
+    var chipWrap = $("veInitRatioChips");
+    if (chipWrap) chipWrap.querySelectorAll(".chip").forEach(function(chip) {
+      chip.classList.toggle("active", chip.dataset.value === v);
+    });
     var plan = $("veShortsPlanInput");
     var isShorts = v === "portrait" || v === "square";
-    if (rec) rec.style.display = isShorts ? "" : "none";
-    if (plan) plan.style.display = isShorts ? "" : "none";
+    if (plan) plan.style.display = "none";
+    if ($("veModeTitle")) $("veModeTitle").textContent = isShorts ? "쇼츠 만들기" : "롱폼 편집";
+    if ($("veModeSub")) $("veModeSub").textContent = isShorts
+      ? "긴 영상에서 쇼츠 후보를 자동으로 뽑고, 결과물별로 수정합니다"
+      : "가로 영상을 자막, 무음 제거, 이미지 삽입 중심으로 다듬습니다";
+    if ($("veAnalyzeBtn")) $("veAnalyzeBtn").textContent = isShorts ? "실행하기" : "롱폼 분석 시작";
     renderShortsPlanList();
-  });
-
-  // 저장 폴더 선택
-  var odBtn=$("veSelectOutputDir"); if(odBtn) odBtn.addEventListener("click",async function(){
-    try {
-      var r = await bridge.videoSelectSaveDir();
-      if(r && r.ok && r.dirPath) { $("veOutputDir").value = r.dirPath; ve._outputDir = r.dirPath; }
-    } catch(e) {}
-  });
-
-  // 장르 선택
-  chipG("veGenreChips", function(v) { ve._genre = v; });
-
-  // 처리 구간 슬라이더
-  var rsStart = $("veRangeSliderStart"), rsEnd = $("veRangeSliderEnd");
-  function updateRangeLabels() {
-    var dur = ve.duration || 1;
-    var s = Math.round(dur * (rsStart ? rsStart.value / 100 : 0));
-    var e = Math.round(dur * (rsEnd ? rsEnd.value / 100 : 1));
-    ve._rangeStart = s; ve._rangeEnd = e;
-    var fmt = function(t) { var m = Math.floor(t/60); var sec = Math.floor(t%60); return m + ":" + String(sec).padStart(2,"0"); };
-    if ($("veRangeStart")) $("veRangeStart").value = fmt(s);
-    if ($("veRangeEnd")) $("veRangeEnd").value = fmt(e);
   }
-  if (rsStart) rsStart.addEventListener("input", updateRangeLabels);
-  if (rsEnd) rsEnd.addEventListener("input", updateRangeLabels);
+  window._veSelectVideoEditMode = selectVideoEditMode;
+  document.querySelectorAll(".ve-mode-card[data-mode]").forEach(function(card) {
+    card.addEventListener("click", function() { selectVideoEditMode(card.dataset.mode || "portrait"); });
+  });
+
+  // 시퀀스 비율 칩 (Step1) + 숏폼 추천 토글
+  chipG("veInitRatioChips", function(v) {
+    selectVideoEditMode(v);
+  });
+  selectVideoEditMode(window._vePendingMode || "portrait");
 
   // 브랜드 로고 선택
   var logoBtn=$("veBrandLogoBtn"); if(logoBtn) logoBtn.addEventListener("click",async function(){
@@ -5921,10 +6405,18 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   var aBtn=$("veAnalyzeBtn"); if(aBtn) aBtn.addEventListener("click",async function(){
     if(!ve.filePath) return;
     // 비율 설정 적용
+    var modeCard = document.querySelector(".ve-mode-card.active");
     var initRatio = document.querySelector("#veInitRatioChips .chip.active");
-    if(initRatio) ve.type = initRatio.dataset.value;
-    // 저장 폴더
-    var od=$("veOutputDir"); if(od && od.value.trim()) ve._outputDir = od.value.trim();
+    if(modeCard) ve.type = modeCard.dataset.mode;
+    else if(initRatio) ve.type = initRatio.dataset.value;
+    if (isShortsMode()) applyAutoShortsPlan();
+    ve._pendingSilenceRemove = await showChoiceModal(
+      "무음 구간 줄이기",
+      "분석 후 말이 없는 구간을 자동으로 줄일까요?\n결과가 더 짧고 빠르게 보이지만, 원본 흐름을 유지하려면 건너뛰세요.",
+      "자동으로 줄이기",
+      "그대로 진행"
+    );
+    ve.silenceRemove = !!ve._pendingSilenceRemove;
 
     goStep(2); setProg("veAnalyzePct","veAnalyzeBar","veAnalyzeLabel",5,"서버에 업로드 + AI 분석 중...");
     try {
@@ -5946,7 +6438,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         buildShortsRecommendations();
       }
       renderShortsPlanList(); setProg("veAnalyzePct","veAnalyzeBar","veAnalyzeLabel",100,"분석 완료!");
-      setTimeout(function(){goStep(3);var fn=$("veFileName2");if(fn) fn.textContent=ve.filePath.split(/[\\/]/).pop(); initEditor();},500);
+      setTimeout(function(){goStep(3);var fn=$("veFileName2");if(fn) fn.textContent=ve.filePath.split(/[\\/]/).pop(); initEditor(); if (ve._pendingSilenceRemove) setTimeout(function(){ runSilenceRemoval().catch(function(){}); ve._pendingSilenceRemove=false; }, 800);},500);
     } catch(e) { showModal("분석 실패",e.message||"서버 연결 확인","확인"); goStep(1); }
   });
 
@@ -5990,7 +6482,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   }
   function rangesOverlap(a, b) {
     var overlap = Math.max(0, Math.min(a.end_seconds, b.end_seconds) - Math.max(a.start_seconds, b.start_seconds));
-    return overlap > Math.min(a.end_seconds - a.start_seconds, b.end_seconds - b.start_seconds) * 0.35;
+    return overlap > Math.min(a.end_seconds - a.start_seconds, b.end_seconds - b.start_seconds) * 0.2;
   }
   function syncShortsControls() {
     ["veClipCountChips", "veClipCountChipsStart"].forEach(function(id) {
@@ -6001,6 +6493,51 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var wrap = $(id); if (!wrap) return;
       wrap.querySelectorAll(".chip").forEach(function(btn) { btn.classList.toggle("active", parseInt(btn.dataset.value) === ve.clipDuration); });
     });
+  }
+  function applyAutoShortsPlan() {
+    var duration = Math.max(1, Number(ve.duration || 0));
+    var subCount = (ve.subtitles || []).length;
+    var density = subCount ? subCount / Math.max(1, duration / 60) : 8;
+    var count = duration < 90 ? 1 : duration < 240 ? 3 : duration < 600 ? 5 : 8;
+    if (density < 4) count = Math.max(1, count - 1);
+    ve.clipCount = Math.max(1, Math.min(8, count));
+    ve.clipDuration = duration < 90 ? Math.max(15, Math.min(45, duration)) : 45;
+    syncShortsControls();
+  }
+  var MIN_SHORTS_SECONDS = 12;
+  function shortsKey(c) {
+    return [Math.round(Number(c.start_seconds || c.start || 0) * 10) / 10, Math.round(Number(c.end_seconds || c.end || 0) * 10) / 10].join("-");
+  }
+  function shortsDuration(c) {
+    return Math.max(0, Number(c.end_seconds || c.end || 0) - Number(c.start_seconds || c.start || 0));
+  }
+  function isUsableShortCandidate(c) {
+    if (!c) return false;
+    if (shortsDuration(c) < MIN_SHORTS_SECONDS) return false;
+    if (ve._removedShorts && ve._removedShorts[shortsKey(c)]) return false;
+    return true;
+  }
+  function snapShortsClipTime(c, target) {
+    var duration = Math.max(1, ve.duration || 0);
+    var start = Math.max(0, Number(c.start_seconds || 0));
+    var end = Math.min(duration, Number(c.end_seconds || start + target));
+    var subs = getSubsInRange(Math.max(0, start - 0.2), Math.min(duration, end + 1.5));
+    if (subs.length) {
+      var startSub = subs.find(function(s) { return getSubStart(s) >= start - 0.2; }) || subs[0];
+      var endSub = subs[subs.length - 1];
+      start = Math.max(0, getSubStart(startSub) - 0.12);
+      end = Math.min(duration, getSubEnd(endSub) + 0.25);
+    }
+    if (end - start < MIN_SHORTS_SECONDS) end = Math.min(duration, start + Math.max(MIN_SHORTS_SECONDS, Math.min(target, 30)));
+    if (end - start > 90) end = start + 90;
+    return {
+      start_seconds: Math.round(start * 100) / 100,
+      end_seconds: Math.round(end * 100) / 100,
+    };
+  }
+  function hasRepeatedShortsText(text) {
+    text = String(text || "").replace(/\s+/g, " ").trim();
+    return /(\S{2,}(?:\s+\S{1,8}){0,2})\s+\1/.test(text) || /([가-힣]{2,})\1/.test(text);
   }
   // AI 기반 숏폼 하이라이트 추출 (OpusClip 방식)
   var _aiShortsCache = null;
@@ -6014,9 +6551,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       return (i+1) + "\n" + fmt(st) + " --> " + fmt(en) + "\n" + (s.text || "");
     }).join("\n\n");
 
-    var target = Math.max(15, Math.min(180, parseInt(ve.clipDuration || 45)));
-    var genre = ve._genre || "auto";
-    var genreHint = genre === "auto" ? "" : "\n영상 장르: " + genre;
+    applyAutoShortsPlan();
+    var target = Math.max(15, Math.min(75, parseInt(ve.clipDuration || 45)));
 
     try {
       var res = await fetch("https://snsmakeit.com/api/ai-proxy", {
@@ -6027,7 +6563,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           max_tokens: 4096,
           messages: [{
             role: "user",
-            content: "너는 유튜브 숏폼 전문 편집 전략가야. 아래 자막에서 조회수가 높을 구간을 " + ve.clipCount + "개 찾아줘." + genreHint + "\n\n요구사항:\n- 각 구간은 약 " + target + "초 길이\n- 강력한 훅이 시작점에 있어야 함\n- 자기완결적 스토리 (해당 구간만으로 내용 완성)\n- 구간끼리 겹치면 안 됨\n- 영상 전체를 골고루 활용\n- start_seconds/end_seconds는 자막 타임스탬프 기준\n- 문장이 끝나는 지점에서 끊어야 함\n\n반드시 JSON 배열만 응답:\n[{\"start_seconds\":0,\"end_seconds\":30,\"hook_text\":\"훅 문장\",\"seo_title\":\"제목\",\"reason\":\"선정 이유\",\"score\":95}]\n\n자막:\n" + srtText.slice(0, 8000)
+            content: "너는 유튜브 쇼츠 전문 편집자야. 아래 자막에서 클릭률과 완주율이 높을 하이라이트 구간을 자동으로 골라줘.\n\n요구사항:\n- 구간 개수는 최대 " + ve.clipCount + "개, 억지로 채우지 말고 좋은 구간만 선택\n- 길이는 고정하지 말고 문맥에 맞게 20~70초 사이로 선택\n- 첫 1~3초에 질문, 반전, 문제 제기, 숫자, 강한 주장 중 하나가 와야 함\n- 말이 시작되는 문장 앞에서 시작하고, 결론이나 호기심이 닫히는 문장 끝에서 종료\n- 의미 없는 침묵/준비 멘트/앞뒤 잡담은 제외\n- 구간끼리 겹치면 안 됨\n- start_seconds/end_seconds는 자막 타임스탬프 기준\n\n반드시 JSON 배열만 응답:\n[{\"start_seconds\":0,\"end_seconds\":30,\"hook_text\":\"훅 문장\",\"seo_title\":\"제목\",\"reason\":\"왜 클릭률이 높을지\",\"score\":95}]\n\n자막:\n" + srtText.slice(0, 8000)
           }]
         })
       });
@@ -6039,19 +6575,32 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       if (!Array.isArray(segments) || !segments.length) throw new Error("empty");
 
       segments.sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
-      ve.recommendedClips = segments.slice(0, ve.clipCount).map(function(c, idx) {
-        var subs = getSubsInRange(c.start_seconds || 0, c.end_seconds || 30);
+      var selectedAi = [];
+      segments.forEach(function(c) {
+        if (selectedAi.length >= ve.clipCount) return;
+        var snapped = snapShortsClipTime(c, target);
+        var subs = getSubsInRange(snapped.start_seconds, snapped.end_seconds);
+        var txt = subs.map(function(s) { return s.text || ""; }).join(" ");
+        var normalized = Object.assign({}, c, snapped, { _subs: subs });
+        if (!isUsableShortCandidate(normalized)) return;
+        if (hasRepeatedShortsText(txt)) return;
+        if (!selectedAi.some(function(prev) { return rangesOverlap(prev, normalized); })) selectedAi.push(normalized);
+      });
+      if (!selectedAi.length) throw new Error("no usable ai segments");
+      ve.recommendedClips = selectedAi.map(function(c, idx) {
+        var snapped = snapShortsClipTime(c, target);
+        var subs = c._subs || getSubsInRange(snapped.start_seconds, snapped.end_seconds);
         return {
-          start_seconds: c.start_seconds || 0,
-          end_seconds: c.end_seconds || 30,
+          start_seconds: snapped.start_seconds,
+          end_seconds: snapped.end_seconds,
           hook: (c.hook_text || "").slice(0, 34),
-          title: c.seo_title || ("쇼츠 " + (idx + 1)),
+          title: (c.seo_title || c.hook_text || "추천 구간").replace(/^쇼츠\s*\d+\s*:?\s*/i, "").trim(),
           description: c.reason || "",
           score: c.score || 80,
           reason: c.reason || "",
           subtitles: subs,
         };
-      });
+      }).filter(isUsableShortCandidate);
       _aiShortsCache = ve.recommendedClips;
     } catch (e) {
       console.warn("[AI Shorts] fallback:", e.message);
@@ -6061,19 +6610,25 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 
   // 폴백: 기존 로컬 계산 방식
   function buildShortsRecommendationsFallback() {
-    var target = Math.max(15, Math.min(90, parseInt(ve.clipDuration || 45)));
+    applyAutoShortsPlan();
+    var target = Math.max(20, Math.min(60, parseInt(ve.clipDuration || 45)));
     var duration = Math.max(1, ve.duration || 0);
     var candidates = [];
     if (ve.subtitles && ve.subtitles.length) {
       for (var i = 0; i < ve.subtitles.length; i += Math.max(1, Math.floor(target / 12))) {
-        var start = Math.max(0, getSubStart(ve.subtitles[i]) - 1);
+        var text0 = ve.subtitles[i].text || "";
+        var isHookStart = /[?？]|\d|가지|방법|이유|비밀|실수|꿀팁|핵심|문제|해결|절대|꼭|바로|충격|주의|그런데|하지만|사실/.test(text0);
+        var start = Math.max(0, getSubStart(ve.subtitles[i]) - (isHookStart ? 0.35 : 0));
         var end = Math.min(duration, start + target);
         var subs = getSubsInRange(start, end);
         if (!subs.length) continue;
         var text = subs.map(function(s) { return s.text || ""; }).join(" ").trim();
+        if (hasRepeatedShortsText(text)) continue;
+        var snappedCandidate = snapShortsClipTime({ start_seconds: start, end_seconds: end }, target);
+        if (!isUsableShortCandidate(snappedCandidate)) continue;
         candidates.push({
-          start_seconds: Math.round(start * 100) / 100,
-          end_seconds: Math.round(end * 100) / 100,
+          start_seconds: snappedCandidate.start_seconds,
+          end_seconds: snappedCandidate.end_seconds,
           hook: text.slice(0, 34) || "추천 구간",
           title: "추천 숏폼 " + (candidates.length + 1),
           score: scoreShortsText(text, subs.length, end - start),
@@ -6092,11 +6647,12 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       for (var ci = 0; ci < ve.clipCount; ci++) {
         var st = Math.min(Math.max(0, duration - target), (duration / ve.clipCount) * ci);
         var en = Math.min(duration, st + target);
-        selected.push({ start_seconds: st, end_seconds: en, hook: "자동 구간 " + (ci + 1), title: "추천 숏폼 " + (ci + 1), score: 60, reason: "자막 기반 자동 분할", subtitles: getSubsInRange(st, en) });
+        var snapped = snapShortsClipTime({ start_seconds: st, end_seconds: en }, target);
+        if (isUsableShortCandidate(snapped)) selected.push({ start_seconds: snapped.start_seconds, end_seconds: snapped.end_seconds, hook: "자동 구간 " + (ci + 1), title: "추천 숏폼 " + (ci + 1), score: 60, reason: "자막 기반 자동 분할", subtitles: getSubsInRange(snapped.start_seconds, snapped.end_seconds) });
       }
     }
-    ve.recommendedClips = selected.slice(0, ve.clipCount).map(function(c, idx) {
-      return Object.assign({}, c, { title: "쇼츠 " + (idx + 1) + ": " + (c.hook || "추천 구간").slice(0, 18) });
+    ve.recommendedClips = selected.filter(isUsableShortCandidate).slice(0, ve.clipCount).map(function(c, idx) {
+      return Object.assign({}, c, { title: (c.title || c.hook || "추천 구간").replace(/^쇼츠\s*\d+\s*:?\s*/i, "").trim() });
     });
   }
 
@@ -6108,49 +6664,165 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function isShortsMode() {
     return ve.type === "portrait" || ve.type === "square";
   }
+  function getSelectedShortIndex() {
+    var idx = Number(ve.selectedShortIndex || 0);
+    if (!ve.videoClips || !ve.videoClips.length) return 0;
+    return Math.max(0, Math.min(idx, ve.videoClips.length - 1));
+  }
+  function getSelectedShortClip() {
+    if (!isShortsMode()) return null;
+    syncShortsVideoClips(false);
+    return (ve.videoClips || [])[getSelectedShortIndex()] || null;
+  }
+  function getSubsInSelectedShort() {
+    var clip = getSelectedShortClip();
+    if (!clip) return (ve.subtitles || []).map(function(s, i) { return { sub:s, idx:i }; });
+    return (ve.subtitles || []).map(function(s, i) {
+      var st = s.start_seconds != null ? s.start_seconds : (s.start || 0);
+      var en = s.end_seconds != null ? s.end_seconds : (s.end || st + 2);
+      if (en <= clip.start || st >= clip.end) return null;
+      return { sub:s, idx:i, localStart: Math.max(clip.start, st) - clip.start, sourceStart: Math.max(clip.start, st) };
+    }).filter(Boolean);
+  }
+  function getTimelineRange() {
+    var clip = getSelectedShortClip();
+    if (clip) return { start: clip.start, duration: Math.max(0.5, clip.end - clip.start) };
+    return { start: 0, duration: ve.duration || 1 };
+  }
+  function selectShortClip(idx) {
+    syncShortsVideoClips(false);
+    if (!ve.videoClips || !ve.videoClips.length) return;
+    ve.selectedShortIndex = Math.max(0, Math.min(Number(idx) || 0, ve.videoClips.length - 1));
+    var c = ve.videoClips[ve.selectedShortIndex];
+    var video = $("veVideo");
+    if (video && c) video.currentTime = c.start;
+    renderShortsPlanList();
+    renderClipList();
+    renderSubList();
+    renderTimeline();
+    renderVideoTrack();
+    renderImageTrack();
+    renderTimeRuler();
+    renderShortsInsightPanel();
+    _needsRedraw = true;
+  }
+  function deleteShortClip(idx) {
+    buildShortsRecommendations();
+    var target = (ve.recommendedClips || [])[idx];
+    if (!target) return;
+    ve._removedShorts = ve._removedShorts || {};
+    ve._removedShorts[shortsKey(target)] = true;
+    ve.recommendedClips = (ve.recommendedClips || []).filter(function(c, i) { return i !== idx && isUsableShortCandidate(c); });
+    if (_aiShortsCache) _aiShortsCache = _aiShortsCache.filter(function(c) { return isUsableShortCandidate(c); });
+    ve.videoClips = [];
+    ve.selectedShortIndex = Math.min(idx, Math.max(0, ve.recommendedClips.length - 1));
+    syncShortsVideoClips(false);
+    renderShortsPlanList();
+    renderClipList();
+    renderSubList();
+    renderTimeline();
+    renderVideoTrack();
+    renderImageTrack();
+    renderShortsInsightPanel();
+    _needsRedraw = true;
+  }
   function syncShortsVideoClips() {
     if (!isShortsMode()) return;
     buildShortsRecommendations();
+    var prev = ve.videoClips || [];
+    ve.recommendedClips = (ve.recommendedClips || []).filter(isUsableShortCandidate);
     ve.videoClips = (ve.recommendedClips || []).map(function(c, idx) {
+      var old = prev[idx] && prev[idx]._shorts ? prev[idx] : null;
       return {
-        start: Number(c.start_seconds || 0),
-        end: Number(c.end_seconds || (c.start_seconds || 0) + (ve.clipDuration || 45)),
-        label: "쇼츠 " + (idx + 1),
-        title: c.title || c.hook || ("쇼츠 " + (idx + 1)),
+        start: old ? old.start : Number(c.start_seconds || 0),
+        end: old ? old.end : Number(c.end_seconds || (c.start_seconds || 0) + (ve.clipDuration || 45)),
+        label: (idx + 1) + "위",
+        title: old ? (old.title || c.title) : ((c.title || c.hook || "추천 구간").replace(/^쇼츠\s*\d+\s*:?\s*/i, "").trim()),
         score: c.score || 0,
         reason: c.reason || "",
+        rank: idx + 1,
         _shorts: true
       };
     });
+    if (ve.selectedShortIndex == null) ve.selectedShortIndex = 0;
+    ve.selectedShortIndex = getSelectedShortIndex();
   }
   function renderShortsPlanList() {
     var list = $("veShortsPlanList"); if (!list) return;
     syncShortsControls();
     if (ve.type !== "portrait" && ve.type !== "square") {
       list.innerHTML = "<div style='color:#64748b;padding:8px 0;'>세로 또는 정사각 비율을 선택하면 숏폼 후보가 표시됩니다.</div>";
+      renderShortsInsightPanel();
       return;
     }
     buildShortsRecommendations();
     syncShortsVideoClips();
     if (!ve.recommendedClips.length) {
       list.innerHTML = "<div style='color:#64748b;padding:8px 0;'>분석 후 추천 숏폼 리스트가 자동으로 표시됩니다.</div>";
+      renderShortsInsightPanel();
       return;
     }
     list.innerHTML = ve.recommendedClips.map(function(c, i) {
       var dur = Math.max(0, c.end_seconds - c.start_seconds);
-      return "<div data-short-idx='" + i + "' style='padding:10px 8px;border:1px solid #1e1e3a;border-radius:8px;margin-bottom:6px;background:#101026;cursor:pointer;'>" +
-        "<div style='display:flex;align-items:center;gap:8px;margin-bottom:5px;'><span style='width:22px;height:22px;border-radius:50%;background:#3b82f6;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;'>" + (i + 1) + "</span>" +
-        "<div style='flex:1;min-width:0;font-size:12px;font-weight:800;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml(c.hook || c.title || "추천 구간") + "</div>" +
-        "<span style='font-size:11px;font-weight:800;color:#60a5fa;'>" + Math.round(c.score || 0) + "점</span></div>" +
-        "<div style='font-size:11px;color:#94a3b8;margin-bottom:4px;'>" + fmtTime(c.start_seconds) + " ~ " + fmtTime(c.end_seconds) + " · 약 " + Math.round(dur) + "초</div>" +
-        "<div style='font-size:11px;color:#64748b;line-height:1.45;'>" + escapeHtml(c.reason || "") + "</div></div>";
+      var active = i === getSelectedShortIndex();
+      return "<div data-short-idx='" + i + "' style='padding:10px 8px;border:2px solid " + (active ? "#3b82f6" : "#1e1e3a") + ";border-radius:8px;margin-bottom:6px;background:" + (active ? "#111b32" : "#101026") + ";cursor:pointer;'>" +
+        "<div style='display:flex;align-items:center;gap:8px;margin-bottom:5px;'><span style='height:22px;border-radius:999px;background:#3b82f6;color:#fff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;padding:0 8px;'>" + (i + 1) + "위</span>" +
+        "<div style='flex:1;min-width:0;font-size:12px;font-weight:900;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml((c.title || c.hook || "추천 구간").replace(/^쇼츠\s*\d+\s*:?\s*/i, "").trim()) + "</div>" +
+        "<span style='font-size:11px;font-weight:800;color:#60a5fa;'>" + Math.round(c.score || 0) + "점</span>" +
+        "<button data-short-delete='" + i + "' title='이 쇼츠 삭제' style='width:22px;height:22px;border:none;border-radius:6px;background:#1f2937;color:#94a3b8;font-size:13px;font-weight:900;cursor:pointer;line-height:1;'>×</button></div>" +
+        "<div style='font-size:11px;color:#94a3b8;'>" + fmtTime(c.start_seconds) + " ~ " + fmtTime(c.end_seconds) + " · 약 " + Math.round(dur) + "초</div></div>";
     }).join("");
-    list.querySelectorAll("[data-short-idx]").forEach(function(el) {
-      el.addEventListener("click", function() {
-        var c = ve.recommendedClips[parseInt(el.dataset.shortIdx)];
-        var video = $("veVideo"); if (video && c) video.currentTime = c.start_seconds;
+    list.querySelectorAll("[data-short-delete]").forEach(function(btn) {
+      btn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        deleteShortClip(parseInt(btn.dataset.shortDelete));
       });
     });
+    list.querySelectorAll("[data-short-idx]").forEach(function(el) {
+      el.addEventListener("click", function() {
+        selectShortClip(parseInt(el.dataset.shortIdx));
+      });
+    });
+    renderShortsInsightPanel();
+  }
+
+  function renderShortsInsightPanel() {
+    var panel = $("veShortsInsightPanel");
+    var body = $("veShortsInsightBody");
+    if (!panel || !body) return;
+    var visible = isShortsMode() && ve.recommendedClips && ve.recommendedClips.length;
+    panel.style.display = visible ? "flex" : "none";
+    var bgInput = $("veCanvasBgColor");
+    if (bgInput && bgInput.value !== (ve.bgColor || "#000000")) bgInput.value = ve.bgColor || "#000000";
+    var scaleInput = $("veVideoScale");
+    var scaleLabel = $("veVideoScaleLabel");
+    var scalePct = Math.round(Number(ve.videoScale || 1) * 100);
+    if (scaleInput && Number(scaleInput.value) !== scalePct) scaleInput.value = scalePct;
+    if (scaleLabel) scaleLabel.textContent = scalePct + "%";
+    if (!visible) { body.innerHTML = ""; return; }
+    var idx = getSelectedShortIndex();
+    var c = ve.recommendedClips[idx] || ve.recommendedClips[0];
+    var text = (c.subtitles || []).map(function(s) { return s.text || ""; }).join(" ");
+    var hookScore = Math.min(100, Math.max(45, Math.round((c.score || 70) + (/[?？]|\d|방법|이유|핵심|문제|해결|주의/.test(text) ? 6 : -4))));
+    var flowScore = Math.min(100, Math.max(45, Math.round(70 + Math.min(20, (c.subtitles || []).length * 2) - (/(\S{2,})\s+\1/.test(text) ? 10 : 0))));
+    var lenScore = Math.min(100, Math.max(45, Math.round(100 - Math.abs(42 - Math.max(1, (c.end_seconds || 0) - (c.start_seconds || 0))) * 1.2)));
+    body.innerHTML =
+      "<div style='display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px;'>" +
+      "<div><div style='display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;background:#1d4ed8;color:#fff;font-size:11px;font-weight:900;'>" + (idx + 1) + "위</div>" +
+      "<div style='font-size:15px;font-weight:900;color:#f8fafc;line-height:1.35;margin-top:8px;'>" + escapeHtml((c.title || c.hook || "추천 구간").replace(/^쇼츠\s*\d+\s*:?\s*/i, "").trim()) + "</div>" +
+      "<div style='font-size:11px;color:#94a3b8;margin-top:5px;'>" + fmtTime(c.start_seconds || 0) + " ~ " + fmtTime(c.end_seconds || 0) + "</div></div>" +
+      "<div style='font-size:28px;font-weight:900;color:#60a5fa;line-height:1;'>" + Math.round(c.score || 0) + "<span style='font-size:11px;color:#64748b;'>점</span></div></div>" +
+      "<div style='font-size:12px;font-weight:800;color:#e2e8f0;margin-bottom:6px;'>점수 이유</div>" +
+      "<div style='font-size:12px;color:#94a3b8;line-height:1.55;margin-bottom:14px;'>" + escapeHtml(c.reason || "초반 훅, 문장 흐름, 쇼츠 길이를 기준으로 추천했습니다.") + "</div>" +
+      "<div style='font-size:12px;font-weight:800;color:#e2e8f0;margin-bottom:8px;'>랭킹 기준</div>" +
+      insightMeter("훅 강도", hookScore) +
+      insightMeter("말 흐름", flowScore) +
+      insightMeter("길이 적합도", lenScore);
+  }
+  function insightMeter(label, value) {
+    value = Math.max(0, Math.min(100, Math.round(value || 0)));
+    return "<div style='margin-bottom:10px;'><div style='display:flex;justify-content:space-between;font-size:11px;color:#94a3b8;margin-bottom:4px;'><span>" + label + "</span><b style='color:#cbd5e1;'>" + value + "</b></div>" +
+      "<div style='height:6px;border-radius:999px;background:#1f2937;overflow:hidden;'><div style='width:" + value + "%;height:100%;background:#3b82f6;'></div></div></div>";
   }
 
   ve.overlays = []; // {path, startTime, endTime, x, y, width, height}
@@ -6194,27 +6866,15 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var dur = ve.duration || 1;
     if (isShortsMode() && ve.recommendedClips && ve.recommendedClips.length) {
       syncShortsVideoClips();
-      var totalShortDur = ve.videoClips.reduce(function(sum, c) { return sum + Math.max(0.5, c.end - c.start); }, 0) || 1;
-      var cursor = 0;
+      var selectedIdx = getSelectedShortIndex();
+      var selectedClip = ve.videoClips[selectedIdx];
+      var clipDur = selectedClip ? Math.max(0.5, selectedClip.end - selectedClip.start) : 1;
       track.style.cssText = "position:absolute;inset:0;";
-      track.innerHTML = ve.videoClips.map(function(c, i) {
-        var clipDur = Math.max(0.5, c.end - c.start);
-        var left = (cursor / totalShortDur * 100).toFixed(2) + "%";
-        var width = (clipDur / totalShortDur * 100).toFixed(2) + "%";
-        cursor += clipDur;
-        var colors = ["#009688", "#00897b", "#00796b", "#3b82f6"];
-        var color = colors[i % colors.length];
-        return "<div data-vclip='" + i + "' title='" + escapeHtml(c.title || c.label) + "' style='position:absolute;top:2px;bottom:2px;left:" + left + ";width:" + width +
-          ";background:" + color + ";border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid " + color + "99;'>" +
-          "<div style='flex:1;min-width:0;padding:0 4px;font-size:10px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;text-align:center;font-weight:800;'>" + escapeHtml(c.label || ("쇼츠 " + (i + 1))) + "</div></div>";
-      }).join("");
+      track.innerHTML = selectedClip ? "<div data-vclip='" + selectedIdx + "' title='" + escapeHtml(selectedClip.title || selectedClip.label) + "' style='position:absolute;top:2px;bottom:2px;left:0;width:100%;background:#3b82f6;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #60a5fa;'>" +
+          "<div style='flex:1;min-width:0;padding:0 4px;font-size:10px;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;text-align:center;font-weight:800;'>" + escapeHtml((selectedIdx + 1) + "위 · " + fmtTime(0) + "~" + fmtTime(clipDur)) + "</div></div>" : "";
       track.querySelectorAll("[data-vclip]").forEach(function(el) {
         el.addEventListener("click", function() {
-          var idx = parseInt(el.dataset.vclip);
-          track.querySelectorAll("[data-vclip]").forEach(function(e) { e.style.outline = "none"; e.style.boxShadow = "none"; });
-          el.style.outline = "2px solid #80cbc4"; el.style.boxShadow = "0 0 8px rgba(0,191,165,0.55)";
-          var c = ve.videoClips[idx];
-          if (c) { var video = $("veVideo"); if (video) video.currentTime = c.start; }
+          selectShortClip(parseInt(el.dataset.vclip));
         });
       });
       return;
@@ -6253,21 +6913,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function renderClipList() {
     var list = $("veClipList"); if (!list) return;
     if (isShortsMode() && ve.recommendedClips && ve.recommendedClips.length) {
-      syncShortsVideoClips();
-      list.style.display = "";
-      list.innerHTML = ve.videoClips.map(function(c, i) {
-        return "<div style='padding:8px 6px;border:1px solid #1e1e3a;border-radius:8px;margin-bottom:6px;cursor:pointer;background:#101026;' data-vci='" + i + "'>" +
-          "<div style='display:flex;align-items:center;gap:8px;margin-bottom:4px;'><span style='font-size:11px;font-weight:900;color:#4db6ac;min-width:38px;'>쇼츠 " + (i + 1) + "</span>" +
-          "<span style='font-size:12px;font-weight:800;color:#e2e8f0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>" + escapeHtml(c.title || c.label || "") + "</span></div>" +
-          "<div style='font-size:11px;color:#94a3b8;'>" + fmtTime(c.start) + " ~ " + fmtTime(c.end) + " · " + Math.round(c.end - c.start) + "초 · " + Math.round(c.score || 0) + "점</div>" +
-          (c.reason ? "<div style='font-size:11px;color:#64748b;line-height:1.45;margin-top:4px;'>" + escapeHtml(c.reason) + "</div>" : "") + "</div>";
-      }).join("");
-      list.querySelectorAll("[data-vci]").forEach(function(el) {
-        el.addEventListener("click", function() {
-          var c = ve.videoClips[parseInt(el.dataset.vci)];
-          if (c) { var video = $("veVideo"); if (video) video.currentTime = c.start; _needsRedraw = true; }
-        });
-      });
+      list.style.display = "none";
+      list.innerHTML = "";
       return;
     }
     if (!ve.videoClips || ve.videoClips.length <= 1) {
@@ -6330,6 +6977,13 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 
   // ── 프로젝트 저장 버튼 ──
   var saveBtn = $("veSaveProjectBtn"); if (saveBtn) saveBtn.addEventListener("click", function() { saveProject(); });
+  var advancedBtn = $("veAdvancedToggleBtn");
+  if (advancedBtn) advancedBtn.addEventListener("click", function() {
+    var step3 = $("veStep3");
+    if (!step3) return;
+    var open = step3.classList.toggle("ve-advanced-open");
+    advancedBtn.textContent = open ? "고급 닫기" : "고급 편집";
+  });
   // ── 프로젝트 보관함 버튼 ──
   var projListBtn = $("veProjectListBtn"); if (projListBtn) projListBtn.addEventListener("click", function() { showProjectList(); });
   // ── Ctrl+S 단축키 ──
@@ -6338,6 +6992,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   window._initEditor = initEditor;
   function initEditor(){
     var video=$("veVideo"); if(!video||!ve.filePath) return;
+    ensureScreenSettingsButton();
 
     // 전체 로딩 오버레이 (Step3 위에)
     var loadOv = $("veLoadingOverlay");
@@ -6391,6 +7046,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
           renderVideoTrack();
           renderClipList();
           renderShortsPlanList();
+          veActivateTab(isShortsMode() ? "clip" : "sub");
         } catch (err) {
           console.error("[VideoEditor] timeline init failed:", err);
           showModal(
@@ -6430,14 +7086,21 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var now = performance.now();
       if (now - _lastTimeUpdate < 100) return; // 100ms throttle (10fps)
       _lastTimeUpdate = now;
-      var veDur = ve.duration || 1;
+      var activeShort = getSelectedShortClip();
+      var veDur = activeShort ? Math.max(0.5, activeShort.end - activeShort.start) : (ve.duration || 1);
       var cur=video.currentTime;
+      if (activeShort && cur >= activeShort.end) {
+        video.pause(); video.currentTime = activeShort.end;
+        isPlaying = false; if(pb) pb.innerHTML="&#9654;";
+        return;
+      }
       // 영상 끝(ve.duration) 이후 재생 차단
-      if (cur > veDur + 0.1) { video.currentTime = veDur; video.pause(); isPlaying = false; if(pb) pb.innerHTML="&#9654;"; return; }
-      if(seekBar&&!seekBar._dragging) seekBar.value=Math.round(cur/veDur*1000);
-      if(timeDisp) timeDisp.textContent=fmtTime(Math.min(cur,veDur))+" / "+fmtTime(veDur);
+      if (!activeShort && cur > veDur + 0.1) { video.currentTime = veDur; video.pause(); isPlaying = false; if(pb) pb.innerHTML="&#9654;"; return; }
+      var localCur = activeShort ? Math.max(0, cur - activeShort.start) : cur;
+      if(seekBar&&!seekBar._dragging) seekBar.value=Math.round(localCur/veDur*1000);
+      if(timeDisp) timeDisp.textContent=(activeShort ? ((getSelectedShortIndex()+1) + "위 · ") : "") + fmtTime(Math.min(localCur,veDur))+" / "+fmtTime(veDur);
       renderSubOverlay(cur);
-      updateTimelineHead(cur,veDur);
+      updateTimelineHead(localCur,veDur);
       highlightActiveSub(cur);
     };
     video.onended=function(){isPlaying=false;if(pb)pb.innerHTML="&#9654;";};
@@ -6449,8 +7112,10 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       if (video._checkEndInterval) clearInterval(video._checkEndInterval);
       video._checkEndInterval = setInterval(function() {
         if (!video || video.paused) { clearInterval(video._checkEndInterval); video._checkEndInterval = null; return; }
-        if (video.currentTime >= (ve.duration || 9999)) {
-          video.pause(); video.currentTime = ve.duration;
+        var activeShort = getSelectedShortClip();
+        var stopAt = activeShort ? activeShort.end : (ve.duration || 9999);
+        if (video.currentTime >= stopAt) {
+          video.pause(); video.currentTime = stopAt;
           isPlaying = false; if(pb) pb.innerHTML = "&#9654;";
           clearInterval(video._checkEndInterval); video._checkEndInterval = null;
         }
@@ -6462,7 +7127,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     if(seekBar){
       seekBar.onmousedown=function(){seekBar._dragging=true;};
       seekBar.onmouseup=function(){seekBar._dragging=false;};
-      seekBar.oninput=function(){var dur=ve.duration||video.duration||1;video.currentTime=Math.min(dur,seekBar.value/1000*dur);};
+      seekBar.oninput=function(){var clip=getSelectedShortClip();var dur=clip?Math.max(0.5,clip.end-clip.start):(ve.duration||video.duration||1);video.currentTime=(clip?clip.start:0)+Math.min(dur,seekBar.value/1000*dur);};
     }
 
     // 자막 목록 + 타임라인 렌더
@@ -6528,10 +7193,14 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function renderSubList(){
     var list=$("veSubtitleList"); if(!list) return;
     if(!ve.subtitles.length){list.innerHTML="<div style='color:var(--text-dim);padding:8px 0;'>자막 없음</div>";return;}
-    list.innerHTML=ve.subtitles.map(function(s,i){
-      var st=s.start_seconds!=null?s.start_seconds:(s.start||0);
-      return "<div class='ve-sub-row' data-idx='"+i+"' data-sub-idx='"+i+"' style='display:flex;gap:6px;padding:6px 6px;border-bottom:1px solid #1e1e3a;cursor:pointer;align-items:center;transition:background 0.15s;border-radius:3px;'>" +
-        "<span style='font-size:11px;font-weight:700;color:#3b82f6;min-width:40px;font-variant-numeric:tabular-nums;'>"+fmtTime(st)+"</span>"+
+    var rows = isShortsMode() && ve.videoClips && ve.videoClips.some(function(c){return c._shorts;})
+      ? getSubsInSelectedShort()
+      : ve.subtitles.map(function(s, i) { return { sub:s, idx:i, localStart:s.start_seconds != null ? s.start_seconds : (s.start || 0), sourceStart:s.start_seconds != null ? s.start_seconds : (s.start || 0) }; });
+    if (!rows.length) { list.innerHTML="<div style='color:var(--text-dim);padding:8px 0;'>선택한 쇼츠 구간에 자막이 없습니다.</div>"; return; }
+    list.innerHTML=rows.map(function(row){
+      var s=row.sub, i=row.idx;
+      return "<div class='ve-sub-row' data-idx='"+i+"' data-sub-idx='"+i+"' data-source-start='"+row.sourceStart+"' style='display:flex;gap:6px;padding:6px 6px;border-bottom:1px solid #1e1e3a;cursor:pointer;align-items:center;transition:background 0.15s;border-radius:3px;'>" +
+        "<span style='font-size:11px;font-weight:700;color:#3b82f6;min-width:40px;font-variant-numeric:tabular-nums;'>"+fmtTime(row.localStart || 0)+"</span>"+
         "<input type='text' value='"+escapeHtml(s.text||"")+"' data-idx='"+i+"' class='ve-sub-edit' style='flex:1;border:none;background:transparent;color:#e2e8f0;font-size:12px;outline:none;padding:3px 6px;font-family:inherit;min-width:0;border-radius:4px;' onfocus=\"this.style.background='#1e1e3a'\" onblur=\"this.style.background='transparent'\">" +
         "<button data-idx='"+i+"' class='ve-sub-del' style='border:none;background:none;color:#64748b;cursor:pointer;font-size:12px;padding:3px 6px;flex-shrink:0;font-weight:700;'>X</button></div>";
     }).join("");
@@ -6542,7 +7211,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         if(e.target.tagName==="INPUT"||e.target.tagName==="BUTTON") return;
         var idx=parseInt(row.dataset.idx);
         var s=ve.subtitles[idx]; if(!s) return;
-        var video=$("veVideo"); if(video) video.currentTime=s.start_seconds!=null?s.start_seconds:(s.start||0);
+        var video=$("veVideo"); if(video) video.currentTime=parseFloat(row.dataset.sourceStart || (s.start_seconds!=null?s.start_seconds:(s.start||0)));
       });
       row.addEventListener("dblclick",function(e){
         if(e.target.tagName==="INPUT") return;
@@ -6576,29 +7245,27 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var timelineSubs = ve.subtitles || [];
     var shortsTimelineMode = isShortsMode() && ve.videoClips && ve.videoClips.length && ve.videoClips.some(function(c) { return c._shorts; });
     if (shortsTimelineMode) {
+      var selectedClip = getSelectedShortClip();
       var mapped = [];
-      var offset = 0;
-      ve.videoClips.forEach(function(c, ci) {
-        var clipDur = Math.max(0.5, c.end - c.start);
+      if (selectedClip) {
         (ve.subtitles || []).forEach(function(s, si) {
           var st0 = s.start_seconds != null ? s.start_seconds : (s.start || 0);
           var en0 = s.end_seconds != null ? s.end_seconds : (s.end || st0 + 2);
-          if (en0 <= c.start || st0 >= c.end) return;
-          var st = Math.max(c.start, st0);
-          var en = Math.min(c.end, en0);
+          if (en0 <= selectedClip.start || st0 >= selectedClip.end) return;
+          var st = Math.max(selectedClip.start, st0);
+          var en = Math.min(selectedClip.end, en0);
           mapped.push(Object.assign({}, s, {
             _origIdx: si,
             _sourceStart: st,
             _sourceEnd: en,
-            _shortsClip: ci,
-            start_seconds: offset + (st - c.start),
-            end_seconds: offset + (en - c.start)
+            _shortsClip: getSelectedShortIndex(),
+            start_seconds: st - selectedClip.start,
+            end_seconds: en - selectedClip.start
           }));
         });
-        offset += clipDur;
-      });
+      }
       timelineSubs = mapped;
-      dur = offset || 1;
+      dur = selectedClip ? Math.max(0.5, selectedClip.end - selectedClip.start) : 1;
     }
 
     // 줌 적용 (CSS transform — 리플로우 없음)
@@ -6714,8 +7381,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         var x = e.clientX - rect.left;
         var pct = x / rect.width;
         var video = $("veVideo");
-        var d = ve.duration || 1;
-        if (video && d > 0) video.currentTime = pct * d;
+        var clip = getSelectedShortClip();
+        var range = getTimelineRange();
+        if (video && range.duration > 0) video.currentTime = range.start + pct * range.duration;
       });
     }
 
@@ -6885,8 +7553,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       var laneW = lane.scrollWidth || rect.width;
       var pct = clickX / rect.width; // 화면상 비율 → 실제 비율
       var video=$("veVideo");
-      var dur=ve.duration||1;
-      if(video && dur>0) video.currentTime=Math.max(0,Math.min(dur,pct*dur));
+      var range = getTimelineRange();
+      if(video && range.duration>0) video.currentTime=Math.max(range.start,Math.min(range.start+range.duration,range.start+pct*range.duration));
     });
   });
 
@@ -6898,7 +7566,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
 
   function renderTimeRuler(){
     var ruler=$("veTimeRuler"); if(!ruler) return;
-    var dur=ve.duration||1;
+    var rangeForRuler = getTimelineRange();
+    var dur=rangeForRuler.duration||1;
     var interval=dur>600?60:dur>300?30:dur>120?15:dur>60?10:5;
     var count=Math.ceil(dur/interval)+1;
     var html="";
@@ -6919,8 +7588,8 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         var rect = ruler.getBoundingClientRect();
         var pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
         var video = $("veVideo");
-        var d = ve.duration || 1;
-        if (video && d > 0) { video.currentTime = Math.min(d, pct * d); _needsRedraw = true; }
+        var range = getTimelineRange();
+        if (video && range.duration > 0) { video.currentTime = Math.min(range.start + range.duration, range.start + pct * range.duration); _needsRedraw = true; }
       }
       ruler.addEventListener("mousedown", function(e) { _rulerDragging = true; rulerSeek(e); });
       document.addEventListener("mousemove", function(e) { if (_rulerDragging) rulerSeek(e); });
@@ -7068,10 +7737,18 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
       if (isPortrait) {
         // 세로/정사각: 하이라이트 자동 생성 (segments 없으면 자막 기반)
         var clips = [];
-        buildShortsRecommendations();
-        if (ve.recommendedClips && ve.recommendedClips.length > 0) {
-          clips = ve.recommendedClips.slice(0, ve.clipCount || 5).map(function(s) {
-            return Object.assign({}, s, { subtitles: ve.subEnabled ? (s.subtitles || getSubsInRange(s.start_seconds || 0, s.end_seconds || 0)) : [] });
+        syncShortsVideoClips(false);
+        if (ve.videoClips && ve.videoClips.some(function(c) { return c._shorts; })) {
+          clips = ve.videoClips.slice(0, ve.clipCount || 5).map(function(c, i) {
+            return {
+              start_seconds: c.start,
+              end_seconds: c.end,
+              hook: c.title || c.label || ("쇼츠 " + (i + 1)),
+              title: c.title || c.label || ("쇼츠 " + (i + 1)),
+              score: c.score || 0,
+              reason: c.reason || "",
+              subtitles: ve.subEnabled ? getSubsInRange(c.start, c.end) : []
+            };
           });
         } else if (ve.segments.length > 0) {
           clips = ve.segments.slice(0, ve.clipCount || 5).map(function(s) {
@@ -7123,9 +7800,9 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
         setProg("veExportPct", "veExportBar", "veExportLabel", 10, "쇼츠 렌더링 중...");
         var _brandName = ($("veBrandName") || {}).value || "";
         var _brandLogo = ($("veBrandLogo") || {}).value || "";
-        result = await bridge.videoRenderShorts({ inputPath: ve.filePath, clips: clips, outputDir: ve._outputDir || null, outputFileName: ve._outputFileName || null, template: "minimal", subtitlesEnabled: ve.subEnabled, aspect: aspect, outputResolution: outputResolution, silenceRemove: ve.silenceRemove, brandName: _brandName, brandLogo: _brandLogo, captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1} });
+        result = await bridge.videoRenderShorts({ inputPath: ve.filePath, clips: clips, overlays: ve.overlays || [], outputDir: ve._outputDir || null, outputFileName: ve._outputFileName || null, template: "minimal", subtitlesEnabled: ve.subEnabled, aspect: aspect, outputResolution: outputResolution, backgroundColor: ve.bgColor || "#000000", videoScale: ve.videoScale || 1, silenceRemove: ve.silenceRemove, brandName: _brandName, brandLogo: _brandLogo, captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1} });
       } else {
-        result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1},aspect:aspect,outputResolution:outputResolution,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null,outputFileName:ve._outputFileName||null});
+        result=await bridge.videoRenderLongform({inputPath:ve.filePath,subtitles:ve.subEnabled?ve.subtitles:[],subtitlesEnabled:ve.subEnabled,overlays:ve.overlays||[],captionStyle:{fontSize:ve.subSize,color:ve.subColor,stroke:parseInt(_subStroke||"0"),strokeColor:_subStrokeColor||"#000",shadow:_subShadow||"none",bgMode:_subBg||"box",bgColor:_subBgColor||"#000",bgOpacity:_subBgOpacity!=null?_subBgOpacity:60,borderRadius:parseInt(_subRound||"0"),maxChars:_subMaxChars||15,lines:_subLines||1},aspect:aspect,outputResolution:outputResolution,backgroundColor:ve.bgColor||"#000000",videoScale:ve.videoScale||1,silenceRemove:ve.silenceRemove,outputDir:ve._outputDir||null,outputFileName:ve._outputFileName||null});
       }
       if(!result.ok) throw new Error(result.error||"렌더링 실패");
       // 횟수 차감 (로컬 dev 모드는 스킵)
@@ -7822,7 +8499,21 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
     var title = $("writeResultTitleInput")?.value || $("writeResultTitle")?.textContent || "임시저장";
     var html = $("writeResultContent")?.innerHTML || "";
     if (window._archiveSave) {
-      window._archiveSave({ type: "blog", title: "[임시] " + title, theme: $("writeTopic")?.value || "", preview: html.replace(/<[^>]*>/g, "").slice(0, 200), html: html, draft: true });
+      window._archiveSave({
+        type: "blog",
+        title: "[임시] " + title,
+        rawTitle: title,
+        theme: $("writeTopic")?.value || "",
+        preview: html.replace(/<[^>]*>/g, "").slice(0, 200),
+        html: html,
+        draft: true,
+        data: {
+          title: title,
+          topic: $("writeTopic")?.value || "",
+          html: html,
+          draft: true,
+        },
+      });
     }
     showModal("임시저장 완료", "보관함에 저장되었습니다. 보관함에서 다시 열 수 있습니다.", "확인");
   });
@@ -8345,29 +9036,7 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
     $("writeInputView").style.display = "block";
     $("writeTitleSuggestions").style.display = "none";
     $("writeSeoKeys").style.display = "none";
-    $("writeAiImageResult").style.display = "none";
     writeGoStep(1);
-  });
-
-  // AI 대표 이미지
-  $("writeAiImageBtn")?.addEventListener("click", async () => {
-    const topic = $("writeTopic")?.value.trim() || "블로그 대표 이미지";
-    $("writeAiImageStatus").textContent = "이미지 생성 중...";
-    $("writeAiImageBtn").disabled = true;
-    try {
-      const res = await fetch(API + "/generate-image", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: `Blog thumbnail for: ${topic}. Clean, modern, professional style. No text overlay.`, aspectRatio: "16:9" }),
-      });
-      const data = await res.json();
-      if (data.url || data.image_url) {
-        $("writeAiImageResult").style.display = "block";
-        $("writeAiImageImg").src = data.url || data.image_url;
-        $("writeAiImageImg").onclick = () => { const a = document.createElement("a"); a.href = $("writeAiImageImg").src; a.download = "ai-image.png"; a.click(); };
-        $("writeAiImageStatus").textContent = "생성 완료! 클릭하여 다운로드";
-      } else { $("writeAiImageStatus").textContent = "이미지 생성 실패"; }
-    } catch { $("writeAiImageStatus").textContent = "이미지 생성 실패"; }
-    $("writeAiImageBtn").disabled = false;
   });
 })();
 
@@ -8400,7 +9069,12 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
       category: item.category || "",
       preview: (item.preview || "").slice(0, 200),
       url: item.url || "",
-      data: item.data || null,          // 다시 열기용 데이터
+      data: item.data || (item.html || item.draft ? {
+        title: item.rawTitle || item.title || "",
+        topic: item.theme || "",
+        html: item.html || "",
+        draft: !!item.draft,
+      } : null),          // 다시 열기용 데이터
     });
     setArchive(list);
   };
@@ -8505,13 +9179,29 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
             if (window._initEditor) window._initEditor();
           }, 300);
         } else if (item.type === "blog") {
-          // 글쓰기 패널로 이동 + 테마 복원
-          document.querySelectorAll(".nav-item").forEach(function(n) { n.classList.remove("active"); });
-          document.querySelectorAll(".panel").forEach(function(p) { p.classList.add("hidden"); });
-          var btn = document.querySelector('[data-panel="manual-write"]');
-          if (btn) { btn.classList.add("active"); btn.click(); }
-          if (item.theme && $("quickTheme")) $("quickTheme").value = item.theme;
-          if (item.category && $("quickCategory")) $("quickCategory").value = item.category;
+          // 수동 글쓰기 패널로 이동 + 저장된 초안/본문 복원
+          goToPanel("manual-write");
+          setTimeout(function() {
+            var data = item.data || {};
+            var savedTitle = String(data.title || item.title || "임시저장").replace(/^\[임시\]\s*/, "");
+            var savedHtml = data.html || item.html || "";
+            if ($("writeTopic")) $("writeTopic").value = data.topic || item.theme || "";
+            if ($("writeTitle")) $("writeTitle").value = savedTitle;
+            if ($("writeInputView")) $("writeInputView").style.display = savedHtml ? "none" : "";
+            if ($("writeLoadingView")) $("writeLoadingView").style.display = "none";
+            if ($("writeResultView")) $("writeResultView").style.display = savedHtml ? "" : "none";
+            if ($("writeResultTitle")) $("writeResultTitle").textContent = savedTitle || "저장된 글";
+            if ($("writeResultTitleInput")) $("writeResultTitleInput").value = savedTitle || "";
+            if ($("writeResultContent")) {
+              $("writeResultContent").innerHTML = savedHtml || escapeHtml(item.preview || "");
+              $("writeResultContent").contentEditable = "true";
+              $("writeResultContent").style.outline = "none";
+              $("writeResultContent").style.minHeight = "200px";
+            }
+            if (!savedHtml) {
+              showModal("보관함", "이전 버전에서 저장된 항목이라 본문 전체가 없어 주제만 복원했습니다.", "확인");
+            }
+          }, 120);
         }
       });
     });
@@ -9139,10 +9829,17 @@ ${accentColor ? "중요 키워드를 **강조**로 표시" : ""}
     var target = document.querySelector('[data-panel="' + name + '"]');
     if (target) target.classList.remove("hidden");
   }
-  var vhSlideshow = document.getElementById("vhSlideshow");
-  var vhVideoEdit = document.getElementById("vhVideoEdit");
-  if (vhSlideshow) vhSlideshow.addEventListener("click", function() { showPanel("slideshow"); });
-  if (vhVideoEdit) vhVideoEdit.addEventListener("click", function() { showPanel("video-editor"); });
+  function openVideoEditorMode(mode) {
+    window._vePendingMode = mode;
+    showPanel("video-editor");
+    if (typeof window._veSelectVideoEditMode === "function") {
+      window._veSelectVideoEditMode(mode);
+    }
+  }
+  var vhShortsEdit = document.getElementById("vhShortsEdit");
+  var vhLongformEdit = document.getElementById("vhLongformEdit");
+  if (vhShortsEdit) vhShortsEdit.addEventListener("click", function() { openVideoEditorMode("portrait"); });
+  if (vhLongformEdit) vhLongformEdit.addEventListener("click", function() { openVideoEditorMode("landscape"); });
 })();
 
 // ── 링크로 글쓰기 ──

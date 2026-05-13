@@ -5,9 +5,9 @@ import { Btn } from "./UI";
 /* ── 게시판 카테고리/태그 CRUD ── */
 const DEFAULT_BOARD_CATS = [
   { id:"info",label:"정보공유",icon:"📌",color:"#3b82f6" },
-  { id:"qna", label:"질문답변",icon:"❓",color:"#f59e0b" },
+  { id:"qna", label:"질문답변",icon:"",color:"#60a5fa" },
   { id:"free",label:"자유게시판",icon:"🗣",color:"#10b981" },
-  { id:"review",label:"사용후기",icon:"⭐",color:"#ec4899" },
+  { id:"review",label:"사용후기",icon:"",color:"#0ea5e9" },
 ];
 async function fetchBoardCatsAdmin() {
   try {
@@ -62,6 +62,16 @@ function getDriveThumb(url) {
 
 const FREE_GUEST  = 5;
 const FREE_MEMBER = 5;
+const cleanPostText = (value) => {
+  const raw = String(value || "");
+  if (!raw) return "";
+  if (typeof window !== "undefined" && window.DOMParser) {
+    try {
+      return new window.DOMParser().parseFromString(raw, "text/html").body.textContent.trim();
+    } catch {}
+  }
+  return raw.replace(/<[^>]*>/g, "").trim();
+};
 
 export default function AdminPage({ C, user: adminUser }) {
   const isAdminRole = adminUser?.role === "admin";
@@ -85,6 +95,7 @@ export default function AdminPage({ C, user: adminUser }) {
   const [toast, setToast]     = useState("");
   const [ptInputs, setPtInputs] = useState({});
   const [aiLogs, setAiLogs] = useState([]);
+  const [monthlyAiLogs, setMonthlyAiLogs] = useState([]);
   const [aiLogsLoading, setAiLogsLoading] = useState(false);
   const [programLogs, setProgramLogs] = useState([]);
   const [programLogsLoading, setProgramLogsLoading] = useState(false);
@@ -191,6 +202,14 @@ export default function AdminPage({ C, user: adminUser }) {
     } catch {}
     setAiLogsLoading(false);
   };
+  const loadMonthlyAiLogs = async () => {
+    try {
+      const { logs } = await adminApi("ai_logs", "&days=31");
+      setMonthlyAiLogs(logs || []);
+    } catch {
+      setMonthlyAiLogs([]);
+    }
+  };
   const loadProgramLogs = async (period) => {
     const days = periodDays[period || logPeriod] || 7;
     setProgramLogsLoading(true);
@@ -203,6 +222,7 @@ export default function AdminPage({ C, user: adminUser }) {
   const switchLogPeriod = (p) => {
     setLogPeriod(p);
     loadAiLogs(p);
+    loadMonthlyAiLogs();
     loadProgramLogs(p);
   };
 
@@ -280,7 +300,7 @@ export default function AdminPage({ C, user: adminUser }) {
 
   useEffect(() => {
     if (auth) {
-      loadMembers(); loadVideos(); loadPosts(); loadBoardCats(); loadAiLogs(); loadProgramLogs(); loadDailySignups(); loadDailyAiUsage();
+      loadMembers(); loadVideos(); loadPosts(); loadBoardCats(); loadAiLogs(); loadMonthlyAiLogs(); loadProgramLogs(); loadDailySignups(); loadDailyAiUsage();
       loadSubs(); loadTrials();
       adminApi("online_count").then(d=>setOnlineCount(d.count||0)).catch(()=>{});
     }
@@ -498,12 +518,17 @@ export default function AdminPage({ C, user: adminUser }) {
   const panelBg = isDark ? "rgba(255,255,255,0.045)" : "#fff";
   const panelBorder = isDark ? "rgba(255,255,255,0.06)" : "#eef0f6";
   const subtleBg = isDark ? "rgba(255,255,255,0.035)" : "#f8f9fc";
-  const activeBg = isDark ? "rgba(84,111,255,0.12)" : "rgba(84,111,255,0.08)";
-  const accent = "#546FFF";
-  const cardStyle = { padding: "20px 22px", borderRadius: 16, background: panelBg, border: `1px solid ${panelBorder}`, boxShadow: isDark ? "none" : "0 2px 12px rgba(0,0,0,0.04)" };
-  const adminTitle = {stats:"통계 대시보드", visitors:"접속 분석", members:"회원 관리", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백", chat:"실시간 채팅"}[tab] || tab;
+  const activeBg = isDark ? "rgba(37,99,235,0.14)" : "rgba(37,99,235,0.08)";
+  const accent = "#2563eb";
+  const blueSoft = isDark ? "rgba(37,99,235,0.16)" : "rgba(37,99,235,0.08)";
+  const blueMuted = "#60a5fa";
+  const blueDeep = "#1d4ed8";
+  const cardStyle = { padding: "20px 22px", borderRadius: 16, background: panelBg, border: `1px solid ${panelBorder}`, boxShadow: isDark ? "none" : "0 2px 12px rgba(15,23,42,0.04)" };
+  const isMobileAdmin = typeof window !== "undefined" && window.innerWidth < 768;
+  const adminTitle = {stats:"관리자 홈", logs:"SaaS 사용 로그", visitors:"접속 분석", members:"회원 관리", guest:"비회원 관리", posts:"게시글 관리", board:"게시판 관리", inquiries:"문의 관리", appFeedback:"앱 피드백", chat:"실시간 채팅"}[tab] || tab;
   const adminDesc = {
-    stats: "회원, 게시글, AI 사용량을 한 화면에서 확인합니다.",
+    stats: "핵심 운영 지표를 간결하게 확인합니다.",
+    logs: "exe 프로그램에서 발생한 SaaS 사용 횟수만 확인합니다.",
     visitors: "유입 경로와 접속 데이터를 점검합니다.",
     members: "회원 정보, 멤버십, 횟수 내역을 통합 관리합니다.",
     guest: "비회원 AI 사용량을 관리합니다.",
@@ -514,18 +539,79 @@ export default function AdminPage({ C, user: adminUser }) {
     chat: "사용자 문의에 실시간으로 답변합니다.",
   }[tab] || "관리자 작업을 처리합니다.";
   const refreshAdminData = () => {
-    loadMembers(); loadPosts(); loadAiLogs(); loadDailySignups(); loadDailyAiUsage();
+    loadMembers(); loadPosts(); loadAiLogs(); loadMonthlyAiLogs(); loadProgramLogs(); loadDailySignups(); loadDailyAiUsage();
     loadSubs(); loadTrials();
     adminApi("online_count").then(d=>setOnlineCount(d.count||0)).catch(()=>{});
     if (tab === "board") loadBoardCats();
     showToast("관리자 데이터 새로고침 완료");
   };
+  const isSaasAiUsageLog = (log) => {
+    const reason = String(log?.reason || "");
+    const delta = Number(log?.delta || 0);
+    if (reason.includes("[PENTEST") || reason.includes("PENTEST") || reason.includes("IDOR")) return false;
+    if (reason.includes("NaverBot") || reason.includes("데스크톱")) return false;
+    if (reason.includes("구독 시작") || reason.includes("구독 갱신") || reason.includes("추천")) return false;
+    if (delta < -1000) return false;
+    return delta < 0;
+  };
+  const memberMonthlySaasUsage = (m) => {
+    const write = Number(m?.monthly_used_write ?? m?.monthly_used ?? 0);
+    const video = Number(m?.monthly_used_video || 0);
+    return { write, video, total: write + video };
+  };
+  const saasLogUsageCount = (log) => Math.max(1, Math.abs(Number(log?.delta || 0)));
+  const saasLogKey = (log) => log?.id || `${log?.uid || ""}-${log?.created_at || ""}-${log?.reason || ""}-${log?.delta || ""}`;
+  const dedupeSaasLogs = (logs = []) => {
+    const seen = new Set();
+    return logs.filter(log => {
+      const key = saasLogKey(log);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+  const buildMonthlySaasUsers = (sourceMembers = members, sourceLogs = monthlyAiLogs) => {
+    const monthlyLogByUid = {};
+    sourceLogs.filter(isSaasAiUsageLog).forEach(l => {
+      const uid = l.uid || "unknown";
+      if (!monthlyLogByUid[uid]) monthlyLogByUid[uid] = { write: 0, video: 0, total: 0, lastAt: l.created_at };
+      const reason = String(l.reason || "").toLowerCase();
+      const count = saasLogUsageCount(l);
+      if (reason.includes("video") || reason.includes("영상")) monthlyLogByUid[uid].video += count;
+      else monthlyLogByUid[uid].write += count;
+      monthlyLogByUid[uid].total += count;
+      if (l.created_at && (!monthlyLogByUid[uid].lastAt || l.created_at > monthlyLogByUid[uid].lastAt)) monthlyLogByUid[uid].lastAt = l.created_at;
+    });
+    const memberByUid = {};
+    sourceMembers.forEach(m => { if (m.uid) memberByUid[m.uid] = m; });
+    return Array.from(new Set([
+      ...sourceMembers.filter(m => memberMonthlySaasUsage(m).total > 0).map(m => m.uid),
+      ...Object.keys(monthlyLogByUid),
+    ])).map(uid => {
+      const m = memberByUid[uid] || { uid };
+      const log = monthlyLogByUid[uid] || { write: 0, video: 0, total: 0 };
+      const db = memberMonthlySaasUsage(m);
+      return {
+        ...m,
+        _monthlyWrite: Math.max(db.write, log.write),
+        _monthlyVideo: Math.max(db.video, log.video),
+        _monthlyLogTotal: log.total,
+        _monthlyDbTotal: db.total,
+        _monthlyLastAt: log.lastAt || m.updated_at || m.created_at,
+      };
+    })
+      .filter(m => m._monthlyWrite > 0 || m._monthlyVideo > 0 || m._monthlyLogTotal > 0)
+      .sort((a,b) => ((b._monthlyWrite + b._monthlyVideo) || b._monthlyLogTotal) - ((a._monthlyWrite + a._monthlyVideo) || a._monthlyLogTotal));
+  };
+  const programLogUid = (log) => log?.license_key || log?.uid || log?.user_id || "";
+  const programLogLabel = (log) => cleanPostText(log?.title || log?.topic || "콘텐츠 생성") || "콘텐츠 생성";
+  const programLogMember = (log) => members.find(m => m.uid === programLogUid(log));
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", fontFamily: "'Apple SD Gothic Neo','Noto Sans KR',sans-serif", background: shellBg }}>
       {/* 토스트 */}
       {toast && (
-        <div style={{ position: "fixed", top: 24, right: 24, zIndex: 9999, background: accent, color: "#fff", padding: "14px 24px", borderRadius: 12, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(84,111,255,0.3)", animation: "fadein 0.2s", fontFamily: "inherit" }}>
+        <div style={{ position: "fixed", top: 24, right: 24, zIndex: 9999, background: accent, color: "#fff", padding: "14px 24px", borderRadius: 12, fontSize: 13, fontWeight: 600, boxShadow: "0 8px 24px rgba(37,99,235,0.24)", animation: "fadein 0.2s", fontFamily: "inherit" }}>
           {toast}
         </div>
       )}
@@ -554,8 +640,8 @@ export default function AdminPage({ C, user: adminUser }) {
         {/* 로고 */}
         <div style={{ padding: "0 8px 24px", marginBottom: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: `linear-gradient(135deg, ${accent}, #8b5cf6)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: accent, display: "flex", alignItems: "center", justifyContent: "center", color:"#fff", fontSize:13, fontWeight:900 }}>
+              A
             </div>
             <div>
               <div style={{ fontSize: 16, fontWeight: 800, color: C.text, letterSpacing: -0.3 }}>SNS메이킷</div>
@@ -569,7 +655,8 @@ export default function AdminPage({ C, user: adminUser }) {
           const recentMemberCnt = members.filter(m => { const d = m.join_date||m.created_at; return d && Date.now()-new Date(d).getTime()<7*86400000; }).length;
           const menuItems = [
             { group: "대시보드", items: [
-              ["stats", "통계", "M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zm10 0a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"],
+              ["stats", "홈", "M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1h-5v-6H9v6H4a1 1 0 01-1-1V10.5z"],
+              ["logs", "SaaS 사용 로그", "", programLogs.length || null],
               ["visitors", "접속 분석", "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"],
             ]},
             { group: "회원", items: [
@@ -599,9 +686,9 @@ export default function AdminPage({ C, user: adminUser }) {
                     color: active ? accent : (isDark ? "rgba(255,255,255,0.55)" : "#64748b"),
                     marginBottom: 2, transition: "all 0.15s", display: "flex", alignItems: "center", gap: 10,
                   }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={active ? accent : (isDark ? "rgba(255,255,255,0.35)" : "#94a3b8")} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={pathD} /></svg>
+                    <span style={{ width:6, height:6, borderRadius:99, background:active ? accent : (isDark ? "rgba(255,255,255,0.25)" : "#cbd5e1"), flexShrink:0 }} />
                     <span style={{ flex:1 }}>{label}</span>
-                    {badge && <span style={{ fontSize:10, fontWeight:700, minWidth:20, height:20, borderRadius:99, display:"flex", alignItems:"center", justifyContent:"center", background:active?accent+"20":"rgba(84,111,255,0.08)", color:active?accent:(isDark?"rgba(255,255,255,0.4)":"#94a3b8") }}>{badge}</span>}
+                    {badge && <span style={{ fontSize:10, fontWeight:700, minWidth:20, height:20, borderRadius:99, display:"flex", alignItems:"center", justifyContent:"center", background:active?blueSoft:"rgba(37,99,235,0.08)", color:active?accent:(isDark?"rgba(255,255,255,0.4)":"#94a3b8") }}>{badge}</span>}
                   </button>
                 );
               })}
@@ -612,7 +699,7 @@ export default function AdminPage({ C, user: adminUser }) {
         {/* 하단 관리자 프로필 */}
         <div style={{ marginTop: "auto", padding: "16px 12px", borderTop: `1px solid ${panelBorder}` }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
-            <div style={{ width:36, height:36, borderRadius:99, background:`linear-gradient(135deg, ${accent}, #8b5cf6)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#fff", flexShrink:0 }}>
+            <div style={{ width:36, height:36, borderRadius:99, background:accent, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, fontWeight:700, color:"#fff", flexShrink:0 }}>
               {(adminUser?.nick||adminUser?.email||"A")[0].toUpperCase()}
             </div>
             <div style={{ minWidth:0 }}>
@@ -628,7 +715,7 @@ export default function AdminPage({ C, user: adminUser }) {
       </aside>
 
       {/* ── 메인 콘텐츠 ── */}
-      <main style={{ flex: 1, padding: "32px 36px 80px", overflowY: "auto", background: shellBg }}>
+      <main style={{ flex: 1, width: "100%", maxWidth: 1320, margin: "0 auto", boxSizing: "border-box", padding: "32px clamp(18px, 3vw, 36px) 80px", overflowY: "auto", background: shellBg }}>
         {/* 상단 헤더 */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 28, gap: 16, flexWrap: "wrap" }}>
           <div>
@@ -696,12 +783,12 @@ export default function AdminPage({ C, user: adminUser }) {
         const popularPosts = [...posts].sort((a,b) => (b.views||0)-(a.views||0)).slice(0,10);
 
         // AI 사용 분석 데이터
-        const aiOnly = aiLogs.filter(l => l.delta < 0);
+        const aiOnly = aiLogs.filter(isSaasAiUsageLog);
         const byReason = {};
         aiOnly.forEach(l => { const r = l.reason || "기타"; byReason[r] = (byReason[r]||0) + 1; });
         const totalAiUsage = aiOnly.length;
         const reasonEntries = Object.entries(byReason).sort((a,b)=>b[1]-a[1]);
-        const donutColors = ["#546FFF","#FFab40","#FF6b6b","#8b5cf6","#06b6d4","#22c55e","#f59e0b","#ec4899"];
+        const donutColors = ["#2563eb","#1d4ed8","#3b82f6","#60a5fa","#0ea5e9","#0284c7","#0369a1","#93c5fd"];
 
         // SVG 라인 차트 헬퍼
         const makeLine = (data, w, h, pad) => {
@@ -728,17 +815,15 @@ export default function AdminPage({ C, user: adminUser }) {
           {/* ── 요약 카드 4열 ── */}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))", gap:18, marginBottom:28 }}>
             {[
-              { n: totalMembers.toLocaleString()+"+", l: "전체 회원", sub: recentMembers ? `+${recentMembers} 이번주` : null, icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z", color:"#546FFF", bg:"rgba(84,111,255,0.08)" },
-              { n: (onlineCount||0).toLocaleString()+"+", l: "실시간 접속", sub: null, icon: "M13 10V3L4 14h7v7l9-11h-7z", color:"#22c55e", bg:"rgba(34,197,94,0.08)" },
-              { n: totalPosts.toLocaleString()+"+", l: "전체 게시글", sub: todayPosts ? `+${todayPosts} 오늘` : null, icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z", color:"#f59e0b", bg:"rgba(245,158,11,0.08)" },
-              { n: totalAiUsage.toLocaleString()+"+", l: "AI 사용량", sub: null, icon: "M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z", color:"#8b5cf6", bg:"rgba(139,92,246,0.08)" },
+              { n: totalMembers.toLocaleString()+"+", l: "전체 회원", sub: recentMembers ? `+${recentMembers} 이번주` : null, color:accent },
+              { n: (onlineCount||0).toLocaleString()+"+", l: "실시간 접속", sub: null, color:blueDeep },
+              { n: totalPosts.toLocaleString()+"+", l: "전체 게시글", sub: todayPosts ? `+${todayPosts} 오늘` : null, color:"#0ea5e9" },
+              { n: totalAiUsage.toLocaleString()+"+", l: "웹 AI 사용량", sub: null, color:blueMuted },
             ].map((s,i) => (
               <div key={i} style={{ padding:"22px 24px", borderRadius:16, background:panelBg, border:`1px solid ${panelBorder}`, boxShadow: isDark ? "none" : "0 1px 8px rgba(0,0,0,0.04)", transition:"box-shadow 0.2s" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:14 }}>
-                  <div style={{ width:48, height:48, borderRadius:14, background:s.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={s.color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={s.icon}/></svg>
-                  </div>
-                  {s.sub && <span style={{ fontSize:11, fontWeight:600, color:"#22c55e", background:"rgba(34,197,94,0.08)", padding:"3px 10px", borderRadius:99 }}>{s.sub}</span>}
+                  <div style={{ width:10, height:10, borderRadius:99, background:s.color }} />
+                  {s.sub && <span style={{ fontSize:11, fontWeight:600, color:accent, background:blueSoft, padding:"3px 10px", borderRadius:99 }}>{s.sub}</span>}
                 </div>
                 <div style={{ fontSize:28, fontWeight:800, color:C.text, letterSpacing:-0.5, lineHeight:1 }}>{s.n}</div>
                 <div style={{ fontSize:12, color:isDark?"rgba(255,255,255,0.4)":"#94a3b8", fontWeight:500, marginTop:6 }}>{s.l}</div>
@@ -747,14 +832,14 @@ export default function AdminPage({ C, user: adminUser }) {
           </div>
 
           {/* ── Reports 라인차트 + Analytics 도넛 ── */}
-          <div style={{ display:"grid", gridTemplateColumns:"1.8fr 1fr", gap:18, marginBottom:24 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(100%, 360px), 1fr))", gap:18, marginBottom:24 }}>
             {/* Reports — SVG 라인 차트 */}
             <div style={{ ...cardStyle, padding:"24px 28px" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:18 }}>
                 <div style={{ fontSize:16, fontWeight:800, color:C.text }}>Reports</div>
                 <div style={{ display:"flex", gap:16, fontSize:11, color:isDark?"rgba(255,255,255,0.4)":"#94a3b8" }}>
                   <span style={{ display:"flex", alignItems:"center", gap:5 }}><span style={{ width:8, height:8, borderRadius:99, background:"#546FFF", display:"inline-block" }}/>가입자</span>
-                  <span style={{ display:"flex", alignItems:"center", gap:5 }}><span style={{ width:8, height:8, borderRadius:99, background:"#f59e0b", display:"inline-block" }}/>AI 사용</span>
+                  <span style={{ display:"flex", alignItems:"center", gap:5 }}><span style={{ width:8, height:8, borderRadius:99, background:blueMuted, display:"inline-block" }}/>AI 사용</span>
                 </div>
               </div>
               {dailySignups.length > 0 ? (
@@ -770,7 +855,7 @@ export default function AdminPage({ C, user: adminUser }) {
                   {/* AI 사용 라인 */}
                   {dailyAiUsage.length > 0 && <>
                     <path d={makeArea(dailyAiUsage,cW,cH,cPad)} fill="rgba(245,158,11,0.06)" />
-                    <path d={makeLine(dailyAiUsage,cW,cH,cPad)} fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6 3"/>
+                    <path d={makeLine(dailyAiUsage,cW,cH,cPad)} fill="none" stroke={blueMuted} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="6 3"/>
                   </>}
                   {/* 포인트 + 라벨 */}
                   {dailySignups.map((d,i) => {
@@ -837,8 +922,8 @@ export default function AdminPage({ C, user: adminUser }) {
             {[
               { n: todayPosts, l: "오늘 게시글", color:"#06b6d4" },
               { n: totalViews.toLocaleString(), l: "총 조회수", color:"#546FFF" },
-              { n: totalLikes, l: "총 좋아요", color:"#f59e0b" },
-              { n: totalComments, l: "총 댓글", color:"#8b5cf6" },
+              { n: totalLikes, l: "총 좋아요", color:"#0ea5e9" },
+              { n: totalComments, l: "총 댓글", color:blueMuted },
             ].map((s,i) => (
               <div key={i} style={{ padding:"16px 20px", borderRadius:14, background:panelBg, border:`1px solid ${panelBorder}`, display:"flex", alignItems:"center", gap:14 }}>
                 <div style={{ width:10, height:36, borderRadius:5, background:s.color, flexShrink:0, opacity:0.7 }}/>
@@ -851,7 +936,7 @@ export default function AdminPage({ C, user: adminUser }) {
           </div>
 
           {/* ── 인기 게시글 + 활발한 작성자 ── */}
-          <div style={{ display:"grid", gridTemplateColumns:"1.8fr 1fr", gap:18, marginBottom:24 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(100%, 360px), 1fr))", gap:18, marginBottom:24 }}>
             {/* 인기 게시글 TOP10 */}
             <div style={cardStyle}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
@@ -872,13 +957,13 @@ export default function AdminPage({ C, user: adminUser }) {
                       <tr key={p.id} style={{ transition:"background 0.15s" }}
                         onMouseEnter={e=>e.currentTarget.style.background=isDark?"rgba(255,255,255,0.02)":"#fafbfe"}
                         onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                        <td style={{ padding:"10px 12px", fontWeight:800, color:i<3?"#f59e0b":(isDark?"rgba(255,255,255,0.3)":"#c0c0c0"), fontSize:14 }}>{i+1}</td>
-                        <td style={{ padding:"10px 12px", fontWeight:600, color:C.text, maxWidth:260, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</td>
+                        <td style={{ padding:"10px 12px", fontWeight:800, color:i<3?accent:(isDark?"rgba(255,255,255,0.3)":"#c0c0c0"), fontSize:14 }}>{i+1}</td>
+                        <td style={{ padding:"10px 12px", fontWeight:600, color:C.text, maxWidth:260, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{cleanPostText(p.title)}</td>
                         <td style={{ padding:"10px 12px", textAlign:"right" }}>
                           <span style={{ background:"rgba(6,182,212,0.1)", color:"#06b6d4", fontWeight:700, fontSize:12, padding:"3px 10px", borderRadius:99 }}>{(p.views||0).toLocaleString()}</span>
                         </td>
-                        <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color:"#f59e0b", fontSize:12 }}>{p.likes||0}</td>
-                        <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color:"#8b5cf6", fontSize:12 }}>{(p.comments||[]).length}</td>
+                        <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color:"#0ea5e9", fontSize:12 }}>{p.likes||0}</td>
+                        <td style={{ padding:"10px 12px", textAlign:"right", fontWeight:700, color:blueMuted, fontSize:12 }}>{(p.comments||[]).length}</td>
                         <td style={{ padding:"10px 12px", color:isDark?"rgba(255,255,255,0.4)":"#94a3b8", fontSize:12 }}>{p.nick}</td>
                       </tr>
                     ))}
@@ -908,136 +993,13 @@ export default function AdminPage({ C, user: adminUser }) {
                     <div key={cat} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
                       <span style={{ fontSize:12, fontWeight:600, color:C.text, minWidth:60 }}>{cat}</span>
                       <div style={{ flex:1, height:10, borderRadius:5, background:isDark?"rgba(255,255,255,0.04)":"#f0f1f5", overflow:"hidden" }}>
-                        <div style={{ height:"100%", borderRadius:5, background:i%2===0?"#546FFF":"#f59e0b", width:`${Math.max(4,(cnt/maxCat)*100)}%`, transition:"width 0.4s" }}/>
+                        <div style={{ height:"100%", borderRadius:5, background:i%2===0?accent:blueMuted, width:`${Math.max(4,(cnt/maxCat)*100)}%`, transition:"width 0.4s" }}/>
                       </div>
                       <span style={{ fontSize:12, fontWeight:700, color:accent, minWidth:36, textAlign:"right" }}>{cnt}</span>
                     </div>
                   );
                 })}
               </div>
-            </div>
-          </div>
-
-          {/* ── 기간 선택 ── */}
-          <div style={{ display:"flex", gap:6, marginBottom:20 }}>
-            {[["day","일간"],["week","주간"],["month","월간"]].map(([k,l]) => (
-              <button key={k} onClick={() => switchLogPeriod(k)}
-                style={{ padding:"8px 20px", borderRadius:10, border:`1px solid ${logPeriod===k?accent:panelBorder}`, background:logPeriod===k?accent:"transparent", color:logPeriod===k?"#fff":C.text, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>
-                {l}
-              </button>
-            ))}
-          </div>
-
-          {/* ── 요약 카드 ── */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:12, marginBottom:20 }}>
-            {(() => {
-              const totalUse = aiOnly.length;
-              const uniqueUsers = new Set(aiOnly.map(l => l.uid)).size;
-              const totalProgram = programLogs.length;
-              const periodLabel = {day:"오늘",week:"이번 주",month:"이번 달"}[logPeriod];
-              return [
-                { label: `AI 사용 (${periodLabel})`, value: totalUse + "회", color: accent },
-                { label: "활성 사용자", value: uniqueUsers + "명", color: "#60a5fa" },
-                { label: `프로그램 발행 (${periodLabel})`, value: totalProgram + "건", color: "#2563eb" },
-                { label: "사용자당 평균", value: uniqueUsers ? (totalUse/uniqueUsers).toFixed(1) + "회" : "-", color: "#93c5fd" },
-              ].map(r => (
-                <div key={r.label} style={{ padding:"16px 18px", borderRadius:14, background:panelBg, border:`1px solid ${panelBorder}` }}>
-                  <div style={{ fontSize:24, fontWeight:900, color:r.color }}>{r.value}</div>
-                  <div style={{ fontSize:11, color:C.muted, marginTop:4 }}>{r.label}</div>
-                </div>
-              ));
-            })()}
-          </div>
-
-          {/* ── 기능별 + 사용자별 분석 ── */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14, marginBottom:20 }}>
-            <div style={cardStyle}>
-              <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:12 }}>기능별 사용</div>
-              {reasonEntries.length === 0 ? <div style={{ color:C.muted, fontSize:13 }}>데이터 없음</div> :
-                reasonEntries.slice(0,8).map(([r,c],i) => (
-                  <div key={r} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-                    <div style={{ width:8, height:8, borderRadius:99, background:donutColors[i%donutColors.length], flexShrink:0 }}/>
-                    <span style={{ fontSize:13, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r}</span>
-                    <span style={{ fontSize:13, fontWeight:800, color:accent }}>{c}</span>
-                  </div>
-                ))
-              }
-            </div>
-            <div style={cardStyle}>
-              <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:12 }}>사용자 TOP 5</div>
-              {(() => {
-                const byUser = {};
-                aiOnly.forEach(l => { byUser[l.uid||"unknown"] = (byUser[l.uid||"unknown"]||0)+1; });
-                const top = Object.entries(byUser).sort((a,b)=>b[1]-a[1]).slice(0,5);
-                if (!top.length) return <div style={{ color:C.muted, fontSize:13 }}>데이터 없음</div>;
-                return top.map(([uid,c],i) => {
-                  const nick = members.find(m=>m.uid===uid)?.nick || uid?.slice(0,8) || "?";
-                  return (
-                    <div key={uid} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
-                      <div style={{ width:24, height:24, borderRadius:99, background:`${accent}15`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color:accent, flexShrink:0 }}>{i+1}</div>
-                      <span style={{ fontSize:13, color:C.text, flex:1 }}>{nick}</span>
-                      <span style={{ fontSize:13, fontWeight:800, color:accent }}>{c}회</span>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-          </div>
-
-          {/* ── AI 사용 로그 (카드형) ── */}
-          <div style={cardStyle}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <div style={{ fontSize:14, fontWeight:800, color:C.text }}>AI 사용 로그</div>
-              <button onClick={() => loadAiLogs()} disabled={aiLogsLoading}
-                style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${panelBorder}`, background:panelBg, color:accent, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
-                {aiLogsLoading ? "로딩..." : "새로고침"}
-              </button>
-            </div>
-            <div style={{ maxHeight:400, overflowY:"auto", display:"flex", flexDirection:"column", gap:6 }}>
-              {aiLogs.length === 0 ? (
-                <div style={{ textAlign:"center", padding:40, color:C.muted, fontSize:13 }}>{aiLogsLoading ? "로딩중..." : "사용 기록이 없습니다."}</div>
-              ) : aiLogs.slice(0,100).map((l,i) => {
-                const nick = members.find(m=>m.uid===l.uid)?.nick || l.uid?.slice(0,8) || "?";
-                const deltaVal = l.created_at&&l.created_at<"2026-05-03"?Math.round((l.delta||0)/30):Math.round(l.delta);
-                return (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:10, background:isDark?"rgba(255,255,255,0.02)":"#fafbfe", border:`1px solid ${isDark?"rgba(255,255,255,0.04)":"#f0f1f4"}` }}>
-                    <div style={{ flex:"0 0 80px", fontSize:13, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nick}</div>
-                    <div style={{ flex:1, fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{l.reason||"-"}</div>
-                    <div style={{ flex:"0 0 60px", textAlign:"right" }}>
-                      <span style={{ fontWeight:700, fontSize:12, padding:"2px 8px", borderRadius:99, background:l.delta>0?`${accent}15`:"rgba(239,68,68,0.1)", color:l.delta>0?accent:"#ef4444" }}>{l.delta>0?"+":""}{deltaVal}</span>
-                    </div>
-                    <div style={{ flex:"0 0 110px", fontSize:11, color:C.muted, textAlign:"right" }}>{l.created_at ? new Date(l.created_at).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) : "-"}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ── 프로그램 발행 로그 ── */}
-          <div style={{ ...cardStyle, marginTop:16 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <div style={{ fontSize:14, fontWeight:800, color:C.text }}>프로그램 발행 로그</div>
-              <button onClick={() => loadProgramLogs()} disabled={programLogsLoading}
-                style={{ padding:"6px 14px", borderRadius:8, border:`1px solid ${panelBorder}`, background:panelBg, color:accent, fontSize:11, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
-                {programLogsLoading ? "로딩..." : "새로고침"}
-              </button>
-            </div>
-            <div style={{ maxHeight:400, overflowY:"auto", display:"flex", flexDirection:"column", gap:6 }}>
-              {programLogs.length === 0 ? (
-                <div style={{ textAlign:"center", padding:40, color:C.muted, fontSize:13 }}>{programLogsLoading ? "로딩중..." : "발행 기록이 없습니다."}</div>
-              ) : programLogs.slice(0,100).map((l,i) => {
-                const nick = members.find(m=>m.uid===l.license_key)?.nick || l.license_key?.slice(0,8) || "?";
-                return (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px", borderRadius:10, background:isDark?"rgba(255,255,255,0.02)":"#fafbfe", border:`1px solid ${isDark?"rgba(255,255,255,0.04)":"#f0f1f4"}` }}>
-                    <div style={{ flex:"0 0 80px", fontSize:13, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nick}</div>
-                    <div style={{ flex:1, fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{l.title || l.topic || "-"}</div>
-                    <div style={{ flex:"0 0 60px", textAlign:"center" }}>
-                      <span style={{ fontSize:11, padding:"2px 8px", borderRadius:99, background:`${accent}15`, color:accent, fontWeight:600 }}>{l.tokens_used ? l.tokens_used+"tk" : "1회"}</span>
-                    </div>
-                    <div style={{ flex:"0 0 110px", fontSize:11, color:C.muted, textAlign:"right" }}>{l.created_at ? new Date(l.created_at).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) : "-"}</div>
-                  </div>
-                );
-              })}
             </div>
           </div>
 
@@ -1065,7 +1027,7 @@ export default function AdminPage({ C, user: adminUser }) {
           </div>
 
           {/* ── 플랜 분포 + 최근 활동 ── */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1.5fr", gap:18, marginTop:24 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap:18, marginTop:24 }}>
             {/* 플랜 분포 */}
             <div style={cardStyle}>
               <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:18 }}>플랜 분포</div>
@@ -1078,7 +1040,7 @@ export default function AdminPage({ C, user: adminUser }) {
                 });
                 const entries = Object.entries(planCount).sort((a,b)=>b[1]-a[1]);
                 const total = members.length || 1;
-                const planColors = {Free:"#94a3b8",Basic:"#3b82f6",Pro:"#8b5cf6",Premium:"#f59e0b",Business:"#22c55e",Agency:"#ec4899"};
+                const planColors = {Free:"#94a3b8",Basic:"#3b82f6",Pro:"#2563eb",Premium:"#1d4ed8",Business:"#0ea5e9",Agency:"#0369a1"};
                 let cum = 0;
                 const arcs = entries.map(([p,c],i) => {
                   const pct = c/total;
@@ -1121,17 +1083,21 @@ export default function AdminPage({ C, user: adminUser }) {
                     const d = m.join_date||m.created_at;
                     if (d) timeline.push({ type:"join", time:new Date(d), label:`${m.nick||"회원"} 가입`, sub:m.email, color:"#22c55e", icon:"M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" });
                   });
-                  // 최근 AI 사용
-                  aiLogs.slice(0,5).forEach(l => {
-                    if (l.created_at) {
-                      const nick = members.find(m=>m.uid===l.uid)?.nick || l.uid?.slice(0,6) || "?";
-                      timeline.push({ type:"ai", time:new Date(l.created_at), label:`${nick} — ${l.reason||"AI 사용"}`, sub:`${l.delta>0?"+":""}${Math.round(l.delta)}회`, color:"#8b5cf6", icon:"M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" });
+                  // 최근 exe 프로그램 사용
+                  programLogs.slice(0,8).forEach(l => {
+                    const d = l.created_at ? new Date(l.created_at) : null;
+                    if (d && !isNaN(d)) {
+                      const uid = programLogUid(l);
+                      const member = programLogMember(l);
+                      const nick = member?.nick || member?.email || uid?.slice(0,6) || "회원";
+                      const tokens = Number(l.tokens_used || 0);
+                      timeline.push({ type:"program", time:d, label:`${nick} — exe SaaS 사용`, sub:tokens > 0 ? `${tokens.toLocaleString()} tokens` : programLogLabel(l), color:blueMuted, icon:"M13 2L3 14h7l-1 8 11-14h-7l1-6z" });
                     }
                   });
                   // 최근 게시글
                   posts.slice(0,3).forEach(p => {
                     const d = typeof p.date==="string" ? new Date(p.date) : null;
-                    if (d && !isNaN(d)) timeline.push({ type:"post", time:d, label:`${p.nick||"회원"} — "${(p.title||"").slice(0,20)}"`, sub:"게시글 작성", color:"#f59e0b", icon:"M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" });
+                    if (d && !isNaN(d)) timeline.push({ type:"post", time:d, label:`${p.nick||"회원"} — "${cleanPostText(p.title).slice(0,20)}"`, sub:"게시글 작성", color:"#0ea5e9", icon:"" });
                   });
                   timeline.sort((a,b)=>b.time-a.time);
                   if (timeline.length===0) return <div style={{ color:C.muted, fontSize:13, textAlign:"center", padding:20 }}>활동 데이터 없음</div>;
@@ -1164,6 +1130,129 @@ export default function AdminPage({ C, user: adminUser }) {
                   ));
                 })()}
               </div>
+            </div>
+          </div>
+        </div>
+        );
+      })()}
+
+      {/* ─────────────── SaaS 사용 로그 ─────────────── */}
+      {tab === "logs" && (() => {
+        const programOnly = [...programLogs].sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        const byUser = {};
+        programOnly.forEach(l => {
+          const uid = programLogUid(l) || "unknown";
+          byUser[uid] = (byUser[uid] || 0) + 1;
+        });
+        const topUsers = Object.entries(byUser).sort((a,b)=>b[1]-a[1]).slice(0,6);
+        const uniqueUsers = new Set(programOnly.map(programLogUid).filter(Boolean)).size;
+        const todayKey = new Date().toISOString().slice(0, 10);
+        const todayProgramCount = programOnly.filter(l => String(l.created_at || "").slice(0, 10) === todayKey).length;
+        const mostActiveCount = topUsers[0]?.[1] || 0;
+        const periodLabel = {day:"오늘",week:"이번 주",month:"이번 달"}[logPeriod];
+        const logCard = { ...cardStyle, padding: "18px 20px" };
+        const compactLogItem = (children, key) => (
+          <div key={key} style={{
+            display:"grid", gridTemplateColumns:isMobileAdmin ? "1fr" : "minmax(140px, 0.85fr) minmax(0, 1.5fr) auto", gap:12,
+            alignItems:"center", padding:"12px 14px", borderRadius:12,
+            background:isDark?"rgba(255,255,255,0.025)":"#fafbfe",
+            border:`1px solid ${isDark?"rgba(255,255,255,0.04)":"#f0f1f4"}`,
+          }}>
+            {children}
+          </div>
+        );
+
+        return (
+        <div>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, marginBottom:18, flexWrap:"wrap" }}>
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+              {[["day","일간"],["week","주간"],["month","월간"]].map(([k,l]) => (
+                <button key={k} onClick={() => switchLogPeriod(k)}
+                  style={{ padding:"8px 18px", borderRadius:10, border:`1px solid ${logPeriod===k?accent:panelBorder}`, background:logPeriod===k?accent:panelBg, color:logPeriod===k?"#fff":C.text, fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))", gap:12, marginBottom:18 }}>
+            {[
+              { label: `exe 사용 횟수 (${periodLabel})`, value: programOnly.length + "회", color: accent },
+              { label: "사용 회원", value: uniqueUsers + "명", color: "#0ea5e9" },
+              { label: "오늘 사용", value: todayProgramCount + "회", color: "#2563eb" },
+              { label: "최다 사용", value: mostActiveCount + "회", color: "#60a5fa" },
+            ].map(r => (
+              <div key={r.label} style={{ padding:"16px 18px", borderRadius:14, background:panelBg, border:`1px solid ${panelBorder}` }}>
+                <div style={{ fontSize:22, fontWeight:900, color:r.color, lineHeight:1 }}>{r.value}</div>
+                <div style={{ fontSize:11, color:C.muted, marginTop:6, fontWeight:600 }}>{r.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap:14, marginBottom:18 }}>
+            <div style={logCard}>
+              <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:14 }}>exe 사용 TOP</div>
+              {topUsers.length === 0 ? <div style={{ color:C.muted, fontSize:13, padding:"18px 0" }}>데이터 없음</div> :
+                topUsers.map(([uid,c],i) => {
+                  const member = members.find(m=>m.uid===uid);
+                  const nick = member?.nick || uid?.slice(0,8) || "?";
+                  return (
+                    <div key={uid} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderBottom:i<topUsers.length-1?`1px solid ${panelBorder}`:"none" }}>
+                      <div style={{ width:26, height:26, borderRadius:8, background:`${accent}14`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:900, color:accent, flexShrink:0 }}>{i+1}</div>
+                      <div style={{ minWidth:0, flex:1 }}>
+                        <div style={{ fontSize:13, color:C.text, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nick}</div>
+                        <div style={{ fontSize:11, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{member?.email || uid}</div>
+                      </div>
+                      <span style={{ fontSize:13, fontWeight:900, color:accent }}>{c}회</span>
+                    </div>
+                  );
+                })
+              }
+            </div>
+
+            <div style={logCard}>
+              <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:14 }}>최근 exe 실행</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+                {programOnly.slice(0,6).length === 0 ? <div style={{ color:C.muted, fontSize:13, padding:"18px 0" }}>데이터 없음</div> :
+                  programOnly.slice(0,6).map((l,i) => {
+                    const member = programLogMember(l);
+                    const uid = programLogUid(l);
+                    return (
+                      <div key={l.id || i} style={{ display:"flex", justifyContent:"space-between", gap:12, paddingBottom:i<Math.min(programOnly.length,6)-1?9:0, borderBottom:i<Math.min(programOnly.length,6)-1?`1px solid ${panelBorder}`:"none" }}>
+                        <div style={{ minWidth:0 }}>
+                          <div style={{ fontSize:13, color:C.text, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{member?.nick || member?.email || uid?.slice(0,8) || "회원"}</div>
+                          <div style={{ fontSize:11, color:C.muted }}>{l.created_at ? new Date(l.created_at).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) : "-"}</div>
+                        </div>
+                        <span style={{ fontSize:12, color:accent, fontWeight:900, flexShrink:0 }}>1회</span>
+                      </div>
+                    );
+                  })
+                }
+              </div>
+            </div>
+          </div>
+
+          <div style={logCard}>
+            <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:14 }}>exe 프로그램 사용 내역</div>
+            <div style={{ maxHeight:560, overflowY:"auto", display:"flex", flexDirection:"column", gap:7 }}>
+              {programOnly.length === 0 ? (
+                <div style={{ textAlign:"center", padding:40, color:C.muted, fontSize:13 }}>{programLogsLoading ? "로딩중..." : "exe 프로그램 사용 기록이 없습니다."}</div>
+              ) : programOnly.slice(0,100).map((l,i) => {
+                  const member = programLogMember(l);
+                  const uid = programLogUid(l);
+                  const nick = member?.nick || uid?.slice(0,8) || "회원";
+                  return compactLogItem(<>
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:800, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nick}</div>
+                      <div style={{ fontSize:11, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{member?.email || uid || "-"}</div>
+                    </div>
+                    <div style={{ minWidth:0 }}>
+                      <div style={{ fontSize:12, color:C.text, fontWeight:700, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{programLogLabel(l)}</div>
+                      <div style={{ fontSize:11, color:C.muted }}>{l.created_at ? new Date(l.created_at).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"}) : "-"}</div>
+                    </div>
+                    <span style={{ justifySelf:"end", fontSize:11, padding:"3px 9px", borderRadius:99, background:`${accent}15`, color:accent, fontWeight:800 }}>1회</span>
+                  </>, i);
+                })}
             </div>
           </div>
         </div>
@@ -1236,7 +1325,7 @@ export default function AdminPage({ C, user: adminUser }) {
                     >
                       {/* 회원 정보 */}
                       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 99, background: `linear-gradient(135deg, ${accent}22, ${accent}44)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: accent, flexShrink: 0 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 99, background: blueSoft, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color: accent, flexShrink: 0 }}>
                           {(m.nick||"?")[0].toUpperCase()}
                         </div>
                         <div style={{ minWidth: 0 }}>
@@ -1330,7 +1419,7 @@ export default function AdminPage({ C, user: adminUser }) {
                           <div style={{ background: panelBg, border: `1px solid ${panelBorder}`, borderRadius: 14, padding: "16px 18px" }}>
                             <div style={{ fontSize: 11, fontWeight: 600, color: isDark ? "rgba(255,255,255,0.35)" : "#94a3b8", marginBottom: 10, letterSpacing: 0.3 }}>계정 관리</div>
                             <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-                              <button onClick={e => { e.stopPropagation(); resetPoints(uid); }} style={{ width: "100%", padding: "6px 0", borderRadius: 6, border: `1px solid rgba(251,191,36,0.25)`, background: "rgba(251,191,36,0.06)", color: "#f59e0b", fontSize: 11, fontWeight: 600, cursor: "pointer" }}>횟수 초기화</button>
+                              <button onClick={e => { e.stopPropagation(); resetPoints(uid); }} style={{ width: "100%", padding: "6px 0", borderRadius: 6, border: `1px solid ${blueSoft}`, background: blueSoft, color: accent, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>횟수 초기화</button>
                               <button onClick={e => { e.stopPropagation(); resetMemberUsage(uid); }} style={{ width: "100%", padding: "6px 0", borderRadius: 6, border: `1px solid ${bdr}`, background: "transparent", color: C.purpleL, fontSize: 11, fontWeight: 600, cursor: "pointer" }}>AI 사용량 초기화</button>
                               {m.role !== "admin" && (
                                 <button onClick={async e => {
@@ -1514,7 +1603,7 @@ export default function AdminPage({ C, user: adminUser }) {
       {/* ─────────────── 게시글 관리 ─────────────── */}
       {tab === "posts" && (() => {
         const filteredPosts = postSearch.trim()
-          ? posts.filter(p => (p.title||"").toLowerCase().includes(postSearch.toLowerCase()))
+          ? posts.filter(p => cleanPostText(p.title).toLowerCase().includes(postSearch.toLowerCase()))
           : posts;
         const totalPages = Math.ceil(filteredPosts.length / PAGE_SIZE);
         const curPage = Math.min(postPage, totalPages || 1);
@@ -1538,7 +1627,8 @@ export default function AdminPage({ C, user: adminUser }) {
           {!loadingPosts && filteredPosts.length === 0 && <div style={{ textAlign:"center", padding:"60px 0", color:C.muted }}>{postSearch.trim() ? "검색 결과가 없어요" : "게시글이 없어요"}</div>}
           {!loadingPosts && filteredPosts.length > 0 && (
             <div style={{ background:panelBg, borderRadius:16, overflow:"hidden", boxShadow:isDark?"none":"0 1px 8px rgba(0,0,0,0.04)" }}>
-              <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
+              <div style={{ overflowX:"auto" }}>
+              <table style={{ width:"100%", minWidth:760, borderCollapse:"collapse", fontSize:13 }}>
                 <thead>
                   <tr>
                     {["#","제목","작성자","날짜","조회","좋아요",""].map((h,i) => (
@@ -1553,7 +1643,7 @@ export default function AdminPage({ C, user: adminUser }) {
                       onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                       <td style={{ padding:"12px 14px", color:isDark?"rgba(255,255,255,0.3)":"#c0c0c0", fontWeight:600, fontSize:12 }}>{(curPage-1)*PAGE_SIZE+i+1}</td>
                       <td style={{ padding:"12px 14px", fontWeight:600, color:C.text, maxWidth:320, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                        {p.title}
+                        {cleanPostText(p.title)}
                         {p.subCat && <span style={{ marginLeft:8, fontSize:10, padding:"2px 8px", borderRadius:99, background:isDark?"rgba(255,255,255,0.04)":"#f3f4f6", color:isDark?"rgba(255,255,255,0.4)":"#94a3b8", fontWeight:500 }}>{p.subCat}</span>}
                       </td>
                       <td style={{ padding:"12px 14px", color:isDark?"rgba(255,255,255,0.5)":"#64748b", fontSize:12 }}>{p.nick||"-"}</td>
@@ -1561,7 +1651,7 @@ export default function AdminPage({ C, user: adminUser }) {
                       <td style={{ padding:"12px 14px", textAlign:"right" }}>
                         <span style={{ fontWeight:700, fontSize:12, padding:"3px 10px", borderRadius:99, background:"rgba(6,182,212,0.08)", color:"#06b6d4" }}>{(p.views||0).toLocaleString()}</span>
                       </td>
-                      <td style={{ padding:"12px 14px", textAlign:"right", fontWeight:700, color:"#f59e0b", fontSize:12 }}>{p.likes||0}</td>
+                      <td style={{ padding:"12px 14px", textAlign:"right", fontWeight:700, color:"#0ea5e9", fontSize:12 }}>{p.likes||0}</td>
                       <td style={{ padding:"12px 14px", textAlign:"right" }}>
                         <button onClick={() => deletePost(p.id)} style={{ padding:"5px 12px", borderRadius:8, border:"none", cursor:"pointer", background:"rgba(239,68,68,0.08)", color:"#ef4444", fontSize:11, fontWeight:600, fontFamily:"inherit" }}>삭제</button>
                       </td>
@@ -1569,6 +1659,7 @@ export default function AdminPage({ C, user: adminUser }) {
                   ))}
                 </tbody>
               </table>
+              </div>
               {/* 페이지네이션 */}
               {totalPages > 1 && (
                 <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:4, padding:"16px 20px", borderTop:`1px solid ${panelBorder}` }}>
@@ -1603,7 +1694,7 @@ export default function AdminPage({ C, user: adminUser }) {
 
       {/* ─────────────── 게시판 관리 ─────────────── */}
       {tab === "board" && (
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1.4fr", gap:18, alignItems:"start" }}>
+        <div style={{ display:"grid", gridTemplateColumns:isMobileAdmin ? "1fr" : "1fr 1.4fr", gap:18, alignItems:"start" }}>
           {/* 왼쪽: 카테고리 목록 */}
           <div style={{ ...cardStyle }}>
             <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>메인 카테고리</div>
@@ -1761,7 +1852,7 @@ export default function AdminPage({ C, user: adminUser }) {
                     <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{v.title}</div>
                     <div style={{ fontSize:11, color:C.muted, display:"flex", gap:8, flexWrap:"wrap" }}>
                       <span>{v.category || "synth"}</span>
-                      <span style={{ color:v.isFree!==false?"#22c55e":"#f59e0b", fontWeight:600 }}>{v.isFree !== false ? "무료" : "멤버전용"}</span>
+                      <span style={{ color:v.isFree!==false?"#0ea5e9":accent, fontWeight:600 }}>{v.isFree !== false ? "무료" : "멤버전용"}</span>
                       {v.downloadUrl && <span>다운로드 있음</span>}
                       <span style={{ color:"rgba(255,255,255,0.2)" }}>|</span>
                       <span style={{ maxWidth:240, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", opacity:0.5 }}>{v.videoUrl}</span>
@@ -2171,6 +2262,7 @@ function VisitorAnalyticsTab({ C, isDark }) {
   const card = C.card;
   const bdr = isDark ? "rgba(255,255,255,0.06)" : "#f0f0f0";
   const inputSt = { padding: "6px 10px", borderRadius: 8, border: `1px solid ${bdr}`, background: "transparent", color: text, fontSize: 12, outline: "none", fontFamily: "inherit" };
+  const isMobileAdmin = typeof window !== "undefined" && window.innerWidth < 768;
 
   if (loading) return <div style={{ padding: 40, textAlign: "center", color: muted }}>로딩 중...</div>;
   if (!data) return <div style={{ padding: 40, textAlign: "center", color: muted }}>데이터를 불러올 수 없습니다. 배포 후 사용 가능합니다.</div>;
@@ -2250,7 +2342,7 @@ function VisitorAnalyticsTab({ C, isDark }) {
       )}
 
       {/* 국가별 / 도시별 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 28 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobileAdmin ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 28 }}>
         <div style={{ padding: "20px", borderRadius: 14, background: card, border: `1px solid ${bdr}` }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 14 }}>국가별 방문</div>
           {sortedCountries.length === 0 && <div style={{ fontSize: 13, color: muted }}>데이터 없음</div>}
@@ -2283,7 +2375,7 @@ function VisitorAnalyticsTab({ C, isDark }) {
       </div>
 
       {/* 리퍼러 / 디바이스 / 인기 페이지 */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobileAdmin ? "1fr" : "1fr 1fr 1fr", gap: 14 }}>
         <div style={{ padding: "20px", borderRadius: 14, background: card, border: `1px solid ${bdr}` }}>
           <div style={{ fontSize: 15, fontWeight: 800, color: text, marginBottom: 14 }}>유입 경로</div>
           {(data.referrerCounts || []).length === 0 && <div style={{ fontSize: 13, color: muted }}>데이터 없음</div>}

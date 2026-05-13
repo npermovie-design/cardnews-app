@@ -10,6 +10,7 @@ const fs = require("fs");
 const { spawn } = require("child_process");
 const os = require("os");
 const http = require("http");
+const https = require("https");
 const urlLib = require("url");
 
 // EPIPE 에러 방지 (ffmpeg 프로세스 종료 후 stderr 쓰기 시도)
@@ -292,7 +293,7 @@ function setupHotCacheInterceptor(win) {
     if (!details.url.startsWith("file://")) return callback({});
     const decoded = decodeURIComponent(details.url.replace(/\?.*$/, ""));
     const fileName = path.basename(decoded);
-    if (["style.css", "app.js", "cardnews.js"].includes(fileName)) {
+    if (["index.html", "style.css", "app.js", "cardnews.js"].includes(fileName)) {
       const cached = path.join(HOT_CACHE_DIR, fileName);
       if (fs.existsSync(cached)) {
         const redirectURL = "file:///" + cached.replace(/\\/g, "/");
@@ -1277,11 +1278,17 @@ p { color:#6b7280; font-size:13px; line-height:1.6; }
 
 // Google OAuth: 시스템 브라우저에서 Google 로그인
 ipcMain.on("auth:google", async () => {
-  await startAuthHttpServer();
-  const SUPABASE_URL = "https://ckzjnpzadeovrasucjmu.supabase.co";
-  const redirectTo = `http://127.0.0.1:${AUTH_PORT}/callback`;
-  const authUrl = `${SUPABASE_URL}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectTo)}`;
-  shell.openExternal(authUrl);
+  try {
+    await startAuthHttpServer();
+    const authUrl = "https://snsmakeit.com/api/naverbot?action=login-page";
+    await shell.openExternal(authUrl);
+  } catch (e) {
+    if (mainWindow) {
+      mainWindow.webContents.send("auth:callback", {
+        error: e.message || "로그인 페이지를 열 수 없습니다",
+      });
+    }
+  }
 });
 
 ipcMain.on("auth:openExternal", (_, url) => {
@@ -1828,6 +1835,111 @@ ipcMain.handle("video:selectFile", async () => {
   return { ok: true, filePath: r.filePaths[0], filePaths: r.filePaths };
 });
 
+function isYoutubeVideoUrl(raw) {
+  return /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/.test(String(raw || ""));
+}
+
+function safeVideoFileName(name, ext = ".mp4") {
+  const cleaned = String(name || "imported_video")
+    .replace(/[\\/:*?"<>|]/g, "_")
+    .replace(/\s+/g, "_")
+    .slice(0, 80)
+    .replace(/^_+|_+$/g, "");
+  return (cleaned || "imported_video") + ext;
+}
+
+function extensionFromUrl(raw) {
+  try {
+    const ext = path.extname(new URL(raw).pathname).toLowerCase();
+    if ([".mp4", ".mov", ".mkv", ".webm", ".avi"].includes(ext)) return ext;
+  } catch {}
+  return ".mp4";
+}
+
+function downloadVideoToFile(sourceUrl, outPath, redirectCount = 0) {
+  return new Promise((resolve, reject) => {
+    if (redirectCount > 5) return reject(new Error("다운로드 리다이렉트가 너무 많습니다"));
+    const client = sourceUrl.startsWith("https:") ? https : http;
+    const req = client.get(sourceUrl, { headers: { "User-Agent": "SNSMakeit/1.0" } }, (res) => {
+      if ([301, 302, 303, 307, 308].includes(res.statusCode || 0) && res.headers.location) {
+        res.resume();
+        const nextUrl = new URL(res.headers.location, sourceUrl).toString();
+        return resolve(downloadVideoToFile(nextUrl, outPath, redirectCount + 1));
+      }
+      if ((res.statusCode || 0) < 200 || (res.statusCode || 0) >= 300) {
+        res.resume();
+        return reject(new Error(`다운로드 실패 (HTTP ${res.statusCode})`));
+      }
+      const total = Number(res.headers["content-length"] || 0);
+      let received = 0;
+      const file = fs.createWriteStream(outPath);
+      res.on("data", (chunk) => {
+        received += chunk.length;
+        if (total && mainWindow) {
+          const pct = Math.min(95, 35 + Math.round((received / total) * 55));
+          mainWindow.webContents.send("video:progress", { percent: pct, label: "영상 다운로드 중..." });
+        }
+      });
+      res.pipe(file);
+      file.on("finish", () => file.close(() => resolve(outPath)));
+      file.on("error", reject);
+    });
+    req.on("error", reject);
+    req.setTimeout(600000, () => {
+      req.destroy(new Error("다운로드 시간 초과"));
+    });
+  });
+}
+
+// URL로 영상 가져오기: 직접 MP4 URL 또는 YouTube URL → 로컬 임시 파일
+ipcMain.handle("video:importUrl", async (_, rawUrl) => {
+  const API = "https://shorts-factory-r33o.onrender.com";
+  try {
+    const inputUrl = String(rawUrl || "").trim();
+    if (!/^https?:\/\//i.test(inputUrl)) return { ok: false, error: "http/https URL을 입력해주세요" };
+
+    const sendProg = (pct, label) => {
+      if (mainWindow) mainWindow.webContents.send("video:progress", { percent: pct, label });
+    };
+
+    const importDir = path.join(app.getPath("userData"), "imported-videos");
+    fs.mkdirSync(importDir, { recursive: true });
+
+    let sourceUrl = inputUrl;
+    let fileName = safeVideoFileName("url_video_" + Date.now(), extensionFromUrl(inputUrl));
+
+    if (isYoutubeVideoUrl(inputUrl)) {
+      sendProg(10, "유튜브 영상 정보를 가져오는 중...");
+      const ytRes = await fetch(`${API}/youtube-download`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: inputUrl }),
+      });
+      const ytData = await ytRes.json().catch(() => ({}));
+      if (!ytRes.ok) throw new Error(ytData.detail || ytData.error || "유튜브 영상을 가져오지 못했습니다");
+      if (ytData.video_path === "" || ytData.needs_upload) {
+        throw new Error(ytData.message || "유튜브 영상 다운로드가 제한되었습니다. MP4 파일을 직접 업로드해주세요.");
+      }
+      if (!ytData.file_id) throw new Error("유튜브 다운로드 결과 파일 ID가 없습니다");
+      sourceUrl = `${API}/source/${encodeURIComponent(ytData.file_id)}`;
+      fileName = safeVideoFileName(ytData.title || `youtube_${ytData.file_id}`, ".mp4");
+      sendProg(30, "유튜브 영상을 로컬로 저장하는 중...");
+    } else {
+      sendProg(15, "URL 영상을 다운로드하는 중...");
+    }
+
+    const outPath = path.join(importDir, fileName);
+    await downloadVideoToFile(sourceUrl, outPath);
+    if (!fs.existsSync(outPath) || fs.statSync(outPath).size < 1024) {
+      return { ok: false, error: "다운로드된 영상 파일이 비어 있습니다" };
+    }
+    sendProg(100, "URL 영상 가져오기 완료");
+    return { ok: true, filePath: outPath, sourceUrl: inputUrl };
+  } catch (e) {
+    return { ok: false, error: e.message || "URL 영상 가져오기 실패" };
+  }
+});
+
 // 다중 영상을 하나로 합치기 (concat → 단일 파일)
 ipcMain.handle("video:concat", async (_, filePaths) => {
   if (!filePaths || filePaths.length < 2) return { ok: false, error: "2개 이상의 영상이 필요합니다" };
@@ -2186,17 +2298,26 @@ function getOutputSize(aspect = "16:9", resolution = "1080") {
   return { width: Math.round(base * 16 / 9 / 2) * 2, height: base };
 }
 
-function buildVideoLayoutFilters(aspect = "16:9", resolution = "1080") {
+function normalizeFfmpegColor(color = "#000000") {
+  const m = String(color || "#000000").match(/^#?([0-9a-f]{6})$/i);
+  return `0x${m ? m[1] : "000000"}`;
+}
+
+function buildVideoLayoutFilters(aspect = "16:9", resolution = "1080", backgroundColor = "#000000", videoScale = 1) {
   const size = getOutputSize(aspect, resolution);
   const w = size.width;
   const h = size.height;
+  const padColor = normalizeFfmpegColor(backgroundColor);
+  const zoom = Math.max(0.8, Math.min(1.5, Number(videoScale || 1)));
   if (aspect === "9:16") {
-    return [`split=2[bg][fg];[bg]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},gblur=sigma=24,eq=brightness=-0.08[bg];[fg]scale=${w}:-2:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2`];
+    const sw = Math.max(2, Math.round((w * zoom) / 2) * 2);
+    return [`scale=${sw}:${h}:force_original_aspect_ratio=decrease`, `crop=w='min(iw\\,${w})':h='min(ih\\,${h})':x='(iw-ow)/2':y='(ih-oh)/2'`, `pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:color=${padColor}`];
   }
   if (aspect === "1:1") {
-    return [`split=2[bg][fg];[bg]scale=${w}:${h}:force_original_aspect_ratio=increase,crop=${w}:${h},gblur=sigma=20,eq=brightness=-0.08[bg];[fg]scale=${w}:-2:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2`];
+    const sw = Math.max(2, Math.round((w * zoom) / 2) * 2);
+    return [`scale=${sw}:${h}:force_original_aspect_ratio=decrease`, `crop=w='min(iw\\,${w})':h='min(ih\\,${h})':x='(iw-ow)/2':y='(ih-oh)/2'`, `pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:color=${padColor}`];
   }
-  return [`scale=${w}:${h}:force_original_aspect_ratio=decrease`, `pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:color=0x000000`];
+  return [`scale=${w}:${h}:force_original_aspect_ratio=decrease`, `pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2:color=${padColor}`];
 }
 
 // 숏폼 렌더링 (로컬 ffmpeg)
@@ -2217,9 +2338,23 @@ function escDrawtext(text) {
   return String(text || "").replace(/\\/g, "\\\\\\\\").replace(/'/g, "'\\''").replace(/:/g, "\\:").replace(/;/g, "\\;");
 }
 
+function isGifOverlay(ov) {
+  return String(ov?.type || "").toLowerCase() === "gif" || /\.gif(?:\?|$)/i.test(String(ov?.path || ""));
+}
+
+function overlayExportBox(ov, outputSize, aspect) {
+  const designW = aspect === "16:9" ? 1280 : outputSize.width;
+  const designH = aspect === "16:9" ? 720 : outputSize.height;
+  const x = Math.max(0, Math.round(Number(ov.x || 0) / designW * outputSize.width));
+  const y = Math.max(0, Math.round(Number(ov.y || 0) / designH * outputSize.height));
+  const w = Math.max(24, Math.round(Number(ov.width || ov.w || 180) / designW * outputSize.width));
+  const h = Math.max(24, Math.round(Number(ov.height || ov.h || ov.width || 180) / designH * outputSize.height));
+  return { x, y, w, h };
+}
+
 ipcMain.handle("video:renderShorts", async (_, opts) => {
   if (videoProcess) return { ok: false, error: "이미 렌더링 중입니다. 취소 후 다시 시도해주세요." };
-  const { inputPath, clips, outputDir, outputFileName, template, subtitlesEnabled, aspect, captionStyle, outputResolution, brandName, brandLogo } = opts;
+  const { inputPath, clips, overlays, outputDir, outputFileName, template, subtitlesEnabled, aspect, captionStyle, outputResolution, brandName, brandLogo, backgroundColor, videoScale } = opts;
   if (!inputPath || !fs.existsSync(inputPath)) return { ok: false, error: "입력 파일 없음" };
   if (!clips || !clips.length) return { ok: false, error: "렌더링할 클립이 없습니다" };
 
@@ -2234,7 +2369,7 @@ ipcMain.handle("video:renderShorts", async (_, opts) => {
     const ss = clip.start_seconds || 0;
     const se = clip.end_seconds || 30;
     const duration = se - ss;
-    if (duration <= 0) continue;
+    if (duration < 8) continue;
 
     const outName = clips.length === 1 && outputFileName
       ? outputFileName
@@ -2248,7 +2383,7 @@ ipcMain.handle("video:renderShorts", async (_, opts) => {
     }
 
     // ffmpeg 필터
-    const filters = buildVideoLayoutFilters(aspect || "9:16", outputResolution || "1080");
+    const filters = buildVideoLayoutFilters(aspect || "9:16", outputResolution || "1080", backgroundColor || "#000000", videoScale || 1);
     const outputSize = getOutputSize(aspect || "9:16", outputResolution || "1080");
 
     // 자막 — fontSize는 프리뷰(캔버스 기준 1280px)와 동일 비율로 출력 해상도에 맞춤
@@ -2282,14 +2417,44 @@ ipcMain.handle("video:renderShorts", async (_, opts) => {
     filters.push(`fade=t=in:st=0:d=0.5,fade=t=out:st=${Math.max(0, duration - 0.5).toFixed(2)}:d=0.5`);
 
     const args = ["-ss", String(Math.max(0, ss)), "-to", String(se + 0.3), "-i", inputPath];
-    // 로고 이미지 오버레이
-    if (brandLogo && fs.existsSync(brandLogo)) {
+    const clipOverlays = (Array.isArray(overlays) ? overlays : []).filter((ov) => {
+      const st = Number(ov.startTime ?? ov.start_seconds ?? 0);
+      const en = Number(ov.endTime ?? ov.end_seconds ?? st + 4);
+      return ov.path && en > ss && st < se;
+    }).slice(0, 6);
+    clipOverlays.forEach((ov) => {
+      const inputPathOrUrl = String(ov.path || "");
+      if (isGifOverlay(ov)) args.push("-ignore_loop", "0", "-i", inputPathOrUrl);
+      else args.push("-loop", "1", "-t", String(Math.max(0.5, Math.min(duration, Number(ov.endTime || se) - Number(ov.startTime || ss)))), "-i", inputPathOrUrl);
+    });
+
+    // 로고/GIF/이미지 오버레이
+    if ((brandLogo && fs.existsSync(brandLogo)) || clipOverlays.length) {
       const logoH = Math.round(outputSize.height * 0.04);
-      args.push("-i", brandLogo);
-      // 로고를 리사이즈 후 우상단에 오버레이 (영상 필터 뒤에)
-      const vfStr = filters.join(",");
-      const logoFilter = `[1:v]scale=-1:${logoH}[logo];[0:v]${vfStr}[main];[main][logo]overlay=W-w-20:20`;
-      args.push("-filter_complex", logoFilter);
+      let inputIdx = 1;
+      let chain = `[0:v]${filters.join(",")}[v0];`;
+      let prev = "v0";
+      clipOverlays.forEach((ov, oi) => {
+        const box = overlayExportBox(ov, outputSize, aspect || "9:16");
+        const localStart = Math.max(0, Number(ov.startTime || 0) - ss);
+        const localEnd = Math.min(duration, Number(ov.endTime || localStart + ss + 4) - ss);
+        const opacity = Math.max(0.1, Math.min(1, Number(ov.opacity == null ? 1 : ov.opacity)));
+        const tag = `ov${oi}`;
+        const out = `v${oi + 1}`;
+        const alpha = opacity < 0.99 ? `,format=rgba,colorchannelmixer=aa=${opacity}` : "";
+        chain += `[${inputIdx}:v]scale=${box.w}:${box.h}:force_original_aspect_ratio=decrease${alpha}[${tag}];[${prev}][${tag}]overlay=${box.x}:${box.y}:enable='between(t,${localStart.toFixed(2)},${localEnd.toFixed(2)})'[${out}];`;
+        prev = out;
+        inputIdx++;
+      });
+      if (brandLogo && fs.existsSync(brandLogo)) {
+        args.push("-i", brandLogo);
+        const out = "vlogo";
+        chain += `[${inputIdx}:v]scale=-1:${logoH}[logo];[${prev}][logo]overlay=W-w-20:20[${out}]`;
+        prev = out;
+      } else {
+        chain = chain.replace(new RegExp(`\\[${prev}\\];$`), `[${prev}]`);
+      }
+      args.push("-filter_complex", chain, "-map", `[${prev}]`, "-map", "0:a?");
     } else {
       args.push("-vf", filters.join(","));
     }
@@ -2337,7 +2502,7 @@ ipcMain.handle("video:renderShorts", async (_, opts) => {
 // 롱폼 렌더링 (로컬 ffmpeg)
 ipcMain.handle("video:renderLongform", async (_, opts) => {
   if (videoProcess) return { ok: false, error: "이미 렌더링 중입니다. 취소 후 다시 시도해주세요." };
-  const { inputPath, subtitles, subtitlesEnabled, captionStyle, outputDir, outputFileName, aspect, outputResolution } = opts;
+  const { inputPath, subtitles, subtitlesEnabled, captionStyle, outputDir, outputFileName, aspect, outputResolution, backgroundColor, videoScale } = opts;
   if (!inputPath || !fs.existsSync(inputPath)) return { ok: false, error: "입력 파일 없음" };
 
   const jobId = ++_videoJobId;
@@ -2348,7 +2513,7 @@ ipcMain.handle("video:renderLongform", async (_, opts) => {
   const args = ["-i", inputPath];
   let srtCleanup = null;
 
-  const filters = buildVideoLayoutFilters(aspect || "16:9", outputResolution || "1080");
+  const filters = buildVideoLayoutFilters(aspect || "16:9", outputResolution || "1080", backgroundColor || "#000000", videoScale || 1);
 
   if (subtitlesEnabled && subtitles?.length) {
     const srtPath = path.join(os.tmpdir(), `makeit_long_${jobId}_${Date.now()}.srt`);
