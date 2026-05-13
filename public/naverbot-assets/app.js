@@ -3816,11 +3816,15 @@ bridge.loadConfig().then(async cfg => {
   renderCalendar();
   renderDashboardAutopilot();
 
-  // 홈 버전 표시
+  // 홈 + 정보 버전 표시
   if (bridge.getAppVersion) {
     bridge.getAppVersion().then(function(v) {
       var badge = document.getElementById("homeVersionBadge");
       if (badge) badge.textContent = "v" + v;
+      var aboutSub = document.getElementById("aboutVersionSub");
+      if (aboutSub) aboutSub.textContent = "SNS메이킷 v" + v;
+      var aboutBuild = document.getElementById("aboutBuildInfo");
+      if (aboutBuild) aboutBuild.textContent = "v" + v;
     }).catch(function(){});
   }
 
@@ -3829,28 +3833,10 @@ bridge.loadConfig().then(async cfg => {
   const isAdminBoot = ADMIN_EMAILS.includes(savedEmail.toLowerCase());
 
   if (cfg.makeit_access_token && savedEmail) {
-    const nick = savedEmail.split("@")[0];
-    const cachedUsed = isAdminBoot ? 0 : await bridge.getTrialUsed();
-    _trialUsedCache = cachedUsed;
-    state.loggedIn = true;
-    state.user = {
-      valid: true, email: savedEmail, nick,
-      plan: isAdminBoot ? "admin" : (cfg._cached_plan || ""),
-      role: isAdminBoot ? "admin" : "",
-      trial: isAdminBoot ? false : !cfg._cached_plan,
-      trial_used: cachedUsed,
-      trial_limit: isAdminBoot ? 999999 : 5,
-      monthly_used: Number(cfg._cached_monthly_used || 0),
-      monthly_limit: Number(cfg._cached_monthly_limit || 5),
-      monthly_used_video: Number(cfg._cached_monthly_used_video || 0),
-      monthly_video_limit: Number(cfg._cached_monthly_video_limit || 0),
-      admin: isAdminBoot,
-    };
-    setUserBadge(isAdminBoot ? `관리자 · ${nick}` : nick, "green");
+    // 로그인 확인 중 상태 표시 (플랜 깜빡임 방지)
+    setUserBadge("로그인 중...", "gray");
     const loginCard = document.getElementById("loginCard");
     if (loginCard) loginCard.style.display = "none";
-    renderPlanCard(state.user);
-    if (isAdminBoot) addLog("[계정] 관리자 자동 로그인");
   } else if (savedEmail) {
     setUserBadge("다시 로그인 필요", "gray");
   }
@@ -7679,7 +7665,7 @@ if ($("execResetBtn")) $("execResetBtn").addEventListener("click", resetToStart)
   function renderChallengeList() {
     var list = $("challengeList");
     if (!list) return;
-    if (!challenges.length) { list.innerHTML = "<div style='text-align:center;padding:40px 0;color:var(--text-dim);font-size:14px;'>등록된 부트캠프가 없습니다.</div>"; return; }
+    if (!challenges.length) { list.innerHTML = "<div style='text-align:center;padding:40px 0;color:var(--text-dim);font-size:14px;'>등록된 크루잉가 없습니다.</div>"; return; }
 
     list.innerHTML = "<div style='display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;'>" +
       challenges.map(function(ch) {

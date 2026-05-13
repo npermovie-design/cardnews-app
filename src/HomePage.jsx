@@ -325,13 +325,13 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
               { img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=520&fit=crop", cat: ko ? "키워드" : "KEYWORDS", title: ko ? "실시간 트렌드 분석" : "Real-time Trend Analysis" },
               { img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=520&fit=crop", cat: ko ? "대시보드" : "DASHBOARD", title: ko ? "콘텐츠 성과 관리" : "Content Performance" },
               { img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=520&fit=crop", cat: ko ? "드라이브" : "DRIVE", title: ko ? "구글 드라이브 연동" : "Google Drive Sync" },
-              { img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=520&fit=crop", cat: ko ? "커뮤니티" : "COMMUNITY", title: ko ? "성장 프로그램 & 커뮤니티" : "Bootcamp & Community" },
+              { img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=520&fit=crop", cat: ko ? "커뮤니티" : "COMMUNITY", title: ko ? "크루잉 & 커뮤니티" : "Bootcamp & Community" },
               { img: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=400&h=520&fit=crop", cat: ko ? "블로그" : "BLOG", title: ko ? "블로그 글쓰기 자동화" : "Blog Writing Automation" },
               { img: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=520&fit=crop", cat: ko ? "SNS 발행" : "PUBLISH", title: ko ? "SNS 자동 발행" : "SNS Auto Publishing" },
               { img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=520&fit=crop", cat: ko ? "키워드" : "KEYWORDS", title: ko ? "실시간 트렌드 분석" : "Real-time Trend Analysis" },
               { img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=520&fit=crop", cat: ko ? "대시보드" : "DASHBOARD", title: ko ? "콘텐츠 성과 관리" : "Content Performance" },
               { img: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=520&fit=crop", cat: ko ? "드라이브" : "DRIVE", title: ko ? "구글 드라이브 연동" : "Google Drive Sync" },
-              { img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=520&fit=crop", cat: ko ? "커뮤니티" : "COMMUNITY", title: ko ? "성장 프로그램 & 커뮤니티" : "Bootcamp & Community" },
+              { img: "https://images.unsplash.com/photo-1432888498266-38ffec3eaf0a?w=400&h=520&fit=crop", cat: ko ? "커뮤니티" : "COMMUNITY", title: ko ? "크루잉 & 커뮤니티" : "Bootcamp & Community" },
             ].map((card, i) => (
               <div key={i} onClick={goAi} style={{ flexShrink: 0, width: 300, height: 400, borderRadius: 24, overflow: "hidden", position: "relative", cursor: "pointer", transition: "transform .3s" }}
                 onMouseEnter={e => e.currentTarget.style.transform = "scale(1.04) translateY(-8px)"}
@@ -515,7 +515,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             <div className="hp-bento-card" style={{ padding: "clamp(20px,2.5vw,28px) clamp(20px,2.5vw,28px) 0" }}>
               <Reveal delay={0.15}>
                 <div style={{ padding: "0 clamp(20px,2.5vw,28px)" }}>
-                  <h3 style={{ fontSize: 18, fontWeight: 700, color: TEXT, margin: "0 0 8px" }}>{ko ? "커뮤니티 & 성장 프로그램" : "Community & Bootcamp"}</h3>
+                  <h3 style={{ fontSize: 18, fontWeight: 700, color: TEXT, margin: "0 0 8px" }}>{ko ? "커뮤니티 & 크루잉" : "Community & Bootcamp"}</h3>
                   <p style={{ fontSize: 14, color: SUB, lineHeight: 1.6, margin: "0 0 16px" }}>{ko ? "사업자들과 노하우를 나누고 함께 성장하세요." : "Share tips and grow together."}</p>
                 </div>
                 <div style={{ margin: "0 12px", paddingBottom: 12 }}>
@@ -721,7 +721,7 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             const col2 = [
               { image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face", name: ko?"이** 운영자":"Lee, Mgr", role: ko?"1인 사업자":"Solo Business", text: ko?"자동 발행 덕분에 매일 블로그에 글이 올라가요. 검색 노출이 확 늘었어요.":"Auto-publishing keeps my blog active daily." },
               { image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face", name: ko?"최** 마케터":"Choi, Mkt", role: ko?"스타트업":"Startup", text: ko?"키워드 분석부터 글 작성까지 한 번에 돼서 다른 업무에 집중할 수 있어요.":"From keywords to posts, all at once." },
-              { image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face", name: ko?"한** 대표":"Han, CEO", role: ko?"교육 플랫폼":"Education", text: ko?"성장 프로그램에서 다른 사업자들과 함께 SNS 운영 노하우를 나누고 있어요.":"Learning SNS skills together in bootcamp." },
+              { image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face", name: ko?"한** 대표":"Han, CEO", role: ko?"교육 플랫폼":"Education", text: ko?"크루잉에서 다른 사업자들과 함께 SNS 운영 노하우를 나누고 있어요.":"Learning SNS skills together in bootcamp." },
             ];
             const col3 = [
               { image: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop&crop=face", name: ko?"신** 매니저":"Shin, Mgr", role: ko?"쇼핑몰 운영":"E-commerce", text: ko?"드라이브에 사진만 올려두면 자동으로 블로그 글이 완성돼요. 진짜 편해요.":"Just upload photos to Drive, blog posts are auto-created." },
@@ -749,12 +749,12 @@ export default function HomePage({ navigate, C, theme, user, onLoginRequest, set
             </div>
           </Reveal>
           {(ko ? [
-            { q: "SNS메이킷은 어떤 서비스인가요?", a: "SNS 콘텐츠 제작과 관리를 쉽게 도와주는 올인원 플랫폼입니다. 블로그 글쓰기, 키워드 분석, 자동 발행, 성장 프로그램까지 한곳에서 해결할 수 있습니다." },
+            { q: "SNS메이킷은 어떤 서비스인가요?", a: "SNS 콘텐츠 제작과 관리를 쉽게 도와주는 올인원 플랫폼입니다. 블로그 글쓰기, 키워드 분석, 자동 발행, 크루잉까지 한곳에서 해결할 수 있습니다." },
             { q: "무료로 사용할 수 있나요?", a: "네. 회원가입 시 5회가 무료로 지급되며, 비회원도 5회 체험이 가능합니다. 데스크톱 프로그램도 무료로 다운로드할 수 있습니다." },
-            { q: "어떤 기능을 제공하나요?", a: "블로그 자동 글쓰기, 키워드 트렌드 분석, SNS 자동 발행, 구글 드라이브 연동, 성장 프로그램, 커뮤니티 등 20가지 이상의 기능을 제공합니다." },
+            { q: "어떤 기능을 제공하나요?", a: "블로그 자동 글쓰기, 키워드 트렌드 분석, SNS 자동 발행, 구글 드라이브 연동, 크루잉, 커뮤니티 등 20가지 이상의 기능을 제공합니다." },
             { q: "자동 발행은 어떻게 되나요?", a: "데스크톱 프로그램을 설치하면 테마 입력만으로 글 작성부터 이미지 삽입, 발행까지 자동으로 처리됩니다. Pro 플랜 이상에서 이용 가능합니다." },
             { q: "어떤 플랫폼을 지원하나요?", a: "네이버 블로그, 네이버 카페 자동 발행을 지원하며, 웹에서는 인스타그램, 유튜브, 스레드 등 다양한 SNS용 콘텐츠를 생성할 수 있습니다." },
-            { q: "성장 프로그램는 무엇인가요?", a: "SNS 운영 역량을 함께 키울 수 있는 그룹 프로그램입니다. 매일 미션을 인증하고, 참가자들과 함께 성장할 수 있습니다." },
+            { q: "크루잉는 무엇인가요?", a: "SNS 운영 역량을 함께 키울 수 있는 그룹 프로그램입니다. 매일 미션을 인증하고, 참가자들과 함께 성장할 수 있습니다." },
             { q: "상업적으로 사용 가능한가요?", a: "네, 생성된 모든 콘텐츠는 상업적으로 자유롭게 사용할 수 있습니다." },
             { q: "개인정보는 안전한가요?", a: "암호화된 인프라에서 안전하게 관리되며, 데스크톱 프로그램의 로그인 정보는 PC에만 저장됩니다." },
           ] : [

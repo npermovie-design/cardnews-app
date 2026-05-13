@@ -236,12 +236,12 @@ export default function AdminPage({ C, user: adminUser }) {
   const toggleModerator = async (member) => {
     const isMod = member.role === "moderator";
     const action = isMod ? "해제" : "부여";
-    if (!window.confirm(`${member.email || member.nick}에게 성장 프로그램 관리 권한을 ${action}할까요?`)) return;
+    if (!window.confirm(`${member.email || member.nick}에게 크루잉 관리 권한을 ${action}할까요?`)) return;
     const newRole = isMod ? "member" : "moderator";
     const { error } = await supabase.from("users").update({ role: newRole }).eq("uid", member.uid);
     if (error) { showToast(`권한 변경 실패: ${error.message}`); return; }
     setMembers2(prev => prev.map(m => m.uid === member.uid ? { ...m, role: newRole } : m));
-    showToast(`성장 프로그램 관리 권한 ${action} 완료`);
+    showToast(`크루잉 관리 권한 ${action} 완료`);
   };
   // ── 회원별 횟수 내역 로드 ──
   const loadMemberHistory = async (uid) => {

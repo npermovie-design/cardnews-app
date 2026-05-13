@@ -46,7 +46,7 @@ const STATUS_MAP = {
   completed:  { label: "완료",   color: "#6b7280", bg: "rgba(107,114,128,0.1)" },
 };
 const TYPE_MAP = {
-  challenge: { label: "성장 프로그램", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
+  challenge: { label: "크루잉", color: "#3b82f6", bg: "rgba(59,130,246,0.1)" },
   class:     { label: "클래스",   color: "#10b981", bg: "rgba(16,185,129,0.1)" },
   meetup:    { label: "모임",     color: "#8b5cf6", bg: "rgba(139,92,246,0.1)" },
   study:     { label: "스터디",   color: "#f59e0b", bg: "rgba(245,158,11,0.1)" },
@@ -111,7 +111,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
   // SEO 메타 업데이트
   const updateSeo = (ch) => {
     if (!ch) return;
-    const title = `${ch.title} - SNS메이킷 성장 프로그램`;
+    const title = `${ch.title} - SNS메이킷 크루잉`;
     const desc = (ch.subtitle || ch.description?.replace(/<[^>]*>/g, "") || "").slice(0, 155);
     const url = `https://snsmakeit.com/growth/${ch.id}`;
     document.title = title;
@@ -128,7 +128,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
     if (!canon) { canon = document.createElement("link"); canon.rel = "canonical"; document.head.appendChild(canon); }
     canon.href = url;
   };
-  const resetSeo = () => { document.title = "성장 프로그램 - SNS메이킷"; };
+  const resetSeo = () => { document.title = "크루잉 - SNS메이킷"; };
 
   useEffect(() => {
     (async () => {
@@ -229,17 +229,17 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
           <div style={{ display: "inline-block", background: PRIMARY, color: "#fff", fontSize: 12, fontWeight: 700, padding: "5px 16px", borderRadius: 99, marginBottom: 20 }}>BOOTCAMP</div>
           <h1 style={{ fontSize: mob ? "clamp(26px,6vw,38px)" : "clamp(36px,5vw,52px)", fontWeight: 700, color: "#1a1a1a", lineHeight: 1.3, marginBottom: 14, letterSpacing: "-0.02em" }}>
             함께 성장하는<br/>
-            <span style={{ color: PRIMARY }}>SNS 성장 프로그램</span>
+            <span style={{ color: PRIMARY }}>SNS 크루잉</span>
           </h1>
           <p style={{ fontSize: mob ? 14 : 17, color: "#4a5568", lineHeight: 1.7, marginBottom: 32 }}>
-            성장 프로그램, 클래스, 스터디, 모임까지 다양한 프로그램을 운영합니다.<br/>
+            크루잉, 클래스, 스터디, 모임까지 다양한 프로그램을 운영합니다.<br/>
             함께 실행하고, 서로 피드백하며 성장하세요.
           </p>
           {isAdmin && (
             <button onClick={() => { setSel(null); setView("editor"); }}
               style={{ padding: "16px 36px", borderRadius: 99, border: "none", background: PRIMARY, color: "#fff", fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "transform 0.18s", fontFamily: "inherit" }}
               onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"} onMouseLeave={e => e.currentTarget.style.transform = "none"}>
-              + 새 성장 프로그램 만들기
+              + 새 크루잉 만들기
             </button>
           )}
         </div>
@@ -250,8 +250,8 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
         {challenges.length === 0 ? (
           <div style={{ textAlign: "center", padding: "80px 20px", color: C.muted }}>
             <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke={C.muted} strokeWidth="1" strokeLinecap="round" style={{ margin: "0 auto 20px", display: "block", opacity: 0.25 }}><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
-            <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>아직 등록된 성장 프로그램가 없어요</div>
-            <div style={{ fontSize: 14 }}>곧 새로운 성장 프로그램가 시작될 예정입니다</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 8 }}>아직 등록된 크루잉가 없어요</div>
+            <div style={{ fontSize: 14 }}>곧 새로운 크루잉가 시작될 예정입니다</div>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: `repeat(auto-fill,minmax(${mob ? "100%" : "340px"},1fr))`, gap: 24 }}>
@@ -426,7 +426,7 @@ export default function ChallengePage({ C, navigate, user, theme, onLoginRequest
         <h2 style={{ fontSize: 24, fontWeight: 700, color: C.text, marginBottom: 10 }}>신청 완료!</h2>
         <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, marginBottom: 28 }}>
           관리자 확인 후 참여가 확정되면 안내를 드립니다.
-          {sel.start_date && <><br/>성장 프로그램 시작일: <strong style={{ color: C.text }}>{fmt(sel.start_date)}</strong></>}
+          {sel.start_date && <><br/>크루잉 시작일: <strong style={{ color: C.text }}>{fmt(sel.start_date)}</strong></>}
         </p>
         <StartProofUploader ch={sel} C={C} bdr={bdr} isDark={isDark} user={user} myApp={myApp} setMyApp={setMyApp} />
         <div style={{ marginTop: 16 }}>
@@ -882,7 +882,7 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
         </button>
         <div style={{ background: card, border: "1px solid " + bdr, borderRadius: 24, padding: mob ? "28px 20px" : "40px 36px", boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 6 }}>{ch.title}</h2>
-          <p style={{ fontSize: 13, color: C.muted, marginBottom: 32 }}>성장 프로그램 참가 신청</p>
+          <p style={{ fontSize: 13, color: C.muted, marginBottom: 32 }}>크루잉 참가 신청</p>
 
           <Fld label="이름 *" C={C}><input value={f.name} onChange={e => up("name", e.target.value)} placeholder="이름" style={inp} /></Fld>
           <Fld label="연락처 *" C={C}><input value={f.phone} onChange={e => {
@@ -959,7 +959,7 @@ function ApplyForm({ ch, C, bdr, card, isDark, mob, user, onBack, onSubmit }) {
           <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
             <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: C.text }}>
               <input type="checkbox" checked={f.agree_rules} onChange={e => up("agree_rules", e.target.checked)} style={{ width: 18, height: 18, accentColor: PRIMARY }} />
-              성장 프로그램 규칙에 동의합니다 <span style={{ color: "#ef4444" }}>*</span>
+              크루잉 규칙에 동의합니다 <span style={{ color: "#ef4444" }}>*</span>
             </label>
             {ch.price > 0 && <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 13, color: C.text }}>
               <input type="checkbox" checked={f.agree_refund} onChange={e => up("agree_refund", e.target.checked)} style={{ width: 18, height: 18, accentColor: PRIMARY }} />
@@ -1350,7 +1350,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
       <div style={{ maxWidth: 860, margin: "0 auto", padding: mob ? "24px 16px 80px" : "40px 20px 100px" }}>
         {/* 헤더 */}
         <button onClick={onBack} style={{ background: "none", border: "none", color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer", marginBottom: 16, display: "flex", alignItems: "center", gap: 4, fontFamily: "inherit" }}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg> 성장 프로그램 상세로
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="15 18 9 12 15 6"/></svg> 크루잉 상세로
         </button>
         <h2 style={{ fontSize: mob ? 20 : 24, fontWeight: 700, color: C.text, marginBottom: 4 }}>{ch.title}</h2>
         <p style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>{ch.daily_mission || "매일 미션을 수행하고 인증 링크를 등록하세요"}</p>
@@ -1662,7 +1662,7 @@ function MissionBoard({ ch, C, bdr, card, isDark, mob, user, myApp, setMyApp, mi
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 800, color: C.text }}>종료 다음날 데이터 인증</div>
                     <div style={{ fontSize: 12, color: C.muted, marginTop: 4 }}>{endProofDate.toLocaleDateString("ko-KR", { month: "long", day: "numeric", weekday: "short" })}</div>
-                    <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>예: 성장 프로그램 후 늘어난 팔로워 수, 조회수, 방문자 수가 보이는 화면</div>
+                    <div style={{ fontSize: 12, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>예: 크루잉 후 늘어난 팔로워 수, 조회수, 방문자 수가 보이는 화면</div>
                   </div>
                   <button onClick={() => { setProofPanel(null); setEndProofEditing(false); }} style={{ background: "none", border: "none", cursor: "pointer", color: C.muted, fontSize: 18 }}>x</button>
                 </div>
@@ -2146,7 +2146,7 @@ function FreeBoard({ ch, C, bdr, card, isDark, mob, user }) {
       {posts.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px", color: C.muted, border: "1px dashed " + bdr, borderRadius: 16 }}>
           <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 8 }}>아직 글이 없어요</div>
-          <div style={{ fontSize: 13 }}>성장 프로그램 참여자끼리 자유롭게 소통해보세요!</div>
+          <div style={{ fontSize: 13 }}>크루잉 참여자끼리 자유롭게 소통해보세요!</div>
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -2376,7 +2376,7 @@ function AdminPanel({ ch, C, bdr, card, isDark, mob, apps, onBack, onEdit, onSta
             <h2 style={{ fontSize: 22, fontWeight: 700, color: C.text, marginBottom: 4 }}>{ch.title}</h2>
             <p style={{ fontSize: 13, color: C.muted }}>총 {apps.length}명 신청 · 확정 {confirmedApps.length}명 · 시작 미인증 {stat.missingStart}명 · 마지막 미인증 {stat.missingEnd}명</p>
           </div>
-          <button onClick={onEdit} style={{ padding: "10px 22px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>성장 프로그램 수정</button>
+          <button onClick={onEdit} style={{ padding: "10px 22px", borderRadius: 99, border: "1px solid " + bdr, background: "transparent", color: C.text, fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>크루잉 수정</button>
         </div>
 
         {/* 탭 전환 */}
@@ -2828,11 +2828,11 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
 
           {/* ── Step 1: 기본 정보 ── */}
           {step === 1 && <>
-            <Fld label="프로그램 이름 *" C={C}><input value={f.title} onChange={e => up("title", e.target.value)} placeholder="예: SNS 수익화 10일 성장 프로그램" style={inp} /></Fld>
+            <Fld label="프로그램 이름 *" C={C}><input value={f.title} onChange={e => up("title", e.target.value)} placeholder="예: SNS 수익화 10일 크루잉" style={inp} /></Fld>
             <Fld label="한줄 소개" C={C}><input value={f.subtitle} onChange={e => up("subtitle", e.target.value)} placeholder="카드에 표시될 짧은 설명" style={inp} /></Fld>
             <Fld label="유형" C={C}>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-                {[["challenge", "성장 프로그램"], ["class", "클래스"], ["meetup", "모임"], ["study", "스터디"]].map(([v, l]) => {
+                {[["challenge", "크루잉"], ["class", "클래스"], ["meetup", "모임"], ["study", "스터디"]].map(([v, l]) => {
                   const tc = TYPE_MAP[v]?.color || PRIMARY;
                   return <button key={v} onClick={() => up("type", v)} style={{ padding: "12px 8px", borderRadius: 12, border: `2px solid ${f.type === v ? tc : bdr}`, background: f.type === v ? tc + "12" : "transparent", color: f.type === v ? tc : C.muted, fontSize: 13, fontWeight: f.type === v ? 700 : 500, cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s" }}>{l}</button>;
                 })}
@@ -2914,7 +2914,7 @@ function Editor({ ch, C, bdr, card, isDark, mob, user, onBack, onSave, onDelete 
                   }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <input value={f.badge_title || ""} onChange={e => up("badge_title", e.target.value)} placeholder="뱃지 이름 (예: SNS 성장 프로그램 2기)" style={inp} />
+                  <input value={f.badge_title || ""} onChange={e => up("badge_title", e.target.value)} placeholder="뱃지 이름 (예: SNS 크루잉 2기)" style={inp} />
                 </div>
               </div>
             </Fld>

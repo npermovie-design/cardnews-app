@@ -1441,12 +1441,12 @@
       <section class="panel hidden" data-panel="news-hub">
         <div class="panel-header">
           <h1>커뮤니티</h1>
-          <p class="panel-sub">공지사항, 커뮤니티, 부트캠프를 한 곳에서 확인하세요.</p>
+          <p class="panel-sub">공지사항, 커뮤니티, 크루잉를 한 곳에서 확인하세요.</p>
         </div>
         <div style="display:flex;gap:0;border-bottom:2px solid var(--border-soft);margin-bottom:16px;">
           <button class="hub-tab-btn active" data-hub-panel="notice" style="flex:1;padding:12px 0;font-size:14px;font-weight:700;border:none;background:transparent;color:var(--accent);cursor:pointer;border-bottom:2px solid var(--accent);margin-bottom:-2px;">공지사항</button>
           <button class="hub-tab-btn" data-hub-panel="community" style="flex:1;padding:12px 0;font-size:14px;font-weight:700;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">커뮤니티</button>
-          <button class="hub-tab-btn" data-hub-panel="challenge" style="flex:1;padding:12px 0;font-size:14px;font-weight:700;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">부트캠프</button>
+          <button class="hub-tab-btn" data-hub-panel="challenge" style="flex:1;padding:12px 0;font-size:14px;font-weight:700;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">크루잉</button>
           <button class="hub-tab-btn" data-hub-panel="classes" style="flex:1;padding:12px 0;font-size:14px;font-weight:700;border:none;background:transparent;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;">클래스</button>
         </div>
         <div id="hubInlineContent"></div>
@@ -1480,7 +1480,7 @@
       <section class="panel hidden" data-panel="about">
         <div class="panel-header">
           <h1>정보</h1>
-          <p class="panel-sub">SNS메이킷 v0.2.3</p>
+          <p class="panel-sub" id="aboutVersionSub">SNS메이킷</p>
         </div>
         <div class="card">
           <div class="about-item">
@@ -1492,8 +1492,8 @@
             <div class="about-value">Basic / Pro / Business</div>
           </div>
           <div class="about-item">
-            <div class="about-label">빌드</div>
-            <div class="about-value">0.2.3 · Electron 28 · Python 3.12</div>
+            <div class="about-label">버전</div>
+            <div class="about-value" id="aboutBuildInfo">-</div>
           </div>
         </div>
       </section>

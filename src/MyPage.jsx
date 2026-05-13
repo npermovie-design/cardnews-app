@@ -447,7 +447,7 @@ export default function MyPage({ user, setUser, C, navigate, theme }) {
             <div style={{ textAlign: "center", padding: "48px 20px", color: muted }}>
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: "0 auto 12px", display: "block", opacity: 0.3 }}><path d="M12 15l-3 3h6l-3-3z"/><circle cx="12" cy="8" r="5"/><path d="M6.5 13L4 21l3.5-2L12 21l4.5-2L20 21l-2.5-8"/></svg>
               <div style={{ fontSize: 15, fontWeight: 700 }}>{ko ? "아직 달성한 뱃지가 없어요" : "No badges yet"}</div>
-              <div style={{ fontSize: 12, marginTop: 6 }}>{ko ? "성장 프로그램을 완료하면 뱃지를 받을 수 있어요!" : "Complete a bootcamp to earn badges!"}</div>
+              <div style={{ fontSize: 12, marginTop: 6 }}>{ko ? "크루잉을 완료하면 뱃지를 받을 수 있어요!" : "Complete a bootcamp to earn badges!"}</div>
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 12 }}>
