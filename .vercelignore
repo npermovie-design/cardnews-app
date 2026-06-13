@@ -1,3 +1,12 @@
+api/shorts/
+api/shorts/**
+api/news.js
+api/naver-datalab.js
+api/youtube-search.js
+api/library.js
+api/video-jobs.js
+api/shorts-store.js
+api/simplecut.js
 image/
 reference-screenshots/
 shorts-factory/
