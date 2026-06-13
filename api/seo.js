@@ -2,6 +2,25 @@
 // ?action=sitemap|rss|archive-auto-tag
 
 import { createClient } from "@supabase/supabase-js";
+import { sendWebPushToUsers } from "../lib/webPush.js";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const SITE = "https://snsmakeit.com";
+const INDEXNOW_KEY = process.env.INDEXNOW_KEY || "6f2d7c9a4b8e4f21a5c8d3e9f0a1b2c3d4e5f678";
+const SEO_CDN_CACHE = "public, s-maxage=300, stale-while-revalidate=600";
+const LEGACY_CLEANUP_URLS = [
+  `${SITE}/community/info/post-keyword_2026-04-22`,
+  `${SITE}/snsnews`,
+  `${SITE}/news`,
+  `${SITE}/event`,
+  `${SITE}/cases`,
+];
+
+function setSeoCacheHeaders(res) {
+  res.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
+  res.setHeader("CDN-Cache-Control", SEO_CDN_CACHE);
+  res.setHeader("Vercel-CDN-Cache-Control", SEO_CDN_CACHE);
+}
 
 function stripMdHtml(s) {
   if (!s) return "";
@@ -36,32 +55,202 @@ function slugifyKo(input, fallback = "content") {
   return slug || fallback;
 }
 
+function escXml(input) {
+  return String(input || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function sitemapLastmod(value, fallback) {
+  if (!value) return fallback;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return fallback;
+  return d.toISOString();
+}
+
+function isUsableSitemapImage(url) {
+  const raw = String(url || "").trim();
+  if (!raw || /^(data:|blob:|javascript:)/i.test(raw)) return false;
+  if (!/^https?:\/\//i.test(raw) && !raw.startsWith("/")) return false;
+  const path = raw.split("?")[0].toLowerCase();
+  if (/\.(pdf|mp4|mov|avi|webm|mkv|m4v|mp3|wav|ogg|zip|hwp|docx?|pptx?|xlsx?)$/i.test(path)) return false;
+  return /\.(jpg|jpeg|png|webp|gif|bmp|avif)$/i.test(path) || /^https?:\/\//i.test(raw) || raw.startsWith("/");
+}
+
+function toAbsUrl(url) {
+  const raw = String(url || "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith("/")) return `${SITE}${raw}`;
+  return "";
+}
+
+function normalizeSiteUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw || raw.length > 2048 || /[\r\n]/.test(raw)) return "";
+  try {
+    const u = raw.startsWith("/")
+      ? new URL(raw, SITE)
+      : new URL(raw);
+    if (u.protocol !== "https:") return "";
+    if (u.hostname !== "snsmakeit.com" && !u.hostname.endsWith(".snsmakeit.com")) return "";
+    u.hash = "";
+    return u.toString();
+  } catch {
+    return "";
+  }
+}
+
+function extractImageUrlsFromContent(content) {
+  const html = String(content || "");
+  const urls = [];
+  const add = (url) => {
+    const abs = toAbsUrl(url);
+    if (abs && isUsableSitemapImage(abs)) urls.push(abs);
+  };
+  for (const m of html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)) add(m[1]);
+  for (const m of html.matchAll(/!\[[^\]]*]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g)) add(m[1]);
+  return urls;
+}
+
+function normalizeImageUrls(images, content = "") {
+  const list = Array.isArray(images)
+    ? images
+    : (typeof images === "string" ? (() => {
+        try {
+          const parsed = JSON.parse(images);
+          return Array.isArray(parsed) ? parsed : [images];
+        } catch {
+          return [images];
+        }
+      })() : []);
+  const fromImages = list
+    .map(img => typeof img === "string" ? img : (img?.url || img?.src || ""))
+    .filter(isUsableSitemapImage)
+    .map(toAbsUrl)
+    .filter(Boolean);
+  return [...new Set([...fromImages, ...extractImageUrlsFromContent(content)])].slice(0, 3);
+}
+
+function modifiedTime(row) {
+  const ts = Date.parse(row?.updated_at || row?.created_at || "");
+  return Number.isFinite(ts) ? ts : 0;
+}
+
+function sortByModifiedDesc(rows) {
+  return [...(rows || [])].sort((a, b) => modifiedTime(b) - modifiedTime(a));
+}
+
+function sitemapUrlEntry(p, today) {
+  const lastmod = p.lastmod || today;
+  const images = Array.isArray(p.images) ? p.images : [];
+  return `  <url>
+    <loc>${escXml(SITE + p.url)}</loc>
+    <lastmod>${escXml(lastmod)}</lastmod>
+    <changefreq>${escXml(p.freq || "weekly")}</changefreq>
+    <priority>${escXml(p.priority || "0.6")}</priority>${images.length ? images.map(img => `
+    <image:image>
+      <image:loc>${escXml(img.url)}</image:loc>
+      <image:title>${escXml(img.title)}</image:title>
+    </image:image>`).join("") : ""}
+  </url>`;
+}
+
+async function getCommunitySitemapEntries(today) {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !supabaseKey) throw new Error("Supabase env vars missing");
+
+  const sb = createClient(
+    supabaseUrl,
+    supabaseKey,
+    { auth: { persistSession: false, autoRefreshToken: false } }
+  );
+
+  const { data: boardCats } = await sb
+    .from("board_cats")
+    .select("id")
+    .order("order", { ascending: true });
+  const cats = (boardCats && boardCats.length ? boardCats.map(c => c.id) : ["info", "qna"])
+    .filter(Boolean)
+    .filter(id => id !== "archive");
+  const boardPageUrls = [
+    { url: "/community/all", priority: "0.8", freq: "daily", lastmod: today },
+    { url: "/community-sitemap", priority: "0.7", freq: "daily", lastmod: today },
+    ...[...new Set(cats)].map(id => ({
+      url: `/community/${id}`,
+      priority: "0.7",
+      freq: "daily",
+      lastmod: today,
+    })),
+  ];
+
+  const { data: posts, error } = await sb
+    .from("posts")
+    .select("id,title,content,subCat,cat,created_at,updated_at,images")
+    .order("created_at", { ascending: false })
+    .limit(5000);
+  if (error) throw error;
+
+  const now = Date.now();
+  const D30 = 30 * DAY_MS;
+  const D180 = 180 * DAY_MS;
+  const postUrls = sortByModifiedDesc(posts || [])
+    .filter(p => (p.subCat || p.cat || "info") !== "archive")
+    .map(p => {
+      const modifiedAt = p.updated_at || p.created_at;
+      const ts = modifiedAt ? new Date(modifiedAt).getTime() : now;
+      const age = now - ts;
+      let priority = "0.4", freq = "monthly";
+      if (age < D30) { priority = "0.8"; freq = "weekly"; }
+      else if (age < D180) { priority = "0.6"; freq = "monthly"; }
+      return {
+        url: `/community/${p.subCat || p.cat || "info"}/post-${p.id}/${slugifyKo(p.title, "post")}`,
+        title: p.title || "제목 없음",
+        description: stripMdHtml(p.content || "").slice(0, 300),
+        author: p.author || p.nick || "SNS메이킷",
+        category: p.subCat || p.cat || "info",
+        pubDate: p.updated_at || p.created_at || "",
+        priority,
+        freq,
+        lastmod: sitemapLastmod(modifiedAt, today),
+        images: normalizeImageUrls(p.images, p.content).map(url => ({ url, title: p.title || "SNS메이킷 게시글" })),
+      };
+    });
+
+  return { boardPageUrls, postUrls };
+}
+
 // ── Sitemap ──
 async function handleSitemap(req, res) {
-  const SITE = "https://snsmakeit.com";
   const today = new Date().toISOString().slice(0, 10);
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
 
   // 정적 페이지 (lastmod는 실제 수정일 기준, 매일 today로 넣으면 구글이 신뢰하지 않음)
   const staticPages = [
     { url: "/", priority: "1.0", freq: "weekly", langs: true, lastmod: today },
     { url: "/about", priority: "0.8", freq: "monthly", langs: true, lastmod: "2026-04-20" },
     { url: "/howto", priority: "0.7", freq: "monthly", langs: true, lastmod: "2026-04-20" },
+    { url: "/faq", priority: "0.5", freq: "monthly", langs: true, lastmod: "2026-04-20" },
     { url: "/pricing", priority: "0.8", freq: "monthly", langs: true, lastmod: "2026-04-17" },
-    { url: "/ai", priority: "0.9", freq: "weekly", langs: true, lastmod: today },
-    { url: "/programs", priority: "0.8", freq: "weekly", lastmod: today },
+    { url: "/programs", priority: "0.9", freq: "weekly", langs: true, lastmod: today },
     { url: "/growth", priority: "0.7", freq: "weekly", lastmod: today },
-    { url: "/community/info", priority: "0.7", freq: "daily", lastmod: today },
-    { url: "/community/qna", priority: "0.7", freq: "daily", lastmod: today },
+    { url: "/class", priority: "0.6", freq: "weekly", lastmod: today },
+    { url: "/community/all", priority: "0.8", freq: "daily", lastmod: today },
+    { url: "/community-sitemap", priority: "0.7", freq: "daily", lastmod: today },
     { url: "/contact", priority: "0.5", freq: "monthly", lastmod: "2026-03-15" },
-    { url: "/event", priority: "0.6", freq: "weekly", lastmod: "2026-04-17" },
+    { url: "/notice", priority: "0.5", freq: "weekly", lastmod: today },
     { url: "/legal", priority: "0.3", freq: "yearly" },
   ];
 
-  // Supabase에서 게시글 가져오기
+  // Supabase에서 게시판/게시글 가져오기
+  let boardPageUrls = [];
   let postUrls = [];
   try {
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
     if (!supabaseUrl || !supabaseKey) {
       console.log("Sitemap: Supabase env vars missing");
       return res.status(500).send("Supabase env vars missing");
@@ -71,9 +260,23 @@ async function handleSitemap(req, res) {
       supabaseKey,
       { auth: { persistSession: false, autoRefreshToken: false } }
     );
+    const { data: boardCats } = await sb
+      .from("board_cats")
+      .select("id")
+      .order("order", { ascending: true });
+    const cats = (boardCats && boardCats.length ? boardCats.map(c => c.id) : ["info", "qna"])
+      .filter(Boolean)
+      .filter(id => id !== "archive");
+    boardPageUrls = [...new Set(cats)].map(id => ({
+      url: `/community/${id}`,
+      priority: "0.7",
+      freq: "daily",
+      lastmod: today,
+    }));
+
     const { data: posts, error } = await sb
       .from("posts")
-      .select("id,title,subCat,created_at")
+      .select("id,title,content,subCat,cat,created_at,updated_at,images")
       .order("created_at", { ascending: false })
       .limit(2000);
     if (error) console.log("Sitemap Supabase error:", error.message);
@@ -81,17 +284,21 @@ async function handleSitemap(req, res) {
       const now = Date.now();
       const D30 = 30 * 86400 * 1000;
       const D180 = 180 * 86400 * 1000;
-      postUrls = posts.map(p => {
-        const ts = p.created_at ? new Date(p.created_at).getTime() : now;
+      postUrls = sortByModifiedDesc(posts)
+      .filter(p => (p.subCat || p.cat || "info") !== "archive")
+      .map(p => {
+        const modifiedAt = p.updated_at || p.created_at;
+        const ts = modifiedAt ? new Date(modifiedAt).getTime() : now;
         const age = now - ts;
         let priority = "0.4", freq = "monthly";
         if (age < D30) { priority = "0.8"; freq = "weekly"; }
         else if (age < D180) { priority = "0.6"; freq = "monthly"; }
         return {
-          url: `/community/${p.subCat || "info"}/post-${p.id}/${slugifyKo(p.title, "post")}`,
+          url: `/community/${p.subCat || p.cat || "info"}/post-${p.id}/${slugifyKo(p.title, "post")}`,
           priority,
           freq,
-          lastmod: p.created_at ? p.created_at.slice(0, 10) : today,
+          lastmod: sitemapLastmod(modifiedAt, today),
+          images: normalizeImageUrls(p.images, p.content).map(url => ({ url, title: p.title || "SNS메이킷 게시글" })),
         };
       });
     }
@@ -100,14 +307,15 @@ async function handleSitemap(req, res) {
   // 자료실 프로그램 페이지
   let programUrls = [];
   try {
-    const sb2 = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_KEY);
-    const { data: progs } = await sb2.from("programs").select("id,title,created_at").order("created_at", { ascending: false });
+    if (!supabaseUrl || !supabaseKey) throw new Error("Supabase env vars missing");
+    const sb2 = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data: progs } = await sb2.from("programs").select("id,title,created_at,updated_at").order("created_at", { ascending: false });
     if (progs) {
       programUrls = progs.map(p => ({
         url: `/programs/${p.id}/${slugifyKo(p.title, "program")}`,
         priority: "0.7",
         freq: "monthly",
-        lastmod: p.created_at ? p.created_at.slice(0, 10) : today,
+        lastmod: sitemapLastmod(p.updated_at || p.created_at, today),
       }));
     }
   } catch {}
@@ -115,75 +323,110 @@ async function handleSitemap(req, res) {
   // 챌린지 페이지
   let challengeUrls = [];
   try {
-    const sb3 = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_KEY);
+    if (!supabaseUrl || !supabaseKey) throw new Error("Supabase env vars missing");
+    const sb3 = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false, autoRefreshToken: false } });
     const { data: chs } = await sb3.from("challenges").select("id,title,updated_at").order("created_at", { ascending: false });
     if (chs) {
       challengeUrls = chs.map(c => ({
         url: `/growth/${c.id}`,
         priority: "0.8",
         freq: "daily",
-        lastmod: c.updated_at ? c.updated_at.slice(0, 10) : today,
+        lastmod: sitemapLastmod(c.updated_at, today),
       }));
     }
   } catch {}
 
   // XML 생성
   const hreflang = (url) => `
-    <xhtml:link rel="alternate" hreflang="ko" href="${SITE}${url}"/>
-    <xhtml:link rel="alternate" hreflang="en" href="${SITE}${url}?lang=en"/>
-    <xhtml:link rel="alternate" hreflang="ja" href="${SITE}${url}?lang=ja"/>
-    <xhtml:link rel="alternate" hreflang="zh-CN" href="${SITE}${url}?lang=zh"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="${SITE}${url}"/>`;
+    <xhtml:link rel="alternate" hreflang="ko" href="${escXml(SITE + url)}"/>
+    <xhtml:link rel="alternate" hreflang="en" href="${escXml(SITE + url + "?lang=en")}"/>
+    <xhtml:link rel="alternate" hreflang="ja" href="${escXml(SITE + url + "?lang=ja")}"/>
+    <xhtml:link rel="alternate" hreflang="zh-CN" href="${escXml(SITE + url + "?lang=zh")}"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="${escXml(SITE + url)}"/>`;
 
   const urlEntry = (p) => `  <url>
-    <loc>${SITE}${p.url}</loc>
-    <lastmod>${p.lastmod || today}</lastmod>
-    <changefreq>${p.freq}</changefreq>
-    <priority>${p.priority}</priority>${p.langs ? hreflang(p.url) : ""}
+    <loc>${escXml(SITE + p.url)}</loc>
+    <lastmod>${escXml(p.lastmod || today)}</lastmod>
+    <changefreq>${escXml(p.freq)}</changefreq>
+    <priority>${escXml(p.priority)}</priority>${p.langs ? hreflang(p.url) : ""}${Array.isArray(p.images) && p.images.length ? p.images.map(img => `
+    <image:image>
+      <image:loc>${escXml(img.url)}</image:loc>
+      <image:title>${escXml(img.title)}</image:title>
+    </image:image>`).join("") : ""}
   </url>`;
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml">
-${[...staticPages, ...postUrls, ...programUrls, ...challengeUrls].map(urlEntry).join("\n")}
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${[...staticPages, ...boardPageUrls, ...postUrls, ...programUrls, ...challengeUrls].map(urlEntry).join("\n")}
 </urlset>`;
 
   res.setHeader("Content-Type", "application/xml; charset=utf-8");
-  res.setHeader("Cache-Control", "public, s-maxage=3600, stale-while-revalidate=86400");
+  setSeoCacheHeaders(res);
   res.status(200).send(xml);
+}
+
+async function handleCommunitySitemapXml(req, res) {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const { boardPageUrls, postUrls } = await getCommunitySitemapEntries(today);
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+${[...boardPageUrls, ...postUrls].map(p => sitemapUrlEntry(p, today)).join("\n")}
+</urlset>`;
+
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    setSeoCacheHeaders(res);
+    return res.status(200).send(xml);
+  } catch (e) {
+    console.log("Community sitemap error:", e.message);
+    return res.status(500).send("Community sitemap failed");
+  }
+}
+
+async function handleSitemapIndex(req, res) {
+  const lastmod = new Date().toISOString();
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>${SITE}/sitemap.xml</loc>
+    <lastmod>${lastmod}</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>${SITE}/community-sitemap.xml</loc>
+    <lastmod>${lastmod}</lastmod>
+  </sitemap>
+</sitemapindex>`;
+
+  res.setHeader("Content-Type", "application/xml; charset=utf-8");
+  setSeoCacheHeaders(res);
+  return res.status(200).send(xml);
 }
 
 // ── RSS ──
 async function handleRss(req, res) {
-  const SITE = "https://snsmakeit.com";
-
   let items = "";
   try {
-    const sb = createClient(
-      process.env.VITE_SUPABASE_URL,
-      process.env.VITE_SUPABASE_KEY
-    );
-    if (!process.env.VITE_SUPABASE_URL || !process.env.VITE_SUPABASE_KEY) {
-      console.log("RSS: Supabase env vars missing");
-      return;
-    }
-    const { data: posts } = await sb.from("posts").select("id,title,content,subCat,author,created_at,images").order("created_at", { ascending: false }).limit(50);
-
-    if (posts) {
-      items = posts.map(p => {
-        const plainBody = (p.content || p.body || "").replace(/<[^>]*>/g, "").slice(0, 300);
-        const cat = p.subCat || "info";
-        const link = `${SITE}/community/${cat}/post-${p.id}/${slugifyKo(p.title, "post")}`;
-        const pubDate = p.created_at ? new Date(p.created_at).toUTCString() : new Date().toUTCString();
-        const image = p.images?.[0] ? `<enclosure url="${p.images[0]}" type="image/jpeg"/>` : "";
+    const today = new Date().toISOString().slice(0, 10);
+    const { postUrls } = await getCommunitySitemapEntries(today);
+    if (postUrls) {
+      items = postUrls
+      .slice(0, 200)
+      .map(p => {
+        const link = `${SITE}${p.url}`;
+        const pubDate = p.pubDate ? new Date(p.pubDate).toUTCString() : new Date().toUTCString();
+        const imageUrl = Array.isArray(p.images) && p.images[0]?.url ? p.images[0].url : "";
+        const image = imageUrl ? `<enclosure url="${escXml(imageUrl)}" type="image/jpeg"/>` : "";
         return `    <item>
       <title><![CDATA[${p.title || "제목 없음"}]]></title>
-      <link>${link}</link>
-      <guid isPermaLink="true">${link}</guid>
-      <description><![CDATA[${plainBody}]]></description>
-      <author>${p.author || p.nick || "SNS메이킷"}</author>
+      <link>${escXml(link)}</link>
+      <guid isPermaLink="true">${escXml(link)}</guid>
+      <description><![CDATA[${p.description || ""}]]></description>
+      <author>${escXml(p.author || "SNS메이킷")}</author>
       <pubDate>${pubDate}</pubDate>
-      <category>${cat}</category>
+      <category>${escXml(p.category || "info")}</category>
       ${image}
     </item>`;
       }).join("\n");
@@ -209,7 +452,7 @@ ${items}
 </rss>`;
 
   res.setHeader("Content-Type", "application/rss+xml; charset=utf-8");
-  res.setHeader("Cache-Control", "public, max-age=1800");
+  setSeoCacheHeaders(res);
   res.status(200).send(xml);
 }
 
@@ -220,6 +463,13 @@ const supabaseAdmin = createClient(
 );
 
 const CRON_ACTIONS = new Set([
+  "archive-auto-tag",
+  "bulk-index",
+  "cron-challenge-missing",
+  "cron-indexnow-sitemap",
+]);
+
+const DISABLED_AUTO_CONTENT_ACTIONS = new Set([
   "cron-briefing",
   "cron-social",
   "cron-ai",
@@ -228,12 +478,12 @@ const CRON_ACTIONS = new Set([
   "cron-info",
   "cron-threads",
   "cron-all",
-  "archive-auto-tag",
-  "bulk-index",
 ]);
 
 const PUBLIC_ACTIONS = new Set([
   "sitemap",
+  "sitemap-index",
+  "community-sitemap",
   "rss",
   "naver-verify",
 ]);
@@ -249,10 +499,18 @@ const supabaseAuth = createClient(
 );
 
 async function authorizeSeoAction(req, res, action) {
+  if (DISABLED_AUTO_CONTENT_ACTIONS.has(action)) {
+    return res.status(410).json({
+      ok: false,
+      error: "AI 자동 글감/커뮤니티 자동 발행은 비활성화되었습니다.",
+    });
+  }
+
   if (CRON_ACTIONS.has(action)) {
     const expected = process.env.CRON_SECRET ? `Bearer ${process.env.CRON_SECRET}` : "";
     if (!expected) return res.status(500).json({ ok: false, error: "cron secret not configured" });
-    if (req.headers?.authorization !== expected) {
+    const vercelCron = req.headers?.["x-vercel-cron"] === "1" || req.headers?.["x-vercel-cron"] === "true";
+    if (!vercelCron && req.headers?.authorization !== expected && req.query?.secret !== process.env.CRON_SECRET) {
       console.warn(`[/api/seo] cron auth failed: ${action} from ${req.headers?.["x-forwarded-for"] || ""}`);
       return res.status(401).json({ ok: false, error: "cron secret required" });
     }
@@ -268,16 +526,7 @@ async function authorizeSeoAction(req, res, action) {
     if (action === "index-now") {
       const rawUrl = String(req.query.url || "");
       if (!rawUrl) return res.status(400).json({ error: "url 필요" });
-      try {
-        const u = rawUrl.startsWith("/")
-          ? new URL(rawUrl, "https://snsmakeit.com")
-          : new URL(rawUrl);
-        if (u.protocol !== "https:" || (u.hostname !== "snsmakeit.com" && !u.hostname.endsWith(".snsmakeit.com"))) {
-          return res.status(400).json({ error: "허용되지 않은 도메인" });
-        }
-      } catch {
-        return res.status(400).json({ error: "잘못된 URL" });
-      }
+      if (!normalizeSiteUrl(rawUrl)) return res.status(400).json({ error: "잘못된 URL" });
     }
     return true;
   }
@@ -330,9 +579,18 @@ async function handleIndexNow(req, res) {
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: "url 파라미터 필요" });
 
-  const SITE = "https://snsmakeit.com";
-  const KEY = "b7ec85037f97a6e5870a755bc0c1d9b90d224ed9"; // 네이버 인증키 재활용
-  const fullUrl = url.startsWith("http") ? url : SITE + url;
+  const KEY = INDEXNOW_KEY;
+  const fullUrl = normalizeSiteUrl(url);
+  if (!fullUrl) return res.status(400).json({ error: "잘못된 URL" });
+  const discoveryUrls = [
+    `${SITE}/community/all`,
+    `${SITE}/community-sitemap`,
+    `${SITE}/community-sitemap.xml`,
+    `${SITE}/sitemap-index.xml`,
+    `${SITE}/sitemap.xml`,
+    `${SITE}/rss.xml`,
+  ];
+  const urlList = [fullUrl, ...discoveryUrls].filter((item, idx, arr) => arr.indexOf(item) === idx);
 
   const results = {};
   // 1) IndexNow (Bing, Yandex, Naver 동시 지원)
@@ -340,30 +598,95 @@ async function handleIndexNow(req, res) {
     const r = await fetch("https://api.indexnow.org/indexnow", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ host: "snsmakeit.com", key: KEY, keyLocation: `${SITE}/${KEY}.txt`, urlList: [fullUrl] }),
+      body: JSON.stringify({ host: "snsmakeit.com", key: KEY, keyLocation: `${SITE}/${KEY}.txt`, urlList }),
     });
     results.indexnow = { status: r.status, ok: r.ok };
   } catch (e) { results.indexnow = { error: e.message }; }
 
   // 2) Google sitemap ping
   try {
-    const sm = encodeURIComponent(SITE + "/sitemap.xml");
-    await fetch(`https://www.google.com/ping?sitemap=${sm}`);
-    results.google_ping = "ok";
+    const sitemapUrls = [`${SITE}/sitemap-index.xml`, `${SITE}/sitemap.xml`, `${SITE}/community-sitemap.xml`];
+    const googleResults = await Promise.allSettled(
+      sitemapUrls.map(sm => fetch(`https://www.google.com/ping?sitemap=${encodeURIComponent(sm)}`))
+    );
+    results.google_ping = googleResults.map((result, idx) => ({
+      sitemap: sitemapUrls[idx],
+      ok: result.status === "fulfilled",
+    }));
   } catch (e) { results.google_ping = e.message; }
 
-  return res.status(200).json({ success: true, url: fullUrl, results });
+  return res.status(200).json({ success: true, url: fullUrl, submitted: urlList.length, results });
+}
+
+async function handleCronIndexNowSitemap(req, res) {
+  try {
+    const sitemapPaths = ["/sitemap.xml", "/community-sitemap.xml"];
+    const urls = [];
+    for (const path of sitemapPaths) {
+      const sitemapRes = await fetch(`${SITE}${path}`, {
+        headers: { "User-Agent": "SNSMakeit-IndexNow-Cron/1.0" },
+      });
+      if (!sitemapRes.ok) {
+        return res.status(502).json({ ok: false, error: `${path} fetch failed: ${sitemapRes.status}` });
+      }
+
+      const xml = await sitemapRes.text();
+      urls.push(...[...xml.matchAll(/<loc>(.*?)<\/loc>/g)]
+        .map(match => match[1])
+        .filter(url => /^https:\/\/snsmakeit\.com\//i.test(url)));
+    }
+
+    const urlList = [...urls, ...LEGACY_CLEANUP_URLS]
+      .filter((url, idx, arr) => arr.indexOf(url) === idx)
+      .slice(0, 10000);
+
+    if (!urlList.length) return res.status(200).json({ ok: true, submitted: 0 });
+
+    const results = [];
+    const batchSize = 500;
+    for (let i = 0; i < urlList.length; i += batchSize) {
+      const batch = urlList.slice(i, i + batchSize);
+      const r = await fetch("https://api.indexnow.org/indexnow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          host: "snsmakeit.com",
+          key: INDEXNOW_KEY,
+          keyLocation: `${SITE}/${INDEXNOW_KEY}.txt`,
+          urlList: batch,
+        }),
+      });
+      results.push({ status: r.status, ok: r.ok, count: batch.length });
+    }
+
+    return res.status(200).json({
+      ok: results.every(r => r.ok),
+      submitted: urlList.length,
+      sitemaps: sitemapPaths.map(path => `${SITE}${path}`),
+      cleanupUrls: LEGACY_CLEANUP_URLS.length,
+      batches: results,
+    });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message || "indexnow sitemap cron failed" });
+  }
 }
 
 // ── 대량 IndexNow 제출 (모든 게시글) ──
 async function handleBulkIndex(req, res) {
-  const SITE = "https://snsmakeit.com";
-  const KEY = "b7ec85037f97a6e5870a755bc0c1d9b90d224ed9";
+  const KEY = INDEXNOW_KEY;
   try {
-    const sb = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_KEY);
-    const { data: posts } = await sb.from("posts").select("id,title,subCat").order("id", { ascending: false }).limit(2000);
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_KEY || process.env.SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseKey) return res.status(500).json({ error: "Supabase env vars missing" });
+    const sb = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data: posts } = await sb.from("posts").select("id,title,subCat,cat,created_at,updated_at").order("created_at", { ascending: false }).limit(5000);
     if (!posts?.length) return res.status(200).json({ message: "게시글 없음" });
-    const urlList = posts.map(p => `${SITE}/community/${p.subCat || "info"}/post-${p.id}/${slugifyKo(p.title, "post")}`);
+    const urlList = [
+      ...sortByModifiedDesc(posts)
+        .filter(p => (p.subCat || p.cat || "info") !== "archive")
+        .map(p => `${SITE}/community/${p.subCat || p.cat || "info"}/post-${p.id}/${slugifyKo(p.title, "post")}`),
+      ...LEGACY_CLEANUP_URLS,
+    ].filter((url, idx, arr) => arr.indexOf(url) === idx);
     // IndexNow는 최대 10,000개씩 전송 가능
     const batchSize = 500;
     const results = [];
@@ -391,6 +714,209 @@ function handleNaverVerify(req, res) {
   return res.status(200).send("naver13ff0ecd787361289eef4e82f97736a");
 }
 
+function todayKstKey(now = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const get = type => parts.find(p => p.type === type)?.value;
+  return `${get("year")}-${get("month")}-${get("day")}`;
+}
+
+function parseDateKey(value) {
+  const [year, month, day] = String(value || "").slice(0, 10).split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return Date.UTC(year, month - 1, day);
+}
+
+function activeChallengeDay(challenge, todayKey) {
+  const start = parseDateKey(challenge.start_date || challenge.created_at);
+  const today = parseDateKey(todayKey);
+  if (!start || !today) return null;
+  const day = Math.floor((today - start) / DAY_MS) + 1;
+  const duration = Number(challenge.duration || 0);
+  const end = parseDateKey(challenge.end_date);
+  if (day <= 0) return null;
+  if (duration > 0 && day > duration) return null;
+  if (end && today > end) return null;
+  return day;
+}
+
+function hasChallengeProof(mission) {
+  return Boolean(
+    String(mission?.link || "").trim() ||
+    String(mission?.screenshot_url || "").trim() ||
+    String(mission?.extra_link || "").trim()
+  );
+}
+
+function dateKeyFromUtcMs(ms) {
+  if (!Number.isFinite(ms)) return null;
+  return new Date(ms).toISOString().slice(0, 10);
+}
+
+function challengeDayDateKey(challenge, day) {
+  const start = parseDateKey(challenge?.start_date || challenge?.created_at);
+  const dayNumber = Number(day || 0);
+  if (!start || dayNumber <= 0) return null;
+  return dateKeyFromUtcMs(start + ((dayNumber - 1) * DAY_MS));
+}
+
+function participationStartDateKey(challenge, application) {
+  const challengeStart = parseDateKey(challenge?.start_date || challenge?.created_at);
+  const joinedAt = parseDateKey(application?.confirmed_at || application?.created_at || challenge?.start_date || challenge?.created_at);
+  if (!challengeStart && !joinedAt) return null;
+  return dateKeyFromUtcMs(Math.max(challengeStart || 0, joinedAt || 0));
+}
+
+function isApplicationEligibleForChallengeDay(challenge, application, day) {
+  if (String(challenge?.challenge_mode || "").toLowerCase() !== "habit") return true;
+  const targetDate = challengeDayDateKey(challenge, day);
+  const joinedDate = participationStartDateKey(challenge, application);
+  if (!targetDate || !joinedDate) return true;
+  return joinedDate <= targetDate;
+}
+
+function isMissionCompleteForChallengeDay(challenge, mission, targetDate) {
+  if (!hasChallengeProof(mission)) return false;
+  if (String(challenge?.challenge_mode || "").toLowerCase() !== "habit") return true;
+  return String(mission?.post_date || "").slice(0, 10) === targetDate;
+}
+
+async function handleCronChallengeMissing(req, res) {
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !supabaseKey) return res.status(500).json({ ok: false, error: "missing supabase server env" });
+
+  const dryRun = req.query.dryRun === "1" || req.query.dry_run === "1";
+  const todayKey = req.query.date || todayKstKey();
+  const dateCompact = String(todayKey).replace(/-/g, "");
+  const sb = createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+
+  const { data: challenges, error: challengeError } = await sb
+    .from("challenges")
+    .select("id,title,start_date,end_date,duration,status,created_at,challenge_mode")
+    .order("created_at", { ascending: false });
+  if (challengeError) return res.status(500).json({ ok: false, error: challengeError.message });
+
+  const summaries = [];
+  let notificationCount = 0;
+  let completedCount = 0;
+
+  for (const challenge of challenges || []) {
+    const status = String(challenge.status || "").toLowerCase();
+    if (["completed", "archived", "closed"].includes(status)) continue;
+    const end = parseDateKey(challenge.end_date);
+    const today = parseDateKey(todayKey);
+    if (end && today && today > end) {
+      if (!dryRun) {
+        await sb.from("challenges").update({ status: "completed", updated_at: new Date().toISOString() }).eq("id", challenge.id);
+      }
+      completedCount += 1;
+      summaries.push({ id: challenge.id, title: challenge.title, status: "completed", reason: "end_date passed" });
+      continue;
+    }
+    const day = activeChallengeDay(challenge, todayKey);
+    if (!day) continue;
+
+    const { data: applications, error: appError } = await sb
+      .from("challenge_applications")
+      .select("uid,name,created_at,confirmed_at")
+      .eq("challenge_id", challenge.id)
+      .eq("status", "confirmed")
+      .not("uid", "is", null);
+    if (appError) {
+      summaries.push({ id: challenge.id, title: challenge.title, day, error: appError.message });
+      continue;
+    }
+
+    const eligibleApplications = (applications || []).filter(app => isApplicationEligibleForChallengeDay(challenge, app, day));
+    const uids = [...new Set(eligibleApplications.map(app => app.uid).filter(Boolean))];
+    if (uids.length === 0) {
+      summaries.push({ id: challenge.id, title: challenge.title, day, participants: applications?.length || 0, eligibleParticipants: 0, missing: 0 });
+      continue;
+    }
+
+    const targetDate = challengeDayDateKey(challenge, day);
+    const { data: missions, error: missionError } = await sb
+      .from("challenge_missions")
+      .select("uid,link,screenshot_url,extra_link,post_date")
+      .eq("challenge_id", challenge.id)
+      .eq("day", day)
+      .in("uid", uids);
+    if (missionError) {
+      summaries.push({ id: challenge.id, title: challenge.title, day, error: missionError.message });
+      continue;
+    }
+
+    const isHabit = String(challenge.challenge_mode || "").toLowerCase() === "habit";
+    const done = new Set((missions || []).filter(m => isMissionCompleteForChallengeDay(challenge, m, targetDate)).map(m => m.uid));
+    const body = isHabit
+      ? `Day ${day} 인증이 아직 등록되지 않았습니다. 오늘 날짜로 업로드한 링크와 게시 날짜를 맞춰 미션 게시판에 올려주세요.`
+      : `Day ${day} 인증이 아직 등록되지 않았습니다. 오늘 안에 미션 게시판에서 인증을 올려주세요.`;
+    const rows = uids
+      .filter(uid => !done.has(uid))
+      .map(uid => ({
+        id: `cn_auto_missing_${challenge.id}_${day}_${uid}_${dateCompact}`,
+        uid,
+        challenge_id: challenge.id,
+        mission_id: null,
+        actor_uid: "system",
+        actor_nick: "크루잉",
+        title: `${challenge.title || "크루잉"} 인증 알림`,
+        body,
+        url: `/growth/${challenge.id}/board`,
+        read_at: null,
+        created_at: new Date().toISOString(),
+      }));
+
+    if (!dryRun && rows.length > 0) {
+      const { error: insertError } = await sb
+        .from("challenge_notifications")
+        .upsert(rows, { onConflict: "id" });
+      if (insertError) {
+        summaries.push({ id: challenge.id, title: challenge.title, day, error: insertError.message });
+        continue;
+      }
+    }
+
+    let push = null;
+    if (!dryRun && rows.length > 0) {
+      push = await sendWebPushToUsers(rows.map(row => row.uid), {
+        title: `${challenge.title || "크루잉"} 인증 알림`,
+        body,
+        url: `/growth/${challenge.id}/board`,
+        tag: `missing-${challenge.id}-${day}-${dateCompact}`,
+      });
+    }
+
+    notificationCount += rows.length;
+    summaries.push({
+      id: challenge.id,
+      title: challenge.title,
+      day,
+      participants: applications?.length || 0,
+      eligibleParticipants: uids.length,
+      completed: done.size,
+      missing: rows.length,
+      push,
+    });
+  }
+
+  return res.status(200).json({
+    ok: true,
+    dryRun,
+    date: todayKey,
+    notifications: notificationCount,
+    completedChallenges: completedCount,
+    challenges: summaries,
+  });
+}
+
 // ── Router ──
 export default async function handler(req, res) {
   const action = req.query.action;
@@ -402,6 +928,10 @@ export default async function handler(req, res) {
   switch (action) {
     case "sitemap":
       return handleSitemap(req, res);
+    case "sitemap-index":
+      return handleSitemapIndex(req, res);
+    case "community-sitemap":
+      return handleCommunitySitemapXml(req, res);
     case "rss":
       return handleRss(req, res);
     case "archive-auto-tag":
@@ -409,9 +939,9 @@ export default async function handler(req, res) {
     case "cron-briefing":
       return handleCronBriefing(req, res);
     case "cron-social":
-      return handleCronSocial(req, res);
+      return res.status(410).json({ disabled: true, message: "소셜클리핑 자동 발행은 중지되었습니다." });
     case "cron-ai":
-      return handleCronAI(req, res);
+      return res.status(410).json({ disabled: true, message: "AI뉴스 자동 발행은 중지되었습니다." });
     case "cron-keyword":
       return handleCronKeyword(req, res);
     case "cron-daily-keywords":
@@ -422,6 +952,10 @@ export default async function handler(req, res) {
       return handleCronThreads(req, res);
     case "cron-all":
       return handleCronAll(req, res);
+    case "cron-challenge-missing":
+      return handleCronChallengeMissing(req, res);
+    case "cron-indexnow-sitemap":
+      return handleCronIndexNowSitemap(req, res);
     case "index-now":
       return handleIndexNow(req, res);
     case "bulk-index":
@@ -455,8 +989,6 @@ async function handleCronAll(req, res) {
   // Phase 1: 경량 작업 병렬 실행 (각 1회 Haiku API 호출)
   const phase1 = await Promise.allSettled([
     runCronTask(handleCronBriefing, req).then(r => { results.briefing = r; }),
-    runCronTask(handleCronSocial, req).then(r => { results.social = r; }),
-    runCronTask(handleCronAI, req).then(r => { results.ai = r; }),
     runCronTask(handleCronKeyword, req).then(r => { results.keyword = r; }),
     runCronTask(handleCronInfo, req).then(r => { results.info = r; }),
     runCronTask(handleCronThreads, req).then(r => { results.threads = r; }),
@@ -533,11 +1065,16 @@ HEADLINE: [7개 중 검색량/관심도 가장 높은 핵심 이슈를 SEO 친�
 
     // 자동 색인 요청 (IndexNow)
     try {
-      const KEY = "b7ec85037f97a6e5870a755bc0c1d9b90d224ed9";
+      const KEY = INDEXNOW_KEY;
       await fetch("https://api.indexnow.org/indexnow", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ host: "snsmakeit.com", key: KEY, keyLocation: `https://snsmakeit.com/${KEY}.txt`, urlList: ["https://snsmakeit.com/snsnews"] }),
+        body: JSON.stringify({
+          host: "snsmakeit.com",
+          key: KEY,
+          keyLocation: `https://snsmakeit.com/${KEY}.txt`,
+          urlList: [`${SITE}/community/all`, `${SITE}/community-sitemap`, `${SITE}/sitemap.xml`],
+        }),
       });
     } catch {}
 
@@ -649,7 +1186,7 @@ async function handleCronDailyKeywords(req, res) {
   if (existing) return res.status(200).json({ message: "이미 존재", date: todayKey });
 
   const CATEGORIES = [
-    { id: "AI 도구", desc: "ChatGPT, Claude, 미드저니, 노션AI, 캔바AI 등 AI 도구 활용법과 비교 리뷰" },
+    { id: "SNS 자동화", desc: "네이버 블로그·카페 자동 발행, 키워드 분석, 구글 드라이브 연동 등 SNS 운영 자동화 활용법" },
     { id: "AI 트렌드", desc: "AI 모델 업데이트, AI 규제, AI 산업 동향, 생성형AI 뉴스, 빅테크 AI 전략" },
     { id: "블로그", desc: "네이버 블로그 상위노출, 블로그 수익화, SEO, 키워드 분석, 체험단, 블로그 운영 팁" },
     { id: "유튜브", desc: "유튜브 알고리즘, 쇼츠 전략, 썸네일, 구독자 성장, 수익화, 편집 팁" },
@@ -761,7 +1298,7 @@ async function handleCronInfo(req, res) {
     { theme: "SNS 트렌드 리포트", focus: "이번 주 SNS 플랫폼별 트렌드, 밈, 챌린지, 해시태그 분석" },
     { theme: "수익화 전략 가이드", focus: "SNS/블로그 수익화, 협찬, 제휴마케팅, 쿠팡파트너스 등 실전 노하우" },
     { theme: "브랜딩 & 퍼스널브랜딩", focus: "개인/기업 브랜딩 전략, 포지셔닝, 차별화 방법론" },
-    { theme: "AI 마케팅 활용법", focus: "ChatGPT/Claude/미드저니 등 AI 도구를 마케팅에 활용하는 실전 방법" },
+    { theme: "SNS 자동화 활용법", focus: "설치형 프로그램과 자동 발행 기능을 SNS 운영에 활용하는 실전 방법" },
   ];
   const topic = topics[dayOfWeek];
 
@@ -1018,7 +1555,7 @@ async function handleCronPost(req, res, opts) {
 // ── 검색엔진 색인 요청 ──
 async function pingSearchEngines(pageUrl) {
   const sitemapUrl = "https://snsmakeit.com/sitemap.xml";
-  const indexNowKey = process.env.INDEXNOW_KEY || "";
+  const indexNowKey = INDEXNOW_KEY;
 
   const pings = [
     // Google sitemap ping
@@ -1030,6 +1567,7 @@ async function pingSearchEngines(pageUrl) {
       body: JSON.stringify({
         host: "snsmakeit.com",
         key: indexNowKey,
+        keyLocation: `${SITE}/${indexNowKey}.txt`,
         urlList: [pageUrl],
       }),
     }).catch(() => {}) : Promise.resolve(),

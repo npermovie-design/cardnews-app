@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "preview:static": "node scripts/static-preview-server.cjs dist 4180",
+    "shorts:worker": "node scripts/makeit-shorts-worker.mjs",
+    "shorts:smoke": "node scripts/makeit-shorts-smoke-test.mjs",
     "electron:build": "vite build && electron-builder"
   },
   "build": {
@@ -28,14 +31,14 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
-    "@tailwindcss/vite": "^4.2.4",
-    "@vitejs/plugin-react": "^4.3.0",
+    "@tailwindcss/vite": "^4.3.0",
+    "@vitejs/plugin-react": "^6.0.2",
     "concurrently": "^8.0.0",
-    "electron": "^28.0.0",
-    "electron-builder": "^24.0.0",
+    "electron": "^42.3.0",
+    "electron-builder": "^26.8.1",
     "gh-pages": "^6.3.0",
     "tailwindcss": "^4.2.4",
-    "vite": "^5.0.0",
+    "vite": "^8.0.14",
     "wait-on": "^7.0.0"
   },
   "dependencies": {
@@ -44,8 +47,6 @@
     "@remotion/media-utils": "^4.0.443",
     "@remotion/player": "^4.0.443",
     "@remotion/transitions": "^4.0.443",
-    "@splinetool/react-spline": "^4.1.0",
-    "@splinetool/runtime": "^1.12.90",
     "@supabase/supabase-js": "^2.99.2",
     "clsx": "^2.1.1",
     "dompurify": "^3.3.3",
@@ -60,6 +61,7 @@
     "react-leaflet": "^5.0.0",
     "remotion": "^4.0.443",
     "tailwind-merge": "^3.5.0",
+    "web-push": "^3.6.7",
     "youtube-transcript": "^1.3.0",
     "ytdl-core": "^4.11.5"
   }

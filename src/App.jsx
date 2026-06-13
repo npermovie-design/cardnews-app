@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from "react";
 import { THEMES, THEME_KEY, getSavedTheme } from "./theme";
-import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAuthUser, FREE_GUEST, processReferralSignup, ensureReferralCode, getUsageSummary } from "./storage";
+import { getUser, setUser, setLocalUser, fbLogout, supabase, fetchUser, syncOAuthUser, FREE_GUEST, processReferralSignup, ensureReferralCode, getUsageSummary, getAuthToken } from "./storage";
 import { useI18n, LANGUAGES } from "./i18n.jsx";
 
 // 핵심 컴포넌트 (즉시 로드)
@@ -13,7 +13,6 @@ import ChatWidget from "./ChatWidget.jsx";
 const AboutPage = lazy(() => import("./AboutPage").then(m => ({ default: m.AboutPage })));
 const HowToPage = lazy(() => import("./AboutPage").then(m => ({ default: m.HowToPage })));
 const FaqPage = lazy(() => import("./AboutPage").then(m => ({ default: m.FaqPage })));
-const AiPage = lazy(() => import("./AiPage").then(m => ({ default: m.AiPage })));
 const ContactPage = lazy(() => import("./ContactPage").then(m => ({ default: m.ContactPage })));
 const PricingPage = lazy(() => import("./PricingPage").then(m => ({ default: m.PricingPage })));
 const PaymentSuccessPage = lazy(() => import("./PaymentPage").then(m => ({ default: m.PaymentSuccessPage })));
@@ -22,14 +21,11 @@ const LegalPage = lazy(() => import("./LegalPage").then(m => ({ default: m.Legal
 const BoardPage = lazy(() => import("./BoardPage"));
 const AdminPage = lazy(() => import("./AdminPage"));
 const MyPage = lazy(() => import("./MyPage"));
-const EventPage = lazy(() => import("./EventPage.jsx"));
-const CasePage = lazy(() => import("./CasePage.jsx"));
-const AnalyzerPage = lazy(() => import("./AnalyzerPage.jsx"));
 const ProgramsPage = lazy(() => import("./ProgramsPage.jsx"));
+const CloudVersionPage = lazy(() => import("./CloudVersionPage.jsx"));
 const NoticePage = lazy(() => import("./NoticePage.jsx"));
 const ClassPage = lazy(() => import("./ClassPage.jsx"));
 const ChallengePage = lazy(() => import("./ChallengePage.jsx"));
-// const GuidePage = lazy(() => import("./GuidePage.jsx"));
 
 // 로딩 폴백
 const PageLoader = () => (
@@ -127,7 +123,7 @@ function WelcomeModal({ userName, lang = "ko", onClose, onGoAi, onGoPricing }) {
             color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer",
             marginBottom: 8, boxShadow: "none",
           }}>
-          {ko ? "AI 도구 시작하기 →" : "Start using AI tools →"}
+          {ko ? "설치형 프로그램 보기 →" : "View desktop program →"}
         </button>
         <button onClick={onGoPricing}
           style={{
@@ -195,6 +191,111 @@ function GuardModal({ cost, onConfirm, onCancel, lang = "ko" }) {
   );
 }
 
+function NotificationButton({ C, theme, notifications, unreadCount, open, setOpen, onItemClick, onMarkAllRead, pushNotifyEnabled = false, onEnablePushNotifications, onTestPushNotifications, pushTestBusy = false, compact = false }) {
+  const isDark = theme === "dark";
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" && window.innerWidth < 768);
+  const pushSupported = typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+  const pushPermissionGranted = pushSupported && window.Notification.permission === "granted";
+  const timeText = (value) => {
+    const ts = value ? new Date(value).getTime() : 0;
+    const diff = Date.now() - ts;
+    if (!ts || diff < 0) return "";
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return "방금";
+    if (min < 60) return `${min}분 전`;
+    const hour = Math.floor(min / 60);
+    if (hour < 24) return `${hour}시간 전`;
+    return new Date(value).toLocaleDateString("ko-KR", { month: "short", day: "numeric" });
+  };
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return (
+    <div style={{ position: "relative", flexShrink: 0 }}>
+      <button onClick={() => setOpen(!open)} aria-label="알림" title="알림"
+        style={{ width: compact ? 44 : 36, height: compact ? 44 : 36, minWidth: compact ? 44 : 36, minHeight: compact ? 44 : 36, borderRadius: "50%", border: "1px solid " + C.border, background: open ? (isDark ? "rgba(255,255,255,0.08)" : "rgba(59,130,246,0.06)") : "transparent", color: C.text, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative", flexShrink: 0 }}>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 7h18s-3 0-3-7" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+        {unreadCount > 0 && (
+          <span style={{ position: "absolute", top: -3, right: -3, minWidth: 17, height: 17, padding: "0 4px", borderRadius: 99, background: "#ef4444", color: "#fff", fontSize: 10, fontWeight: 900, lineHeight: "17px", textAlign: "center", border: `2px solid ${isDark ? "#0b0b12" : "#fff"}` }}>
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </button>
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 998 }} />
+          <div style={{
+            position: isMobile ? "fixed" : "absolute",
+            top: isMobile ? 72 : "calc(100% + 8px)",
+            left: isMobile ? 12 : "auto",
+            right: isMobile ? 12 : 0,
+            zIndex: 9999,
+            width: isMobile ? "auto" : (compact ? "min(340px, calc(100vw - 24px))" : "min(340px, 86vw)"),
+            maxWidth: isMobile ? "none" : "calc(100vw - 24px)",
+            maxHeight: isMobile ? "calc(100vh - 96px)" : "70vh",
+            overflow: "hidden",
+            background: C.modalBg || (isDark ? "#1a1730" : "#fff"),
+            border: "1px solid " + C.border,
+            borderRadius: 16,
+            boxShadow: "0 16px 48px rgba(0,0,0,0.18)",
+            boxSizing: "border-box",
+          }}>
+            <div style={{ padding: "14px 16px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+              <div style={{ fontSize: 14, fontWeight: 900, color: C.text }}>알림</div>
+              {unreadCount > 0 && (
+                <button onClick={onMarkAllRead} style={{ border: "none", background: "transparent", color: "#3b82f6", fontSize: 12, fontWeight: 800, cursor: "pointer", padding: 4 }}>모두 읽음</button>
+              )}
+            </div>
+            {pushSupported && (
+              <div style={{ padding: "10px 14px", borderBottom: "1px solid " + C.border, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 850, color: C.text }}>휴대폰/앱 알림</div>
+                  <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{pushNotifyEnabled && pushPermissionGranted ? "미인증 알림을 기기 알림으로 받습니다" : "홈 화면 앱처럼 인증 알림을 받을 수 있습니다"}</div>
+                </div>
+                {pushNotifyEnabled && pushPermissionGranted ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    <button onClick={onTestPushNotifications} disabled={pushTestBusy} style={{ border: "1px solid rgba(59,130,246,0.25)", background: "rgba(59,130,246,0.08)", color: "#3b82f6", borderRadius: 999, padding: "5px 8px", fontSize: 11, fontWeight: 850, cursor: pushTestBusy ? "default" : "pointer", opacity: pushTestBusy ? 0.65 : 1 }}>{pushTestBusy ? "전송중" : "테스트"}</button>
+                    <span style={{ fontSize: 11, fontWeight: 850, color: "#16a34a", background: "rgba(22,163,74,0.1)", borderRadius: 999, padding: "5px 8px" }}>켜짐</span>
+                  </div>
+                ) : (
+                  <button onClick={onEnablePushNotifications} style={{ flexShrink: 0, border: "1px solid rgba(59,130,246,0.25)", background: "rgba(59,130,246,0.08)", color: "#3b82f6", borderRadius: 999, padding: "6px 9px", fontSize: 11, fontWeight: 850, cursor: "pointer" }}>켜기</button>
+                )}
+              </div>
+            )}
+            <div style={{ maxHeight: isMobile ? "calc(100vh - 158px)" : "58vh", overflowY: "auto", overflowX: "hidden", padding: 6 }}>
+              {notifications.length === 0 ? (
+                <div style={{ padding: "34px 16px", textAlign: "center", color: C.muted, fontSize: 13 }}>새 알림이 없습니다</div>
+              ) : notifications.map(n => {
+                const unread = !n.read_at;
+                return (
+                  <button key={n.id} onClick={() => onItemClick(n)}
+                    style={{ width: "100%", minWidth: 0, boxSizing: "border-box", border: "none", borderRadius: 11, background: unread ? (isDark ? "rgba(59,130,246,0.14)" : "rgba(59,130,246,0.07)") : "transparent", cursor: "pointer", textAlign: "left", padding: "11px 12px", display: "flex", gap: 10, alignItems: "flex-start" }}
+                    onMouseEnter={e => e.currentTarget.style.background = isDark ? "rgba(255,255,255,0.07)" : "#f5f7fb"}
+                    onMouseLeave={e => e.currentTarget.style.background = unread ? (isDark ? "rgba(59,130,246,0.14)" : "rgba(59,130,246,0.07)") : "transparent"}>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: unread ? "#3b82f6" : "transparent", marginTop: 6, flexShrink: 0 }} />
+                    <span style={{ minWidth: 0, flex: 1 }}>
+                      <span style={{ display: "block", fontSize: 13, fontWeight: 850, color: C.text, marginBottom: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "100%" }}>{n.title || "크루잉 알림"}</span>
+                      <span style={{ display: "block", fontSize: 12, lineHeight: 1.45, color: C.muted, overflowWrap: "anywhere", wordBreak: "break-word" }}>{n.body}</span>
+                      <span style={{ display: "block", fontSize: 11, color: C.muted, opacity: 0.7, marginTop: 5 }}>{timeText(n.created_at)}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // OG 메타태그 동적 업데이트 (클라이언트)
 function updateOgMeta(title, description, path, image) {
   const url = "https://snsmakeit.com" + (path || "/");
@@ -217,6 +318,57 @@ function updateOgMeta(title, description, path, image) {
   }
 }
 
+const PAGE_OG_IMAGES = {
+  programs: "https://snsmakeit.com/og-desktop.png",
+  cloud: "https://snsmakeit.com/og-app.png",
+};
+
+const PUSH_NOTIFICATION_KEY = "challenge_push_notifications";
+
+const isFileApp = () => window.location.protocol === "file:";
+
+function routePath() {
+  if (isFileApp()) {
+    return (window.location.hash.replace(/^#\/?/, "").split("?")[0] || "home");
+  }
+  return window.location.pathname.replace(/^\//, "") || "home";
+}
+
+function routeSearch() {
+  if (!isFileApp()) return window.location.search || "";
+  const hash = String(window.location.hash || "");
+  const query = hash.includes("?") ? hash.split("?")[1] : "";
+  return query ? `?${query}` : "";
+}
+
+function routeUrl(path) {
+  if (!isFileApp()) return path;
+  return path === "/" ? "#/" : "#" + path;
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+}
+
+function getCloudRouteMode(search) {
+  const params = new URLSearchParams(search || "");
+  const mode = (
+    (params.get("start") || "")
+      .trim()
+      .toLowerCase() ||
+    (params.get("panel") || "")
+      .trim()
+      .toLowerCase() ||
+    (params.get("view") || "")
+      .trim()
+      .toLowerCase()
+  );
+  return mode === "makeit-video-editor" || mode === "video-editor" ? "legacy-video-editor" : "";
+}
+
 function localDateKey() {
   const d = new Date();
   const y = d.getFullYear();
@@ -225,9 +377,17 @@ function localDateKey() {
   return `${y}-${m}-${day}`;
 }
 
+function parseCommunityPath(segments) {
+  if (segments[0] !== "community") return null;
+  const postSeg = segments.find(s => s.startsWith("post-"));
+  const postId = postSeg ? postSeg.replace(/^post-/, "").split(/[/?#]/)[0] : null;
+  const rawCat = segments[1] && !segments[1].startsWith("post-") ? segments[1] : "";
+  const cat = rawCat || "all";
+  return { cat, postId };
+}
+
 export default function App() {
   const [page,       setPage]       = useState("home");
-  const [aiVisited,  setAiVisited]  = useState(false);
   const [user,       setUserState]  = useState(getUser);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled,   setScrolled]   = useState(false);
@@ -243,14 +403,23 @@ export default function App() {
   const [pendingPostId, setPendingPostId] = useState(null);
   const [programId, setProgramId] = useState(null);
   const [challengeId, setChallengeId] = useState(null);
+  const [challengeBoard, setChallengeBoard] = useState(false);
   const [classId, setClassId] = useState(null);
   const [classLessonId, setClassLessonId] = useState(null);
-  const [aiMenu,     setAiMenu]     = useState("home");
   const [theme,      setTheme]      = useState(getSavedTheme);
   const [guardModal, setGuardModal] = useState(null); // { cost, onConfirm }
   const [showPointsModal, setShowPointsModal] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [pushNotifyEnabled, setPushNotifyEnabled] = useState(() => {
+    try { return localStorage.getItem(PUSH_NOTIFICATION_KEY) === "1"; } catch { return false; }
+  });
+  const [pushTestBusy, setPushTestBusy] = useState(false);
+  const seenNotificationIdsRef = useRef(new Set());
+  const notificationListInitializedRef = useRef(false);
+  const lastTrackedPathRef = useRef("");
   const langRef = useRef(null);
   const { t, lang, setLang } = useI18n();
   const [guestUsageCount, setGuestUsageCount] = useState(() => {
@@ -262,34 +431,205 @@ export default function App() {
   const isLoggingOut  = useRef(false);
   // 현재 테마 팔레트
   const C = THEMES[theme];
+  const unreadCount = notifications.filter(n => !n.read_at).length;
+
+  const loadNotifications = useCallback(async () => {
+    if (!user?.uid) {
+      seenNotificationIdsRef.current = new Set();
+      notificationListInitializedRef.current = false;
+      setNotifications([]);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from("challenge_notifications")
+        .select("*")
+        .eq("uid", user.uid)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      if (error) throw error;
+      const rows = data || [];
+      const seen = seenNotificationIdsRef.current;
+      if (!notificationListInitializedRef.current) {
+        rows.forEach(n => seen.add(n.id));
+        notificationListInitializedRef.current = true;
+      } else {
+        rows.forEach(n => { if (n?.id) seen.add(n.id); });
+      }
+      setNotifications(rows);
+    } catch {
+      setNotifications([]);
+    }
+  }, [user?.uid]);
+
+  useEffect(() => {
+    loadNotifications();
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    let channel = null;
+    try {
+      channel = supabase
+        .channel(`challenge-notifications-${user.uid}`)
+        .on("postgres_changes", { event: "*", schema: "public", table: "challenge_notifications", filter: `uid=eq.${user.uid}` }, loadNotifications)
+        .subscribe();
+    } catch {}
+    return () => {
+      try { if (channel) supabase.removeChannel(channel); } catch {}
+    };
+  }, [user?.uid, loadNotifications]);
+
+  const openNotification = async (item) => {
+    if (!item) return;
+    if (!item.read_at) {
+      const readAt = new Date().toISOString();
+      setNotifications(prev => prev.map(n => n.id === item.id ? { ...n, read_at: readAt } : n));
+      try { await supabase.from("challenge_notifications").update({ read_at: readAt }).eq("id", item.id).eq("uid", user.uid); } catch {}
+    }
+    setNotificationOpen(false);
+    const url = item.url || (item.challenge_id ? `/growth/${item.challenge_id}/board` : "/growth");
+    const segments = url.replace(/^\//, "").split("/");
+    if ((segments[0] === "growth" || segments[0] === "challenge") && segments[1]) {
+      setChallengeId(segments[1]);
+      setChallengeBoard(segments[2] === "board");
+      setPage("challenge");
+      setOpenMenu(null);
+      setMobileOpen(false);
+      window.history.pushState(null, "", routeUrl(url));
+      return;
+    }
+    window.history.pushState(null, "", routeUrl(url));
+  };
+
+  const enablePushNotifications = async () => {
+    if (!user?.uid) {
+      navigate("login");
+      return;
+    }
+    if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
+      alert("이 기기에서는 앱 푸시 알림을 지원하지 않습니다. iPhone은 홈 화면에 추가한 뒤 다시 시도해주세요.");
+      return;
+    }
+
+    try {
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent || "") || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+      const isStandalone = window.matchMedia?.("(display-mode: standalone)")?.matches || window.navigator.standalone === true;
+      if (isIos && !isStandalone) {
+        alert("iPhone은 Safari 공유 버튼에서 홈 화면에 추가한 뒤, 홈 화면 앱으로 열어 알림을 켤 수 있습니다.");
+        return;
+      }
+
+      const permission = await window.Notification.requestPermission();
+      if (permission !== "granted") {
+        localStorage.removeItem(PUSH_NOTIFICATION_KEY);
+        setPushNotifyEnabled(false);
+        return;
+      }
+
+      const token = await getAuthToken();
+      if (!token) {
+        alert("로그인 세션을 확인하지 못했습니다. 다시 로그인해주세요.");
+        return;
+      }
+
+      const keyRes = await fetch("/api/push?action=public-key");
+      const keyData = await keyRes.json();
+      if (!keyRes.ok || !keyData.publicKey) {
+        alert("푸시 알림 키가 아직 설정되지 않았습니다.");
+        return;
+      }
+
+      const registration = await navigator.serviceWorker.register("/sw.js");
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(keyData.publicKey),
+        });
+      }
+
+      const res = await fetch("/api/push?action=subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ subscription: subscription.toJSON() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) throw new Error(data.error || "푸시 구독 저장 실패");
+
+      localStorage.setItem(PUSH_NOTIFICATION_KEY, "1");
+      setPushNotifyEnabled(true);
+    } catch {
+      localStorage.removeItem(PUSH_NOTIFICATION_KEY);
+      setPushNotifyEnabled(false);
+      alert("앱 푸시 알림을 켜지 못했습니다. 브라우저 알림 권한과 설치 상태를 확인해주세요.");
+    }
+  };
+
+  const testPushNotifications = async () => {
+    if (pushTestBusy) return;
+    setPushTestBusy(true);
+    try {
+      const token = await getAuthToken();
+      if (!token) throw new Error("로그인이 필요합니다");
+      const res = await fetch("/api/push?action=test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) throw new Error(data.error || "테스트 알림 실패");
+      if (!Number(data?.push?.sent || 0)) alert("저장된 기기 알림 구독을 찾지 못했습니다. 알림을 다시 켜주세요.");
+    } catch (e) {
+      alert(e.message || "테스트 알림을 보내지 못했습니다.");
+    } finally {
+      setPushTestBusy(false);
+    }
+  };
+
+  const markAllNotificationsRead = async () => {
+    if (!user?.uid || unreadCount === 0) return;
+    const readAt = new Date().toISOString();
+    setNotifications(prev => prev.map(n => n.read_at ? n : { ...n, read_at: readAt }));
+    try {
+      await supabase
+        .from("challenge_notifications")
+        .update({ read_at: readAt })
+        .eq("uid", user.uid)
+        .is("read_at", null);
+    } catch {}
+  };
 
   useEffect(() => {
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
-    const path = page === "home" ? "/" : page === "ai" && aiMenu && aiMenu !== "home" ? `/ai/${aiMenu}` : `/${page}`;
+    const path = page === "home" ? "/" : `/${page}`;
     const titleMap = {
       ko: {
-        home: "SNS메이킷 - AI SNS 콘텐츠 자동 생성",
+        home: "SNS메이킷 - SNS를 쉽게 관리하세요",
         about: "소개 - SNS메이킷",
         howto: "이용방법 - SNS메이킷",
         faq: "자주 묻는 질문 - SNS메이킷",
-        ai: "AI 생성기 - SNS메이킷",
-        programs: "자동화 - SNS메이킷",
+        ai: "설치형 프로그램 - SNS메이킷",
+        programs: "데스크톱버전 - SNS메이킷",
+        cloud: "앱버전 - SNS메이킷",
         class: "클래스 - SNS메이킷",
         challenge: "크루잉 - SNS메이킷",
+        notice: "공지사항 - SNS메이킷",
         pricing: "가격정책 - SNS메이킷",
         contact: "문의하기 - SNS메이킷",
         event: "이벤트 - SNS메이킷",
         cases: "고객사례 - SNS메이킷",
         community: "커뮤니티 - SNS메이킷",
         legal: "약관·정책 - SNS메이킷",
+        xk9m2p4q7: "관리자 - SNS메이킷",
       },
       en: {
         home: "SNS Makeit - AI Social Content Generator",
         about: "About - SNS Makeit",
         howto: "How to Use - SNS Makeit",
         faq: "FAQ - SNS Makeit",
-        ai: "AI Generator - SNS Makeit",
-        programs: "Resources - SNS Makeit",
+        ai: "Desktop Program - SNS Makeit",
+        programs: "Desktop Version - SNS Makeit",
+        cloud: "App Version - SNS Makeit",
         class: "Classes - SNS Makeit",
         challenge: "Bootcamp - SNS Makeit",
         pricing: "Pricing - SNS Makeit",
@@ -302,71 +642,90 @@ export default function App() {
     };
     const descMap = {
       ko: {
-        home: "블로그 글쓰기, 자동 발행, 키워드 분석까지. SNS 콘텐츠 관리를 쉽게 도와주는 올인원 플랫폼.",
+        home: "콘텐츠 제작, 키워드 분석, 자동 발행, 커뮤니티까지 SNS 운영에 필요한 흐름을 한곳에서 쉽게 관리하세요.",
         about: "SNS메이킷은 블로그 글쓰기, 자동 발행, 키워드 분석 등 SNS 콘텐츠 관리를 위한 올인원 플랫폼입니다.",
         howto: "SNS메이킷 사용법 가이드. 블로그 글쓰기, 자동 발행, 키워드 분석까지 단계별로 안내합니다.",
         faq: "SNS메이킷의 콘텐츠 생성, 요금제, 저작권, 계정 관련 자주 묻는 질문을 확인하세요.",
-        ai: "블로그 글, 인스타그램 캡션, 영상 편집까지 쉽게 생성하세요.",
+        ai: "SNS메이킷 설치형 SaaS 프로그램으로 네이버 블로그·카페 자동 발행을 관리하세요.",
         class: "SNS 콘텐츠 제작과 자동화 실무를 배우는 메이킷 클래스입니다.",
         challenge: "SNS 성장 목표를 정하고 매일 인증하며 실행하는 메이킷 크루잉입니다.",
         pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 콘텐츠 생성과 자동 발행을 이용하세요.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류, 제휴 문의를 남겨주시면 빠르게 답변드립니다.",
-        community: "SNS메이킷 커뮤니티. SNS 운영, AI 콘텐츠 제작, 마케팅 정보와 질문답변, 크루잉을 함께하세요.",
-        programs: "SNS 운영에 필요한 자동화 도구, 템플릿, 무료 사진, 무료 영상 자료를 확인하세요.",
+        community: "SNS메이킷 커뮤니티. SNS 운영, 자동화 프로그램, 마케팅 정보와 질문답변, 크루잉을 함께하세요.",
+        programs: "SNS메이킷 Windows 데스크톱 설치형 프로그램을 다운로드하고 기능을 확인하세요.",
+        cloud: "SNS메이킷 설치형 프로그램 흐름을 웹 화면에서 확인할 수 있는 앱버전입니다.",
         event: "SNS메이킷 이벤트와 혜택을 확인하세요.",
         cases: "SNS메이킷을 활용한 고객사례와 AI 콘텐츠 제작 성공 사례를 확인하세요.",
         legal: "SNS메이킷 이용약관, 개인정보처리방침, 환불정책을 확인하세요.",
+        xk9m2p4q7: "SNS메이킷 관리자 페이지입니다.",
       },
       en: {
         home: "Enter a keyword and AI creates drafts for blogs, Instagram, and shorts. 5 guest uses and 5 credits on signup.",
         about: "SNS Makeit is an all-in-one AI platform for blogs, Instagram, shorts, and image content creation.",
         howto: "Learn how to use SNS Makeit for AI writing, image generation, card news, detail pages, and shorts editing.",
         faq: "Find answers about SNS Makeit AI content generation, credits, pricing, copyright, and accounts.",
-        ai: "Generate blog posts, Instagram captions, card news, product images, logos, and shorts videos with AI.",
+        ai: "Manage Naver Blog and Cafe auto-publishing with the SNS Makeit desktop SaaS program.",
         class: "Practical SNS Makeit classes for content creation, automation, and marketing workflows.",
         challenge: "SNS Makeit bootcamps help you set goals, submit proofs, and build a consistent content routine.",
         pricing: "SNS Makeit pricing. 5 credits on signup, simple monthly usage counts, and plan upgrades.",
         contact: "Contact SNS Makeit for billing, features, bugs, or partnership inquiries.",
-        community: "SNS Makeit Community for AI content creation, marketing tips, and Q&A.",
-        programs: "Download automation tools, templates, free photos, and video resources for SNS operations.",
+        community: "SNS Makeit Community for SNS operations, automation programs, marketing tips, and Q&A.",
+        programs: "Download the SNS Makeit Windows desktop program and review its features.",
+        cloud: "Use the SNS Makeit workflow in a browser-based cloud screen.",
       },
       ja: {
-        home: "キーワードを入力すると、AIがブログ、Instagram、ショート動画の下書きを作成します。",
-        about: "SNS Makeitは、SNSコンテンツ制作を支援するAIプラットフォームです。",
-        howto: "SNS MakeitのAIライティング、画像生成、ショート動画編集の使い方を確認できます。",
+        home: "インストール型SaaSプログラムでNaverブログ・カフェの自動発行とSNS運用を管理できます。",
+        about: "SNS Makeitは、Naverブログ・カフェの自動発行を支援するインストール型SaaSです。",
+        howto: "SNS MakeitのWindowsプログラムと自動発行の使い方を確認できます。",
         faq: "SNS Makeitの生成回数、料金、著作権、アカウントに関する質問を確認できます。",
-        ai: "ブログ、カードニュース、商品画像、ショート動画をAIで作成できます。",
+        ai: "インストール型SaaSプログラムで自動発行を管理できます。",
         class: "SNSコンテンツ制作と自動化を実践的に学べるSNS Makeitクラスです。",
         challenge: "目標設定、認証、毎日の実行を支援するSNS Makeitブートキャンプです。",
         pricing: "SNS Makeitの料金プラン。無料利用からBusinessまで確認できます。",
         contact: "決済、機能、不具合、提携に関するお問い合わせはこちらです。",
-        community: "SNS運用、AIコンテンツ制作、マーケティング情報を共有するコミュニティです。",
-        programs: "SNS運用に役立つ自動化ツール、テンプレート、素材を確認できます。",
+        community: "SNS運用、マーケティング情報、Q&Aのためのコミュニティです。",
+        programs: "SNS MakeitのWindowsデスクトップ版を確認できます。",
+        cloud: "SNS Makeitのクラウド版を確認できます。",
       },
     };
-    const title = (titleMap[lang] || titleMap.ko)[page] || `${brand}`;
+    const title = (titleMap[lang] || titleMap.ko)[page] || (lang === "ko" ? `페이지를 찾을 수 없습니다 - ${brand}` : `Page not found - ${brand}`);
     const desc = (descMap[lang] || descMap.ko)[page] || (descMap[lang] || descMap.ko).home;
     const privatePages = ["login", "mypage", "profile", "xk9m2p4q7", "payment/success", "payment/fail"];
     document.title = title;
-    updateOgMeta(title, desc, path);
+    updateOgMeta(title, desc, path, PAGE_OG_IMAGES[page]);
     const robots = document.querySelector('meta[name="robots"]');
-    if (robots) robots.setAttribute("content", privatePages.includes(page) ? "noindex, nofollow" : "index, follow");
-  }, [page, aiMenu, lang]);
+    if (robots) robots.setAttribute("content", privatePages.includes(page) ? "noindex, nofollow" : "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1");
+  }, [page, lang]);
 
-  // 방문자 추적 (페이지 로드 시 1회, 프로덕션만)
+  // 방문자 추적 (SPA 페이지 이동 포함, 페이지별 30분 중복 제한)
   useEffect(() => {
     if (window.location.hostname === "localhost") return;
     try {
-      const key = "nper_visit_" + new Date().toISOString().slice(0, 13);
+      const path = window.location.pathname || "/";
+      const bucket = Math.floor(Date.now() / (30 * 60 * 1000));
+      const key = `nper_visit_${bucket}_${path}`;
+      const visitorKey = "snsmakeit_visitor_id";
+      const sessionKey = "snsmakeit_session_id";
+      let visitorId = localStorage.getItem(visitorKey);
+      if (!visitorId) {
+        visitorId = (crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+        localStorage.setItem(visitorKey, visitorId);
+      }
+      let sessionId = sessionStorage.getItem(sessionKey);
+      if (!sessionId) {
+        sessionId = (crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+        sessionStorage.setItem(sessionKey, sessionId);
+      }
       if (!sessionStorage.getItem(key)) {
         fetch("/api/sns?action=track-log", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ page: window.location.pathname, referrer: document.referrer }),
+          body: JSON.stringify({ page: path, referrer: lastTrackedPathRef.current || document.referrer, visitorId, sessionId }),
         }).catch(() => {});
         sessionStorage.setItem(key, "1");
       }
+      lastTrackedPathRef.current = window.location.origin + path;
     } catch {}
-  }, []);
+  }, [page, boardCat, pendingPostId, challengeId, challengeBoard, programId, classId, classLessonId]);
 
   // 이용 횟수 소진 이벤트 수신
   useEffect(() => {
@@ -443,28 +802,38 @@ export default function App() {
 
   // OAuth 에러 콜백 처리 — URL에 error 파라미터가 있으면 정리
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(routeSearch());
     if (params.has("error") || params.has("error_code")) {
       console.warn("OAuth error:", params.get("error"), params.get("error_description"));
       // 에러 파라미터 제거하여 URL 정리
-      window.history.replaceState({}, "", window.location.pathname);
+      if (isFileApp()) {
+        window.history.replaceState({}, "", routeUrl(routePath()));
+      } else {
+        window.history.replaceState({}, "", window.location.pathname);
+      }
     }
   }, []);
 
   useEffect(() => {
-    const rawPath = window.location.pathname.replace(/^\//, "") || "home";
+    const rawPath = routePath();
     const segments = rawPath.split("/");
     const mainSeg = segments[0];
-    const postId = rawPath.includes("/post-") ? rawPath.split("/post-")[1].split("/")[0] : null;
-    if (postId) setPendingPostId(postId);
+    const communityRoute = parseCommunityPath(segments);
+    if (communityRoute?.postId) setPendingPostId(communityRoute.postId);
 
     // 404 리다이렉트: 기존 경로 → 신규 경로
-    const REDIRECTS = { board: "community/info", terms: "legal", news: "snsnews" };
+    const REDIRECTS = { board: "community/info", terms: "legal", news: "community/all", snsnews: "community/all", cardnews: "programs", ai: "programs", event: "programs", cases: "programs", projects: "cloud" };
     if (REDIRECTS[mainSeg]) {
-      window.history.replaceState(null, "", "/" + REDIRECTS[mainSeg]);
+      const targetPath = REDIRECTS[mainSeg] === "cloud" ? "/cloud" : "/" + REDIRECTS[mainSeg];
+      window.history.replaceState(null, "", routeUrl(targetPath));
       const rSegs = REDIRECTS[mainSeg].split("/");
       if (rSegs[0] === "community" && rSegs[1]) setBoardCat(rSegs[1]);
       setPage(rSegs[0]);
+      return;
+    }
+    if (mainSeg === "makeit-video-editor" || mainSeg === "video-editor") {
+      window.history.replaceState(null, "", routeUrl("/cloud"));
+      setPage("cloud");
       return;
     }
     // /payment/success, /payment/fail 처리
@@ -472,13 +841,11 @@ export default function App() {
       setPage("payment/" + segments[1]);
       return;
     }
-    // /community/info → page=community, boardCat=info
-    if (mainSeg === "community" && segments[1] && !segments[1].startsWith("post-")) {
-      setBoardCat(segments[1]);
-    }
-    // /ai/blog_naver → page=ai, aiMenu=blog_naver
-    if (mainSeg === "ai" && segments[1]) {
-      setAiMenu(segments[1]);
+    // /community/info 및 /community/info/post-123 → page=community, boardCat=info
+    if (communityRoute) {
+      setBoardCat(communityRoute.cat);
+      setPage("community");
+      return;
     }
     // /programs/[id] → page=programs, programId=id
     if (mainSeg === "programs" && segments[1]) {
@@ -487,6 +854,7 @@ export default function App() {
     // /growth/[id] or /challenge/[id] → page=challenge, challengeId=id
     if ((mainSeg === "growth" || mainSeg === "challenge") && segments[1]) {
       setChallengeId(segments[1]);
+      setChallengeBoard(segments[2] === "board");
     }
     // /class/[courseId]/[lessonId] → page=class
     if (mainSeg === "class" && segments[1]) {
@@ -496,7 +864,6 @@ export default function App() {
     // /growth → challenge 페이지로 매핑
     const effectiveSeg = mainSeg === "growth" ? "challenge" : mainSeg;
     if (effectiveSeg && effectiveSeg !== "home") setPage(effectiveSeg);
-    if (effectiveSeg === "ai") setAiVisited(true);
   }, []);
 
   // popstate - 뒤로가기: URL에서 상태 복원
@@ -515,19 +882,35 @@ export default function App() {
         if (!ok) return;
       }
       // URL 파싱으로 이전 페이지 상태 정확히 복원
-      const rawPath = window.location.pathname.replace(/^\//, "") || "home";
+      const rawPath = routePath();
       const segments = rawPath.split("/");
       const mainSeg = segments[0] || "home";
+      const communityRoute = parseCommunityPath(segments);
 
       // 커뮤니티 하위 카테고리 복원
-      if (mainSeg === "community" && segments[1] && !segments[1].startsWith("post-")) {
-        setBoardCat(segments[1]);
+      if (communityRoute) {
+        setBoardCat(communityRoute.cat);
+        setPendingPostId(communityRoute.postId || null);
+        setPage("community"); setOpenMenu(null); setMobileOpen(false);
+        return;
       }
-      // AI 메뉴 복원
-      if (mainSeg === "ai" && segments[1]) {
-        setAiMenu(segments[1]);
-      } else if (mainSeg === "ai") {
-        setAiMenu("home");
+      if (mainSeg === "ai") {
+        window.history.replaceState(null, "", routeUrl("/programs"));
+        setPage("programs"); setOpenMenu(null); setMobileOpen(false);
+        return;
+      }
+      if (mainSeg === "makeit-video-editor" || mainSeg === "video-editor") {
+        window.history.replaceState(null, "", routeUrl("/cloud"));
+        setPage("cloud");
+        setOpenMenu(null);
+        setMobileOpen(false);
+        return;
+      }
+      if (mainSeg === "cloud") {
+        setPage("cloud");
+        setOpenMenu(null);
+        setMobileOpen(false);
+        return;
       }
       // 게시글 뷰 복원은 BoardPage popstate에서 처리
       // App.jsx는 페이지 전환만 담당
@@ -535,8 +918,14 @@ export default function App() {
         setPendingPostId(null);
       }
 
-      setPage(mainSeg); setOpenMenu(null); setMobileOpen(false);
-      if (mainSeg === "ai") setAiVisited(true);
+      if ((mainSeg === "growth" || mainSeg === "challenge") && segments[1]) {
+        setChallengeId(segments[1]);
+        setChallengeBoard(segments[2] === "board");
+        setPage("challenge"); setOpenMenu(null); setMobileOpen(false);
+        return;
+      }
+
+      setPage(mainSeg === "growth" ? "challenge" : mainSeg); setOpenMenu(null); setMobileOpen(false);
     };
     window.addEventListener("popstate", fn);
     return () => window.removeEventListener("popstate", fn);
@@ -555,55 +944,68 @@ export default function App() {
 
   const [legalTab, setLegalTab] = useState("terms");
   const navigate = async (target, extra) => {
+    if (target === "video-editor" || target === "makeit-video-editor") target = "cloud";
     if (target === "login_trigger") { navigate("login"); return; }
+    if (target === "ai") target = "programs";
     if (!(await confirmGuard())) return;
-    const urlTarget = target === "home" ? "/" : target === "challenge" ? "/growth" : "/" + target;
-    window.history.pushState(null, "", urlTarget);
+    const urlTarget = target === "home"
+      ? "/"
+      : target === "challenge"
+        ? "/growth"
+        : target === "cloud"
+          ? "/cloud"
+          : "/" + target;
+    window.history.pushState(null, "", routeUrl(urlTarget));
     setPage(target); setOpenMenu(null); setMobileOpen(false);
-    if (target === "ai") setAiVisited(true);
+    if (target === "challenge") { setChallengeId(null); setChallengeBoard(false); }
     if (target === "legal" && extra) setLegalTab(extra);
     // SEO: 다국어 동적 타이틀
     const brand = lang === "ko" ? "SNS메이킷" : "SNS Makeit";
     const titleMap = {
-      ko: { home:"SNS메이킷 - AI SNS 콘텐츠 자동 생성", about:"소개", howto:"이용방법", ai:"AI 생성기", programs:"자동화", class:"클래스", challenge:"크루잉", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
-      en: { home:"SNS Makeit - AI Social Content Generator", about:"About", howto:"How to Use", ai:"AI Generator", programs:"Program Store", class:"Classes", challenge:"Bootcamp", notice:"Notices", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy" },
-      ja: { home:"SNS Makeit - AI カードニュース·ブログ·画像生成", about:"紹介", howto:"使い方", ai:"AI生成器", programs:"プログラムストア", class:"クラス", challenge:"ブートキャンプ", notice:"お知らせ", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約" },
+      ko: { home:"SNS메이킷 - SNS를 쉽게 관리하세요", about:"소개", howto:"이용방법", ai:"설치형 프로그램", programs:"데스크톱버전", cloud:"앱버전", class:"클래스", challenge:"크루잉", notice:"공지사항", pricing:"가격정책", contact:"문의하기", event:"이벤트", community:"커뮤니티", legal:"약관·정책" },
+      en: { home:"SNS Makeit - Desktop SNS Management", about:"About", howto:"How to Use", ai:"Desktop Program", programs:"Desktop Version", cloud:"App Version", class:"Classes", challenge:"Bootcamp", notice:"Notices", pricing:"Pricing", contact:"Contact", event:"Events", community:"Community", legal:"Terms & Policy" },
+      ja: { home:"SNS Makeit - インストール型SNS管理", about:"紹介", howto:"使い方", ai:"インストール型プログラム", programs:"デスクトップ版", cloud:"クラウド版", class:"クラス", challenge:"ブートキャンプ", notice:"お知らせ", pricing:"料金", contact:"お問い合わせ", event:"イベント", community:"コミュニティ", legal:"利用規約" },
     };
     // 페이지별 meta description (SEO 최적화)
     const descMap = {
       ko: {
-        home: "블로그 글쓰기, 자동 발행, 키워드 분석까지. SNS 콘텐츠 관리를 쉽게 도와주는 올인원 플랫폼.",
+        home: "콘텐츠 제작, 키워드 분석, 자동 발행, 커뮤니티까지 SNS 운영에 필요한 흐름을 한곳에서 쉽게 관리하세요.",
         pricing: "SNS메이킷 가격정책. Free부터 Business까지, 필요한 만큼 콘텐츠 생성과 자동 발행을 이용하세요.",
         about: "SNS메이킷은 SNS 콘텐츠 관리를 위한 올인원 플랫폼입니다.",
         howto: "SNS메이킷 사용법 가이드. 블로그 글쓰기, 자동 발행까지 단계별로 안내합니다.",
-        ai: "블로그 글, 이미지, 영상을 쉽게 생성하세요.",
+        ai: "설치형 SaaS 프로그램으로 네이버 블로그·카페 자동 발행을 관리하세요.",
         class: "SNS 콘텐츠 제작과 자동화 실무를 배우는 메이킷 클래스입니다.",
         challenge: "SNS 성장 목표를 정하고 매일 인증하며 실행하는 메이킷 크루잉입니다.",
         contact: "SNS메이킷 문의하기. 결제, 기능, 오류 등 1:1 문의를 받고 있어요.",
         community: "SNS메이킷 커뮤니티. 마케터와 크리에이터를 위한 정보와 Q&A.",
-        programs: "SNS 자동화봇으로 네이버 블로그 글 생성, 드라이브 자료 기반 발행, 자동 운영 흐름을 확인하세요.",
+        programs: "SNS메이킷 데스크톱 설치형 프로그램으로 네이버 블로그 글 생성, 드라이브 자료 기반 발행, 자동 운영 흐름을 확인하세요.",
+        cloud: "SNS메이킷 앱버전에서 글쓰기와 콘텐츠 제작 흐름을 웹으로 확인하세요.",
       },
       en: {
-        home: "Enter a keyword and AI creates drafts for blogs, Instagram, and shorts. 5 guest uses and 5 credits on signup.",
-        pricing: "SNS Makeit pricing. 5 credits on signup, simple monthly usage counts, and plan upgrades.",
-        about: "SNS Makeit is an all-in-one platform automating SNS content creation with AI.",
-        howto: "SNS Makeit user guide. Step-by-step for AI writing, image generation, and shorts editing.",
-        ai: "Generate blogs, card news, detail pages, images, and shorts videos with AI. 5 free uses for guests.",
+        home: "Manage SNS operations with the SNS Makeit desktop SaaS program for Naver Blog and Cafe auto-publishing.",
+        pricing: "SNS Makeit pricing for desktop SaaS publishing limits and plan upgrades.",
+        about: "SNS Makeit is a desktop SaaS program for Naver Blog/Cafe auto-publishing and SNS operations.",
+        howto: "SNS Makeit user guide. Step-by-step for the Windows desktop program and Naver auto-publishing.",
+        ai: "Manage Naver Blog and Cafe auto-publishing with the desktop SaaS program.",
         class: "Practical SNS Makeit classes for content creation, automation, and marketing workflows.",
         challenge: "SNS Makeit bootcamps help you set goals, submit proofs, and build a consistent content routine.",
         contact: "Contact SNS Makeit. 1:1 support for billing, features, and troubleshooting.",
-        community: "SNS Makeit Community. Info, Q&A, and resources for marketers and creators.",
+        community: "SNS Makeit Community. Info, Q&A, and resources for SNS operators.",
+        programs: "Download the Windows desktop program for Naver Blog/Cafe auto-publishing and SNS operations.",
+        cloud: "Open the SNS Makeit cloud version in a browser-based screen.",
       },
       ja: {
-        home: "キーワードを入力すると、AIがブログ、Instagram、ショート動画の下書きを作成します。",
+        home: "インストール型SaaSプログラムでNaverブログ・カフェの自動発行とSNS運用を管理できます。",
         pricing: "SNS Makeitの料金プラン。無料利用からBusinessまで確認できます。",
-        about: "SNS Makeitは、SNSコンテンツ制作を支援するAIプラットフォームです。",
-        howto: "SNS Makeitの使い方をステップごとに確認できます。",
-        ai: "ブログ、画像、動画をAIで簡単に作成できます。",
+        about: "SNS Makeitは、Naverブログ・カフェの自動発行を支援するインストール型SaaSです。",
+        howto: "SNS MakeitのWindowsプログラムと自動発行の使い方を確認できます。",
+        ai: "インストール型SaaSプログラムで自動発行を管理できます。",
         class: "SNSコンテンツ制作と自動化を実践的に学べるSNS Makeitクラスです。",
         challenge: "目標設定、認証、毎日の実行を支援するSNS Makeitブートキャンプです。",
         contact: "決済、機能、不具合に関するお問い合わせはこちらです。",
-        community: "SNS運用、AIコンテンツ制作、Q&Aのためのコミュニティです。",
+        community: "SNS運用、マーケティング情報、Q&Aのためのコミュニティです。",
+        programs: "Naverブログ・カフェ自動発行のWindowsプログラムを確認できます。",
+        cloud: "SNS Makeitのクラウド版を確認できます。",
       },
     };
     const titles = titleMap[lang] || titleMap.ko;
@@ -618,9 +1020,9 @@ export default function App() {
   const navigateBoard = async (cat) => {
     if (!(await confirmGuard())) return;
     setBoardCat(cat);
-    window.history.pushState(null, "", "/community/" + cat);
+    window.history.pushState(null, "", routeUrl("/community/" + cat));
     setPage("community"); setOpenMenu(null); setMobileOpen(false);
-    const catNames = { info: "정보공유", qna: "질문답변", free: "자유게시판", review: "사용후기", challenge: "크루잉" };
+    const catNames = { info: "정보공유", qna: "질문답변", challenge: "크루잉" };
     const title = (catNames[cat] || "커뮤니티") + " - SNS메이킷";
     document.title = title;
     updateOgMeta(title, null, "/community/" + cat);
@@ -637,7 +1039,7 @@ export default function App() {
       .slice(0, 80)
       .replace(/-$/g, "") || "post";
     const path = "/community/" + cat + "/post-" + postId + "/" + slug;
-    window.history.pushState(null, "", path);
+    window.history.pushState(null, "", routeUrl(path));
     if (postTitle) {
       const title = postTitle + " - SNS메이킷 커뮤니티";
       document.title = title;
@@ -647,9 +1049,8 @@ export default function App() {
 
   const navigateAi = async (menu) => {
     if (!(await confirmGuard())) return;
-    setAiMenu(menu);
-    window.history.pushState(null, "", "/ai/" + menu);
-    setPage("ai"); setAiVisited(true); setOpenMenu(null); setMobileOpen(false);
+    window.history.pushState(null, "", routeUrl("/programs"));
+    setPage("programs"); setOpenMenu(null); setMobileOpen(false);
     window.scrollTo(0, 0);
   };
 
@@ -663,9 +1064,6 @@ export default function App() {
       }
     } catch {}
   };
-  // AiPage에 전달하는 콜백 안정화 (인라인 함수 → useCallback)
-  const stableOnLoginRequest = useCallback(() => navigate("login"), [navigate]);
-  const stableOnUserUpdate = useCallback(u => { setLocalUser(u); setUserState(u); }, []);
   const refreshCurrentUser = useCallback(async () => {
     const uid = user?.uid;
     if (!uid) return;
@@ -731,7 +1129,7 @@ export default function App() {
     setUserState(null);
 
     // 7) 완전 새로고침
-    window.location.replace("/");
+    window.location.replace(routeUrl("/"));
   };
 
   const isBoard = page === "community";
@@ -787,42 +1185,50 @@ export default function App() {
 
   /* ── 페이지 렌더 ── */
   const renderPage = () => {
-    if (page === "home")     return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} setAiMenu={setAiMenu} />;
+    if (page === "home")     return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} />;
     if (page === "login")    { if (user) { navigate("home"); return null; } return <AuthPage C={C} onAuth={handleAuth} navigate={navigate} />; }
     if (page === "about")    return <AboutPage C={C} navigate={navigate} />;
     if (page === "howto")  return <HowToPage C={C} navigate={navigate} />;
     // guide 페이지 비활성화
     if (page === "faq")      return <FaqPage C={C} navigate={navigate} />;
 
-    if (page === "analyzer")  return <AnalyzerPage C={C} theme={theme} user={user} navigate={navigate} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
-    if (page === "ai")       return null; /* AiPage는 keep-alive로 별도 렌더 */
+    if (page === "ai")       { navigate("programs"); return null; }
     if (isBoard)             return <BoardPage key={boardCat} C={C} user={user} onLoginRequest={() => navigate("login")} initialCat={boardCat} pendingPostId={pendingPostId} onPendingPostClear={() => setPendingPostId(null)} onNavigatePost={navigatePost} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} />;
     if (page === "pricing")  return <PricingPage C={C} navigate={navigate} user={user} onLogin={() => navigate("login")} />;
     if (page === "contact")  return <ContactPage C={C} />;
-    if (page === "event")    return <EventPage C={C} navigate={navigate} />;
+    if (page === "event")    { navigate("programs"); return null; }
     if (page === "programs") return <ProgramsPage C={C} navigate={navigate} user={user} onLogin={() => navigate("login")} initialProductId={programId} onProductIdChange={setProgramId} />;
+    if (page === "cloud") return <CloudVersionPage C={C} navigate={navigate} user={user} onLogin={() => navigate("login")} />;
     if (page === "notice") return <NoticePage C={C} navigate={navigate} user={user} />;
     if (page === "class") {
       return <ClassPage C={C} navigate={navigate} user={user} theme={theme} initialCourseId={classId} initialLessonId={classLessonId} />;
     }
-    if (page === "challenge") return <ChallengePage C={C} navigate={navigate} user={user} theme={theme} onLoginRequest={() => navigate("login")} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} initialChallengeId={challengeId} />;
-    if (page === "snsnews")  { navigate("community"); return null; }
-    if (page === "cases")    return <CasePage C={C} isDark={theme==="dark"} user={user} />;
+    if (page === "challenge") return <ChallengePage key={`${challengeId || "list"}-${challengeBoard ? "board" : "detail"}-${user?.uid || "guest"}`} C={C} navigate={navigate} user={user} theme={theme} onLoginRequest={() => navigate("login")} onUserUpdate={u => { setLocalUser(u); setUserState(u); }} initialChallengeId={challengeId} initialBoard={challengeBoard} />;
+    if (page === "snsnews")  { navigate("community/all"); return null; }
+    if (page === "cases")    { navigate("programs"); return null; }
     if (page === "intro-video") { navigate("home"); return null; }
     if (page === "payment/success") return <PaymentSuccessPage C={C} navigate={navigate} />;
     if (page === "payment/fail")    return <PaymentFailPage C={C} navigate={navigate} />;
     if (page === "legal")           return <LegalPage C={C} navigate={navigate} initialTab={legalTab} />;
     if (page === "mypage" || page === "profile")   return <MyPage C={C} theme={theme} user={user} setUser={u => { setLocalUser(u); setUserState(u); }} navigate={navigate} />;
     if (page === "xk9m2p4q7") {
-      if (!user) return <div style={{ minHeight: "80vh" }} />;
-      if (user.role !== "admin") return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} setAiMenu={setAiMenu} />;
+      if (!user) return (
+        <div style={{ minHeight: "80vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 24px", textAlign: "center" }}>
+          <div style={{ maxWidth: 420, width: "100%", background: C.card, border: "1px solid " + C.border, borderRadius: 18, padding: "34px 28px", boxShadow: C.shadow }}>
+            <h1 style={{ fontSize: 22, fontWeight: 900, color: C.text, margin: "0 0 8px" }}>관리자 로그인 필요</h1>
+            <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.7, margin: "0 0 22px" }}>관리자 권한이 있는 계정으로 로그인해 주세요.</p>
+            <button onClick={() => navigate("login")} style={{ padding: "11px 24px", borderRadius: 10, border: "none", background: "#2563eb", color: "#fff", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>로그인하기</button>
+          </div>
+        </div>
+      );
+      if (user.role !== "admin") return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} />;
       return <AdminPage C={C} user={user} />;
     }
     // 404 - 알 수 없는 페이지
     if (page !== "home") return (
       <div style={{ minHeight: "60vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 24px", textAlign: "center" }}>
         <div style={{ fontSize: 48, fontWeight: 900, color: C.muted, marginBottom: 16, opacity: 0.3 }}>404</div>
-        <div style={{ fontSize: 28, fontWeight: 900, color: C.text, marginBottom: 8 }}>{lang === "ko" ? "페이지를 찾을 수 없습니다" : "Page not found"}</div>
+        <h1 style={{ fontSize: 28, fontWeight: 900, color: C.text, margin: "0 0 8px" }}>{lang === "ko" ? "페이지를 찾을 수 없습니다" : "Page not found"}</h1>
         <div style={{ fontSize: 14, color: C.muted, lineHeight: 1.8, marginBottom: 28 }}>{lang === "ko" ? "요청하신 페이지가 존재하지 않거나 이동되었어요." : "The page you requested doesn't exist or has moved."}</div>
         <button onClick={() => navigate("home")}
           style={{ padding: "12px 32px", borderRadius: 12, border: "none", background: "#3b82f6", color: "#fff", fontSize: 15, fontWeight: 700, cursor: "pointer" }}>
@@ -830,7 +1236,7 @@ export default function App() {
         </button>
       </div>
     );
-    return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} setAiMenu={setAiMenu} />;
+    return <HomePage C={C} navigate={navigate} theme={theme} user={user} onLoginRequest={() => navigate("login")} />;
   };
 
   const isAdminPage = page === "xk9m2p4q7" && user?.role === "admin";
@@ -996,7 +1402,7 @@ export default function App() {
           userName={user?.nick}
           lang={lang}
           onClose={() => setShowWelcome(false)}
-          onGoAi={() => { setShowWelcome(false); navigate("ai"); }}
+          onGoAi={() => { setShowWelcome(false); navigate("programs"); }}
           onGoPricing={() => { setShowWelcome(false); navigate("pricing"); }}
         />
       )}
@@ -1032,10 +1438,10 @@ export default function App() {
       <nav role="navigation" aria-label="메인 네비게이션" style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 1000, height: 60,
         boxSizing: "border-box", maxWidth: "100vw", overflow: "visible",
-        background: scrolled ? C.nav : "transparent",
-        borderBottom: scrolled ? "1px solid " + C.border : "none",
-        backdropFilter: scrolled ? "blur(20px)" : "none",
-        boxShadow: scrolled ? "0 1px 8px rgba(0,0,0,0.04)" : "none",
+        background: page === "cloud" ? C.nav : (scrolled ? C.nav : "transparent"),
+        borderBottom: page === "cloud" || scrolled ? "1px solid " + C.border : "none",
+        backdropFilter: page === "cloud" || scrolled ? "blur(20px)" : "none",
+        boxShadow: page === "cloud" || scrolled ? "0 1px 8px rgba(0,0,0,0.04)" : "none",
         transition: "all 0.3s", display: "flex", alignItems: "center", padding: "0 20px", gap: 4,
       }}>
 
@@ -1050,7 +1456,15 @@ export default function App() {
         {/* 데스크톱 메뉴 — 중앙 정렬 */}
         <div ref={dropMenuRef} className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 2, flex: 1, justifyContent: "center" }}>
           <NavBtn id="home" label={t("home")} />
-          <NavBtn id="programs" label="제품" />
+          <div style={{ position: "relative" }}>
+            <DropBtn id="product" label="제품" open={openMenu==="product"} active={page==="programs"||page==="cloud"} onClick={() => setOpenMenu(m => m==="product"?null:"product")} />
+            {openMenu==="product" && (
+              <DropMenu>
+                <DropItem id="programs" label="데스크톱버전" onClick={() => { navigate("programs"); setOpenMenu(null); }} />
+                <DropItem id="cloud" label="앱버전" onClick={() => { navigate("cloud"); setOpenMenu(null); }} />
+              </DropMenu>
+            )}
+          </div>
           <NavBtn id="class" label="클래스" />
           <div style={{ width: 1, height: 16, background: C.border, margin: "0 6px" }} />
           <NavBtn id="challenge" label="크루잉" />
@@ -1110,6 +1524,21 @@ export default function App() {
           </div>
           <div style={{ width: 1, height: 20, background: C.border, margin: "0 4px" }} />
           {user ? (
+            <>
+            <NotificationButton
+              C={C}
+              theme={theme}
+              notifications={notifications}
+              unreadCount={unreadCount}
+              open={notificationOpen}
+              setOpen={setNotificationOpen}
+              onItemClick={openNotification}
+              onMarkAllRead={markAllNotificationsRead}
+              pushNotifyEnabled={pushNotifyEnabled}
+              onEnablePushNotifications={enablePushNotifications}
+              onTestPushNotifications={testPushNotifications}
+              pushTestBusy={pushTestBusy}
+            />
             <div ref={profileRef} style={{ position: "relative" }}>
               {/* 프로필 버튼 */}
               <button onMouseDown={e=>e.stopPropagation()} onClick={() => setProfileOpen(p => !p)}
@@ -1165,8 +1594,8 @@ export default function App() {
                   {/* 메뉴 */}
                   <div style={{ padding: "8px" }}>
                     {[
-                      { icon: "+", label: "플랜 업그레이드", sub: "더 많은 AI 생성", action: () => { navigate("pricing"); setProfileOpen(false); } },
-                      { icon: "F", label: "내 보관함", sub: "생성한 글 보관", action: () => { navigate("ai"); setAiMenu("library"); setProfileOpen(false); } },
+                      { icon: "+", label: "플랜 업그레이드", sub: "자동 발행 한도 확장", action: () => { navigate("pricing"); setProfileOpen(false); } },
+                      { icon: "P", label: "설치형 프로그램", sub: "다운로드·기능 확인", action: () => { navigate("programs"); setProfileOpen(false); } },
                       { icon: "U", label: "회원정보", sub: "프로필·이용 내역 확인", action: () => { navigate("mypage"); setProfileOpen(false); } },
                       ...(user.role==="admin" ? [{ icon: "A", label: "관리자 페이지", sub: "회원·플랜 관리", action: () => { navigate("xk9m2p4q7"); setProfileOpen(false); } }] : []),
                     ].map((m,i) => (
@@ -1197,6 +1626,7 @@ export default function App() {
                 </div>
               )}
             </div>
+            </>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <button onClick={() => navigate("login")} style={{ padding: "8px 16px", borderRadius: 10, border: "none", cursor: "pointer", fontWeight: 700, fontSize: 12, background: "#3b82f6", color: "#fff", minHeight: 36 }}>로그인</button>
@@ -1209,7 +1639,7 @@ export default function App() {
           {/* 모바일 언어 선택 */}
           <div style={{ position: "relative" }}>
             <button onClick={() => setLangOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "center",
-              width: 36, height: 36, borderRadius: "50%", border: "1px solid " + C.border,
+              width: 44, height: 44, minWidth: 44, minHeight: 44, borderRadius: "50%", border: "1px solid " + C.border,
               background: C.toggleBg, cursor: "pointer", fontSize: 13, flexShrink: 0 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
             </button>
@@ -1235,12 +1665,29 @@ export default function App() {
           </div>
           {/* 유저 상태 */}
           {user ? (
-            <button onClick={() => setMobileOpen(s => !s)} style={{ width: 36, height: 36, borderRadius: "50%",
-              background: "#3b82f6", display: "flex",
-              alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900,
-              color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }}>
-              {(user.nick||"U")[0].toUpperCase()}
-            </button>
+            <>
+              <NotificationButton
+                C={C}
+                theme={theme}
+                notifications={notifications}
+              unreadCount={unreadCount}
+              open={notificationOpen}
+              setOpen={setNotificationOpen}
+              onItemClick={openNotification}
+              onMarkAllRead={markAllNotificationsRead}
+              pushNotifyEnabled={pushNotifyEnabled}
+              onEnablePushNotifications={enablePushNotifications}
+              onTestPushNotifications={testPushNotifications}
+              pushTestBusy={pushTestBusy}
+              compact
+            />
+              <button onClick={() => setMobileOpen(s => !s)} style={{ width: 44, height: 44, minWidth: 44, minHeight: 44, borderRadius: "50%",
+                background: "#3b82f6", display: "flex",
+                alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 900,
+                color: "#fff", border: "none", cursor: "pointer", flexShrink: 0 }}>
+                {(user.nick||"U")[0].toUpperCase()}
+              </button>
+            </>
           ) : (
             <button onClick={() => navigate("login")} style={{ padding: "6px 12px", borderRadius: 8, border: "none",
               cursor: "pointer", fontWeight: 700, fontSize: 12,
@@ -1261,26 +1708,46 @@ export default function App() {
         <div style={{
           position: "fixed", top: 60, left: 0, right: 0, bottom: 0, zIndex: 999,
           background: theme === "dark" ? "rgba(10,8,18,0.98)" : "rgba(255,255,255,0.98)",
-          backdropFilter: "blur(20px)", padding: "16px 16px 40px",
+          backdropFilter: "blur(20px)", padding: "16px clamp(12px, 4vw, 20px) 40px",
           animation: "fadeIn 0.2s ease", overflowY: "auto", borderTop: "1px solid " + C.border,
         }}>
               {/* PC 상단 메뉴와 동일한 큰 메뉴만 */}
           {[
             { id: "home",     label: t("home"),      onClick: () => { navigate("home"); setMobileOpen(false); },     active: page==="home" },
-            { id: "programs", label: "제품", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
+            { id: "programs", label: "데스크톱버전", onClick: () => { navigate("programs"); setMobileOpen(false); }, active: page==="programs" },
+            { id: "cloud", label: "앱버전", onClick: () => { navigate("cloud"); setMobileOpen(false); }, active: page==="cloud" },
             { id: "class", label: "클래스", onClick: () => { navigate("class"); setMobileOpen(false); }, active: page==="class" },
             { id: "challenge", label: "크루잉", onClick: () => { navigate("challenge"); setMobileOpen(false); }, active: page==="challenge" },
             { id: "community",label: t("community"),  onClick: () => { navigateBoard("info"); setMobileOpen(false); }, active: page==="community" },
           ].map(m => (
             <button key={m.id} onClick={m.onClick} style={{
               display: "block", width: "100%", textAlign: "left",
-              padding: "14px 16px", borderRadius: 10, border: "none", cursor: "pointer", marginBottom: 3,
+              padding: "13px 16px", borderRadius: 12, border: "none", cursor: "pointer", marginBottom: 4,
               background: m.active ? "rgba(59,130,246,0.08)" : "transparent",
               color: m.active ? C.purpleL : C.text,
               fontSize: 16, fontWeight: m.active ? 700 : 500,
-              borderLeft: m.active ? "3px solid #3b82f6" : "3px solid transparent",
             }}>{m.label}</button>
           ))}
+
+          <div style={{ margin: "8px 0 6px", padding: "10px", borderRadius: 12, background: theme === "dark" ? "rgba(255,255,255,0.03)" : "rgba(59,130,246,0.04)" }}>
+            <div style={{ fontSize: 11, color: C.muted, fontWeight: 700, padding: "0 6px 6px", opacity: 0.75 }}>커뮤니티 바로가기</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2,minmax(0,1fr))", gap: 6 }}>
+              {[
+                { id:"info", label:t("info") || "정보공유" },
+                { id:"qna", label:t("qna") || "질문답변" },
+              ].map(item => (
+                <button key={item.id} onClick={() => { navigateBoard(item.id); setMobileOpen(false); }}
+                  style={{
+                    minHeight: 42, padding: "10px 12px", borderRadius: 9, border: "1px solid " + C.border,
+                    background: page === "community" && boardCat === item.id ? "rgba(59,130,246,0.1)" : "transparent",
+                    color: page === "community" && boardCat === item.id ? C.purpleL : C.text,
+                    fontSize: 13, fontWeight: 700, textAlign: "center", cursor: "pointer",
+                  }}>
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
           {/* 고객센터 */}
           <div style={{ margin: "12px 0 6px", paddingTop: 8, borderTop: "1px solid " + C.border }}>
@@ -1300,7 +1767,7 @@ export default function App() {
             }}>{m.label}</button>
           ))}
 
-          <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid " + C.border }}>
+          <div style={{ marginTop: 22, paddingTop: 18, paddingBottom: 24, borderTop: "1px solid " + C.border }}>
             {user ? (
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
@@ -1316,8 +1783,9 @@ export default function App() {
                   </div>
                   <button onClick={logout} style={{ padding: "7px 14px", borderRadius: 9, cursor: "pointer", border: "1px solid " + C.border, background: "transparent", color: C.muted, fontSize: 12 }}>{t("logout")}</button>
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{ flex: 1, padding: "9px", borderRadius: 9, border: "none", background: "#3b82f6", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>플랜 보기</button>
+                <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: 8, alignItems: "center" }}>
+                  <button onClick={() => { navigate("pricing"); setMobileOpen(false); }} style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: "none", background: "#3b82f6", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>플랜 보기</button>
+                  <button onClick={() => { navigate("mypage"); setMobileOpen(false); }} style={{ padding: "10px 14px", borderRadius: 10, border: "1px solid " + C.border, background: "transparent", color: C.text, fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>내 정보</button>
                 </div>
               </div>
             ) : (
@@ -1353,28 +1821,17 @@ export default function App() {
       </>)}
 
       {/* ── 페이지 ── */}
-      {/* AI 페이지 — keep-alive: 한번 방문하면 항상 마운트, display로 숨김 */}
-      {aiVisited && (
-        <div style={{ paddingTop: 60, display: page === "ai" ? "block" : "none" }}>
-          <Suspense fallback={<PageLoader />}>
-            <AiPage C={C} theme={theme} user={user} navigate={navigate} navigateBoard={navigateBoard} navigateAi={navigateAi} onLogout={logout} onLoginRequest={stableOnLoginRequest} aiMenu={aiMenu} setAiMenu={setAiMenu} onUserUpdate={stableOnUserUpdate} />
-          </Suspense>
-        </div>
-      )}
-      {/* 일반 페이지 — AI가 아닐 때만 표시 */}
-      {page !== "ai" && (
-        <div style={{ paddingTop: isAdminPage ? 0 : 60 }} className="page-anim" key={page}>
-          <Suspense fallback={<PageLoader />}>
-            {renderPage()}
-          </Suspense>
-        </div>
-      )}
+      <div style={{ paddingTop: isAdminPage ? 0 : 60 }} className="page-anim" key={page}>
+        <Suspense fallback={<PageLoader />}>
+          {renderPage()}
+        </Suspense>
+      </div>
 
       {/* ── 푸터 (AI 페이지에서는 콘텐츠 내부에 포함) ── */}
-      {page !== "ai" && !isAdminPage && <Footer C={C} navigateBoard={navigateBoard} navigateAi={navigateAi} navigate={navigate} />}
+      {page !== "ai" && page !== "cloud" && !isAdminPage && <Footer C={C} navigateBoard={navigateBoard} navigateAi={navigateAi} navigate={navigate} />}
 
       {/* 실시간 채팅 위젯 */}
-      {!isAdminPage && <ChatWidget user={user} C={C} />}
+      {!isAdminPage && page !== "cloud" && <ChatWidget user={user} C={C} />}
 
       {showScrollTop && (
         <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

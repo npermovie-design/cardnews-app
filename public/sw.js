@@ -1,9 +1,44 @@
-// 서비스워커 비활성화 — 캐시 전부 삭제 후 자기 자신도 제거
-self.addEventListener("install", () => self.skipWaiting());
-self.addEventListener("activate", (e) => {
-  e.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
-      .then(() => self.clients.claim())
-      .then(() => self.registration.unregister())
-  );
+self.addEventListener("install", () => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = {};
+  }
+
+  const title = data.title || "SNS메이킷 알림";
+  const options = {
+    body: data.body || "새 알림이 도착했습니다.",
+    icon: "/icon-192.png",
+    badge: "/favicon-96.png",
+    tag: data.tag || "snsmakeit-notice",
+    data: {
+      url: data.url || "/growth",
+    },
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || "/", self.location.origin).href;
+  event.waitUntil((async () => {
+    const clientList = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of clientList) {
+      if ("focus" in client) {
+        client.navigate(targetUrl);
+        return client.focus();
+      }
+    }
+    return self.clients.openWindow(targetUrl);
+  })());
 });
