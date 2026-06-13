@@ -47,6 +47,8 @@
     "@remotion/media-utils": "^4.0.443",
     "@remotion/player": "^4.0.443",
     "@remotion/transitions": "^4.0.443",
+    "@splinetool/react-spline": "^4.1.0",
+    "@splinetool/runtime": "^1.12.90",
     "@supabase/supabase-js": "^2.99.2",
     "clsx": "^2.1.1",
     "dompurify": "^3.3.3",
